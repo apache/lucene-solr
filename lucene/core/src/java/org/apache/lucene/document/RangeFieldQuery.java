@@ -356,6 +356,12 @@ abstract class RangeFieldQuery extends Query {
         }
         return scorerSupplier.get(Long.MAX_VALUE);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 

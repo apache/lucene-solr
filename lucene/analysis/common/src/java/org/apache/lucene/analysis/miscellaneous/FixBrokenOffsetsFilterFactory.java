@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link FixBrokenOffsetsFilter}.
+ * @since 7.0.0
  */
 public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
 

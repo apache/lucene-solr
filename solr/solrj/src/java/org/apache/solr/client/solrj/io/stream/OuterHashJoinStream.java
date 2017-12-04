@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * tuple will not be considered a match to anything. If a tuple from the fullStream does not contain a value (ie, null) 
  * for one of the fields the hash is being computed on then that tuple will be returned without any joined tuples
  * from the hashStream
+ * @since 6.0.0
 **/
 public class OuterHashJoinStream extends HashJoinStream implements Expressible {
   

@@ -31,6 +31,7 @@ import java.util.Map;
  *     &lt;filter class="solr.BengaliStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 7.1.0
  */
 public class BengaliStemFilterFactory extends TokenFilterFactory {
 

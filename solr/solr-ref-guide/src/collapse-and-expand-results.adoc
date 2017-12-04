@@ -1,6 +1,4 @@
 = Collapse and Expand Results
-:page-shortname: collapse-and-expand-results
-:page-permalink: collapse-and-expand-results.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -74,7 +72,7 @@ The data structures used for collapsing grow dynamically when collapsing on nume
 The default is 100,000.
 
 
-=== Sample Syntax
+=== Sample Usage Syntax
 
 Collapse on `group_field` selecting the document in each group with the highest scoring document:
 

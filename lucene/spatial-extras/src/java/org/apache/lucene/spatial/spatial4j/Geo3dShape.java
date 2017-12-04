@@ -159,6 +159,11 @@ public class Geo3dShape<T extends GeoAreaShape> implements Shape {
   }
 
   @Override
+  public String toString() {
+    return "Geo3D:" + shape.toString();
+  } // note: the shape usually prints its planet model
+
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof Geo3dShape<?>))
       return false;

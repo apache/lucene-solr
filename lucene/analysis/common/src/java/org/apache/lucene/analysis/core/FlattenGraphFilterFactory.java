@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * Factory for {@link FlattenGraphFilter}. 
  *
  * @lucene.experimental
+ * @since 6.4.0
  */
 public class FlattenGraphFilterFactory extends TokenFilterFactory {
 

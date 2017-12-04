@@ -1,6 +1,4 @@
 = Solr Tutorial
-:page-shortname: solr-tutorial
-:page-permalink: solr-tutorial.html
 :page-tocclass: right
 :experimental:
 

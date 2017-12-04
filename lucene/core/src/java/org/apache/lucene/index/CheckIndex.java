@@ -149,7 +149,7 @@ public final class CheckIndex implements Closeable {
     public boolean partial;
 
     /** The greatest segment name. */
-    public int maxSegmentName;
+    public long maxSegmentName;
 
     /** Whether the SegmentInfos.counter is greater than any of the segments' names. */
     public boolean validCounter; 
@@ -635,7 +635,7 @@ public final class CheckIndex implements Closeable {
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = sis.info(i);
-      int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
+      long segmentName = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
       }
@@ -1253,6 +1253,10 @@ public final class CheckIndex implements Closeable {
         continue;
       }
       
+      if (terms.getDocCount() > maxDoc) {
+        throw new RuntimeException("docCount > maxDoc for field: " + field + ", docCount=" + terms.getDocCount() + ", maxDoc=" + maxDoc);
+      }
+      
       final boolean hasFreqs = terms.hasFreqs();
       final boolean hasPositions = terms.hasPositions();
       final boolean hasPayloads = terms.hasPayloads();
@@ -1293,12 +1297,6 @@ public final class CheckIndex implements Closeable {
 
       if (hasFreqs != expectedHasFreqs) {
         throw new RuntimeException("field \"" + field + "\" should have hasFreqs=" + expectedHasFreqs + " but got " + hasFreqs);
-      }
-
-      if (hasFreqs == false) {
-        if (terms.getSumTotalTermFreq() != -1) {
-          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
-        }
       }
 
       if (!isVectors) {
@@ -1375,8 +1373,8 @@ public final class CheckIndex implements Closeable {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
-          if (termsEnum.totalTermFreq() != -1) {
-            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be -1)");   
+          if (termsEnum.totalTermFreq() != termsEnum.docFreq()) {
+            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be " + termsEnum.docFreq() + ")");
           }
         }
         
@@ -1406,14 +1404,11 @@ public final class CheckIndex implements Closeable {
             break;
           }
           visitedDocs.set(doc);
-          int freq = -1;
-          if (hasFreqs) {
-            freq = postings.freq();
-            if (freq <= 0) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
-            }
-            totalTermFreq += freq;
-          } else {
+          int freq = postings.freq();
+          if (freq <= 0) {
+            throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
+          }
+          if (hasFreqs == false) {
             // When a field didn't index freq, it must
             // consistently "lie" and pretend that freq was
             // 1:
@@ -1421,6 +1416,8 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
             }
           }
+          totalTermFreq += freq;
+
           if (liveDocs == null || liveDocs.get(doc)) {
             hasNonDeletedDocs = true;
             status.totFreq++;
@@ -1490,19 +1487,25 @@ public final class CheckIndex implements Closeable {
         }
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
-        final boolean hasTotalTermFreq = hasFreqs && totalTermFreq2 != -1;
         
         if (docCount != docFreq) {
           throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
         }
-        if (hasTotalTermFreq) {
-          if (totalTermFreq2 <= 0) {
-            throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
-          }
-          sumTotalTermFreq += totalTermFreq;
-          if (totalTermFreq != totalTermFreq2) {
-            throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
-          }
+        if (docFreq > terms.getDocCount()) {
+          throw new RuntimeException("term " + term + " docFreq=" + docFreq + " > docCount=" + terms.getDocCount());
+        }
+        if (totalTermFreq2 <= 0) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
+        }
+        sumTotalTermFreq += totalTermFreq;
+        if (totalTermFreq != totalTermFreq2) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
+        }
+        if (totalTermFreq2 < docFreq) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds, docFreq=" + docFreq);
+        }
+        if (hasFreqs == false && totalTermFreq != docFreq) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq + " !=  docFreq=" + docFreq);
         }
         
         // Test skipping
@@ -1626,22 +1629,22 @@ public final class CheckIndex implements Closeable {
         }
         status.blockTreeStats.put(field, stats);
 
-        if (sumTotalTermFreq != 0) {
-          final long v = fields.terms(field).getSumTotalTermFreq();
-          if (v != -1 && sumTotalTermFreq != v) {
-            throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
-          }
+        final long actualSumDocFreq = fields.terms(field).getSumDocFreq();
+        if (sumDocFreq != actualSumDocFreq) {
+          throw new RuntimeException("sumDocFreq for field " + field + "=" + actualSumDocFreq + " != recomputed sumDocFreq=" + sumDocFreq);
         }
+
+        final long actualSumTotalTermFreq = fields.terms(field).getSumTotalTermFreq();
+        if (sumTotalTermFreq != actualSumTotalTermFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + actualSumTotalTermFreq + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+        } 
         
-        if (sumDocFreq != 0) {
-          final long v = fields.terms(field).getSumDocFreq();
-          if (v != -1 && sumDocFreq != v) {
-            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
-          }
+        if (hasFreqs == false && sumTotalTermFreq != sumDocFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + " should be " + sumDocFreq + ", got sumTotalTermFreq=" + sumTotalTermFreq);
         }
         
         final int v = fieldTerms.getDocCount();
-        if (v != -1 && visitedDocs.cardinality() != v) {
+        if (visitedDocs.cardinality() != v) {
           throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
         

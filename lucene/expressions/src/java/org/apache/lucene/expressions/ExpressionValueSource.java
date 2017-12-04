@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
@@ -49,6 +50,12 @@ final class ExpressionValueSource extends DoubleValuesSource {
       needsScores |= source.needsScores();
       variables[i] = source;
     }
+    this.needsScores = needsScores;
+  }
+
+  ExpressionValueSource(DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
+    this.variables = variables;
+    this.expression = expression;
     this.needsScores = needsScores;
   }
 
@@ -140,6 +147,15 @@ final class ExpressionValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    for (DoubleValuesSource v : variables) {
+      if (v.isCacheable(ctx) == false)
+        return false;
+    }
+    return true;
+  }
+
+  @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     Explanation[] explanations = new Explanation[variables.length];
     DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
@@ -150,6 +166,20 @@ final class ExpressionValueSource extends DoubleValuesSource {
     for (DoubleValuesSource var : variables) {
       explanations[i++] = var.explain(ctx, docId, scoreExplanation);
     }
-    return Explanation.match((float)dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
+    return Explanation.match((float) dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    boolean changed = false;
+    DoubleValuesSource[] rewritten = new DoubleValuesSource[variables.length];
+    for (int i = 0; i < variables.length; i++) {
+      rewritten[i] = variables[i].rewrite(searcher);
+      changed |= (rewritten[i] == variables[i]);
+    }
+    if (changed) {
+      return new ExpressionValueSource(variables, expression, needsScores);
+    }
+    return this;
   }
 }

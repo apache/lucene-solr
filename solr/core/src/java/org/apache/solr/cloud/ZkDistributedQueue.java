@@ -19,10 +19,14 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -30,7 +34,7 @@ import java.util.function.Predicate;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.solr.common.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,13 +42,15 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A distributed queue. Optimized for single-consumer,
+ * A ZK-based distributed queue. Optimized for single-consumer,
  * multiple-producer: if there are multiple consumers on the same ZK queue,
  * the results should be correct but inefficient
  */
@@ -68,7 +74,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   final SolrZkClient zookeeper;
 
-  final Overseer.Stats stats;
+  final Stats stats;
 
   /**
    * A lock that guards all of the mutable state that follows.
@@ -93,11 +99,22 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   private int watcherCount = 0;
 
+  private final int maxQueueSize;
+
+  /**
+   * If {@link #maxQueueSize} is set, the number of items we can queue without rechecking the server.
+   */
+  private final AtomicInteger offerPermits = new AtomicInteger(0);
+
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir) {
-    this(zookeeper, dir, new Overseer.Stats());
+    this(zookeeper, dir, new Stats());
   }
 
-  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats) {
+    this(zookeeper, dir, stats, 0);
+  }
+
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize) {
     this.dir = dir;
 
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
@@ -112,6 +129,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
     this.zookeeper = zookeeper;
     this.stats = stats;
+    this.maxQueueSize = maxQueueSize;
   }
 
   /**
@@ -210,6 +228,42 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
+  public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
+    if (paths.isEmpty()) return;
+    List<Op> ops = new ArrayList<>();
+    for (String path : paths) {
+      ops.add(Op.delete(dir + "/" + path, -1));
+    }
+    for (int from = 0; from < ops.size(); from += 1000) {
+      int to = Math.min(from + 1000, ops.size());
+      if (from < to) {
+        try {
+          zookeeper.multi(ops.subList(from, to), true);
+        } catch (KeeperException.NoNodeException e) {
+          // don't know which nodes are not exist, so try to delete one by one node
+          for (int j = from; j < to; j++) {
+            try {
+              zookeeper.delete(ops.get(j).getPath(), -1, true);
+            } catch (KeeperException.NoNodeException e2) {
+              LOG.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
+            }
+          }
+        }
+      }
+    }
+
+    int cacheSizeBefore = knownChildren.size();
+    knownChildren.removeAll(paths);
+    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
+      stats.setQueueLength(knownChildren.size());
+    } else {
+      // There are elements get deleted but not present in the cache,
+      // the cache seems not valid anymore
+      knownChildren.clear();
+      isDirty = true;
+    }
+  }
+
   /**
    * Removes the head of the queue and returns it, blocks until it succeeds.
    *
@@ -244,6 +298,24 @@ public class ZkDistributedQueue implements DistributedQueue {
     try {
       while (true) {
         try {
+          if (maxQueueSize > 0) {
+            if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
+              // If a max queue size is set, check it before creating a new queue item.
+              Stat stat = zookeeper.exists(dir, null, true);
+              if (stat == null) {
+                // jump to the code below, which tries to create dir if it doesn't exist
+                throw new KeeperException.NoNodeException();
+              }
+              int remainingCapacity = maxQueueSize - stat.getNumChildren();
+              if (remainingCapacity <= 0) {
+                throw new IllegalStateException("queue is full");
+              }
+
+              // Allow this client to push up to 1% of the remaining queue capacity without rechecking.
+              offerPermits.set(remainingCapacity / 100);
+            }
+          }
+
           // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
           // This will get set again when the watcher actually fires, but that's ok.
           zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
@@ -262,8 +334,33 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  public Overseer.Stats getStats() {
+  public Stats getZkStats() {
     return stats;
+  }
+
+  @Override
+  public Map<String, Object> getStats() {
+    if (stats == null) {
+      return Collections.emptyMap();
+    }
+    Map<String, Object> res = new HashMap<>();
+    res.put("queueLength", stats.getQueueLength());
+    final Map<String, Object> statsMap = new HashMap<>();
+    res.put("stats", statsMap);
+    stats.getStats().forEach((op, stat) -> {
+      final Map<String, Object> statMap = new HashMap<>();
+      statMap.put("success", stat.success.get());
+      statMap.put("errors", stat.errors.get());
+      final List<Map<String, Object>> failed = new ArrayList<>(stat.failureDetails.size());
+      statMap.put("failureDetails", failed);
+      stat.failureDetails.forEach(failedOp -> {
+        Map<String, Object> fo = new HashMap<>();
+        fo.put("req", failedOp.req);
+        fo.put("resp", failedOp.resp);
+      });
+      statsMap.put(op, statMap);
+    });
+    return res;
   }
 
   /**
@@ -331,7 +428,8 @@ public class ZkDistributedQueue implements DistributedQueue {
   /**
    * Return the currently-known set of elements, using child names from memory. If no children are found, or no
    * children pass {@code acceptFilter}, waits up to {@code waitMillis} for at least one child to become available.
-   * Package-private to support {@link OverseerTaskQueue} specifically.
+   * <p>
+   * Package-private to support {@link OverseerTaskQueue} specifically.</p>
    */
   @Override
   public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {

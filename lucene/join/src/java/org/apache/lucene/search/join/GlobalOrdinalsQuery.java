@@ -154,6 +154,14 @@ final class GlobalOrdinalsQuery extends Query {
       }
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      // disable caching because this query relies on a top reader context
+      // and holds a bitset of matching ordinals that cannot be accounted in
+      // the memory used by the cache
+      return false;
+    }
+
   }
 
   final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {

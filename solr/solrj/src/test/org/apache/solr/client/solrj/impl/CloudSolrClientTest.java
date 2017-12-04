@@ -292,8 +292,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(0, docs.getNumFound());
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    try (CloudSolrClient threadedClient = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
-      threadedClient.setParallelUpdates(true);
+    try (CloudSolrClient threadedClient = new CloudSolrClientBuilder()
+        .withZkHost(cluster.getZkServer().getZkAddress())
+        .withParallelUpdates(true)
+        .build()) {
       threadedClient.setDefaultCollection(COLLECTION);
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
@@ -786,6 +788,69 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
   }
+
+  public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
+    final String COL = "stale_state_test_col";
+    assert cluster.getJettySolrRunners().size() >= 2;
+
+    final JettySolrRunner old_leader_node = cluster.getJettySolrRunners().get(0);
+    final JettySolrRunner new_leader_node = cluster.getJettySolrRunners().get(1);
+    
+    // start with exactly 1 shard/replica...
+    assertEquals("Couldn't create collection", 0,
+                 CollectionAdminRequest.createCollection(COL, "conf", 1, 1)
+                 .setCreateNodeSet(old_leader_node.getNodeName())
+                 .process(cluster.getSolrClient()).getStatus());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish
+      (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+
+    // determine the coreNodeName of only current replica
+    Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
+    assertEquals(1, slices.size()); // sanity check
+    Slice slice = slices.iterator().next();
+    assertEquals(1, slice.getReplicas().size()); // sanity check
+    final String old_leader_core_node_name = slice.getLeader().getName();
+
+    // NOTE: creating our own CloudSolrClient whose settings we can muck with...
+    try (CloudSolrClient stale_client = new CloudSolrClientBuilder()
+        .withZkHost(cluster.getZkServer().getZkAddress())
+        .sendDirectUpdatesToAnyShardReplica()
+        .withParallelUpdates(true)
+        .build()) {
+      // don't let collection cache entries get expired, even on a slow machine...
+      stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
+      stale_client.setDefaultCollection(COL);
+     
+      // do a query to populate stale_client's cache...
+      assertEquals(0, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
+      
+      // add 1 replica on a diff node...
+      assertEquals("Couldn't create collection", 0,
+                   CollectionAdminRequest.addReplicaToShard(COL, "shard1")
+                   .setNode(new_leader_node.getNodeName())
+                   // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
+                   .process(cluster.getSolrClient()).getStatus());
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish
+        (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+      
+      // ...and delete our original leader.
+      assertEquals("Couldn't create collection", 0,
+                   CollectionAdminRequest.deleteReplica(COL, "shard1", old_leader_core_node_name)
+                   // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
+                   .process(cluster.getSolrClient()).getStatus());
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish
+        (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+
+      // stale_client's collection state cache should now only point at a leader that no longer exists.
+      
+      // attempt a (direct) update that should succeed in spite of cached cluster state
+      // pointing solely to a node that's no longer part of our collection...
+      assertEquals(0, (new UpdateRequest().add("id", "1").commit(stale_client, COL)).getStatus());
+      assertEquals(1, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
+      
+    }
+  }
+  
 
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;

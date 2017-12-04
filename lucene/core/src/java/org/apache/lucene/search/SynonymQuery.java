@@ -34,6 +34,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * A query that treats multiple terms as synonyms.
@@ -137,16 +138,18 @@ public final class SynonymQuery extends Query {
       for (int i = 0; i < termContexts.length; i++) {
         termContexts[i] = TermContext.build(searcher.getTopReaderContext(), terms[i]);
         TermStatistics termStats = searcher.termStatistics(terms[i], termContexts[i]);
-        docFreq = Math.max(termStats.docFreq(), docFreq);
-        if (termStats.totalTermFreq() == -1) {
-          totalTermFreq = -1;
-        } else if (totalTermFreq != -1) {
+        if (termStats != null) {
+          docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += termStats.totalTermFreq();
         }
       }
-      TermStatistics pseudoStats = new TermStatistics(null, docFreq, totalTermFreq);
       this.similarity = searcher.getSimilarity(true);
-      this.simWeight = similarity.computeWeight(boost, collectionStats, pseudoStats);
+      if (docFreq > 0) {
+        TermStatistics pseudoStats = new TermStatistics(new BytesRef("synonym pseudo-term"), docFreq, totalTermFreq);
+        this.simWeight = similarity.computeWeight(boost, collectionStats, pseudoStats);
+      } else {
+        this.simWeight = null; // no terms exist at all, we won't use similarity
+      }
     }
 
     @Override
@@ -168,7 +171,7 @@ public final class SynonymQuery extends Query {
             freq = synScorer.tf(synScorer.getSubMatches());
           } else {
             assert scorer instanceof TermScorer;
-            freq = scorer.freq();
+            freq = ((TermScorer)scorer).freq();
           }
           SimScorer docScorer = similarity.simScorer(simWeight, context);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
@@ -185,7 +188,7 @@ public final class SynonymQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      Similarity.SimScorer simScorer = similarity.simScorer(simWeight, context);
+      Similarity.SimScorer simScorer = null;
       // we use termscorers + disjunction as an impl detail
       List<Scorer> subScorers = new ArrayList<>();
       for (int i = 0; i < terms.length; i++) {
@@ -194,6 +197,10 @@ public final class SynonymQuery extends Query {
           TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
           termsEnum.seekExact(terms[i].bytes(), state);
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.FREQS);
+          // lazy init sim, in case no terms exist
+          if (simScorer == null) {
+            simScorer = similarity.simScorer(simWeight, context);
+          }
           subScorers.add(new TermScorer(this, postings, simScorer));
         }
       }
@@ -206,6 +213,12 @@ public final class SynonymQuery extends Query {
         return new SynonymScorer(simScorer, this, subScorers);
       }
     }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
   }
   
   static class SynonymScorer extends DisjunctionScorer {
@@ -225,7 +238,7 @@ public final class SynonymQuery extends Query {
     final int tf(DisiWrapper topList) throws IOException {
       int tf = 0;
       for (DisiWrapper w = topList; w != null; w = w.next) {
-        tf += w.scorer.freq();
+        tf += ((TermScorer)w.scorer).freq();
       }
       return tf;
     }

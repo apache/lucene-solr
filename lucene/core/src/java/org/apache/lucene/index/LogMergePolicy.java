@@ -19,10 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>This class implements a {@link MergePolicy} that tries
@@ -462,7 +462,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     final List<SegmentInfoAndLevel> levels = new ArrayList<>(numSegments);
     final float norm = (float) Math.log(mergeFactor);
 
-    final Collection<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = infos.info(i);

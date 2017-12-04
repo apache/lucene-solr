@@ -25,11 +25,13 @@ import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.ErrorHandler;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from Solr's <code>search</code> module
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCoreParser extends CoreParser implements NamedListInitializedPlugin {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   protected final SolrQueryRequest req;
 
@@ -95,6 +98,11 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
         }
       }
     }
+  }
+
+  @Override
+  protected ErrorHandler getErrorHandler() {
+    return xmllog;
   }
 
 }

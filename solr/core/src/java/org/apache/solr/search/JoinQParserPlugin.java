@@ -282,6 +282,10 @@ class JoinQuery extends Query {
       return new ConstantScoreScorer(this, score(), readerSetIterator);
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
 
     // most of these statistics are only used for the enum method
     int fromSetSize;          // number of docs in the fromSet (that match the from query)

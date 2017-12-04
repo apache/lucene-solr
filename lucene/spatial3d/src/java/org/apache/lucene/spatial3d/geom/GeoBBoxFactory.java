@@ -116,4 +116,19 @@ public class GeoBBoxFactory {
     return new GeoRectangle(planetModel, topLat, bottomLat, leftLon, rightLon);
   }
 
+  /**
+   * Create a geobbox of the right kind given the specified {@link LatLonBounds}.
+   *
+   * @param planetModel is the planet model
+   * @param bounds    are the bounds
+   * @return a GeoBBox corresponding to what was specified.
+   */
+  public static GeoBBox makeGeoBBox(final PlanetModel planetModel, LatLonBounds bounds) {
+    final double topLat = (bounds.checkNoTopLatitudeBound()) ? Math.PI * 0.5 : bounds.getMaxLatitude();
+    final double bottomLat = (bounds.checkNoBottomLatitudeBound()) ? -Math.PI * 0.5 : bounds.getMinLatitude();
+    final double leftLon = (bounds.checkNoLongitudeBound()) ? -Math.PI : bounds.getLeftLongitude();
+    final double rightLon = (bounds.checkNoLongitudeBound()) ? Math.PI : bounds.getRightLongitude();
+    return makeGeoBBox(planetModel, topLat, bottomLat, leftLon, rightLon);
+  }
+
 }

@@ -49,6 +49,7 @@ abstract class FacetRequestSorted extends FacetRequest {
 
 
 public class FacetField extends FacetRequestSorted {
+  public static final int DEFAULT_FACET_LIMIT = 10;
   String field;
   boolean missing;
   boolean allBuckets;   // show cumulative stats across all buckets (this can be different than non-bucketed stats across all docs because of multi-valued docs)
@@ -63,7 +64,7 @@ public class FacetField extends FacetRequestSorted {
   {
     // defaults for FacetRequestSorted
     mincount = 1;
-    limit = 10;
+    limit = DEFAULT_FACET_LIMIT;
   }
 
   public enum FacetMethod {
@@ -100,6 +101,11 @@ public class FacetField extends FacetRequestSorted {
 
     if (fcontext.facetInfo != null) {
       // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets
+      if (multiToken && !sf.hasDocValues() && method!=FacetMethod.DV) {
+        // Match the access method from the first phase.
+        // It won't always matter, but does currently for an all-values bucket
+        return new FacetFieldProcessorByArrayUIF(fcontext, this, sf);
+      }
       return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
     }
 

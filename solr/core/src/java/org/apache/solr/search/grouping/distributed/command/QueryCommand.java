@@ -127,7 +127,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       collector = TopScoreDocCollector.create(docsToCollect);
     } else {
-      collector = TopFieldCollector.create(sort, docsToCollect, true, needScores, needScores);
+      collector = TopFieldCollector.create(sort, docsToCollect, true, needScores, needScores, true);
     }
     filterCollector = new FilterCollector(docSet, collector);
     return Arrays.asList((Collector) filterCollector);

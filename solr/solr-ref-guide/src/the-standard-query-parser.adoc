@@ -1,6 +1,4 @@
 = The Standard Query Parser
-:page-shortname: the-standard-query-parser
-:page-permalink: the-standard-query-parser.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -50,7 +48,7 @@ This section presents examples of responses from the standard query parser.
 
 The URL below submits a simple query and requests the XML Response Writer to use indentation to make the XML response more readable.
 
-`\http://localhost:8983/solr/techproducts/select?q=id:SP2514N`
+`\http://localhost:8983/solr/techproducts/select?q=id:SP2514N&wt=xml`
 
 Results:
 
@@ -77,7 +75,7 @@ Results:
 
 Here's an example of a query with a limited field list.
 
-`\http://localhost:8983/solr/techproducts/select?q=id:SP2514N&fl=id+name`
+`\http://localhost:8983/solr/techproducts/select?q=id:SP2514N&fl=id+name&wt=xml`
 
 Results:
 
@@ -324,7 +322,7 @@ Comments may be nested.
 
 Solr's standard query parser differs from the Lucene Query Parser in the following ways:
 
-* A * may be used for either or both endpoints to specify an open-ended range query
+* A `*` may be used for either or both endpoints to specify an open-ended range query
 ** `field:[* TO 100]` finds all field values less than or equal to 100
 ** `field:[100 TO *]` finds all field values greater than or equal to 100
 ** `field:[* TO *]` matches all documents with the field

@@ -132,6 +132,16 @@ public class CompletionWeight extends Weight {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * This object can be cached
+   * 
+   * @see org.apache.lucene.search.SegmentCacheable#isCacheable(LeafReaderContext)
+   */
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return true;
+  }
+
   @Override
   public void extractTerms(Set<Term> terms) {
     // no-op

@@ -123,7 +123,10 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     ensureOpen();
     int total = 0;          // sum freqs in subreaders
     for (int i = 0; i < subReaders.length; i++) {
-      total += subReaders[i].docFreq(term);
+      int sub = subReaders[i].docFreq(term);
+      assert sub >= 0;
+      assert sub <= subReaders[i].getDocCount(term.field());
+      total += sub;
     }
     return total;
   }
@@ -134,9 +137,8 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     long total = 0;        // sum freqs in subreaders
     for (int i = 0; i < subReaders.length; i++) {
       long sub = subReaders[i].totalTermFreq(term);
-      if (sub == -1) {
-        return -1;
-      }
+      assert sub >= 0;
+      assert sub <= subReaders[i].getSumTotalTermFreq(term.field());
       total += sub;
     }
     return total;
@@ -148,9 +150,8 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     long total = 0; // sum doc freqs in subreaders
     for (R reader : subReaders) {
       long sub = reader.getSumDocFreq(field);
-      if (sub == -1) {
-        return -1; // if any of the subs doesn't support it, return -1
-      }
+      assert sub >= 0;
+      assert sub <= reader.getSumTotalTermFreq(field);
       total += sub;
     }
     return total;
@@ -162,9 +163,8 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     int total = 0; // sum doc counts in subreaders
     for (R reader : subReaders) {
       int sub = reader.getDocCount(field);
-      if (sub == -1) {
-        return -1; // if any of the subs doesn't support it, return -1
-      }
+      assert sub >= 0;
+      assert sub <= reader.maxDoc();
       total += sub;
     }
     return total;
@@ -176,9 +176,8 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     long total = 0; // sum doc total term freqs in subreaders
     for (R reader : subReaders) {
       long sub = reader.getSumTotalTermFreq(field);
-      if (sub == -1) {
-        return -1; // if any of the subs doesn't support it, return -1
-      }
+      assert sub >= 0;
+      assert sub >= reader.getSumDocFreq(field);
       total += sub;
     }
     return total;

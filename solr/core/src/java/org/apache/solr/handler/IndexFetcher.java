@@ -163,6 +163,8 @@ public class IndexFetcher {
 
   private Integer soTimeout;
 
+  private boolean downloadTlogFiles = false;
+
   private boolean skipCommitOnMasterVersionZero;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
@@ -255,6 +257,10 @@ public class IndexFetcher {
       soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
     }
 
+    if (initArgs.getBooleanArg(TLOG_FILES) != null) {
+      downloadTlogFiles = initArgs.getBooleanArg(TLOG_FILES);
+    }
+
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
@@ -300,6 +306,7 @@ public class IndexFetcher {
   private void fetchFileList(long gen) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND,  CMD_GET_FILE_LIST);
+    params.set(TLOG_FILES, downloadTlogFiles);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);

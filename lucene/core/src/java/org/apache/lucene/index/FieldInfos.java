@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -95,14 +96,15 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
     this.hasPointValues = hasPointValues;
-    this.values = Collections.unmodifiableCollection(byNumber.values());
-    Integer max = byNumber.isEmpty() ? null : Collections.max(byNumber.keySet());
+    Integer max = byNumber.isEmpty() ? null : byNumber.lastKey();
     
     // Only usee TreeMap in the very sparse case (< 1/16th of the numbers are used),
     // because TreeMap uses ~ 64 (32 bit JVM) or 120 (64 bit JVM w/o compressed oops)
     // overall bytes per entry, but array uses 4 (32 bit JMV) or 8
     // (64 bit JVM w/o compressed oops):
     if (max != null && max < ArrayUtil.MAX_ARRAY_LENGTH && max < 16L*byNumber.size()) {
+      // Pull infos into an arraylist to avoid holding a reference to the TreeMap
+      values = Collections.unmodifiableCollection(new ArrayList<>(byNumber.values()));
       byNumberMap = null;
       byNumberTable = new FieldInfo[max+1];
       for (Map.Entry<Integer,FieldInfo> entry : byNumber.entrySet()) {
@@ -110,6 +112,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     } else {
       byNumberMap = byNumber;
+      values = Collections.unmodifiableCollection(byNumber.values());
       byNumberTable = null;
     }
   }
@@ -357,7 +360,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
   static final class Builder {
     private final HashMap<String,FieldInfo> byName = new HashMap<>();
     final FieldNumbers globalFieldNumbers;
-
+    private boolean finished;
+    
     Builder() {
       this(new FieldNumbers());
     }
@@ -371,6 +375,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
 
     public void add(FieldInfos other) {
+      assert assertNotFinished();
       for(FieldInfo fieldInfo : other){ 
         add(fieldInfo);
       }
@@ -380,6 +385,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     public FieldInfo getOrAdd(String name) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
+        assert assertNotFinished();
         // This field wasn't yet added to this in-RAM
         // segment's FieldInfo, so now we get a global
         // number for this field.  If the field was seen
@@ -397,8 +403,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
    
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
                                           boolean storeTermVector,
-                                          boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
+                                          boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
+                                          DocValuesType docValues, long dvGen,
                                           int dimensionCount, int dimensionNumBytes) {
+      assert assertNotFinished();
       if (docValues == null) {
         throw new NullPointerException("DocValuesType must not be null");
       }
@@ -410,7 +418,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues, dimensionCount, dimensionNumBytes);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, new HashMap<>(), dimensionCount, dimensionNumBytes);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dimensionCount, dimensionNumBytes);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
@@ -428,24 +436,38 @@ public class FieldInfos implements Iterable<FieldInfo> {
           }
 
           fi.setDocValuesType(docValues); // this will also perform the consistency check.
+          fi.setDocValuesGen(dvGen);
         }
       }
       return fi;
     }
 
     public FieldInfo add(FieldInfo fi) {
+      return add(fi, -1);
+    }
+
+    public FieldInfo add(FieldInfo fi, long dvGen) {
       // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
-                                 fi.getIndexOptions(), fi.getDocValuesType(),
+                                 fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
                                  fi.getPointDimensionCount(), fi.getPointNumBytes());
     }
     
     public FieldInfo fieldInfo(String fieldName) {
       return byName.get(fieldName);
     }
+
+    /** Called only from assert */
+    private boolean assertNotFinished() {
+      if (finished) {
+        throw new IllegalStateException("FieldInfos.Builder was already finished; cannot add new fields");
+      }
+      return true;
+    }
     
     FieldInfos finish() {
+      finished = true;
       return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
     }
   }

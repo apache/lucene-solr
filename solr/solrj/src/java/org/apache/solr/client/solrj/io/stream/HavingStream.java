@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * The HavingStream iterates over an internal stream and applies a BooleanOperation to each tuple. If the BooleanOperation
  * evaluates to true then the HavingStream emits the tuple, if it returns false the tuple is not emitted.
+ * @since 6.4.0
  **/
 
 public class HavingStream extends TupleStream implements Expressible {

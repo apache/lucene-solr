@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * The factory can be configured to return a specific HTTP response code, default is 403, and
  * optional response message, such as to warn the client application that its request was ignored.
  * </p>
+ * @since 5.0.0
  */
 public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

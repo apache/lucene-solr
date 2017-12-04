@@ -430,7 +430,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             );
 
     assertQ("test nested nested query",
-            req("q","_query_:\"{!query defType=query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
+            req("q","_query_:\"{!query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
             ,"//result[@numFound='2']"
             );
     assertQ("Test text field with no analysis doesn't NPE with wildcards (SOLR-4318)",

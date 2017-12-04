@@ -262,59 +262,6 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     dir.close();
   }
 
-  public void testFreq() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    // matches freq == 3
-    doc.add(newTextField("field", "here comes the sun foo bar here comes another sun here comes shiny sun", Field.Store.NO));
-    w.addDocument(doc);
-
-    doc = new Document();
-    // doesn't match
-    doc.add(newTextField("field", "here comes the other sun", Field.Store.NO));
-    w.addDocument(doc);
-    IndexReader r = w.getReader();
-    IndexSearcher s = newSearcher(r);
-
-    TermAutomatonQuery q = new TermAutomatonQuery("field");
-    int init = q.createState();
-    int s1 = q.createState();
-    q.addTransition(init, s1, "comes");
-    int s2 = q.createState();
-    q.addAnyTransition(s1, s2);
-    int s3 = q.createState();
-    q.setAccept(s3, true);
-    q.addTransition(s2, s3, "sun");
-    q.finish();
-
-    s.search(q, new SimpleCollector() {
-        private Scorer scorer;
-
-        @Override
-        public void setScorer(Scorer scorer) {
-          this.scorer = scorer;
-          while (scorer instanceof AssertingScorer) {
-            scorer = ((AssertingScorer) scorer).getIn();
-          }
-        }
-
-        @Override
-        public void collect(int docID) throws IOException {
-          assertEquals(3, scorer.freq());
-        }
-        
-        @Override
-        public boolean needsScores() {
-          return true;
-        }
-      });
-
-    w.close();
-    r.close();
-    dir.close();
-  }
-
   public void testSegsMissingTerms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -650,6 +597,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           }
           return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
       };
     }
 
@@ -964,5 +916,65 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     assertEquals(2, positions[1]);
     
     IOUtils.close(w, r, dir);
+  }
+  
+  // we query with sun|moon but moon doesn't exist
+  public void testOneTermMissing() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "comes");
+    int s2 = q.createState();
+    q.addAnyTransition(s1, s2);
+    int s3 = q.createState();
+    q.setAccept(s3, true);
+    q.addTransition(s2, s3, "sun");
+    q.addTransition(s2, s3, "moon");
+    q.finish();
+
+    assertEquals(1, s.search(q, 1).totalHits);
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+  
+  // we query with sun|moon but no terms exist for the field
+  public void testFieldMissing() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("bogusfield");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "comes");
+    int s2 = q.createState();
+    q.addAnyTransition(s1, s2);
+    int s3 = q.createState();
+    q.setAccept(s3, true);
+    q.addTransition(s2, s3, "sun");
+    q.addTransition(s2, s3, "moon");
+    q.finish();
+
+    assertEquals(0, s.search(q, 1).totalHits);
+
+    w.close();
+    r.close();
+    dir.close();
   }
 }

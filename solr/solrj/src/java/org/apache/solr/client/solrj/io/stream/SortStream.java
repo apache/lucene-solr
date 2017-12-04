@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
 /**
  * The SortStream emits a stream of Tuples sorted by a Comparator.
+ * @since 6.1.0
  **/
 
 public class SortStream extends TupleStream implements Expressible {

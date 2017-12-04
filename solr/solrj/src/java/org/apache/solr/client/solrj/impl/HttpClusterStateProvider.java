@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -46,7 +48,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   private String urlScheme;
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
-  volatile Map<String, String> aliases;
+  volatile Map<String, List<String>> aliases;
   long aliasesTimestamp = 0;
 
   private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
@@ -90,7 +92,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
       try (HttpSolrClient client = new HttpSolrClient.Builder().
           withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
           withHttpClient(httpClient).build()) {
-        ClusterState cs = fetchClusterState(client, collection);
+        ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         if (e.getMessage().contains(collection + " not found")) {
@@ -111,25 +113,43 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private ClusterState fetchClusterState(SolrClient client, String collection) throws SolrServerException, IOException {
+  private ClusterState fetchClusterState(SolrClient client, String collection, Map<String, Object> clusterProperties) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("collection", collection);
+    if (collection != null) {
+      params.set("collection", collection);
+    }
     params.set("action", "CLUSTERSTATUS");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
-    Map<String, Object> collectionsMap = Collections.singletonMap(collection,
-        ((NamedList) cluster.get("collections")).get(collection));
-    int znodeVersion = (int)((Map<String, Object>)(collectionsMap).get(collection)).get("znodeVersion");
+    Map<String, Object> collectionsMap;
+    if (collection != null) {
+      collectionsMap = Collections.singletonMap(collection,
+          ((NamedList) cluster.get("collections")).get(collection));
+    } else {
+      collectionsMap = ((NamedList)cluster.get("collections")).asMap(10);
+    }
+    int znodeVersion;
+    if (collection != null) {
+      znodeVersion =  (int)((Map<String, Object>)(collectionsMap).get(collection)).get("znodeVersion");
+    } else {
+      znodeVersion = -1;
+    }
     Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
     ClusterState cs = ClusterState.load(znodeVersion, collectionsMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    if (clusterProperties != null) {
+      Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
+      if (properties != null) {
+        clusterProperties.putAll(properties);
+      }
+    }
     return cs;
   }
 
   @Override
-  public Set<String> liveNodes() {
+  public Set<String> getLiveNodes() {
     if (liveNodes == null) {
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest live_nodes information from. "
@@ -172,12 +192,11 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public String getAlias(String alias) {
-    Map<String, String> aliases = getAliases(false);
-    return aliases.get(alias);
+  public List<String> resolveAlias(String aliasName) {
+    return Aliases.resolveAliasesGivenAliasMap(getAliases(false), aliasName);
   }
 
-  private Map<String, String> getAliases(boolean forceFetch) {
+  private Map<String, List<String>> getAliases(boolean forceFetch) {
     if (this.liveNodes == null) {
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest aliases information from. "
@@ -193,10 +212,10 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
             withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
             withHttpClient(httpClient).build()) {
 
-          Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliases();
+          Map<String, List<String>> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliasesAsLists();
           this.aliases = aliases;
           this.aliasesTimestamp = System.nanoTime();
-          return Collections.unmodifiableMap(aliases);
+          return Collections.unmodifiableMap(this.aliases);
         } catch (SolrServerException | RemoteSolrException | IOException e) {
           // Situation where we're hitting an older Solr which doesn't have LISTALIASES
           if (e instanceof RemoteSolrException && ((RemoteSolrException)e).code()==400) {
@@ -222,9 +241,51 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public String getCollectionName(String name) {
-    Map<String, String> aliases = getAliases(false);
-    return aliases.containsKey(name) ? aliases.get(name): name;
+  public ClusterState getClusterState() throws IOException {
+    for (String nodeName: liveNodes) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder().
+          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withHttpClient(httpClient).build()) {
+        ClusterState cs = fetchClusterState(client, null, null);
+        return cs;
+      } catch (SolrServerException | RemoteSolrException | IOException e) {
+        log.warn("Attempt to fetch cluster state from " +
+            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      }
+    }
+    throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
+        + "succeeded in obtaining the cluster state from none of them."
+        + "If you think your Solr cluster is up and is accessible,"
+        + " you could try re-creating a new CloudSolrClient using working"
+        + " solrUrl(s) or zkHost(s).");
+  }
+
+  @Override
+  public Map<String, Object> getClusterProperties() {
+    for (String nodeName: liveNodes) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder().
+          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withHttpClient(httpClient).build()) {
+        Map<String, Object> clusterProperties = new HashMap<>();
+        fetchClusterState(client, null, clusterProperties);
+        return clusterProperties;
+      } catch (SolrServerException | RemoteSolrException | IOException e) {
+        log.warn("Attempt to fetch cluster state from " +
+            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      }
+    }
+    throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
+        + "succeeded in obtaining the cluster state from none of them."
+        + "If you think your Solr cluster is up and is accessible,"
+        + " you could try re-creating a new CloudSolrClient using working"
+        + " solrUrl(s) or zkHost(s).");
+  }
+
+  @Override
+  public String getPolicyNameByCollection(String coll) {
+    throw new UnsupportedOperationException("Fetching cluster properties not supported"
+        + " using the HttpClusterStateProvider. "
+        + "ZkClientClusterStateProvider can be used for this."); // TODO
   }
 
   @Override
@@ -232,19 +293,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
       return this.urlScheme;
     }
-    throw new UnsupportedOperationException("Fetching cluster properties not supported"
-        + " using the HttpClusterStateProvider. "
-        + "ZkClientClusterStateProvider can be used for this."); // TODO
-  }
-
-  @Override
-  public Object getClusterProperty(String propertyName, String def) {
-    if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
-      return this.urlScheme;
-    }
-    throw new UnsupportedOperationException("Fetching cluster properties not supported"
-        + " using the HttpClusterStateProvider. "
-        + "ZkClientClusterStateProvider can be used for this."); // TODO
+    return getClusterProperties().get(propertyName);
   }
 
   @Override

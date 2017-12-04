@@ -176,7 +176,7 @@ public class SolrXmlConfig {
 
     if (config.getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          "\n. Please upgrade your solr.xml: https://cwiki.apache.org/confluence/display/solr/Format+of+solr.xml");
+          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
     }
   }
 
@@ -379,14 +379,12 @@ public class SolrXmlConfig {
         case "zkClientTimeout":
           builder.setZkClientTimeout(parseInt(name, value));
           break;
-        case "autoReplicaFailoverBadNodeExpiration":
-          builder.setAutoReplicaFailoverBadNodeExpiration(parseInt(name, value));
+        case "autoReplicaFailoverBadNodeExpiration": case "autoReplicaFailoverWorkLoopDelay":
+          //TODO remove this in Solr 8.0
+          log.info("Configuration parameter " + name + " is ignored");
           break;
         case "autoReplicaFailoverWaitAfterExpiration":
           builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
-          break;
-        case "autoReplicaFailoverWorkLoopDelay":
-          builder.setAutoReplicaFailoverWorkLoopDelay(parseInt(name, value));
           break;
         case "zkHost":
           builder.setZkHost(value);
@@ -545,4 +543,3 @@ public class SolrXmlConfig {
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
   }
 }
-

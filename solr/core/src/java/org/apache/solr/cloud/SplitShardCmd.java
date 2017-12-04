@@ -27,11 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -39,9 +39,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -79,6 +81,7 @@ public class SplitShardCmd implements Cmd {
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String collectionName = message.getStr("collection");
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
 
     log.info("Split shard invoked");
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -206,7 +209,7 @@ public class SplitShardCmd implements Cmd {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), collection, subSlice, Replica.Type.NRT);
+        String subShardName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), collection, subSlice, Replica.Type.NRT);
         subShardNames.add(subShardName);
       }
 
@@ -281,6 +284,7 @@ public class SplitShardCmd implements Cmd {
         propMap.put(SHARD_ID_PROP, subSlice);
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
+        propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         // copy over property params:
         for (String key : message.keySet()) {
           if (key.startsWith(COLL_PROP_PREFIX)) {
@@ -382,8 +386,8 @@ public class SplitShardCmd implements Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
-          ocmh.zkStateReader, clusterState,
+      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(ocmh,
+          clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
           collectionName,
           new ZkNodeProps(collection.getProperties()),
@@ -405,7 +409,8 @@ public class SplitShardCmd implements Cmd {
             ZkStateReader.CORE_NAME_PROP, shardName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
-            ZkStateReader.NODE_NAME_PROP, subShardNodeName);
+            ZkStateReader.NODE_NAME_PROP, subShardNodeName,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
 
         HashMap<String, Object> propMap = new HashMap<>();
@@ -426,6 +431,8 @@ public class SplitShardCmd implements Cmd {
         }
         // special flag param to instruct addReplica not to create the replica in cluster state again
         propMap.put(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, "true");
+
+        propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
 
         replicas.add(propMap);
       }
@@ -505,6 +512,8 @@ public class SplitShardCmd implements Cmd {
     } catch (Exception e) {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
+    } finally {
+      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
     }
   }
 }

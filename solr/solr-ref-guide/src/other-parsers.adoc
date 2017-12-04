@@ -1,6 +1,4 @@
 = Other Parsers
-:page-shortname: other-parsers
-:page-permalink: other-parsers.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -64,7 +62,7 @@ The parameter `allParents` is a filter that matches *only parent documents*; her
 
 The parameter `someParents` identifies a query that will match some of the parent documents. The output is the children.
 
-Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene`. We only get one document in response:
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene&wt=xml`. We only get one document in response:
 
 [source,xml]
 ----
@@ -108,9 +106,9 @@ In older version the error is:
 [literal]
 child query must only match non-parent docs.
 
-You can search for `q=+(parentFilter) +(someChildren)` to find a cause .
+You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
 
-Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud`. We get this document in response:
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
 
 [source,xml]
 ----
@@ -138,6 +136,36 @@ Instead, you should use a sibling mandatory clause as a filter:
 === Scoring with the Block Join Parent Query Parser
 
 You can optionally use the `score` local parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`. Implicit default is `none` which returns `0.0`.
+
+== Boolean Query Parser
+
+The `BoolQParser` creates a Lucene `BooleanQuery` which is a boolean combination of other queries. Sub-queries along with their typed occurrences indicate how documents will be matched and scored.
+
+*Parameters*
+
+`must`::
+A list of queries that *must* appear in matching documents and contribute to the score.
+
+`must_not`::
+A list of queries that *must not* appear in matching documents.
+
+`should`::
+A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
+
+`filter`::
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored.
+
+*Examples*
+
+[source,text]
+----
+{!bool must=foo must=bar}
+----
+
+[source,text]
+----
+{!bool filter=foo should=bar}
+----
 
 == Boost Query Parser
 
@@ -307,9 +335,10 @@ The `graph` query parser does a breadth first, cyclic aware, graph traversal of 
 
 The graph is built according to linkages between documents based on the terms found in `from` and `to` fields that you specify as part of the query.
 
-The supported fieldTypes are point fields with docValues enabled or string fields with indexed=true or docValues=true.
-For string fields which are indexed=false and docValues=true please refer to the javadocs for `DocValuesTermsQuery`
-for it's performance characteristics so indexed=true will perform better for most use-cases.
+Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
+
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
+for it's performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 
@@ -658,24 +687,24 @@ The main query, for both of these parsers, is parsed straightforwardly from the 
 This parser accepts the following parameters:
 
 `f`::
-The field to use (required).
+The field to use. This parameter is required.
 
 `func`::
-Payload function: min, max, average, sum (required).
+The payload function. The options are: `min`, `max`, `average`, or `sum`. This parameter is required.
 
 `operator`::
-Search operator: or , phrase ( default ) (optional). This defines if the search query should be an OR
-query or a phrase query
+A search operator. The options are `or` and `phrase`, which is the default. This defines if the search query should be an OR query or a phrase query.
 
 `includeSpanScore`::
-If `true`, multiples computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
+If `true`, multiples the computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
 
-*Example*
+*Examples*
 
 [source,text]
-----
 {!payload_score f=my_field_dpf v=some_term func=max}
-----
+
+[source,text]
+{!payload_score f=payload_field func=sum operator=or}A B C
 
 === Payload Check Parser
 
@@ -888,7 +917,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate an boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 
@@ -974,7 +1003,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example solrconfig.xml snippet:
+You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

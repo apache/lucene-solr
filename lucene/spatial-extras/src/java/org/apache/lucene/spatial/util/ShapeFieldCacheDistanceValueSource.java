@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.IndexSearcher;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
@@ -87,6 +88,16 @@ public class ShapeFieldCacheDistanceValueSource extends DoubleValuesSource {
   @Override
   public boolean needsScores() {
     return false;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return true;
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    return this;
   }
 
   @Override

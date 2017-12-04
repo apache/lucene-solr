@@ -56,6 +56,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
@@ -64,7 +65,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,7 +174,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
+      final String shardZkNodeName, final CoreDescriptor cd) throws Exception {
     SolrException.log(LOG, "Recovery failed - I give up.");
     try {
       zkController.publish(cd, Replica.State.RECOVERY_FAILED);
@@ -215,6 +215,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
     solrParams.set(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
+    // always download the tlogs from the leader when running with cdcr enabled. We need to have all the tlogs
+    // to ensure leader failover doesn't cause missing docs on the target
+    if (core.getUpdateHandler().getUpdateLog() != null && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
+      solrParams.set(ReplicationHandler.TLOG_FILES, true);
+    }
     
     if (isClosed()) return; // we check closed on return
     boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
@@ -298,7 +303,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
   
-  final public void doRecovery(SolrCore core) throws KeeperException, InterruptedException {
+  final public void doRecovery(SolrCore core) throws Exception {
     if (core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog()) {
       doSyncOrReplicateRecovery(core);
     } else {
@@ -441,7 +446,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  final public void doSyncOrReplicateRecovery(SolrCore core) throws KeeperException, InterruptedException {
+  final public void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     boolean replayed = false;
     boolean successfulRecovery = false;
 

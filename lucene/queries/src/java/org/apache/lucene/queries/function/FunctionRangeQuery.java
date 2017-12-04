@@ -153,5 +153,10 @@ public class FunctionRangeQuery extends Query {
       // getRangeScorer takes String args and parses them. Weird.
       return functionValues.getRangeScorer(context, lowerVal, upperVal, includeLower, includeUpper);
     }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
   }
 }

@@ -1,6 +1,4 @@
 = Working with External Files and Processes
-:page-shortname: working-with-external-files-and-processes
-:page-permalink: working-with-external-files-and-processes.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -165,7 +163,7 @@ name ::= text
 value ::= text
 ----
 
-Special characters in "text" values can be escaped using the escape character `\` . The following escape sequences are recognized:
+Special characters in "text" values can be escaped using the escape character `\`. The following escape sequences are recognized:
 
 [width="60%",options="header",]
 |===
@@ -179,7 +177,7 @@ Special characters in "text" values can be escaped using the escape character `\
 |`\t` |horizontal tab
 |===
 
-Please note that Unicode sequences (e.g. `\u0001`) are not supported.
+Please note that Unicode sequences (e.g., `\u0001`) are not supported.
 
 ==== Supported Attributes
 

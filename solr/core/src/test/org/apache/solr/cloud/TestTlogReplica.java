@@ -464,12 +464,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     {
       long docsPending = (long) getSolrCore(true).get(0).getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
-      assertEquals(4, docsPending);
+      assertEquals("Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),4, docsPending);
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
       long docsPending = (long) solrCore.getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
-      assertEquals(0, docsPending);
+      assertEquals("Expected non docs are pending in core " + solrCore.getCoreDescriptor(),0, docsPending);
     }
 
     checkRTG(1, 4, cluster.getJettySolrRunners());
@@ -487,18 +487,34 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .commit(cloudClient, collectionName);
 
     waitForNumDocsInAllActiveReplicas(2);
-    assertCopyOverOldUpdates(1, timeCopyOverPerCores);
+    // There are a small delay between new searcher and copy over old updates operation
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      if (assertCopyOverOldUpdates(1, timeCopyOverPerCores)) {
+        break;
+      } else {
+        Thread.sleep(500);
+      }
+    }
+    assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
 
+    boolean firstCommit = true;
     // UpdateLog copy over old updates
     for (int i = 15; i <= 150; i++) {
       cloudClient.add(collectionName, sdoc("id",String.valueOf(i)));
       if (random().nextInt(100) < 15 & i != 150) {
+        if (firstCommit) {
+          // because tlog replicas periodically ask leader for new segments,
+          // therefore the copy over old updates action must not be triggered until
+          // tlog replicas actually get new segments
+          assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
+          firstCommit = false;
+        }
         cloudClient.commit(collectionName);
       }
     }
     checkRTG(120,150, cluster.getJettySolrRunners());
     waitForReplicasCatchUp(20);
-    assertCopyOverOldUpdates(2, timeCopyOverPerCores);
   }
   
   @SuppressWarnings("unchecked")
@@ -657,8 +673,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
+    String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     ChaosMonkey.kill(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+    waitForState("Expect new leader", collectionName,
+        (liveNodes, collectionState) -> {
+          Replica leader = collectionState.getLeader("shard1");
+          if (leader == null) return false;
+          return !leader.getNodeName().equals(oldLeaderNodeName);
+        }
+    );
     ChaosMonkey.start(oldLeaderJetty);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
@@ -705,8 +729,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440 
-    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas", 
+    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",
         collectionName, clusterShape(numShards, numReplicasPerShard));
     return assertNumberOfReplicas(numNrtReplicas*numShards, numTlogReplicas*numShards, numPullReplicas*numShards, false, true);
   }
@@ -904,10 +927,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   }
 
-  private void assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
+  private boolean assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
     for (SolrCore core : timesPerCore.keySet()) {
-      assertEquals(timesPerCore.get(core) + delta, getTimesCopyOverOldUpdates(core));
+      if (timesPerCore.get(core) + delta != getTimesCopyOverOldUpdates(core)) return false;
     }
+    return true;
   }
 
   private Map<SolrCore, Long> getTimesCopyOverOldUpdates(List<SolrCore> cores) {

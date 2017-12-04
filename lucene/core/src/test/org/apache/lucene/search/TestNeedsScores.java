@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.Objects;
 
 import org.apache.lucene.document.Document;
@@ -103,17 +102,7 @@ public class TestNeedsScores extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       final Weight w = in.createWeight(searcher, needsScores, boost);
-      return new Weight(AssertNeedsScores.this) {
-        @Override
-        public void extractTerms(Set<Term> terms) {
-          w.extractTerms(terms);
-        }
-
-        @Override
-        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-          return w.explain(context, doc);
-        }
-
+      return new FilterWeight(w) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           assertEquals("query=" + in, value, needsScores);

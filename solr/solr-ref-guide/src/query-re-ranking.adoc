@@ -1,6 +1,4 @@
 = Query Re-Ranking
-:page-shortname: query-re-ranking
-:page-permalink: query-re-ranking.html
 :page-children: learning-to-rank
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

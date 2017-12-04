@@ -28,7 +28,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -555,13 +554,7 @@ public class JdbcTest extends SolrCloudTestCase {
       tables.addAll(collectionsSet);
 
       Aliases aliases = zkStateReader.getAliases();
-      if(aliases != null) {
-        Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
-        if(collectionAliasMap != null) {
-          Set<String> aliasesSet = collectionAliasMap.keySet();
-          tables.addAll(aliasesSet);
-        }
-      }
+      tables.addAll(aliases.getCollectionAliasListMap().keySet());
 
       try(ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
         for(String table : tables) {

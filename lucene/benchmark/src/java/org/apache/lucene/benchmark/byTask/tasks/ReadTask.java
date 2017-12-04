@@ -113,7 +113,8 @@ public abstract class ReadTask extends PerfTask {
             // pulling the Weight ourselves:
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
                                                                    true, withScore(),
-                                                                   withMaxScore());
+                                                                   withMaxScore(),
+                                                                   withTotalHits());
             searcher.search(q, collector);
             hits = collector.topDocs();
           } else {
@@ -218,6 +219,12 @@ public abstract class ReadTask extends PerfTask {
    *  field sort) */
   public boolean withMaxScore() {
     return true;
+  }
+
+  /** Whether totalHits should be computed (only useful with
+   *  field sort) */
+  public boolean withTotalHits() {
+    return false;
   }
 
   /**

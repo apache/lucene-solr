@@ -1,6 +1,4 @@
 = Statistical Programming
-:page-shortname: statistical-programming
-:page-permalink: statistical-programming.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -455,10 +453,81 @@ Returns the following response:
 
 == Setting Variables with let
 
-The `let` function sets variables and runs a streaming expression that references the variables. The `let` function can be used to
-write small statistical programs.
+The `let` function sets variables and returns the last variable. The output of any statistical function can be set to a variable.
 
-A variable can be set to the output of any streaming expression. Here is a very simple example:
+Below is a simple example setting three variables `a`, `b` and `correlation`.
+
+[source,text]
+----
+let(a=array(1,2,3),
+    b=array(10, 20, 30),
+    correlation=corr(a, b))
+----
+
+Here is the output:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "correlation": 1
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+All variables can be output by setting the `echo` variable to `true`.
+
+[source,text]
+----
+let(echo=true,
+    a=array(1,2,3),
+    b=array(10, 20, 30),
+    correlation=corr(a, b))
+----
+
+Here is the output:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          1,
+          2,
+          3
+        ],
+        "b": [
+          10,
+          20,
+          30
+        ],
+        "correlation": 1
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Streaming expressions can also be used inside of a `let` expression in the following ways:
+
+* A variable can be set to the output of any streaming expression.
+* A streaming expression can be executed after all variables have been set. The variables can then be referenced by the streaming expression that is executed. The `let` expression will stream the tuples that are emitted by the final streaming expression.
+
+Here is a very simple example:
 
 [source,text]
 ----

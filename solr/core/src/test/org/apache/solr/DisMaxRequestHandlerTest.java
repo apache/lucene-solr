@@ -169,6 +169,26 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                  "q", "\"cool chick\"" )
             ,"//*[@numFound='1']"
             );
+
+  }
+
+  @Test
+  public void testSubQueriesNotSupported() {
+    // See org.apache.solr.search.TestSolrQueryParser.testNestedQueryModifiers()
+    assertQ("don't parse subqueries",
+        req("defType", "dismax",
+            "df", "doesnotexist_s",
+            "q", "_query_:\"{!v=$qq}\"",
+            "qq", "features_t:cool")
+        ,"//*[@numFound='0']"
+    );
+    assertQ("don't parse subqueries",
+        req("defType", "dismax",
+            "df", "doesnotexist_s",
+            "q", "{!v=$qq}",
+            "qq", "features_t:cool")
+        ,"//*[@numFound='0']"
+    );
   }
 
   @Test

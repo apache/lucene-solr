@@ -1,6 +1,4 @@
 = Configuring Logging
-:page-shortname: configuring-logging
-:page-permalink: configuring-logging.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -58,7 +56,7 @@ Log levels settings are as follows:
 
 Multiple settings at one time are allowed.
 
-=== Log level API
+=== Loglevel API
 
 There is also a way of sending REST commands to the logging endpoint to do the same. Example:
 
@@ -111,7 +109,7 @@ For high-volume search applications, logging every query can generate a large am
 
 On the other hand, if you're only concerned about warnings and error messages related to requests, then you can set the log verbosity to WARN. However, this poses a potential problem in that you won't know if any queries are slow, as slow queries are still logged at the INFO level.
 
-Solr provides a way to set your log verbosity threshold to WARN and be able to set a latency threshold above which a request is considered "slow" and log that request at the WARN level to help you identify slow queries in your application. To enable this behavior, configure the `<slowQueryThresholdMillis>` element in the *query* section of solrconfig.xml:
+Solr provides a way to set your log verbosity threshold to WARN and be able to set a latency threshold above which a request is considered "slow" and log that request at the WARN level to help you identify slow queries in your application. To enable this behavior, configure the `<slowQueryThresholdMillis>` element in the *query* section of `solrconfig.xml`:
 
 [source,xml]
 ----

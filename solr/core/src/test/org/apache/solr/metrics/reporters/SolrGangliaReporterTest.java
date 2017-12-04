@@ -45,6 +45,8 @@ import static org.mockito.Mockito.*;
 public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
+    assumeWorkingMockito();
+    
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");

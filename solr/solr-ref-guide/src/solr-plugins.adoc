@@ -1,6 +1,4 @@
 = Solr Plugins
-:page-shortname: solr-plugins
-:page-permalink: solr-plugins.html
 :page-children: adding-custom-plugins-in-solrcloud-mode
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

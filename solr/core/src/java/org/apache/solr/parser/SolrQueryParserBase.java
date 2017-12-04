@@ -34,6 +34,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -43,6 +44,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -60,6 +62,8 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.*;
+
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
  */
@@ -76,6 +80,39 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_NONE    = 0;
   static final int MOD_NOT     = 10;
   static final int MOD_REQ     = 11;
+
+  protected SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
+
+  /**
+   *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
+   *  consider if pants and khakis are query time synonyms
+   *
+   *  {@link #AS_SAME_TERM}
+   *  {@link #PICK_BEST}
+   *  {@link #AS_DISTINCT_TERMS}
+   */
+  public static enum SynonymQueryStyle {
+    /** (default) synonym terms share doc freq
+     *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
+     *  appropriate for exact synonyms
+     *  see {@link org.apache.lucene.search.SynonymQuery}
+     * */
+    AS_SAME_TERM,
+
+    /** highest scoring term match chosen (ie dismax)
+     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher
+     *  appropriate when more specific synonyms should score higher
+     * */
+    PICK_BEST,
+
+    /** each synonym scored indepedently, then added together (ie boolean query)
+     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
+     *  summed with any "pants" matches
+     *  appropriate when more specific synonyms should score higher, but we don't want to ignore
+     *  less specific synonyms
+     * */
+    AS_DISTINCT_TERMS
+  }
 
   // make it possible to call setDefaultOperator() without accessing
   // the nested class:
@@ -96,6 +133,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
   boolean autoGeneratePhraseQueries = false;
+  boolean allowSubQueryParsing = false;
   int flags;
 
   protected IndexSchema schema;
@@ -189,6 +227,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     this.flags = parser.getFlags();
     this.defaultField = defaultField;
     setAnalyzer(schema.getQueryAnalyzer());
+    // TODO in 8.0(?) remove this.  Prior to 7.2 we defaulted to allowing sub-query parsing by default
+    if (!parser.getReq().getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0)) {
+      setAllowSubQueryParsing(true);
+    } // otherwise defaults to false
   }
 
   // Turn on the "filter" bit and return the previous flags for the caller to save
@@ -306,6 +348,35 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   public int getPhraseSlop() {
     return phraseSlop;
   }
+
+  /** @see #setAllowLeadingWildcard(boolean) */
+  public boolean isAllowSubQueryParsing() {
+    return allowSubQueryParsing;
+  }
+
+  /**
+   * Set to enable subqueries to be parsed. If now allowed, the default, a {@link SyntaxError}
+   * will likely be thrown.
+   * Here is the preferred syntax using local-params:
+   *   <code>{!prefix f=field v=foo}</code>
+   * and here is the older one, using a magic field name:
+   *   <code>_query_:"{!prefix f=field v=foo}"</code>.
+   */
+  public void setAllowSubQueryParsing(boolean allowSubQueryParsing) {
+    this.allowSubQueryParsing = allowSubQueryParsing;
+  }
+
+  /**
+   * Set how overlapping query terms (ie synonyms) should be scored, as if they're the same term,
+   * picking highest scoring term, or OR'ing them together
+   * @param synonymQueryStyle how to score terms that overlap see {{@link SynonymQueryStyle}}
+   */
+  public void setSynonymQueryStyle(SynonymQueryStyle synonymQueryStyle) {this.synonymQueryStyle = synonymQueryStyle;}
+
+  /**
+   * Gets how overlapping query terms should be scored
+   */
+  public SynonymQueryStyle getSynonymQueryStyle() {return this.synonymQueryStyle;}
 
 
   /**
@@ -438,13 +509,16 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries) 
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
+                                SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
+    setSynonymQueryStyle(synonymQueryStyle);
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
+    setSynonymQueryStyle(AS_SAME_TERM);
     return query;
   }
 
@@ -515,6 +589,29 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf = schema.getField(regexp.field());
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
+  }
+
+  @Override
+  protected Query newSynonymQuery(Term terms[]) {
+    switch (synonymQueryStyle) {
+      case PICK_BEST:
+        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        for (Term term : terms) {
+          currPosnClauses.add(newTermQuery(term));
+        }
+        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
+        return dm;
+      case AS_DISTINCT_TERMS:
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (Term term : terms) {
+          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+        }
+        return builder.build();
+      case AS_SAME_TERM:
+        return super.newSynonymQuery(terms);
+      default:
+        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+    }
   }
 
   /**
@@ -639,8 +736,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
 
+            SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
+            if (ft instanceof TextField) {
+              synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+            }
+
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -939,7 +1041,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(queryText, magic.subParser);
@@ -957,7 +1059,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+        SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
+        if (ft instanceof TextField) {
+          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+        }
+        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -968,7 +1074,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, AS_SAME_TERM);
   }
 
   // Assumption: quoted is always false
@@ -983,7 +1089,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(String.join(" ", queryTerms), magic.subParser);
@@ -1002,8 +1108,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
+        if (ft instanceof TextField) {
+          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+        }
         return newFieldQuery
-            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);
@@ -1035,7 +1145,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, AS_SAME_TERM);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){
@@ -1132,6 +1242,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   // called from parser
   protected Query getLocalParams(String qfield, String lparams) throws SyntaxError {
+    if (!allowSubQueryParsing) {
+      throw new SyntaxError("local-params subquery is disabled");
+    }
     QParser nested = parser.subQuery(lparams, null);
     return nested.getQuery();
   }

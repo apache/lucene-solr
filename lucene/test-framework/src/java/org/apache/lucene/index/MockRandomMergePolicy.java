@@ -18,11 +18,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -56,7 +56,7 @@ public class MockRandomMergePolicy extends MergePolicy {
     int numSegments = segmentInfos.size();
 
     List<SegmentCommitInfo> segments = new ArrayList<>();
-    final Collection<SegmentCommitInfo> merging = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
 
     for(SegmentCommitInfo sipc : segmentInfos) {
       if (!merging.contains(sipc)) {

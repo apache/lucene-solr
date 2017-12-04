@@ -17,30 +17,23 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.common.util.StrUtils;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 public class CreateAliasCmd implements Cmd {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
 
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
@@ -51,64 +44,42 @@ public class CreateAliasCmd implements Cmd {
   public void call(ClusterState state, ZkNodeProps message, NamedList results)
       throws Exception {
     String aliasName = message.getStr(NAME);
-    String collections = message.getStr("collections");
+    String collections = message.getStr("collections"); // could be comma delimited list
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Map<String, String> prevColAliases = zkStateReader.getAliases().getCollectionAliasMap();
-    validateAllCollectionsExist(collections, prevColAliases, zkStateReader.getClusterState());
+    validateAllCollectionsExistAndNoDups(collections, zkStateReader);
 
-    Map<String, Map<String, String>> newAliasesMap = new HashMap<>();
-    Map<String, String> newCollectionAliasesMap = new HashMap<>();
-    if (prevColAliases != null) {
-      newCollectionAliasesMap.putAll(prevColAliases);
-    }
-    newCollectionAliasesMap.put(aliasName, collections);
-    newAliasesMap.put("collection", newCollectionAliasesMap);
-    Aliases newAliases = new Aliases(newAliasesMap);
-    byte[] jsonBytes = null;
-    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
-      jsonBytes = Utils.toJSON(newAliases.getAliasMap());
-    }
-    try {
-      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES, jsonBytes, true);
+    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, collections));
 
-      checkForAlias(aliasName, collections);
-      // some fudge for other nodes
-      Thread.sleep(100);
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      log.warn("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+    // Sleep a bit to allow ZooKeeper state propagation.
+    //
+    // THIS IS A KLUDGE.
+    //
+    // Solr's view of the cluster is eventually consistent. *Eventually* all nodes and CloudSolrClients will be aware of
+    // alias changes, but not immediately. If a newly created alias is queried, things should work right away since Solr
+    // will attempt to see if it needs to get the latest aliases when it can't otherwise resolve the name.  However
+    // modifications to an alias will take some time.
+    //
+    // We could levy this requirement on the client but they would probably always add an obligatory sleep, which is
+    // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
+    // Solr nodes in the cluster have the latest aliases?
+    Thread.sleep(100);
   }
 
-  private void validateAllCollectionsExist(String collections, Map<String,String> prevColAliases, ClusterState clusterState) {
-    String[] collectionArr = collections.split(",");
-    for (String collection:collectionArr) {
-      if (clusterState.getCollectionOrNull(collection) == null && (prevColAliases == null || !prevColAliases.containsKey(collection))) {
+  private void validateAllCollectionsExistAndNoDups(String collections, ZkStateReader zkStateReader) {
+    List<String> collectionArr = StrUtils.splitSmart(collections, ",", true);
+    if (new HashSet<>(collectionArr).size() != collectionArr.size()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collections));
+    }
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
+    for (String collection : collectionArr) {
+      if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collections, collection));
       }
     }
   }
 
-  private void checkForAlias(String name, String value) {
-
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
-    boolean success = false;
-    Aliases aliases;
-    while (!timeout.hasTimedOut()) {
-      aliases = ocmh.zkStateReader.getAliases();
-      String collections = aliases.getCollectionAlias(name);
-      if (collections != null && collections.equals(value)) {
-        success = true;
-        break;
-      }
-    }
-    if (!success) {
-      log.warn("Timeout waiting to be notified of Alias change...");
-    }
-  }
 }

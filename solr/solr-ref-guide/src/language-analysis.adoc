@@ -1,6 +1,4 @@
 = Language Analysis
-:page-shortname: language-analysis
-:page-permalink: language-analysis.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -165,7 +163,7 @@ Expert options:
 
 `caseFirst`:: Valid values are `lower` or `upper`. Useful to control which is sorted first when case is not ignored.
 
-`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g. foobar-9 sorts before foobar-10. The default is false.
+`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10. The default is false.
 
 `variableTop`:: Single character or contraction. Controls what is variable for `alternate`.
 
@@ -1418,7 +1416,7 @@ See the Solr wiki for tips & advice on using this filter: https://wiki.apache.or
 
 *Arguments:*
 
-`haircut` :: Select the extend of normalization. Valid values are:
+`haircut`:: Select the extend of normalization. Valid values are:
 +
 * `bald`: (Default behavior) Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
 * `regular`: Only Cyrillic to Latin normalization will be applied, preserving the Latin diatrics

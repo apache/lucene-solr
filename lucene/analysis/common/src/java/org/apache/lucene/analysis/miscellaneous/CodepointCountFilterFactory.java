@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.CodepointCountFilterFactory" min="0" max="1" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 4.5.1
  */
 public class CodepointCountFilterFactory extends TokenFilterFactory {
   final int min;

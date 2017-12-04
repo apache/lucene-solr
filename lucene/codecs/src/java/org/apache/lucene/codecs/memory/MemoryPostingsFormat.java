@@ -733,10 +733,10 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       if (!didDecode) {
         buffer.reset(current.output.bytes, current.output.offset, current.output.length);
         docFreq = buffer.readVInt();
-        if (field.getIndexOptions() != IndexOptions.DOCS) {
-          totalTermFreq = docFreq + buffer.readVLong();
+        if (field.getIndexOptions() == IndexOptions.DOCS) {
+          totalTermFreq = docFreq;
         } else {
-          totalTermFreq = -1;
+          totalTermFreq = docFreq + buffer.readVLong();
         }
         postingsSpare.bytes = current.output.bytes;
         postingsSpare.offset = buffer.getPosition();
@@ -873,12 +873,15 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       field = fieldInfos.fieldInfo(fieldNumber);
       if (field == null) {
         throw new CorruptIndexException("invalid field number: " + fieldNumber, in);
-      } else if (field.getIndexOptions() != IndexOptions.DOCS) {
-        sumTotalTermFreq = in.readVLong();
       } else {
-        sumTotalTermFreq = -1;
+        sumTotalTermFreq = in.readVLong();
       }
-      sumDocFreq = in.readVLong();
+      // if frequencies are omitted, sumDocFreq = sumTotalTermFreq and we only write one value.
+      if (field.getIndexOptions() == IndexOptions.DOCS) {
+        sumDocFreq = sumTotalTermFreq;
+      } else {
+        sumDocFreq = in.readVLong();
+      }
       docCount = in.readVInt();
       
       fst = new FST<>(in, outputs);

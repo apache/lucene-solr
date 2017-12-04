@@ -41,6 +41,7 @@ import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
@@ -70,7 +71,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * If two {@link AnalyticsValue}s are passed as the if-else parameters, an {@link AnalyticsValue} will be returned.
  * If either parameter isn't single-valued, a {@link AnalyticsValueStream} will be returned.
  */
-public class IfFunction implements AnalyticsValueStream {
+public class IfFunction extends AbstractAnalyticsValueStream {
   private final BooleanValue ifExpr;
   private final AnalyticsValueStream thenExpr;
   private final AnalyticsValueStream elseExpr;

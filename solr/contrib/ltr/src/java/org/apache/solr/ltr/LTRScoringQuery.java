@@ -479,6 +479,11 @@ public class LTRScoringQuery extends Query {
 
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
     public class ModelScorer extends Scorer {
       final private DocInfo docInfo;
       final private Scorer featureTraversalScorer;
@@ -514,11 +519,6 @@ public class LTRScoringQuery extends Query {
       @Override
       public float score() throws IOException {
         return featureTraversalScorer.score();
-      }
-
-      @Override
-      public int freq() throws IOException {
-        return featureTraversalScorer.freq();
       }
 
       @Override
@@ -573,16 +573,6 @@ public class LTRScoringQuery extends Query {
             }
           }
           return makeNormalizedFeaturesAndScore();
-        }
-
-        @Override
-        public int freq() throws IOException {
-          final DisiWrapper subMatches = subScorers.topList();
-          int freq = 1;
-          for (DisiWrapper w = subMatches.next; w != null; w = w.next) {
-            freq += 1;
-          }
-          return freq;
         }
 
         @Override
@@ -674,11 +664,6 @@ public class LTRScoringQuery extends Query {
             children.add(new ChildScorer(scorer, "SHOULD"));
           }
           return children;
-        }
-
-        @Override
-        public int freq() throws IOException {
-          return freq;
         }
 
         @Override

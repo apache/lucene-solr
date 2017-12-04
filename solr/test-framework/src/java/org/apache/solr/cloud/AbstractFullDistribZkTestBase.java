@@ -296,7 +296,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000);
-    client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -1821,14 +1820,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CloudSolrClient getCommonCloudSolrClient() {
     synchronized (this) {
       if (commonCloudSolrClient == null) {
-        boolean updatesToLeaders = random().nextBoolean();
-        boolean parallelUpdates = random().nextBoolean();
         commonCloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(),
-                updatesToLeaders, 5000, 120000);
-        commonCloudSolrClient.setParallelUpdates(parallelUpdates);
+            random().nextBoolean(), 5000, 120000);
         commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
         commonCloudSolrClient.connect();
-        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}", updatesToLeaders, parallelUpdates);
+        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
+            commonCloudSolrClient.isUpdatesToLeaders(), commonCloudSolrClient.isParallelUpdates());
       }
     }
     return commonCloudSolrClient;

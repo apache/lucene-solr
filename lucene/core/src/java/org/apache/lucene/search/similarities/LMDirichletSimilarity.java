@@ -44,11 +44,17 @@ public class LMDirichletSimilarity extends LMSimilarity {
   /** Instantiates the similarity with the provided &mu; parameter. */
   public LMDirichletSimilarity(CollectionModel collectionModel, float mu) {
     super(collectionModel);
+    if (Float.isFinite(mu) == false || mu < 0) {
+      throw new IllegalArgumentException("illegal mu value: " + mu + ", must be a non-negative finite value");
+    }
     this.mu = mu;
   }
   
   /** Instantiates the similarity with the provided &mu; parameter. */
   public LMDirichletSimilarity(float mu) {
+    if (Float.isFinite(mu) == false || mu < 0) {
+      throw new IllegalArgumentException("illegal mu value: " + mu + ", must be a non-negative finite value");
+    }
     this.mu = mu;
   }
 
@@ -63,18 +69,18 @@ public class LMDirichletSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
-    float score = stats.getBoost() * (float)(Math.log(1 + freq /
+  protected double score(BasicStats stats, double freq, double docLen) {
+    double score = stats.getBoost() * (Math.log(1 + freq /
         (mu * ((LMStats)stats).getCollectionProbability())) +
         Math.log(mu / (docLen + mu)));
-    return score > 0.0f ? score : 0.0f;
+    return score > 0.0d ? score : 0.0d;
   }
   
   @Override
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
-      float freq, float docLen) {
-    if (stats.getBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getBoost(), "boost"));
+      double freq, double docLen) {
+    if (stats.getBoost() != 1.0d) {
+      subs.add(Explanation.match((float) stats.getBoost(), "boost"));
     }
 
     subs.add(Explanation.match(mu, "mu"));

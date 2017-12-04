@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -26,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -45,14 +47,22 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest
-        .createCollection("testCollection1", "config", 2, 1)
-        .setMaxShardsPerNode(1000)
-        .process(cluster.getSolrClient());
-    CollectionAdminRequest
-        .createCollection("testCollection2", "config", 2, 1)
-        .setMaxShardsPerNode(1000)
-        .process(cluster.getSolrClient());
+    for (int i = 1; i <= 2; i++) {
+      // Create two collections with same order of requests, no parallel
+      // therefore Assign.buildCoreNodeName will create same coreNodeName
+      CollectionAdminRequest
+          .createCollection("testCollection"+i, "config", 2, 1)
+          .setMaxShardsPerNode(100)
+          .setCreateNodeSet("")
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest
+          .addReplicaToShard("testCollection"+i, "shard1")
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest
+          .addReplicaToShard("testCollection"+i, "shard2")
+          .process(cluster.getSolrClient());
+    }
+
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection1", cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection2", cluster.getSolrClient().getZkStateReader(),
@@ -63,14 +73,27 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
   public void test() throws KeeperException, InterruptedException, IOException, SolrServerException {
     ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
     stateReader.forceUpdateCollection(TEST_COLLECTION_1);
-    List<Replica> replicasOfCollection1 = stateReader.getClusterState().getCollection(TEST_COLLECTION_1).getReplicas();
-    List<Replica> replicasOfCollection2 = stateReader.getClusterState().getCollection(TEST_COLLECTION_2).getReplicas();
-    Replica replica = findLeaderReplicaWithDuplicatedName(replicasOfCollection1, replicasOfCollection2);
+    ClusterState clusterState = stateReader.getClusterState();
+    // The test assume that TEST_COLLECTION_1 and TEST_COLLECTION_2 will have identical layout
+    // ( same replica's name on every shard )
+    for (int i = 1; i <= 2; i++) {
+      String coll1ShardiLeader = clusterState.getCollection(TEST_COLLECTION_1).getLeader("shard"+i).getName();
+      String coll2ShardiLeader = clusterState.getCollection(TEST_COLLECTION_2).getLeader("shard"+i).getName();
+      String assertMss = String.format(Locale.ROOT, "Expect %s and %s each have a replica with same name on shard %s",
+          coll1ShardiLeader, coll2ShardiLeader, "shard"+i);
+      assertEquals(
+          assertMss,
+          coll1ShardiLeader,
+          coll2ShardiLeader
+      );
+    }
+
+    String shard = "shard" + String.valueOf(random().nextInt(2) + 1);
+    Replica replica = clusterState.getCollection(TEST_COLLECTION_1).getLeader(shard);
     assertNotNull(replica);
 
-    SolrClient shardLeaderClient = new HttpSolrClient.Builder(replica.get("base_url").toString()).build();
-    try {
-      assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, "shard1", stateReader.getZkClient()).size());
+    try (SolrClient shardLeaderClient = new HttpSolrClient.Builder(replica.get("base_url").toString()).build()) {
+      assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size());
       List<String> collection2Shard1Nodes = getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient());
       List<String> collection2Shard2Nodes = getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient());
       CoreAdminRequest.unloadCore(replica.getCoreName(), shardLeaderClient);
@@ -79,7 +102,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       boolean found = false;
       while (System.nanoTime() < timeout) {
         try {
-          found = getElectionNodes(TEST_COLLECTION_1, "shard1", stateReader.getZkClient()).size() == 0;
+          found = getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size() == 0;
           break;
         } catch (KeeperException.NoNodeException nne) {
           // ignore
@@ -89,23 +112,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       // There are no leader election was kicked off on testCollection2
       assertThat(collection2Shard1Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient())));
       assertThat(collection2Shard2Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient())));
-    } finally {
-      shardLeaderClient.close();
     }
-  }
-
-  private Replica findLeaderReplicaWithDuplicatedName(List<Replica> replicas1, List<Replica> replicas2) {
-    for (Replica replica1 : replicas1) {
-      if (!replica1.containsKey("leader")) continue;
-      for (Replica replica2 : replicas2) {
-        if (replica1.getName().equals(replica2.getName())
-            && replica1.get("base_url").equals(replica2.get("base_url"))
-            && replica2.containsKey("leader")) {
-          return replica1;
-        }
-      }
-    }
-    return null;
   }
 
   private List<String> getElectionNodes(String collection, String shard, SolrZkClient client) throws KeeperException, InterruptedException {

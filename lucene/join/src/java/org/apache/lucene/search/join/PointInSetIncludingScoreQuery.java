@@ -170,11 +170,6 @@ abstract class PointInSetIncludingScoreQuery extends Query {
           }
 
           @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
           public int docID() {
             return disi.docID();
           }
@@ -186,6 +181,12 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
         };
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 

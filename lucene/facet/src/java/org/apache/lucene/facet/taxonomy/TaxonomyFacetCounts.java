@@ -39,7 +39,7 @@ public class TaxonomyFacetCounts extends IntTaxonomyFacets {
    *  {@link OrdinalsReader}; otherwise use {@link
    *  FastTaxonomyFacetCounts}. */
   public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
-    super(ordinalsReader.getIndexFieldName(), taxoReader, config);
+    super(ordinalsReader.getIndexFieldName(), taxoReader, config, fc);
     this.ordinalsReader = ordinalsReader;
     count(fc.getMatchingDocs());
   }
@@ -54,7 +54,7 @@ public class TaxonomyFacetCounts extends IntTaxonomyFacets {
       while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ords.get(doc, scratch);
         for(int i=0;i<scratch.length;i++) {
-          values[scratch.ints[scratch.offset+i]]++;
+          increment(scratch.ints[scratch.offset+i]);
         }
       }
     }

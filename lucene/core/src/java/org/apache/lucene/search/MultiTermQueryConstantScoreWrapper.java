@@ -211,6 +211,12 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
           return scorer(weightOrBitSet.set);
         }
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 }

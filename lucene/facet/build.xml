@@ -28,6 +28,7 @@
   <path id="classpath">
     <path refid="base.classpath"/>
     <pathelement path="${queries.jar}"/>
+    <fileset dir="lib"/>
   </path>
 
   <target name="compile-core" depends="jar-queries,common.compile-core" />

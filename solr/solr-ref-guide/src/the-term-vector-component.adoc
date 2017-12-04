@@ -1,6 +1,4 @@
 = The Term Vector Component
-:page-shortname: the-term-vector-component
-:page-permalink: the-term-vector-component.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -158,7 +156,7 @@ If `true`, returns payload information.
 If `true`, returns document term frequency info for each term in the document.
 
 `tv.tf_idf`::
-If `true`, calculates TF / DF (ie: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
+If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
 This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
 

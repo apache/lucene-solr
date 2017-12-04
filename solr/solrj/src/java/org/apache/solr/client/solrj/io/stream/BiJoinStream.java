@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * Joins leftStream with rightStream based on a Equalitor. Both streams must be sorted by the fields being joined on.
  * Resulting stream is sorted by the equalitor.
+ * @since 6.0.0
  **/
 
 public abstract class BiJoinStream extends JoinStream implements Expressible {

@@ -1,6 +1,4 @@
 = Managed Resources
-:page-shortname: managed-resources
-:page-permalink: managed-resources.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -134,7 +132,7 @@ NOTE: PUT/POST is used to add terms to an existing list instead of replacing the
 
 === Managing Synonyms
 
-For the most part, the API for managing synonyms behaves similar to the API for stop words, except instead of working with a list of words, it uses a map, where the value for each entry in the map is a set of synonyms for a term. As with stop words, the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> includes a pre-built set of synonym mappings suitable for the sample data that is activated by the following field type definition in schema.xml:
+For the most part, the API for managing synonyms behaves similar to the API for stop words, except instead of working with a list of words, it uses a map, where the value for each entry in the map is a set of synonyms for a term. As with stop words, the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> includes a pre-built set of synonym mappings suitable for the sample data that is activated by the following field type definition in `schema.xml`:
 
 [source,xml]
 ----
@@ -193,7 +191,7 @@ To add a new synonym mapping, you can PUT/POST a single mapping such as:
 curl -X PUT -H 'Content-type:application/json' --data-binary '{"mad":["angry","upset"]}' "http://localhost:8983/solr/techproducts/schema/analysis/synonyms/english"
 ----
 
-The API will return status code 200 if the PUT request was successful. To determine the synonyms for a specific term, you send a GET request for the child resource, such as `/schema/analysis/synonyms/english/mad` would return `["angry","upset"]` .
+The API will return status code 200 if the PUT request was successful. To determine the synonyms for a specific term, you send a GET request for the child resource, such as `/schema/analysis/synonyms/english/mad` would return `["angry","upset"]`.
 
 You can also PUT a list of symmetric synonyms, which will be expanded into a mapping for each term in the list. For example, you could PUT the following list of symmetric synonyms using the JSON list syntax instead of a map:
 
@@ -227,7 +225,7 @@ Changing things like stop words and synonym mappings typically require re-indexi
 
 Metadata about registered ManagedResources is available using the `/schema/managed` endpoint for each collection.
 
-Assuming you have the `managed_en` field type shown above defined in your schema.xml, sending a GET request to the following resource will return metadata about which schema-related resources are being managed by the RestManager:
+Assuming you have the `managed_en` field type shown above defined in your `schema.xml`, sending a GET request to the following resource will return metadata about which schema-related resources are being managed by the RestManager:
 
 [source,bash]
 ----
@@ -285,7 +283,7 @@ For most users, creating resources in this way should never be necessary, since 
 
 However, You may want to explicitly delete managed resources if they are no longer being used by a Solr component.
 
-For instance, the managed resource for German that we created above can be deleted because there are no Solr components that are using it, whereas the managed resource for English stop words cannot be deleted because there is a token filter declared in schema.xml that is using it.
+For instance, the managed resource for German that we created above can be deleted because there are no Solr components that are using it, whereas the managed resource for English stop words cannot be deleted because there is a token filter declared in `schema.xml` that is using it.
 
 [source,bash]
 ----

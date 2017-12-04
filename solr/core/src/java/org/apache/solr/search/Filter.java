@@ -135,6 +135,10 @@ public abstract class Filter extends Query {
         return new ConstantScoreScorer(this, 0f, iterator);
       }
 
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
     };
   }
 }

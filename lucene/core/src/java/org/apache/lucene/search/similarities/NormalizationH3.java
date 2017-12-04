@@ -36,11 +36,14 @@ public class NormalizationH3 extends Normalization {
    * @param mu smoothing parameter <code>&mu;</code>
    */
   public NormalizationH3(float mu) {
+    if (Float.isFinite(mu) == false || mu < 0) {
+      throw new IllegalArgumentException("illegal mu value: " + mu + ", must be a non-negative finite value");
+    }
     this.mu = mu;
   }
 
   @Override
-  public float tfn(BasicStats stats, float tf, float len) {
+  public double tfn(BasicStats stats, double tf, double len) {
     return (tf + mu * ((stats.getTotalTermFreq()+1F) / (stats.getNumberOfFieldTokens()+1F))) / (len + mu) * mu;
   }
 

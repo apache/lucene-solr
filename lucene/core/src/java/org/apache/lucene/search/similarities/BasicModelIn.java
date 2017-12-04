@@ -30,16 +30,16 @@ public class BasicModelIn extends BasicModel {
   public BasicModelIn() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn) {
     long N = stats.getNumberOfDocuments();
     long n = stats.getDocFreq();
-    return tfn * (float)(log2((N + 1) / (n + 0.5)));
+    return tfn * log2((N + 1) / (n + 0.5));
   }
   
   @Override
-  public final Explanation explain(BasicStats stats, float tfn) {
+  public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
-        score(stats, tfn),
+        (float) score(stats, tfn),
         getClass().getSimpleName() + ", computed from: ",
         Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
         Explanation.match(stats.getDocFreq(), "docFreq"));

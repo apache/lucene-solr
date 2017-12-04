@@ -56,6 +56,11 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return in.isCacheable(ctx);
+  }
+
+  @Override
   public void extractTerms(Set<Term> terms) {
     in.extractTerms(terms);
   }

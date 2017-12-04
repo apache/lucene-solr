@@ -19,30 +19,44 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class TestPolicy extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String clusterState = "{'gettingstarted':{" +
       "    'router':{'name':'compositeId'}," +
@@ -82,14 +96,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
       "            'state':'active'}," +
       "          'r5':{" +
       "            'core':r5," +
-      "            'base_url':'http://10.0.0.4:7574/solr'," +
+      "            'base_url':'http://10.0.0.4:8983/solr'," +
       "            'node_name':'node1'," +
       "            'state':'active'}}}}}}";
 
-  public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, String s) {
+  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node, String clusterState) {
     ValidatingJsonMap m = ValidatingJsonMap
-        .getDeepCopy((Map) Utils.fromJSONString(s), 6, true);
-    Map<String, Map<String, List<Policy.ReplicaInfo>>> result = new LinkedHashMap<>();
+        .getDeepCopy((Map) Utils.fromJSONString(clusterState), 6, true);
+    Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
 
     m.forEach((collName, o) -> {
       ValidatingJsonMap coll = (ValidatingJsonMap) o;
@@ -99,11 +113,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
           ValidatingJsonMap r = (ValidatingJsonMap) o2;
           String node_name = (String) r.get("node_name");
           if (!node_name.equals(node)) return;
-          Map<String, List<Policy.ReplicaInfo>> shardVsReplicaStats = result.get(collName);
-          if (shardVsReplicaStats == null) result.put(collName, shardVsReplicaStats = new HashMap<>());
-          List<Policy.ReplicaInfo> replicaInfos = shardVsReplicaStats.get(shard);
-          if (replicaInfos == null) shardVsReplicaStats.put(shard, replicaInfos = new ArrayList<>());
-          replicaInfos.add(new Policy.ReplicaInfo(replicaName, collName, shard, new HashMap<>()));
+          Map<String, List<ReplicaInfo>> shardVsReplicaStats = result.computeIfAbsent(collName, k -> new HashMap<>());
+          List<ReplicaInfo> replicaInfos = shardVsReplicaStats.computeIfAbsent(shard, k -> new ArrayList<>());
+          replicaInfos.add(new ReplicaInfo(replicaName, (String) r.get("core"), collName, shard,
+              Replica.Type.get((String) r.get(ZkStateReader.REPLICA_TYPE)), node, r));
         });
       });
     });
@@ -187,16 +200,549 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(c.tag.isPass(12.8d));
     assertFalse(c.tag.isPass("12.6"));
     assertFalse(c.tag.isPass(12.6d));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:0, 'metrics:x:y:z':'>12.7'}"));
+    assertTrue(c.tag.val instanceof String);
+    assertTrue(c.tag.isPass("12.8"));
+    assertTrue(c.tag.isPass(12.8d));
+    assertFalse(c.tag.isPass("12.6"));
+    assertFalse(c.tag.isPass(12.6d));
+
+  }
+
+  public void testNodeLost() {
+    String dataproviderdata = " {'liveNodes':[" +
+        "    '127.0.0.1:65417_solr'," +
+        "    '127.0.0.1:65434_solr']," +
+        "  'replicaInfo':{" +
+        "    '127.0.0.1:65427_solr':{'testNodeLost':{'shard1':[{'core_node2':{type: NRT}}]}}," +
+        "    '127.0.0.1:65417_solr':{'testNodeLost':{'shard1':[{'core_node1':{type: NRT}}]}}," +
+        "    '127.0.0.1:65434_solr':{}}," +
+        "  'nodeValues':{" +
+        "    '127.0.0.1:65417_solr':{" +
+        "      'node':'127.0.0.1:65417_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    '127.0.0.1:65434_solr':{" +
+        "      'node':'127.0.0.1:65434_solr'," +
+        "      'cores':0," +
+        "      'freedisk':884.7097854614258}}}";
+   /* String stateJson = "{'testNodeLost':{" +
+        "           'pullReplicas':'0'," +
+        "           'replicationFactor':'2'," +
+        "           'router':{'name':'compositeId'}," +
+        "           'maxShardsPerNode':'1'," +
+        "           'autoAddReplicas':'false'," +
+        "           'nrtReplicas':'2'," +
+        "           'tlogReplicas':'0'," +
+        "           'shards':{'shard1':{" +
+        "               'range':'80000000-7fffffff'," +
+        "               'state':'active'," +
+        "               'replicas':{" +
+        "                 'core_node1':{" +
+        "                   'core':'testNodeLost_shard1_replica_n1'," +
+        "                   'base_url':'http://127.0.0.1:65417/solr'," +
+        "                   'node_name':'127.0.0.1:65417_solr'," +
+        "                   'state':'active'," +
+        "                   'type':'NRT'," +
+        "                   'leader':'true'}," +
+        "                 'core_node2':{" +
+        "                   'core':'testNodeLost_shard1_replica_n2'," +
+        "                   'base_url':'http://127.0.0.1:65427/solr'," +
+        "                   'node_name':'127.0.0.1:65427_solr'," +
+        "                   'state':'down'," +
+        "                   'type':'NRT'}}}}}}";*/
+
+    String autoScalingjson = "{" +
+        "       'cluster-policy':[" +
+        "         {" +
+        "           'cores':'<10'," +
+        "           'node':'#ANY'}," +
+        "         {" +
+        "           'replica':'<2'," +
+        "           'shard':'#EACH'," +
+        "           'node':'#ANY'}," +
+        "         {" +
+        "           'nodeRole':'overseer'," +
+        "           'replica':0}]," +
+        "       'cluster-preferences':[" +
+        "         {" +
+        "           'minimize':'cores'," +
+        "           'precision':3}," +
+        "         {" +
+        "           'maximize':'freedisk'," +
+        "           'precision':100}]}";
+
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
+    SolrRequest op = session.getSuggester(MOVEREPLICA).hint(Hint.SRC_NODE, "127.0.0.1:65427_solr").getSuggestion();
+    assertNotNull(op);
+    assertEquals( "127.0.0.1:65434_solr",op.getParams().get("targetNode") );
+  }
+
+  public void testNodeLostMultipleReplica() {
+    String nodeValues = " {" +
+        "    'node4':{" +
+        "      'node':'10.0.0.4:8987_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node3':{" +
+        "      'node':'10.0.0.4:8989_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node2':{" +
+        "      'node':'10.0.0.4:7574_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "}";
+
+    SolrCloudManager provider = getSolrCloudManager((Map<String, Map>) Utils.fromJSONString(nodeValues), clusterState);
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+    Policy policy = config.getPolicy();
+    Policy.Session session = policy.createSession(provider);
+    Suggester suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    SolrRequest operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node3", operation.getParams().get("targetNode"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertNull(operation);
+
+    // lets change the policy such that all replicas that were on node1
+    // can now fit on node2
+    policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    config = new AutoScalingConfig(policies);
+    policy = config.getPolicy();
+    session = policy.createSession(provider);
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r3", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r5", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r1", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertNull(operation);
+
+    // now lets change the policy such that a node can have 2 shard2 replicas
+    policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': 'shard1', 'node': '#ANY'}," +
+        "    { 'replica': '<3', 'shard': 'shard2', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    config = new AutoScalingConfig(policies);
+    policy = config.getPolicy();
+    session = policy.createSession(provider);
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r3", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r5", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getSuggestion();
+    assertEquals("node3", operation.getParams().get("targetNode"));
+    assertEquals("r1", operation.getParams().get("replica"));
+  }
+
+  private static SolrCloudManager cloudManagerWithData(String data) {
+    final Map m = (Map) Utils.fromJSONString(data);
+    Map replicaInfo = (Map) m.get("replicaInfo");
+    replicaInfo.forEach((node, val) -> {
+      Map m1 = (Map) val;
+      m1.forEach((coll, val2) -> {
+        Map m2 = (Map) val2;
+        m2.forEach((shard, val3) -> {
+          List l3 = (List) val3;
+          for (int i = 0; i < l3.size(); i++) {
+            Object o = l3.get(i);
+            Map m3 = (Map) o;
+            String name = m3.keySet().iterator().next().toString();
+            m3 = (Map) m3.get(name);
+            Replica.Type type = Replica.Type.get((String) m3.get("type"));
+            l3.set(i, new ReplicaInfo(name,name
+                , coll.toString(), shard.toString(), type, (String) node, m3));
+          }
+        });
+
+      });
+
+    });
+    return new DelegatingCloudManager(null) {
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return new HashSet<>((Collection<String>) m.get("liveNodes"));
+          }
+        };
+      }
+
+      @Override
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
+            return result == null ? Collections.emptyMap() : result;
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
+            return result == null ? Collections.emptyMap() : result;
+          }
+        };
+      }
+    };
+  }
+
+  public void testPolicyWithReplicaType() {
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!ssd',  type : TLOG }" +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
+        "  ]" +
+        "}");
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy(policies);
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard1"))
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL);
+    SolrRequest op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+    assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL);
+    op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+    assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard1"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
+    op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+    assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
+    op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+    assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
+    op = suggester.getSuggestion();
+    assertNull("No node should qualify for this" ,op);
+
+  }
+
+
+  public void testMoveReplicasInMultipleCollections() {
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:2}," +
+        "node3:{cores:4}" +
+        "}");
+    String clusterState = "{\n" +
+        "'collection1' : {\n" +
+        "  'pullReplicas':'0',\n" +
+        "  'replicationFactor':'2',\n" +
+        "  'shards':{\n" +
+        "    'shard1':{\n" +
+        "      'range':'80000000-ffffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node1':{\n" +
+        "          'core':'collection1_shard1_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
+        "          'node_name':'node1',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'},\n" +
+        "        'core_node6':{\n" +
+        "          'core':'collection1_shard1_replica_n3',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'}}},\n" +
+        "    'shard2':{\n" +
+        "      'range':'0-7fffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node3':{\n" +
+        "          'core':'collection1_shard2_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
+        "          'node_name':'node1',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'},\n" +
+        "        'core_node5':{\n" +
+        "          'core':'collection1_shard2_replica_n3',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'}}}},\n" +
+        "  'router':{'name':'compositeId'},\n" +
+        "  'maxShardsPerNode':'2',\n" +
+        "  'autoAddReplicas':'true',\n" +
+        "  'nrtReplicas':'2',\n" +
+        "  'tlogReplicas':'0'},\n" +
+        "'collection2' : {\n" +
+        "  'pullReplicas':'0',\n" +
+        "  'replicationFactor':'2',\n" +
+        "  'shards':{\n" +
+        "    'shard1':{\n" +
+        "      'range':'80000000-ffffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node1':{\n" +
+        "          'core':'collection2_shard1_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
+        "          'node_name':'node2',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'},\n" +
+        "        'core_node2':{\n" +
+        "          'core':'collection2_shard1_replica_n2',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'}}},\n" +
+        "    'shard2':{\n" +
+        "      'range':'0-7fffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node3':{\n" +
+        "          'core':'collection2_shard2_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
+        "          'node_name':'node2',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'},\n" +
+        "        'core_node4':{\n" +
+        "          'core':'collection2_shard2_replica_n2',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'}}}},\n" +
+        "  'router':{'name':'compositeId'},\n" +
+        "  'maxShardsPerNode':'2',\n" +
+        "  'autoAddReplicas':'true',\n" +
+        "  'nrtReplicas':'2',\n" +
+        "  'tlogReplicas':'0'}\n" +
+        "}";
+    Policy policy = new Policy(new HashMap<>());
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Suggester.Hint.SRC_NODE, "node2");
+    SolrRequest op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals("collection2", op.getParams().get("collection"));
+    assertEquals("node1", op.getParams().get("targetNode"));
+    String coreNodeName = op.getParams().get("replica");
+    assertTrue(coreNodeName.equals("core_node3") || coreNodeName.equals("core_node1"));
+
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Suggester.Hint.SRC_NODE, "node2");
+    op = suggester.getSuggestion();
+    assertNotNull(op);
+    assertEquals("collection2", op.getParams().get("collection"));
+    assertEquals("node1", op.getParams().get("targetNode"));
+    coreNodeName = op.getParams().get("replica");
+    assertTrue(coreNodeName.equals("core_node3") || coreNodeName.equals("core_node1"));
+
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Suggester.Hint.SRC_NODE, "node2");
+    op = suggester.getSuggestion();
+    assertNull(op);
+  }
+
+
+  public void testMultipleCollections() {
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl'}," +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2', type : PULL}," +
+        "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2'}," +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!ssd',  type : TLOG }" +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
+        "  ]" +
+        "}");
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy(policies);
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard1"));
+    SolrRequest op;
+    int countOp = 0;
+    int countNewCollOp = 0;
+    int countNewColl2Op = 0;
+    while ((op = suggester.getSuggestion()) != null) {
+      countOp++;
+      suggester = suggester.getSession().getSuggester(ADDREPLICA)
+          .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard1"));
+      assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+      String collection =  op.getParams().get("collection");
+      assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
+      if (collection.equals("newColl")) countNewCollOp++;
+      else countNewColl2Op++;
+      assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+    }
+    assertEquals(2, countOp);
+    assertEquals(1, countNewCollOp);
+    assertEquals(1, countNewColl2Op);
+
+    countOp = 0;
+    countNewCollOp = 0;
+    countNewColl2Op = 0;
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
+    while ((op = suggester.getSuggestion()) != null) {
+      countOp++;
+      suggester = suggester.getSession()
+          .getSuggester(ADDREPLICA)
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard2"))
+          .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
+      assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+      String collection =  op.getParams().get("collection");
+      assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
+      if (collection.equals("newColl")) countNewCollOp++;
+      else countNewColl2Op++;
+      assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+    }
+    assertEquals(3, countOp);
+    assertEquals(1, countNewCollOp);
+    assertEquals(2, countNewColl2Op);
   }
 
   public void testRow() {
-    Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), new ArrayList<>());
-    Row r1 = row.addReplica("c1", "s1");
-    Row r2 = r1.addReplica("c1", "s1");
+    Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), true);
+    Row r1 = row.addReplica("c1", "s1", null);
+    Row r2 = r1.addReplica("c1", "s1",null);
     assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof Policy.ReplicaInfo);
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof Policy.ReplicaInfo);
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof ReplicaInfo);
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof ReplicaInfo);
   }
 
   public void testMerge() {
@@ -264,12 +810,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     Policy.Session session;
-    session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
+    session = policy.createSession(getSolrCloudManager(nodeValues, clusterState));
 
     List<Row> l = session.getSorted();
     assertEquals("node1", l.get(0).node);
-    assertEquals("node4", l.get(1).node);
-    assertEquals("node3", l.get(2).node);
+    assertEquals("node3", l.get(1).node);
+    assertEquals("node4", l.get(2).node);
     assertEquals("node2", l.get(3).node);
 
 
@@ -279,10 +825,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(violations.stream().anyMatch(violation -> "nodeRole".equals(violation.getClause().tag.getName())));
     assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.getOperand() == Operand.LESS_THAN && "node".equals(violation.getClause().tag.getName()))));
 
-    Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "gettingstarted")
-        .hint(Hint.SHARD, "r1");
-    SolrParams operation = suggester.getOperation().getParams();
+    Suggester suggester = session.getSuggester(ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("gettingstarted","r1"));
+    SolrParams operation = suggester.getSuggestion().getParams();
     assertEquals("node2", operation.get("node"));
 
     nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
@@ -292,13 +837,88 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node5:{cores:0, freedisk: 895, heapUsage:17834}," +
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer}" +
         "}");
-    session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
+    session = policy.createSession(getSolrCloudManager(nodeValues, clusterState));
     SolrRequest opReq = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "node5")
-        .getOperation();
+        .getSuggestion();
     assertNotNull(opReq);
     assertEquals("node5", opReq.getParams().get("targetNode"));
+  }
 
+  @Test
+  public void testSessionCaching() {
+    PolicyHelper.SessionRef ref1 = new PolicyHelper.SessionRef();
+    String autoScalingjson = "  '{cluster-policy':[" +
+        "    {      'cores':'<10',      'node':'#ANY'}," +
+        "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
+        "    {      'nodeRole':'overseer','replica':0}]," +
+        "  'cluster-preferences':[{'minimize':'cores'}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    PolicyHelper.SESSION_REF.set(ref1);
+    String nodeValues = " {" +
+        "    'node4':{" +
+        "      'node':'10.0.0.4:8987_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node3':{" +
+        "      'node':'10.0.0.4:8989_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node2':{" +
+        "      'node':'10.0.0.4:7574_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "}";
+
+    SolrCloudManager provider = getSolrCloudManager((Map<String, Map>) Utils.fromJSONString(nodeValues), clusterState);
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations("c", config, provider, null,
+        Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+
+    long sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    PolicyHelper.SessionRef ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    Policy.Session session = ref1Copy.get();
+    assertNotNull(session);
+    assertEquals(ref1, ref1Copy);
+    assertTrue(session.getPolicy() == config.getPolicy());
+    ref1Copy.decref(sessionRefVersion);
+    PolicyHelper.SESSION_REF.set(ref1);
+    AutoScalingConfig config2 = new AutoScalingConfig(policies);
+    locations = PolicyHelper.getReplicaLocations("c2", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    session = ref1Copy.get();
+    ref1Copy.decref(sessionRefVersion);
+    assertEquals(ref1, ref1Copy);
+    assertFalse(session.getPolicy() == config2.getPolicy());
+    assertTrue(session.getPolicy() == config.getPolicy());
+    assertEquals(2, ref1Copy.getRefCount());
+    ref1.decref(sessionRefVersion);//decref 1
+    ref1.decref(sessionRefVersion);//decref 2
+    PolicyHelper.SESSION_REF.set(ref1);
+    locations = PolicyHelper.getReplicaLocations("c3", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    session = ref1Copy.get();
+    ref1Copy.decref(sessionRefVersion);
+    assertTrue(session.getPolicy() == config2.getPolicy());
 
   }
 
@@ -318,14 +938,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
-    ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
-    Policy.Session session = policy.createSession(clusterDataProvider);
+    SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
+    Policy.Session session = policy.createSession(cloudManager);
     for (int i = 0; i < 3; i++) {
-      Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
+      Suggester suggester = session.getSuggester(ADDREPLICA);
       SolrRequest op = suggester
-          .hint(Hint.COLL, "newColl")
-          .hint(Hint.SHARD, "shard1")
-          .getOperation();
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl","shard1"))
+          .getSuggestion();
       assertNotNull(op);
       assertEquals("node3", op.getParams().get("node"));
       session = suggester.getSession();
@@ -351,51 +970,27 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
-    ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
-    ClusterDataProvider cdp = new ClusterDataProvider() {
-      @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-        return clusterDataProvider.getNodeValues(node, tags);
-      }
-
-      @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return clusterDataProvider.getReplicaInfo(node, keys);
-      }
-
-      @Override
-      public Collection<String> getNodes() {
-        return clusterDataProvider.getNodes();
-      }
-
-      @Override
-      public String getPolicyNameByCollection(String coll) {
-        return null;
-      }
-    };
-    Policy.Session session = policy.createSession(cdp);
-    Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
+    SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
+    Policy.Session session = policy.createSession(cloudManager);
+    Suggester suggester = session.getSuggester(ADDREPLICA);
     SolrRequest op = suggester
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1")
-        .getOperation();
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
+        .getSuggestion();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
     suggester = suggester
         .getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1");
-    op = suggester.getOperation();
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"));
+    op = suggester.getSuggestion();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
 
     suggester = suggester
         .getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1");
-    op = suggester.getOperation();
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"));
+    op = suggester.getSuggestion();
     assertNotNull(op);
     assertEquals("node2", op.getParams().get("node"));
   }
@@ -417,9 +1012,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'core_node2':{}}]}}}");
     Map m = (Map) Utils.getObjectByPath(replicaInfoMap, false, "127.0.0.1:60089_solr/compute_plan_action_test");
     m.put("shard1", Arrays.asList(
-        new Policy.ReplicaInfo("core_node1", "compute_plan_action_test", "shard1", Collections.emptyMap()),
-        new Policy.ReplicaInfo("core_node2", "compute_plan_action_test", "shard1", Collections.emptyMap())
-    ));
+        new ReplicaInfo("core_node1", "core_node1", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap()),
+        new ReplicaInfo("core_node2", "core_node2", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap())));
 
     Map<String, Map<String, Object>> tagsMap = (Map) Utils.fromJSONString("{" +
         "      '127.0.0.1:60099_solr':{" +
@@ -430,35 +1024,36 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "            'freedisk':918005641216}}}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
-    Policy.Session session = policy.createSession(new ClusterDataProvider() {
+    Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
       @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-        return tagsMap.get(node);
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return replicaInfoMap.keySet();
+          }
+
+        };
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return (Map<String, Map<String, List<Policy.ReplicaInfo>>>) replicaInfoMap.get(node);
-      }
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            return tagsMap.get(node);
+          }
 
-      @Override
-      public Collection<String> getNodes() {
-        return replicaInfoMap.keySet();
-      }
-
-      @Override
-      public String getPolicyNameByCollection(String coll) {
-        return null;
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return (Map<String, Map<String, List<ReplicaInfo>>>) replicaInfoMap.get(node);
+          }
+        };
       }
     });
-
-    Policy.Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+    Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
-    SolrParams op = suggester.getOperation().getParams();
-    assertNotNull(op);
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
-    op = suggester.getOperation().getParams();
+    SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
   }
 
@@ -491,64 +1086,107 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, sysprop.rack: rack1}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
-    ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
-    ClusterDataProvider cdp = new ClusterDataProvider() {
+    SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
+    SolrCloudManager cdp = new DelegatingCloudManager(null) {
       @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-        return clusterDataProvider.getNodeValues(node, tags);
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            return cloudManager.getNodeStateProvider().getNodeValues(node, tags);
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return cloudManager.getNodeStateProvider().getReplicaInfo(node, keys);
+          }
+        };
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return clusterDataProvider.getReplicaInfo(node, keys);
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return cloudManager.getClusterStateProvider().getLiveNodes();
+          }
+
+          @Override
+          public String getPolicyNameByCollection(String coll) {
+            return "p1";
+          }
+        };
       }
 
-      @Override
-      public Collection<String> getNodes() {
-        return clusterDataProvider.getNodes();
-      }
 
-      @Override
-      public String getPolicyNameByCollection(String coll) {
-        return "p1";
-      }
     };
     Policy.Session session = policy.createSession(cdp);
 
     CollectionAdminRequest.AddReplica op = (CollectionAdminRequest.AddReplica) session
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "s1").getOperation();
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "s1")).getSuggestion();
     assertNotNull(op);
     assertEquals("node2", op.getNode());
   }
 
-  private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String clusterState) {
-    return new ClusterDataProvider() {
+  private SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, String clusterState) {
+    return new SolrCloudManager() {
+      ObjectCache objectCache = new ObjectCache();
+
       @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        tags.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
-        return result;
+      public ObjectCache getObjectCache() {
+        return objectCache;
+      }
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return nodeValues.keySet();
+          }
+
+        };
       }
 
       @Override
-      public Collection<String> getNodes() {
-        return nodeValues.keySet();
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            tags.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+            return result;
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return getReplicaDetails(node, clusterState);
+          }
+        };
       }
 
       @Override
-      public String getPolicyNameByCollection(String coll) {
+      public DistribStateManager getDistribStateManager() {
         return null;
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return getReplicaDetails(node, clusterState);
+      public DistributedQueueFactory getDistributedQueueFactory() {
+        return null;
       }
 
+      @Override
+      public SolrResponse request(SolrRequest req) throws IOException {
+        return null;
+      }
+
+      @Override
+      public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
+        return new byte[0];
+      }
     };
   }
+
   public void testEmptyClusterState(){
     String autoScaleJson =  " {'policies':{'c1':[{" +
         "        'replica':1," +
@@ -561,51 +1199,56 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    '127.0.0.1:50096_solr':{" +
         "      'cores':0," +
         "      'port':'50096'}}");
-    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+    SolrCloudManager dataProvider = new DelegatingCloudManager(null) {
       @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
-        return result;
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return new HashSet<>(Arrays.asList( "127.0.0.1:50097_solr", "127.0.0.1:50096_solr"));
+          }
+        };
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return getReplicaDetails(node, clusterState);
-      }
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+            return result;
+          }
 
-      @Override
-      public String getPolicyNameByCollection(String coll) {
-        return null;
-      }
-
-      @Override
-      public Collection<String> getNodes() {
-        return Arrays.asList( "127.0.0.1:50097_solr", "127.0.0.1:50096_solr");
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return getReplicaDetails(node, clusterState);
+          }
+        };
       }
     };
-    Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
-        "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, null);
-    assertTrue(locations.get("shard1").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
-    assertTrue(locations.get("shard2").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
+        "newColl", new AutoScalingConfig((Map<String, Object>)Utils.fromJSONString(autoScaleJson)),
+        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
+
+    assertTrue(locations.stream().allMatch(it -> it.node.equals("127.0.0.1:50096_solr")) );
   }
 
   public void testMultiReplicaPlacement() {
     String autoScaleJson = "{" +
-        "  'cluster-preferences': [" +
+        "  cluster-preferences: [" +
         "    { maximize : freedisk , precision: 50}," +
         "    { minimize : cores, precision: 2}" +
         "  ]," +
-        "  'cluster-policy': [" +
-        "    { replica : '0' , 'nodeRole': 'overseer'}," +
-        "    { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'" +
+        "  cluster-policy: [" +
+        "    { replica : '0' , nodeRole: overseer}," +
+        "    { replica: '<2', shard: '#ANY', node: '#ANY'" +
         "    }" +
         "  ]," +
-        "  'policies': {" +
-        "    'policy1': [" +
-        "      { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      { 'replica': '<2', 'shard': '#EACH', 'sysprop.rack': 'rack1'}" +
+        "  policies: {" +
+        "    policy1: [" +
+        "      { replica: '<2', shard: '#EACH', node: '#ANY'}," +
+        "      { replica: '<2', shard: '#EACH', sysprop.rack: rack1}" +
         "    ]" +
         "  }" +
         "}";
@@ -618,37 +1261,324 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:0, freedisk: 900, heap:16900, nodeRole:overseer, sysprop.rack:rack2}" +
         "}");
 
-    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+    SolrCloudManager cloudManager = new DelegatingCloudManager(null) {
       @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
-        return result;
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+            return result;
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return getReplicaDetails(node, clusterState);
+          }
+        };
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return getReplicaDetails(node, clusterState);
-      }
-
-      @Override
-      public String getPolicyNameByCollection(String coll) {
-        return null;
-      }
-
-      @Override
-      public Collection<String> getNodes() {
-        return Arrays.asList("node1", "node2", "node3", "node4");
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public Set<String> getLiveNodes() {
+            return new HashSet<>(Arrays.asList("node1", "node2", "node3", "node4"));
+          }
+        };
       }
     };
-    Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
-        "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, null);
-    assertTrue(locations.get("shard1").containsAll(ImmutableList.of("node2", "node1", "node3")));
-    assertTrue(locations.get("shard2").containsAll(ImmutableList.of("node2", "node1", "node3")));
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
+        "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
+        cloudManager, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3,0,0, null);
+    assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)) );
+  }
+
+  public void testMoveReplicaSuggester(){
+    String dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard2':[{'core_node2':{'type':'NRT'}}]," +
+        "        'shard1':[{'core_node1':{'type':'NRT'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':2}}}";
+    String autoScalingjson = "  '{cluster-policy':[" +
+        "    {      'cores':'<10',      'node':'#ANY'}," +
+        "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
+        "    {      'nodeRole':'overseer','replica':0}]," +
+        "  'cluster-preferences':[{'minimize':'cores'}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
+    Suggester suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    SolrRequest op = suggester.getSuggestion();
+    assertNotNull(op);
+    suggester = suggester.getSession().getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    op = suggester.getSuggestion();
+    assertNull(op);
+  }
+
+  public void testComputePlanAfterNodeAdded() {
+
+    String dataproviderdata = "{" +
+        "     liveNodes:[" +
+        "       '127.0.0.1:51078_solr'," +
+        "       '127.0.0.1:51147_solr']," +
+        "     replicaInfo:{" +
+        "       '127.0.0.1:51147_solr':{}," +
+        "       '127.0.0.1:51078_solr':{testNodeAdded:{shard1:[" +
+        "             { core_node3 : { type : NRT}}," +
+        "             { core_node4 : { type : NRT}}]}}}," +
+        "     nodeValues:{" +
+        "       '127.0.0.1:51147_solr':{" +
+        "         node:'127.0.0.1:51147_solr'," +
+        "         cores:0," +
+        "         freedisk : 880.5428657531738}," +
+        "       '127.0.0.1:51078_solr':{" +
+        "         node:'127.0.0.1:51078_solr'," +
+        "         cores:2," +
+        "         freedisk:880.5428695678711}}}";
+
+    String autoScalingjson = "cluster-preferences:[" +
+        "       {minimize : cores}," +
+        "       {'maximize':freedisk , precision:100}],    " +
+        " cluster-policy:[{cores:'<10',node:'#ANY'}," +
+        "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
+        "       { nodeRole:overseer,replica:0}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
+    Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+        .hint(Hint.TARGET_NODE, "127.0.0.1:51147_solr");
+    SolrRequest op = suggester.getSuggestion();
+    log.info("" + op);
+    assertNotNull(op);
+  }
+
+  public void testReplicaCountSuggestions() {
+    String dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard2':[{'core_node2':{'type':'NRT'}}]," +
+        "        'shard1':[{'core_node1':{'type':'NRT'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':2}}}";
+    String autoScalingjson = "  { cluster-policy:[" +
+        "    { cores :'<10', node :'#ANY'}," +
+        "    { replica :'<2',  node:'#ANY'}," +
+        "    { nodeRole : overseer, replica :0}]," +
+        "  cluster-preferences :[{ minimize : cores }]}";
+    List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
+        cloudManagerWithData(dataproviderdata));
+    assertFalse(l.isEmpty());
+
+    Map m = l.get(0).toMap(new LinkedHashMap<>());
+    assertEquals(1l, Utils.getObjectByPath(m, true, "violation/violation/delta"));
+    assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
+    assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
+    assertNotNull(Utils.getObjectByPath(m, false, "operation/command/move-replica"));
+    assertEquals("10.0.0.6:7574_solr", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("core_node2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+  }
+
+  //  @Ignore
+  public void testFreeDiskSuggestions() {
+    String dataproviderdata = "{" +
+        "  liveNodes:[node1,node2]," +
+        "  replicaInfo : {" +
+        "    node1:{}," +
+        "    node2:{mycoll1:{" +
+        "        shard1:[{r1:{type:NRT, INDEX.sizeInBytes:900}}]," +
+        "        shard2:[{r2:{type:NRT, INDEX.sizeInBytes:300}}]," +
+        "        shard3:[{r3:{type:NRT, INDEX.sizeInBytes:200}}]," +
+        "        shard4:[{r4:{type:NRT, INDEX.sizeInBytes:100}}]}}}" +
+        "    nodeValues : {" +
+        "    node1: { node : node1 , cores:0 , freedisk : 2000}," +
+        "    node2: { node : node2 , cores:4 , freedisk : 500}}}";
+
+
+    String autoScalingjson = "  { cluster-policy:[" +
+//        "    { cores :'<10', node :'#ANY'}," +
+//        "    { replica :'<2', shard:'#EACH' node:'#ANY'}," +
+        "    { replica :'0', freedisk:'<1000'}," +
+        "    { nodeRole : overseer, replica :0}]," +
+        "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(1, violations.size());
+    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(3, l.size());
+    Map m = l.get(0).toMap(new LinkedHashMap<>());
+    assertEquals("r4", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+
+    m = l.get(1).toMap(new LinkedHashMap<>());
+    assertEquals("r3", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+
+    m = l.get(2).toMap(new LinkedHashMap<>());
+    assertEquals("r2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
 
 
   }
 
+
+  public void testCoresSuggestions() {
+    String dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard1':[{'core_node1':{'type':'NRT'}}]," +
+        "        'shard2':[{'core_node2':{'type':'NRT'}}]," +
+        "        'shard3':[{'core_node3':{'type':'NRT'}}]," +
+        "        'shard4':[{'core_node4':{'type':'NRT'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':4}}}";
+    String autoScalingjson = "  { cluster-policy:[" +
+        "    { cores :'<3', node :'#ANY'}]," +
+        "  cluster-preferences :[{ minimize : cores }]}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertFalse(violations.isEmpty());
+    assertEquals(2l, violations.get(0).replicaCountDelta.longValue());
+
+    List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg,
+        cloudManagerWithData(dataproviderdata));
+    assertEquals(2, l.size());
+    for (Suggester.SuggestionInfo suggestionInfo : l) {
+      Map m = suggestionInfo.toMap(new LinkedHashMap<>());
+      assertEquals("10.0.0.6:7574_solr", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+      assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
+      assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
+    }
+
+  }
+
+  public void testSyspropSuggestions() {
+    String autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': '1', shard:'#EACH', sysprop.fs : 'ssd'}" +
+        "  ]" +
+        "}";
+
+
+    String dataproviderdata = "{" +
+        "  'liveNodes': [" +
+        "    'node1'," +
+        "    'node2'," +
+        "    'node3'" +
+        "  ]," +
+        "  'replicaInfo': {" +
+        "    'node1': {" +
+        "      'c1': {'s1': [{'r1': {'type': 'NRT'}, 'r2': {'type': 'NRT'}}]," +
+        "             's2': [{'r1': {'type': 'NRT'}, 'r2': {'type': 'NRT'}}]}," +
+        "    }" +
+        "  }," +
+        "    'nodeValues': {" +
+        "      'node1': {'cores': 2, 'freedisk': 334, 'sysprop.fs': 'slowdisk'}," +
+        "      'node2': {'cores': 2, 'freedisk': 749, 'sysprop.fs': 'slowdisk'}," +
+        "      'node3': {'cores': 0, 'freedisk': 262, 'sysprop.fs': 'ssd'}" +
+        "    }" +
+        "}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(2, suggestions.size());
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      Utils.getObjectByPath(suggestion ,true, "operation/move-replica/targetNode");
+    }
+  }
+
+  public void testPortSuggestions() {
+    String autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, shard:'#EACH', port : '8983'}" +
+        "  ]" +
+        "}";
+
+
+    String dataproviderdata = "{" +
+        "  'liveNodes': [" +
+        "    'node1:8983'," +
+        "    'node2:8984'," +
+        "    'node3:8985'" +
+        "  ]," +
+        "  'replicaInfo': {" +
+        "    'node1:8983': {" +
+        "      'c1': {" +
+        "        's1': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]," +
+        "        's2': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]" +
+        "      }" +
+        "    }" +
+        "  }," +
+        "  'nodeValues': {" +
+        "    'node1:8983': {" +
+        "      'cores': 4," +
+        "      'freedisk': 334," +
+        "      'port': 8983" +
+        "    }," +
+        "    'node2:8984': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1000," +
+        "      'port': 8984" +
+        "    }," +
+        "    'node3:8985': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1500," +
+        "      'port': 8985" +
+        "    }" +
+        "  }" +
+        "}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(4, suggestions.size());
+    for (Suggester.SuggestionInfo suggestionInfo : suggestions) {
+      assertEquals(suggestionInfo.operation.getPath(), "/c/c1");
+    }
+  }
 
 }

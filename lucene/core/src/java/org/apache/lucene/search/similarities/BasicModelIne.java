@@ -30,11 +30,11 @@ public class BasicModelIne extends BasicModel {
   public BasicModelIne() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn) {
     long N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
     double ne = N * (1 - Math.pow((N - 1) / (double)N, F));
-    return tfn * (float)(log2((N + 1) / (ne + 0.5)));
+    return tfn * log2((N + 1) / (ne + 0.5));
   }
 
   @Override

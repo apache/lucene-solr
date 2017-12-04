@@ -117,7 +117,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       TermsEnum termsEnum = in.intersect(automaton, bytes);
       assert termsEnum != null;
       assert bytes == null || bytes.isValid();
-      return new AssertingTermsEnum(termsEnum);
+      return new AssertingTermsEnum(termsEnum, hasFreqs());
     }
 
     @Override
@@ -135,10 +135,34 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public int getDocCount() throws IOException {
+      final int docCount = in.getDocCount();
+      assert docCount > 0;
+      return docCount;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      final long sumDf = in.getSumDocFreq();
+      assert sumDf >= getDocCount();
+      return sumDf;
+    }
+
+    @Override
+    public long getSumTotalTermFreq() throws IOException {
+      final long sumTtf = in.getSumTotalTermFreq();
+      if (hasFreqs() == false) {
+        assert sumTtf == in.getSumDocFreq();
+      }
+      assert sumTtf >= getSumDocFreq();
+      return sumTtf;
+    }
+
+    @Override
     public TermsEnum iterator() throws IOException {
       TermsEnum termsEnum = super.iterator();
       assert termsEnum != null;
-      return new AssertingTermsEnum(termsEnum);
+      return new AssertingTermsEnum(termsEnum, hasFreqs());
     }
 
     @Override
@@ -154,10 +178,12 @@ public class AssertingLeafReader extends FilterLeafReader {
     private enum State {INITIAL, POSITIONED, UNPOSITIONED};
     private State state = State.INITIAL;
     private final boolean delegateOverridesSeekExact;
+    private final boolean hasFreqs;
 
-    public AssertingTermsEnum(TermsEnum in) {
+    public AssertingTermsEnum(TermsEnum in, boolean hasFreqs) {
       super(in);
       delegateOverridesSeekExact = SEEK_EXACT.isOverriddenAsOf(in.getClass());
+      this.hasFreqs = hasFreqs;
     }
 
     @Override
@@ -210,14 +236,22 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int docFreq() throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "docFreq() called on unpositioned TermsEnum";
-      return super.docFreq();
+      final int df = super.docFreq();
+      assert df > 0;
+      return df;
     }
 
     @Override
     public long totalTermFreq() throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "totalTermFreq() called on unpositioned TermsEnum";
-      return super.totalTermFreq();
+      final long ttf = super.totalTermFreq();
+      if (hasFreqs) {
+        assert ttf >= docFreq();
+      } else {
+        assert ttf == docFreq();
+      }
+      return ttf;
     }
 
     @Override

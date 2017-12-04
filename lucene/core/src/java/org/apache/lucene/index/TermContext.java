@@ -141,11 +141,11 @@ public final class TermContext {
 
   /** Expert: Accumulate term statistics. */
   public void accumulateStatistics(final int docFreq, final long totalTermFreq) {
+    assert docFreq >= 0;
+    assert totalTermFreq >= 0;
+    assert docFreq <= totalTermFreq;
     this.docFreq += docFreq;
-    if (this.totalTermFreq >= 0 && totalTermFreq >= 0)
-      this.totalTermFreq += totalTermFreq;
-    else
-      this.totalTermFreq = -1;
+    this.totalTermFreq += totalTermFreq;
   }
 
   /**

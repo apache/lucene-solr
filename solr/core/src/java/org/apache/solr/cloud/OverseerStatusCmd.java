@@ -64,8 +64,8 @@ public class OverseerStatusCmd implements Cmd {
     NamedList stateUpdateQueueStats = new NamedList();
     NamedList workQueueStats = new NamedList();
     NamedList collectionQueueStats = new NamedList();
-    Overseer.Stats stats = ocmh.stats;
-    for (Map.Entry<String, Overseer.Stat> entry : stats.getStats().entrySet()) {
+    Stats stats = ocmh.stats;
+    for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
       String key = entry.getKey();
       NamedList<Object> lst = new SimpleOrderedMap<>();
       if (key.startsWith("collection_"))  {
@@ -74,10 +74,10 @@ public class OverseerStatusCmd implements Cmd {
         int errors = stats.getErrorCount(entry.getKey());
         lst.add("requests", successes);
         lst.add("errors", errors);
-        List<Overseer.FailedOp> failureDetails = stats.getFailureDetails(key);
+        List<Stats.FailedOp> failureDetails = stats.getFailureDetails(key);
         if (failureDetails != null) {
           List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
-          for (Overseer.FailedOp failedOp : failureDetails) {
+          for (Stats.FailedOp failedOp : failureDetails) {
             SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
             fail.add("request", failedOp.req.getProperties());
             fail.add("response", failedOp.resp.getResponse());

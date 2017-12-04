@@ -17,6 +17,8 @@
 package org.apache.solr.common.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +60,9 @@ public abstract class SnitchContext implements RemoteCallback {
     return session != null ? session.get(s) : null;
 
   }
+  public Map<String, Object> getNodeValues(String node, Collection<String> tags){
+    return Collections.emptyMap();
+  }
 
   public abstract Map getZkJson(String path) throws KeeperException, InterruptedException;
 
@@ -75,7 +80,8 @@ public abstract class SnitchContext implements RemoteCallback {
    * @param callback The callback to be called when the response is obtained from remote node.
    *                 If this is passed as null the entire response map will be added as tags
    */
-  public abstract void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) ;
+  @Deprecated
+  public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {};
 
 
   @Override

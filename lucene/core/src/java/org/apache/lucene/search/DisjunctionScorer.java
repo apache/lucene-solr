@@ -176,16 +176,6 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public final int freq() throws IOException {
-    DisiWrapper subMatches = getSubMatches();
-    int freq = 1;
-    for (DisiWrapper w = subMatches.next; w != null; w = w.next) {
-      freq += 1;
-    }
-    return freq;
-  }
-
-  @Override
   public final float score() throws IOException {
     return score(getSubMatches());
   }

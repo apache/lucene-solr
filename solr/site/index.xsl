@@ -23,6 +23,7 @@
   <xsl:param name="buildfiles"/>
   <xsl:param name="version"/>
   <xsl:param name="luceneJavadocUrl"/>
+  <xsl:param name="solrGuideVersion"/>
   
   <!--
     NOTE: This template matches the root element of any given input XML document!
@@ -74,7 +75,7 @@
             <li><a href="http://wiki.apache.org/solr">Wiki</a>: Additional documentation, especially focused on using Solr.</li>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
-            <li><a href="quickstart.html">Solr Quick Start</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>
+            <li><a href="https://lucene.apache.org/solr/guide/{$solrGuideVersion}/solr-tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>
             <li><a href="{$luceneJavadocUrl}index.html">Lucene Documentation</a></li>
           </ul>
         <h2>API Javadocs</h2>

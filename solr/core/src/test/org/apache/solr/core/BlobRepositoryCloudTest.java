@@ -31,6 +31,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.handler.TestBlobHandler;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
         .configure();
 //    Thread.sleep(2000);
     HashMap<String, String> params = new HashMap<>();
-    CollectionAdminRequest.createCollection(".system", null, 1, 1)
+    CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(cluster.getSolrClient());
     // test component will fail if it cant' find a blob with this data by this name
     TestBlobHandler.postData(cluster.getSolrClient(), findLiveNodeURI(), "testResource", ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));

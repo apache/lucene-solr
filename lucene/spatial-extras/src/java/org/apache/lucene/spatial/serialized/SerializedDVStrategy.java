@@ -141,6 +141,12 @@ public class SerializedDVStrategy extends SpatialStrategy {
           TwoPhaseIterator it = predicateValueSource.iterator(context, approximation);
           return new ConstantScoreScorer(this, score(), it);
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return predicateValueSource.isCacheable(ctx);
+        }
+
       };
     }
 
@@ -196,6 +202,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
       };
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, fieldName);
     }
 
     @Override

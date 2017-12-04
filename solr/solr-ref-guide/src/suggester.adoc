@@ -1,6 +1,4 @@
 = Suggester
-:page-shortname: suggester
-:page-permalink: suggester.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -213,7 +211,7 @@ When using `BlendedInfixSuggester` you can provide your own path where the index
 `minPrefixChars`::
 Minimum number of leading characters before PrefixQuery is used (the default is `4`). Prefixes shorter than this are indexed as character ngrams (increasing index size but making lookups faster).
 
-This implementation supports <<Context Filtering>> .
+This implementation supports <<Context Filtering>>.
 
 ==== FreeTextLookupFactory
 

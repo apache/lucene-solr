@@ -1057,7 +1057,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
-  
+
+
+  public void testSynonymQueryStyle() throws Exception {
+
+    Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
+    assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
+
+    q = QParser.getParser("tabby", req(params("df", "t_as_distinct_foo"))).getQuery();
+    assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
+
+    /*confirm autoGeneratePhraseQueries always builds OR queries*/
+    q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)", q.toString());
+
+    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_pick_best_foo:\"denim pant\" t_pick_best_foo:jean)", q.toString());
+
+  }
+
   @Test
   public void testBadRequestInSetQuery() throws SyntaxError {
     SolrQueryRequest req = req();

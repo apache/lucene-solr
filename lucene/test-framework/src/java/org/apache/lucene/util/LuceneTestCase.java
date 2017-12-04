@@ -1783,7 +1783,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void overrideDefaultQueryCache() {
     // we need to reset the query cache in an @BeforeClass so that tests that
     // instantiate an IndexSearcher in an @BeforeClass method use a fresh new cache
-    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25, context -> true));
+    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25, context -> true, random().nextBoolean() ? 1.1f : Float.POSITIVE_INFINITY));
     IndexSearcher.setDefaultQueryCachingPolicy(MAYBE_CACHE_POLICY);
   }
 
@@ -2025,15 +2025,9 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
-      assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
-    }
-    if (leftTerms.getSumDocFreq() != -1 && rightTerms.getSumDocFreq() != -1) {
-      assertEquals(info, leftTerms.getSumDocFreq(), rightTerms.getSumDocFreq());
-    }
-    if (leftTerms.getSumTotalTermFreq() != -1 && rightTerms.getSumTotalTermFreq() != -1) {
-      assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
-    }
+    assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
+    assertEquals(info, leftTerms.getSumDocFreq(), rightTerms.getSumDocFreq());
+    assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
     if (leftTerms.size() != -1 && rightTerms.size() != -1) {
       assertEquals(info, leftTerms.size(), rightTerms.size());
     }
@@ -2312,9 +2306,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   public void assertTermStatsEquals(String info, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum) throws IOException {
     assertEquals(info, leftTermsEnum.docFreq(), rightTermsEnum.docFreq());
-    if (leftTermsEnum.totalTermFreq() != -1 && rightTermsEnum.totalTermFreq() != -1) {
-      assertEquals(info, leftTermsEnum.totalTermFreq(), rightTermsEnum.totalTermFreq());
-    }
+    assertEquals(info, leftTermsEnum.totalTermFreq(), rightTermsEnum.totalTermFreq());
   }
   
   /** 

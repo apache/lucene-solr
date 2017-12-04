@@ -75,6 +75,11 @@ public class FunctionQuery extends Query {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context)).explain(doc);
     }
@@ -116,11 +121,6 @@ public class FunctionQuery extends Query {
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return 1;
     }
 
     public Explanation explain(int doc) throws IOException {

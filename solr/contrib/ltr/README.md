@@ -14,7 +14,7 @@ For information on how to get started with solr ltr please see:
 
 For information on how to get started with solr please see:
  * [solr/README.txt](../../README.txt)
- * [Solr Quick Start](http://lucene.apache.org/solr/quickstart.html)
+ * [Solr Tutorial](https://lucene.apache.org/solr/guide/solr-tutorial.html)
 
 # How To Contribute
 

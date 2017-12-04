@@ -48,23 +48,23 @@ public class AxiomaticF2LOG extends Axiomatic {
    * compute the term frequency component
    */
   @Override
-  protected float tf(BasicStats stats, float freq, float docLen) {
-    return 1f;
+  protected double tf(BasicStats stats, double freq, double docLen) {
+    return 1.0;
   }
 
   /**
    * compute the document length component
    */
   @Override
-  protected float ln(BasicStats stats, float freq, float docLen) {
-    return 1f;
+  protected double ln(BasicStats stats, double freq, double docLen) {
+    return 1.0;
   }
 
   /**
    * compute the mixed term frequency and document length component
    */
   @Override
-  protected float tfln(BasicStats stats, float freq, float docLen) {
+  protected double tfln(BasicStats stats, double freq, double docLen) {
     return freq / (freq + this.s + this.s * docLen / stats.getAvgFieldLength());
   }
 
@@ -72,15 +72,15 @@ public class AxiomaticF2LOG extends Axiomatic {
    * compute the inverted document frequency component
    */
   @Override
-  protected float idf(BasicStats stats, float freq, float docLen) {
-    return (float) Math.log((stats.getNumberOfDocuments() + 1.0) / stats.getDocFreq());
+  protected double idf(BasicStats stats, double freq, double docLen) {
+    return Math.log((stats.getNumberOfDocuments() + 1.0) / stats.getDocFreq());
   }
 
   /**
    * compute the gamma component
    */
   @Override
-  protected float gamma(BasicStats stats, float freq, float docLen) {
-    return 0f;
+  protected double gamma(BasicStats stats, double freq, double docLen) {
+    return 0.0;
   }
 }

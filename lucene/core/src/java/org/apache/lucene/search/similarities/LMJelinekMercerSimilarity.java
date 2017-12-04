@@ -31,7 +31,9 @@ import org.apache.lucene.search.Explanation;
  * <p>The model has a single parameter, &lambda;. According to said paper, the
  * optimal value depends on both the collection and the query. The optimal value
  * is around {@code 0.1} for title queries and {@code 0.7} for long queries.</p>
- *
+ * <p>Values should be between 0 (exclusive) and 1 (inclusive). Values near zero act score more
+ * like a conjunction (coordinate level matching), whereas values near 1 behave
+ * the opposite (more like pure disjunction).
  * @lucene.experimental
  */
 public class LMJelinekMercerSimilarity extends LMSimilarity {
@@ -42,27 +44,33 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   public LMJelinekMercerSimilarity(
       CollectionModel collectionModel, float lambda) {
     super(collectionModel);
+    if (Float.isNaN(lambda) || lambda <= 0 || lambda > 1) {
+      throw new IllegalArgumentException("lambda must be in the range (0 .. 1]");
+    }
     this.lambda = lambda;
   }
 
   /** Instantiates with the specified &lambda; parameter. */
   public LMJelinekMercerSimilarity(float lambda) {
+    if (Float.isNaN(lambda) || lambda <= 0 || lambda > 1) {
+      throw new IllegalArgumentException("lambda must be in the range (0 .. 1]");
+    }
     this.lambda = lambda;
   }
   
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
+  protected double score(BasicStats stats, double freq, double docLen) {
     return stats.getBoost() *
-        (float)Math.log(1 +
+            Math.log(1 +
             ((1 - lambda) * freq / docLen) /
             (lambda * ((LMStats)stats).getCollectionProbability()));
   }
   
   @Override
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
-      float freq, float docLen) {
-    if (stats.getBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getBoost(), "boost"));
+      double freq, double docLen) {
+    if (stats.getBoost() != 1.0d) {
+      subs.add(Explanation.match((float) stats.getBoost(), "boost"));
     }
     subs.add(Explanation.match(lambda, "lambda"));
     super.explain(subs, stats, doc, freq, docLen);

@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -41,10 +43,12 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final ZkStateReader zkStateReader;
+  protected final SolrCloudManager dataProvider;
+  protected final DistribStateManager stateManager;
 
-  public CollectionMutator(ZkStateReader zkStateReader) {
-    this.zkStateReader = zkStateReader;
+  public CollectionMutator(SolrCloudManager dataProvider) {
+    this.dataProvider = dataProvider;
+    this.stateManager = dataProvider.getDistribStateManager();
   }
 
   public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {

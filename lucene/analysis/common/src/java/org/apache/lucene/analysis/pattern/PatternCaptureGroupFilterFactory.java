@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @see PatternCaptureGroupTokenFilter
+ * @since 4.4.0
  */
 public class PatternCaptureGroupFilterFactory extends TokenFilterFactory {
   private Pattern pattern;

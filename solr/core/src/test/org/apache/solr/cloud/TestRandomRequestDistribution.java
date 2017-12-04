@@ -98,7 +98,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
           String registry = core.getCoreMetricManager().getRegistryName();
           Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
           // sanity check
-          assertEquals(core.getName() + " has already recieved some requests?",
+          assertEquals(core.getName() + " has already received some requests?",
                        0, cnt.getCount());
           counters.put(core.getName(), cnt);
         }

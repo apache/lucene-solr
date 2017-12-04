@@ -56,4 +56,19 @@ public abstract class DoubleValues {
     };
   }
 
+  /**
+   * An empty DoubleValues instance that always returns {@code false} from {@link #advanceExact(int)}
+   */
+  public static final DoubleValues EMPTY = new DoubleValues() {
+    @Override
+    public double doubleValue() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceExact(int doc) throws IOException {
+      return false;
+    }
+  };
+
 }

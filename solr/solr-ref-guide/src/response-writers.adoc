@@ -1,6 +1,4 @@
 = Response Writers
-:page-shortname: response-writers
-:page-permalink: response-writers.html
 :page-children: velocity-response-writer
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

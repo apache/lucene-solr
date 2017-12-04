@@ -22,6 +22,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -82,6 +84,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    log.debug("### Before decommission: " + collection);
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
@@ -101,8 +105,20 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertTrue(status.getCoreStatus().size() == 0);
     }
 
-    //let's do it back
-    createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE).processAsync("001", cloudClient);
+    Thread.sleep(5000);
+    collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    log.debug("### After decommission: " + collection);
+    // check what are replica states on the decommissioned node
+    List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
+    if (replicas == null) {
+      replicas = Collections.emptyList();
+    }
+    log.debug("### Existing replicas on decommissioned node: " + replicas);
+
+    //let's do it back - this time wait for recoveries
+    CollectionAdminRequest.AsyncCollectionAdminRequest replaceNodeRequest = createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE);
+    replaceNodeRequest.setWaitForFinalState(true);
+    replaceNodeRequest.processAsync("001", cloudClient);
     requestStatus = CollectionAdminRequest.requestStatus("001");
 
     for (int i = 0; i < 200; i++) {
@@ -119,13 +135,34 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals("Expecting no cores but found some: " + status.getCoreStatus(), 0, status.getCoreStatus().size());
     }
-    
-    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+
+    collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());
     for (Slice s:collection.getSlices()) {
       assertEquals(create.getNumNrtReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
       assertEquals(create.getNumTlogReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
       assertEquals(create.getNumPullReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    }
+    // make sure all newly created replicas on node are active
+    List<Replica> newReplicas = collection.getReplicas(node2bdecommissioned);
+    replicas.forEach(r -> {
+      for (Iterator<Replica> it = newReplicas.iterator(); it.hasNext(); ) {
+        Replica nr = it.next();
+        if (nr.getName().equals(r.getName())) {
+          it.remove();
+        }
+      }
+    });
+    assertFalse(newReplicas.isEmpty());
+    for (Replica r : newReplicas) {
+      assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
+    }
+    // make sure all replicas on emptyNode are not active
+    replicas = collection.getReplicas(emptyNode);
+    if (replicas != null) {
+      for (Replica r : replicas) {
+        assertFalse(r.toString(), Replica.State.ACTIVE.equals(r.getState()));
+      }
     }
   }
 

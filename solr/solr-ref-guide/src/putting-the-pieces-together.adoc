@@ -1,6 +1,4 @@
 = Putting the Pieces Together
-:page-shortname: putting-the-pieces-together
-:page-permalink: putting-the-pieces-together.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -56,7 +54,7 @@ Handling text properly will make your users happy by providing them with the bes
 
 One technique is using a text field as a catch-all for keyword searching. Most users are not sophisticated about their searches and the most common search is likely to be a simple keyword search. You can use `copyField` to take a variety of fields and funnel them all into a single text field for keyword searches.
 
-In the schema.xml file for the "```techproducts```" example included with Solr, `copyField` declarations are used to dump the contents of `cat`, `name`, `manu`, `features`, and `includes` into a single field, `text`. In addition, it could be a good idea to copy `ID` into `text` in case users wanted to search for a particular product by passing its product number to a keyword search.
+In the `schema.xml` file for the "```techproducts```" example included with Solr, `copyField` declarations are used to dump the contents of `cat`, `name`, `manu`, `features`, and `includes` into a single field, `text`. In addition, it could be a good idea to copy `ID` into `text` in case users wanted to search for a particular product by passing its product number to a keyword search.
 
 Another technique is using `copyField` to use the same field in different ways. Suppose you have a field that is a list of authors, like this:
 

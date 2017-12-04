@@ -1,6 +1,4 @@
 = Function Queries
-:page-shortname: function-queries
-:page-permalink: function-queries.html
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -31,7 +29,7 @@ Functions must be expressed as function calls (for example, `sum(a,b)` instead o
 
 There are several ways of using function queries in a Solr query:
 
-* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>> . For example:
+* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>>. For example:
 +
 [source,text]
 ----
@@ -47,7 +45,7 @@ sort=div(popularity,price) desc, score desc
 +
 [source,text]
 ----
-&fl=sum(x, y),id,a,b,c,score
+&fl=sum(x, y),id,a,b,c,score&wt=xml
 ----
 +
 the output would be:
@@ -82,9 +80,10 @@ The table below summarizes the functions available for function queries.
 === abs Function
 Returns the absolute value of the specified value or function.
 
-*Syntax Example*
+*Syntax Examples*
 
-* `abs(x)` `abs(-5)`
+* `abs(x)`
+* `abs(-5)`
 
 === childfield(field) Function
 Returns the value of the given field for one of the matched child docs when searching by <<other-parsers.adoc#block-join-parent-query-parser,{!parent}>>. It can be used only in `sort` parameter.
@@ -113,9 +112,10 @@ Specifies a floating point constant.
 === def Function
 `def` is short for default. Returns the value of field "field", or if the field does not exist, returns the default value specified. Yields the first value where `exists()==true`.
 
-*Syntax Example*
+*Syntax Examples*
 
-* `def(rating,5)`: This `def()` function returns the rating, or if no rating specified in the doc, returns 5 `def(myfield, 1.0):` equivalent to `if(exists(myfield),myfield,1.0)`
+* `def(rating,5)`: This `def()` function returns the rating, or if no rating specified in the doc, returns 5
+* `def(myfield, 1.0):` equivalent to `if(exists(myfield),myfield,1.0)`
 
 === div Function
 Divides one value or function by another. `div(x,y)` divides `x` by `y`.
@@ -224,7 +224,7 @@ If the value of `x` does not fall between `min` and `max`, then either the value
 ** `map(x,0,0,1)`: Changes any values of 0 to 1. This can be useful in handling default 0 values.
 * `map(x,min,max,target,default)`
 ** `map(x,0,100,1,-1)`: Changes any values between `0` and `100` to `1`, and all other values to` -1`.
-* `map(x,0,100,sum(x,599),docfreq(text,solr))`: Changes any values between `0` and `100` to x+599, and all other values to frequency of the term 'solr' in the field text.
+** `map(x,0,100,sum(x,599),docfreq(text,solr))`: Changes any values between `0` and `100` to x+599, and all other values to frequency of the term 'solr' in the field text.
 
 === max Function
 Returns the maximum numeric value of multiple nested functions or constants, which are specified as arguments: `max(x,y,...)`. The `max` function can also be useful for "bottoming out" another function or field at some specified constant.
@@ -258,7 +258,7 @@ Arguments may be the name of a `DatePointField`, `TrieDateField`, or date math b
 
 * `ms()`: Equivalent to `ms(NOW)`, number of milliseconds since the epoch.
 * `ms(a):` Returns the number of milliseconds since the epoch that the argument represents.
-* `ms(a,b)` : Returns the number of milliseconds that b occurs before a (that is, a - b)
+* `ms(a,b)`: Returns the number of milliseconds that b occurs before a (that is, a - b)
 
 *Syntax Examples*
 
@@ -330,7 +330,7 @@ Returns the product of multiple values or functions, which are specified in a co
 
 * `product(x,y,...)`
 * `product(x,2)`
-* `product(x,y)mul(x,y)`
+* `mul(x,y)`
 
 === query Function
 Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> through the `v` key.
@@ -379,9 +379,11 @@ The Square Euclidean distance calculates the 2-norm (Euclidean distance) but doe
 === sqrt Function
 Returns the square root of the specified value or function.
 
-*Syntax Example*
+*Syntax Examples*
 
-* `sqrt(x)sqrt(100)sqrt(sum(x,100))`
+* `sqrt(x)`
+* `sqrt(100)`
+* `sqrt(sum(x,100))`
 
 === strdist Function
 Calculate the distance between two strings. Uses the Lucene spell checker `StringDistance` interface and supports all of the implementations available in that package, plus allows applications to plug in their own via Solr's resource loading capabilities. `strdist` takes (string1, string2, distance measure).
@@ -410,8 +412,8 @@ Returns the sum of multiple values or functions, which are specified in a comma-
 
 *Syntax Examples*
 
-* `sum(x,y,...) sum(x,1)`
-* `sum(x,y)`
+* `sum(x,y,...)`
+* `sum(x,1)`
 * `sum(sqrt(x),log(y),z,0.5)`
 * `add(x,y)`
 
@@ -497,6 +499,7 @@ Returns `true` if any member of the field exists.
 5 comparison functions: Greater Than, Greater Than or Equal, Less Than, Less Than or Equal, Equal
 
 *Syntax Example*
+
 * `if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
 
 == Example Function Queries
@@ -527,7 +530,7 @@ http://localhost:8983/solr/collection_name/select?q=*:*&sort=dist(2, point1, poi
 
 Sort by function also supports pseudo-fields: fields can be generated dynamically and return results as though it was normal field in the index. For example,
 
-`&fl=id,sum(x, y),score`
+`&fl=id,sum(x, y),score&wt=xml`
 
 would return:
 

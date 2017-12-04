@@ -229,10 +229,6 @@ public abstract class LTRScoringModel {
     return true;
   }
 
-  public boolean hasParams() {
-    return !((params == null) || params.isEmpty());
-  }
-
   public Collection<Feature> getAllFeatures() {
     return allFeatures;
   }

@@ -51,5 +51,9 @@ public interface BooleanValueStream extends AnalyticsValueStream {
     public void streamObjects(Consumer<Object> cons) {
       streamBooleans((boolean val) -> cons.accept(val));
     }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
   }
 }

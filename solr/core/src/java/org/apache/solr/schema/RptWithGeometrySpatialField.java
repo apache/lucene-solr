@@ -187,6 +187,11 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
 
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return targetValueSource.isCacheable(ctx);
+    }
+
   }
 
   public static final String CACHE_KEY_PREFIX = "perSegSpatialFieldCache_";//then field name

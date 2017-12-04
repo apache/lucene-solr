@@ -203,13 +203,20 @@ public class MultiPhraseQuery extends Query {
             termContext = TermContext.build(context, term);
             termContexts.put(term, termContext);
           }
-          allTermStats.add(searcher.termStatistics(term, termContext));
+          TermStatistics termStatistics = searcher.termStatistics(term, termContext);
+          if (termStatistics != null) {
+            allTermStats.add(termStatistics);
+          }
         }
       }
-      stats = similarity.computeWeight(
+      if (allTermStats.isEmpty()) {
+        stats = null; // none of the terms were found, we won't use sim at all
+      } else {
+        stats = similarity.computeWeight(
           boost,
           searcher.collectionStatistics(field),
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+      }
     }
 
     @Override
@@ -285,12 +292,17 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
-          float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
+          float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
           SimScorer docScorer = similarity.simScorer(stats, context);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);

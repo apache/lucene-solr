@@ -36,6 +36,7 @@ import java.util.Map;
  *     &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 4.8.0
  */
 public class TruncateTokenFilterFactory extends TokenFilterFactory {
 

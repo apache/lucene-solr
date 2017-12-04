@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -34,6 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.SkipExistingDocumentsProcessorFactory.SkipExistingDocumentsUpdateProcessor;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -41,6 +43,11 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
   private BytesRef docId = new BytesRef();
   private SolrQueryRequest defaultRequest = new LocalSolrQueryRequest(null, new NamedList());
+  
+  @BeforeClass
+  public static void beforeClass() {
+    SolrTestCaseJ4.assumeWorkingMockito();
+  }
 
   // Tests for logic in the factory
 

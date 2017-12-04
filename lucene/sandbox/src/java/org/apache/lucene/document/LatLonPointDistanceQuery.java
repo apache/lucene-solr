@@ -118,6 +118,11 @@ final class LatLonPointDistanceQuery extends Query {
       }
 
       @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
+      @Override
       public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
         PointValues values = reader.getPointValues(field);

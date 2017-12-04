@@ -18,8 +18,8 @@ package org.apache.lucene.queries.payloads;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -29,7 +29,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.spans.FilterSpans;
@@ -42,28 +41,25 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A Query class that uses a {@link PayloadFunction} to modify the score of a wrapped SpanQuery
- *
- * NOTE: In order to take advantage of this with the default scoring implementation
- * ({@link ClassicSimilarity}), you must override {@link ClassicSimilarity#scorePayload(int, int, int, BytesRef)},
- * which returns 1 by default.
- *
- * @see org.apache.lucene.search.similarities.Similarity.SimScorer#computePayloadFactor(int, int, int, BytesRef)
  */
 public class PayloadScoreQuery extends SpanQuery {
 
   private final SpanQuery wrappedQuery;
   private final PayloadFunction function;
+  private final PayloadDecoder decoder;
   private final boolean includeSpanScore;
 
   /**
    * Creates a new PayloadScoreQuery
    * @param wrappedQuery the query to wrap
    * @param function a PayloadFunction to use to modify the scores
+   * @param decoder a PayloadDecoder to convert payloads into float values
    * @param includeSpanScore include both span score and payload score in the scoring algorithm
    */
-  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, boolean includeSpanScore) {
+  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, PayloadDecoder decoder, boolean includeSpanScore) {
     this.wrappedQuery = Objects.requireNonNull(wrappedQuery);
     this.function = Objects.requireNonNull(function);
+    this.decoder = Objects.requireNonNull(decoder);
     this.includeSpanScore = includeSpanScore;
   }
 
@@ -72,8 +68,8 @@ public class PayloadScoreQuery extends SpanQuery {
    * @param wrappedQuery the query to wrap
    * @param function a PayloadFunction to use to modify the scores
    */
-  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function) {
-    this(wrappedQuery, function, true);
+  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, PayloadDecoder decoder) {
+    this(wrappedQuery, function, decoder, true);
   }
 
   @Override
@@ -85,7 +81,7 @@ public class PayloadScoreQuery extends SpanQuery {
   public Query rewrite(IndexReader reader) throws IOException {
     Query matchRewritten = wrappedQuery.rewrite(reader);
     if (wrappedQuery != matchRewritten && matchRewritten instanceof SpanQuery) {
-      return new PayloadScoreQuery((SpanQuery)matchRewritten, function, includeSpanScore);
+      return new PayloadScoreQuery((SpanQuery)matchRewritten, function, decoder, includeSpanScore);
     }
     return super.rewrite(reader);
   }
@@ -120,16 +116,13 @@ public class PayloadScoreQuery extends SpanQuery {
   
   private boolean equalsTo(PayloadScoreQuery other) {
     return wrappedQuery.equals(other.wrappedQuery) && 
-           function.equals(other.function) && (includeSpanScore == other.includeSpanScore);
+           function.equals(other.function) && (includeSpanScore == other.includeSpanScore) &&
+           Objects.equals(decoder, other.decoder);
   }
 
   @Override
   public int hashCode() {
-    int result = classHash();
-    result = 31 * result + Objects.hashCode(wrappedQuery);
-    result = 31 * result + Objects.hashCode(function);
-    result = 31 * result + Objects.hashCode(includeSpanScore);
-    return result;
+    return Objects.hash(wrappedQuery, function, decoder, includeSpanScore);
   }
 
   private class PayloadSpanWeight extends SpanWeight {
@@ -157,8 +150,13 @@ public class PayloadScoreQuery extends SpanQuery {
       if (spans == null)
         return null;
       SimScorer docScorer = innerWeight.getSimScorer(context);
-      PayloadSpans payloadSpans = new PayloadSpans(spans, docScorer);
+      PayloadSpans payloadSpans = new PayloadSpans(spans, decoder);
       return new PayloadSpanScorer(this, payloadSpans, docScorer);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return innerWeight.isCacheable(ctx);
     }
 
     @Override
@@ -172,7 +170,7 @@ public class PayloadScoreQuery extends SpanQuery {
       if (scorer == null || scorer.iterator().advance(doc) != doc)
         return Explanation.noMatch("No match");
 
-      scorer.freq();  // force freq calculation
+      scorer.score();  // force freq calculation
       Explanation payloadExpl = scorer.getPayloadExplanation();
 
       if (includeSpanScore) {
@@ -187,13 +185,13 @@ public class PayloadScoreQuery extends SpanQuery {
 
   private class PayloadSpans extends FilterSpans implements SpanCollector {
 
-    private final SimScorer docScorer;
+    private final PayloadDecoder decoder;
     public int payloadsSeen;
     public float payloadScore;
 
-    private PayloadSpans(Spans in, SimScorer docScorer) {
+    private PayloadSpans(Spans in, PayloadDecoder decoder) {
       super(in);
-      this.docScorer = docScorer;
+      this.decoder = decoder;
     }
     
     @Override
@@ -210,9 +208,7 @@ public class PayloadScoreQuery extends SpanQuery {
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
       BytesRef payload = postings.getPayload();
-      if (payload == null)
-        return;
-      float payloadFactor = docScorer.computePayloadFactor(docID(), in.startPosition(), in.endPosition(), payload);
+      float payloadFactor = decoder.computePayloadFactor(payload);
       payloadScore = function.currentScore(docID(), getField(), in.startPosition(), in.endPosition(),
                                             payloadsSeen, payloadScore, payloadFactor);
       payloadsSeen++;

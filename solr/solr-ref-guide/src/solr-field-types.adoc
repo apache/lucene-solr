@@ -1,6 +1,4 @@
 = Solr Field Types
-:page-shortname: solr-field-types
-:page-permalink: solr-field-types.html
 :page-children: field-type-definitions-and-properties, field-types-included-with-solr, working-with-currencies-and-exchange-rates, working-with-dates, working-with-enum-fields, working-with-external-files-and-processes, field-properties-by-use-case
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

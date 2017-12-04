@@ -51,11 +51,6 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     }
 
     @Override
-    public int freq() throws IOException {
-      return 1;
-    }
-
-    @Override
     public DocIdSetIterator iterator() {
       return it;
     }

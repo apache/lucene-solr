@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
 import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTOSCALING_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
@@ -78,6 +79,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -187,6 +189,8 @@ public class CoreContainer {
   protected MetricsHandler metricsHandler;
 
   protected MetricsCollectorHandler metricsCollectorHandler;
+
+  protected AutoscalingHistoryHandler autoscalingHistoryHandler;
 
 
   // Bits for the state variable.
@@ -531,6 +535,7 @@ public class CoreContainer {
     coreAdminHandler   = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     metricsHandler = createHandler(METRICS_PATH, MetricsHandler.class.getName(), MetricsHandler.class);
+    autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
     // may want to add some configuration here in the future
     metricsCollectorHandler.init(null);
@@ -544,9 +549,9 @@ public class CoreContainer {
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.node);
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jvm);
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jetty);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 
@@ -742,6 +747,11 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
       zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
+      try {
+        zkSys.zkController.removeEphemeralLiveNode();
+      } catch (Exception e) {
+        log.warn("Error removing live node. Continuing to close CoreContainer", e);
+      }
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
       }
@@ -940,6 +950,7 @@ public class CoreContainer {
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
         core = createFromDescriptor(cd, true, newCollection);
+        coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
       } finally {
         solrCores.removeFromPendingOps(cd.getName());
       }
@@ -956,6 +967,8 @@ public class CoreContainer {
           Thread.currentThread().interrupt();
           SolrException.log(log, null, e);
         } catch (KeeperException e) {
+          SolrException.log(log, null, e);
+        } catch (Exception e) {
           SolrException.log(log, null, e);
         }
       }
@@ -1018,10 +1031,10 @@ public class CoreContainer {
       MDCLoggingContext.setCoreDescriptor(this, dcore);
       SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
-        zkSys.getZkController().preRegister(dcore);
+        zkSys.getZkController().preRegister(dcore, publishState);
       }
 
-      ConfigSet coreConfig = coreConfigService.getConfig(dcore);
+      ConfigSet coreConfig = getConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       try {
@@ -1055,6 +1068,21 @@ public class CoreContainer {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  public boolean isSharedFs(CoreDescriptor cd) {
+    try (SolrCore core = this.getCore(cd.getName())) {
+      if (core != null) {
+        return core.getDirectoryFactory().isSharedStorage();
+      } else {
+        ConfigSet configSet = getConfigSet(cd);
+        return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null).isSharedStorage();
+      }
+    }
+  }
+
+  private ConfigSet getConfigSet(CoreDescriptor cd) {
+    return coreConfigService.getConfig(cd);
   }
   
   /**
@@ -1387,6 +1415,8 @@ public class CoreContainer {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       }
     }
   }
@@ -1628,7 +1658,45 @@ public class CoreContainer {
   public TransientSolrCoreCache getTransientCache() {
     return solrCores.getTransientCacheHandler();
   }
-  
+
+
+  /**
+   *
+   * @param cd CoreDescriptor, presumably a deficient one
+   * @param prop The property that needs to be repaired.
+   * @return true if we were able to successfuly perisist the repaired coreDescriptor, false otherwise.
+   *
+   * See SOLR-11503, This can be removed when there's no chance we'll need to upgrade a
+   * Solr isntallation createged with legacyCloud=true from 6.6.1 through 7.1
+   */
+  public boolean repairCoreProperty(CoreDescriptor cd, String prop) {
+    // So far, coreNodeName is the only property that we need to repair, this may get more complex as other properties
+    // are added.
+
+    if (CoreDescriptor.CORE_NODE_NAME.equals(prop) == false) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          String.format(Locale.ROOT,"The only supported property for repair is currently [%s]",
+              CoreDescriptor.CORE_NODE_NAME));
+    }
+
+    // Try to read the coreNodeName from the cluster state.
+
+    String coreName = cd.getName();
+    DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
+    for (Replica rep : coll.getReplicas()) {
+      if (coreName.equals(rep.getCoreName())) {
+        log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. " +
+            "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1.",
+            rep.getCoreName(), rep.getName());
+        cd.getCloudDescriptor().setCoreNodeName(rep.getName());
+        coresLocator.persist(this, cd);
+        return true;
+      }
+    }
+    log.error("Could not repair coreNodeName in core.properties file for core {}", coreName);
+    return false;
+  }
+
 }
 
 class CloserThread extends Thread {

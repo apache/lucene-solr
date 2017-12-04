@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -59,22 +60,31 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    return zkStateReader.getClusterState().getCollectionRef(collection);
+    ClusterState clusterState = zkStateReader.getClusterState();
+    if (clusterState != null) {
+      return clusterState.getCollectionRef(collection);
+    } else {
+      return null;
+    }
   }
   public ZkStateReader getZkStateReader(){
     return zkStateReader;
   }
 
   @Override
-  public Set<String> liveNodes() {
-    return zkStateReader.getClusterState().getLiveNodes();
+  public Set<String> getLiveNodes() {
+    ClusterState clusterState = zkStateReader.getClusterState();
+    if (clusterState != null) {
+      return clusterState.getLiveNodes();
+    } else {
+      return Collections.emptySet();
+    }
   }
 
 
   @Override
-  public String getAlias(String alias) {
-    Aliases aliases = zkStateReader.getAliases();
-    return aliases.getCollectionAlias(alias);
+  public List<String> resolveAlias(String alias) {
+    return zkStateReader.getAliases().resolveAliases(alias); // if not an alias, returns itself
   }
 
   @Override
@@ -84,25 +94,30 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public Object getClusterProperty(String propertyName, String def) {
+  public <T> T getClusterProperty(String propertyName, T def) {
     Map<String, Object> props = zkStateReader.getClusterProperties();
     if (props.containsKey(propertyName)) {
-      return props.get(propertyName);
+      return (T)props.get(propertyName);
     }
     return def;
   }
 
   @Override
-  public String getCollectionName(String name) {
-    Aliases aliases = zkStateReader.getAliases();
-    if (aliases != null) {
-      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
-      if (collectionAliases != null && collectionAliases.containsKey(name)) {
-        name = collectionAliases.get(name);
-      }
-    }
-    return name;
+  public ClusterState getClusterState() throws IOException {
+    return zkStateReader.getClusterState();
   }
+
+  @Override
+  public Map<String, Object> getClusterProperties() {
+    return zkStateReader.getClusterProperties();
+  }
+
+  @Override
+  public String getPolicyNameByCollection(String coll) {
+    ClusterState.CollectionRef state = getState(coll);
+    return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
+  }
+
   /**
    * Download a named config from Zookeeper to a location on the filesystem
    * @param configName    the name of the config

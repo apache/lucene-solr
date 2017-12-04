@@ -40,6 +40,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -51,7 +52,7 @@ import org.apache.lucene.util.Version;
  * items in the list. If a test case fails, the name of the Similarity that
  * caused the failure is returned as part of the assertion error message.</p>
  * <p>Unit testing is performed by constructing statistics manually and calling
- * the {@link SimilarityBase#score(BasicStats, float, float)} method of the
+ * the {@link SimilarityBase#score(BasicStats, double, double)} method of the
  * Similarities. The statistics represent corner cases of corpus distributions.
  * </p>
  * <p>For the integration tests, a small (8-document) collection is indexed. The
@@ -183,7 +184,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   
   private CollectionStatistics toCollectionStats(BasicStats stats) {
-    return new CollectionStatistics(stats.field, stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
+    long sumTtf = stats.getNumberOfFieldTokens();
+    long sumDf;
+    if (sumTtf == -1) {
+      sumDf = TestUtil.nextLong(random(), stats.getNumberOfDocuments(), 2L * stats.getNumberOfDocuments());
+    } else {
+      sumDf = TestUtil.nextLong(random(), Math.min(stats.getNumberOfDocuments(), sumTtf), sumTtf);
+    }
+    int docCount = Math.toIntExact(Math.min(sumDf, stats.getNumberOfDocuments()));
+    int maxDoc = TestUtil.nextInt(random(), docCount, docCount + 10);
+
+    return new CollectionStatistics(stats.field, maxDoc, docCount, sumTtf, sumDf);
   }
   
   private TermStatistics toTermStats(BasicStats stats) {
@@ -191,17 +202,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   /**
    * The generic test core called by all unit test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and checks if the score is valid; i.e. it
    * is a finite positive real number.
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
       BasicStats realStats = (BasicStats) sim.computeWeight(
-          stats.getBoost(),
+          (float)stats.getBoost(),
           toCollectionStats(stats), 
           toTermStats(stats));
-      float score = sim.score(realStats, freq, docLen);
+      float score = (float)sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
           realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
@@ -524,17 +535,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /**
    * The generic test core called by all correctness test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and compares the score against the manually
    * computed {@code gold}.
    */
   private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
     BasicStats realStats = (BasicStats) sim.computeWeight(
-        stats.getBoost(),
+        (float)stats.getBoost(),
         toCollectionStats(stats), 
         toTermStats(stats));
-    float score = sim.score(realStats, FREQ, DOC_LEN);
+    float score = (float) sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);
   }

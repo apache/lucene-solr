@@ -227,6 +227,12 @@ class GeoDegeneratePath extends GeoBasePath {
   }
 
   @Override
+  protected double deltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    // Since this is always called when a point is within the degenerate path, delta distance is always zero by definition.
+    return 0.0;
+  }
+  
+  @Override
   protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
     // TBD: Compute actual bounds based on distance
     getBounds(bounds);

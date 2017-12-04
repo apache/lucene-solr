@@ -16,38 +16,35 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   public SolrParams params;
   public SimpleSolrResponse response = new SimpleSolrResponse();
-  private Collection<ContentStream> contentStreams;
+  public ContentWriter contentWriter;
 
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
     super(m, path);
     this.params = params;
   }
 
-  public void setContentStreams(Collection<ContentStream> streams) {
-    contentStreams = streams;
+  public GenericSolrRequest setContentWriter(ContentWriter contentWriter) {
+    this.contentWriter = contentWriter;
+    return this;
   }
 
+  @Override
+  public ContentWriter getContentWriter(String expectedType) {
+    return contentWriter;
+  }
 
   @Override
   public SolrParams getParams() {
     return params;
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return contentStreams;
   }
 
   @Override
