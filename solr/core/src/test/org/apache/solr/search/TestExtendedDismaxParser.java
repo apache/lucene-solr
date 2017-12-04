@@ -96,6 +96,9 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "71", "text_sw", "ties"));
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
+//    assertU(adoc("id", "74", "text_pick_best", "tabby"));
+//    assertU(adoc("id", "74", "text_as_distinct", "persian"));
+
     assertU(commit());
   }
 
@@ -2018,10 +2021,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
        **/
       @Override
       protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                    boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+                                    boolean quoted, boolean fieldAutoGenPhraseQueries,
+                                    boolean fieldEnableGraphQueries, SynonymQueryStyle synonymQueryStyle)
           throws SyntaxError {
         Query q = super.newFieldQuery
-            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
         if (q instanceof BooleanQuery) {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
