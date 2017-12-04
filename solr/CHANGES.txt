@@ -141,6 +141,9 @@ Bug Fixes
 * SOLR-11616: Snapshot the segments more robustly such that segments created during a backup does does not fail the
   operation (Varun Thacker)
 
+* SOLR-11687: SolrCore.getNewIndexDir falsely returns {dataDir}/index on any IOException reading index.properties
+  (Nikolay Martynov, Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
