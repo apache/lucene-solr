@@ -521,7 +521,9 @@ public class SolrDocumentFetcher {
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
     if (schemaField.getType() instanceof LatLonPointSpatialField) {
       return new String(decodeLatitudeCeil(value) + "," + decodeLongitudeCeil(value));
-    } else if (schemaField.getType().getNumberType() == null) {
+    } 
+    
+    if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);
       return null;
