@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
