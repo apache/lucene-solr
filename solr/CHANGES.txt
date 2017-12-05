@@ -72,9 +72,9 @@ New Features
 
 * SOLR-11524: A new autoscaling/suggestions API end-point which gives autoscaling suggestions (noble)
 
-* SOLR-11519: Implement autoscaling suggestions for replica count violations (noble)
+* SOLR-11519: Implement suggestions for replica count violations (noble)
 
-* SOLR-11518: Implement autoscaling Suggestions for freedisk violations (noble)
+* SOLR-11518: Implement Suggestions for freedisk violations (noble)
 
 * SOLR-10132: A new optional facet.matches parameter to return facet buckets only
   for terms that match a regular expression. (Gus Heck, Christine Poerschke)
@@ -91,11 +91,19 @@ New Features
 * SOLR-11487: Collection Aliases may now have metadata (currently an internal feature).
   (Gus Heck, David Smiley)
 
-* SOLR-11542: New TimePartitionedUpdateProcessor URP that routes documents to another collection
+* SOLR-11542: New TimeRoutedAliasUpdateProcessor URP that routes documents to another collection
   in the same Alias defined set based on a time field (currently an internal feature).
   (David Smiley)
 
-* SOLR-9743: A new  UTILIZENODE command (noble)
+* SOLR-9743: A new UTILIZENODE command (noble)
+
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
+* SOLR-11250: A new DefaultWrapperModel class for loading of large and/or externally stored
+  LTRScoringModel definitions. (Yuki Yano, shalin, Christine Poerschke)
+
+* SOLR-11662: New synonymQueryStyle option to configure whether SynonymQuery, a DisjunctionMaxQuery, or BooleanQuery
+  occurs over query terms that overlap their position. (Doug Turnbull, David Smiley)
 
 Bug Fixes
 ----------------------
