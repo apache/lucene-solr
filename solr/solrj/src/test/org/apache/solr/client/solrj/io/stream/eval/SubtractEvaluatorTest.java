@@ -73,8 +73,8 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
   public void subOneField() throws Exception{
     factory.constructEvaluator("sub(a)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void subTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -83,8 +83,8 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void subTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -108,7 +108,7 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void subTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;

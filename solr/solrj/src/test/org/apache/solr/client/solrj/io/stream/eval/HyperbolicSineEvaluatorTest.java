@@ -75,8 +75,8 @@ public class HyperbolicSineEvaluatorTest extends LuceneTestCase {
   public void twoFields() throws Exception{
     factory.constructEvaluator("sinh(a,b)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sinh(a)");
     
@@ -84,7 +84,8 @@ public class HyperbolicSineEvaluatorTest extends LuceneTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test
+
+  @Test(expected = IOException.class)
   public void nullValue() throws Exception{
     test(null);
   }
