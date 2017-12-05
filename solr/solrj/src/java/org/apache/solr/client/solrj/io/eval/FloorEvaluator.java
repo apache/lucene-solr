@@ -45,8 +45,7 @@ public class FloorEvaluator extends RecursiveNumericEvaluator implements OneValu
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.floor(((BigDecimal)value).doubleValue());
+      return Math.floor(((Number)value).doubleValue());
     }
   }
 }

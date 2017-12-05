@@ -52,7 +52,7 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
     if(objects.length == 1) {
       //Only the y values passed
 
-      y = ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+      y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
       for(int i=0; i<y.length; i++) {
         x[i] = i;
@@ -62,18 +62,18 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
       // x, y and degree passed
 
       Object second = objects[1];
-      x = ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
-      y = ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+      x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       degree = ((Number)objects[2]).intValue();
     } else if(objects.length == 2) {
       if(objects[1] instanceof List) {
         // x and y passed
         Object second = objects[1];
-        x = ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
-        y = ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+        x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       } else {
         // y and degree passed
-        y = ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+        y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
         x = new double[y.length];
         for(int i=0; i<y.length; i++) {
           x[i] = i;

@@ -48,7 +48,7 @@ public class AnovaEvaluator extends RecursiveNumericListEvaluator implements Man
     
     List<double[]> anovaInput = Arrays.stream(values)
         // for each List, convert to double[]
-        .map(value -> ((List<BigDecimal>)value).stream().mapToDouble(BigDecimal::doubleValue).toArray())
+        .map(value -> ((List<Number>)value).stream().mapToDouble(Number::doubleValue).toArray())
         // turn into List<double[]>
         .collect(Collectors.toList());
     

@@ -45,8 +45,7 @@ public class ArcCosineEvaluator extends RecursiveNumericEvaluator implements One
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.acos(((BigDecimal)value).doubleValue());
+      return Math.acos(((Number)value).doubleValue());
     }
   }
 }

@@ -45,8 +45,7 @@ public class CeilingEvaluator extends RecursiveNumericEvaluator implements OneVa
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.ceil(((BigDecimal)value).doubleValue());
+      return Math.ceil(((Number)value).doubleValue());
     }
   }
 }

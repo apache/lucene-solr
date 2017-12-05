@@ -48,8 +48,8 @@ public class MeanDifferenceEvaluator extends RecursiveNumericEvaluator implement
     }
 
     return StatUtils.meanDifference(
-        ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
     );
   }
 }
