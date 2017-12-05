@@ -105,6 +105,41 @@ New Features
 * SOLR-11662: New synonymQueryStyle option to configure whether SynonymQuery, a DisjunctionMaxQuery, or BooleanQuery
   occurs over query terms that overlap their position. (Doug Turnbull, David Smiley)
 
+* SOLR-11429: Add loess Stream Evaluator to support local regression (Joel Bernstein)
+
+* SOLR-11568: Add matrix Stream Evaluator to support efficient matrix operations (Joel Bernstein)
+
+* SOLR-11566: Add transpose Stream Evaluator to support transposing of matrices (Joel Bernstein)
+
+* SOLR-11565: Add unit Stream Evaluator to support unitizing of vectors (Joel Bernstein)
+
+* SOLR-11567: Add triangularDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11593: Add support for covariance matrices to the cov Stream Evaluator (Joel Bernstein)
+
+* SOLR-10680: Add minMaxScale Stream Evaluator (Joel Bernstein)
+
+* SOLR-11599: Change normalize function to standardize and make it work with matrices (Joel Bernstein)
+
+* SOLR-11602: Add Markov Chain Stream Evaluator (Joel Bernstein)
+
+* SOLR-11607: Add grandSum, sumRows, sumColumns, scalarDivide, scalarMultiply, scalarAdd,
+  scalarSubtract Stream Evaluators (Joel Bernstein)
+
+* SOLR-11571: Add diff Stream Evaluator to support time series differencing (Mathew Skaria, Joel Bernstein)
+
+* SOLR-11570: Add support for correlation matrices to the corr Stream Evaluator (Joel Bernstein)
+
+* SOLR-11569: Add support for distance matrices to the distance Stream Evaluator (Joel Bernstein)
+
+* SOLR-11674: Support ranges in the probability Stream Evaluator (Joel Bernstein)
+
+* SOLR-11680: Add normalizeSum Stream Evaluator (Joel Bernstein)
+
+* SOLR-11697: Add geometricDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11485: Add olsRegress, spline and derivative Stream Evaluators (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
