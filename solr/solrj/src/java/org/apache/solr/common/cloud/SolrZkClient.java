@@ -78,7 +78,10 @@ public class SolrZkClient implements Closeable {
 
   private ZkCmdExecutor zkCmdExecutor;
 
-  private final ExecutorService zkCallbackExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+  private final ExecutorService zkCallbackExecutor =
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+  private final ExecutorService zkConnManagerCallbackExecutor =
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -266,7 +269,11 @@ public class SolrZkClient implements Closeable {
       public void process(final WatchedEvent event) {
         log.debug("Submitting job to respond to event " + event);
         try {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
+          if (watcher instanceof ConnectionManager) {
+            zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+          } else {
+            zkCallbackExecutor.submit(() -> watcher.process(event));
+          }
         } catch (RejectedExecutionException e) {
           // If not a graceful shutdown
           if (!isClosed()) {
@@ -722,6 +729,12 @@ public class SolrZkClient implements Closeable {
   private void closeCallbackExecutor() {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
+    } catch (Exception e) {
+      SolrException.log(log, e);
+    }
+
+    try {
+      ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
     } catch (Exception e) {
       SolrException.log(log, e);
     }
