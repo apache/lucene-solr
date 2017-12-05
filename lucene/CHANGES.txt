@@ -130,6 +130,9 @@ Bug Fixes
 * LUCENE-8078: The query cache should not cache instances of
   MatchNoDocsQuery. (Jon Harper via Adrien Grand)
 
+* LUCENE-8048: Filesystems do not guarantee order of directories updates
+  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
+  
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
@@ -145,9 +148,6 @@ Optimizations
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
 
-* LUCENE-8048: Filesystems do not guarantee order of directories updates
-  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
-  
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
