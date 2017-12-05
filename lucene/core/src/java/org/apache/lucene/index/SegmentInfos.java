@@ -747,6 +747,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (pendingCommit) {
       throw new IllegalStateException("prepareCommit was already called");
     }
+    dir.syncMetaData();
     write(dir);
   }
 

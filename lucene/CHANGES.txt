@@ -144,6 +144,9 @@ Optimizations
 * LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
+
+* LUCENE-8048: Filesystems do not guarantee order of directories updates
+  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
   
 Tests
 
