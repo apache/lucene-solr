@@ -458,7 +458,8 @@ public class Assign {
     if (createNodeList != null) { // Overrides petty considerations about maxShardsPerNode
       if (createNodeList.size() != nodeNameVsShardCount.size()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "At least one of the node(s) specified are not currently active, no action taken.");
+            "At least one of the node(s) specified " + createNodeList + " are not currently active in "
+                + nodeNameVsShardCount.keySet() + ", no action taken.");
       }
       return nodeNameVsShardCount;
     }

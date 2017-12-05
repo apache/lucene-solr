@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
@@ -551,17 +552,20 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           return accept;
         }
       });
+    } catch (FileNotFoundException fnfe) {
+      // already deleted - ignore
+      LOG.debug("Old index directory already deleted - skipping...", fnfe);
     } catch (IOException ioExc) {
       LOG.error("Error checking for old index directories to clean-up.", ioExc);
-    }
-    
-    List<Path> oldIndexPaths = new ArrayList<>(oldIndexDirs.length);
-    for (FileStatus ofs : oldIndexDirs) {
-      oldIndexPaths.add(ofs.getPath());
     }
 
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to clean-up
+
+    List<Path> oldIndexPaths = new ArrayList<>(oldIndexDirs.length);
+    for (FileStatus ofs : oldIndexDirs) {
+      oldIndexPaths.add(ofs.getPath());
+    }
 
     Collections.sort(oldIndexPaths, Collections.reverseOrder());
     

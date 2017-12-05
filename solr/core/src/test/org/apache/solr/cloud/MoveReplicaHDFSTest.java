@@ -24,6 +24,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  *
@@ -52,6 +53,18 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     cluster.shutdown(); // need to close before the MiniDFSCluster
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
+  }
+
+  @Test
+  public void testNormalMove() throws Exception {
+    inPlaceMove = false;
+    test();
+  }
+
+  @Test
+  public void testNormalFailedMove() throws Exception {
+    inPlaceMove = false;
+    testFailedMove();
   }
 
   public static class ForkJoinThreadsFilter implements ThreadFilter {
