@@ -16,36 +16,41 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Map;
 
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+public class VectorFunction extends ArrayList {
 
-public class SineEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public SineEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
-    super(expression, factory);
-    
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+
+  private Object function;
+  private Map context = new HashMap();
+
+  public VectorFunction(Object function, double[] results) {
+    this.function = function;
+    for(double d : results) {
+      add(d);
     }
   }
 
-  @Override
-  public Object doWork(Object value){
-    if(null == value){
-      return null;
-    }
-    else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
-    }
-    else{
-      return Math.sin(((Number)value).doubleValue());
-    }
+  public VectorFunction(Object function, List<Number> values) {
+    this.function = function;
+    addAll(values);
   }
+
+  public Object getFunction() {
+    return this.function;
+  }
+
+  public void addToContext(Object key, Object value) {
+    this.context.put(key, value);
+  }
+
+  public Object getFromContext(Object key) {
+    return this.context.get(key);
+  }
+
 }

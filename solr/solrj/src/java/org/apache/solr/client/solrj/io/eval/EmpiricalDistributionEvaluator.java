@@ -45,7 +45,7 @@ public class EmpiricalDistributionEvaluator extends RecursiveNumericEvaluator im
 
     EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
     
-    double[] backingValues = ((List<?>)value).stream().mapToDouble(innerValue -> ((BigDecimal)innerValue).doubleValue()).sorted().toArray();
+    double[] backingValues = ((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).sorted().toArray();
     empiricalDistribution.load(backingValues);
 
     return empiricalDistribution;

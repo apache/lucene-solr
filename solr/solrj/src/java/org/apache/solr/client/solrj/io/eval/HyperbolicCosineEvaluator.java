@@ -45,8 +45,7 @@ public class HyperbolicCosineEvaluator extends RecursiveNumericEvaluator impleme
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.cosh(((BigDecimal)value).doubleValue());
+      return Math.cosh(((Number)value).doubleValue());
     }
   }
 }

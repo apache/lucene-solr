@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -42,7 +41,7 @@ public class TimeDifferencingEvaluator extends RecursiveNumericEvaluator impleme
     if (!(1 == values.length ||  values.length == 2)){
       throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 1 or 2 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
     }
-    List<BigDecimal> timeseriesValues = (List<BigDecimal> )values[0];
+    List<Number> timeseriesValues = (List<Number> )values[0];
     Number lagValue = 1;
 
     if(1 == values.length) {

@@ -45,8 +45,7 @@ public class CubedRootEvaluator extends RecursiveNumericEvaluator implements One
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.cbrt(((BigDecimal)value).doubleValue());
+      return Math.cbrt(((Number)value).doubleValue());
     }
   }
 }

@@ -45,8 +45,7 @@ public class RoundEvaluator extends RecursiveNumericEvaluator implements OneValu
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.round(((BigDecimal)value).doubleValue());
+      return Math.round(((Number)value).doubleValue());
     }
   }
 }

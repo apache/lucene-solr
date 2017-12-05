@@ -46,7 +46,7 @@ public class ArcTangentEvaluator extends RecursiveNumericEvaluator implements On
     }
     else{
       // we know it's a BigDecimal
-      return Math.atan(((BigDecimal)value).doubleValue());
+      return Math.atan(((Number)value).doubleValue());
     }
   }
 }

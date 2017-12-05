@@ -48,7 +48,7 @@ public class FactorialEvaluator extends RecursiveNumericEvaluator implements One
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      return CombinatoricsUtils.factorialDouble(((BigDecimal)value).intValue());
+      return CombinatoricsUtils.factorialDouble(((Number)value).intValue());
     }
   }
 }

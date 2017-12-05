@@ -44,8 +44,7 @@ public class AbsoluteValueEvaluator extends RecursiveNumericEvaluator implements
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue));
     }
     else{
-      // we know it's a BigDecimal
-      return Math.abs(((BigDecimal)value).doubleValue());
+      return Math.abs(((Number)value).doubleValue());
     }
   }
 }
