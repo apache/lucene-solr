@@ -193,6 +193,9 @@ Bug Fixes
 
 * SOLR-11458: Improve error handling in MoveReplicaCmd to avoid potential loss of data. (ab)
 
+* SOLR-11590: Synchronize ZK connect/disconnect handling so that they are processed in linear order
+  (noble, Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
