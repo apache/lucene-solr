@@ -153,6 +153,9 @@ Bug Fixes
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
 
+* SOLR-9137: bin/solr script ignored custom STOP_PORT on shutdown.
+  (Joachim Kohlhammer, Steve Rowe, Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
