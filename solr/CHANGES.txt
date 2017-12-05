@@ -165,6 +165,9 @@ Bug Fixes
 * SOLR-11687: SolrCore.getNewIndexDir falsely returns {dataDir}/index on any IOException reading index.properties
   (Nikolay Martynov, Erick Erickson)
 
+* SOLR-9137: bin/solr script ignored custom STOP_PORT on shutdown.
+  (Joachim Kohlhammer, Steve Rowe, Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr

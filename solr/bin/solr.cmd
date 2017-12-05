@@ -964,7 +964,7 @@ IF "%SCRIPT_CMD%"=="stop" (
               IF "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
                 set found_it=1
                 @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
-                set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
+                IF "%STOP_PORT%"=="" set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
                 "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
                 del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
                 timeout /T 5
@@ -994,7 +994,7 @@ IF "%SCRIPT_CMD%"=="stop" (
         IF "%%M"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
           set found_it=1
           @echo Stopping Solr process %%N running on port %SOLR_PORT%
-          set /A STOP_PORT=%SOLR_PORT% - 1000
+          IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
           "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" "%SOLR_JETTY_CONFIG%" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
           del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
           timeout /T 5
