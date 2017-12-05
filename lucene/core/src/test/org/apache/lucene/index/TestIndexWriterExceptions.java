@@ -885,14 +885,16 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class FailOnlyInCommit extends MockDirectoryWrapper.Failure {
 
-    boolean failOnCommit, failOnDeleteFile;
+    boolean failOnCommit, failOnDeleteFile, failOnSyncMetadata;
     private final boolean dontFailDuringGlobalFieldMap;
+    private final boolean dontFailDuringSyncMetadata;
     private static final String PREPARE_STAGE = "prepareCommit";
     private static final String FINISH_STAGE = "finishCommit";
     private final String stage;
     
-    public FailOnlyInCommit(boolean dontFailDuringGlobalFieldMap, String stage) {
+    public FailOnlyInCommit(boolean dontFailDuringGlobalFieldMap, boolean dontFailDuringSyncMetadata, String stage) {
       this.dontFailDuringGlobalFieldMap = dontFailDuringGlobalFieldMap;
+      this.dontFailDuringSyncMetadata = dontFailDuringSyncMetadata;
       this.stage = stage;
     }
 
@@ -901,9 +903,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       StackTraceElement[] trace = new Exception().getStackTrace();
       boolean isCommit = false;
       boolean isDelete = false;
+      boolean isSyncMetadata = false;
       boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if (isCommit && isDelete && isInGlobalFieldMap) {
+        if (isCommit && isDelete && isInGlobalFieldMap && isSyncMetadata) {
           break;
         }
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
@@ -915,14 +918,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
           isInGlobalFieldMap = true;
         }
-          
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "syncMetaData".equals(trace[i].getMethodName())) {
+          isSyncMetadata = true;
+        }
       }
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
+        isCommit = false;
+      }
+      if (isSyncMetadata && dontFailDuringSyncMetadata) {
         isCommit = false;
       }
       if (isCommit) {
         if (!isDelete) {
           failOnCommit = true;
+          failOnSyncMetadata = isSyncMetadata;
           throw new RuntimeException("now fail first");
         } else {
           failOnDeleteFile = true;
@@ -935,9 +944,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionsDuringCommit() throws Throwable {
     FailOnlyInCommit[] failures = new FailOnlyInCommit[] {
         // LUCENE-1214
-        new FailOnlyInCommit(false, FailOnlyInCommit.PREPARE_STAGE), // fail during global field map is written
-        new FailOnlyInCommit(true, FailOnlyInCommit.PREPARE_STAGE), // fail after global field map is written
-        new FailOnlyInCommit(false, FailOnlyInCommit.FINISH_STAGE)  // fail while running finishCommit    
+        new FailOnlyInCommit(false, true, FailOnlyInCommit.PREPARE_STAGE), // fail during global field map is written
+        new FailOnlyInCommit(true, false, FailOnlyInCommit.PREPARE_STAGE), // fail during sync metadata
+        new FailOnlyInCommit(true, true, FailOnlyInCommit.PREPARE_STAGE), // fail after global field map is written
+        new FailOnlyInCommit(false, true, FailOnlyInCommit.FINISH_STAGE)  // fail while running finishCommit
     };
     
     for (FailOnlyInCommit failure : failures) {
@@ -952,8 +962,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expectThrows(RuntimeException.class, () -> {
         w.close();
       });
-
-      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile, failure.failOnCommit && failure.failOnDeleteFile);
+      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile
+          + " failOnSyncMetadata=" + failure.failOnSyncMetadata + "", failure.failOnCommit && (failure.failOnDeleteFile || failure.failOnSyncMetadata));
       w.rollback();
       String files[] = dir.listAll();
       assertTrue(files.length == fileCount || (files.length == fileCount+1 && Arrays.asList(files).contains(IndexWriter.WRITE_LOCK_NAME)));
