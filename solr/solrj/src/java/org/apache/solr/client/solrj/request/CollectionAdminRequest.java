@@ -617,6 +617,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String collection, replica, targetNode;
     protected String shard, sourceNode;
     protected boolean randomlyMoveReplica;
+    protected boolean inPlaceMove = true;
+    protected int timeout = -1;
 
     public MoveReplica(String collection, String replica, String targetNode) {
       super(CollectionAction.MOVEREPLICA);
@@ -635,11 +637,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.randomlyMoveReplica = true;
     }
 
+    public void setInPlaceMove(boolean inPlaceMove) {
+      this.inPlaceMove = inPlaceMove;
+    }
+
+    public void setTimeout(int timeout) {
+      this.timeout = timeout;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set("collection", collection);
       params.set(CollectionParams.TARGET_NODE, targetNode);
+      params.set(CommonAdminParams.IN_PLACE_MOVE, inPlaceMove);
+      if (timeout != -1) {
+        params.set(CommonAdminParams.TIMEOUT, timeout);
+      }
       if (randomlyMoveReplica) {
         params.set("shard", shard);
         params.set(CollectionParams.SOURCE_NODE, sourceNode);

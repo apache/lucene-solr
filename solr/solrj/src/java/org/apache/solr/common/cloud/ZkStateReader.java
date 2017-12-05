@@ -89,6 +89,7 @@ public class ZkStateReader implements Closeable {
   public static final String SHARD_PARENT_PROP = "shard_parent";
   public static final String NUM_SHARDS_PROP = "numShards";
   public static final String LEADER_PROP = "leader";
+  public static final String SHARED_STORAGE_PROP = "shared_storage";
   public static final String PROPERTY_PROP = "property";
   public static final String PROPERTY_PROP_PREFIX = "property.";
   public static final String PROPERTY_VALUE_PROP = "property.value";

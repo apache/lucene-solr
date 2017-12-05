@@ -168,6 +168,8 @@ Bug Fixes
 * SOLR-9137: bin/solr script ignored custom STOP_PORT on shutdown.
   (Joachim Kohlhammer, Steve Rowe, Christine Poerschke)
 
+* SOLR-11458: Improve error handling in MoveReplicaCmd to avoid potential loss of data. (ab)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
