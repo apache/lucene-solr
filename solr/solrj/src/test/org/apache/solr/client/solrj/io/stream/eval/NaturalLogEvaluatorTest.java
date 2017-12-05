@@ -78,7 +78,7 @@ public class NaturalLogEvaluatorTest extends LuceneTestCase {
     factory.constructEvaluator("log(a,b)");
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void logNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 
@@ -86,7 +86,8 @@ public class NaturalLogEvaluatorTest extends LuceneTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test
+
+  @Test(expected = IOException.class)
   public void logNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 

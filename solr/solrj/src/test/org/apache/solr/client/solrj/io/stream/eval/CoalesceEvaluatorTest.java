@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,9 +41,9 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
       .withFunctionName("coalesce", CoalesceEvaluator.class);
     values = new HashMap<String,Object>();
   }
-    
-  @Test
-  public void twoFieldsWithValues() throws Exception{
+  /*
+  @Test(expected = IOException.class)
+  public void twoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
     Object result;
     
@@ -83,19 +84,19 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
 
-  @Test
-  public void twoFieldsWithMissingField() throws Exception{
+
+  @Test(expected = IOException.class)
+  public void twoFieldsWithValues() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
     Object result;
     
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
-    
   }
-  
+  */
+
   @Test
   public void manyFieldsWithSubcoalesces() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b,coalesce(c,d))");

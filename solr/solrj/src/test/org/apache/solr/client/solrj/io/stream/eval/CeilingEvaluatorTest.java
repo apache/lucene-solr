@@ -75,8 +75,8 @@ public class CeilingEvaluatorTest extends LuceneTestCase {
   public void ceilTwoFields() throws Exception{
     factory.constructEvaluator("ceil(a,b)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void ceilNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     
@@ -84,7 +84,8 @@ public class CeilingEvaluatorTest extends LuceneTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test
+
+  @Test(expected = IOException.class)
   public void ceilNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     

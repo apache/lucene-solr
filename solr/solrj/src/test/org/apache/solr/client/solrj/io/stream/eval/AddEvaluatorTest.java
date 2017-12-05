@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,8 +68,8 @@ public class AddEvaluatorTest extends LuceneTestCase {
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(3.2D, result);
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void addTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;
@@ -77,8 +78,8 @@ public class AddEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void addTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;
@@ -102,7 +103,7 @@ public class AddEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void addTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;

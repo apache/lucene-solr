@@ -157,8 +157,6 @@ public class TemporalEvaluatorsTest {
     }
 
     values.clear();
-    values.put("a", null);
-    assertNull(evaluator.evaluate(new Tuple(values)));
   }
 
   @Test
