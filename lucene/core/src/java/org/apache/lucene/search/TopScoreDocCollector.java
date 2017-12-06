@@ -63,9 +63,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         public void collect(int doc) throws IOException {
           float score = scorer.score();
 
-          // This collector cannot handle these scores:
-          assert score != Float.NEGATIVE_INFINITY;
-          assert !Float.isNaN(score);
+          // This collector relies on the fact that scorers produce positive values:
+          assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
           if (score <= pqTop.score) {
@@ -114,9 +113,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         public void collect(int doc) throws IOException {
           float score = scorer.score();
 
-          // This collector cannot handle these scores:
-          assert score != Float.NEGATIVE_INFINITY;
-          assert !Float.isNaN(score);
+          // This collector relies on the fact that scorers produce positive values:
+          assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
 

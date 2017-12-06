@@ -150,7 +150,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // test constant score
     singleTest(field,"1.414213", 10, 1.414213f);
-    singleTest(field,"-1.414213", 10, -1.414213f);
+    singleTest(field,"-1.414213", 10, 0f);
 
     singleTest(field,"sum(\0,1)", 10, 11);
     singleTest(field,"sum(\0,\0)", 10, 20);
@@ -166,20 +166,20 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field,"abs(\0)",10,10, -4,4);
     singleTest(field,"pow(\0,\0)",0,1, 5,3125);
     singleTest(field,"pow(\0,0.5)",100,10, 25,5, 0,0);
-    singleTest(field,"div(1,\0)",-4,-.25f, 10,.1f, 100,.01f);
+    singleTest(field,"div(1,\0)",-4,0f, 10,.1f, 100,.01f);
     singleTest(field,"div(1,1)",-4,1, 10,1);
 
     singleTest(field,"sqrt(abs(\0))",-4,2);
     singleTest(field,"sqrt(sum(29,\0))",-4,5);
 
-    singleTest(field,"map(\0,0,0,500)",10,10, -4,-4, 0,500);
+    singleTest(field,"map(\0,0,0,500)",10,10, -4,0, 0,500);
     singleTest(field,"map(\0,-4,5,500)",100,100, -4,500, 0,500, 5,500, 10,10, 25,25);
-    singleTest(field,"map(\0,0,0,sum(\0,500))",10,10, -4,-4, 0,500);
-    singleTest(field,"map(\0,0,0,sum(\0,500),sum(\0,1))",10,11, -4,-3, 0,500);
-    singleTest(field,"map(\0,-4,5,sum(\0,1))",100,100, -4,-3, 0,1, 5,6, 10,10, 25,25);
+    singleTest(field,"map(\0,0,0,sum(\0,500))",10,10, -4,0, 0,500);
+    singleTest(field,"map(\0,0,0,sum(\0,500),sum(\0,1))",10,11, -4,0, 0,500);
+    singleTest(field,"map(\0,-4,5,sum(\0,1))",100,100, -4,0, 0,1, 5,6, 10,10, 25,25);
 
-    singleTest(field,"scale(\0,-1,1)",-4,-1, 100,1, 0,-0.9230769f);
-    singleTest(field,"scale(\0,-10,1000)",-4,-10, 100,1000, 0,28.846153f);
+    singleTest(field,"scale(\0,-1,1)",-4,0, 100,1, 0,0);
+    singleTest(field,"scale(\0,-10,1000)",-4,0, 100,1000, 0,28.846153f);
 
     // test that infinity doesn't mess up scale function
     singleTest(field,"scale(log(\0),-1000,1000)",100,1000);
@@ -222,7 +222,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // Unsorted field, largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
-    singleTest(field, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
+    singleTest(field, "\0", 54321, 543210, 0,0, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
     singleTest(field, "log(\0)");
     // make sure the values were cached
@@ -273,7 +273,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       float[] answers = new float[ids.length*2];
       for (int j=0; j<len; j++) {
         answers[j*2] = ids[j];
-        answers[j*2+1] = vals[j];
+        answers[j*2+1] = Math.max(0, vals[j]);
       }
       for (int j=len; j<ids.length; j++) {
         answers[j*2] = ids[j];
@@ -296,7 +296,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "993", keyField, "CCC=CCC"));
     assertU(commit());
     makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250");
-    singleTest(extField,"\0",991,543210,992,-8,993,250);
+    singleTest(extField,"\0",991,543210,992,0,993,250);
   }
 
   @Test
@@ -310,7 +310,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "993", keyField, "93"));
     assertU(commit());
     makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
-    singleTest(extField,"\0",991,543210,992,-8,993,250);
+    singleTest(extField,"\0",991,543210,992,0,993,250);
   }
   
   @Test
@@ -366,7 +366,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
 
     // test that we can subtract dates to millisecond precision
-    assertQ(req("fl","*,score","q", "{!func}ms(a_tdt,b_tdt)", "fq","id:1"), "//float[@name='score']='-1.0'");
+    assertQ(req("fl","*,score","q", "{!func}ms(a_tdt,b_tdt)", "fq","id:1"), "//float[@name='score']='0.0'");
     assertQ(req("fl","*,score","q", "{!func}ms(b_tdt,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
     assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,2009-08-31T12:10:10.124Z)", "fq","id:1"), "//float[@name='score']='1.0'");
     assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.124Z,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
@@ -756,7 +756,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // Unsorted field, largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
-    singleTest(fieldAsFunc, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
+    singleTest(fieldAsFunc, "\0", 54321, 543210, 0,0, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
     singleTest(fieldAsFunc, "log(\0)");
     // make sure the values were cached
@@ -790,7 +790,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 
-               100,100,  -4,-4,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
+               100,100,  -4,0,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
     singleTest(fieldAsFunc, "sqrt(\0)", 
                100,10,  25,5,  0,0,   1,1);
     singleTest(fieldAsFunc, "log(\0)",  1,0); 

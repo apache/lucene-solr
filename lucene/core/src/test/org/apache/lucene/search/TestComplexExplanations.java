@@ -127,7 +127,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     q.add(new BoostQuery(t, 1000), Occur.SHOULD);
     
     t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
-    q.add(new BoostQuery(t, -20), Occur.SHOULD);
+    q.add(new BoostQuery(t, 20), Occur.SHOULD);
     
     List<Query> disjuncts = new ArrayList<>();
     disjuncts.add(snear(st("w2"),

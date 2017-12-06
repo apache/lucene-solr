@@ -476,7 +476,7 @@ public class TestQueryRescorer extends LuceneTestCase {
                 return num;
               } else {
                 //System.out.println("score doc=" + docID + " num=" + -num);
-                return -num;
+                return 1f / (1 + num);
               }
             }
           };

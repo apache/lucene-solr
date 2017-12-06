@@ -49,6 +49,7 @@ public class AssertingSimilarity extends Similarity {
 
   @Override
   public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    assert boost >= 0;
     assert collectionStats != null;
     assert termStats.length > 0;
     for (TermStatistics term : termStats) {
@@ -91,7 +92,7 @@ public class AssertingSimilarity extends Similarity {
         float score = delegateScorer.score(doc, freq);
         assert Float.isFinite(score);
         // TODO: some tests have negative boosts today
-        assert score >= 0 || assertingWeight.boost < 0;
+        assert score >= 0;
         return score;
       }
 

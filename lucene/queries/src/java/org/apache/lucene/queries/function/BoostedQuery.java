@@ -100,14 +100,27 @@ public final class BoostedQuery extends Query {
         return subQueryExpl;
       }
       FunctionValues vals = boostVal.getValues(fcontext, readerContext);
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
-      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:", subQueryExpl, vals.explain(doc));
+      float factor = vals.floatVal(doc);
+      Explanation factorExpl = vals.explain(doc);
+      if (factor < 0) {
+        factor = 0;
+        factorExpl = Explanation.match(0, "truncated score, max of:",
+            Explanation.match(0f, "minimum score"), factorExpl);
+      } else if (Float.isNaN(factor)) {
+        factor = 0;
+        factorExpl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", factorExpl);
+      }
+      
+      float sc = subQueryExpl.getValue() * factor;
+      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:",
+          subQueryExpl, factorExpl);
     }
   }
 
 
   private class CustomScorer extends FilterScorer {
     private final BoostedQuery.BoostedWeight weight;
+    private final ValueSource vs;
     private final FunctionValues vals;
     private final LeafReaderContext readerContext;
 
@@ -116,33 +129,23 @@ public final class BoostedQuery extends Query {
       super(scorer);
       this.weight = w;
       this.readerContext = readerContext;
+      this.vs = vs;
       this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
     @Override   
     public float score() throws IOException {
-      float score = in.score() * vals.floatVal(in.docID());
-
-      // Current Lucene priority queues can't handle NaN and -Infinity, so
-      // map to -Float.MAX_VALUE. This conditional handles both -infinity
-      // and NaN since comparisons with NaN are always false.
-      return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+      float factor = vals.floatVal(in.docID());
+      if (factor >= 0 == false) { // covers NaN as well
+        factor = 0;
+      }
+      return in.score() * factor;
     }
 
     @Override
     public Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(in, "CUSTOM"));
     }
-
-    public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(readerContext ,doc);
-      if (!subQueryExpl.isMatch()) {
-        return subQueryExpl;
-      }
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
-      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:", subQueryExpl, vals.explain(doc));
-    }
-
   }
 
 

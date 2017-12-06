@@ -23,6 +23,9 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been removed (Alan Woodward)
 
+* LUCENE-7996: Queries are now required to produce positive scores.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
