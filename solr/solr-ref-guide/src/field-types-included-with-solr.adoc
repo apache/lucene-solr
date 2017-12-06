@@ -87,3 +87,8 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 *Note*: configuring a UUIDField instance with a default value of `NEW` is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using UUIDUpdateProcessorFactory to generate UUID values when documents are added is recommended instead.
 |===
+
+NOTE: All Trie* numeric and date field types have been deprecated in favor of *Point field types.
+      Point field types are better at range queries (speed, memory, disk), however simple field:value queries underperform
+      relative to Trie. Either accept this, or continue to use Trie fields.
+      This shortcoming may be addressed in a future release.
