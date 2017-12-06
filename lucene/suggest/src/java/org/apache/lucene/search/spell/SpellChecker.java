@@ -126,7 +126,7 @@ public class SpellChecker implements java.io.Closeable {
   }
   /**
    * Use the given directory as a spell checker index with a
-   * {@link LevensteinDistance} as the default {@link StringDistance}. The
+   * {@link LevenshteinDistance} as the default {@link StringDistance}. The
    * directory is created if it doesn't exist yet.
    * 
    * @param spellIndex
@@ -135,7 +135,7 @@ public class SpellChecker implements java.io.Closeable {
    *           if spellchecker can not open the directory
    */
   public SpellChecker(Directory spellIndex) throws IOException {
-    this(spellIndex, new LevensteinDistance());
+    this(spellIndex, new LevenshteinDistance());
   }
 
   /**

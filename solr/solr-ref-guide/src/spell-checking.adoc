@@ -39,7 +39,7 @@ The `IndexBasedSpellChecker` uses a Solr index as the basis for a parallel index
     <str name="field">content</str>
     <str name="buildOnCommit">true</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
@@ -99,7 +99,7 @@ The `FileBasedSpellChecker` uses an external file as a spelling dictionary. This
     <str name="characterEncoding">UTF-8</str>
     <str name="spellcheckIndexDir">./spellcheckerFile</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
