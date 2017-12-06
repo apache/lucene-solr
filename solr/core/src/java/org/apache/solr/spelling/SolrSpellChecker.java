@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordQueue;
@@ -89,9 +89,9 @@ public abstract class SolrSpellChecker {
     
     StringDistance sd = null;
     try {
-      sd = getStringDistance() == null ? new LevensteinDistance() : getStringDistance();    
+      sd = getStringDistance() == null ? new LevenshteinDistance() : getStringDistance();    
     } catch(UnsupportedOperationException uoe) {
-      sd = new LevensteinDistance();
+      sd = new LevenshteinDistance();
     }
     
     SpellingResult result = new SpellingResult();

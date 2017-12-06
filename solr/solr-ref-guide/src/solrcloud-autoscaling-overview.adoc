@@ -98,7 +98,7 @@ You can learn more about Trigger Actions in the section <<solrcloud-autoscaling-
 
 An Autoscaling *listener* can be attached to a trigger. Solr calls the listener each time the trigger fires as well as before and after the actions performed by the trigger. Listeners are useful as a call back mechanism to perform tasks such as logging or informing external systems about events. For example, a listener is automatically added by Solr to each trigger to log details of the trigger fire and actions to the `.system` collection.
 
-You can learn more about Listeners in the section <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Listeners>>.
+You can learn more about Listeners in the section <<solrcloud-autoscaling-listeners.adoc#solrcloud-autoscaling-listeners,Autoscaling Listeners>>.
 
 == Autoscaling APIs
 

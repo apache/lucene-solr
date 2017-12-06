@@ -46,7 +46,7 @@
   <fieldType name="text_paramc" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
     <similarity class="solr.DFRSimilarityFactory">
-      <str name="basicModel">P</str>
+      <str name="basicModel">G</str>
       <str name="afterEffect">L</str>
       <str name="normalization">H2</str>
       <float name="c">7</float>

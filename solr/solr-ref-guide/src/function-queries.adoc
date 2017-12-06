@@ -148,7 +148,7 @@ You can quote the term if it's more complex, or do parameter substitution for th
 * `...&defType=func` `&q=docfreq(text,$myterm)&myterm=solr`
 
 === field Function
-Returns the numeric docValues or indexed value of the field with the specified name. In its simplest (single argument) form, this function can only be used on single valued fields, and can be called using the name of the field as a string, or for most conventional field names simply use the field name by itself with out using the `field(...)` syntax.
+Returns the numeric docValues or indexed value of the field with the specified name. In its simplest (single argument) form, this function can only be used on single valued fields, and can be called using the name of the field as a string, or for most conventional field names simply use the field name by itself without using the `field(...)` syntax.
 
 When using docValues, an optional 2nd argument can be specified to select the `min` or `max` value of multivalued fields.
 

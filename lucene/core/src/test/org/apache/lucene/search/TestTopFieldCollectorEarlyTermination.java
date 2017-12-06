@@ -154,7 +154,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         TopDocs td2 = collector2.topDocs();
 
         assertFalse(collector1.isEarlyTerminated());
-        if (trackMaxScore == false && paging == false && maxSegmentSize >= numHits && query instanceof MatchAllDocsQuery) {
+        if (trackMaxScore == false && paging == false && maxSegmentSize > numHits && query instanceof MatchAllDocsQuery) {
           // Make sure that we sometimes early terminate
           assertTrue(collector2.isEarlyTerminated());
         }

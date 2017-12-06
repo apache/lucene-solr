@@ -69,6 +69,7 @@ public class AssertingScorer extends Scorer {
     assert iterating();
     final float score = in.score();
     assert !Float.isNaN(score) : "NaN score for in="+in;
+    assert Float.compare(score, 0f) >= 0 : score;
     return score;
   }
 

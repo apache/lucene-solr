@@ -88,6 +88,7 @@ public class CreateShardCmd implements Cmd {
     Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
+    PolicyHelper.SessionWrapper sessionWrapper = null;
     boolean usePolicyFramework = usePolicyFramework(collection,ocmh);
     List<ReplicaPosition> positions = null;
     SolrCloseableLatch countDownLatch;
@@ -103,6 +104,7 @@ public class CreateShardCmd implements Cmd {
             numNrtReplicas,
             numTlogReplicas,
             numPullReplicas);
+        sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       } else {
         List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, totalReplicas,
             createNodeSetStr, ocmh.overseer.getSolrCloudManager());
@@ -164,7 +166,7 @@ public class CreateShardCmd implements Cmd {
         });
       }
     } finally {
-      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
+      if(sessionWrapper != null) sessionWrapper.release();
     }
 
     log.debug("Waiting for create shard action to complete");

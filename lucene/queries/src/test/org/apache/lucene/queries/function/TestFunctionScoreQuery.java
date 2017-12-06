@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.ToDoubleBiFunction;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -30,11 +33,14 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -216,4 +222,39 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     };
   }
 
+  public void testTruncateNegativeScores() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("foo", -2));
+    w.addDocument(doc);
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), DoubleValuesSource.fromLongField("foo"));
+    QueryUtils.check(random(), q, searcher);
+    Explanation expl = searcher.explain(q, 0);
+    assertEquals(0, expl.getValue(), 0f);
+    assertTrue(expl.toString(), expl.getDetails()[0].getDescription().contains("truncated score"));
+    reader.close();
+    dir.close();
+  }
+
+  public void testNaN() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("foo", Double.doubleToLongBits(Double.NaN)));
+    w.addDocument(doc);
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), DoubleValuesSource.fromDoubleField("foo"));
+    QueryUtils.check(random(), q, searcher);
+    Explanation expl = searcher.explain(q, 0);
+    assertEquals(0, expl.getValue(), 0f);
+    assertTrue(expl.toString(), expl.getDetails()[0].getDescription().contains("NaN is an illegal score"));
+    reader.close();
+    dir.close();
+  }
 }

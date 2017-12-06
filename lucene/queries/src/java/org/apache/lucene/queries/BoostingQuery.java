@@ -56,6 +56,10 @@ public class BoostingQuery extends Query {
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;
       this.context = context; // ignore context-only matches
+      if (Float.isFinite(boost) == false || Float.compare(boost, 0f) < 0) {
+        // otherwise scores could be negative
+        throw new IllegalArgumentException("boost must be a non-negative float, got " + boost);
+      }
       this.boost = boost;
     }
 

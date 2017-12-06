@@ -23,6 +23,9 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been removed (Alan Woodward)
 
+* LUCENE-7996: Queries are now required to produce positive scores.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -45,6 +48,13 @@ Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
+
+======================= Lucene 7.3.0 =======================
+
+API Changes
+
+* LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
+  (Pulak Ghosh via Adrien Grand)
 
 ======================= Lucene 7.2.0 =======================
 

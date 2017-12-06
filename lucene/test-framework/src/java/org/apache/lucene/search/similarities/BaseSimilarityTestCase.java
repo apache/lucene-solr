@@ -193,20 +193,46 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       lowerBound = SmallFloat.byte4ToInt((byte) norm);
     }
     final long maxDoc;
-    if (random.nextBoolean()) {
-      // small collection
-      maxDoc = TestUtil.nextLong(random, 1, 100000);
-    } else {
-      // yuge collection
-      maxDoc = TestUtil.nextLong(random, 1, MAXDOC_FORTESTING);
+    switch (random.nextInt(6)) {
+      case 0:
+        // 1 doc collection
+        maxDoc = 1;
+        break;
+      case 1:
+        // 2 doc collection
+        maxDoc = 2;
+        break;
+      case 2:
+        // tiny collection
+        maxDoc = TestUtil.nextLong(random, 3, 16);
+        break;
+      case 3:
+        // small collection
+        maxDoc = TestUtil.nextLong(random, 16, 100000);
+        break;
+      case 4:
+        // big collection
+        maxDoc = TestUtil.nextLong(random, 100000, MAXDOC_FORTESTING);
+        break;
+      default:
+        // yuge collection
+        maxDoc = MAXDOC_FORTESTING;
+        break;
     }
     final long docCount;
-    if (random.nextBoolean()) {
-      // sparse field
-      docCount = TestUtil.nextLong(random, 1, maxDoc);
-    } else {
-      // fully populated
-      docCount = maxDoc;
+    switch (random.nextInt(3)) {
+      case 0:
+        // sparsest field
+        docCount = 1;
+        break;
+      case 1:
+        // sparse field
+        docCount = TestUtil.nextLong(random, 1, maxDoc);
+        break;
+      default:
+        // fully populated
+        docCount = maxDoc;
+        break;
     }
     // random docsize: but can't require docs to have > 2B tokens
     long upperBound;
@@ -216,15 +242,22 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       upperBound = MAXTOKENS_FORTESTING;
     }
     final long sumDocFreq;
-    if (random.nextBoolean()) {
-      // shortest possible docs
-      sumDocFreq = docCount;
-    } else {
-      // random docsize
-      sumDocFreq = TestUtil.nextLong(random, docCount, upperBound + 1 - lowerBound);
+    switch (random.nextInt(3)) {
+      case 0:
+        // shortest possible docs
+        sumDocFreq = docCount;
+        break;
+      case 1:
+        // biggest possible docs
+        sumDocFreq = upperBound + 1 - lowerBound;
+        break;
+      default:
+        // random docsize
+        sumDocFreq = TestUtil.nextLong(random, docCount, upperBound + 1 - lowerBound);
+        break;
     }
     final long sumTotalTermFreq;
-    switch (random.nextInt(3)) {
+    switch (random.nextInt(4)) {
       case 0:
         // term frequencies were omitted
         sumTotalTermFreq = sumDocFreq;
@@ -232,6 +265,10 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       case 1:
         // no repetition of terms (except to satisfy this norm)
         sumTotalTermFreq = sumDocFreq - 1 + lowerBound;
+        break;
+      case 2:
+        // maximum repetition of terms
+        sumTotalTermFreq = upperBound;
         break;
       default:
         // random repetition
@@ -249,29 +286,46 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
    */
   static TermStatistics newTerm(Random random, CollectionStatistics corpus) {
     final long docFreq;
-    if (random.nextBoolean()) {
-      // rare term
-      docFreq = 1;
-    } else {
-      // random specificity
-      docFreq = TestUtil.nextLong(random, 1, corpus.docCount());
+    switch (random.nextInt(3)) {
+      case 0:
+        // rare term
+        docFreq = 1;
+        break;
+      case 1:
+        // common term
+        docFreq = corpus.docCount();
+        break;
+      default:
+        // random specificity
+        docFreq = TestUtil.nextLong(random, 1, corpus.docCount());
+        break;
     }
     final long totalTermFreq;
+    // can't require docs to have > 2B tokens
+    long upperBound;
+    try {
+      upperBound = Math.min(corpus.sumTotalTermFreq(), Math.multiplyExact(docFreq, Integer.MAX_VALUE));
+    } catch (ArithmeticException overflow) {
+      upperBound = corpus.sumTotalTermFreq();
+    }
     if (corpus.sumTotalTermFreq() == corpus.sumDocFreq()) {
       // omitTF
       totalTermFreq = docFreq;
-    } else if (random.nextBoolean()) {
-      // no repetition
-      totalTermFreq = docFreq;
     } else {
-      // random repetition: but can't require docs to have > 2B tokens
-      long upperBound;
-      try {
-        upperBound = Math.min(corpus.sumTotalTermFreq(), Math.multiplyExact(docFreq, Integer.MAX_VALUE));
-      } catch (ArithmeticException overflow) {
-        upperBound = corpus.sumTotalTermFreq();
+      switch (random.nextInt(3)) {
+        case 0:
+          // no repetition
+          totalTermFreq = docFreq;
+          break;
+        case 1:
+          // maximum repetition
+          totalTermFreq = upperBound;
+          break;
+        default:
+          // random repetition
+          totalTermFreq = TestUtil.nextLong(random, docFreq, upperBound);
+          break;
       }
-      totalTermFreq = TestUtil.nextLong(random, docFreq, upperBound);
     }
     return new TermStatistics(TERM, docFreq, totalTermFreq);
   }
@@ -315,9 +369,34 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
               // there is at least one other document, and those must have at least 1 instance each.
               int upperBound = Math.toIntExact(Math.min(term.totalTermFreq() - term.docFreq() + 1, Integer.MAX_VALUE));
               if (random.nextBoolean()) {
-                freq = TestUtil.nextInt(random, 1, upperBound);
+                // integer freq
+                switch (random.nextInt(3)) {
+                  case 0:
+                    // smallest freq
+                    freq = 1;
+                    break;
+                  case 1:
+                    // largest freq
+                    freq = upperBound;
+                    break;
+                  default:
+                    // random freq
+                    freq = TestUtil.nextInt(random, 1, upperBound);
+                    break;
+                }
               } else {
-                float freqCandidate = upperBound * random.nextFloat();
+                // float freq
+                float freqCandidate;
+                switch (random.nextInt(2)) {
+                  case 0:
+                    // smallest freq
+                    freqCandidate = Float.MIN_VALUE;
+                    break;
+                  default:
+                    // random freq
+                    freqCandidate = upperBound * random.nextFloat();
+                    break;
+                }
                 // we need to be 2nd float value at a minimum, the pairwise test will check MIN_VALUE in this case.
                 // this avoids testing frequencies of 0 which seem wrong to allow (we should enforce computeSlopFactor etc)
                 if (freqCandidate <= Float.MIN_VALUE) {

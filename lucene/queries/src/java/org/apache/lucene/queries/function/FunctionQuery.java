@@ -115,18 +115,23 @@ public class FunctionQuery extends Query {
 
     @Override
     public float score() throws IOException {
-      float score = boost * vals.floatVal(docID());
-
-      // Current Lucene priority queues can't handle NaN and -Infinity, so
-      // map to -Float.MAX_VALUE. This conditional handles both -infinity
-      // and NaN since comparisons with NaN are always false.
-      return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+      float val = vals.floatVal(docID());
+      if (val >= 0 == false) { // this covers NaN as well since comparisons with NaN return false
+        return 0;
+      } else {
+        return boost * val;
+      }
     }
 
     public Explanation explain(int doc) throws IOException {
-      float sc = boost * vals.floatVal(doc);
+      Explanation expl = vals.explain(doc);
+      if (expl.getValue() < 0) {
+        expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
+      } else if (Float.isNaN(expl.getValue())) {
+        expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+      }
 
-      return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
+      return Explanation.match(boost * expl.getValue(), "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
           Explanation.match(weight.boost, "boost"));
     }

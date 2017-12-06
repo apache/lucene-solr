@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 public class ChaosMonkey {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  private static final int NO_STOP_WARN_TIME = 60;
   private static final int CONLOSS_PERCENT = 10; // 0 - 10 = 0 - 100%
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
@@ -583,8 +584,8 @@ public class ChaosMonkey {
     DirectUpdateHandler2.commitOnClose = true;
 
     double runtime = runTimer.getTime()/1000.0f;
-    if (runtime > 45 && stops.get() == 0) {
-      LuceneTestCase.fail("The Monkey ran for over 45 seconds and no jetties were stopped - this is worth investigating!");
+    if (runtime > NO_STOP_WARN_TIME && stops.get() == 0) {
+      LuceneTestCase.fail("The Monkey ran for over " + NO_STOP_WARN_TIME +" seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 

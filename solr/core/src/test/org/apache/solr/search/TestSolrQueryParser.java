@@ -222,12 +222,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
     assertEquals(3.0, ((BoostQuery) q).getBoost(), 0.0f);
 
-    qParser = QParser.getParser("(text:x text:y)^=-3", req);
-    q = qParser.getQuery();
-    assertTrue(q instanceof BoostQuery);
-    assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
-    assertEquals(-3.0, ((BoostQuery) q).getBoost(), 0.0f);
-
     req.close();
   }
 

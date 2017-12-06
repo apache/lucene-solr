@@ -60,15 +60,15 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
   public void testExplanationsIncludingScore() throws Exception {
 
     Query q = new TermQuery(new Term(FIELD, "w1"));
-    FunctionScoreQuery csq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
+    FunctionScoreQuery fsq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
 
-    qtest(csq, new int[] { 0, 1, 2, 3 });
+    qtest(fsq, new int[] { 0, 1, 2, 3 });
 
     Explanation e1 = searcher.explain(q, 0);
-    Explanation e = searcher.explain(csq, 0);
+    Explanation e = searcher.explain(fsq, 0);
 
     assertEquals(e.getValue(), e1.getValue(), 0.00001);
-    assertEquals(e.getDetails()[1], e1);
+    assertEquals(e.getDetails()[0], e1);
 
   }
 
@@ -78,7 +78,7 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     searcher.setSimilarity(new BM25Similarity());
 
     Explanation expl = searcher.explain(query, 0);
-    Explanation subExpl = expl.getDetails()[1];
+    Explanation subExpl = expl.getDetails()[0];
     assertEquals("constant(5.0)", subExpl.getDescription());
     assertEquals(0, subExpl.getDetails().length);
 
