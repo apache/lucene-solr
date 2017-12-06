@@ -29,16 +29,16 @@ public class AfterEffectB extends AfterEffect {
   public AfterEffectB() {}
 
   @Override
-  public final double score(BasicStats stats, double tfn) {
+  public final double scoreTimes1pTfn(BasicStats stats) {
     long F = stats.getTotalTermFreq()+1;
     long n = stats.getDocFreq()+1;
-    return (F + 1) / (n * (tfn + 1));
+    return (F + 1.0) / n;
   }
   
   @Override
   public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
-        (float) score(stats, tfn),
+        (float) (scoreTimes1pTfn(stats) / (1 + tfn)),
         getClass().getSimpleName() + ", computed from: ",
         Explanation.match((float) tfn, "tfn"),
         Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"),

@@ -58,13 +58,11 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
   // all the similarities that we rotate through
   /** The DFR basic models to test. */
   static BasicModel[] BASIC_MODELS = {
-    /* TODO: enable new BasicModelBE(), */ /* TODO: enable new BasicModelD(), */ new BasicModelG(),
-    new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
-    /* TODO: enable new BasicModelP() */
+    new BasicModelG(), new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
   };
   /** The DFR aftereffects to test. */
   static AfterEffect[] AFTER_EFFECTS = {
-    new AfterEffectB(), new AfterEffectL(), new AfterEffect.NoAfterEffect()
+    new AfterEffectB(), new AfterEffectL()
   };
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {

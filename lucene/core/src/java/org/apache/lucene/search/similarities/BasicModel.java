@@ -36,8 +36,10 @@ public abstract class BasicModel {
    */
   public BasicModel() {}
 
-  /** Returns the informative content score. */
-  public abstract double score(BasicStats stats, double tfn);
+  /** Returns the informative content score combined with the after effect, more specifically
+   * {@code informationContentScore * aeTimes1pTfn / (1 + tfn)}. This function must be
+   * non-decreasing with {@code tfn}. */
+  public abstract double score(BasicStats stats, double tfn, double aeTimes1pTfn);
   
   /**
    * Returns an explanation for the score.
@@ -46,9 +48,9 @@ public abstract class BasicModel {
    * explanation for such models. Subclasses that use other statistics must
    * override this method.</p>
    */
-  public Explanation explain(BasicStats stats, double tfn) {
+  public Explanation explain(BasicStats stats, double tfn, double aeTimes1pTfn) {
     return Explanation.match(
-        (float) score(stats, tfn),
+        (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
         getClass().getSimpleName() + ", computed from: ",
         Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
         Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"));

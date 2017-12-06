@@ -30,11 +30,18 @@ public class BasicModelIne extends BasicModel {
   public BasicModelIne() {}
 
   @Override
-  public final double score(BasicStats stats, double tfn) {
+  public final double score(BasicStats stats, double tfn, double aeTimes1pTfn) {
     long N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
     double ne = N * (1 - Math.pow((N - 1) / (double)N, F));
-    return tfn * log2((N + 1) / (ne + 0.5));
+    double A = log2((N + 1) / (ne + 0.5));
+
+    // basic model I(ne) should return A * tfn
+    // which we rewrite to A * (1 + tfn) - A
+    // so that it can be combined with the after effect while still guaranteeing
+    // that the result is non-decreasing with tfn
+
+    return A * aeTimes1pTfn * (1 - 1 / (1 + tfn));
   }
 
   @Override

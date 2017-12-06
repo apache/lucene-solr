@@ -29,14 +29,14 @@ public class AfterEffectL extends AfterEffect {
   public AfterEffectL() {}
 
   @Override
-  public final double score(BasicStats stats, double tfn) {
-    return 1 / (tfn + 1);
+  public final double scoreTimes1pTfn(BasicStats stats) {
+    return 1.0;
   }
   
   @Override
   public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
-        (float) score(stats, tfn),
+        (float) (scoreTimes1pTfn(stats) / (1 + tfn)),
         getClass().getSimpleName() + ", computed from: ",
         Explanation.match((float) tfn, "tfn"));
   }
