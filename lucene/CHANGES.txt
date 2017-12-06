@@ -4,7 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.3.0 =======================
-(No Changes)
+
+API Changes
+
+* LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
+  (Pulak Ghosh via Adrien Grand)
 
 ======================= Lucene 7.2.0 =======================
 

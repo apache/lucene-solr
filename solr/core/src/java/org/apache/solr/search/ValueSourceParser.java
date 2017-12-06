@@ -41,7 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
-import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -406,7 +406,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         if (distClass.equalsIgnoreCase("jw")) {
           dist = new JaroWinklerDistance();
         } else if (distClass.equalsIgnoreCase("edit")) {
-          dist = new LevensteinDistance();
+          dist = new LevenshteinDistance();
         } else if (distClass.equalsIgnoreCase("ngram")) {
           int ngram = 2;
           if (fp.hasMoreArguments()) {
