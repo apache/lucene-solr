@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -1439,6 +1440,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "collection1";

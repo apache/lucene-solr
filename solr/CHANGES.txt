@@ -52,8 +52,6 @@ New Features
 ----------------------
 * SOLR-11448: Implement an option in collection commands to wait for final results. (ab)
 
-* SOLR-11072: Implement trigger for searchRate event type. (ab)
-
 * SOLR-11524: A new autoscaling/suggestions API end-point which gives autoscaling suggestions (noble)
 
 * SOLR-11519: Implement suggestions for replica count violations (noble)

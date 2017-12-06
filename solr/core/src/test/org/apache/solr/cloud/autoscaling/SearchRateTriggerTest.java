@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -43,6 +44,7 @@ import org.junit.Test;
 /**
  *
  */
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
 public class SearchRateTriggerTest extends SolrCloudTestCase {
 
   private static final String PREFIX = SearchRateTriggerTest.class.getSimpleName() + "-";
