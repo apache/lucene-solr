@@ -554,7 +554,7 @@ Then, configure `DefaultWrapperModel` to wrap `myModel.json`:
 
 `myModel.json` will be loaded during the initialization and be able to use by specifying `model=myWrapperModel`.
 
-NOTE: No `"features"` are configured in `myWrapperModel` because the features of the wrapped model (`myModel`) will be used; also note that the `"store"` configured for the wrapper model must match that of the wrapped model i.e. in this example the feature store called `largeModelsFeatureStore` is used.
+NOTE: No `"features"` are configured in `myWrapperModel` because the features of the wrapped model (`myModel`) will be used; also note that the `"store"` configured for the wrapper model must match that of the wrapped model i.e., in this example the feature store called `largeModelsFeatureStore` is used.
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
 
