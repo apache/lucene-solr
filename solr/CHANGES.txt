@@ -208,6 +208,10 @@ Bug Fixes
 * SOLR-11590: Synchronize ZK connect/disconnect handling so that they are processed in linear order
   (noble, Varun Thacker)
 
+* SOLR-11664: JSON Facet API: range facets containing unique, hll, min, max aggregations over string fields
+  produced incorrect results since 7.0 (Volodymyr Rudniev, yonik)
+
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
