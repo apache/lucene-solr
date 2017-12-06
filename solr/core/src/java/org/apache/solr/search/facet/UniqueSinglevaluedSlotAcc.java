@@ -27,7 +27,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
 
 class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   SortedDocValues topLevel;
