@@ -37,7 +37,7 @@ All configuration items, can be retrieved by sending a GET request to the `/conf
 curl http://localhost:8983/solr/techproducts/config
 ----
 
-To restrict the returned results to a top level section, e.g., `query`, `requestHandler` or `updateHandler`, append the name of the section to the `/config` endpoint following a slash. E.g. to retrieve configuration for all request handlers:
+To restrict the returned results to a top level section, e.g., `query`, `requestHandler` or `updateHandler`, append the name of the section to the `/config` endpoint following a slash. For example, to retrieve configuration for all request handlers:
 
 [source,bash]
 ----

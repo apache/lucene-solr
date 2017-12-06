@@ -108,7 +108,7 @@ emitted by the analyzer. The `analyze` function can be called on its own or with
 The expressions below show the various ways in which you can use the `analyze` evaluator.
 
 * Analyze the raw text: `analyze("hello world", analyzerField)`
-* Analyze a text field within a `select` expression. This will annotate the tuples with output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
+* Analyze a text field within a `select` expression. This will annotate tuples with the output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
 * Analyze a text field with a `cartesianProduct` expression. This will stream each token emitted by the analyzer in its own tuple: `cartesianProduct(expr, analyze(textField, analyzer) as outField)`
 
 == and
