@@ -28,11 +28,12 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,26 +57,40 @@ public class ComputePlanAction extends TriggerActionBase {
       if (autoScalingConf.isEmpty()) {
         throw new Exception("Action: " + getName() + " executed but no policy is configured");
       }
-      Policy policy = autoScalingConf.getPolicy();
-      Policy.Session session = policy.createSession(cloudManager);
-      Suggester suggester = getSuggester(session, event, cloudManager);
-      while (true) {
-        SolrRequest operation = suggester.getSuggestion();
-        if (operation == null) break;
-        log.info("Computed Plan: {}", operation.getParams());
-        Map<String, Object> props = context.getProperties();
-        props.compute("operations", (k, v) -> {
-          List<SolrRequest> operations = (List<SolrRequest>) v;
-          if (operations == null) operations = new ArrayList<>();
-          operations.add(operation);
-          return operations;
-        });
-        session = suggester.getSession();
-        suggester = getSuggester(session, event, cloudManager);
+
+      //    Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
+//    return new PolicyHelper.SessionWrapper(session, null);
+      PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getSession(cloudManager);
+      Policy.Session session = sessionWrapper.get();
+//      Policy policy = autoScalingConf.getPolicy();
+      try {
+        Suggester suggester = getSuggester(session, event, cloudManager);
+        while (true) {
+          SolrRequest operation = suggester.getSuggestion();
+          if (operation == null) break;
+          log.info("Computed Plan: {}", operation.getParams());
+          Map<String, Object> props = context.getProperties();
+          props.compute("operations", (k, v) -> {
+            List<SolrRequest> operations = (List<SolrRequest>) v;
+            if (operations == null) operations = new ArrayList<>();
+            operations.add(operation);
+            return operations;
+          });
+          session = suggester.getSession();
+          suggester = getSuggester(session, event, cloudManager);
+        }
+      } finally {
+        releasePolicySession(sessionWrapper, session);
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected exception while processing event: " + event, e);    }
+  }
+
+  private void releasePolicySession(PolicyHelper.SessionWrapper sessionWrapper, Policy.Session session) {
+    sessionWrapper.returnSession(session);
+    sessionWrapper.release();
+
   }
 
   protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {

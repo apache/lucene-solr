@@ -30,6 +30,7 @@ import org.apache.solr.common.util.ObjectCache;
  */
 public class DelegatingCloudManager implements SolrCloudManager {
   private final SolrCloudManager delegate;
+  private ObjectCache objectCache = new ObjectCache();
 
   public DelegatingCloudManager(SolrCloudManager delegate) {
     this.delegate = delegate;
@@ -57,7 +58,7 @@ public class DelegatingCloudManager implements SolrCloudManager {
 
   @Override
   public ObjectCache getObjectCache() {
-    return delegate.getObjectCache();
+    return delegate == null ? objectCache : delegate.getObjectCache();
   }
 
   @Override
