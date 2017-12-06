@@ -59,6 +59,13 @@ API Changes
 * LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
   (Pulak Ghosh via Adrien Grand)
 
+Improvements
+
+* LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
+  Index/Update Threads try to help out flushing pending document buffers to
+  disk. This change adds an expert setting to opt ouf of this behavior unless
+  flusing is falling behind. (Simon Willnauer)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
