@@ -18,7 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.LuceneTestCase;
@@ -31,8 +31,8 @@ public class ConjunctionSolrSpellCheckerTest extends LuceneTestCase {
   @Test
   public void test() throws Exception {
     ConjunctionSolrSpellChecker cssc = new ConjunctionSolrSpellChecker();
-    MockSolrSpellChecker levenstein1 = new MockSolrSpellChecker(new LevensteinDistance());
-    MockSolrSpellChecker levenstein2 = new MockSolrSpellChecker(new LevensteinDistance());
+    MockSolrSpellChecker levenstein1 = new MockSolrSpellChecker(new LevenshteinDistance());
+    MockSolrSpellChecker levenstein2 = new MockSolrSpellChecker(new LevenshteinDistance());
     MockSolrSpellChecker ngram = new MockSolrSpellChecker(new NGramDistance());
     
     cssc.addChecker(levenstein1);
