@@ -89,7 +89,8 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
     executeAll(requests);
-    Policy.Session session = autoScalingConfig.getPolicy().createSession(ocmh.overseer.getSolrCloudManager());
+    PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getSession(ocmh.overseer.getSolrCloudManager());
+    Policy.Session session =  sessionWrapper.get();
     for (; ; ) {
       Suggester suggester = session.getSuggester(MOVEREPLICA)
           .hint(Suggester.Hint.TARGET_NODE, nodeName);
@@ -101,9 +102,12 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           REPLICA_PROP, request.getParams().get(REPLICA_PROP),
           ASYNC, request.getParams().get(ASYNC)));
     }
-
-
-    executeAll(requests);
+    sessionWrapper.returnSession(session);
+    try {
+      executeAll(requests);
+    } finally {
+      sessionWrapper.release();
+    }
   }
 
   private void executeAll(List<ZkNodeProps> requests) throws Exception {

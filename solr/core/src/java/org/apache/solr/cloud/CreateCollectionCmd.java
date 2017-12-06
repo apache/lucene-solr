@@ -103,6 +103,7 @@ public class CreateCollectionCmd implements Cmd {
     }
 
     ocmh.validateConfigOrThrowSolrException(configName);
+    PolicyHelper.SessionWrapper sessionWrapper = null;
 
     try {
       // look at the replication factor and see if it matches reality
@@ -184,6 +185,7 @@ public class CreateCollectionCmd implements Cmd {
         }
         replicaPositions = Assign.identifyNodes(ocmh
             , clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
+        sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -318,7 +320,7 @@ public class CreateCollectionCmd implements Cmd {
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     } finally {
-      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
+      if(sessionWrapper != null) sessionWrapper.release();
     }
   }
 

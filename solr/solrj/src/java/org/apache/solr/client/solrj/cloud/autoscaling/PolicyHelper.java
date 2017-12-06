@@ -18,13 +18,14 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
@@ -36,12 +37,19 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
+import static org.apache.solr.common.util.Utils.time;
+import static org.apache.solr.common.util.Utils.timeElapsed;
 
 public class PolicyHelper {
   private static ThreadLocal<Map<String, String>> policyMapping = new ThreadLocal<>();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static List<ReplicaPosition> getReplicaLocations(String collName, AutoScalingConfig autoScalingConfig,
                                                           SolrCloudManager cloudManager,
                                                           Map<String, String> optionalPolicyMapping,
@@ -52,26 +60,45 @@ public class PolicyHelper {
                                                           List<String> nodesList) {
     List<ReplicaPosition> positions = new ArrayList<>();
     ClusterStateProvider stateProvider = new DelegatingClusterStateProvider(cloudManager.getClusterStateProvider()) {
-        @Override
-        public String getPolicyNameByCollection(String coll) {
-          return policyMapping.get() != null && policyMapping.get().containsKey(coll) ?
-              optionalPolicyMapping.get(coll) :
-              delegate.getPolicyNameByCollection(coll);
-        }
-      };
+      @Override
+      public String getPolicyNameByCollection(String coll) {
+        return policyMapping.get() != null && policyMapping.get().containsKey(coll) ?
+            optionalPolicyMapping.get(coll) :
+            delegate.getPolicyNameByCollection(coll);
+      }
+    };
     SolrCloudManager delegatingManager = new DelegatingCloudManager(cloudManager) {
       @Override
       public ClusterStateProvider getClusterStateProvider() {
         return stateProvider;
       }
+
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        if (autoScalingConfig != null) {
+          return new DelegatingDistribStateManager(null) {
+            @Override
+            public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+              return autoScalingConfig;
+            }
+          };
+        } else {
+          return super.getDistribStateManager();
+        }
+      }
     };
 
     policyMapping.set(optionalPolicyMapping);
+    SessionWrapper sessionWrapper = null;
     Policy.Session session = null;
     try {
-      session = SESSION_REF.get() != null ?
-          SESSION_REF.get().initOrGet(delegatingManager, autoScalingConfig.getPolicy()) :
-          autoScalingConfig.getPolicy().createSession(delegatingManager);
+      try {
+        SESSION_WRAPPPER_REF.set(sessionWrapper = getSession(delegatingManager));
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to get autoscaling policy session", e);
+
+      }
+      session = sessionWrapper.session;
 
       Map<Replica.Type, Integer> typeVsCount = new EnumMap<>(Replica.Type.class);
       typeVsCount.put(Replica.Type.NRT, nrtReplicas);
@@ -100,15 +127,16 @@ public class PolicyHelper {
         }
       }
     } finally {
-      if (session != null && SESSION_REF.get() != null) SESSION_REF.get().updateSession(session);
       policyMapping.remove();
+      if (sessionWrapper != null) {
+        sessionWrapper.returnSession(session);
+      }
     }
     return positions;
   }
 
 
   public static final int SESSION_EXPIRY = 180;//3 seconds
-  public static ThreadLocal<Long> REF_VERSION = new ThreadLocal<>();
 
   public static MapWriter getDiagnostics(Policy policy, SolrClientCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
@@ -155,76 +183,219 @@ public class PolicyHelper {
     return suggestionCtx.getSuggestions();
   }
 
-  public static class SessionRef {
-    private final AtomicLong myVersion = new AtomicLong(0);
-    AtomicInteger refCount = new AtomicInteger();
-    private Policy.Session session;
-    long lastUsedTime;
+  public enum Status {
+    NULL,
+    //it is just created and not yet used or all operations on it has been competed fully
+    UNUSED,
+    COMPUTING, EXECUTING;
+  }
+
+  /**
+   * This class stores a session for sharing purpose. If a process creates a session to
+   * compute operations,
+   * 1) see if there is a session that is available in the cache,
+   * 2) if yes, check if it is expired
+   * 3) if it is expired, create a new session
+   * 4) if it is not expired, borrow it
+   * 5) after computing operations put it back in the cache
+   */
+  static class SessionRef {
+    private final Object lockObj = new Object();
+    private SessionWrapper sessionWrapper = SessionWrapper.DEF_INST;
+
 
     public SessionRef() {
     }
 
-    public long getRefVersion(){
-      return myVersion.get();
+
+    //only for debugging
+    SessionWrapper getSessionWrapper() {
+      return sessionWrapper;
+    }
+
+    /**
+     * All operations suggested by the current session object
+     * is complete. Do not even cache anything
+     *
+     */
+    private void release(SessionWrapper sessionWrapper) {
+      synchronized (lockObj) {
+        if (sessionWrapper.createTime == this.sessionWrapper.createTime && this.sessionWrapper.refCount.get() <= 0) {
+          log.debug("session set to NULL");
+          this.sessionWrapper = SessionWrapper.DEF_INST;
+        } // else somebody created a new session b/c of expiry . So no need to do anything about it
+      }
+    }
+
+    /**
+     * Computing is over for this session and it may contain a new session with new state
+     * The session can be used by others while the caller is performing operations
+     *
+     */
+    private void returnSession(SessionWrapper sessionWrapper) {
+      synchronized (lockObj) {
+        sessionWrapper.status = Status.EXECUTING;
+        log.info("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} ", time(MILLISECONDS),
+            sessionWrapper.createTime,
+            this.sessionWrapper.createTime);
+        if (sessionWrapper.createTime == this.sessionWrapper.createTime) {
+          //this session was used for computing new operations and this can now be used for other
+          // computing
+          this.sessionWrapper = sessionWrapper;
+
+          //one thread who is waiting for this need to be notified.
+          lockObj.notify();
+        } else {
+          log.info("create time NOT SAME {} ", SessionWrapper.DEF_INST.createTime);
+          //else just ignore it
+        }
+      }
+
     }
 
 
-    public void decref(long version) {
-      synchronized (SessionRef.class) {
-        if (session == null) return;
-        if(myVersion.get() != version) return;
-        if (refCount.decrementAndGet() <= 0) {
-          session = null;
-          lastUsedTime = 0;
+    public SessionWrapper get(SolrCloudManager cloudManager) throws IOException, InterruptedException {
+      synchronized (lockObj) {
+        if (sessionWrapper.status == Status.NULL ||
+            TimeUnit.SECONDS.convert(System.nanoTime() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
+          //no session available or the session is expired
+          return createSession(cloudManager);
+        } else {
+          long waitStart = time(MILLISECONDS);
+          //the session is not expired
+          log.debug("reusing a session {}", this.sessionWrapper.createTime);
+          if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
+            this.sessionWrapper.status = Status.COMPUTING;
+            return sessionWrapper;
+          } else {
+            //status= COMPUTING it's being used for computing. computing is
+            log.debug("session being used. waiting... current time {} ", time(MILLISECONDS));
+            try {
+              lockObj.wait(10 * 1000);//wait for a max of 10 seconds
+            } catch (InterruptedException e) {
+              log.info("interrupted... ");
+            }
+            log.debug("out of waiting curr-time:{} time-elapsed {}", time(MILLISECONDS), timeElapsed(waitStart, MILLISECONDS));
+            // now this thread has woken up because it got timed out after 10 seconds or it is notified after
+            //the session was returned from another COMPUTING operation
+            if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
+              log.debug("Wait over. reusing the existing session ");
+              this.sessionWrapper.status = Status.COMPUTING;
+              return sessionWrapper;
+            } else {
+              //create a new Session
+              return createSession(cloudManager);
+            }
+          }
         }
       }
+
+
+    }
+
+    private SessionWrapper createSession(SolrCloudManager cloudManager) throws InterruptedException, IOException {
+      synchronized (lockObj) {
+        log.debug("Creating a new session");
+        Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
+        log.debug("New session created ");
+        this.sessionWrapper = new SessionWrapper(session, this);
+        this.sessionWrapper.status = Status.COMPUTING;
+        return sessionWrapper;
+      }
+    }
+
+
+  }
+
+  /**
+   * How to get a shared Policy Session
+   * 1) call {@link #getSession(SolrCloudManager)}
+   * 2) compute all suggestions
+   * 3) call {@link  SessionWrapper#returnSession(Policy.Session)}
+   * 4) perform all suggestions
+   * 5) call {@link  SessionWrapper#release()}
+   */
+  public static SessionWrapper getSession(SolrCloudManager cloudManager) throws IOException, InterruptedException {
+    SessionRef sessionRef = (SessionRef) cloudManager.getObjectCache().computeIfAbsent(SessionRef.class.getName(), s -> new SessionRef());
+    return sessionRef.get(cloudManager);
+  }
+
+  /**
+   * Use this to get the last used session wrapper in this thread
+   *
+   * @param clear whether to unset the threadlocal or not
+   */
+  public static SessionWrapper getLastSessionWrapper(boolean clear) {
+    SessionWrapper wrapper = SESSION_WRAPPPER_REF.get();
+    if (clear) SESSION_WRAPPPER_REF.remove();
+    return wrapper;
+
+  }
+
+  static ThreadLocal<SessionWrapper> SESSION_WRAPPPER_REF = new ThreadLocal<>();
+
+
+  public static class SessionWrapper {
+    public static final SessionWrapper DEF_INST = new SessionWrapper(null, null);
+
+    static {
+      DEF_INST.status = Status.NULL;
+      DEF_INST.createTime = -1l;
+      DEF_INST.lastUpdateTime = -1l;
+    }
+
+    private long createTime;
+    private long lastUpdateTime;
+    private Policy.Session session;
+    public Status status;
+    private final SessionRef ref;
+    private AtomicInteger refCount = new AtomicInteger();
+
+    public long getCreateTime() {
+      return createTime;
+    }
+
+    public long getLastUpdateTime() {
+      return lastUpdateTime;
+    }
+
+    public SessionWrapper(Policy.Session session, SessionRef ref) {
+      lastUpdateTime = createTime = System.nanoTime();
+      this.session = session;
+      this.status = Status.UNUSED;
+      this.ref = ref;
+    }
+
+    public Policy.Session get() {
+      return session;
+    }
+
+    public SessionWrapper update(Policy.Session session) {
+      this.lastUpdateTime = System.nanoTime();
+      this.session = session;
+      return this;
     }
 
     public int getRefCount() {
       return refCount.get();
     }
 
-    public Policy.Session get() {
-      synchronized (SessionRef.class) {
-        if (session == null) return null;
-        if (TimeUnit.SECONDS.convert(System.nanoTime() - lastUsedTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
-          session = null;
-          return null;
-        } else {
-          REF_VERSION.set(myVersion.get());
-          refCount.incrementAndGet();
-          return session;
-        }
-      }
+    /**
+     * return this for later use and update the session with the latest state
+     * ensure that this is done after computing the suggestions
+     */
+    public void returnSession(Policy.Session session) {
+      this.update(session);
+      refCount.incrementAndGet();
+      ref.returnSession(this);
+
     }
 
-    public Policy.Session initOrGet(SolrCloudManager cloudManager, Policy policy) {
-      synchronized (SessionRef.class) {
-        Policy.Session session = get();
-        if (session != null) return session;
-        this.session = policy.createSession(cloudManager);
-        myVersion.incrementAndGet();
-        lastUsedTime = System.nanoTime();
-        REF_VERSION.set(myVersion.get());
-        refCount.set(1);
-        return this.session;
-      }
-    }
+    //all ops are executed now it can be destroyed
+    public void release() {
+      refCount.decrementAndGet();
+      ref.release(this);
 
-
-    private void updateSession(Policy.Session session) {
-      this.session = session;
-      lastUsedTime = System.nanoTime();
     }
   }
-
-  public static void clearFlagAndDecref(SessionRef policySessionRef) {
-    Long refVersion =  REF_VERSION.get();
-    if (refVersion != null) policySessionRef.decref(refVersion);
-    REF_VERSION.remove();
-  }
-
-  public static ThreadLocal<SessionRef> SESSION_REF = new ThreadLocal<>();
-
-
 }

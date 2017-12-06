@@ -92,6 +92,8 @@ public class SplitShardCmd implements Cmd {
 
     DocCollection collection = clusterState.getCollection(collectionName);
     DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+    PolicyHelper.SessionWrapper sessionWrapper = null;
+
 
     Slice parentSlice;
 
@@ -392,6 +394,7 @@ public class SplitShardCmd implements Cmd {
           collectionName,
           new ZkNodeProps(collection.getProperties()),
           subSlices, repFactor - 1, 0, 0);
+      sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
@@ -513,7 +516,7 @@ public class SplitShardCmd implements Cmd {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
     } finally {
-      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
+      if (sessionWrapper != null) sessionWrapper.release();
     }
   }
 }

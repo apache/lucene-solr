@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
@@ -101,8 +101,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
-    final Long policyVersionBefore = PolicyHelper.REF_VERSION.get();
-    AtomicLong policyVersionAfter  = new AtomicLong(-1);
+
+    AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
     if (!skipCreateReplicaInClusterState) {
       if (CreateShardCmd.usePolicyFramework(coll, ocmh)) {
@@ -118,9 +118,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
               replicaType == Replica.Type.TLOG ? 0 : 1,
               replicaType == Replica.Type.PULL ? 0 : 1
           ).get(0).node;
-          if (policyVersionBefore == null && PolicyHelper.REF_VERSION.get() != null) {
-            policyVersionAfter.set(PolicyHelper.REF_VERSION.get());
-          }
+          sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
         }
       } else {
         node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
@@ -220,9 +218,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       ocmh.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica", asyncId, requestMap);
       ocmh.waitForCoreNodeName(collection, fnode, fcoreName);
-      if (policyVersionAfter.get() > -1) {
-        PolicyHelper.REF_VERSION.remove();
-        ocmh.policySessionRef.decref(policyVersionAfter.get());
+      if (sessionWrapper.get() != null) {
+        sessionWrapper.get().release();
       }
       if (onComplete != null) onComplete.run();
     };
