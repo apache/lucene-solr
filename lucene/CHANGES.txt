@@ -59,6 +59,9 @@ Other
 * LUCENE-8106: Add script (reproduceJenkinsFailures.py) to attempt to reproduce
   failing tests from a Jenkins log. (Steve Rowe)
 
+* LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
+  (Pulak Ghosh via Adrien Grand)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
