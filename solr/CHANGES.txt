@@ -372,8 +372,6 @@ New Features
 
 * SOLR-10858: Make UUIDUpdateProcessorFactory as Runtime URP (Amit Sarkar, noble)
 
-* SOLR-11126: Node level health check handler (Anshum Gupta)
-
 * SOLR-11031: Implement SystemLogListener for autoscaling (ab)
 
 * SOLR-11205: Any metrics value can be directly accessed in autoscaling policies (noble)
