@@ -46,6 +46,9 @@ Optimizations
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
 
+======================= Lucene 7.3.0 =======================
+(No Changes)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
