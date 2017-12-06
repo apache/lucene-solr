@@ -130,6 +130,9 @@ Bug Fixes
 * LUCENE-8078: The query cache should not cache instances of
   MatchNoDocsQuery. (Jon Harper via Adrien Grand)
 
+* LUCENE-8048: Filesystems do not guarantee order of directories updates
+  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
+  
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
@@ -144,7 +147,7 @@ Optimizations
 * LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
-  
+
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
@@ -156,6 +159,10 @@ Bug Fixes
 
 * LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
   instead of 1. (Simon Willnauer)
+
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless) 
 
 Build
 

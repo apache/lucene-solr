@@ -84,7 +84,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   even while readers are using the index. The old readers will 
   continue to search the "point in time" snapshot they had opened, 
   and won't see the newly created index until they re-open. If 
-  {@link OpenMode#CREATE_OR_APPEND} is used IndexWriter will create a 
+  {@link OpenMode#CREATE_OR_APPEND} is used IndexWriter will create a
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
@@ -551,13 +551,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       return true;
     }
 
-    public synchronized void drop(SegmentCommitInfo info) throws IOException {
+    public synchronized boolean drop(SegmentCommitInfo info) throws IOException {
       final ReadersAndUpdates rld = readerMap.get(info);
       if (rld != null) {
         assert info == rld.info;
         readerMap.remove(info);
         rld.dropReaders();
+        return true;
       }
+      return false;
     }
 
     public synchronized long ramBytesUsed() {
@@ -726,7 +728,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       final Iterator<Map.Entry<SegmentCommitInfo,ReadersAndUpdates>> it = readerMap.entrySet().iterator();
       while(it.hasNext()) {
         final ReadersAndUpdates rld = it.next().getValue();
-
         try {
           if (doSave && rld.writeLiveDocs(directory)) {
             // Make sure we only write del docs and field updates for a live segment:
@@ -1097,7 +1098,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
 
-      commitUserData = new HashMap<String,String>(segmentInfos.getUserData()).entrySet();
+      commitUserData = new HashMap<>(segmentInfos.getUserData()).entrySet();
 
       pendingNumDocs.set(segmentInfos.totalMaxDoc());
 
@@ -1267,6 +1268,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "now flush at close");
         }
+
         flush(true, true);
         waitForMerges();
         commitInternal(config.getMergePolicy());
@@ -1617,9 +1619,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // merge will skip merging it and will then drop
     // it once it's done:
     if (mergingSegments.contains(info) == false) {
-      segmentInfos.remove(info);
-      pendingNumDocs.addAndGet(-info.info.maxDoc());
-      readerPool.drop(info);
+      // it's possible that we invoke this method more than once for the same SCI
+      // we must only remove the docs once!
+      boolean dropPendingDocs = segmentInfos.remove(info);
+      try {
+        // this is sneaky - we might hit an exception while dropping a reader but then we have already
+        // removed the segment for the segmentInfo and we lost the pendingDocs update due to that.
+        // therefore we execute the adjustPendingNumDocs in a finally block to account for that.
+        dropPendingDocs |= readerPool.drop(info);
+      } finally {
+        if (dropPendingDocs) {
+          adjustPendingNumDocs(-info.info.maxDoc());
+        }
+      }
     }
   }
 
@@ -2342,6 +2354,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // Make sure no commit is running, else e.g. we can close while another thread is still fsync'ing:
     synchronized(commitLock) {
       rollbackInternalNoCommit();
+
+      assert pendingNumDocs.get() == segmentInfos.totalMaxDoc()
+          : "pendingNumDocs " + pendingNumDocs.get() + " != " + segmentInfos.totalMaxDoc() + " totalMaxDoc";
     }
   }
 
@@ -2354,7 +2369,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     try {
       abortMerges();
-
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
       }
@@ -2365,6 +2379,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
       docWriter.abort(this); // don't sync on IW here
+      docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
+      purge(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
       synchronized(this) {
 
         if (pendingCommit != null) {
@@ -2376,15 +2392,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             notifyAll();
           }
         }
-
         // Don't bother saving any changes in our segmentInfos
         readerPool.dropAll(false);
-
+        final int totalMaxDoc = segmentInfos.totalMaxDoc();
         // Keep the same segmentInfos instance but replace all
         // of its SegmentInfo instances so IFD below will remove
         // any segments we flushed since the last commit:
         segmentInfos.rollbackSegmentInfos(rollbackSegments);
-
+        int rollbackMaxDoc = segmentInfos.totalMaxDoc();
+        // now we need to adjust this back to the rolled back SI but don't set it to the absolute value
+        // otherwise we might hide internal bugsf
+        adjustPendingNumDocs(-(totalMaxDoc-rollbackMaxDoc));
         if (infoStream.isEnabled("IW") ) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
@@ -2495,9 +2513,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     try {
       synchronized (fullFlushLock) { 
-        long abortedDocCount = docWriter.lockAndAbortAll(this);
-        pendingNumDocs.addAndGet(-abortedDocCount);
-        
+        docWriter.lockAndAbortAll(this);
         processEvents(false, true);
         synchronized (this) {
           try {
@@ -2505,11 +2521,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             abortMerges();
             // Let merges run again
             stopMerges = false;
+            adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
             // Remove all segments
-            pendingNumDocs.addAndGet(-segmentInfos.totalMaxDoc());
             segmentInfos.clear();
             // Ask deleter to locate unreferenced files & remove them:
             deleter.checkpoint(segmentInfos, false);
+
             /* don't refresh the deleter here since there might
              * be concurrent indexing requests coming in opening
              * files on the directory after we called DW#abort()
@@ -2522,12 +2539,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             changeCount.incrementAndGet();
             segmentInfos.changed();
             globalFieldNumberMap.clear();
-
             success = true;
             long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
             docWriter.setLastSeqNo(seqNo);
             return seqNo;
-
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
             if (!success) {
@@ -2660,6 +2675,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   synchronized void publishFlushedSegment(SegmentCommitInfo newSegment,
                                           FrozenBufferedUpdates packet, FrozenBufferedUpdates globalPacket,
                                           Sorter.DocMap sortMap) throws IOException {
+    boolean published = false;
     try {
       // Lock order IW -> BDS
       ensureOpen(false);
@@ -2695,6 +2711,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
       newSegment.setBufferedDeletesGen(nextGen);
       segmentInfos.add(newSegment);
+      published = true;
       checkpoint();
 
       if (packet != null && packet.any() && sortMap != null) {
@@ -2705,6 +2722,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
       
     } finally {
+      if (published == false) {
+        adjustPendingNumDocs(-newSegment.info.maxDoc());
+      }
       flushCount.incrementAndGet();
       doAfterFlush();
     }
@@ -3894,7 +3914,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // doing this  makes  MockDirWrapper angry in
       // TestNRTThreads (LUCENE-5434):
       readerPool.drop(merge.info);
-
       // Safe: these files must exist:
       deleteNewFiles(merge.info.files());
       return false;
@@ -3955,9 +3974,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     // Now deduct the deleted docs that we just reclaimed from this
     // merge:
-    int delDocCount = merge.totalMaxDoc - merge.info.info.maxDoc();
+    int delDocCount;
+    if (dropSegment) {
+      // if we drop the segment we have to reduce the pendingNumDocs by merge.totalMaxDocs since we never drop
+      // the docs when we apply deletes if the segment is currently merged.
+      delDocCount = merge.totalMaxDoc;
+    } else {
+      delDocCount = merge.totalMaxDoc - merge.info.info.maxDoc();
+    }
     assert delDocCount >= 0;
-    pendingNumDocs.addAndGet(-delDocCount);
+    adjustPendingNumDocs(-delDocCount);
 
     if (dropSegment) {
       assert !segmentInfos.contains(merge.info);
@@ -5072,11 +5098,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   private void processEvents(Queue<Event> queue, boolean triggerMerge, boolean forcePurge) throws IOException {
-    boolean processed = false;
     if (tragedy == null) {
       Event event;
       while ((event = queue.poll()) != null)  {
-        processed = true;
         event.process(this, triggerMerge, forcePurge);
       }
     }
@@ -5088,7 +5112,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * encoded inside the {@link #process(IndexWriter, boolean, boolean)} method.
    *
    */
-  static interface Event {
+  interface Event {
     
     /**
      * Processes the event. This method is called by the {@link IndexWriter}
@@ -5111,9 +5135,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  IllegalArgumentException} if it's not allowed. */ 
   private void reserveDocs(long addedNumDocs) {
     assert addedNumDocs >= 0;
-    if (pendingNumDocs.addAndGet(addedNumDocs) > actualMaxDocs) {
+    if (adjustPendingNumDocs(addedNumDocs) > actualMaxDocs) {
       // Reserve failed: put the docs back and throw exc:
-      pendingNumDocs.addAndGet(-addedNumDocs);
+      adjustPendingNumDocs(-addedNumDocs);
       tooManyDocs(addedNumDocs);
     }
   }
@@ -5141,5 +5165,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public long getMaxCompletedSequenceNumber() {
     ensureOpen();
     return docWriter.getMaxCompletedSequenceNumber();
+  }
+
+  private long adjustPendingNumDocs(long numDocs) {
+    long count = pendingNumDocs.addAndGet(numDocs);
+    assert count >= 0 : "pendingNumDocs is negative: " + count;
+    return count;
   }
 }

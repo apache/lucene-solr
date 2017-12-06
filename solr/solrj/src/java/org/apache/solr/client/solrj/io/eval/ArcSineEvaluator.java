@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -45,8 +44,7 @@ public class ArcSineEvaluator extends RecursiveNumericEvaluator implements OneVa
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.asin(((BigDecimal)value).doubleValue());
+      return Math.asin(((Number)value).doubleValue());
     }
   }
 }

@@ -17,10 +17,12 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -32,28 +34,65 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements TwoVal
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the first value", toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the second value", toExpression(constructingFactory)));
     }
-    if(!(first instanceof RegressionEvaluator.RegressionTuple)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RegressionTuple",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
-    if(!(second instanceof Number) && !(second instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
-    
-    RegressionEvaluator.RegressionTuple regressedTuple = (RegressionEvaluator.RegressionTuple)first;
 
-    if(second instanceof Number){
-      return regressedTuple.predict(((Number)second).doubleValue());
+    if (!(first instanceof VectorFunction) && !(first instanceof RegressionEvaluator.RegressionTuple) && !(first instanceof OLSRegressionEvaluator.MultipleRegressionTuple)) {
+      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a RegressionTuple", toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
-    else{
-      return ((List<?>)second).stream().map(value -> regressedTuple.predict(((Number)value).doubleValue())).collect(Collectors.toList());
+
+    if (!(second instanceof Number) && !(second instanceof List<?>) && !(second instanceof Matrix)) {
+      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a Number, Array or Matrix", toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
+
+    if (first instanceof RegressionEvaluator.RegressionTuple) {
+
+      RegressionEvaluator.RegressionTuple regressedTuple = (RegressionEvaluator.RegressionTuple) first;
+      if (second instanceof Number) {
+        return regressedTuple.predict(((Number) second).doubleValue());
+      } else {
+        return ((List<?>) second).stream().map(value -> regressedTuple.predict(((Number) value).doubleValue())).collect(Collectors.toList());
+      }
+
+    } else if (first instanceof OLSRegressionEvaluator.MultipleRegressionTuple) {
+
+      OLSRegressionEvaluator.MultipleRegressionTuple regressedTuple = (OLSRegressionEvaluator.MultipleRegressionTuple) first;
+      if (second instanceof List) {
+        List<Number> list = (List<Number>) second;
+        double[] predictors = new double[list.size()];
+
+        for (int i = 0; i < list.size(); i++) {
+          predictors[i] = list.get(i).doubleValue();
+        }
+
+        return regressedTuple.predict(predictors);
+      } else if (second instanceof Matrix) {
+
+        Matrix m = (Matrix) second;
+        double[][] data = m.getData();
+        List<Number> predictions = new ArrayList();
+        for (double[] predictors : data) {
+          predictions.add(regressedTuple.predict(predictors));
+        }
+        return predictions;
+      }
+
+    } else if (first instanceof VectorFunction) {
+      VectorFunction vectorFunction = (VectorFunction) first;
+      UnivariateFunction univariateFunction = (UnivariateFunction)vectorFunction.getFunction();
+      if (second instanceof Number) {
+        double x = ((Number)second).doubleValue();
+        return univariateFunction.value(x);
+      } else {
+        return ((List<?>) second).stream().map(value -> univariateFunction.value(((Number) value).doubleValue())).collect(Collectors.toList());
+      }
+    }
+
+    return null;
   }
-  
 }

@@ -119,6 +119,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    // clear any persisted auto scaling configuration
+    Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+
     throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
@@ -130,9 +134,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     actionCompleted = new CountDownLatch(1);
     events.clear();
     listenerEvents.clear();
-    // clear any persisted auto scaling configuration
-    Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+    lastActionExecutedAt.set(0);
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
@@ -201,7 +203,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
 
-    if (!triggerFiredLatch.await(20, TimeUnit.SECONDS)) {
+    if (!triggerFiredLatch.await(30, TimeUnit.SECONDS)) {
       fail("Both triggers should have fired by now");
     }
 
@@ -249,7 +251,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       }
     }
 
-    if (!triggerFiredLatch.await(20, TimeUnit.SECONDS)) {
+    if (!triggerFiredLatch.await(30, TimeUnit.SECONDS)) {
       fail("Both triggers should have fired by now");
     }
   }
@@ -272,16 +274,20 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         return;
       }
       try {
+        long currentTime = timeSource.getTime();
         if (lastActionExecutedAt.get() != 0)  {
-          log.info("last action at " + lastActionExecutedAt.get() + " time = " + timeSource.getTime() + " expected diff: " + TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS));
-          if (timeSource.getTime() - lastActionExecutedAt.get() < TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS)) {
+          long minDiff = TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS);
+          log.info("last action at " + lastActionExecutedAt.get() + " current time = " + currentTime +
+              "\nreal diff: " + (currentTime - lastActionExecutedAt.get()) +
+              "\n min diff: " + minDiff);
+          if (currentTime - lastActionExecutedAt.get() < minDiff) {
             log.info("action executed again before minimum wait time from {}", event.getSource());
             fail("TriggerListener was fired before the throttling period");
           }
         }
         if (onlyOnce.compareAndSet(false, true)) {
           log.info("action executed from {}", event.getSource());
-          lastActionExecutedAt.set(timeSource.getTime());
+          lastActionExecutedAt.set(currentTime);
           getTriggerFiredLatch().countDown();
         } else  {
           log.info("action executed more than once from {}", event.getSource());
@@ -1225,6 +1231,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.SECONDS.toNanos(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS));
     prevTimestamp = ev.timestamp;
 
+    // this also resets the cooldown period
     long modifiedCooldownPeriodSeconds = 7;
     String setPropertiesCommand = "{\n" +
         "\t\"set-properties\" : {\n" +
@@ -1243,13 +1250,24 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner newNode3 = cluster.startJettySolrRunner();
     await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
+    triggerFiredLatch = new CountDownLatch(1);
+    triggerFired.compareAndSet(true, false);
+    // add another node
+    JettySolrRunner newNode4 = cluster.startJettySolrRunner();
+    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     Thread.sleep(2000);
 
-    // there must be at least one IGNORED event due to cooldown, and one SUCCEEDED event
+    // there must be at least one SUCCEEDED (due to newNode3) then for newNode4 one IGNORED
+    // event due to cooldown, and one SUCCEEDED
     capturedEvents = listenerEvents.get("bar");
-    assertTrue(capturedEvents.toString(), capturedEvents.size() > 1);
-    for (int i = 0; i < capturedEvents.size() - 1; i++) {
+    assertTrue(capturedEvents.toString(), capturedEvents.size() > 2);
+    // first event should be SUCCEEDED
+    ev = capturedEvents.get(0);
+    assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
+
+    for (int i = 1; i < capturedEvents.size() - 1; i++) {
       ev = capturedEvents.get(i);
       assertEquals(ev.toString(), TriggerEventProcessorStage.IGNORED, ev.stage);
       assertTrue(ev.toString(), ev.message.contains("cooldown"));

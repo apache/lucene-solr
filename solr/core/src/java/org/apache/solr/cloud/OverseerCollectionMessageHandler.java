@@ -698,7 +698,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (result.size() == coreNames.size()) {
         return result;
       } else {
-        log.debug("Expecting {} cores but found {}", coreNames.size(), result.size());
+        log.debug("Expecting {} cores but found {}", coreNames, result);
       }
       if (timeout.hasTimedOut()) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);

@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -49,8 +48,8 @@ public class DotProductEvaluator extends RecursiveNumericEvaluator implements Tw
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
-    RealVector v = new ArrayRealVector(((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray());
-    RealVector v2 = new ArrayRealVector(((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray());
+    RealVector v = new ArrayRealVector(((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+    RealVector v2 = new ArrayRealVector(((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
 
     return v.dotProduct(v2);
 

@@ -34,10 +34,11 @@ public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
   }
     
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
-    if(null == value){
+    if(null == value) {
       return null;
-    }
-    else if(value instanceof Double){
+    } else if (value instanceof VectorFunction) {
+      return value;
+    } else if(value instanceof Double){
       if(Double.isNaN((Double)value)){
         return Double.NaN;
       }

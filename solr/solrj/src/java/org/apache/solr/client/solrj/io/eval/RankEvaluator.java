@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +47,7 @@ public class RankEvaluator extends RecursiveNumericEvaluator implements OneValue
       return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
     }
     else{
-      return doWork(Arrays.asList((BigDecimal)value));
+      return doWork(Arrays.asList((Number)value));
     }
   }
 }

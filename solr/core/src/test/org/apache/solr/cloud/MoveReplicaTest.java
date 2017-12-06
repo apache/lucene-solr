@@ -48,6 +48,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.IdUtils;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -61,6 +62,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   private static ZkStateReaderAccessor accessor;
   private static int overseerLeaderIndex;
+
+  // used by MoveReplicaHDFSTest
+  protected boolean inPlaceMove = true;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -91,12 +95,17 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   @Before
   public void beforeTest() throws Exception {
     cluster.deleteAllCollections();
+    // restart any shut down nodes
+    for (int i = cluster.getJettySolrRunners().size(); i < 5; i++) {
+      cluster.startJettySolrRunner();
+    }
+    cluster.waitForAllNodes(5000);
+    inPlaceMove = true;
   }
 
   @Test
   public void test() throws Exception {
-    cluster.waitForAllNodes(5000);
-    String coll = "movereplicatest_coll";
+    String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
     log.info("total_jettys: " + cluster.getJettySolrRunners().size());
     int REPLICATION = 2;
 
@@ -104,6 +113,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     create.setMaxShardsPerNode(2);
+    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -133,8 +143,10 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     int targetNumCores = getNumOfCores(cloudClient, targetNode, coll);
 
     CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
-    moveReplica.processAsync("000", cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
+    moveReplica.setInPlaceMove(inPlaceMove);
+    String asyncId = IdUtils.randomId();
+    moveReplica.processAsync(asyncId, cloudClient);
+    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = false;
     for (int i = 0; i < 200; i++) {
@@ -193,6 +205,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertEquals(watchers, newWatchers);
 
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
+    moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
     checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
     // wait for recovery
@@ -232,12 +245,14 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertTrue("replica never fully recovered", recovered);
     newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
     assertEquals(watchers, newWatchers);
+
+    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
+ // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
   public void testFailedMove() throws Exception {
-    String coll = "movereplicatest_failed_coll";
+    String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -245,6 +260,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     Set<CollectionStateWatcher> watchers = new HashSet<>(accessor.getStateWatchers(coll));
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
+    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -262,15 +278,17 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertNotNull(targetNode);
     CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
+    moveReplica.setInPlaceMove(inPlaceMove);
     // start moving
-    moveReplica.processAsync("001", cloudClient);
+    String asyncId = IdUtils.randomId();
+    moveReplica.processAsync(asyncId, cloudClient);
     // shut down target node
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(targetNode)) {
         cluster.stopJettySolrRunner(i);
       }
     }
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("001");
+    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = true;
     for (int i = 0; i < 200; i++) {
@@ -286,6 +304,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
     assertEquals(watchers, newWatchers);
+
     log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
@@ -375,4 +394,5 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     solrClient.commit(collection);
     Thread.sleep(5000);
-  }}
+  }
+}

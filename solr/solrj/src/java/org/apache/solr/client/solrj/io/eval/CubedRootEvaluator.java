@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -45,8 +44,7 @@ public class CubedRootEvaluator extends RecursiveNumericEvaluator implements One
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.cbrt(((BigDecimal)value).doubleValue());
+      return Math.cbrt(((Number)value).doubleValue());
     }
   }
 }

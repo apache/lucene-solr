@@ -33,7 +33,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
   HLLAgg.HLLFactory factory;
   SchemaField field;
   FixedBitSet[] arr;
-  int currentDocBase;
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
@@ -51,11 +50,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
       if (bits == null) continue;
       bits.clear(0, bits.length());
     }
-  }
-
-  @Override
-  public void setNextReader(LeafReaderContext readerContext) throws IOException {
-    currentDocBase = readerContext.docBase;
   }
 
   @Override

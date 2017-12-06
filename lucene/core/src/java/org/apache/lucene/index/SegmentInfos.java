@@ -747,6 +747,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (pendingCommit) {
       throw new IllegalStateException("prepareCommit was already called");
     }
+    dir.syncMetaData();
     write(dir);
   }
 
@@ -972,8 +973,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Remove the provided {@link SegmentCommitInfo}.
    *
    * <p><b>WARNING</b>: O(N) cost */
-  public void remove(SegmentCommitInfo si) {
-    segments.remove(si);
+  public boolean remove(SegmentCommitInfo si) {
+    return segments.remove(si);
   }
   
   /** Remove the {@link SegmentCommitInfo} at the

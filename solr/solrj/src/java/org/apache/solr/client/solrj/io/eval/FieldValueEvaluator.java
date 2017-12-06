@@ -72,8 +72,9 @@ public class FieldValueEvaluator extends SourceEvaluator {
         return list;
       } else if(value instanceof Matrix) {
         return value;
-      }
-      else if(value instanceof Iterable && !(value instanceof List<?>)){
+      } else if(value instanceof VectorFunction) {
+        return value;
+      } else if(value instanceof Iterable && !(value instanceof List<?>)){
         Iterable<?> iter = (Iterable<?>)value;
         List<Object> list = new ArrayList<Object>();
         for(Object obj : iter){
@@ -82,7 +83,11 @@ public class FieldValueEvaluator extends SourceEvaluator {
         return list;
       }
     }
-    
+
+    if(value == null) {
+      return fieldName;
+    }
+
     return value;
   }
   

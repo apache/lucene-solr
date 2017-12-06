@@ -6791,7 +6791,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Map> listg = (List<Map>)tuples.get(0).get("g");
     Map mapg = listg.get(0);
     double pctg = (double) mapg.get("pct");
-    assertEquals(pctg, .2, .02 );
+    assertEquals(pctg, .2, .02);
 
     List<Map> listh = (List<Map>)tuples.get(0).get("h");
     Map maph = listh.get(0);
@@ -7115,33 +7115,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testResiduals() throws Exception {
-    String cexpr = "let(a=array(1,2,3,4,5,6), b=array(2,4,6,8,10,12), c=regress(a,b), tuple(res=residuals(c,a,a)))";
-    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cexpr);
-    paramsLoc.set("qt", "/stream");
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
-    solrStream.setStreamContext(context);
-    List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("res");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == -1);
-    assertTrue(out.get(1).intValue() == -2);
-    assertTrue(out.get(2).intValue() == -3);
-    assertTrue(out.get(3).intValue() == -4);
-    assertTrue(out.get(4).intValue() == -5);
-    assertTrue(out.get(5).intValue() == -6);
-  }
-
-  @Test
   public void testPolyfit() throws Exception {
     String cexpr = "let(echo=true," +
                    "    a=array(0,1,2,3,4,5,6,7)," +
-                   "    fit=polyfit(a, 1)," +
-                   "    deriv=polyfitDerivative(a, 1))";
+                   "    fit=polyfit(a, 1))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -7161,17 +7138,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 5);
     assertTrue(out.get(6).intValue() == 6);
     assertTrue(out.get(7).intValue() == 7);
-
-    out = (List<Number>)tuples.get(0).get("deriv");
-    assertTrue(out.size() == 8);
-    assertTrue(out.get(0).intValue() == 1);
-    assertTrue(out.get(1).intValue() == 1);
-    assertTrue(out.get(2).intValue() == 1);
-    assertTrue(out.get(3).intValue() == 1);
-    assertTrue(out.get(4).intValue() == 1);
-    assertTrue(out.get(5).intValue() == 1);
-    assertTrue(out.get(6).intValue() == 1);
-    assertTrue(out.get(7).intValue() == 1);
   }
 
 
@@ -7179,7 +7145,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public void testLoess() throws Exception {
     String cexpr = "let(echo=true," +
                    "    a=array(0,1,2,3,4,5,6,7)," +
-                   "    fit=loess(a))";
+                   "    fit=loess(a), " +
+                   "    der=derivative(fit))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -7192,14 +7159,66 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
     assertTrue(out.size() == 8);
-    assertTrue(out.get(0).intValue() == 0);
-    assertTrue(out.get(1).intValue() == 1);
-    assertTrue(out.get(2).intValue() == 2);
-    assertTrue(out.get(3).intValue() == 3);
-    assertTrue(out.get(4).intValue() == 4);
-    assertTrue(out.get(5).intValue() == 5);
-    assertTrue(out.get(6).intValue() == 6);
-    assertTrue(out.get(7).intValue() == 7);
+    assertEquals(out.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 1.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 2.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 4.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 5.0, 0.0);
+    assertEquals(out.get(6).doubleValue(), 6.0, 0.0);
+    assertEquals(out.get(7).doubleValue(), 7.0, 0.0);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(1).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(2).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(3).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(5).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(6).doubleValue(), 1.0, 0.0);
+    assertEquals(out1.get(7).doubleValue(), 1.0, 0.0);
+
+  }
+
+  @Test
+  public void testSpline() throws Exception {
+    String cexpr = "let(echo=true," +
+                   "    a=array(0,1,2,3,4,5,6,7), b=array(1,70,90,10,78, 100, 1, 9)," +
+                   "    fit=spline(a, b), " +
+                   "    der=derivative(fit))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(1).doubleValue(), 70.0, 0.0001);
+    assertEquals(out.get(2).doubleValue(), 90.0, 0.0001);
+    assertEquals(out.get(3).doubleValue(), 10.0, 0.0001);
+    assertEquals(out.get(4).doubleValue(), 78.0, 0.0001);
+    assertEquals(out.get(5).doubleValue(), 100.0, 0.0001);
+    assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 72.06870491240123, 0.0001);
+    assertEquals(out1.get(1).doubleValue(), 62.86259017519753, 0.0001);
+    assertEquals(out1.get(2).doubleValue(),-56.519065613191344, 0.0001);
+    assertEquals(out1.get(3).doubleValue(), -16.786327722432148, 0.0001);
+    assertEquals(out1.get(4).doubleValue(), 87.66437650291996, 0.0001);
+    assertEquals(out1.get(5).doubleValue(), -63.87117828924769, 0.0001);
+    assertEquals(out1.get(6).doubleValue(), -63.17966334592923, 0.0001);
+    assertEquals(out1.get(7).doubleValue(), 43.58983167296462, 0.0001);
   }
 
 
@@ -7241,6 +7260,50 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals((double) out.get("f-ratio"), 0.24169D, .0001);
   }
 
+  @Test
+  public void testOlsRegress() throws Exception {
+    String cexpr = "let(echo=true, a=array(8.5, 12.89999962, 5.199999809, 10.69999981, 3.099999905, 3.5, 9.199999809, 9, 15.10000038, 10.19999981), " +
+                       "b=array(5.099999905, 5.800000191, 2.099999905, 8.399998665, 2.900000095, 1.200000048, 3.700000048, 7.599999905, 7.699999809, 4.5)," +
+                       "c=array(4.699999809, 8.800000191, 15.10000038, 12.19999981, 10.60000038, 3.5, 9.699999809, 5.900000095, 20.79999924, 7.900000095)," +
+                       "d=array(85.09999847, 106.3000031, 50.20000076, 130.6000061, 54.79999924, 30.29999924, 79.40000153, 91, 135.3999939, 89.30000305)," +
+                       "e=transpose(matrix(a, b, c))," +
+                       "f=olsRegress(e, d)," +
+                       "g=predict(f, e))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map regression = (Map)tuples.get(0).get("f");
+
+    Number rsquared = (Number)regression.get("RSquared");
+
+    assertEquals(rsquared.doubleValue(), 0.9667887860584002, .000001);
+
+    List<Number> regressionParameters = (List<Number>)regression.get("regressionParameters");
+
+    assertEquals(regressionParameters.get(0).doubleValue(), 7.676028542255028, .0001);
+    assertEquals(regressionParameters.get(1).doubleValue(), 3.661604009261836, .0001);
+    assertEquals(regressionParameters.get(2).doubleValue(), 7.621051256504592, .0001);
+    assertEquals(regressionParameters.get(3).doubleValue(), 0.8284680662898674, .0001);
+
+    List<Number> predictions = (List<Number>)tuples.get(0).get("g");
+
+    assertEquals(predictions.get(0).doubleValue(), 81.56082305847914, .0001);
+    assertEquals(predictions.get(1).doubleValue(), 106.40333675525883, .0001);
+    assertEquals(predictions.get(2).doubleValue(), 55.23044372150484, .0001);
+    assertEquals(predictions.get(3).doubleValue(), 120.97932137751451, .0001);
+    assertEquals(predictions.get(4).doubleValue(), 49.90981180846799, .0001);
+    assertEquals(predictions.get(5).doubleValue(), 32.53654268030196, .0001);
+    assertEquals(predictions.get(6).doubleValue(), 77.59681482774931, .0001);
+    assertEquals(predictions.get(7).doubleValue(), 103.43841512086125, .0001);
+    assertEquals(predictions.get(8).doubleValue(), 138.88047884217636, .0001);
+    assertEquals(predictions.get(9).doubleValue(), 85.86401719768607, .0001);
+  }
 
   @Test
   public void testPlot() throws Exception {
@@ -7268,8 +7331,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(pair3.get(0).intValue() == 3);
     assertTrue(pair3.get(1).intValue() == 3);
   }
-
-
 
   @Test
   public void testMovingAverage() throws Exception {
@@ -7893,7 +7954,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Map regression = (Map)tuple.get("regress");
     double slope = (double)regression.get("slope");
     double intercept= (double) regression.get("intercept");
-    double rSquare= (double) regression.get("RSquare");
+    double rSquare= (double) regression.get("RSquared");
     assertTrue(slope == 2.0D);
     assertTrue(intercept == 0.0D);
     assertTrue(rSquare == 1.0D);
