@@ -602,6 +602,11 @@ class DrillSidewaysScorer extends BulkScorer {
     }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
     public Collection<ChildScorer> getChildren() {
       return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
     }

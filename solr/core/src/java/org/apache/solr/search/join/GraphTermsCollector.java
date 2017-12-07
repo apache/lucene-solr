@@ -29,6 +29,7 @@ import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.util.BitSet;
@@ -111,8 +112,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
   public abstract Query getResultQuery(SchemaField matchField, boolean useAutomaton);
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
   
 }

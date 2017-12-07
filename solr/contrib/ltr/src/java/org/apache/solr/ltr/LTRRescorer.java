@@ -27,6 +27,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -114,7 +115,7 @@ public class LTRRescorer extends Rescorer {
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-        .createNormalizedWeight(scoringQuery, true);
+        .createNormalizedWeight(scoringQuery, ScoreMode.COMPLETE);
 
     scoreFeatures(searcher, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
@@ -219,7 +220,7 @@ public class LTRRescorer extends Rescorer {
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
     final Weight modelWeight = searcher.createNormalizedWeight(scoringQuery,
-        true);
+        ScoreMode.COMPLETE);
     return modelWeight.explain(context, deBasedDoc);
   }
 

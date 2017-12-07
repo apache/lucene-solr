@@ -60,7 +60,7 @@ public abstract class QueryRescorer extends Rescorer {
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    Weight weight = searcher.createNormalizedWeight(query, true);
+    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
 
     // Now merge sort docIDs from hits, with reader's leaves:
     int hitUpto = 0;

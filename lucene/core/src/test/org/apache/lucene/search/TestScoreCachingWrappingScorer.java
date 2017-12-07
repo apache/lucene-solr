@@ -42,6 +42,11 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       // once per document.
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
+    
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
 
     @Override public int docID() { return doc; }
 
@@ -95,8 +100,8 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
   }
@@ -112,7 +117,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     IndexReader ir = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(ir);
-    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, true, 1f);
+    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, 1f);
     Scorer s = new SimpleScorer(fake);
     ScoreCachingCollector scc = new ScoreCachingCollector(scores.length);
     scc.setScorer(s);

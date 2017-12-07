@@ -126,6 +126,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
           return 1;
         }
 
+        @Override
+        public float maxScore(float maxFreq) {
+          return 1;
+        }
       };
     }
 
@@ -151,7 +155,11 @@ public class TestSimilarityProvider extends LuceneTestCase {
         public float score(int doc, float freq) throws IOException {
           return 10;
         }
-        
+
+        @Override
+        public float maxScore(float maxFreq) {
+          return 10;
+        }
       };
     }
   }

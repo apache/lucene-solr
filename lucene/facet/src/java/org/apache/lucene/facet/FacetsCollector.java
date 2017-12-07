@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -130,8 +131,8 @@ public class FacetsCollector extends SimpleCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   @Override
@@ -235,7 +236,7 @@ public class FacetsCollector extends SimpleCollector implements Collector {
                                                  doMaxScore,
                                                  true); // TODO: can we disable exact hit counts
       } else {
-        hitsCollector = TopScoreDocCollector.create(n, after);
+        hitsCollector = TopScoreDocCollector.create(n, after, true);
       }
       searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
     

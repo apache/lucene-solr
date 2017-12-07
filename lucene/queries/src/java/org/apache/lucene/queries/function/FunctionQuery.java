@@ -27,6 +27,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -123,6 +124,11 @@ public class FunctionQuery extends Query {
       }
     }
 
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
     public Explanation explain(int doc) throws IOException {
       Explanation expl = vals.explain(doc);
       if (expl.getValue() < 0) {
@@ -140,7 +146,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
 

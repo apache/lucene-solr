@@ -71,6 +71,11 @@ public class BooleanSimilarity extends Similarity {
       }
 
       @Override
+      public float maxScore(float maxFreq) {
+        return boost;
+      }
+
+      @Override
       public Explanation explain(int doc, Explanation freq) throws IOException {
         Explanation queryBoostExpl = Explanation.match(boost, "boost");
         return Explanation.match(

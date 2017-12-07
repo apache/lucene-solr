@@ -16,46 +16,45 @@
  */
 package org.apache.lucene.search;
 
+/**
+ * Different modes of search.
+ */
+public enum ScoreMode {
+  
+  /**
+   * Produced scorers will allow visiting all matches and get their score.
+   */
+  COMPLETE {
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
+  },
 
-import java.util.Collection;
+  /**
+   * Produced scorers will allow visiting all matches but scores won't be
+   * available.
+   */
+  COMPLETE_NO_SCORES {
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+  },
 
-/** Used by {@link BulkScorer}s that need to pass a {@link
- *  Scorer} to {@link LeafCollector#setScorer}. */
-final class FakeScorer extends Scorer {
-  float score;
-  int doc = -1;
+  /**
+   * Produced scorers will optionally allow skipping over non-competitive
+   * hits using the {@link Scorer#setMinCompetitiveScore(float)} API.
+   */
+  TOP_SCORES {
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
+  };
 
-  public FakeScorer() {
-    super(null);
-  }
-
-  @Override
-  public int docID() {
-    return doc;
-  }
-
-  @Override
-  public float score() {
-    return score;
-  }
-
-  @Override
-  public float maxScore() {
-    return Float.POSITIVE_INFINITY;
-  }
-
-  @Override
-  public DocIdSetIterator iterator() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Weight getWeight() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Collection<ChildScorer> getChildren() {
-    throw new UnsupportedOperationException();
-  }
+  /**
+   * Whether this {@link ScoreMode} needs to compute scores.
+   */
+  public abstract boolean needsScores();
 }

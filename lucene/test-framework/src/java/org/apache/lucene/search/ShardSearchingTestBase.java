@@ -230,7 +230,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public Query rewrite(Query original) throws IOException {
         final IndexSearcher localSearcher = new IndexSearcher(getIndexReader());
-        final Weight weight = localSearcher.createNormalizedWeight(original, true);
+        final Weight weight = localSearcher.createNormalizedWeight(original, ScoreMode.COMPLETE);
         final Set<Term> terms = new HashSet<>();
         weight.extractTerms(terms);
 

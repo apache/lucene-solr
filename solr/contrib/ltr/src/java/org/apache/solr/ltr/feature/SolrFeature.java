@@ -29,6 +29,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
@@ -178,7 +179,7 @@ public class SolrFeature extends Feature {
         // leaving nothing for the phrase query to parse.
         if (query != null) {
           queryAndFilters.add(query);
-          solrQueryWeight = searcher.createNormalizedWeight(query, true);
+          solrQueryWeight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
         } else {
           solrQueryWeight = null;
         }
@@ -284,6 +285,11 @@ public class SolrFeature extends Feature {
                   "Unable to extract feature for "
                   + name, e);
         }
+      }
+
+      @Override
+      public float maxScore() {
+        return Float.POSITIVE_INFINITY;
       }
     }
 

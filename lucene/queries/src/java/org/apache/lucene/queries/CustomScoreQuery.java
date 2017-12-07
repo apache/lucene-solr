@@ -30,6 +30,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -171,17 +172,17 @@ public class CustomScoreQuery extends Query implements Cloneable {
     final Weight[] valSrcWeights;
     final float queryWeight;
 
-    public CustomWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public CustomWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       super(CustomScoreQuery.this);
       // note we DONT incorporate our boost, nor pass down any boost 
       // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
       // function obeys the distributive law... it might call sqrt() on the subQuery score
       // or some other arbitrary function other than multiplication.
       // so, instead boosts are applied directly in score()
-      this.subQueryWeight = subQuery.createWeight(searcher, needsScores, 1f);
+      this.subQueryWeight = subQuery.createWeight(searcher, scoreMode, 1f);
       this.valSrcWeights = new Weight[scoringQueries.length];
       for(int i = 0; i < scoringQueries.length; i++) {
-        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores, 1f);
+        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, scoreMode, 1f);
       }
       this.queryWeight = boost;
     }
@@ -286,14 +287,19 @@ public class CustomScoreQuery extends Query implements Cloneable {
     }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+    
+    @Override
     public Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(subQueryScorer, "CUSTOM"));
     }
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new CustomWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new CustomWeight(searcher, scoreMode, boost);
   }
 
   /** The sub-query that CustomScoreQuery wraps, affecting both the score and which documents match. */

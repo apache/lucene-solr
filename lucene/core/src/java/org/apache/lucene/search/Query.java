@@ -59,10 +59,10 @@ public abstract class Query {
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
    *
-   * @param needsScores   True if document scores ({@link Scorer#score}) are needed.
+   * @param scoreMode     How the produced scorers will be consumed.
    * @param boost         The boost that is propagated by the parent queries.
    */
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 

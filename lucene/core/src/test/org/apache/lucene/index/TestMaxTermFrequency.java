@@ -123,6 +123,10 @@ public class TestMaxTermFrequency extends LuceneTestCase {
           return 0;
         }
 
+        @Override
+        public float maxScore(float maxFreq) {
+          return 0;
+        }
       };
     }
 

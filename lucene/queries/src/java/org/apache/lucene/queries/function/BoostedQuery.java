@@ -29,6 +29,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -59,17 +60,17 @@ public final class BoostedQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new BoostedQuery.BoostedWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new BoostedQuery.BoostedWeight(searcher, scoreMode, boost);
   }
 
   private class BoostedWeight extends Weight {
     Weight qWeight;
     Map fcontext;
 
-    public BoostedWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public BoostedWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       super(BoostedQuery.this);
-      this.qWeight = searcher.createWeight(q, needsScores, boost);
+      this.qWeight = searcher.createWeight(q, scoreMode, boost);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
     }
@@ -140,6 +141,11 @@ public final class BoostedQuery extends Query {
         factor = 0;
       }
       return in.score() * factor;
+    }
+
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
     }
 
     @Override

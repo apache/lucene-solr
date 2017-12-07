@@ -53,6 +53,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -719,7 +720,7 @@ public class TestDrillSideways extends FacetTestCase {
         filter = new Query() {
 
           @Override
-          public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+          public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
             return new ConstantScoreWeight(this, boost) {
 
               @Override
@@ -785,8 +786,8 @@ public class TestDrillSideways extends FacetTestCase {
         }
 
         @Override
-        public boolean needsScores() {
-          return false;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
         }
       });
 

@@ -334,8 +334,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new MultiPhraseWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new MultiPhraseWeight(searcher, scoreMode.needsScores(), boost);
   }
 
   /** Prints a user-readable version of this query. */

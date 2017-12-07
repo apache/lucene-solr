@@ -49,6 +49,9 @@ Optimizations
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
 
+* LUCENE-4100: Disjunctions now support faster collection of top hits when the
+  total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes

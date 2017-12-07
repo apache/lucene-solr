@@ -202,8 +202,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
   
@@ -227,8 +227,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       }
       
       @Override
-      public boolean needsScores() {
-        return true;
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
       }
     });
     QueryUtils.check(random(), pq, searcher);

@@ -77,6 +77,17 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    return reqScorer.maxScore();
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float score) {
+    // The score of this scorer is the same as the score of 'reqScorer'.
+    reqScorer.setMinCompetitiveScore(score);
+  }
+
+  @Override
   public Collection<ChildScorer> getChildren() {
     return Collections.singleton(new ChildScorer(reqScorer, "MUST"));
   }

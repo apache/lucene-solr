@@ -51,6 +51,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
@@ -289,10 +290,10 @@ public class WeightedSpanTermExtractor {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
+        rewrittenQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost).extractTerms(nonWeightedTerms);
       }
     } else {
-      spanQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
+      spanQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost).extractTerms(nonWeightedTerms);
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();
@@ -305,7 +306,7 @@ public class WeightedSpanTermExtractor {
         q = spanQuery;
       }
       LeafReaderContext context = getLeafContext();
-      SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, false);
+      SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
       Bits acceptDocs = context.reader().getLiveDocs();
       final Spans spans = w.getSpans(context, SpanWeight.Postings.POSITIONS);
       if (spans == null) {
@@ -359,7 +360,7 @@ public class WeightedSpanTermExtractor {
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query, float boost) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<>();
     final IndexSearcher searcher = new IndexSearcher(getLeafContext());
-    searcher.createNormalizedWeight(query, false).extractTerms(nonWeightedTerms);
+    searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES).extractTerms(nonWeightedTerms);
 
     for (final Term queryTerm : nonWeightedTerms) {
 

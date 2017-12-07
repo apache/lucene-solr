@@ -223,7 +223,13 @@ public class BM25Similarity extends Similarity {
       }
       return weightValue * (float) (freq / (freq + norm));
     }
-    
+
+    @Override
+    public float maxScore(float maxFreq) {
+      // TODO: leverage maxFreq and the min norm from the cache
+      return weightValue;
+    }
+
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
       List<Explanation> subs = new ArrayList<>();

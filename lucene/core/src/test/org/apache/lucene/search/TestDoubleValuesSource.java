@@ -225,8 +225,8 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public boolean needsScores() {
-        return rewritten.needsScores();
+      public ScoreMode scoreMode() {
+        return vs.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       }
     });
   }
@@ -258,8 +258,8 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public boolean needsScores() {
-        return true;
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
       }
     });
   }

@@ -46,7 +46,7 @@ class AssertingCollector extends FilterCollector {
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     final LeafCollector in = super.getLeafCollector(context);
     final int docBase = context.docBase;
-    return new AssertingLeafCollector(random, in, 0, DocIdSetIterator.NO_MORE_DOCS) {
+    return new AssertingLeafCollector(random, in, 0, DocIdSetIterator.NO_MORE_DOCS, scoreMode()) {
       @Override
       public void collect(int doc) throws IOException {
         // check that documents are scored in order globally,

@@ -338,8 +338,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   @Override
-  public boolean needsScores() {
-    return needsScores;
+  public ScoreMode scoreMode() {
+    return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   /**

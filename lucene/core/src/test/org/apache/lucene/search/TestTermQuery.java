@@ -73,10 +73,10 @@ public class TestTermQuery extends LuceneTestCase {
     IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
     Query query = new TermQuery(new Term("foo", "bar"));
     AssertionError e = expectThrows(AssertionError.class,
-        () -> noSeekSearcher.createNormalizedWeight(query, true));
+        () -> noSeekSearcher.createNormalizedWeight(query, ScoreMode.COMPLETE));
     assertEquals("no seek", e.getMessage());
 
-    noSeekSearcher.createNormalizedWeight(query, false); // no exception
+    noSeekSearcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES); // no exception
     IndexSearcher searcher = new IndexSearcher(reader);
     // use a collector rather than searcher.count() which would just read the
     // doc freq instead of creating a scorer

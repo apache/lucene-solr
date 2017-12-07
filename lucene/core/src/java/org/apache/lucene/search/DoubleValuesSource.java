@@ -81,7 +81,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
    * IndexReader-independent implementations can just return {@code this}
    *
    * Queries that use DoubleValuesSource objects should call rewrite() during
-   * {@link Query#createWeight(IndexSearcher, boolean, float)} rather than during
+   * {@link Query#createWeight(IndexSearcher, ScoreMode, float)} rather than during
    * {@link Query#rewrite(IndexReader)} to avoid IndexReader reference leakage
    */
   public abstract DoubleValuesSource rewrite(IndexSearcher reader) throws IOException;
@@ -553,7 +553,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-      return new WeightDoubleValuesSource(searcher.rewrite(query).createWeight(searcher, true, 1f));
+      return new WeightDoubleValuesSource(searcher.rewrite(query).createWeight(searcher, ScoreMode.COMPLETE, 1f));
     }
 
     @Override

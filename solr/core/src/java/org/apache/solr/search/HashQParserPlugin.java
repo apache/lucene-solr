@@ -30,6 +30,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
@@ -132,7 +133,7 @@ public class HashQParserPlugin extends QParserPlugin {
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false, boost);
+      return searcher.rewrite(constantScoreQuery).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
 
     public static class BitsFilter extends Filter {

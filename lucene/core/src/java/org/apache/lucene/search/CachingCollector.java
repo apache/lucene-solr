@@ -68,6 +68,11 @@ public abstract class CachingCollector extends FilterCollector {
     public final float score() { return score; }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
     public int docID() {
       return doc;
     }
@@ -175,8 +180,8 @@ public abstract class CachingCollector extends FilterCollector {
 
     /** Ensure the scores are collected so they can be replayed, even if the wrapped collector doesn't need them. */
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
     @Override
@@ -301,8 +306,8 @@ public abstract class CachingCollector extends FilterCollector {
       public void collect(int doc) {}
 
       @Override
-      public boolean needsScores() {
-        return true;
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
       }
 
     };

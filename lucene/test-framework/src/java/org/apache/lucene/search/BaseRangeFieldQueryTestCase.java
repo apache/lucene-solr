@@ -253,7 +253,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         }
 
         @Override
-        public boolean needsScores() { return false; }
+        public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
       });
 
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");

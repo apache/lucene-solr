@@ -226,6 +226,11 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     }
 
                     @Override
+                    public float maxScore() {
+                      return scorer.maxScore();
+                    }
+
+                    @Override
                     public int docID() {
                       return scorer.docID();
                     }
@@ -241,8 +246,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
               };
             }
             @Override
-            public boolean needsScores() {
-              return topCollector.needsScores();
+            public ScoreMode scoreMode() {
+              return topCollector.scoreMode();
             }
           };
           searcher.search(query, assertingCollector);

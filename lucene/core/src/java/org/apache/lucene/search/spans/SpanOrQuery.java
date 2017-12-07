@@ -33,6 +33,7 @@ import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
@@ -115,12 +116,12 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, boost));
+      subWeights.add(q.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost));
     }
-    return new SpanOrWeight(searcher, needsScores ? getTermContexts(subWeights) : null, subWeights, boost);
+    return new SpanOrWeight(searcher, scoreMode.needsScores() ? getTermContexts(subWeights) : null, subWeights, boost);
   }
 
   public class SpanOrWeight extends SpanWeight {

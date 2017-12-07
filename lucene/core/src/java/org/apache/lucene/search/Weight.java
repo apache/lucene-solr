@@ -43,7 +43,7 @@ import org.apache.lucene.util.Bits;
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, boolean, float)}).
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, ScoreMode, float)}).
  * <li>A <code>Scorer</code> is constructed by
  * {@link #scorer(org.apache.lucene.index.LeafReaderContext)}.
  * </ol>
