@@ -167,15 +167,15 @@ Bug Fixes
 
 * SOLR-11413: SolrGraphiteReporter fails to report metrics due to non-thread safe code. (Erik Persson, ab)
 
-* SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
-  never update it causing stale state to be returned in ClusterState. (shalin)
-
 * SOLR-11560: Specifying the replicationFactor parameter while restoring a collection would lead to extra tlog
   and pull replicas being created (Peter Szantai-Kis, Varun Thacker)
 
 * SOLR-11586: Restored collection should use stateFormat=2 instead of 1. (Varun Thacker)
 
 * SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
+* SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
+  never update it causing stale state to be returned in ClusterState. (shalin)
 
 * SOLR-11619: V2 requests that needed to be forwarded to other nodes would get an NPE. (David Smiley)
 
@@ -1230,11 +1230,11 @@ Other Changes
 * SOLR-11068: MOVEREPLICA and REPLACENODE API parameter names are now 'sourceNode' and 'targetNode'. The old names
   viz. 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE have been deprecated. (shalin)
 
-* SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
-
 * SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
 
 * SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
+
+* SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
 
 * SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
