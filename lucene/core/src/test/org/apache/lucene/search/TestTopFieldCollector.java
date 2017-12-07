@@ -102,6 +102,31 @@ public class TestTopFieldCollector extends LuceneTestCase {
       assertTrue(Float.isNaN(td.getMaxScore()));
     }
   }
+
+  public void testSortWithoutTotalHitTracking() throws Exception {
+    Sort sort = new Sort(SortField.FIELD_DOC);
+    for(int i = 0; i < 2; i++) {
+      Query q = new MatchAllDocsQuery();
+      // check that setting trackTotalHits to false does not throw an NPE because
+      // the index is not sorted
+      TopDocsCollector<Entry> tdc;
+      if (i % 2 == 0) {
+        tdc =  TopFieldCollector.create(sort, 10, true, false, false, false);
+      } else {
+        FieldDoc fieldDoc = new FieldDoc(1, Float.NaN, new Object[] { 1 });
+        tdc = TopFieldCollector.create(sort, 10, fieldDoc, true, false, false, false);
+      }
+
+      is.search(q, tdc);
+
+      TopDocs td = tdc.topDocs();
+      ScoreDoc[] sd = td.scoreDocs;
+      for(int j = 0; j < sd.length; j++) {
+        assertTrue(Float.isNaN(sd[j].score));
+      }
+      assertTrue(Float.isNaN(td.getMaxScore()));
+    }
+  }
   
   public void testSortWithScoreNoMaxScoreTracking() throws Exception {
     
