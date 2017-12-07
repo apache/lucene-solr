@@ -96,7 +96,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       iw.forceMerge(FORCE_MERGE_MAX_SEGMENT_COUNT);
     }
     reader = iw.getReader();
-    if (reader.maxDoc() == 0) {
+    if (reader.numDocs() == 0) {
       iw.addDocument(new Document());
       reader.close();
       reader = iw.getReader();
@@ -130,7 +130,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         final int numHits = TestUtil.nextInt(random(), 1, numDocs);
         FieldDoc after;
         if (paging) {
-          assert searcher.getIndexReader().maxDoc() > 0;
+          assert searcher.getIndexReader().numDocs() > 0;
           TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
           after = (FieldDoc) td.scoreDocs[td.scoreDocs.length - 1];
         } else {
@@ -209,5 +209,4 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       assertEquals(scoreDoc1.score, scoreDoc2.score, 0f);
     }
   }
-
 }
