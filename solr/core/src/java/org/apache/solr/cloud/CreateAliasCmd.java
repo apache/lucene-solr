@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.common.SolrException;
@@ -43,13 +44,14 @@ public class CreateAliasCmd implements Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results)
       throws Exception {
-    String aliasName = message.getStr(NAME);
-    String collections = message.getStr("collections"); // could be comma delimited list
+    final String aliasName = message.getStr(NAME);
+    final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
+    final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    validateAllCollectionsExistAndNoDups(collections, zkStateReader);
+    validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
 
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, collections));
+    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
 
     // Sleep a bit to allow ZooKeeper state propagation.
     //
@@ -66,20 +68,34 @@ public class CreateAliasCmd implements Cmd {
     Thread.sleep(100);
   }
 
-  private void validateAllCollectionsExistAndNoDups(String collections, ZkStateReader zkStateReader) {
-    List<String> collectionArr = StrUtils.splitSmart(collections, ",", true);
-    if (new HashSet<>(collectionArr).size() != collectionArr.size()) {
+  private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {
+    final String collectionStr = StrUtils.join(collectionList, ',');
+
+    if (new HashSet<>(collectionList).size() != collectionList.size()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collections));
+          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collectionStr));
     }
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
-    for (String collection : collectionArr) {
+    for (String collection : collectionList) {
       if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collections, collection));
+            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collectionStr, collection));
       }
     }
+  }
+  
+  /**
+   * The v2 API directs that the 'collections' parameter be provided as a JSON array (e.g. ["a", "b"]).  We also
+   * maintain support for the legacy format, a comma-separated list (e.g. a,b).
+   */
+  @SuppressWarnings("unchecked")
+  private List<String> parseCollectionsParameter(Object colls) {
+    if (colls == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing collections param");
+    if (colls instanceof List) return (List<String>) colls;
+    return StrUtils.splitSmart(colls.toString(), ",", true).stream()
+        .map(String::trim)
+        .collect(Collectors.toList());
   }
 
 }

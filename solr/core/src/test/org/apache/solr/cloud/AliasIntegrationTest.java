@@ -23,12 +23,14 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -177,7 +179,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   
   @Test
   public void test() throws Exception {
-
     CollectionAdminRequest.createCollection("collection1", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2", "conf", 1, 1).process(cluster.getSolrClient());
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1", clusterShape(2, 1));
@@ -240,7 +241,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     //searchSeveralWays("testalias4,testalias5", new SolrQuery("*:*"), 3);
 
     ///////////////
-    CollectionAdminRequest.createAlias("testalias6", "collection2,collection1").process(cluster.getSolrClient());
+    // use v2 API
+    new V2Request.Builder("/collections")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\"create-alias\": {\"name\": \"testalias6\", collections:[\"collection2\",\"collection1\"]}}")
+        .build().process(cluster.getSolrClient());
 
     searchSeveralWays("testalias6", new SolrQuery("*:*"), 6);
 
@@ -328,7 +333,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   public void testErrorChecks() throws Exception {
-
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1).process(cluster.getSolrClient());
     waitForState("Expected testErrorChecks-collection to be created with 2 shards and 1 replica", "testErrorChecks-collection", clusterShape(2, 1));
     

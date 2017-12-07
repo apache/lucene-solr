@@ -181,6 +181,8 @@ Bug Fixes
 * SOLR-11664: JSON Facet API: range facets containing unique, hll, min, max aggregations over string fields
   produced incorrect results since 7.0 (Volodymyr Rudniev, yonik)
 
+* SOLR-11691: V2 requests for create-alias didn't work when the collections param was an array.
+  (Jason Gerlowski, Gus Heck, David Smiley, noble)
 
 Optimizations
 ----------------------
