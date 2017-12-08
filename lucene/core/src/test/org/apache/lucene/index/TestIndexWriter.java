@@ -2900,7 +2900,7 @@ public class TestIndexWriter extends LuceneTestCase {
         .setMaxBufferedDocs(Integer.MAX_VALUE)
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     AtomicBoolean done = new AtomicBoolean(false);
-    int numThreads = 1 + random().nextInt(3);
+    int numThreads = 2 + random().nextInt(3);
     CountDownLatch latch = new CountDownLatch(numThreads);
     Set<String> indexingThreads = new HashSet<>();
     Thread[] threads = new Thread[numThreads];
@@ -2929,7 +2929,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try {
       int numIters = rarely() ? 1 + random().nextInt(5) : 1;
       for (int i = 0; i < numIters; i++) {
-        waitForDocs(w);
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
         w.commit();
         assertTrue(flushingThreads.toString(), flushingThreads.contains(Thread.currentThread().getName()));
         flushingThreads.retainAll(indexingThreads);
@@ -2939,7 +2939,7 @@ public class TestIndexWriter extends LuceneTestCase {
       numIters = 0;
       while (true) {
         assertFalse("should finish in less than 100 iterations", numIters++ >= 100);
-        waitForDocs(w);
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
         w.flush();
         flushingThreads.retainAll(indexingThreads);
         if (flushingThreads.isEmpty() == false) {
@@ -2955,10 +2955,25 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
-  private static void waitForDocs(IndexWriter w) {
-    int numDocsInRam = w.numRamDocs();
+  private static void waitForDocsInBuffers(IndexWriter w, int buffersWithDocs) {
+    // wait until at least N threadstates have a doc in order to observe
+    // who flushes the segments.
     while(true) {
-      if (numDocsInRam != w.numRamDocs()) {
+      int numStatesWithDocs = 0;
+      DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
+      for (int i = 0; i < perThreadPool.getActiveThreadStateCount(); i++) {
+        DocumentsWriterPerThreadPool.ThreadState threadState = perThreadPool.getThreadState(i);
+        threadState.lock();
+        try {
+          DocumentsWriterPerThread dwpt = threadState.dwpt;
+          if (dwpt != null && dwpt.getNumDocsInRAM() > 1) {
+            numStatesWithDocs++;
+          }
+        } finally {
+          threadState.unlock();
+        }
+      }
+      if (numStatesWithDocs >= buffersWithDocs) {
         return;
       }
     }
