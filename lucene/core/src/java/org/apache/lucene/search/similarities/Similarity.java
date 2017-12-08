@@ -159,6 +159,13 @@ public abstract class Similarity {
     public abstract float score(int doc, float freq) throws IOException;
 
     /**
+     * Return the maximum score that this scorer may produce for freqs in {@code ]0, maxFreq]}.
+     * {@code Float.POSITIVE_INFINITY} is a fine return value if scores are not bounded.
+     * @param maxFreq the maximum frequency
+     */
+    public abstract float maxScore(float maxFreq);
+
+    /**
      * Explain the score for a single document
      * @param doc document id within the inverted index segment
      * @param freq Explanation of how the sloppy term frequency was computed

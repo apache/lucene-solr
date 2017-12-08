@@ -86,6 +86,11 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    return reqScorer.maxScore() + optScorer.maxScore();
+  }
+
+  @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>(2);
     children.add(new ChildScorer(reqScorer, "MUST"));

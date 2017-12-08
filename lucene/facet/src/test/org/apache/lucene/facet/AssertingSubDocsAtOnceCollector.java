@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.SimpleCollector;
@@ -56,7 +57,7 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
 }

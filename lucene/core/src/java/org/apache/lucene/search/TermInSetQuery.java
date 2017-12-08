@@ -205,7 +205,7 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -269,7 +269,7 @@ public class TermInSetQuery extends Query implements Accountable {
             bq.add(new TermQuery(new Term(t.field, t.term), termContext), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
-          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores, score());
+          final Weight weight = searcher.rewrite(q).createWeight(searcher, scoreMode, score());
           return new WeightOrDocIdSet(weight);
         } else {
           assert builder != null;

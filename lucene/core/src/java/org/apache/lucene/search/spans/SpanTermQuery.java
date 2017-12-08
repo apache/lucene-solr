@@ -33,6 +33,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 
 /** Matches spans containing a term.
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
@@ -64,7 +65,7 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final TermContext context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
     if (termContext == null || termContext.wasBuiltFor(topContext) == false) {
@@ -73,7 +74,7 @@ public class SpanTermQuery extends SpanQuery {
     else {
       context = termContext;
     }
-    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, boost);
+    return new SpanTermWeight(context, searcher, scoreMode.needsScores() ? Collections.singletonMap(term, context) : null, boost);
   }
 
   public class SpanTermWeight extends SpanWeight {

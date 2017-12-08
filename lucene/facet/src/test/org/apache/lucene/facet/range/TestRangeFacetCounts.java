@@ -53,6 +53,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
@@ -714,8 +715,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      final Weight in = this.in.createWeight(searcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      final Weight in = this.in.createWeight(searcher, scoreMode, boost);
       return new FilterWeight(in) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {

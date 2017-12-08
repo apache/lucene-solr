@@ -224,8 +224,8 @@ public final class JoinUtil {
         }
 
         @Override
-        public boolean needsScores() {
-          return needsScore;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return needsScore ? org.apache.lucene.search.ScoreMode.COMPLETE : org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       };
     } else {
@@ -274,8 +274,8 @@ public final class JoinUtil {
         }
 
         @Override
-        public boolean needsScores() {
-          return needsScore;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return needsScore ? org.apache.lucene.search.ScoreMode.COMPLETE : org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       };
     }

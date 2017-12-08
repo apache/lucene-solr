@@ -28,6 +28,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
@@ -346,7 +347,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
           SortedDocValues docValues = globalDocValues; // this segment/leaf. NN
           LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN
 
-          @Override public boolean needsScores() { return false; }
+          @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
 
           @Override
           protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
@@ -376,7 +377,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
         DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
           SortedNumericDocValues values = null; //NN
 
-          @Override public boolean needsScores() { return false; }
+          @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
 
           @Override
           protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
@@ -407,7 +408,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
         DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
           NumericDocValues values = null; //NN
 
-          @Override public boolean needsScores() { return false; }
+          @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
 
           @Override
           protected void doSetNextReader(LeafReaderContext ctx) throws IOException {

@@ -126,8 +126,8 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 
@@ -515,8 +515,8 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 

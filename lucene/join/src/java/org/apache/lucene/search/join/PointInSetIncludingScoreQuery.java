@@ -120,7 +120,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     return new Weight(this) {
 
       @Override
@@ -167,6 +167,11 @@ abstract class PointInSetIncludingScoreQuery extends Query {
           @Override
           public float score() throws IOException {
             return scores[docID()];
+          }
+
+          @Override
+          public float maxScore() {
+            return Float.POSITIVE_INFINITY;
           }
 
           @Override

@@ -50,6 +50,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -1035,8 +1036,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return originalQuery.createWeight(searcher, needsScores, boost);
+    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return originalQuery.createWeight(searcher, scoreMode, boost);
     }
 
     @Override

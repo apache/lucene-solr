@@ -62,6 +62,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...
@@ -102,13 +104,13 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
-    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, false, 1f);
+    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
     Set<Term> terms = new HashSet<>();
     weight.extractTerms(terms);
     Term[] termArr =terms.toArray(new Term[0]);
     assertEquals(1, termArr.length);
 
-    weight = toChildBlockJoinQuery.createWeight(indexSearcher, false, 1f);
+    weight = toChildBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
     terms = new HashSet<>();
     weight.extractTerms(terms);
     termArr =terms.toArray(new Term[0]);
@@ -1111,7 +1113,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, org.apache.lucene.search.ScoreMode.COMPLETE);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(1, sc.iterator().advance(1));
     r.close();
@@ -1145,7 +1147,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, org.apache.lucene.search.ScoreMode.COMPLETE);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(2, sc.iterator().advance(0));
     r.close();
@@ -1197,7 +1199,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(r, parentsFilter);
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    Weight weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    Weight weight = searcher.createNormalizedWeight(childJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1205,7 +1207,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childQuery = new TermQuery(new Term("bogus", "bogus"));
     childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    weight = searcher.createNormalizedWeight(childJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1399,7 +1401,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentFilter);
 
-    Weight weight = s.createNormalizedWeight(parentJoinQuery, random().nextBoolean());
+    Weight weight = s.createNormalizedWeight(parentJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     Scorer advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
     Scorer nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
 
@@ -1486,6 +1488,11 @@ public class TestBlockJoin extends LuceneTestCase {
       @Override
       protected double score(BasicStats stats, double freq, double docLen) {
         return freq;
+      }
+
+      @Override
+      protected double maxScore(BasicStats stats, double maxFreq) {
+        return maxFreq;
       }
     };
     Directory dir = newDirectory();

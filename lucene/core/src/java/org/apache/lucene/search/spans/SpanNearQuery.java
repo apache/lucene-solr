@@ -33,6 +33,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
@@ -177,12 +178,12 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, boost));
+      subWeights.add(q.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost));
     }
-    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, boost);
+    return new SpanNearWeight(subWeights, searcher, scoreMode.needsScores() ? getTermContexts(subWeights) : null, boost);
   }
 
   public class SpanNearWeight extends SpanWeight {
@@ -306,7 +307,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new SpanGapWeight(searcher, boost);
     }
 

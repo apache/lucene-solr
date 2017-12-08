@@ -488,6 +488,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         }
 
         @Override
+        public float maxScore(float maxFreq) {
+          return Float.MAX_VALUE;
+        }
+
+        @Override
         public Explanation explain(int doc, Explanation freq) throws IOException {
           return Explanation.match(score(doc, 0f), "indexDocValue(" + scoreValueField + ")");
         }

@@ -65,7 +65,13 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
             ((1 - lambda) * freq / docLen) /
             (lambda * ((LMStats)stats).getCollectionProbability()));
   }
-  
+
+  @Override
+  protected double maxScore(BasicStats stats, double maxFreq) {
+    // TODO: can we compute a better upper bound on the produced scores
+    return Double.POSITIVE_INFINITY;
+  }
+
   @Override
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
       double freq, double docLen) {

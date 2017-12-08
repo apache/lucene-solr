@@ -94,6 +94,10 @@ public final class ConstantScoreQuery extends Query {
             public float score() throws IOException {
               return theScore;
             }
+            @Override
+            public float maxScore() {
+              return theScore;
+            }
           });
         }
       };
@@ -106,9 +110,9 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight innerWeight = searcher.createWeight(query, false, 1f);
-    if (needsScores) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight innerWeight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1f);
+    if (scoreMode.needsScores()) {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
@@ -134,6 +138,10 @@ public final class ConstantScoreQuery extends Query {
               return new FilterScorer(innerScorer) {
                 @Override
                 public float score() throws IOException {
+                  return score;
+                }
+                @Override
+                public float maxScore() {
                   return score;
                 }
                 @Override

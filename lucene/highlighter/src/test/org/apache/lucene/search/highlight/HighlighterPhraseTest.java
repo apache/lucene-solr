@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -132,8 +133,8 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         }
 
         @Override
-        public boolean needsScores() {
-          return false;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
         }
       });
       assertEquals(1, bitset.cardinality());

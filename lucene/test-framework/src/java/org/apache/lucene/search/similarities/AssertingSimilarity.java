@@ -91,9 +91,16 @@ public class AssertingSimilarity extends Similarity {
         // result in bounds
         float score = delegateScorer.score(doc, freq);
         assert Float.isFinite(score);
-        // TODO: some tests have negative boosts today
+        assert score <= maxScore(freq);
         assert score >= 0;
         return score;
+      }
+
+      @Override
+      public float maxScore(float maxFreq) {
+        float maxScore = delegateScorer.maxScore(maxFreq);
+        assert Float.isNaN(maxScore) == false;
+        return maxScore;
       }
 
       @Override

@@ -242,6 +242,11 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         public float score(int doc, float freq) throws IOException {
           return freq;
         }
+
+        @Override
+        public float maxScore(float maxFreq) {
+          return maxFreq;
+        }
       };
     }
   }

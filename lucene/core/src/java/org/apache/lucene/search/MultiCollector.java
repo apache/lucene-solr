@@ -95,7 +95,7 @@ public class MultiCollector implements Collector {
     this.collectors = collectors;
     int numNeedsScores = 0;
     for (Collector collector : collectors) {
-      if (collector.needsScores()) {
+      if (collector.scoreMode().needsScores()) {
         numNeedsScores += 1;
       }
     }
@@ -103,13 +103,16 @@ public class MultiCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
+  public ScoreMode scoreMode() {
+    ScoreMode scoreMode = null;
     for (Collector collector : collectors) {
-      if (collector.needsScores()) {
-        return true;
+      if (scoreMode == null) {
+        scoreMode = collector.scoreMode();
+      } else if (scoreMode != collector.scoreMode()) {
+        return ScoreMode.COMPLETE;
       }
     }
-    return false;
+    return scoreMode;
   }
 
   @Override

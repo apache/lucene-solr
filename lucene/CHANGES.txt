@@ -49,12 +49,22 @@ Optimizations
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
 
+* LUCENE-4100: Disjunctions now support faster collection of top hits when the
+  total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
 
 * LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
   (Pulak Ghosh via Adrien Grand)
+
+Improvements
+
+* LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
+  Index/Update Threads try to help out flushing pending document buffers to
+  disk. This change adds an expert setting to opt ouf of this behavior unless
+  flusing is falling behind. (Simon Willnauer)
 
 ======================= Lucene 7.2.0 =======================
 
@@ -158,26 +168,23 @@ Optimizations
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
 
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents
+  instead of 1. (Simon Willnauer)
+
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless)
+
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
   on Java 9+.  (Uwe Schindler)
 
-======================= Lucene 7.1.1 =======================
-
-Bug Fixes
-
-* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
-  instead of 1. (Simon Willnauer)
-
-* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
-  documents. Once this happens, Lucene refuses to open the index and throws a
-  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless) 
-
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
   jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
+
 
 ======================= Lucene 7.1.0 =======================
 

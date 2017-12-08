@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.Weight;
@@ -105,8 +106,7 @@ public class PKIndexSplitter {
     try {
       final IndexSearcher searcher = new IndexSearcher(reader);
       searcher.setQueryCache(null);
-      final boolean needsScores = false; // scores are not needed, only matching docs
-      final Weight preserveWeight = searcher.createNormalizedWeight(preserveFilter, needsScores);
+      final Weight preserveWeight = searcher.createNormalizedWeight(preserveFilter, ScoreMode.COMPLETE_NO_SCORES);
       final List<LeafReaderContext> leaves = reader.leaves();
       final CodecReader[] subReaders = new CodecReader[leaves.size()];
       int i = 0;

@@ -40,4 +40,11 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
     }
     return (float)score;
   }
+
+  @Override
+  public float maxScore() {
+    // TODO: implement it but be careful with floating-point errors
+    return Float.POSITIVE_INFINITY;
+  }
+
 }

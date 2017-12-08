@@ -18,10 +18,14 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -72,8 +76,8 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
 
   }
@@ -207,5 +211,199 @@ public class TestTopDocsCollector extends LuceneTestCase {
       assertTrue(sd[i - 1].score >= sd[i].score);
     }
   }
-  
+
+  private static class FakeScorer extends Scorer {
+    int doc = -1;
+    float score;
+    Float minCompetitiveScore = null;
+
+    FakeScorer() {
+      super(null);
+    }
+
+    @Override
+    public void setMinCompetitiveScore(float minCompetitiveScore) {
+      this.minCompetitiveScore = minCompetitiveScore;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
+
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
+    public DocIdSetIterator iterator() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  public void testSetMinCompetitiveScore() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc));
+    w.flush();
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(2, reader.leaves().size());
+    w.close();
+
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, false);
+    FakeScorer scorer = new FakeScorer();
+
+    LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+    assertNull(scorer.minCompetitiveScore);
+
+    scorer.doc = 0;
+    scorer.score = 1;
+    leafCollector.collect(0);
+    assertNull(scorer.minCompetitiveScore);
+
+    scorer.doc = 1;
+    scorer.score = 2;
+    leafCollector.collect(1);
+    assertEquals(Math.nextUp(1f), scorer.minCompetitiveScore, 0f);
+
+    scorer.doc = 2;
+    scorer.score = 0.5f;
+    // Make sure we do not call setMinCompetitiveScore for non-competitive hits
+    scorer.minCompetitiveScore = Float.NaN;
+    leafCollector.collect(2);
+    assertTrue(Float.isNaN(scorer.minCompetitiveScore));
+
+    scorer.doc = 3;
+    scorer.score = 4;
+    leafCollector.collect(3);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+
+    // Make sure the min score is set on scorers on new segments
+    scorer = new FakeScorer();
+    leafCollector = collector.getLeafCollector(reader.leaves().get(1));
+    leafCollector.setScorer(scorer);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+
+    scorer.doc = 0;
+    scorer.score = 1;
+    leafCollector.collect(0);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+
+    scorer.doc = 1;
+    scorer.score = 3;
+    leafCollector.collect(1);
+    assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testEstimateHitCount() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc, doc));
+    w.flush();
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(2, reader.leaves().size());
+    w.close();
+
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, false);
+    FakeScorer scorer = new FakeScorer();
+
+    LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 0;
+    scorer.score = 3;
+    leafCollector.collect(0);
+
+    scorer.doc = 1;
+    scorer.score = 3;
+    leafCollector.collect(1);
+
+    leafCollector = collector.getLeafCollector(reader.leaves().get(1));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 1;
+    scorer.score = 3;
+    leafCollector.collect(1);
+
+    TopDocs topDocs = collector.topDocs();
+    // It assumes all docs matched since numHits was 2 and the first 2 collected docs matched
+    assertEquals(10, topDocs.totalHits);
+
+    // Now test an index that is more sparsely collected
+    collector = TopScoreDocCollector.create(2, null, false);
+
+    leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 1;
+    scorer.score = 3;
+    leafCollector.collect(1);
+
+    leafCollector = collector.getLeafCollector(reader.leaves().get(1));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 0;
+    scorer.score = 2;
+    leafCollector.collect(0);
+
+    scorer.doc = 2;
+    scorer.score = 5;
+    leafCollector.collect(2);
+
+    topDocs = collector.topDocs();
+    assertEquals(4, topDocs.totalHits);
+
+    // Same 2 first collected docs, but then we collect more docs to make sure
+    // that we use the actual number of collected docs as a lower bound
+    collector = TopScoreDocCollector.create(2, null, false);
+
+    leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 1;
+    scorer.score = 3;
+    leafCollector.collect(1);
+
+    leafCollector = collector.getLeafCollector(reader.leaves().get(1));
+    leafCollector.setScorer(scorer);
+
+    scorer.doc = 0;
+    scorer.score = 2;
+    leafCollector.collect(0);
+
+    scorer.doc = 2;
+    scorer.score = 5;
+    leafCollector.collect(2);
+
+    scorer.doc = 3;
+    scorer.score = 4;
+    leafCollector.collect(3);
+
+    scorer.doc = 4;
+    scorer.score = 1;
+    leafCollector.collect(4);
+
+    topDocs = collector.topDocs();
+    assertEquals(5, topDocs.totalHits);
+
+    reader.close();
+    dir.close();
+  }
+
 }

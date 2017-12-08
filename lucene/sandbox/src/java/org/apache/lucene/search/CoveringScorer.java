@@ -212,6 +212,12 @@ final class CoveringScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    // TODO: implement but beware of floating-point errors
+    return Float.POSITIVE_INFINITY;
+  }
+
+  @Override
   public int docID() {
     return doc;
   }

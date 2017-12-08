@@ -66,18 +66,18 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
     }
     boolean doNoMinMax = min <= 0 && max == Integer.MAX_VALUE;
-    if (needsScores == false && doNoMinMax) {
+    if (scoreMode.needsScores() == false && doNoMinMax) {
       // We don't need scores then quickly change the query to not uses the scores:
       GlobalOrdinalsQuery globalOrdinalsQuery = new GlobalOrdinalsQuery(collector.collectedOrds, joinField, globalOrds,
           toQuery, fromQuery, indexReaderContextId);
-      return globalOrdinalsQuery.createWeight(searcher, false, boost);
+      return globalOrdinalsQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
     }
-    return new W(this, toQuery.createWeight(searcher, false, 1f));
+    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f));
   }
 
   @Override

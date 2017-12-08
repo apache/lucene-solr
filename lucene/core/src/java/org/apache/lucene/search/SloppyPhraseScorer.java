@@ -557,6 +557,11 @@ final class SloppyPhraseScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    return docScorer.maxScore(Float.POSITIVE_INFINITY);
+  }
+
+  @Override
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override

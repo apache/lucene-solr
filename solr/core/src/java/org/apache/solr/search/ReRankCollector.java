@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -80,8 +81,8 @@ public class ReRankCollector extends TopDocsCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   public TopDocs topDocs(int start, int howMany) {

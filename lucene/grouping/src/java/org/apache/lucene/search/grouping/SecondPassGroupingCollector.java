@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 
@@ -71,8 +72,8 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return groupReducer.needsScores();
+  public ScoreMode scoreMode() {
+    return groupReducer.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override

@@ -111,7 +111,13 @@ public class DFRSimilarity extends SimilarityBase {
     double aeTimes1pTfn = afterEffect.scoreTimes1pTfn(stats);
     return stats.getBoost() * basicModel.score(stats, tfn, aeTimes1pTfn);
   }
-  
+
+  @Override
+  protected double maxScore(BasicStats stats, double maxFreq) {
+    // TODO: can we compute a better upper bound on the produced scores
+    return Double.POSITIVE_INFINITY;
+  }
+
   @Override
   protected void explain(List<Explanation> subs,
       BasicStats stats, int doc, double freq, double docLen) {

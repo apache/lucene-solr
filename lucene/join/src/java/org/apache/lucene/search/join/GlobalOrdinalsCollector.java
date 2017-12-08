@@ -50,8 +50,8 @@ final class GlobalOrdinalsCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override

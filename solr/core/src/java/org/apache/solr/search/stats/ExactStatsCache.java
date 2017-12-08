@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -156,7 +157,7 @@ public class ExactStatsCache extends StatsCache {
     Query q = rb.getQuery();
     try {
       HashSet<Term> terms = new HashSet<>();
-      searcher.createNormalizedWeight(q, true).extractTerms(terms);
+      searcher.createNormalizedWeight(q, ScoreMode.COMPLETE).extractTerms(terms);
       IndexReaderContext context = searcher.getTopReaderContext();
       HashMap<String,TermStats> statsMap = new HashMap<>();
       HashMap<String,CollectionStats> colMap = new HashMap<>();

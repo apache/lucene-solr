@@ -30,6 +30,7 @@ import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.NumericUtils;
@@ -101,7 +102,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context);
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
-        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
+        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES);
         Scorer s = fastMatchWeight.scorer(hits.context);
         if (s == null) {
           continue;

@@ -464,6 +464,11 @@ final class Sorter {
     public float score() throws IOException {
       return score;
     }
+
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
   };
   
 }

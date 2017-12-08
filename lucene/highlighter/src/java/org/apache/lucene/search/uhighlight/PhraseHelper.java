@@ -48,6 +48,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
 import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
@@ -157,7 +158,7 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, false, boost)
+        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, ScoreMode.COMPLETE_NO_SCORES, boost)
             .extractTerms(positionInsensitiveTerms);
       }
 
@@ -245,11 +246,11 @@ public class PhraseHelper {
 
     // Get the underlying query terms
     TreeSet<Term> termSet = new FieldFilteringTermSet(); // sorted so we can loop over results in order shortly...
-    searcher.createWeight(spanQuery, false, 1.0f).extractTerms(termSet);//needsScores==false
+    searcher.createWeight(spanQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f).extractTerms(termSet);//needsScores==false
 
     // Get Spans by running the query against the reader
     // TODO it might make sense to re-use/cache the Spans instance, to advance forward between docs
-    SpanWeight spanWeight = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
+    SpanWeight spanWeight = (SpanWeight) searcher.createNormalizedWeight(spanQuery, ScoreMode.COMPLETE_NO_SCORES);
     Spans spans = spanWeight.getSpans(readerContext, SpanWeight.Postings.POSITIONS);
     if (spans == null) {
       return;

@@ -30,6 +30,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -56,9 +57,9 @@ public final class FunctionScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    Weight inner = in.createWeight(searcher, needsScores && source.needsScores(), 1f);
-    if (needsScores == false)
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    Weight inner = in.createWeight(searcher, scoreMode.needsScores() && source.needsScores() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, 1f);
+    if (scoreMode.needsScores() == false)
       return inner;
     return new FunctionScoreWeight(this, inner, source.rewrite(searcher), boost);
   }
@@ -167,6 +168,10 @@ public final class FunctionScoreQuery extends Query {
           }
           // default: missing value, negative value or NaN
           return 0;
+        }
+        @Override
+        public float maxScore() {
+          return Float.POSITIVE_INFINITY;
         }
       };
     }

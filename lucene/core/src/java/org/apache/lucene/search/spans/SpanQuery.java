@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
@@ -36,7 +37,7 @@ public abstract class SpanQuery extends Query {
   public abstract String getField();
 
   @Override
-  public abstract SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException;
+  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException;
 
   /**
    * Build a map of terms to termcontexts, for use in constructing SpanWeights

@@ -74,6 +74,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(Codec.getDefault(), conf.getCodec());
     assertEquals(InfoStream.getDefault(), conf.getInfoStream());
     assertEquals(IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM, conf.getUseCompoundFile());
+    assertTrue(conf.isCheckPendingFlushOnUpdate());
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<>();
     getters.add("getAnalyzer");
@@ -98,6 +99,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getCodec");
     getters.add("getInfoStream");
     getters.add("getUseCompoundFile");
+    getters.add("isCheckPendingFlushOnUpdate");
     
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {

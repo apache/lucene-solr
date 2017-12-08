@@ -121,9 +121,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       final LeafFieldComparator[] comparators = queue.getComparators(context);
       final int[] reverseMul = queue.getReverseMul();
+      final Sort indexSort = context.reader().getMetaData().getSort();
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
-          canEarlyTerminate(sort, context.reader().getMetaData().getSort());
+          indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
       final int initialTotalHits = totalHits;
 
       return new MultiComparatorLeafCollector(comparators, reverseMul, mayNeedScoresTwice) {
@@ -212,7 +214,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       this.trackTotalHits = trackTotalHits;
 
       // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
-      maxScore = Float.NEGATIVE_INFINITY;
+      if (trackMaxScore) {
+        maxScore = Float.NEGATIVE_INFINITY;
+      }
 
       FieldComparator<?>[] comparators = queue.comparators;
       // Tell all comparators their top value:
@@ -227,9 +231,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
+      final Sort indexSort = context.reader().getMetaData().getSort();
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
-          canEarlyTerminate(sort, context.reader().getMetaData().getSort());
+          indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
       final int initialTotalHits = totalHits;
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul(), mayNeedScoresTwice) {
 
@@ -338,8 +344,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   @Override
-  public boolean needsScores() {
-    return needsScores;
+  public ScoreMode scoreMode() {
+    return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   /**

@@ -142,6 +142,57 @@ However, since the first node in the first example had more than 1 replica for a
 
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
+== Suggestions API ==
+Suggestions are operations recommended by the system according to the policies and preferences the user has set. Note that the suggestions are made only if there are `violations` to the policies and the collection admin operation would use the preferences to identify the target node.
+
+The API is available at `/admin/autocaling/suggestion`
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":101},
+  "suggestions":[{
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "shard":"shard2",
+        "tagKey":"7574",
+        "violation":{ "delta":-1},
+        "clause":{
+          "replica":"0",
+          "shard":"#EACH",
+          "port":7574,
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"192.168.43.37:8983_solr",
+            "replica":"core_node7"}}}},
+    {
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "shard":"shard2",
+        "tagKey":"7574",
+        "violation":{ "delta":-1},
+        "clause":{
+          "replica":"0",
+          "shard":"#EACH",
+          "port":7574,
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"192.168.43.37:7575_solr",
+            "replica":"core_node15"}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future."}
+----
+
+The operation is an actual API call that can be invoked to remedy the current violation
+
 == History API
 
 The history of autoscaling events is available at `/admin/autoscaling/history`. It returns information

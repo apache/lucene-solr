@@ -70,7 +70,7 @@ public class SuggestIndexSearcher extends IndexSearcher {
     // TODO use IndexSearcher.rewrite instead
     // have to implement equals() and hashCode() in CompletionQuerys and co
     query = (CompletionQuery) query.rewrite(getIndexReader());
-    Weight weight = query.createWeight(this, collector.needsScores(), 1f);
+    Weight weight = query.createWeight(this, collector.scoreMode(), 1f);
     for (LeafReaderContext context : getIndexReader().leaves()) {
       BulkScorer scorer = weight.bulkScorer(context);
       if (scorer != null) {

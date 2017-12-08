@@ -32,7 +32,7 @@ import java.util.Collections;
  * several places, however all they have in hand is a {@link Scorer} object, and
  * might end up computing the score of a document more than once.
  */
-public class ScoreCachingWrappingScorer extends FilterScorer {
+public final class ScoreCachingWrappingScorer extends FilterScorer {
 
   private int curDoc = -1;
   private float curScore;
@@ -51,6 +51,16 @@ public class ScoreCachingWrappingScorer extends FilterScorer {
     }
 
     return curScore;
+  }
+
+  @Override
+  public float maxScore() {
+    return in.maxScore();
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float minScore) {
+    in.setMinCompetitiveScore(minScore);
   }
 
   @Override

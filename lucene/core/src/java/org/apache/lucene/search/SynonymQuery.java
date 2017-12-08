@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -111,8 +113,8 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    if (needsScores) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    if (scoreMode.needsScores()) {
       return new SynonymWeight(this, searcher, boost);
     } else {
       // if scores are not needed, let BooleanWeight deal with optimizing that case.
@@ -120,7 +122,7 @@ public final class SynonymQuery extends Query {
       for (Term term : terms) {
         bq.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       }
-      return searcher.rewrite(bq.build()).createWeight(searcher, needsScores, boost);
+      return searcher.rewrite(bq.build()).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
   }
   
@@ -189,19 +191,32 @@ public final class SynonymQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       Similarity.SimScorer simScorer = null;
+      IndexOptions indexOptions = IndexOptions.NONE;
+      if (terms.length > 0) {
+        FieldInfo info = context.reader()
+            .getFieldInfos()
+            .fieldInfo(terms[0].field());
+        if (info != null) {
+          indexOptions = info.getIndexOptions();
+        }
+      }
       // we use termscorers + disjunction as an impl detail
       List<Scorer> subScorers = new ArrayList<>();
+      long maxFreq = 0;
       for (int i = 0; i < terms.length; i++) {
         TermState state = termContexts[i].get(context.ord);
         if (state != null) {
           TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
           termsEnum.seekExact(terms[i].bytes(), state);
+
+          maxFreq += getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
+
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.FREQS);
           // lazy init sim, in case no terms exist
           if (simScorer == null) {
             simScorer = similarity.simScorer(simWeight, context);
           }
-          subScorers.add(new TermScorer(this, postings, simScorer));
+          subScorers.add(new TermScorer(this, postings, simScorer, Float.POSITIVE_INFINITY));
         }
       }
       if (subScorers.isEmpty()) {
@@ -210,7 +225,7 @@ public final class SynonymQuery extends Query {
         // we must optimize this case (term not in segment), disjunctionscorer requires >= 2 subs
         return subScorers.get(0);
       } else {
-        return new SynonymScorer(simScorer, this, subScorers);
+        return new SynonymScorer(simScorer, this, subScorers, maxFreq);
       }
     }
 
@@ -220,20 +235,38 @@ public final class SynonymQuery extends Query {
     }
 
   }
-  
+
+  private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
+    // TODO: store the max term freq?
+    if (indexOptions.compareTo(IndexOptions.DOCS) <= 0) {
+      // omitTFAP field, tf values are implicitly 1.
+      return 1;
+    } else {
+      assert ttf >= 0;
+      return Math.min(Integer.MAX_VALUE, ttf - df + 1);
+    }
+  }
+
   static class SynonymScorer extends DisjunctionScorer {
     private final Similarity.SimScorer similarity;
+    private final float maxFreq;
     
-    SynonymScorer(Similarity.SimScorer similarity, Weight weight, List<Scorer> subScorers) {
+    SynonymScorer(Similarity.SimScorer similarity, Weight weight, List<Scorer> subScorers, float maxFreq) {
       super(weight, subScorers, true);
       this.similarity = similarity;
+      this.maxFreq = maxFreq;
     }
 
     @Override
     protected float score(DisiWrapper topList) throws IOException {
       return similarity.score(topList.doc, tf(topList));
     }
-    
+
+    @Override
+    public float maxScore() {
+      return similarity.maxScore(maxFreq);
+    }
+
     /** combines TF of all subs. */
     final int tf(DisiWrapper topList) throws IOException {
       int tf = 0;

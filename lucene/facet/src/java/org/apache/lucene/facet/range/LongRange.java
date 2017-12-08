@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -128,10 +129,10 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       final Weight fastMatchWeight = fastMatchQuery == null
           ? null
-          : searcher.createWeight(fastMatchQuery, false, 1f);
+          : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
 
       return new ConstantScoreWeight(this, boost) {
         @Override

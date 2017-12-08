@@ -31,6 +31,7 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
@@ -310,8 +311,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -332,8 +333,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -357,8 +358,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -380,8 +381,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -438,8 +439,8 @@ public class TestOmitTf extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
   
