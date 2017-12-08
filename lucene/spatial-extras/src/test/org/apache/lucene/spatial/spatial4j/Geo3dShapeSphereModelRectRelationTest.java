@@ -36,11 +36,12 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
 
+  PlanetModel planetModel = PlanetModel.SPHERE;
+
   public Geo3dShapeSphereModelRectRelationTest() {
-    super(PlanetModel.SPHERE);
+    super();
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
-    factory.planetModel = PlanetModel.SPHERE;
-    //factory.distCalc = new GeodesicSphereDistCalc.Haversine();
+    factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();
   }
 

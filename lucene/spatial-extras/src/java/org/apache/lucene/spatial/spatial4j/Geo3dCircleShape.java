@@ -20,13 +20,10 @@ package org.apache.lucene.spatial.spatial4j;
 import org.apache.lucene.spatial3d.geom.GeoCircle;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
  * Specialization of a {@link Geo3dShape} which represents a {@link Circle}.
@@ -66,17 +63,5 @@ public class Geo3dCircleShape extends Geo3dShape<GeoCircle> implements Circle {
       this.center = center;
     }
     return center;
-  }
-
-  //TODO Improve GeoCircle to properly relate a point with WGS84 model -- LUCENE-7970
-  @Override
-  public SpatialRelation relate(Shape other) {
-    if (shape.getPlanetModel() != PlanetModel.SPHERE && other instanceof Point) {
-      if (spatialcontext.getDistCalc().distance((Point) other, getCenter()) <= getRadius()) {
-        return SpatialRelation.CONTAINS;
-      }
-      return SpatialRelation.DISJOINT;
-    }
-    return super.relate(other);
   }
 }

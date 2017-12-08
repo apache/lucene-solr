@@ -55,6 +55,13 @@ public class Geo3dShapeFactory implements ShapeFactory {
   private SpatialContext context;
   private PlanetModel planetModel;
 
+  /**
+   * Default accuracy for circles when not using the unit sphere.
+   * It is equivalent to 10m on the surface of the earth.
+   */
+  private static double DEFAULT_CIRCLE_ACCURACY = 1.6e-6;
+  private double circleAccuracy = DEFAULT_CIRCLE_ACCURACY;
+
   @SuppressWarnings("unchecked")
   public Geo3dShapeFactory(SpatialContext context, SpatialContextFactory factory) {
     this.context = context;
@@ -65,6 +72,25 @@ public class Geo3dShapeFactory implements ShapeFactory {
   @Override
   public SpatialContext getSpatialContext() {
     return context;
+  }
+
+  /**
+   * Set the accuracy for circles.
+   *
+   * "Accuracy" is defined as the maximum linear distance between any point on the
+   * surface circle and planes that describe the circle. Therefore on WSG84, since the
+   * radius of earth is 6,371,000 meters, an accuracy of 1e-6 corresponds to 6.3 meters.
+   * For an accuracy of 1.0 meters, the value of 1.6e-7.
+   *
+   * The default value is set to 10m (1.6e-6).
+   *
+   * Note that accuracy has no effect when the planet model is a sphere. In that case circles
+   * are always fully precise.
+   *
+   * @param circleAccuracy the provided accuracy as a linear distance.
+   */
+  public void setCircleAccuracy(double circleAccuracy) {
+    this.circleAccuracy = circleAccuracy;
   }
 
   @Override
@@ -150,10 +176,21 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   @Override
   public Circle circle(double x, double y, double distance) {
-    GeoCircle circle = GeoCircleFactory.makeGeoCircle(planetModel,
-        y * DistanceUtils.DEGREES_TO_RADIANS,
-        x * DistanceUtils.DEGREES_TO_RADIANS,
-        distance * DistanceUtils.DEGREES_TO_RADIANS);
+    GeoCircle circle;
+    if (planetModel.ab == planetModel.c) {
+      circle = GeoCircleFactory.makeGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS);
+    }
+    else {
+      circle = GeoCircleFactory.makeExactGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS,
+          circleAccuracy);
+
+    }
     return new Geo3dCircleShape(circle, context);
   }
 

@@ -32,12 +32,15 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
 
+  PlanetModel planetModel = PlanetModel.WGS84;
+
   public Geo3dShapeWGS84ModelRectRelationTest() {
-    super(PlanetModel.WGS84);
+    super();
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
-    factory.planetModel = PlanetModel.WGS84;
-    //factory.distCalc = new GeodesicSphereDistCalc.Haversine();
+    factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();
+    this.maxRadius = 178;
+    ((Geo3dShapeFactory)ctx.getShapeFactory()).setCircleAccuracy(1e-10);
   }
 
   @Test
