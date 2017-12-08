@@ -141,7 +141,6 @@ import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 
 import junit.framework.AssertionFailedError;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.frequently;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
