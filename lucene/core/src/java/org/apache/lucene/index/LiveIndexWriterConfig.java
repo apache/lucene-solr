@@ -432,7 +432,7 @@ public class LiveIndexWriterConfig {
   /**
    * Expert: Returns if indexing threads check for pending flushes on update in order
    * to help our flushing indexing buffers to disk
-   * @lucene.eperimental
+   * @lucene.experimental
    */
   public boolean isCheckPendingFlushOnUpdate() {
     return checkPendingFlushOnUpdate;
@@ -445,7 +445,7 @@ public class LiveIndexWriterConfig {
    * be the only thread writing segments to disk unless flushes are falling behind. If indexing is stalled
    * due to too many pending flushes indexing threads will help our writing pending segment flushes to disk.
    *
-   * @lucene.eperimental
+   * @lucene.experimental
    */
   public LiveIndexWriterConfig setCheckPendingFlushUpdate(boolean checkPendingFlushOnUpdate) {
     this.checkPendingFlushOnUpdate = checkPendingFlushOnUpdate;
