@@ -1912,6 +1912,17 @@ The name of the destination node. This parameter is required.
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
+[[utilizenode]]
+== UTILIZENODE: Utilize a new node
+
+This command can be used to move some replicas from the existing nodes to a new node or lightly loaded node and reduce the load on them. This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.
+
+`/admin/collections?action=UTILIZENODE&node=nodeName`
+=== UTILIZENODE Parameters
+
+`node`:: The name of the node that needs to be utilized. This parameter is required
+
+
 == Asynchronous Calls
 
 Since some collection API calls can be long running tasks (such as SPLITSHARD), you can optionally have the calls run asynchronously. Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> call at any time.
