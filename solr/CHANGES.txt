@@ -160,6 +160,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-11423: Overseer queue needs a hard cap (maximum size) that clients respect (Scott Blum, Joshua Humphries, Noble Paul)
+
 * SOLR-11445: Overseer should not hang when process bad message. (Cao Manh Dat, shalin) 
 
 * SOLR-11447: ZkStateWriter should process commands in atomic. (Cao Manh Dat, shalin)
@@ -442,8 +444,6 @@ New Features
 
 Bug Fixes
 ----------------------
-
-* SOLR-11423: Overseer queue needs a hard cap (maximum size) that clients respect (Scott Blum, Joshua Humphries, Noble Paul)
 
 * SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
 
