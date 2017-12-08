@@ -77,17 +77,16 @@ class GeoExactCircle extends GeoBaseCircle {
     final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
     final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
 
-    final boolean mustSplit = cutoffAngle > Math.PI * 0.5;
     final GeoPoint edgePoint;
     if (planetModel.c > planetModel.ab) {
       // z can be greater than x or y, so ellipse is longer in height than width
-      slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0, mustSplit));
-      slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI, mustSplit));
+      slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0, true));
+      slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI, true));
       edgePoint = eastPoint;
     } else {
       // z will be less than x or y, so ellipse is shorter than it is tall
-      slices.add(new ApproximationSlice(center, northPoint, 0.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5, mustSplit));
-      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, Math.PI * 2.0, westPoint, Math.PI * 1.5, mustSplit));
+      slices.add(new ApproximationSlice(center, northPoint, 0.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5, true));
+      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, Math.PI * 2.0, westPoint, Math.PI * 1.5, true));
       edgePoint = northPoint;
     }
     //System.out.println("Edgepoint = " + edgePoint);
@@ -283,8 +282,10 @@ class GeoExactCircle extends GeoBaseCircle {
       if (this.plane == null) {
         throw new IllegalArgumentException("Either circle is too small or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
       }
-      if (plane.isWithin(center) == false || !plane.evaluateIsZero(endPoint1) || !plane.evaluateIsZero(endPoint2) || !plane.evaluateIsZero(middlePoint))
-        throw new IllegalStateException("SidedPlane constructor built a bad plane!!");
+      if (this.plane.isWithin(-center.x, -center.y, -center.z)) {
+        //Plane is bogus, we cannot build the circle
+        throw new IllegalArgumentException("Could not construct a valid plane for this planet model with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
+      }
     }
 
     @Override

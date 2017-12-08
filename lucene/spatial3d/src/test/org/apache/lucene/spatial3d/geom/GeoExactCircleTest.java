@@ -54,8 +54,6 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
 
   @Test
   public void testSurfacePointOnBearingScale(){
-    double ab = 1.6;
-    double c = 0.7;
     PlanetModel p1 = PlanetModel.WGS84;
     PlanetModel p2 = new PlanetModel(0.5 * PlanetModel.WGS84.ab, 0.5 * PlanetModel.WGS84.c );
     GeoPoint point1P1 = new GeoPoint(p1, 0, 0);
@@ -93,9 +91,18 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
   @Test
   @Repeat(iterations = 100)
   public void RandomPointBearingCardinalTest(){
-    double ab = random().nextDouble() * 0.6 + 0.9;
-    double c = random().nextDouble() * 0.6  + 0.9 ;
-    PlanetModel planetModel = new PlanetModel(ab, c);
+    //surface distance calculations methods start not converging when
+    //planet flattening > 0.4
+    PlanetModel planetModel;
+    do {
+      double ab = random().nextDouble() * 2;
+      double c = random().nextDouble() * 2;
+      if (random().nextBoolean()) {
+        planetModel = new PlanetModel(ab, c);
+      } else {
+        planetModel = new PlanetModel(c, ab);
+      }
+    } while (Math.abs(planetModel.flattening) > 0.4);
     GeoPoint center = randomGeoPoint(planetModel);
     double radius =  random().nextDouble() * 0.9 * Math.PI;
     checkBearingPoint(planetModel, center, radius, 0);
@@ -133,7 +140,7 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
   public void exactCircleLargeTest(){
     boolean success = true;
     try {
-      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(new PlanetModel(0.5, 0.7), 0.25 * Math.PI,  0,0.35 * Math.PI, 1e-12);
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(new PlanetModel(0.99, 1.05), 0.25 * Math.PI,  0,0.35 * Math.PI, 1e-12);
     } catch (IllegalArgumentException e) {
       success = false;
     }
@@ -174,8 +181,8 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
    */
   @Test
   @Repeat(iterations = 100)
-  public void testRandom_LUCENE8054() {
-    PlanetModel planetModel = PlanetModel.WGS84;
+  public void testRandomLUCENE8054() {
+    PlanetModel planetModel = randomPlanetModel();
     GeoCircle circle1 = (GeoCircle) randomGeoAreaShape(EXACT_CIRCLE, planetModel);
     // new radius, a bit smaller than the generated one!
     double radius = circle1.getRadius() *  (1 - 0.01 * random().nextDouble());
@@ -230,6 +237,17 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
     GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617, 1.5702573535090856, 8.184299676008562E-6);
     GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617 , 1.5698163157923914, 1.0E-5);
     assertTrue(circle1.getRelationship(circle2) != GeoArea.DISJOINT);
+  }
+
+  public void testLUCENE8080() {
+    PlanetModel planetModel = new PlanetModel(1.6304230055804751, 1.0199671157571204);
+    boolean fail = false;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(planetModel, 0.8853814403571284, 0.9784990176851283, 0.9071033527030907, 1e-11);
+    } catch (IllegalArgumentException e) {
+      fail = true;
+    }
+    assertTrue(fail);
   }
 
 }
