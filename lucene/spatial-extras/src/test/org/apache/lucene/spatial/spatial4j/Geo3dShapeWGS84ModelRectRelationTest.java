@@ -30,7 +30,7 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
-public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
+public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestCase {
 
   PlanetModel planetModel = PlanetModel.WGS84;
 

@@ -28,7 +28,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory;
 
 import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
-public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTestCase {
+public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase {
   protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
 
   @Rule
@@ -36,7 +36,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
   protected int maxRadius = 180;
 
-  public Geo3dShapeRectRelationTestCase() {
+  public ShapeRectRelationTestCase() {
     super(SpatialContext.GEO);
   }
 
@@ -75,9 +75,9 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     new Geo3dRectIntersectionTestHelper(ctx) {
 
       @Override
-      protected Geo3dShape generateRandomShape(Point nearP) {
+      protected Shape generateRandomShape(Point nearP) {
         final int circleRadius = maxRadius - random().nextInt(maxRadius);//no 0-radius
-        return (Geo3dShape<?>) ctx.getShapeFactory().circle(nearP, circleRadius);
+        return ctx.getShapeFactory().circle(nearP, circleRadius);
       }
 
       @Override
@@ -98,16 +98,16 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       }
 
       @Override
-      protected Geo3dShape generateRandomShape(Point nearP) {
-        Point ulhcPoint = randomPoint();
-        Point lrhcPoint = randomPoint();
-        if (ulhcPoint.getY() < lrhcPoint.getY()) {
+      protected Shape generateRandomShape(Point nearP) {
+        Point upperRight = randomPoint();
+        Point lowerLeft = randomPoint();
+        if (upperRight.getY() < lowerLeft.getY()) {
           //swap
-          Point temp = ulhcPoint;
-          ulhcPoint = lrhcPoint;
-          lrhcPoint = temp;
+          Point temp = upperRight;
+          upperRight = lowerLeft;
+          lowerLeft = temp;
         }
-        return (Geo3dShape<?>) ctx.getShapeFactory().rect(lrhcPoint, ulhcPoint);
+        return ctx.getShapeFactory().rect(lowerLeft, upperRight);
       }
 
       @Override
