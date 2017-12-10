@@ -40,9 +40,9 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
     super(SpatialContext.GEO);
   }
 
-  public abstract class Geo3dRectIntersectionTestHelper extends RectIntersectionTestHelper<Shape> {
+  public abstract class AbstractRectIntersectionTestHelper extends RectIntersectionTestHelper<Shape> {
 
-    public Geo3dRectIntersectionTestHelper(SpatialContext ctx) {
+    public AbstractRectIntersectionTestHelper(SpatialContext ctx) {
       super(ctx);
     }
 
@@ -72,7 +72,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
 
   @Test
   public void testGeoCircleRect() {
-    new Geo3dRectIntersectionTestHelper(ctx) {
+    new AbstractRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Shape generateRandomShape(Point nearP) {
@@ -90,7 +90,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
 
   @Test
   public void testGeoBBoxRect() {
-    new Geo3dRectIntersectionTestHelper(ctx) {
+    new AbstractRectIntersectionTestHelper(ctx) {
 
       @Override
       protected boolean isRandomShapeRectangular() {
@@ -119,7 +119,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
 
   @Test
   public void testGeoPolygonRect() {
-    new Geo3dRectIntersectionTestHelper(ctx) {
+    new AbstractRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Shape generateRandomShape(Point nearP) {
@@ -159,7 +159,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
 
   @Test
   public void testGeoPathRect() {
-    new Geo3dRectIntersectionTestHelper(ctx) {
+    new AbstractRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Shape generateRandomShape(Point nearP) {
