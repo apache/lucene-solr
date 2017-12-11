@@ -59,7 +59,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
    * Default accuracy for circles when not using the unit sphere.
    * It is equivalent to 10m on the surface of the earth.
    */
-  private static double DEFAULT_CIRCLE_ACCURACY = 1.6e-6;
+  private static final double DEFAULT_CIRCLE_ACCURACY = 1.6e-6;
   private double circleAccuracy = DEFAULT_CIRCLE_ACCURACY;
 
   @SuppressWarnings("unchecked")
@@ -177,7 +177,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
   @Override
   public Circle circle(double x, double y, double distance) {
     GeoCircle circle;
-    if (planetModel.ab == planetModel.c) {
+    if (planetModel.isSphere()) {
       circle = GeoCircleFactory.makeGeoCircle(planetModel,
           y * DistanceUtils.DEGREES_TO_RADIANS,
           x * DistanceUtils.DEGREES_TO_RADIANS,
