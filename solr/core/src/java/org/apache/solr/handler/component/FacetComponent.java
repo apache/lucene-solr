@@ -571,21 +571,8 @@ public class FacetComponent extends SearchComponent {
           // set the initial limit higher to increase accuracy
           dff.initialLimit = doOverRequestMath(dff.initialLimit, dff.overrequestRatio, 
                                                dff.overrequestCount);
-          
-          // If option FACET_DISTRIB_MCO is turned on then we will use 1 as the initial 
-          // minCount (unless the user explicitly set it to something less than 1). If 
-          // option FACET_DISTRIB_MCO is turned off then we will use 0 as the initial 
-          // minCount regardless of what the user might have provided (prior to the
-          // addition of the FACET_DISTRIB_MCO option the default logic was to use 0).
-          // As described in issues SOLR-8559 and SOLR-8988 the use of 1 provides a 
-          // significant performance boost.
-          dff.initialMincount = dff.mco ? Math.min(dff.minCount, 1) : 0;
-                                   
-        } else {
-          // if limit==-1, then no need to artificially lower mincount to 0 if
-          // it's 1
-          dff.initialMincount = Math.min(dff.minCount, 1);
         }
+        dff.initialMincount = Math.min(dff.minCount, 1);
       } else {
         // we're sorting by index order.
         // if minCount==0, we should always be able to get accurate results w/o
@@ -682,10 +669,8 @@ public class FacetComponent extends SearchComponent {
     } else if ( FacetParams.FACET_SORT_COUNT.equals(sort) ) {
       if ( 0 < requestedLimit ) {
         shardLimit = doOverRequestMath(shardLimit, overRequestRatio, overRequestCount);
-        shardMinCount = 0; 
-      } else {
-        shardMinCount = Math.min(requestedMinCount, 1);
       }
+      shardMinCount = Math.min(requestedMinCount, 1);
     } 
     sreq.params.set(paramStart + FacetParams.FACET_LIMIT, shardLimit);
     sreq.params.set(paramStart + FacetParams.FACET_PIVOT_MINCOUNT, shardMinCount);
@@ -1437,7 +1422,6 @@ public class FacetComponent extends SearchComponent {
     
     public int initialLimit; // how many terms requested in first phase
     public int initialMincount; // mincount param sent to each shard
-    public boolean mco;
     public double overrequestRatio;
     public int overrequestCount;
     public boolean needRefinements;
@@ -1456,9 +1440,6 @@ public class FacetComponent extends SearchComponent {
         = params.getFieldDouble(field, FacetParams.FACET_OVERREQUEST_RATIO, 1.5);
       this.overrequestCount 
         = params.getFieldInt(field, FacetParams.FACET_OVERREQUEST_COUNT, 10);
-      
-      this.mco 
-      = params.getFieldBool(field, FacetParams.FACET_DISTRIB_MCO, false);
     }
     
     void add(int shardNum, NamedList shardCounts, int numRequested) {
@@ -1496,10 +1477,10 @@ public class FacetComponent extends SearchComponent {
         }
       }
       
-      // the largest possible missing term is initialMincount if we received
+      // the largest possible missing term is (initialMincount - 1) if we received
       // less than the number requested.
       if (numRequested < 0 || numRequested != 0 && numReceived < numRequested) {
-        last = initialMincount;
+        last = Math.max(0, initialMincount - 1);
       }
       
       missingMaxPossible += last;
