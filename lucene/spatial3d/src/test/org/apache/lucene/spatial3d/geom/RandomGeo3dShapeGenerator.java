@@ -755,7 +755,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
         int vertexCount = random().nextInt(14) + 3;
         List<GeoPoint> geoPoints = points(vertexCount,planetModel, constraints);
         if (geoPoints.size() < 3){
-          continue;
+          break;
         }
         orderPoints(geoPoints);
         polDescription.add(new GeoPolygonFactory.PolygonDescription(geoPoints));
