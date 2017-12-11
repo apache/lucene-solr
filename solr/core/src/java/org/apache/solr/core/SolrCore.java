@@ -1483,11 +1483,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
-      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this );
+      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, getName());
       assert false : "Too many closes on SolrCore";
       return;
     }
-    log.info(logid+" CLOSING SolrCore " + this);
+    log.info(logid+" CLOSING SolrCore " + getName());
 
     // stop reporting metrics
     try {
@@ -1650,7 +1650,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   protected void finalize() throws Throwable {
     try {
       if (getOpenCount() != 0) {
-        log.error("REFCOUNT ERROR: unreferenced " + this + " (" + getName()
+        log.error("REFCOUNT ERROR: unreferenced (" + getName()
             + ") has a reference count of " + getOpenCount());
       }
     } finally {
