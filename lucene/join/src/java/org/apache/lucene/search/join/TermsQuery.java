@@ -35,7 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-class TermsQuery extends MultiTermQuery implements Accountable {
+public class TermsQuery extends MultiTermQuery implements Accountable {
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermsQuery.class);
 
   private final BytesRefHash terms;
@@ -54,7 +54,7 @@ class TermsQuery extends MultiTermQuery implements Accountable {
    * @param terms                 The terms that matching documents should have. The terms must be sorted by natural order.
    * @param indexReaderContextId  Refers to the top level index reader used to create the set of terms in the previous parameter.
    */
-  TermsQuery(String toField, BytesRefHash terms, String fromField, Query fromQuery, Object indexReaderContextId) {
+  public TermsQuery(String toField, BytesRefHash terms, String fromField, Query fromQuery, Object indexReaderContextId) {
     super(toField);
     this.terms = terms;
     ords = terms.sort();
