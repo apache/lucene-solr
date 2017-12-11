@@ -29,8 +29,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.20.v20170531
 
+Optimizations
+----------------------
 
-(No Changes)
+* SOLR-11711: Fixed distributed processing of facet.field/facet.pivot sub requests to prevent requesting
+  unneccessary and excessive '0' count terms from each shard (Houston Putman via hossman)
 
 
 ==================  7.2.0 ==================
