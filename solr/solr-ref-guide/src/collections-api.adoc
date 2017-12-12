@@ -1885,6 +1885,7 @@ Time in seconds to wait until new replicas are created, and until leader replica
 ====
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
+
 [[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
@@ -1911,6 +1912,20 @@ The name of the destination node. This parameter is required.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+[[utilizenode]]
+== UTILIZENODE: Utilize a New Node
+
+This command can be used to move some replicas from the existing nodes to either a new node or a less loaded node to reduce the load on the existing node.
+
+This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.
+
+`/admin/collections?action=UTILIZENODE&node=nodeName`
+
+=== UTILIZENODE Parameters
+
+`node`:: The name of the node that needs to be utilized. This parameter is required.
+
 
 == Asynchronous Calls
 
