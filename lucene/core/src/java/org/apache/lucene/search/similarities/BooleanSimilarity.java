@@ -77,7 +77,7 @@ public class BooleanSimilarity extends Similarity {
 
       @Override
       public Explanation explain(int doc, Explanation freq) throws IOException {
-        Explanation queryBoostExpl = Explanation.match(boost, "boost");
+        Explanation queryBoostExpl = Explanation.match(boost, "boost, query boost");
         return Explanation.match(
             queryBoostExpl.getValue(),
             "score(" + getClass().getSimpleName() + ", doc=" + doc + "), computed from:",
