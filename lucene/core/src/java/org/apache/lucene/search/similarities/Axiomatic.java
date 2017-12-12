@@ -166,12 +166,46 @@ public abstract class Axiomatic extends SimilarityBase {
    */
   protected abstract double gamma(BasicStats stats, double freq, double docLen);
 
-  protected abstract Explanation tfExplain(BasicStats stats, double freq, double docLen);
 
-  protected abstract Explanation lnExplain(BasicStats stats, double freq, double docLen);
+  /**
+   * Explain the score of the term frequency component for a single document
+   * @param stats the corpus level statistics
+   * @param freq number of occurrences of term in the document
+   * @param docLen the document length
+   * @return Explanation of how the tf component was computed
+   */
+  protected abstract Explanation tfExplain(BasicStats stats,
+                                           double freq, double docLen);
 
-  protected abstract Explanation tflnExplain(BasicStats stats, double freq, double docLen);
+  /**
+   * Explain the score of the document length component for a single document
+   * @param stats the corpus level statistics
+   * @param freq number of occurrences of term in the document
+   * @param docLen the document length
+   * @return Explanation of how the ln component was computed
+   */
+  protected abstract Explanation lnExplain(BasicStats stats,
+                                           double freq, double docLen);
 
+  /**
+   * Explain the score of the mixed term frequency and
+   * document length component for a single document
+   * @param stats the corpus level statistics
+   * @param freq number of occurrences of term in the document
+   * @param docLen the document length
+   * @return Explanation of how the tfln component was computed
+   */
+  protected abstract Explanation tflnExplain(BasicStats stats,
+                                             double freq, double docLen);
+
+  /**
+   * Explain the score of the inverted document frequency component
+   * for a single document
+   * @param stats the corpus level statistics
+   * @param freq number of occurrences of term in the document
+   * @param docLen the document length
+   * @return Explanation of how the idf component was computed
+   */
   protected abstract Explanation idfExplain(BasicStats stats, double freq, double docLen);
 
 }
