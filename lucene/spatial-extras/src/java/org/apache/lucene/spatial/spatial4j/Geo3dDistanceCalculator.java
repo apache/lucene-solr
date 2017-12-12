@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.spatial4j;
 
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPointShape;
-import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
