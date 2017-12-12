@@ -34,7 +34,10 @@ Optimizations
 
 * SOLR-11711: Fixed distributed processing of facet.field/facet.pivot sub requests to prevent requesting
   unneccessary and excessive '0' count terms from each shard (Houston Putman via hossman)
-
+  
+Other Changes
+----------------------
+* SOLR-11575: Improve ref-guide solrj snippets via mock 'print()' method (Jason Gerlowski via hossman)
 
 ==================  7.2.0 ==================
 
