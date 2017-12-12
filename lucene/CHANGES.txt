@@ -37,6 +37,9 @@ Changes in Runtime Behavior
   divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
   instead of returning bogus values for a non-existent term or field. (Robert Muir)
 
+* LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
+  when the function produces a negative value. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
