@@ -142,10 +142,13 @@ However, since the first node in the first example had more than 1 replica for a
 
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
-== Suggestions API ==
-Suggestions are operations recommended by the system according to the policies and preferences the user has set. Note that the suggestions are made only if there are `violations` to the policies and the collection admin operation would use the preferences to identify the target node.
+== Suggestions API
+Suggestions are operations recommended by the system according to the policies and preferences the user has set.
 
-The API is available at `/admin/autocaling/suggestion`
+Suggestions are made only if there are `violations` to active policies. The `operation` section of the response uses the defined preferences to identify the target node.
+
+The API is available at `/admin/autocaling/suggestion`. Here is an example output from a suggestion request:
+
 [source,json]
 ----
 {
@@ -191,7 +194,7 @@ The API is available at `/admin/autocaling/suggestion`
   "WARNING":"This response format is experimental.  It is likely to change in the future."}
 ----
 
-The operation is an actual API call that can be invoked to remedy the current violation
+The suggested `operation` is an API call that can be invoked to remedy the current violation.
 
 == History API
 
@@ -213,14 +216,31 @@ further insight into e.g., exact operations that were computed and/or executed.
 Specifically, the following query parameters can be used (they are turned into
 filter queries, so an implicit AND is applied):
 
-* `trigger` - trigger name
-* `eventType` - event type / trigger type (e.g., `nodeAdded`)
-* `collection` - collection name involved in event processing
-* `stage` - event processing stage
-* `action` - trigger action
-* `node` - node name that the event refers to
-* `beforeAction` - beforeAction stage
-* `afterAction` - afterAction stage
+`trigger`::
+The name of the trigger.
+
+`eventType`::
+The event type or trigger type (e.g., `nodeAdded`).
+
+`collection`::
+The name of the collection involved in event processing.
+
+`stage`::
+An event processing stage.
+
+`action`::
+A trigger action.
+
+`node`::
+A node name that the event refers to.
+
+`beforeAction`::
+A `beforeAction` stage.
+
+`afterAction`::
+An `afterAction` stage.
+
+// TODO someday add an input example also
 
 .Example output
 [source,json]
