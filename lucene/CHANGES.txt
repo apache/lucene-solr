@@ -17,6 +17,10 @@ Improvements
   disk. This change adds an expert setting to opt ouf of this behavior unless
   flusing is falling behind. (Simon Willnauer)
 
+* LUCENE-8086: spatial-extras Geo3dFactory: Use GeoExactCircle with
+  configurable precision for non-spherical planet models.
+  (Ignacio Vera via David Smiley)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
