@@ -76,6 +76,8 @@ Improvements
   configurable precision for non-spherical planet models.
   (Ignacio Vera via David Smiley)
 
+* LUCENE-8093: TrimFilterFactory implements MultiTermAwareComponent (Alan Woodward)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
