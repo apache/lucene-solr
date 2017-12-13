@@ -497,7 +497,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       double dist = dist(latVals.doubleVal(doc), lonVals.doubleVal(doc));
 
       String description = SpatialDistanceQuery.this.toString();
-      return Explanation.match((float) (base.getValue() * dist), description + " product of:",
+      return Explanation.match((float) (base.getValue().floatValue() * dist), description + " product of:",
           base, Explanation.match((float) dist, "hsin("+latVals.doubleVal(doc)+","+lonVals.doubleVal(doc)));
     }
 

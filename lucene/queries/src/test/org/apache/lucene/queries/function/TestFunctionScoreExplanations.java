@@ -67,7 +67,7 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     Explanation e1 = searcher.explain(q, 0);
     Explanation e = searcher.explain(fsq, 0);
 
-    assertEquals(e.getValue(), e1.getValue(), 0.00001);
+    assertEquals(e.getValue(), e1.getValue());
     assertEquals(e.getDetails()[0], e1);
 
   }
@@ -86,19 +86,19 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     expl = searcher.explain(query, 0);
     assertEquals(2, expl.getDetails().length);
     // function
-    assertEquals(5f, expl.getDetails()[1].getValue(), 0f);
+    assertEquals(5f, expl.getDetails()[1].getValue().doubleValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[0].getDescription());
-    assertEquals(2f, expl.getDetails()[0].getValue(), 0f);
+    assertEquals(2f, expl.getDetails()[0].getValue().doubleValue(), 0f);
 
     searcher.setSimilarity(new ClassicSimilarity()); // in order to have a queryNorm != 1
     expl = searcher.explain(query, 0);
     assertEquals(2, expl.getDetails().length);
     // function
-    assertEquals(5f, expl.getDetails()[1].getValue(), 0f);
+    assertEquals(5f, expl.getDetails()[1].getValue().doubleValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[0].getDescription());
-    assertEquals(2f, expl.getDetails()[0].getValue(), 0f);
+    assertEquals(2f, expl.getDetails()[0].getValue().doubleValue(), 0f);
   }
 
 }

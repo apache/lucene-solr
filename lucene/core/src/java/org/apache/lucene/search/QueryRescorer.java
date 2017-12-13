@@ -141,13 +141,13 @@ public abstract class QueryRescorer extends Rescorer {
   public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
     Explanation secondPassExplanation = searcher.explain(query, docID);
 
-    Float secondPassScore = secondPassExplanation.isMatch() ? secondPassExplanation.getValue() : null;
+    Number secondPassScore = secondPassExplanation.isMatch() ? secondPassExplanation.getValue() : null;
 
     float score;
     if (secondPassScore == null) {
-      score = combine(firstPassExplanation.getValue(), false, 0.0f);
+      score = combine(firstPassExplanation.getValue().floatValue(), false, 0.0f);
     } else {
-      score = combine(firstPassExplanation.getValue(), true,  secondPassScore.floatValue());
+      score = combine(firstPassExplanation.getValue().floatValue(), true,  secondPassScore.floatValue());
     }
 
     Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);

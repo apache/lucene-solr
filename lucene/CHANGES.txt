@@ -29,6 +29,9 @@ API Changes
 * LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
   removed (Alan Woodward)
 
+* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward, 
+  Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

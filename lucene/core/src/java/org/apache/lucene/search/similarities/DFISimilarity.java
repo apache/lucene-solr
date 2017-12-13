@@ -82,7 +82,7 @@ public class DFISimilarity extends SimilarityBase {
       BasicStats stats, int doc, Explanation freq, double docLen) {
     final double expected = (stats.getTotalTermFreq() + 1) * docLen /
         (stats.getNumberOfFieldTokens() + 1);
-    if (freq.getValue() <= expected){
+    if (freq.getValue().doubleValue() <= expected){
       return Explanation.match((float) 0, "score(" +
           getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
           freq.getValue() +"), equals to 0");
@@ -95,14 +95,14 @@ public class DFISimilarity extends SimilarityBase {
         Explanation.match(stats.getNumberOfFieldTokens(),
             "T, total number of tokens in the field"));
 
-    final double measure = independence.score(freq.getValue(), expected);
+    final double measure = independence.score(freq.getValue().doubleValue(), expected);
     Explanation explMeasure = Explanation.match((float) measure,
         "measure, computed as independence.score(freq, expected) from:",
         freq,
         explExpected);
 
     return Explanation.match(
-        (float) score(stats, freq.getValue(), docLen),
+        (float) score(stats, freq.getValue().doubleValue(), docLen),
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
             freq.getValue() +"), computed as boost * log2(measure + 1) from:",
         Explanation.match( (float)stats.getBoost(), "boost, query boost"),

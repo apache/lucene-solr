@@ -183,7 +183,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
           Explanation boostExplanation = Explanation.match(getValueForDoc(doc), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
           return Explanation.match(
-              boostExplanation.getValue() * simExplanation.getValue(),
+              boostExplanation.getValue().doubleValue() * simExplanation.getValue().doubleValue(),
               "product of:", boostExplanation, simExplanation);
         }
       };

@@ -110,13 +110,13 @@ public class AssertingSimilarity extends Similarity {
         assert doc < context.reader().maxDoc();
         // freq in bounds 
         assert freq != null;
-        assert Float.isFinite(freq.getValue());
+        assert Float.isFinite(freq.getValue().floatValue());
         // result in bounds
         Explanation explanation = delegateScorer.explain(doc, freq);
         assert explanation != null;
-        assert Float.isFinite(explanation.getValue());
+        assert Float.isFinite(explanation.getValue().floatValue());
         // result matches score exactly
-        assert explanation.getValue() == delegateScorer.score(doc, freq.getValue());
+        assert explanation.getValue().floatValue() == delegateScorer.score(doc, freq.getValue().floatValue());
         return explanation;
       }
     };

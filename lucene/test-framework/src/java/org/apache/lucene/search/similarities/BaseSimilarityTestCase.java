@@ -452,7 +452,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       assertTrue("score > maxScore: " + score + " > " + maxScore, score <= maxScore);
       // check explanation matches
       Explanation explanation = scorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
-      if (score != explanation.getValue()) {
+      if (score != explanation.getValue().doubleValue()) {
         fail("expected: " + score + ", got: " + explanation);
       }
       CheckHits.verifyExplanation("<test query>", 0, score, true, explanation);
@@ -473,7 +473,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       assertTrue(prevScore >= 0);
       // check explanation matches
       Explanation prevExplanation = scorer.explain(0, Explanation.match(prevFreq, "freq, occurrences of term within document"));
-      if (prevScore != prevExplanation.getValue()) {
+      if (prevScore != prevExplanation.getValue().doubleValue()) {
         fail("expected: " + prevScore + ", got: " + prevExplanation);
       }
       CheckHits.verifyExplanation("test query (prevFreq)", 0, prevScore, true, prevExplanation);
@@ -493,7 +493,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         assertTrue(prevNormScore >= 0);
         // check explanation matches
         Explanation prevNormExplanation = prevNormScorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
-        if (prevNormScore != prevNormExplanation.getValue()) {
+        if (prevNormScore != prevNormExplanation.getValue().doubleValue()) {
           fail("expected: " + prevNormScore + ", got: " + prevNormExplanation);
         }
         CheckHits.verifyExplanation("test query (prevNorm)", 0, prevNormScore, true, prevNormExplanation);
@@ -516,7 +516,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         assertTrue(prevTermScore >= 0);
         // check explanation matches
         Explanation prevTermExplanation = prevTermScorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
-        if (prevTermScore != prevTermExplanation.getValue()) {
+        if (prevTermScore != prevTermExplanation.getValue().doubleValue()) {
           fail("expected: " + prevTermScore + ", got: " + prevTermExplanation);
         }
         CheckHits.verifyExplanation("test query (prevTerm)", 0, prevTermScore, true, prevTermExplanation);

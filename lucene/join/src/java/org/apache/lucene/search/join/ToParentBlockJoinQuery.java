@@ -347,7 +347,7 @@ public class ToParentBlockJoinQuery extends Query {
         Explanation child = childWeight.explain(context, childDoc - context.docBase);
         if (child.isMatch()) {
           matches++;
-          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+          if (bestChild == null || child.getValue().floatValue() > bestChild.getValue().floatValue()) {
             bestChild = child;
           }
         }

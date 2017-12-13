@@ -244,9 +244,9 @@ public class PayloadScoreQuery extends SpanQuery {
 
     protected Explanation getPayloadExplanation() {
       Explanation expl = function.explain(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
-      if (expl.getValue() < 0) {
+      if (expl.getValue().floatValue() < 0) {
         expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
-      } else if (Float.isNaN(expl.getValue())) {
+      } else if (Float.isNaN(expl.getValue().floatValue())) {
         expl = Explanation.match(0, "payload score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
       }
       return expl;

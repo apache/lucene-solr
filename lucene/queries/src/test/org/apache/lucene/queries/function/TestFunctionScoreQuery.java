@@ -161,7 +161,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), DoubleValuesSource.fromLongField("foo"));
     QueryUtils.check(random(), q, searcher);
     Explanation expl = searcher.explain(q, 0);
-    assertEquals(0, expl.getValue(), 0f);
+    assertEquals(0, expl.getValue().doubleValue(), 0f);
     assertTrue(expl.toString(), expl.getDetails()[0].getDescription().contains("truncated score"));
     reader.close();
     dir.close();
@@ -179,7 +179,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), DoubleValuesSource.fromDoubleField("foo"));
     QueryUtils.check(random(), q, searcher);
     Explanation expl = searcher.explain(q, 0);
-    assertEquals(0, expl.getValue(), 0f);
+    assertEquals(0, expl.getValue().doubleValue(), 0f);
     assertTrue(expl.toString(), expl.getDetails()[0].getDescription().contains("NaN is an illegal score"));
     reader.close();
     dir.close();

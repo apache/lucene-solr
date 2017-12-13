@@ -170,7 +170,7 @@ public class BM25Similarity extends Similarity {
     for (final TermStatistics stat : termStats ) {
       Explanation idfExplain = idfExplain(collectionStats, stat);
       details.add(idfExplain);
-      idf += idfExplain.getValue();
+      idf += idfExplain.getValue().floatValue();
     }
     return Explanation.match((float) idf, "idf, sum of:", details);
   }
@@ -236,7 +236,7 @@ public class BM25Similarity extends Similarity {
       subs.addAll(stats.explain());
       Explanation tfExpl = explainTF(doc, freq);
       subs.add(tfExpl);
-      return Explanation.match(stats.weight * tfExpl.getValue(),
+      return Explanation.match(stats.weight * tfExpl.getValue().floatValue(),
           "score(doc="+doc+",freq="+freq.getValue()+"), product of:", subs);
     }
     
@@ -247,7 +247,7 @@ public class BM25Similarity extends Similarity {
       if (norms == null) {
         subs.add(Explanation.match(0, "b, field omits length norms"));
         return Explanation.match(
-            (float) (freq.getValue() / (freq.getValue() + (double) k1)),
+            (float) (freq.getValue().floatValue() / (freq.getValue().floatValue() + (double) k1)),
             "tf, computed as freq / (freq + k1) from:", subs);
       } else {
         boolean found = norms.advanceExact(doc);
@@ -263,7 +263,7 @@ public class BM25Similarity extends Similarity {
         subs.add(Explanation.match(stats.avgdl, "avgdl, average length of field"));
         float normValue = k1 * ((1 - b) + b * doclen / stats.avgdl);
         return Explanation.match(
-            (float) (freq.getValue() / (freq.getValue() + (double) normValue)),
+            (float) (freq.getValue().floatValue() / (freq.getValue().floatValue() + (double) normValue)),
             "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:", subs);
       }
     }
@@ -294,7 +294,7 @@ public class BM25Similarity extends Similarity {
       this.avgdl = avgdl;
       this.k1 = k1;
       this.cache = cache;
-      this.weight = (k1 + 1) * boost * idf.getValue();
+      this.weight = (k1 + 1) * boost * idf.getValue().floatValue();
     }
 
     private List<Explanation> explain() {

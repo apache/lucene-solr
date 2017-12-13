@@ -162,10 +162,10 @@ public abstract class SimilarityBase extends Similarity {
   protected Explanation explain(
       BasicStats stats, int doc, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue(), docLen);
+    explain(subs, stats, doc, freq.getValue().floatValue(), docLen);
     
     return Explanation.match(
-        (float) score(stats, freq.getValue(), docLen),
+        (float) score(stats, freq.getValue().floatValue(), docLen),
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
         subs);
   }

@@ -316,7 +316,7 @@ public class CheckHits {
                                        float score,
                                        boolean deep,
                                        Explanation expl) {
-    float value = expl.getValue();
+    float value = expl.getValue().floatValue();
     // TODO: clean this up if we use junit 5 (the assert message is costly)
     try {
       Assert.assertEquals(score, value, 0d);
@@ -382,7 +382,7 @@ public class CheckHits {
         float max = Float.NEGATIVE_INFINITY;
         double maxError = 0;
         for (int i=0; i<detail.length; i++) {
-          float dval = detail[i].getValue();
+          float dval = detail[i].getValue().floatValue();
           verifyExplanation(q,doc,dval,deep,detail[i]);
           product *= dval;
           sum += dval;

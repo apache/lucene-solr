@@ -97,7 +97,7 @@ public class MultiSimilarity extends Similarity {
       for (SimScorer subScorer : subScorers) {
         subs.add(subScorer.explain(doc, freq));
       }
-      return Explanation.match(score(doc, freq.getValue()), "sum of:", subs);
+      return Explanation.match(score(doc, freq.getValue().floatValue()), "sum of:", subs);
     }
 
   }

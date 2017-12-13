@@ -120,17 +120,17 @@ public class IBSimilarity extends SimilarityBase {
     Explanation lambdaExpl = lambda.explain(stats);
     subs.add(normExpl);
     subs.add(lambdaExpl);
-    subs.add(distribution.explain(stats, normExpl.getValue(), lambdaExpl.getValue()));
+    subs.add(distribution.explain(stats, normExpl.getValue().floatValue(), lambdaExpl.getValue().floatValue()));
   }
 
   @Override
   protected Explanation explain(
       BasicStats stats, int doc, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue(), docLen);
+    explain(subs, stats, doc, freq.getValue().doubleValue(), docLen);
 
     return Explanation.match(
-        (float) score(stats, freq.getValue(), docLen),
+        (float) score(stats, freq.getValue().doubleValue(), docLen),
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
             freq.getValue() +"), computed as boost * " +
             "distribution.score(stats, normalization.tfn(stats, freq," +

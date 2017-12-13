@@ -249,7 +249,7 @@ public abstract class ValueSource {
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
       Map context = new HashMap<>();
       FakeScorer scorer = new FakeScorer();
-      scorer.score = scoreExplanation.getValue();
+      scorer.score = scoreExplanation.getValue().floatValue();
       context.put("scorer", scorer);
       context.put("searcher", searcher);
       FunctionValues fv = in.getValues(context, ctx);

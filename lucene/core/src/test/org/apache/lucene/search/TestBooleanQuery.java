@@ -523,7 +523,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       @Override
       public void collect(int doc) throws IOException {
         final float actualScore = scorer.score();
-        final float expectedScore = searcher.explain(bq2, docBase + doc).getValue();
+        final float expectedScore = searcher.explain(bq2, docBase + doc).getValue().floatValue();
         assertEquals(expectedScore, actualScore, 10e-5);
         matched.set(true);
       }

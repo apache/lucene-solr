@@ -257,7 +257,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertTrue(s.contains("combined first and second pass score"));
     assertTrue(s.contains("first pass score"));
     assertTrue(s.contains("= second pass score"));
-    assertEquals(hits2.scoreDocs[0].score, explain.getValue(), 0.0f);
+    assertEquals(hits2.scoreDocs[0].score, explain.getValue().doubleValue(), 0.0f);
 
     docID = hits2.scoreDocs[1].doc;
     explain = rescorer.explain(searcher,
@@ -269,7 +269,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertTrue(s.contains("first pass score"));
     assertTrue(s.contains("no second pass score"));
     assertFalse(s.contains("= second pass score"));
-    assertEquals(hits2.scoreDocs[1].score, explain.getValue(), 0.0f);
+    assertEquals(hits2.scoreDocs[1].score, explain.getValue().doubleValue(), 0.0f);
 
     r.close();
     dir.close();

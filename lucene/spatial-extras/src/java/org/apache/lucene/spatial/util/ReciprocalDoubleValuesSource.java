@@ -77,7 +77,7 @@ public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
   @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     Explanation expl = input.explain(ctx, docId, scoreExplanation);
-    return Explanation.match((float)recip(expl.getValue()),
+    return Explanation.match(recip(expl.getValue().doubleValue()),
         distToEdge + " / (v + " + distToEdge + "), computed from:", expl);
   }
 

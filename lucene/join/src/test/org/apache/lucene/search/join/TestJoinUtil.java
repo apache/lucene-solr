@@ -1293,7 +1293,7 @@ public class TestJoinUtil extends LuceneTestCase {
       assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
       assertEquals(expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score, 0.0f);
       Explanation explanation = indexSearcher.explain(joinQuery, expectedTopDocs.scoreDocs[i].doc);
-      assertEquals(expectedTopDocs.scoreDocs[i].score, explanation.getValue(), 0.0f);
+      assertEquals(expectedTopDocs.scoreDocs[i].score, explanation.getValue().doubleValue(), 0.0f);
     }
   }
 

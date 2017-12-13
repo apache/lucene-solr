@@ -131,13 +131,13 @@ public class FunctionQuery extends Query {
 
     public Explanation explain(int doc) throws IOException {
       Explanation expl = vals.explain(doc);
-      if (expl.getValue() < 0) {
+      if (expl.getValue().floatValue() < 0) {
         expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
-      } else if (Float.isNaN(expl.getValue())) {
+      } else if (Float.isNaN(expl.getValue().floatValue())) {
         expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
       }
 
-      return Explanation.match(boost * expl.getValue(), "FunctionQuery(" + func + "), product of:",
+      return Explanation.match(boost * expl.getValue().floatValue(), "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
           Explanation.match(weight.boost, "boost"));
     }

@@ -150,7 +150,7 @@ public final class CoveringQuery extends Query {
         Explanation subExpl = weight.explain(context, doc);
         if (subExpl.isMatch()) {
           freq++;
-          score += subExpl.getValue();
+          score += subExpl.getValue().doubleValue();
         }
         subExpls.add(subExpl);
       }

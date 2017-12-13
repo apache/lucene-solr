@@ -158,7 +158,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
   @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     Explanation[] explanations = new Explanation[variables.length];
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
     if (dv.advanceExact(docId) == false) {
       return Explanation.noMatch(expression.sourceText);
     }
@@ -166,7 +166,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     for (DoubleValuesSource var : variables) {
       explanations[i++] = var.explain(ctx, docId, scoreExplanation);
     }
-    return Explanation.match((float) dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
+    return Explanation.match(dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
   }
 
   @Override

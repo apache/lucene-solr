@@ -95,10 +95,10 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   protected Explanation explain(
       BasicStats stats, int doc, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue(), docLen);
+    explain(subs, stats, doc, freq.getValue().doubleValue(), docLen);
 
     return Explanation.match(
-        (float) score(stats, freq.getValue(), docLen),
+        (float) score(stats, freq.getValue().doubleValue(), docLen),
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
             freq.getValue() +"), computed as boost * " +
             "log(1 + ((1 - lambda) * freq / dl) /(lambda * P)) from:",

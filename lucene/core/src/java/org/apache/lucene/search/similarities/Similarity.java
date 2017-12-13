@@ -173,7 +173,7 @@ public abstract class Similarity {
      */
     public Explanation explain(int doc, Explanation freq) throws IOException {
       return Explanation.match(
-          score(doc, freq.getValue()),
+          score(doc, freq.getValue().floatValue()),
           "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:",
           Collections.singleton(freq));
     }

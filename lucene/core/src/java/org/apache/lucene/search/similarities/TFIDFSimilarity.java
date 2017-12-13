@@ -472,7 +472,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     for (final TermStatistics stat : termStats ) {
       Explanation idfExplain = idfExplain(collectionStats, stat);
       subs.add(idfExplain);
-      idf += idfExplain.getValue();
+      idf += idfExplain.getValue().floatValue();
     }
     return Explanation.match((float) idf, "idf(), sum of:", subs);
   }
@@ -595,7 +595,7 @@ public abstract class TFIDFSimilarity extends Similarity {
       this.field = field;
       this.idf = idf;
       this.boost = boost;
-      this.queryWeight = boost * idf.getValue();
+      this.queryWeight = boost * idf.getValue().floatValue();
       this.normTable = normTable;
     }
   }  
@@ -606,7 +606,7 @@ public abstract class TFIDFSimilarity extends Similarity {
       subs.add(Explanation.match(stats.boost, "boost"));
     }
     subs.add(stats.idf);
-    Explanation tf = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
+    Explanation tf = Explanation.match(tf(freq.getValue().floatValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
     subs.add(tf);
 
     float norm;
@@ -624,7 +624,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     subs.add(fieldNorm);
     
     return Explanation.match(
-        stats.queryWeight * tf.getValue() * norm,
+        stats.queryWeight * tf.getValue().floatValue() * norm,
         "score(doc="+doc+",freq="+freq.getValue()+"), product of:",
         subs);
   }

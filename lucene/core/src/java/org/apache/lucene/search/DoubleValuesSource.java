@@ -68,9 +68,9 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
    * @throws IOException if an {@link IOException} occurs
    */
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
     if (dv.advanceExact(docId))
-      return Explanation.match((float) dv.doubleValue(), this.toString());
+      return Explanation.match(dv.doubleValue(), this.toString());
     return Explanation.noMatch(this.toString());
   }
 
@@ -305,7 +305,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) {
-      return Explanation.match((float) value, "constant(" + value + ")");
+      return Explanation.match(value, "constant(" + value + ")");
     }
 
     @Override
@@ -405,7 +405,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
       DoubleValues values = getValues(ctx, null);
       if (values.advanceExact(docId))
-        return Explanation.match((float) values.doubleValue(), this.toString());
+        return Explanation.match(values.doubleValue(), this.toString());
       else
         return Explanation.noMatch(this.toString());
     }

@@ -208,7 +208,7 @@ public class TestSimilarity2 extends LuceneTestCase {
       is.setSimilarity(sims.get(i));
       Explanation expected = scores.get(i);
       Explanation actual = is.explain(query, 0);
-      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue(), 0F);
+      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue());
     }
     
     iw.close();

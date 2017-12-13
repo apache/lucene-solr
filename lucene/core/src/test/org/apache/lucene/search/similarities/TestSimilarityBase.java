@@ -213,7 +213,7 @@ public class TestSimilarityBase extends LuceneTestCase {
           toTermStats(stats));
       float score = (float)sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
-          realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
+          realStats, 1, Explanation.match(freq, "freq"), docLen).getValue().floatValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
       assertFalse("Score NaN: " + sim.toString(), Float.isNaN(score));
       assertTrue("Score negative: " + sim.toString(), score >= 0);
