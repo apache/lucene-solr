@@ -18,14 +18,17 @@
 package org.apache.solr.client.ref_guide_examples;
 
 import java.io.File;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -54,6 +57,8 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
+  
+  private Queue<String> expectedLines = new ArrayDeque();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
@@ -69,6 +74,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    expectedLines.clear();
     final SolrClient client = getSolrClient();
 
     final List<TechProduct> products = new ArrayList<TechProduct>();
@@ -84,6 +90,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+    ensureNoLeftoverOutputExpectations();
 
     final SolrClient client = getSolrClient();
     client.deleteByQuery("techproducts", "*:*");
@@ -92,45 +99,60 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   @Test
   public void queryWithRawSolrParamsExample() throws Exception {
+    expectLine("Found 3 documents");
+    expectLine("id: 1; name: Fitbit Alta");
+    expectLine("id: 2; name: Sony Walkman");
+    expectLine("id: 3; name: Garmin GPS");
+    
     // tag::solrj-query-with-raw-solrparams[]
     final SolrClient client = getSolrClient();
 
     final Map<String, String> queryParamMap = new HashMap<String, String>();
     queryParamMap.put("q", "*:*");
     queryParamMap.put("fl", "id, name");
+    queryParamMap.put("sort", "id asc");
     MapSolrParams queryParams = new MapSolrParams(queryParamMap);
 
     final QueryResponse response = client.query("techproducts", queryParams);
     final SolrDocumentList documents = response.getResults();
 
-    assertEquals(NUM_INDEXED_DOCUMENTS, documents.getNumFound());
+    print("Found " + documents.getNumFound() + " documents");
     for(SolrDocument document : documents) {
-      assertTrue(document.getFieldNames().contains("id"));
-      assertTrue(document.getFieldNames().contains("name"));
+      final String id = (String) document.getFirstValue("id");
+      final String name = (String) document.getFirstValue("name");
+      
+      print("id: " + id + "; name: " + name);
     }
     // end::solrj-query-with-raw-solrparams[]
   }
 
   @Test
   public void queryWithSolrQueryExample() throws Exception {
-    final int numResultsToReturn = 1;
+    final int numResultsToReturn = 3;
+    expectLine("Found 3 documents");
+    expectLine("id: 1; name: Fitbit Alta");
+    expectLine("id: 2; name: Sony Walkman");
+    expectLine("id: 3; name: Garmin GPS");
     final SolrClient client = getSolrClient();
 
     // tag::solrj-query-with-solrquery[]
     final SolrQuery query = new SolrQuery("*:*");
     query.addField("id");
     query.addField("name");
+    query.setSort("id", ORDER.asc);
     query.setRows(numResultsToReturn);
     // end::solrj-query-with-solrquery[]
 
     final QueryResponse response = client.query("techproducts", query);
     final SolrDocumentList documents = response.getResults();
 
-    assertEquals(NUM_INDEXED_DOCUMENTS, documents.getNumFound());
+    print("Found " + documents.getNumFound() + " documents");
     assertEquals(numResultsToReturn, documents.size());
     for(SolrDocument document : documents) {
-      assertTrue(document.getFieldNames().contains("id"));
-      assertTrue(document.getFieldNames().contains("name"));
+      final String id = (String) document.getFirstValue("id");
+      final String name = (String) document.getFirstValue("name");
+      
+      print("id: "+ id + "; name: " + name);
     }
   }
 
@@ -167,26 +189,32 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   @Test
   public void queryBeanValueTypeExample() throws Exception {
+    expectLine("Found 3 documents");
+    expectLine("id: 1; name: Fitbit Alta");
+    expectLine("id: 2; name: Sony Walkman");
+    expectLine("id: 3; name: Garmin GPS");
+    
     // tag::solrj-query-bean-value-type[]
     final SolrClient client = getSolrClient();
 
     final SolrQuery query = new SolrQuery("*:*");
     query.addField("id");
     query.addField("name");
+    query.setSort("id", ORDER.asc);
 
     final QueryResponse response = client.query("techproducts", query);
     final List<TechProduct> products = response.getBeans(TechProduct.class);
     // end::solrj-query-bean-value-type[]
 
-    assertEquals(NUM_INDEXED_DOCUMENTS, products.size());
+    print("Found " + products.size() + " documents");
     for (TechProduct product : products) {
-      assertFalse(product.id.isEmpty());
-      assertFalse(product.name.isEmpty());
+      print("id: " + product.id + "; name: " + product.name);
     }
   }
 
   @Test
   public void otherSolrApisExample() throws Exception {
+    expectLine("Found "+NUM_LIVE_NODES+" live nodes");
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
@@ -196,7 +224,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
     final List<String> liveNodes = (List<String>) cluster.get("live_nodes");
 
-    assertEquals(NUM_LIVE_NODES, liveNodes.size());
+    print("Found " + liveNodes.size() + " live nodes");
     // end::solrj-other-apis[]
   }
 
@@ -231,5 +259,28 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     public TechProduct() {}
   }
   // end::solrj-techproduct-value-type[]
-
+  
+  private void expectLine(String expectedLine) {
+    expectedLines.add(expectedLine);
+  }
+  
+  private void print(String actualOutput) {
+    final String nextExpectedLine = expectedLines.poll();
+    assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
+    
+    final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
+        + actualOutput;
+    assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
+  }
+  
+  private void ensureNoLeftoverOutputExpectations() {
+    if (expectedLines.isEmpty()) return;
+    
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Leftover output was expected but not printed:");
+    for (String expectedLine : expectedLines) {
+      builder.append("\n\t" + expectedLine);
+    }
+    fail(builder.toString());
+  }
 }

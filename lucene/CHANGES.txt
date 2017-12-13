@@ -37,12 +37,18 @@ Changes in Runtime Behavior
   divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
   instead of returning bogus values for a non-existent term or field. (Robert Muir)
 
+* LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
+  when the function produces a negative value. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
   SimilarityBase switches to 64-bit doubles internally to help avoid common numeric issues.
   Add missing range checks for similarity parameters.
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
+
+* LUCENE-8011: Improved similarity explanations.
+  (Mayya Sharipova via Adrien Grand)
 
 Optimizations
 

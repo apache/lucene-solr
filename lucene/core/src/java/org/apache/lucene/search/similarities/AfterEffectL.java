@@ -37,8 +37,8 @@ public class AfterEffectL extends AfterEffect {
   public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
         (float) (scoreTimes1pTfn(stats) / (1 + tfn)),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match((float) tfn, "tfn"));
+        getClass().getSimpleName() + ", computed as 1 / (tfn + 1) from:",
+        Explanation.match((float) tfn, "tfn, normalized term frequency"));
   }
   
   @Override

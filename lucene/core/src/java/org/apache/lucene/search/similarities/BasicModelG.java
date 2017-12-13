@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
@@ -46,6 +48,26 @@ public class BasicModelG extends BasicModel {
     // that the result is non-decreasing with tfn since B >= A
     
     return (B - (B - A) / (1 + tfn)) * aeTimes1pTfn;
+  }
+
+  @Override
+  public Explanation explain(BasicStats stats, double tfn, double aeTimes1pTfn) {
+    double F = stats.getTotalTermFreq() + 1;
+    double N = stats.getNumberOfDocuments();
+    double lambda = F / (N + F);
+    Explanation explLambda = Explanation.match((float) lambda,
+        "lambda, computed as F / (N + F) from:",
+        Explanation.match((float) F,
+            "F, total number of occurrences of term across all docs + 1"),
+        Explanation.match((float) N,
+            "N, total number of documents with field"));
+
+    return Explanation.match(
+        (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
+        getClass().getSimpleName() + ", computed as " +
+            "log2(lambda + 1) + tfn * log2((1 + lambda) / lambda) from:",
+        Explanation.match((float) tfn, "tfn, normalized term frequency"),
+        explLambda);
   }
 
   @Override
