@@ -729,13 +729,13 @@ function stop_solr() {
 
   DIR="$1"
   SOLR_PORT="$2"
-  STOP_PORT="${STOP_PORT:-$(expr $SOLR_PORT - 1000)}"
+  THIS_STOP_PORT="${STOP_PORT:-$(expr $SOLR_PORT - 1000)}"
   STOP_KEY="$3"
   SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
       while true
       do
