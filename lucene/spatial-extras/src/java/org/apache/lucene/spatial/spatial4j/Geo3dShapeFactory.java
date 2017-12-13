@@ -55,6 +55,13 @@ public class Geo3dShapeFactory implements ShapeFactory {
   private SpatialContext context;
   private PlanetModel planetModel;
 
+  /**
+   * Default accuracy for circles when not using the unit sphere.
+   * It is equivalent to ~10m on the surface of the earth.
+   */
+  private static final double DEFAULT_CIRCLE_ACCURACY = 1e-4;
+  private double circleAccuracy = DEFAULT_CIRCLE_ACCURACY;
+
   @SuppressWarnings("unchecked")
   public Geo3dShapeFactory(SpatialContext context, SpatialContextFactory factory) {
     this.context = context;
@@ -65,6 +72,16 @@ public class Geo3dShapeFactory implements ShapeFactory {
   @Override
   public SpatialContext getSpatialContext() {
     return context;
+  }
+
+  /**
+   * Set the accuracy for circles in decimal degrees. Note that accuracy has no effect
+   * when the planet model is a sphere. In that case, circles are always fully precise.
+   *
+   * @param circleAccuracy the provided accuracy in decimal degrees.
+   */
+  public void setCircleAccuracy(double circleAccuracy) {
+    this.circleAccuracy = circleAccuracy;
   }
 
   @Override
@@ -150,10 +167,23 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   @Override
   public Circle circle(double x, double y, double distance) {
-    GeoCircle circle = GeoCircleFactory.makeGeoCircle(planetModel,
-        y * DistanceUtils.DEGREES_TO_RADIANS,
-        x * DistanceUtils.DEGREES_TO_RADIANS,
-        distance * DistanceUtils.DEGREES_TO_RADIANS);
+    GeoCircle circle;
+    if (planetModel.isSphere()) {
+      circle = GeoCircleFactory.makeGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS);
+    }
+    else {
+      //accuracy is defined as a linear distance in this class. At tiny distances, linear distance
+      //can be approximated to surface distance in radians.
+      circle = GeoCircleFactory.makeExactGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS,
+          circleAccuracy * DistanceUtils.DEGREES_TO_RADIANS);
+
+    }
     return new Geo3dCircleShape(circle, context);
   }
 
@@ -238,8 +268,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   /**
    * Geo3d implementation of {@link org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder} to generate
-   * nine Strings. Note that GeoPath needs a buffer so we set the
-   * buffer to 1e-10.
+   * line strings.
    */
   private class Geo3dLineStringBuilder extends Geo3dPointBuilder<LineStringBuilder> implements LineStringBuilder {
 
@@ -373,7 +402,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   /**
    * Geo3d implementation of {@link org.locationtech.spatial4j.shape.ShapeFactory.MultiShapeBuilder} to generate
-   * geometry collections
+   * geometry collections.
    *
    * @param <T> is the type of shapes.
    */
