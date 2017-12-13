@@ -109,6 +109,9 @@ Details of the snitch provider. See the section <<rule-based-replica-placement.a
 
 `policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
 
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 === CREATE Response
 
 The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
@@ -267,6 +270,9 @@ For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to s
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>
 
@@ -371,6 +377,9 @@ The format is a comma-separated list of node_names, such as `localhost:8983_solr
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
@@ -748,6 +757,9 @@ See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,T
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>

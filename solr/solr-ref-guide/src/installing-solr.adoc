@@ -65,7 +65,7 @@ Once extracted, you are now ready to run Solr using the instructions provided in
 
 After installing Solr, you'll see the following directories and files within them:
 
-bin::
+bin/::
 This directory includes several important scripts that will make using Solr easier.
 
 solr and solr.cmd::: This is <<solr-control-script-reference.adoc#solr-control-script-reference,Solr's Control Script>>, also known as `bin/solr` (*nix) / `bin/solr.cmd` (Windows). This script is the preferred tool to start and stop Solr. You can also create collections or cores, configure authentication, and work with configuration files when running in SolrCloud mode.
@@ -78,22 +78,22 @@ These are property files for *nix and Windows systems, respectively. System-leve
 install_solr_services.sh:::
 This script is used on *nix systems to install Solr as a service. It is described in more detail in the section <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>.
 
-contrib::
+contrib/::
 Solr's `contrib` directory includes add-on plugins for specialized features of Solr.
 
-dist::
+dist/::
 The `dist` directory contains the main Solr .jar files.
 
-docs::
+docs/::
 The `docs` directory includes a link to online Javadocs for Solr.
 
-example::
+example/::
 The `example` directory includes several types of examples that demonstrate various Solr capabilities. See the section <<Solr Examples>> below for more details on what is in this directory.
 
-licenses::
+licenses/::
 The `licenses` directory includes all of the licenses for 3rd party libraries used by Solr.
 
-server::
+server/::
 This directory is where the heart of the Solr application resides. A README in this directory provides a detailed overview, but here are some highlights:
 * Solr's Admin UI (`server/solr-webapp`)
 * Jetty libraries (`server/lib`)
