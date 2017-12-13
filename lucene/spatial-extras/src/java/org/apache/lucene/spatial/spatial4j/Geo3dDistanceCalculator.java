@@ -73,62 +73,20 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
 
   @Override
   public Point pointOnBearing(Point from, double distDEG, double bearingDEG, SpatialContext ctx, Point reuse) {
-    // Algorithm using Vincenty's formulae (https://en.wikipedia.org/wiki/Vincenty%27s_formulae)
-    // which takes into account that planets may not be spherical.
-    //Code adaptation from http://www.movable-type.co.uk/scripts/latlong-vincenty.html
     Geo3dPointShape geoFrom = (Geo3dPointShape) from;
     GeoPoint point = (GeoPoint) geoFrom.shape;
-    double lat = point.getLatitude();
-    double lon = point.getLongitude();
     double dist = DistanceUtils.DEGREES_TO_RADIANS * distDEG;
     double bearing = DistanceUtils.DEGREES_TO_RADIANS * bearingDEG;
-
-    double sinα1 = Math.sin(bearing);
-    double cosα1 = Math.cos(bearing);
-
-    double tanU1 = (1 - planetModel.flattening) * Math.tan(lat);
-    double cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1));
-    double sinU1 = tanU1 * cosU1;
-
-    double σ1 = Math.atan2(tanU1, cosα1);
-    double sinα = cosU1 * sinα1;
-    double cosSqα = 1 - sinα * sinα;
-    double uSq = cosSqα * planetModel.squareRatio;// (planetModel.ab* planetModel.ab - planetModel.c*planetModel.c) / (planetModel.c*planetModel.c);
-    double A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
-    double B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
-
-    double cos2σM;
-    double sinσ;
-    double cosσ;
-    double Δσ;
-
-    double σ = dist / (planetModel.c * A);
-    double σʹ;
-    double iterations = 0;
-    do {
-      cos2σM = Math.cos(2 * σ1 + σ);
-      sinσ = Math.sin(σ);
-      cosσ = Math.cos(σ);
-      Δσ = B * sinσ * (cos2σM + B / 4 * (cosσ * (-1 + 2 * cos2σM * cos2σM) -
-          B / 6 * cos2σM * (-3 + 4 * sinσ * sinσ) * (-3 + 4 * cos2σM * cos2σM)));
-      σʹ = σ;
-      σ = dist / (planetModel.c * A) + Δσ;
-    } while (Math.abs(σ - σʹ) > 1e-12 && ++iterations < 200);
-
-    if (iterations >= 200) {
-      throw new RuntimeException("Formula failed to converge");
+    GeoPoint newPoint = planetModel.surfacePointOnBearing(point, dist, bearing);
+    double newLat = newPoint.getLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    double newLon = newPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    if (reuse != null) {
+      reuse.reset(newLon, newLat);
+      return reuse;
     }
-
-    double x = sinU1 * sinσ - cosU1 * cosσ * cosα1;
-    double φ2 = Math.atan2(sinU1 * cosσ + cosU1 * sinσ * cosα1, (1 - planetModel.flattening) * Math.sqrt(sinα * sinα + x * x));
-    double λ = Math.atan2(sinσ * sinα1, cosU1 * cosσ - sinU1 * sinσ * cosα1);
-    double C = planetModel.flattening / 16 * cosSqα * (4 + planetModel.flattening * (4 - 3 * cosSqα));
-    double L = λ - (1 - C) * planetModel.flattening * sinα *
-        (σ + C * sinσ * (cos2σM + C * cosσ * (-1 + 2 * cos2σM * cos2σM)));
-    double λ2 = (lon + L + 3 * Math.PI) % (2 * Math.PI) - Math.PI;  // normalise to -180..+180
-
-    return ctx.getShapeFactory().pointXY(λ2 * DistanceUtils.RADIANS_TO_DEGREES,
-        φ2 * DistanceUtils.RADIANS_TO_DEGREES);
+    else {
+      return ctx.getShapeFactory().pointXY(newLon, newLat);
+    }
   }
 
   @Override
