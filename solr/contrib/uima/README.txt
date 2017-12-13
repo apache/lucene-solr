@@ -100,7 +100,7 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
    field mapping describes which features of which types should go in a field
 
 4. in your solrconfig.xml replace the existing default (<requestHandler name="/update"...)  or create a new UpdateRequestHandler with the following:
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler">
+  <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">
       <str name="update.processor">uima</str>
     </lst>
