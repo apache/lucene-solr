@@ -18,20 +18,19 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
-import java.util.function.DoubleUnaryOperator;
-import java.util.function.ToDoubleBiFunction;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.SimpleBindings;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -81,8 +80,10 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   // CustomScoreQuery and BoostedQuery equivalent
   public void testScoreModifyingSource() throws Exception {
 
-    DoubleValuesSource iii = DoubleValuesSource.fromIntField("iii");
-    DoubleValuesSource score = scoringFunction(iii, (v, s) -> v * s);
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("score", DoubleValuesSource.SCORES);
+    bindings.add("iii", DoubleValuesSource.fromIntField("iii"));
+    Expression expr = JavascriptCompiler.compile("score * iii");
 
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD)
@@ -90,7 +91,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
         .build();
     TopDocs plain = searcher.search(bq, 1);
 
-    FunctionScoreQuery fq = new FunctionScoreQuery(bq, score);
+    FunctionScoreQuery fq = new FunctionScoreQuery(bq, expr.getDoubleValuesSource(bindings));
 
     QueryUtils.check(random(), fq, searcher, rarely());
 
@@ -104,12 +105,38 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
   }
 
+  // BoostingQuery equivalent
+  public void testCombiningMultipleQueryScores() throws Exception {
+
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("score", DoubleValuesSource.SCORES);
+    bindings.add("testquery", DoubleValuesSource.fromQuery(new TermQuery(new Term(TEXT_FIELD, "rechecking"))));
+    Expression expr = JavascriptCompiler.compile("score + (testquery * 100)");
+
+    TermQuery q = new TermQuery(new Term(TEXT_FIELD, "text"));
+    TopDocs plain = searcher.search(q, 1);
+
+    FunctionScoreQuery fq = new FunctionScoreQuery(q, expr.getDoubleValuesSource(bindings));
+
+    QueryUtils.check(random(), fq, searcher, rarely());
+
+    int[] expectedDocs = new int[]{  6, 1, 0, 2, 8 };
+    TopDocs docs = searcher.search(fq, 5);
+    assertEquals(plain.totalHits, docs.totalHits);
+    for (int i = 0; i < expectedDocs.length; i++) {
+      assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
+
+    }
+  }
+
   // check boosts with non-distributive score source
   public void testBoostsAreAppliedLast() throws Exception {
 
-    DoubleValuesSource scores = function(DoubleValuesSource.SCORES, v -> Math.log(v + 4));
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("score", DoubleValuesSource.SCORES);
+    Expression expr = JavascriptCompiler.compile("ln(score + 4)");
 
-    Query q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), scores);
+    Query q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), expr.getDoubleValuesSource(bindings));
     TopDocs plain = searcher.search(q1, 5);
 
     Query boosted = new BoostQuery(q1, 2);
@@ -120,106 +147,6 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       assertEquals(plain.scoreDocs[i].score, afterboost.scoreDocs[i].score / 2, 0.0001);
     }
 
-  }
-
-  public static DoubleValuesSource function(DoubleValuesSource in, DoubleUnaryOperator function) {
-    return new DoubleValuesSource() {
-      @Override
-      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        DoubleValues v = in.getValues(ctx, scores);
-        return new DoubleValues() {
-          @Override
-          public double doubleValue() throws IOException {
-            return function.applyAsDouble(v.doubleValue());
-          }
-
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            return v.advanceExact(doc);
-          }
-        };
-      }
-
-      @Override
-      public boolean needsScores() {
-        return in.needsScores();
-      }
-
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return in.isCacheable(ctx);
-      }
-
-      @Override
-      public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-        return function(in.rewrite(searcher), function);
-      }
-
-      @Override
-      public int hashCode() {
-        return 0;
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        return false;
-      }
-
-      @Override
-      public String toString() {
-        return "fn";
-      }
-    };
-  }
-
-  private static DoubleValuesSource scoringFunction(DoubleValuesSource in, ToDoubleBiFunction<Double, Double> function) {
-    return new DoubleValuesSource() {
-      @Override
-      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        DoubleValues v = in.getValues(ctx, scores);
-        return new DoubleValues() {
-          @Override
-          public double doubleValue() throws IOException {
-            return function.applyAsDouble(v.doubleValue(), scores.doubleValue());
-          }
-
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            return v.advanceExact(doc);
-          }
-        };
-      }
-
-      @Override
-      public boolean needsScores() {
-        return true;
-      }
-
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return in.isCacheable(ctx);
-      }
-
-      @Override
-      public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-        return scoringFunction(in.rewrite(searcher), function);
-      }
-
-      @Override
-      public int hashCode() {
-        return 0;
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        return false;
-      }
-
-      @Override
-      public String toString() {
-        return "fn";
-      }
-    };
   }
 
   public void testTruncateNegativeScores() throws IOException {

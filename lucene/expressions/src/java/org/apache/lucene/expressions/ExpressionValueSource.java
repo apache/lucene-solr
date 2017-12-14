@@ -107,7 +107,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     final int prime = 31;
     int result = 1;
     result = prime * result
-        + ((expression == null) ? 0 : expression.hashCode());
+        + ((expression == null) ? 0 : expression.sourceText.hashCode());
     result = prime * result + (needsScores ? 1231 : 1237);
     result = prime * result + Arrays.hashCode(variables);
     return result;
@@ -129,7 +129,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
       if (other.expression != null) {
         return false;
       }
-    } else if (!expression.equals(other.expression)) {
+    } else if (!expression.sourceText.equals(other.expression.sourceText)) {
       return false;
     }
     if (needsScores != other.needsScores) {
@@ -178,7 +178,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
       changed |= (rewritten[i] == variables[i]);
     }
     if (changed) {
-      return new ExpressionValueSource(variables, expression, needsScores);
+      return new ExpressionValueSource(rewritten, expression, needsScores);
     }
     return this;
   }

@@ -43,7 +43,19 @@ import org.apache.lucene.search.Weight;
  * Subclasses can modify the computation by overriding {@link #getCustomScoreProvider}.
  * 
  * @lucene.experimental
+ *
+ * Clients should instead use FunctionScoreQuery and the lucene-expressions library
+ * <pre>
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   bindings.add("score", DoubleValuesSource.SCORES);
+ *   bindings.add("boost", DoubleValuesSource.fromIntField("myboostfield"));
+ *   Expression expr = JavascriptCompiler.compile("score * boost");
+ *   FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
+ * </pre>
+ *
+ * @deprecated use {@link org.apache.lucene.queries.function.FunctionScoreQuery}
  */
+@Deprecated
 public class CustomScoreQuery extends Query implements Cloneable {
 
   private Query subQuery;

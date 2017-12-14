@@ -27,6 +27,9 @@ import org.apache.lucene.index.IndexReader;
  * Boost values that are less than one will give less importance to this
  * query compared to other ones while values that are greater than one will
  * give more importance to the scores returned by this query.
+ *
+ * More complex boosts can be applied by using FunctionScoreQuery in the
+ * lucene-queries module
  */
 public final class BoostQuery extends Query {
 

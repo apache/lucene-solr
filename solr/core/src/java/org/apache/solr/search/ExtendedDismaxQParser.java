@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
@@ -197,9 +196,9 @@ public class ExtendedDismaxQParser extends QParser {
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size()>1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
-      topQuery = new BoostedQuery(topQuery, prod);
+      topQuery = BoostQParserPlugin.boostQuery(topQuery, prod);
     } else if (boosts.size() == 1) {
-      topQuery = new BoostedQuery(topQuery, boosts.get(0));
+      topQuery = BoostQParserPlugin.boostQuery(topQuery, boosts.get(0));
     }
     
     return topQuery;
