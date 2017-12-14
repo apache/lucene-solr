@@ -10,6 +10,10 @@ API Changes
 * LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
   (Pulak Ghosh via Adrien Grand)
 
+* LUCENE-8099: Deprecate CustomScoreQuery, BoostedQuery and BoostingQuery.
+  Users should instead use FunctionScoreQuery, possibly combined with
+  a lucene expression (Alan Woodward)
+
 New Features
 
 * LUCENE-2899: Add new module analysis/opennlp, with analysis components

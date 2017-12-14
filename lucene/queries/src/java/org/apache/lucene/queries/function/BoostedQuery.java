@@ -34,9 +34,20 @@ import org.apache.lucene.search.Weight;
 
 /**
  * Query that is boosted by a ValueSource
+ *
+ * Instead of using this query, clients can use a {@link FunctionScoreQuery} and the
+ * lucene-expressions library:
+ * <pre>
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   bindings.add("score", DoubleValuesSource.SCORES);
+ *   bindings.add("boost", DoubleValuesSource.fromIntField("myboostfield"));
+ *   Expression expr = JavascriptCompiler.compile("score * boost");
+ *   FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
+ * </pre>
+ *
+ * @deprecated Use {@link FunctionScoreQuery}
  */
-// TODO: BoostedQuery and BoostingQuery in the same module? 
-// something has to give
+@Deprecated
 public final class BoostedQuery extends Query {
   private final Query q;
   private final ValueSource boostVal; // optional, can be null

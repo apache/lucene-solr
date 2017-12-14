@@ -16,11 +16,18 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.queries.function.BoostedQuery;
+import java.text.ParseException;
+
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.SimpleBindings;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,7 +67,7 @@ public class BoostQParserPlugin extends QParserPlugin {
         } else {
           vs = new QueryValueSource(bq, 0.0f);
         }
-        return new BoostedQuery(q, vs);
+        return boostQuery(q, vs);
       }
 
 
@@ -82,6 +89,18 @@ public class BoostQParserPlugin extends QParserPlugin {
         debugInfo.add("boost_parsed",vs);
       }
     };
+  }
+
+  public static Query boostQuery(Query input, ValueSource vs) {
+    try {
+      SimpleBindings bindings = new SimpleBindings();
+      bindings.add("score", DoubleValuesSource.SCORES);
+      bindings.add("vs", vs.asDoubleValuesSource());
+      Expression expr = JavascriptCompiler.compile("score * vs");
+      return new FunctionScoreQuery(input, expr.getDoubleValuesSource(bindings));
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e); // should never happen!
+    }
   }
 
 }

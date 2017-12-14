@@ -55,6 +55,13 @@ public final class FunctionScoreQuery extends Query {
     this.source = source;
   }
 
+  /**
+   * @return the wrapped Query
+   */
+  public Query getWrappedQuery() {
+    return in;
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     Weight inner = in.createWeight(searcher, needsScores && source.needsScores(), 1f);

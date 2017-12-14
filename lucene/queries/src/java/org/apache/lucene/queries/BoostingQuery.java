@@ -47,7 +47,19 @@ import org.apache.lucene.search.Weight;
  * This code was originally made available here: 
  *   <a href="http://marc.theaimsgroup.com/?l=lucene-user&amp;m=108058407130459&amp;w=2">http://marc.theaimsgroup.com/?l=lucene-user&amp;m=108058407130459&amp;w=2</a>
  * and is documented here: http://wiki.apache.org/lucene-java/CommunityContributions
+ *
+ * Clients should instead use FunctionScoreQuery and the lucene-expressions library:
+ * <pre>
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   bindings.add("score", DoubleValuesSource.SCORES);
+ *   bindings.add("context", DoubleValuesSource.fromQuery(new ConstantScoreQuery(myContextQuery, boost)));
+ *   Expression expr = JavascriptCompiler.compile("score * context");
+ *   FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
+ * </pre>
+ *
+ * @deprecated Use {@link org.apache.lucene.queries.function.FunctionScoreQuery}
  */
+@Deprecated
 public class BoostingQuery extends Query {
     private final float boost;                            // the amount to boost by
     private final Query match;                            // query to match
