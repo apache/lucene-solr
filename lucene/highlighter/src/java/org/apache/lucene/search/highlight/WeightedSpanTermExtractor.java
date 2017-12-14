@@ -39,7 +39,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
-import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -212,8 +211,6 @@ public class WeightedSpanTermExtractor {
       }
     } else if (query instanceof MatchAllDocsQuery) {
       //nothing
-    } else if (query instanceof CustomScoreQuery) {
-      extract(((CustomScoreQuery) query).getSubQuery(), boost, terms);
     } else if (query instanceof FunctionScoreQuery) {
       extract(((FunctionScoreQuery) query).getWrappedQuery(), boost, terms);
     } else if (isQueryUnsupported(query.getClass())) {

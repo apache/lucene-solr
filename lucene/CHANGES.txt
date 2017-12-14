@@ -26,6 +26,9 @@ API Changes
 * LUCENE-7996: Queries are now required to produce positive scores.
   (Adrien Grand)
 
+* LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
+  removed (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
