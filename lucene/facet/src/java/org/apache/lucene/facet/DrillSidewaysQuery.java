@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -79,11 +80,11 @@ class DrillSidewaysQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight baseWeight = baseQuery.createWeight(searcher, scoreMode, boost);
     final Weight[] drillDowns = new Weight[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
-      drillDowns[dim] = searcher.createNormalizedWeight(drillDownQueries[dim], false);
+      drillDowns[dim] = searcher.createNormalizedWeight(drillDownQueries[dim], ScoreMode.COMPLETE_NO_SCORES);
     }
 
     return new Weight(DrillSidewaysQuery.this) {

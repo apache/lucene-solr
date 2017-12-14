@@ -326,6 +326,12 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    // TODO: implement but be careful about floating-point errors.
+    return Float.POSITIVE_INFINITY;
+  }
+
+  @Override
   public int docID() {
     assert doc == lead.doc;
     return doc;

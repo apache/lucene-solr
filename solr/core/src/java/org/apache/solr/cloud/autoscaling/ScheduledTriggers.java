@@ -38,12 +38,12 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -78,13 +78,14 @@ import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_SCHEDULE_D
  */
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
-  static final int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS = 5;
-  static final int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
-  static final int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
+  public static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
+  public static final int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS = 5;
+  public static final int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
+  public static final int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
 
   static final Map<String, Object> DEFAULT_PROPERTIES = new HashMap<>();
 
+  // Note: values must be all in milliseconds!
   static {
     DEFAULT_PROPERTIES.put(TRIGGER_SCHEDULE_DELAY_SECONDS, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
     DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
@@ -114,11 +115,11 @@ public class ScheduledTriggers implements Closeable {
 
   private final AtomicLong cooldownPeriod = new AtomicLong(TimeUnit.SECONDS.toNanos(DEFAULT_COOLDOWN_PERIOD_SECONDS));
 
-  private final AtomicInteger triggerDelay = new AtomicInteger(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
+  private final AtomicLong triggerDelay = new AtomicLong(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
 
   private final AtomicReference<ActionThrottle> actionThrottle;
 
-  private final SolrCloudManager dataProvider;
+  private final SolrCloudManager cloudManager;
 
   private final DistribStateManager stateManager;
 
@@ -130,20 +131,20 @@ public class ScheduledTriggers implements Closeable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public ScheduledTriggers(SolrResourceLoader loader, SolrCloudManager dataProvider) {
+  public ScheduledTriggers(SolrResourceLoader loader, SolrCloudManager cloudManager) {
     scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_TRIGGER_CORE_POOL_SIZE,
         new DefaultSolrThreadFactory("ScheduledTrigger"));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
-    actionThrottle = new AtomicReference<>(new ActionThrottle("action", TimeUnit.SECONDS.toMillis(DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS)));
-    this.dataProvider = dataProvider;
-    this.stateManager = dataProvider.getDistribStateManager();
+    actionThrottle = new AtomicReference<>(new ActionThrottle("action", TimeUnit.SECONDS.toMillis(DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS), cloudManager.getTimeSource()));
+    this.cloudManager = cloudManager;
+    this.stateManager = cloudManager.getDistribStateManager();
     this.loader = loader;
     queueStats = new Stats();
     listeners = new TriggerListeners();
     // initialize cooldown timer
-    cooldownStart.set(System.nanoTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
   }
 
   /**
@@ -168,7 +169,9 @@ public class ScheduledTriggers implements Closeable {
               scheduledTriggers.forEach((s, scheduledTrigger) -> {
                 if (scheduledTrigger.scheduledFuture.cancel(false)) {
                   scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(
-                      scheduledTrigger, 0, triggerDelay.get(), TimeUnit.SECONDS);
+                      scheduledTrigger, 0,
+                      cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS),
+                      TimeUnit.MILLISECONDS);
                 } else  {
                   log.debug("Failed to cancel scheduled task: {}", s);
                 }
@@ -188,9 +191,10 @@ public class ScheduledTriggers implements Closeable {
             if (oldThrottle.getLastActionStartedAt() != null) {
               newThrottle = new ActionThrottle("action",
                   minMsBetweenActions,
-                  oldThrottle.getLastActionStartedAt());
+                  oldThrottle.getLastActionStartedAt(),
+                  cloudManager.getTimeSource());
             } else  {
-              newThrottle = new ActionThrottle("action", minMsBetweenActions);
+              newThrottle = new ActionThrottle("action", minMsBetweenActions, cloudManager.getTimeSource());
             }
             this.actionThrottle.set(newThrottle);
             break;
@@ -198,7 +202,17 @@ public class ScheduledTriggers implements Closeable {
       }
     }
     this.autoScalingConfig = autoScalingConfig;
+
+    // reset cooldown and actionThrottle
+    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    actionThrottle.get().reset();
+
     listeners.setAutoScalingConfig(autoScalingConfig);
+  }
+
+  @VisibleForTesting
+  void resetActionThrottle() {
+    actionThrottle.get().reset();
   }
 
   /**
@@ -215,12 +229,12 @@ public class ScheduledTriggers implements Closeable {
     }
     ScheduledTrigger st;
     try {
-      st = new ScheduledTrigger(newTrigger, dataProvider, queueStats);
+      st = new ScheduledTrigger(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
       if (isClosed) {
         throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
       }
-      if (dataProvider.isClosed()) {
+      if (cloudManager.isClosed()) {
         log.error("Failed to add trigger " + newTrigger.getName() + " - closing or disconnected from data provider", e);
       } else {
         log.error("Failed to add trigger " + newTrigger.getName(), e);
@@ -241,7 +255,7 @@ public class ScheduledTriggers implements Closeable {
       scheduledTriggers.replace(newTrigger.getName(), scheduledTrigger);
     }
     newTrigger.setProcessor(event -> {
-      if (dataProvider.isClosed()) {
+      if (cloudManager.isClosed()) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because Solr has been shutdown.", event.toString());
         log.warn(msg);
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
@@ -256,7 +270,7 @@ public class ScheduledTriggers implements Closeable {
       }
       boolean replaying = event.getProperty(TriggerEvent.REPLAYING) != null ? (Boolean)event.getProperty(TriggerEvent.REPLAYING) : false;
       AutoScaling.Trigger source = scheduledSource.trigger;
-      if (source.isClosed()) {
+      if (scheduledSource.isClosed || source.isClosed()) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because the source trigger: %s has already been closed", event.toString(), source);
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
         log.warn(msg);
@@ -264,7 +278,7 @@ public class ScheduledTriggers implements Closeable {
         return false;
       }
       // reject events during cooldown period
-      if (cooldownStart.get() + cooldownPeriod.get() > System.nanoTime()) {
+      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTime()) {
         log.debug("-------- Cooldown period - rejecting event: " + event);
         event.getProperties().put(TriggerEvent.COOLDOWN, true);
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "In cooldown period.");
@@ -283,8 +297,16 @@ public class ScheduledTriggers implements Closeable {
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.STARTED);
         List<TriggerAction> actions = source.getActions();
         if (actions != null) {
+          if (actionExecutor.isShutdown()) {
+            String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because the executor has already been closed", event.toString(), source);
+            listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
+            log.warn(msg);
+            // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
+            return false;
+          }
           actionExecutor.submit(() -> {
             assert hasPendingActions.get();
+            long eventProcessingStart = cloudManager.getTimeSource().getTime();
             log.debug("-- processing actions for " + event);
             try {
               // let the action executor thread wait instead of the trigger thread so we use the throttle here
@@ -296,7 +318,7 @@ public class ScheduledTriggers implements Closeable {
               // this event so that we continue processing other events and not block this action executor
               waitForPendingTasks(newTrigger, actions);
 
-              ActionContext actionContext = new ActionContext(dataProvider, newTrigger, new HashMap<>());
+              ActionContext actionContext = new ActionContext(cloudManager, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
                 List<String> beforeActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
@@ -319,9 +341,11 @@ public class ScheduledTriggers implements Closeable {
             } catch (Exception e) {
               log.warn("Exception executing actions", e);
             } finally {
-              cooldownStart.set(System.nanoTime());
+              cooldownStart.set(cloudManager.getTimeSource().getTime());
               hasPendingActions.set(false);
             }
+            log.debug("-- processing took {} ms for event id={}",
+                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTime() - eventProcessingStart), event.id);
           });
         } else {
           if (enqueued) {
@@ -342,11 +366,13 @@ public class ScheduledTriggers implements Closeable {
       }
     });
     newTrigger.init(); // mark as ready for scheduling
-    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0, triggerDelay.get(), TimeUnit.SECONDS);
+    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0,
+        cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS),
+        TimeUnit.MILLISECONDS);
   }
 
   private void waitForPendingTasks(AutoScaling.Trigger newTrigger, List<TriggerAction> actions) throws AlreadyClosedException {
-    DistribStateManager stateManager = dataProvider.getDistribStateManager();
+    DistribStateManager stateManager = cloudManager.getDistribStateManager();
     try {
 
       for (TriggerAction action : actions) {
@@ -365,7 +391,7 @@ public class ScheduledTriggers implements Closeable {
                 String requestid = (String) map.get("requestid");
                 try {
                   log.debug("Found pending task with requestid={}", requestid);
-                  RequestStatusResponse statusResponse = waitForTaskToFinish(dataProvider, requestid,
+                  RequestStatusResponse statusResponse = waitForTaskToFinish(cloudManager, requestid,
                       ExecutePlanAction.DEFAULT_TASK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                   if (statusResponse != null) {
                     RequestStatusState state = statusResponse.getRequestStatus();
@@ -374,7 +400,7 @@ public class ScheduledTriggers implements Closeable {
                     }
                   }
                 } catch (Exception e) {
-                  if (dataProvider.isClosed())  {
+                  if (cloudManager.isClosed())  {
                     throw e; // propagate the abort to the caller
                   }
                   Throwable rootCause = ExceptionUtils.getRootCause(e);
@@ -395,7 +421,7 @@ public class ScheduledTriggers implements Closeable {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted", e);
     } catch (Exception e) {
-      if (dataProvider.isClosed())  {
+      if (cloudManager.isClosed())  {
         throw new AlreadyClosedException("The Solr instance has been shutdown");
       }
       // we catch but don't rethrow because a failure to wait for pending tasks
@@ -618,7 +644,7 @@ public class ScheduledTriggers implements Closeable {
             }
             if (listener != null) {
               try {
-                listener.init(dataProvider, config);
+                listener.init(cloudManager, config);
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
                 log.warn("Error initializing TriggerListener " + config, e);

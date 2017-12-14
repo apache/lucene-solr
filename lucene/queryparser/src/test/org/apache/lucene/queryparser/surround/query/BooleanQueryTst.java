@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.queryparser.surround.parser.QueryParser;
 import org.junit.Assert;
@@ -96,8 +97,8 @@ public class BooleanQueryTst {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
     void checkNrHits() {

@@ -26,25 +26,26 @@ public class AssertingScorer extends Scorer {
 
   static enum IteratorState { START, APPROXIMATING, ITERATING, FINISHED };
 
-  public static Scorer wrap(Random random, Scorer other, boolean canScore) {
+  public static Scorer wrap(Random random, Scorer other, ScoreMode scoreMode) {
     if (other == null) {
       return null;
     }
-    return new AssertingScorer(random, other, canScore);
+    return new AssertingScorer(random, other, scoreMode);
   }
 
   final Random random;
   final Scorer in;
-  final boolean needsScores;
+  final ScoreMode scoreMode;
 
   IteratorState state = IteratorState.START;
   int doc;
+  float minCompetitiveScore = 0;
 
-  private AssertingScorer(Random random, Scorer in, boolean needsScores) {
+  private AssertingScorer(Random random, Scorer in, ScoreMode scoreMode) {
     super(in.weight);
     this.random = random;
     this.in = in;
-    this.needsScores = needsScores;
+    this.scoreMode = scoreMode;
     this.doc = in.docID();
   }
 
@@ -64,11 +65,29 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
+  public void setMinCompetitiveScore(float score) {
+    assert scoreMode == ScoreMode.TOP_SCORES;
+    assert Float.isNaN(score) == false;
+    assert score >= minCompetitiveScore;
+    in.setMinCompetitiveScore(score);
+    minCompetitiveScore = score;
+  }
+
+  @Override
+  public float maxScore() {
+    float maxScore = in.maxScore();
+    assert Float.isNaN(maxScore) == false;
+    return maxScore;
+  }
+
+  @Override
   public float score() throws IOException {
-    assert needsScores;
+    assert scoreMode.needsScores();
     assert iterating();
     final float score = in.score();
     assert !Float.isNaN(score) : "NaN score for in="+in;
+    assert score <= maxScore();
+    assert Float.compare(score, 0f) >= 0 : score;
     return score;
   }
 

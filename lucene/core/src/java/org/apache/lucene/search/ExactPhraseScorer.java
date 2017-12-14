@@ -104,6 +104,11 @@ final class ExactPhraseScorer extends Scorer {
     return docScorer.score(docID(), freq);
   }
 
+  @Override
+  public float maxScore() {
+    return docScorer.maxScore(Integer.MAX_VALUE);
+  }
+
   /** Advance the given pos enum to the first doc on or after {@code target}.
    *  Return {@code false} if the enum was exhausted before reaching
    *  {@code target} and {@code true} otherwise. */

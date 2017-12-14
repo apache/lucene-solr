@@ -29,6 +29,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -59,17 +60,17 @@ public final class BoostedQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new BoostedQuery.BoostedWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new BoostedQuery.BoostedWeight(searcher, scoreMode, boost);
   }
 
   private class BoostedWeight extends Weight {
     Weight qWeight;
     Map fcontext;
 
-    public BoostedWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public BoostedWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       super(BoostedQuery.this);
-      this.qWeight = searcher.createWeight(q, needsScores, boost);
+      this.qWeight = searcher.createWeight(q, scoreMode, boost);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
     }
@@ -100,14 +101,27 @@ public final class BoostedQuery extends Query {
         return subQueryExpl;
       }
       FunctionValues vals = boostVal.getValues(fcontext, readerContext);
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
-      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:", subQueryExpl, vals.explain(doc));
+      float factor = vals.floatVal(doc);
+      Explanation factorExpl = vals.explain(doc);
+      if (factor < 0) {
+        factor = 0;
+        factorExpl = Explanation.match(0, "truncated score, max of:",
+            Explanation.match(0f, "minimum score"), factorExpl);
+      } else if (Float.isNaN(factor)) {
+        factor = 0;
+        factorExpl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", factorExpl);
+      }
+      
+      float sc = subQueryExpl.getValue() * factor;
+      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:",
+          subQueryExpl, factorExpl);
     }
   }
 
 
   private class CustomScorer extends FilterScorer {
     private final BoostedQuery.BoostedWeight weight;
+    private final ValueSource vs;
     private final FunctionValues vals;
     private final LeafReaderContext readerContext;
 
@@ -116,33 +130,28 @@ public final class BoostedQuery extends Query {
       super(scorer);
       this.weight = w;
       this.readerContext = readerContext;
+      this.vs = vs;
       this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
     @Override   
     public float score() throws IOException {
-      float score = in.score() * vals.floatVal(in.docID());
+      float factor = vals.floatVal(in.docID());
+      if (factor >= 0 == false) { // covers NaN as well
+        factor = 0;
+      }
+      return in.score() * factor;
+    }
 
-      // Current Lucene priority queues can't handle NaN and -Infinity, so
-      // map to -Float.MAX_VALUE. This conditional handles both -infinity
-      // and NaN since comparisons with NaN are always false.
-      return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
     }
 
     @Override
     public Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(in, "CUSTOM"));
     }
-
-    public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(readerContext ,doc);
-      if (!subQueryExpl.isMatch()) {
-        return subQueryExpl;
-      }
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
-      return Explanation.match(sc, BoostedQuery.this.toString() + ", product of:", subQueryExpl, vals.explain(doc));
-    }
-
   }
 
 

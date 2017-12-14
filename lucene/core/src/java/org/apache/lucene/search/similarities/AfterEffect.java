@@ -37,33 +37,12 @@ public abstract class AfterEffect {
    */
   public AfterEffect() {}
 
-  /** Returns the aftereffect score. */
-  public abstract double score(BasicStats stats, double tfn);
+  /** Returns the product of the after effect with {@code 1+tfn}.
+   *  This may not depend on the value of {@code tfn}. */
+  public abstract double scoreTimes1pTfn(BasicStats stats);
   
   /** Returns an explanation for the score. */
   public abstract Explanation explain(BasicStats stats, double tfn);
-
-  /** Implementation used when there is no aftereffect. */
-  public static final class NoAfterEffect extends AfterEffect {
-    
-    /** Sole constructor: parameter-free */
-    public NoAfterEffect() {}
-    
-    @Override
-    public double score(BasicStats stats, double tfn) {
-      return 1.0;
-    }
-
-    @Override
-    public Explanation explain(BasicStats stats, double tfn) {
-      return Explanation.match(1, "no aftereffect");
-    }
-    
-    @Override
-    public String toString() {
-      return "";
-    }
-  }
   
   /**
    * Subclasses must override this method to return the code of the

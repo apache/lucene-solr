@@ -23,11 +23,8 @@ public abstract class BasicModelTestCase extends BaseSimilarityTestCase {
   @Override
   protected final Similarity getSimilarity(Random random) {
     final AfterEffect afterEffect;
-    switch(random.nextInt(3)) {
+    switch(random.nextInt(2)) {
       case 0: 
-        afterEffect = new AfterEffect.NoAfterEffect();
-        break;
-      case 1: 
         afterEffect = new AfterEffectL();
         break;
       default: 

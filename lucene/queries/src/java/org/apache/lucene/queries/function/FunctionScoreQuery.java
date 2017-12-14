@@ -30,6 +30,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -56,9 +57,9 @@ public final class FunctionScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    Weight inner = in.createWeight(searcher, needsScores && source.needsScores(), 1f);
-    if (needsScores == false)
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    Weight inner = in.createWeight(searcher, scoreMode.needsScores() && source.needsScores() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, 1f);
+    if (scoreMode.needsScores() == false)
       return inner;
     return new FunctionScoreWeight(this, inner, source.rewrite(searcher), boost);
   }
@@ -110,13 +111,44 @@ public final class FunctionScoreQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = inner.scorer(context);
-      if (scorer.iterator().advance(doc) != doc)
-        return Explanation.noMatch("No match");
       Explanation scoreExplanation = inner.explain(context, doc);
-      Explanation expl = valueSource.explain(context, doc, scoreExplanation);
-      return Explanation.match(expl.getValue() * boost, "product of:",
-          Explanation.match(boost, "boost"), expl);
+      if (scoreExplanation.isMatch() == false) {
+        return scoreExplanation;
+      }
+
+      Scorer scorer = inner.scorer(context);
+      DoubleValues values = valueSource.getValues(context, DoubleValuesSource.fromScorer(scorer));
+      int advanced = scorer.iterator().advance(doc);
+      assert advanced == doc;
+
+      double value;
+      Explanation expl;
+      if (values.advanceExact(doc)) {
+        value = values.doubleValue();
+        expl = valueSource.explain(context, doc, scoreExplanation);
+        if (value < 0) {
+          value = 0;
+          expl = Explanation.match(0, "truncated score, max of:",
+              Explanation.match(0f, "minimum score"), expl);
+        } else if (Double.isNaN(value)) {
+          value = 0;
+          expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+        }
+      } else {
+        value = 0;
+        expl = valueSource.explain(context, doc, scoreExplanation);
+      }
+
+      if (expl.isMatch() == false) {
+        expl = Explanation.match(0f, "weight(" + getQuery().toString() + ") using default score of 0 because the function produced no value:", expl);
+      } else if (boost != 1f) {
+        expl = Explanation.match((float) (value * boost), "weight(" + getQuery().toString() + "), product of:",
+            Explanation.match(boost, "boost"), expl);
+      } else {
+        expl = Explanation.match(expl.getValue(), "weight(" + getQuery().toString() + "), result of:", expl);
+      }
+
+      return expl;
     }
 
     @Override
@@ -128,10 +160,18 @@ public final class FunctionScoreQuery extends Query {
       return new FilterScorer(in) {
         @Override
         public float score() throws IOException {
-          if (scores.advanceExact(docID()))
-            return (float) (scores.doubleValue() * boost);
-          else
-            return 0;
+          if (scores.advanceExact(docID())) {
+            double factor = scores.doubleValue();
+            if (factor >= 0) {
+              return (float) (factor * boost);
+            }
+          }
+          // default: missing value, negative value or NaN
+          return 0;
+        }
+        @Override
+        public float maxScore() {
+          return Float.POSITIVE_INFINITY;
         }
       };
     }

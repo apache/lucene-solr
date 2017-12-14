@@ -36,26 +36,23 @@ import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
-import org.apache.solr.cloud.ZkDistributedQueueFactory;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,7 +60,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.TimeSource;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,15 +77,18 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 public class AutoScalingHandler extends RequestHandlerBase implements PermissionNameProvider {
   public static final String HANDLER_PATH = "/admin/autoscaling";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected final CoreContainer container;
+  protected final SolrCloudManager cloudManager;
+  protected final SolrResourceLoader loader;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
   private static Set<String> singletonCommands = Stream.of("set-cluster-preferences", "set-cluster-policy")
       .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
-  private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
+  private final TimeSource timeSource;
 
-  public AutoScalingHandler(CoreContainer container) {
-    this.container = container;
+  public AutoScalingHandler(SolrCloudManager cloudManager, SolrResourceLoader loader) {
+    this.cloudManager = cloudManager;
+    this.loader = loader;
+    this.timeSource = cloudManager.getTimeSource();
     Map<String, String> map = new HashMap<>(2);
     map.put(NAME, "compute_plan");
     map.put(CLASS, "solr.ComputePlanAction");
@@ -116,7 +116,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown path: " + path);
         }
 
-        AutoScalingConfig autoScalingConf = container.getZkController().zkStateReader.getAutoScalingConfig();
+        AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
         if (parts.size() == 2)  {
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
@@ -154,21 +154,14 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
 
   private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
-    try (CloudSolrClient build = new CloudSolrClient.Builder()
-        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
-        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
-      rsp.getValues().add("suggestions",
-          PolicyHelper.getSuggestions(autoScalingConf, new SolrClientCloudManager(queueFactory, build)));
-    }
-
-
+    rsp.getValues().add("suggestions",
+        PolicyHelper.getSuggestions(autoScalingConf, cloudManager));
   }
 
   public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)
       throws KeeperException, InterruptedException, IOException {
     while (true) {
-      AutoScalingConfig initialConfig = container.getZkController().zkStateReader.getAutoScalingConfig();
+      AutoScalingConfig initialConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
       AutoScalingConfig currentConfig = initialConfig;
       for (CommandOperation op : ops) {
         switch (op.name) {
@@ -216,7 +209,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
       if (!currentConfig.equals(initialConfig)) {
         // update in ZK
-        if (zkSetAutoScalingConfig(container.getZkController().getZkStateReader(), currentConfig)) {
+        if (setAutoScalingConfig(currentConfig)) {
           break;
         } else {
           // someone else updated the config, get the latest one and re-apply our ops
@@ -244,12 +237,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
     Policy policy = autoScalingConf.getPolicy();
-    try (CloudSolrClient build = new CloudSolrClient.Builder()
-        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
-        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
-      rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, new SolrClientCloudManager(queueFactory, build)));
-    }
+    rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, cloudManager));
   }
 
   private AutoScalingConfig handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
@@ -302,7 +290,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       return currentConfig;
     }
 
-    container.getZkController().getZkStateReader().getClusterState().forEachCollection(coll -> {
+    cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> {
       if (policyName.equals(coll.getPolicyName()))
         op.addError(StrUtils.formatString("policy : {0} is being used by collection {1}", policyName, coll.getName()));
     });
@@ -470,7 +458,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     // validate that we can load the listener class
     // todo allow creation from blobstore
     try {
-      container.getResourceLoader().findClass(listenerClass, TriggerListener.class);
+      loader.findClass(listenerClass, TriggerListener.class);
     } catch (Exception e) {
       log.warn("error loading listener class ", e);
       op.addError("Listener not found: " + listenerClass + ". error message:" + e.getMessage());
@@ -535,7 +523,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
       String klass = action.get(CLASS);
       try {
-        container.getResourceLoader().findClass(klass, TriggerAction.class);
+        loader.findClass(klass, TriggerAction.class);
       } catch (Exception e) {
         log.warn("Could not load class : ", e);
         op.addError("Action not found: " + klass + " " + e.getMessage());
@@ -632,26 +620,22 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
-  private boolean zkSetAutoScalingConfig(ZkStateReader reader, AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
+  private boolean setAutoScalingConfig(AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     verifyAutoScalingConf(currentConfig);
     try {
-      reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(currentConfig), currentConfig.getZkVersion(), true);
-    } catch (KeeperException.BadVersionException bve) {
+      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(currentConfig), currentConfig.getZkVersion());
+    } catch (BadVersionException bve) {
       // somebody else has changed the configuration so we must retry
       return false;
     }
+    //log.debug("-- saved version " + currentConfig.getZkVersion() + ": " + currentConfig);
     return true;
   }
 
   private void verifyAutoScalingConf(AutoScalingConfig autoScalingConf) throws IOException {
-    try (CloudSolrClient build = new CloudSolrClient.Builder()
-        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
-        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
-      Policy.Session session = autoScalingConf.getPolicy()
-          .createSession(new SolrClientCloudManager(queueFactory, build));
-      log.debug("Verified autoscaling configuration");
-    }
+    Policy.Session session = autoScalingConf.getPolicy()
+        .createSession(cloudManager);
+    log.debug("Verified autoscaling configuration");
   }
 
   @Override

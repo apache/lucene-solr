@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
@@ -109,7 +110,7 @@ public class GraphQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     Weight graphWeight = new GraphQueryWeight((SolrIndexSearcher)searcher, boost);
     return graphWeight;
   }
@@ -302,6 +303,11 @@ public class GraphQuery extends Query {
     @Override
     public float score() throws IOException {
       // no dynamic scoring now.  
+      return score;
+    }
+
+    @Override
+    public float maxScore() {
       return score;
     }
 

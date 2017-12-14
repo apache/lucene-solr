@@ -195,8 +195,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
             .setNode(deadNode)
             .process(cluster.getSolrClient());
       });
-      assertTrue("Should have gotten a message about shard not ",
-          e1.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
+      assertTrue("Should have gotten a message about shard not currently active: " + e1.toString(),
+          e1.toString().contains("At least one of the node(s) specified [" + deadNode + "] are not currently active in"));
 
       // Should also die if we just add a shard
       Exception e2 = expectThrows(Exception.class, () -> {
@@ -205,8 +205,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
       });
 
-      assertTrue("Should have gotten a message about shard not ",
-          e2.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
+      assertTrue("Should have gotten a message about shard not currently active: " + e2.toString(),
+          e2.toString().contains("At least one of the node(s) specified [" + deadNode + "] are not currently active in"));
     }
     finally {
       cluster.startJettySolrRunner(jetty);

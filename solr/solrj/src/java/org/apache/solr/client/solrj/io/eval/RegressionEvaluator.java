@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,8 +49,8 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
     
-    List<?> l1 = (List<?>)first;
-    List<?> l2 = (List<?>)second;
+    List<Number> l1 = (List<Number>)first;
+    List<Number> l2 = (List<Number>)second;
     
     if(l2.size() < l1.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first list (%d) has more values than the second list (%d)",toExpression(constructingFactory), l1.size(), l2.size()));      
@@ -59,22 +58,22 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
 
     SimpleRegression regression = new SimpleRegression();
     for(int idx = 0; idx < l1.size(); ++idx){
-      regression.addData(((BigDecimal)l1.get(idx)).doubleValue(), ((BigDecimal)l2.get(idx)).doubleValue());
+      regression.addData(l1.get(idx).doubleValue(), l2.get(idx).doubleValue());
     }
     
-    Map<String,Number> map = new HashMap<>();
+    Map<String, Object> map = new HashMap<>();
     map.put("slope", regression.getSlope());
     map.put("intercept", regression.getIntercept());
     map.put("R", regression.getR());
     map.put("N", regression.getN());
-    map.put("RSquare", regression.getRSquare());
+    map.put("RSquared", regression.getRSquare());
     map.put("regressionSumSquares", regression.getRegressionSumSquares());
     map.put("slopeConfidenceInterval", regression.getSlopeConfidenceInterval());
     map.put("interceptStdErr", regression.getInterceptStdErr());
     map.put("totalSumSquares", regression.getTotalSumSquares());
     map.put("significance", regression.getSignificance());
     map.put("meanSquareError", regression.getMeanSquareError());
-    
+
     return new RegressionTuple(regression, map);
   }
   
@@ -90,5 +89,4 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
       return this.simpleRegression.predict(value);
     }
   }
-
 }

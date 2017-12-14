@@ -20,10 +20,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.SolrCloseable;
+
 /**
  * This interface models the access to node and replica information.
  */
-public interface NodeStateProvider {
+public interface NodeStateProvider extends SolrCloseable {
   /**
    * Get the value of each tag for a given node
    *

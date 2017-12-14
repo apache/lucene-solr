@@ -28,6 +28,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 
 
@@ -67,9 +68,9 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, false, boost);
-    return new SpanPositionCheckWeight(matchWeight, searcher, needsScores ? getTermContexts(matchWeight) : null, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    return new SpanPositionCheckWeight(matchWeight, searcher, scoreMode.needsScores() ? getTermContexts(matchWeight) : null, boost);
   }
 
   public class SpanPositionCheckWeight extends SpanWeight {

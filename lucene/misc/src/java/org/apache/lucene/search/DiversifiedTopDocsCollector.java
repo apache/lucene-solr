@@ -82,8 +82,8 @@ public abstract class DiversifiedTopDocsCollector extends
   protected abstract NumericDocValues getKeys(LeafReaderContext context);
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   @Override

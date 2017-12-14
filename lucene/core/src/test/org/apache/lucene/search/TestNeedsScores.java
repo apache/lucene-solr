@@ -62,27 +62,27 @@ public class TestNeedsScores extends LuceneTestCase {
     Query required = new TermQuery(new Term("field", "this"));
     Query prohibited = new TermQuery(new Term("field", "3"));
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.add(new AssertNeedsScores(required, true), BooleanClause.Occur.MUST);
-    bq.add(new AssertNeedsScores(prohibited, false), BooleanClause.Occur.MUST_NOT);
+    bq.add(new AssertNeedsScores(required, ScoreMode.COMPLETE), BooleanClause.Occur.MUST);
+    bq.add(new AssertNeedsScores(prohibited, ScoreMode.COMPLETE_NO_SCORES), BooleanClause.Occur.MUST_NOT);
     assertEquals(4, searcher.search(bq.build(), 5).totalHits); // we exclude 3
   }
   
   /** nested inside constant score query */
   public void testConstantScoreQuery() throws Exception {
     Query term = new TermQuery(new Term("field", "this"));
-    Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, false));
+    Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, ScoreMode.COMPLETE_NO_SCORES));
     assertEquals(5, searcher.search(constantScore, 5).totalHits);
   }
   
   /** when not sorting by score */
   public void testSortByField() throws Exception {
-    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), false);
+    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
     assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits);
   }
   
   /** when sorting by score */
   public void testSortByScore() throws Exception {
-    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), true);
+    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.COMPLETE);
     assertEquals(5, searcher.search(query, 5, Sort.RELEVANCE).totalHits);
   }
 
@@ -92,20 +92,20 @@ public class TestNeedsScores extends LuceneTestCase {
    */
   static class AssertNeedsScores extends Query {
     final Query in;
-    final boolean value;
+    final ScoreMode value;
     
-    AssertNeedsScores(Query in, boolean value) {
+    AssertNeedsScores(Query in, ScoreMode value) {
       this.in = Objects.requireNonNull(in);
       this.value = value;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      final Weight w = in.createWeight(searcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      final Weight w = in.createWeight(searcher, scoreMode, boost);
       return new FilterWeight(w) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          assertEquals("query=" + in, value, needsScores);
+          assertEquals("query=" + in, value, scoreMode);
           return w.scorer(context);
         }
       };
@@ -126,7 +126,7 @@ public class TestNeedsScores extends LuceneTestCase {
       final int prime = 31;
       int result = classHash();
       result = prime * result + in.hashCode();
-      result = prime * result + (value ? 1231 : 1237);
+      result = prime * result + value.hashCode();
       return result;
     }
 

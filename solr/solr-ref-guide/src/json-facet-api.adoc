@@ -299,7 +299,7 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 
 * "lower" all gap based ranges include their lower bound
 * "upper" all gap based ranges include their upper bound
-* "edge" the first and last gap ranges include their edge bounds (ie: lower for the first one, upper for the last one) even if the corresponding upper/lower option is not specified
+* "edge" the first and last gap ranges include their edge bounds (i.e., lower for the first one, upper for the last one) even if the corresponding upper/lower option is not specified
 * "outer" the “before” and “after” ranges will be inclusive of their bounds, even if the first or last ranges already include those boundaries.
 * "all" shorthand for lower, upper, edge, outer
 
@@ -318,8 +318,8 @@ Example:
   categories : {
      type : terms,
      field : cat,
-     domain : { filter : "popularity:[5 TO 10]" } 
-   } 
+     domain : { filter : "popularity:[5 TO 10]" }
+   }
 }
 ----
 The value of `filter` can be a single query to treat as a filter, or a list of filter queries.  Each one can be:
@@ -397,7 +397,7 @@ Now if we wanted to add a nested facet to find the top 2 authors for each genre 
     field: genre,
     limit: 5,
     facet:{
-      top_authors:{ 
+      top_authors:{
         type: terms, // nested terms facet on author will be calculated for each parent bucket (genre)
         field: author,
         limit: 2
@@ -441,7 +441,7 @@ And the response will look something like:
           }
         },
         [...]
- 
+
 ----
 
 By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
@@ -458,4 +458,3 @@ http://yonik.com/solr-facet-functions/
 http://yonik.com/solr-subfacets/
 
 http://yonik.com/percentiles-for-solr-faceting/
-

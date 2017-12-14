@@ -107,6 +107,11 @@ public abstract class ValueSource {
     }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }

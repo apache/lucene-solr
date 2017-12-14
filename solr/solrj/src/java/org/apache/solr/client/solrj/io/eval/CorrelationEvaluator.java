@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -81,21 +80,21 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
       if (type.equals(CorrelationType.pearsons)) {
         PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
         return pearsonsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else if (type.equals(CorrelationType.kendalls)) {
         KendallsCorrelation kendallsCorrelation = new KendallsCorrelation();
         return kendallsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
 
       } else if (type.equals(CorrelationType.spearmans)) {
         SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation();
         return spearmansCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else {
         return null;

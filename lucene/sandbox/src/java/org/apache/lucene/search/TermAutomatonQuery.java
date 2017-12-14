@@ -192,7 +192,7 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
     Map<Integer,TermContext> termStates = new HashMap<>();
 

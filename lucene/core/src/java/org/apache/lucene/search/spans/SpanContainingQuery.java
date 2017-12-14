@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 
 /** Keep matches that contain another SpanScorer. */
 public final class SpanContainingQuery extends SpanContainQuery {
@@ -43,10 +44,10 @@ public final class SpanContainingQuery extends SpanContainQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight bigWeight = big.createWeight(searcher, false, boost);
-    SpanWeight littleWeight = little.createWeight(searcher, false, boost);
-    return new SpanContainingWeight(searcher, needsScores ? getTermContexts(bigWeight, littleWeight) : null,
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight bigWeight = big.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    SpanWeight littleWeight = little.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    return new SpanContainingWeight(searcher, scoreMode.needsScores() ? getTermContexts(bigWeight, littleWeight) : null,
                                       bigWeight, littleWeight, boost);
   }
 

@@ -80,7 +80,7 @@ public class Overseer implements SolrCloseable {
   enum LeaderStatus {DONT_KNOW, NO, YES}
 
   private class ClusterStateUpdater implements Runnable, Closeable {
-    
+
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
     private final String myId;
@@ -88,7 +88,7 @@ public class Overseer implements SolrCloseable {
     private final ZkDistributedQueue stateUpdateQueue;
     //TODO remove in 9.0, we do not push message into this queue anymore
     //Internal queue where overseer stores events that have not yet been published into cloudstate
-    //If Overseer dies while extracting the main queue a new overseer will start from this queue 
+    //If Overseer dies while extracting the main queue a new overseer will start from this queue
     private final ZkDistributedQueue workQueue;
     // Internal map which holds the information about running tasks.
     private final DistributedMap runningMap;
@@ -120,7 +120,7 @@ public class Overseer implements SolrCloseable {
     public Stats getWorkQueueStats()  {
       return workQueue.getZkStats();
     }
-    
+
     @Override
     public void run() {
 
@@ -442,7 +442,7 @@ public class Overseer implements SolrCloseable {
 
   }
 
-  static class OverseerThread extends Thread implements Closeable {
+  public static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
     private Closeable thread;
@@ -466,9 +466,9 @@ public class Overseer implements SolrCloseable {
     public boolean isClosed() {
       return this.isClosed;
     }
-    
+
   }
-  
+
   private OverseerThread ccThread;
 
   private OverseerThread updaterThread;
@@ -478,7 +478,7 @@ public class Overseer implements SolrCloseable {
   private final ZkStateReader reader;
 
   private final ShardHandler shardHandler;
-  
+
   private final UpdateShardHandler updateShardHandler;
 
   private final String adminPath;
@@ -505,7 +505,7 @@ public class Overseer implements SolrCloseable {
     this.stats = new Stats();
     this.config = config;
   }
-  
+
   public synchronized void start(String id) {
     this.id = id;
     closed = false;

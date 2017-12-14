@@ -59,6 +59,9 @@ public abstract class FilterScorer extends Scorer {
     return in.score();
   }
 
+  // Leave maxScore abstract on purpose since the goal of this Filter class is
+  // to change the way the score is computed.
+
   @Override
   public final int docID() {
     return in.docID();

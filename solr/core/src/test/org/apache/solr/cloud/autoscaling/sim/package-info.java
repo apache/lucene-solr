@@ -14,17 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.similarities;
+/**
+ * Simulated environment for autoscaling tests.
+ */
+package org.apache.solr.cloud.autoscaling.sim;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
-//scores go backwards with respect to TF, but it warns it has problems
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8010")
-public class TestBasicModelP extends BasicModelTestCase {
-
-  @Override
-  protected BasicModel getBasicModel() {
-    return new BasicModelP();
-  }
-
-}

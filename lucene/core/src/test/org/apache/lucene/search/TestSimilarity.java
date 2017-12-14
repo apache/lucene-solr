@@ -80,8 +80,8 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals(1.0f, scorer.score(), 0);
          }
          @Override
-         public boolean needsScores() {
-           return true;
+         public ScoreMode scoreMode() {
+           return ScoreMode.COMPLETE;
          }
        });
 
@@ -106,8 +106,8 @@ public class TestSimilarity extends LuceneTestCase {
            base = context.docBase;
          }
          @Override
-         public boolean needsScores() {
-           return true;
+         public ScoreMode scoreMode() {
+           return ScoreMode.COMPLETE;
          }
        });
 
@@ -126,8 +126,8 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals(1.0f, scorer.score(), 0);
          }
          @Override
-         public boolean needsScores() {
-           return true;
+         public ScoreMode scoreMode() {
+           return ScoreMode.COMPLETE;
          }
        });
 
@@ -145,8 +145,8 @@ public class TestSimilarity extends LuceneTestCase {
         assertEquals(0.5f, scorer.score(), 0);
       }
       @Override
-      public boolean needsScores() {
-        return true;
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
       }
     });
 

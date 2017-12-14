@@ -40,6 +40,11 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    return Float.POSITIVE_INFINITY;
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     throw new UnsupportedOperationException();
   }

@@ -23,6 +23,9 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been removed (Alan Woodward)
 
+* LUCENE-7996: Queries are now required to produce positive scores.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -34,6 +37,9 @@ Changes in Runtime Behavior
   divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
   instead of returning bogus values for a non-existent term or field. (Robert Muir)
 
+* LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
+  when the function produces a negative value. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -41,10 +47,36 @@ Improvements
   Add missing range checks for similarity parameters.
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
+* LUCENE-8011: Improved similarity explanations.
+  (Mayya Sharipova via Adrien Grand)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
+
+* LUCENE-4100: Disjunctions now support faster collection of top hits when the
+  total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
+
+======================= Lucene 7.3.0 =======================
+
+API Changes
+
+* LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
+  (Pulak Ghosh via Adrien Grand)
+
+Improvements
+
+* LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
+  Index/Update Threads try to help out flushing pending document buffers to
+  disk. This change adds an expert setting to opt ouf of this behavior unless
+  flusing is falling behind. (Simon Willnauer)
+
+* LUCENE-8086: spatial-extras Geo3dFactory: Use GeoExactCircle with
+  configurable precision for non-spherical planet models.
+  (Ignacio Vera via David Smiley)
+
+* LUCENE-8093: TrimFilterFactory implements MultiTermAwareComponent (Alan Woodward)
 
 ======================= Lucene 7.2.0 =======================
 
@@ -130,6 +162,9 @@ Bug Fixes
 * LUCENE-8078: The query cache should not cache instances of
   MatchNoDocsQuery. (Jon Harper via Adrien Grand)
 
+* LUCENE-8048: Filesystems do not guarantee order of directories updates
+  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
+  
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
@@ -144,23 +179,24 @@ Optimizations
 * LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
-  
+
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents
+  instead of 1. (Simon Willnauer)
+
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless)
+
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
   on Java 9+.  (Uwe Schindler)
 
-======================= Lucene 7.1.1 =======================
-
-Bug Fixes
-
-* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
-  instead of 1. (Simon Willnauer)
-
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
   jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
+
 
 ======================= Lucene 7.1.0 =======================
 

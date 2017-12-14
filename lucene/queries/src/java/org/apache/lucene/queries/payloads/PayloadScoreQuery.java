@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.spans.FilterSpans;
@@ -101,9 +102,9 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, needsScores, boost);
-    if (!needsScores)
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, scoreMode, boost);
+    if (!scoreMode.needsScores())
       return innerWeight;
     return new PayloadSpanWeight(searcher, innerWeight, boost);
   }
@@ -233,11 +234,22 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     protected float getPayloadScore() {
-      return function.docScore(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
+      float score = function.docScore(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
+      if (score >= 0 == false) {
+        return 0;
+      } else {
+        return score;
+      }
     }
 
     protected Explanation getPayloadExplanation() {
-      return function.explain(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
+      Explanation expl = function.explain(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
+      if (expl.getValue() < 0) {
+        expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
+      } else if (Float.isNaN(expl.getValue())) {
+        expl = Explanation.match(0, "payload score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+      }
+      return expl;
     }
 
     protected float getSpanScore() throws IOException {

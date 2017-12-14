@@ -54,6 +54,11 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   @Override
+  public float maxScore() {
+    return score;
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     return disi;
   }

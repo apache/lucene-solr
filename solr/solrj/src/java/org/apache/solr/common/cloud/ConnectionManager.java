@@ -43,8 +43,6 @@ public class ConnectionManager implements Watcher {
 
   private final String zkServerAddress;
 
-  
-
   private final SolrZkClient client;
 
   private final OnReconnect onReconnect;
@@ -118,6 +116,7 @@ public class ConnectionManager implements Watcher {
     KeeperState state = event.getState();
     
     if (state == KeeperState.SyncConnected) {
+      log.info("zkClient has connected");
       connected();
       connectionStrategy.connected();
     } else if (state == Expired) {
@@ -179,7 +178,7 @@ public class ConnectionManager implements Watcher {
         }
         
       } while (!isClosed);
-      log.info("Connected:" + connected);
+      log.info("zkClient Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
       log.warn("zkClient has disconnected");
       disconnected();

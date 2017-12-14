@@ -93,15 +93,15 @@ public class PowerEvaluatorTest extends LuceneTestCase {
   public void powOneField() throws Exception{
     factory.constructEvaluator("pow(a)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void powTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("pow(a,b)");
     
     values.clear();
     Assert.assertNull(evaluator.evaluate(new Tuple(values)));
   }
-    
+
   @Test
   public void powManyFieldsWithSubpows() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("pow(a,pow(b,c))");

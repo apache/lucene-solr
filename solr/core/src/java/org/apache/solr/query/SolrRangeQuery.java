@@ -38,6 +38,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
@@ -139,8 +140,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needScores, float boost) throws IOException {
-    return new ConstWeight(searcher, needScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new ConstWeight(searcher, scoreMode.needsScores(), boost);
     /*
     DocSet docs = createDocSet(searcher.getIndexReader().leaves(), searcher.getIndexReader().maxDoc());
     SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
@@ -400,7 +401,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           bq.add(new TermQuery(new Term( SolrRangeQuery.this.getField(), t.term), termContext), BooleanClause.Occur.SHOULD);
         }
         Query q = new ConstantScoreQuery(bq.build());
-        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores, score());
+        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES, score());
         return segStates[context.ord] = new SegState(weight);
       }
 

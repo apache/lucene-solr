@@ -174,6 +174,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
         }
 
         @Override
+        public float maxScore(float maxFreq) {
+          return Float.POSITIVE_INFINITY;
+        }
+
+        @Override
         public Explanation explain(int doc, Explanation freq) throws IOException {
           Explanation boostExplanation = Explanation.match(getValueForDoc(doc), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);

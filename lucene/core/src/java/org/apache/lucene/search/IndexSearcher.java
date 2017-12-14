@@ -96,6 +96,10 @@ public class IndexSearcher {
         public float score(int doc, float freq) {
           return 0f;
         }
+        @Override
+        public float maxScore(float maxFreq) {
+          return 0f;
+        }
       };
     }
 
@@ -407,7 +411,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after);
+        return TopScoreDocCollector.create(cappedNumHits, after, true);
       }
 
       @Override
@@ -445,7 +449,7 @@ public class IndexSearcher {
    */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createNormalizedWeight(query, results.needsScores()), results);
+    search(leafContexts, createNormalizedWeight(query, results.scoreMode()), results);
   }
 
   /** Search implementation with arbitrary sorting, plus
@@ -570,14 +574,22 @@ public class IndexSearcher {
       return collectorManager.reduce(Collections.singletonList(collector));
     } else {
       final List<C> collectors = new ArrayList<>(leafSlices.length);
-      boolean needsScores = false;
+      ScoreMode scoreMode = null;
       for (int i = 0; i < leafSlices.length; ++i) {
         final C collector = collectorManager.newCollector();
         collectors.add(collector);
-        needsScores |= collector.needsScores();
+        if (scoreMode == null) {
+          scoreMode = collector.scoreMode();
+        } else if (scoreMode != collector.scoreMode()) {
+          throw new IllegalStateException("CollectorManager does not always produce collectors with the same score mode");
+        }
+      }
+      if (scoreMode == null) {
+        // no segments
+        scoreMode = ScoreMode.COMPLETE;
       }
 
-      final Weight weight = createNormalizedWeight(query, needsScores);
+      final Weight weight = createNormalizedWeight(query, scoreMode);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -674,7 +686,7 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createNormalizedWeight(query, true), doc);
+    return explain(createNormalizedWeight(query, ScoreMode.COMPLETE), doc);
   }
 
   /** Expert: low-level implementation method
@@ -707,9 +719,9 @@ public class IndexSearcher {
    * can then directly be used to get a {@link Scorer}.
    * @lucene.internal
    */
-  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+  public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
     query = rewrite(query);
-    return createWeight(query, needsScores, 1f);
+    return createWeight(query, scoreMode, 1f);
   }
 
   /**
@@ -717,10 +729,10 @@ public class IndexSearcher {
    * if possible and configured.
    * @lucene.experimental
    */
-  public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
-    Weight weight = query.createWeight(this, needsScores, boost);
-    if (needsScores == false && queryCache != null) {
+    Weight weight = query.createWeight(this, scoreMode, boost);
+    if (scoreMode.needsScores() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;

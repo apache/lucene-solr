@@ -26,8 +26,22 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBoostQuery extends LuceneTestCase {
 
+  public void testValidation() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+        () -> new BoostQuery(new MatchAllDocsQuery(), -3));
+    assertEquals("boost must be a positive float, got -3.0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> new BoostQuery(new MatchAllDocsQuery(), -0f));
+    assertEquals("boost must be a positive float, got -0.0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> new BoostQuery(new MatchAllDocsQuery(), Float.NaN));
+    assertEquals("boost must be a positive float, got NaN", e.getMessage());
+  }
+
   public void testEquals() {
-    final float boost = random().nextFloat() * 3 - 1;
+    final float boost = random().nextFloat() * 3;
     BoostQuery q1 = new BoostQuery(new MatchAllDocsQuery(), boost);
     BoostQuery q2 = new BoostQuery(new MatchAllDocsQuery(), boost);
     assertEquals(q1, q2);
@@ -35,7 +49,7 @@ public class TestBoostQuery extends LuceneTestCase {
 
     float boost2 = boost;
     while (boost == boost2) {
-      boost2 = random().nextFloat() * 3 - 1;
+      boost2 = random().nextFloat() * 3;
     }
     BoostQuery q3 = new BoostQuery(new MatchAllDocsQuery(), boost2);
     assertFalse(q1.equals(q3));

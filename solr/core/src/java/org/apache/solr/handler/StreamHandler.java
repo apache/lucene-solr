@@ -221,7 +221,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("sequence", SequenceEvaluator.class)
         .withFunctionName("addAll", AppendEvaluator.class)
         .withFunctionName("append", AppendEvaluator.class)
-        .withFunctionName("residuals", ResidualsEvaluator.class)
         .withFunctionName("plot", PlotStream.class)
         .withFunctionName("normalDistribution", NormalDistributionEvaluator.class)
         .withFunctionName("uniformDistribution", UniformDistributionEvaluator.class)
@@ -259,7 +258,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("gammaDistribution", GammaDistributionEvaluator.class)
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
         .withFunctionName("polyfit", PolyFitEvaluator.class)
-        .withFunctionName("polyfitDerivative", PolyFitDerivativeEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
@@ -280,6 +278,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("corrPValues", CorrelationSignificanceEvaluator.class)
         .withFunctionName("normalizeSum", NormalizeSumEvaluator.class)
         .withFunctionName("geometricDistribution", GeometricDistributionEvaluator.class)
+        .withFunctionName("olsRegress", OLSRegressionEvaluator.class)
+        .withFunctionName("derivative", DerivativeEvaluator.class)
+        .withFunctionName("spline", SplineEvaluator.class)
+
 
         // Boolean Stream Evaluators
 

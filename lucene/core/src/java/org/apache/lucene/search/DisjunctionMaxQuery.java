@@ -97,15 +97,15 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
     /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
     protected final ArrayList<Weight> weights = new ArrayList<>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
-    private final boolean needsScores;
+    private final ScoreMode scoreMode;
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
-    public DisjunctionMaxWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public DisjunctionMaxWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       super(DisjunctionMaxQuery.this);
       for (Query disjunctQuery : disjuncts) {
-        weights.add(searcher.createWeight(disjunctQuery, needsScores, boost));
+        weights.add(searcher.createWeight(disjunctQuery, scoreMode, boost));
       }
-      this.needsScores = needsScores;
+      this.scoreMode = scoreMode;
     }
 
     @Override
@@ -133,7 +133,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         // only one sub-scorer in this segment
         return scorers.get(0);
       } else {
-        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, needsScores);
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode.needsScores());
       }
     }
 
@@ -181,8 +181,8 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
   /** Create the Weight used to score us */
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new DisjunctionMaxWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new DisjunctionMaxWeight(searcher, scoreMode, boost);
   }
 
   /** Optimize our representation and our subqueries representations

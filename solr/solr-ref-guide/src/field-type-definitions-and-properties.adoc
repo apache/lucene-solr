@@ -87,6 +87,13 @@ For multivalued fields, specifies a distance between multiple values, which prev
 
 `autoGeneratePhraseQueries`:: For text fields. If `true`, Solr automatically generates phrase queries for adjacent terms. If `false`, terms must be enclosed in double-quotes to be treated as phrases.
 
+`synonymQueryStyle`::
+Query used to combine scores of overlapping query terms (i.e., synonyms). Consider a search for "blue tee" with query-time synonyms `tshirt,tee`.
++
+Use `as_same_term` (default) to blend terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important. Use `pick_best` to select the most significant synonym when scoring `Dismax(tee,tshirt)`. Use `as_distinct_terms` to bias scoring towards the most significant synonym `(pants OR slacks)`.
++
+`as_same_term` is appropriate when terms are true synonyms (television, tv). Use `pick_best` or `as_distinct_terms` when synonyms are expanding to hyponyms `(q=jeans w/ jeans\=>jeans,pants)` and you want exact to come before parent and sibling concepts. See this http://opensourceconnections.com/blog/2017/11/21/solr-synonyms-mea-culpa/[blog article].
+
 `enableGraphQueries`::
 For text fields, applicable when querying with <<the-standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>> (which is the default for the `sow` parameter). Use `true`, the default, for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filter-descriptions.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
 +

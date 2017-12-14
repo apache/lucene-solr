@@ -28,12 +28,15 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,26 +59,41 @@ public class ComputePlanAction extends TriggerActionBase {
       if (autoScalingConf.isEmpty()) {
         throw new Exception("Action: " + getName() + " executed but no policy is configured");
       }
-      Policy policy = autoScalingConf.getPolicy();
-      Policy.Session session = policy.createSession(cloudManager);
-      Suggester suggester = getSuggester(session, event, cloudManager);
-      while (true) {
-        SolrRequest operation = suggester.getSuggestion();
-        if (operation == null) break;
-        log.info("Computed Plan: {}", operation.getParams());
-        Map<String, Object> props = context.getProperties();
-        props.compute("operations", (k, v) -> {
-          List<SolrRequest> operations = (List<SolrRequest>) v;
-          if (operations == null) operations = new ArrayList<>();
-          operations.add(operation);
-          return operations;
-        });
-        session = suggester.getSession();
-        suggester = getSuggester(session, event, cloudManager);
+      PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getSession(cloudManager);
+      Policy.Session session = sessionWrapper.get();
+      if (log.isTraceEnabled()) {
+        ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
+        log.trace("-- session: {}", session);
+        log.trace("-- state: {}", state);
+      }
+      try {
+        Suggester suggester = getSuggester(session, event, cloudManager);
+        while (true) {
+          SolrRequest operation = suggester.getSuggestion();
+          if (operation == null) break;
+          log.info("Computed Plan: {}", operation.getParams());
+          Map<String, Object> props = context.getProperties();
+          props.compute("operations", (k, v) -> {
+            List<SolrRequest> operations = (List<SolrRequest>) v;
+            if (operations == null) operations = new ArrayList<>();
+            operations.add(operation);
+            return operations;
+          });
+          session = suggester.getSession();
+          suggester = getSuggester(session, event, cloudManager);
+        }
+      } finally {
+        releasePolicySession(sessionWrapper, session);
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected exception while processing event: " + event, e);    }
+  }
+
+  private void releasePolicySession(PolicyHelper.SessionWrapper sessionWrapper, Policy.Session session) {
+    sessionWrapper.returnSession(session);
+    sessionWrapper.release();
+
   }
 
   protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
@@ -84,12 +102,10 @@ public class ComputePlanAction extends TriggerActionBase {
       case NODEADDED:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODEADDED Created suggester with targetNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case NODELOST:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODELOST Created suggester with srcNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case SEARCHRATE:
         Map<String, Map<String, Double>> hotShards = (Map<String, Map<String, Double>>)event.getProperty(AutoScalingParams.SHARD);
@@ -110,13 +126,10 @@ public class ComputePlanAction extends TriggerActionBase {
         } else {
           // collection || shard || replica -> ADDREPLICA
           suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
-          Set<String> collections = new HashSet<>();
-          // XXX improve this when AddReplicaSuggester supports coll_shard hint
-          hotReplicas.forEach(r -> collections.add(r.getCollection()));
-          hotShards.forEach((coll, shards) -> collections.add(coll));
-          hotCollections.forEach((coll, rate) -> collections.add(coll));
-          for (String coll : collections) {
-            suggester = suggester.hint(Suggester.Hint.COLL, coll);
+          Set<Pair> collectionShards = new HashSet<>();
+          hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> collectionShards.add(new Pair(coll, s))));
+          for (Pair<String, String> colShard : collectionShards) {
+            suggester = suggester.hint(Suggester.Hint.COLL_SHARD, colShard);
           }
         }
         break;

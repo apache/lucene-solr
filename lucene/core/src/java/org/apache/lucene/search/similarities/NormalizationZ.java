@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 /**
  * Pareto-Zipf Normalization
  * @lucene.experimental
@@ -46,6 +48,20 @@ public class NormalizationZ extends Normalization {
   @Override
   public double tfn(BasicStats stats, double tf, double len) {
     return tf * Math.pow(stats.avgFieldLength / len, z);
+  }
+
+  @Override
+  public Explanation explain(BasicStats stats, double tf, double len) {
+    return Explanation.match(
+        (float) tfn(stats, tf, len),
+        getClass().getSimpleName()
+            + ", computed as tf * Math.pow(avgfl / fl, z) from:",
+        Explanation.match((float) tf,
+            "tf, number of occurrences of term in the document"),
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgfl, average length of field across all documents"),
+        Explanation.match((float) len, "fl, field length of the document"),
+        Explanation.match(z, "z, relates to specificity of the language"));
   }
 
   @Override

@@ -39,8 +39,9 @@ public final class AssertingQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new AssertingWeight(new Random(random.nextLong()), in.createWeight(searcher, needsScores, boost), needsScores);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    assert boost >= 0;
+    return new AssertingWeight(new Random(random.nextLong()), in.createWeight(searcher, scoreMode, boost), scoreMode);
   }
 
   @Override

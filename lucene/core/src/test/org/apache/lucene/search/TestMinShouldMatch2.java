@@ -119,7 +119,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), true);
+    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
     
     switch (mode) {
     case DOC_VALUES:
@@ -346,6 +346,10 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
     public int docID() {
       return currentDoc;
     }

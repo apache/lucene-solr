@@ -291,7 +291,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE;
   }
 }

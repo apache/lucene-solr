@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
@@ -195,7 +196,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * Ignored
    */
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 }

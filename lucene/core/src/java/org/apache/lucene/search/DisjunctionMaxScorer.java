@@ -58,4 +58,10 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
     }
     return (float) (scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier); 
   }
+
+  @Override
+  public float maxScore() {
+    // TODO: implement but be careful about floating-point errors.
+    return Float.POSITIVE_INFINITY;
+  }
 }

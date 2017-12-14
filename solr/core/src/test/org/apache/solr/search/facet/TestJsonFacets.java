@@ -591,6 +591,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     iclient.commit();
     client.commit();
 
+
+
+
     // test for presence of debugging info
     ModifiableSolrParams debugP = params(p);
     debugP.set("debugQuery","true");
@@ -729,7 +732,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // Same thing for dates
     // test min/max of string field
-    if (date.equals("date_dt") || date.equals("date_dtd")) {  // supports only single valued currently...
+    if (date.equals("date_dt") || date.equals("date_dtd")) {  // supports only single valued currently... see SOLR-11706
       client.testJQ(params(p, "q", "*:*"
           , "json.facet", "{" +
               " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
@@ -1036,6 +1039,30 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",between:{count:2,x:-2.0, ny:{count:1}}" +
             " } }"
     );
+
+    // range facet with stats on string fields
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wn:'unique(${where_s})',wh:'hll(${where_s})'     }   }}"
+        )
+        , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wn:1,wh:1}, {val:0.0,count:2,wn:2,wh:2}, {val:5.0,count:0}]" +
+            " ,before:{count:1,wn:1,wh:1}" +
+            " ,after:{count:1,wn:1,wh:1} " +
+            " ,between:{count:3,wn:2,wh:2} " +
+            " } }"
+    );
+
+    if (where_s.equals("where_s") || where_s.equals("where_sd")) {  // min/max only supports only single valued currently... see SOLR-11706
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wmin:'min(${where_s})', wmax:'max(${where_s})'    }   }}"
+          )
+          , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wmin:NY,wmax:NY}, {val:0.0,count:2,wmin:NJ,wmax:NY}, {val:5.0,count:0}]" +
+              " ,before:{count:1,wmin:NJ,wmax:NJ}" +
+              " ,after:{count:1,wmin:NJ,wmax:NJ} " +
+              " ,between:{count:3,wmin:NJ,wmax:NY} " +
+              " } }"
+      );
+    }
+
 
 
     // stats at top level

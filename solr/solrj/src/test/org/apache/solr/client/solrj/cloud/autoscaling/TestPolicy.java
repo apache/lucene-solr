@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -46,6 +47,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.junit.Test;
@@ -846,15 +848,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSessionCaching() {
-    PolicyHelper.SessionRef ref1 = new PolicyHelper.SessionRef();
+  public void testSessionCaching() throws IOException, InterruptedException {
+//    PolicyHelper.SessionRef ref1 = new PolicyHelper.SessionRef();
     String autoScalingjson = "  '{cluster-policy':[" +
         "    {      'cores':'<10',      'node':'#ANY'}," +
         "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
         "    {      'nodeRole':'overseer','replica':0}]," +
         "  'cluster-preferences':[{'minimize':'cores'}]}";
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
-    PolicyHelper.SESSION_REF.set(ref1);
+//    PolicyHelper.SESSION_REF.set(ref1);
     String nodeValues = " {" +
         "    'node4':{" +
         "      'node':'10.0.0.4:8987_solr'," +
@@ -870,7 +872,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'freedisk':884.7097854614258}," +
         "}";
 
-    SolrCloudManager provider = getSolrCloudManager((Map<String, Map>) Utils.fromJSONString(nodeValues), clusterState);
+
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -882,44 +884,70 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  ]" +
         "}");
     AutoScalingConfig config = new AutoScalingConfig(policies);
+    final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager((Map<String, Map>) Utils.fromJSONString(nodeValues),
+        clusterState)) {
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        return delegatingDistribStateManager(config);
+      }
+    };
 
-    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations("c", config, provider, null,
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations("c", config, solrCloudManager, null,
         Arrays.asList("s1", "s2"), 1, 0, 0,
         null);
 
-    long sessionRefVersion =  PolicyHelper.REF_VERSION.get();
-    PolicyHelper.SessionRef ref1Copy = PolicyHelper.SESSION_REF.get();
-    PolicyHelper.SESSION_REF.remove();
-    Policy.Session session = ref1Copy.get();
-    assertNotNull(session);
-    assertEquals(ref1, ref1Copy);
-    assertTrue(session.getPolicy() == config.getPolicy());
-    ref1Copy.decref(sessionRefVersion);
-    PolicyHelper.SESSION_REF.set(ref1);
-    AutoScalingConfig config2 = new AutoScalingConfig(policies);
-    locations = PolicyHelper.getReplicaLocations("c2", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
-        null);
-    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
-    ref1Copy = PolicyHelper.SESSION_REF.get();
-    PolicyHelper.SESSION_REF.remove();
-    session = ref1Copy.get();
-    ref1Copy.decref(sessionRefVersion);
-    assertEquals(ref1, ref1Copy);
-    assertFalse(session.getPolicy() == config2.getPolicy());
-    assertTrue(session.getPolicy() == config.getPolicy());
-    assertEquals(2, ref1Copy.getRefCount());
-    ref1.decref(sessionRefVersion);//decref 1
-    ref1.decref(sessionRefVersion);//decref 2
-    PolicyHelper.SESSION_REF.set(ref1);
-    locations = PolicyHelper.getReplicaLocations("c3", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
-        null);
-    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
-    ref1Copy = PolicyHelper.SESSION_REF.get();
-    PolicyHelper.SESSION_REF.remove();
-    session = ref1Copy.get();
-    ref1Copy.decref(sessionRefVersion);
-    assertTrue(session.getPolicy() == config2.getPolicy());
+    PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
+    assertNotNull(sessionRef);
+    PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
 
+
+    Policy.Session session = sessionWrapper.get();
+    assertNotNull(session);
+    assertTrue(session.getPolicy() == config.getPolicy());
+    assertEquals(sessionWrapper.status, PolicyHelper.Status.EXECUTING);
+    sessionWrapper.release();
+    assertTrue(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEF_INST);
+    PolicyHelper.SessionWrapper s1 = PolicyHelper.getSession(solrCloudManager);
+    assertEquals(sessionRef.getSessionWrapper().getCreateTime(), s1.getCreateTime());
+    PolicyHelper.SessionWrapper[] s2 = new PolicyHelper.SessionWrapper[1];
+    AtomicLong secondTime = new AtomicLong();
+    Thread thread = new Thread(() -> {
+      try {
+        s2[0] = PolicyHelper.getSession(solrCloudManager);
+        secondTime.set(System.nanoTime());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+    thread.start();
+    Thread.sleep(50);
+    long beforeReturn = System.nanoTime();
+    assertEquals(s1.getCreateTime(), sessionRef.getSessionWrapper().getCreateTime());
+    s1.returnSession(s1.get());
+    assertEquals(1, s1.getRefCount());
+    thread.join();
+    assertNotNull(s2[0]);
+    assertTrue(secondTime.get() > beforeReturn);
+    assertTrue(s1.getCreateTime() == s2[0].getCreateTime());
+
+    s2[0].returnSession(s2[0].get());
+    assertEquals(2, s1.getRefCount());
+
+    s2[0].release();
+    assertFalse(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEF_INST);
+    s1.release();
+    assertTrue(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEF_INST);
+
+
+  }
+
+  private DistribStateManager delegatingDistribStateManager(AutoScalingConfig config) {
+    return new DelegatingDistribStateManager(null) {
+      @Override
+      public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+        return config;
+      }
+    };
   }
 
   public void testNegativeConditions() {
@@ -1137,6 +1165,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public ObjectCache getObjectCache() {
         return objectCache;
       }
+
+      @Override
+      public TimeSource getTimeSource() {
+        return TimeSource.NANO_TIME;
+      }
+
+      @Override
+      public void close() throws IOException {
+
+      }
+
       @Override
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {

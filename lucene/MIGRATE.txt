@@ -6,3 +6,12 @@ SpanQuery and PhraseQuery now always calculate their slops as (1.0 / (1.0 +
 distance)).  Payload factor calculation is performed by PayloadDecoder in the
 queries module
 
+
+## Scorer must produce positive scores (LUCENE-7996) ##
+
+Scorers are no longer allowed to produce negative scores. If you have custom
+query implementations, you should make sure their score formula may never produce
+negative scores.
+
+As a side-effect of this change, negative boosts are now rejected and
+FunctionScoreQuery maps negative values to 0.

@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +87,11 @@ public class SolrClientCloudManager implements SolrCloudManager {
   @Override
   public ObjectCache getObjectCache() {
     return objectCache;
+  }
+
+  @Override
+  public TimeSource getTimeSource() {
+    return TimeSource.NANO_TIME;
   }
 
   @Override

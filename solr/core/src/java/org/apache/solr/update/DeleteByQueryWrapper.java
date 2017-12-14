@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.schema.IndexSchema;
@@ -65,11 +66,11 @@ final class DeleteByQueryWrapper extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
     privateContext.setQueryCache(searcher.getQueryCache());
-    final Weight inner = in.createWeight(privateContext, needsScores, boost);
+    final Weight inner = in.createWeight(privateContext, scoreMode, boost);
     return new Weight(DeleteByQueryWrapper.this) {
       @Override
       public void extractTerms(Set<Term> terms) {

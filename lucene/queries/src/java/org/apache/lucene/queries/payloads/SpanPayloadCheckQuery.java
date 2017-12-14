@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
@@ -62,9 +63,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, false, boost);
-    return new SpanPayloadCheckWeight(searcher, needsScores ? getTermContexts(matchWeight) : null, matchWeight, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    return new SpanPayloadCheckWeight(searcher, scoreMode.needsScores() ? getTermContexts(matchWeight) : null, matchWeight, boost);
   }
 
   @Override

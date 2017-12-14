@@ -905,6 +905,7 @@ public abstract class FieldType extends FieldProperties {
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
+  protected static final String SYNONYM_QUERY_STYLE = "synonymQueryStyle";
 
   /**
    * Get a map of property name -&gt; value for this field type. 
@@ -926,6 +927,7 @@ public abstract class FieldType extends FieldProperties {
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
         namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
+        namedPropertyValues.add(SYNONYM_QUERY_STYLE, ((TextField) this).getSynonymQueryStyle());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));

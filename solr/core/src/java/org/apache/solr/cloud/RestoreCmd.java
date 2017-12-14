@@ -219,13 +219,15 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     List<String> sliceNames = new ArrayList<>();
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
+    PolicyHelper.SessionWrapper sessionWrapper = null;
 
     try {
       List<ReplicaPosition> replicaPositions = Assign.identifyNodes(
-          ocmh, clusterState,
+          ocmh.cloudManager, clusterState,
           nodeList, restoreCollectionName,
           message, sliceNames,
           numNrtReplicas, numTlogReplicas, numPullReplicas);
+      sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
         log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
@@ -350,7 +352,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
     } finally {
-      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
+      if (sessionWrapper != null) sessionWrapper.release();
     }
   }
 

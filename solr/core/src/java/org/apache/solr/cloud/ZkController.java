@@ -1417,6 +1417,7 @@ public class ZkController {
         }
         if (core != null && core.getDirectoryFactory().isSharedStorage()) {
           if (core.getDirectoryFactory().isSharedStorage()) {
+            props.put(ZkStateReader.SHARED_STORAGE_PROP, "true");
             props.put("dataDir", core.getDataDir());
             UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
             if (ulog != null) {

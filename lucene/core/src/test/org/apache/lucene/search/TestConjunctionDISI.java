@@ -146,6 +146,10 @@ public class TestConjunctionDISI extends LuceneTestCase {
         return 0;
       }
 
+      @Override
+      public float maxScore() {
+        return 0;
+      }
     };
   }
 

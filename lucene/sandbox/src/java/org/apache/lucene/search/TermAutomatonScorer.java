@@ -360,9 +360,9 @@ class TermAutomatonScorer extends Scorer {
     return docScorer.score(docID, freq);
   }
 
-  // for tests
-  final int freq() {
-    return freq;
+  @Override
+  public float maxScore() {
+    return docScorer.maxScore(Float.POSITIVE_INFINITY);
   }
 
   static class TermRunAutomaton extends RunAutomaton {

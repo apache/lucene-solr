@@ -66,8 +66,8 @@ public class HttpTriggerListener extends TriggerListenerBase {
   private boolean followRedirects;
 
   @Override
-  public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(dataProvider, config);
+  public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(cloudManager, config);
     urlTemplate = (String)config.properties.get("url");
     payloadTemplate = (String)config.properties.get("payload");
     contentType = (String)config.properties.get("contentType");
@@ -148,7 +148,7 @@ public class HttpTriggerListener extends TriggerListenerBase {
     });
     headers.put("Content-Type", type);
     try {
-      dataProvider.httpRequest(url, SolrRequest.METHOD.POST, headers, payload, timeout, followRedirects);
+      cloudManager.httpRequest(url, SolrRequest.METHOD.POST, headers, payload, timeout, followRedirects);
     } catch (IOException e) {
       LOG.warn("Exception sending request for event " + event, e);
     }

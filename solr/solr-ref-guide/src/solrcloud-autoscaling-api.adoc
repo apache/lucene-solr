@@ -142,6 +142,60 @@ However, since the first node in the first example had more than 1 replica for a
 
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
+== Suggestions API
+Suggestions are operations recommended by the system according to the policies and preferences the user has set.
+
+Suggestions are made only if there are `violations` to active policies. The `operation` section of the response uses the defined preferences to identify the target node.
+
+The API is available at `/admin/autocaling/suggestion`. Here is an example output from a suggestion request:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":101},
+  "suggestions":[{
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "shard":"shard2",
+        "tagKey":"7574",
+        "violation":{ "delta":-1},
+        "clause":{
+          "replica":"0",
+          "shard":"#EACH",
+          "port":7574,
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"192.168.43.37:8983_solr",
+            "replica":"core_node7"}}}},
+    {
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "shard":"shard2",
+        "tagKey":"7574",
+        "violation":{ "delta":-1},
+        "clause":{
+          "replica":"0",
+          "shard":"#EACH",
+          "port":7574,
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"192.168.43.37:7575_solr",
+            "replica":"core_node15"}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future."}
+----
+
+The suggested `operation` is an API call that can be invoked to remedy the current violation.
+
 == History API
 
 The history of autoscaling events is available at `/admin/autoscaling/history`. It returns information
@@ -162,14 +216,31 @@ further insight into e.g., exact operations that were computed and/or executed.
 Specifically, the following query parameters can be used (they are turned into
 filter queries, so an implicit AND is applied):
 
-* `trigger` - trigger name
-* `eventType` - event type / trigger type (e.g., `nodeAdded`)
-* `collection` - collection name involved in event processing
-* `stage` - event processing stage
-* `action` - trigger action
-* `node` - node name that the event refers to
-* `beforeAction` - beforeAction stage
-* `afterAction` - afterAction stage
+`trigger`::
+The name of the trigger.
+
+`eventType`::
+The event type or trigger type (e.g., `nodeAdded`).
+
+`collection`::
+The name of the collection involved in event processing.
+
+`stage`::
+An event processing stage.
+
+`action`::
+A trigger action.
+
+`node`::
+A node name that the event refers to.
+
+`beforeAction`::
+A `beforeAction` stage.
+
+`afterAction`::
+An `afterAction` stage.
+
+// TODO someday add an input example also
 
 .Example output
 [source,json]
@@ -508,20 +579,27 @@ The `remove-listener` command can be used to remove an existing listener. It acc
 }
 ----
 
-=== Change AutoScaling Properties
+=== Change Autoscaling Properties
 
 The `set-properties` command can be used to change the default properties used by the Autoscaling framework.
 
-The following well known properties can be specified in the payload:
+The following properties can be specified in the payload:
 
-* `triggerScheduleDelaySeconds` (defaults to 1 second): This is the delay in seconds between two executions of a trigger. Every trigger is scheduled using Java's ScheduledThreadPoolExecutor with this delay.
-* `triggerCooldownPeriodSeconds` (defaults to 5 seconds): Solr pauses all other triggers for this cool down period after a trigger fires so that the system can stabilize before running triggers again.
-* `triggerCorePoolSize` (defaults to 4 threads): The core pool size of the `ScheduledThreadPoolExecutor` used to schedule triggers.
-* `actionThrottlePeriodSeconds` (defaults to 5 seconds): This is the minimum throttling delay between executing actions for triggers. It is guaranteed that actions for two trigger events are executed after this delay period.
+`triggerScheduleDelaySeconds`::
+This is the delay in seconds between two executions of a trigger. Every trigger is scheduled using Java's ScheduledThreadPoolExecutor with this delay. The default is `1` second.
 
-The command allows setting arbitrary properties in addition to the above well-known properties. Such arbitrary properties can be useful in custom `TriggerAction` instances.
+`triggerCooldownPeriodSeconds`::
+Solr pauses all other triggers for this cool down period after a trigger fires so that the system can stabilize before running triggers again. The default is `5` seconds.
 
-.Change default triggerScheduleDelaySeconds
+`triggerCorePoolSize`::
+The core pool size of the `ScheduledThreadPoolExecutor` used to schedule triggers. The default is `4` threads.
+
+`actionThrottlePeriodSeconds`::
+This is the minimum throttling delay between executing actions for triggers. It is guaranteed that actions for two trigger events are executed after this delay period. The default is `5` seconds.
+
+The command allows setting arbitrary properties in addition to the above properties. Such arbitrary properties can be useful in custom `TriggerAction` instances.
+
+.Change default `triggerScheduleDelaySeconds`
 [source.json]
 ----
 {
@@ -531,11 +609,11 @@ The command allows setting arbitrary properties in addition to the above well-kn
 }
 ----
 
-The set-properties command replaces older values if present. So using set-properties to set the same value twice will overwrite the old value.
+The `set-properties` command replaces older values if present. So using `set-properties` to set the same value twice will overwrite the old value.
 If a property is not specified then it retains the last set value or the default, if no change was made.
 A changed value can be unset by using a null value.
 
-.Revert changed value of triggerScheduleDelaySeconds to default value
+.Revert changed value of `triggerScheduleDelaySeconds` to default
 [source.json]
 ----
 {
@@ -545,4 +623,4 @@ A changed value can be unset by using a null value.
 }
 ----
 
-The changed values of these properties, if any, can be read using the Autoscaling Read API in the `properties` section.
+The changed values of these properties, if any, can be read using the Autoscaling <<Read API>> in the `properties` section.

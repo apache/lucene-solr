@@ -516,8 +516,8 @@ public class TestJoinUtil extends LuceneTestCase {
         private final Query fieldQuery = new DocValuesFieldExistsQuery(field);
 
         @Override
-        public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-          Weight fieldWeight = fieldQuery.createWeight(searcher, false, boost);
+        public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+          Weight fieldWeight = fieldQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
           return new Weight(this) {
 
             @Override
@@ -541,6 +541,10 @@ public class TestJoinUtil extends LuceneTestCase {
                 public float score() throws IOException {
                   assertEquals(in.docID(), price.advance(in.docID()));
                   return (float) price.longValue();
+                }
+                @Override
+                public float maxScore() {
+                  return Float.POSITIVE_INFINITY;
                 }
               };
             }
@@ -802,8 +806,8 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         @Override
-        public boolean needsScores() {
-          return false;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       });
 
@@ -1455,8 +1459,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE;
           }
         });
       } else {
@@ -1499,8 +1503,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE;
           }
         });
       }
@@ -1564,8 +1568,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
           }
         });
       }
@@ -1782,8 +1786,8 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     @Override
-    public boolean needsScores() {
-      return false;
+    public org.apache.lucene.search.ScoreMode scoreMode() {
+      return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

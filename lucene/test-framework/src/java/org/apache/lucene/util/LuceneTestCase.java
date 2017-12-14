@@ -988,6 +988,9 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
+    if (rarely(r)) {
+      c.setCheckPendingFlushUpdate(false);
+    }
     return c;
   }
 

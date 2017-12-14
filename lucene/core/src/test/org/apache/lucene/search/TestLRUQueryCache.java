@@ -346,7 +346,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -939,7 +939,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     int[] i = new int[] {42}; // an array so that clone keeps the reference
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -1139,7 +1139,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     LRUQueryCache cache = new LRUQueryCache(1, Long.MAX_VALUE, context -> true, Float.POSITIVE_INFINITY);
 
     // test that the bulk scorer is propagated when a scorer should not be cached
-    Weight weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), false);
+    Weight weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
     weight = cache.doCache(weight, NEVER_CACHE);
     weight.bulkScorer(leaf);
@@ -1273,7 +1273,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
   private static class NoCacheQuery extends Query {
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new Weight(this) {
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -1350,7 +1350,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -1412,7 +1412,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     AtomicBoolean scorerCreated = new AtomicBoolean(false);
     Query query = new DummyQuery2(scorerCreated);
-    Weight weight = searcher.createNormalizedWeight(query, false);
+    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
     ScorerSupplier supplier = weight.scorerSupplier(searcher.getIndexReader().leaves().get(0));
     assertFalse(scorerCreated.get());
     supplier.get(random().nextLong() & 0x7FFFFFFFFFFFFFFFL);
@@ -1449,7 +1449,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, 1) {
 
         @Override

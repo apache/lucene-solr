@@ -245,7 +245,7 @@ public class ReplicaMutator {
         log.debug("node=" + coreNodeName + " is already registered");
       } else {
         // if coreNodeName is null, auto assign one
-        coreNodeName = Assign.assignNode(stateManager, collection);
+        coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
       }
       message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
           coreNodeName);

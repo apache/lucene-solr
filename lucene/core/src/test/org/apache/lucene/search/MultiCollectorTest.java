@@ -51,8 +51,8 @@ public class MultiCollectorTest extends LuceneTestCase {
     }
 
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 
@@ -102,7 +102,7 @@ public class MultiCollectorTest extends LuceneTestCase {
 
   }
 
-  private static Collector collector(boolean needsScores, Class<?> expectedScorer) {
+  private static Collector collector(ScoreMode scoreMode, Class<?> expectedScorer) {
     return new Collector() {
 
       @Override
@@ -121,8 +121,8 @@ public class MultiCollectorTest extends LuceneTestCase {
       }
 
       @Override
-      public boolean needsScores() {
-        return needsScores;
+      public ScoreMode scoreMode() {
+        return scoreMode;
       }
       
     };
@@ -139,22 +139,22 @@ public class MultiCollectorTest extends LuceneTestCase {
     final LeafReaderContext ctx = reader.leaves().get(0);
 
     expectThrows(AssertionError.class, () -> {
-      collector(false, ScoreCachingWrappingScorer.class).getLeafCollector(ctx).setScorer(new FakeScorer());
+      collector(ScoreMode.COMPLETE_NO_SCORES, ScoreCachingWrappingScorer.class).getLeafCollector(ctx).setScorer(new FakeScorer());
     });
 
     // no collector needs scores => no caching
-    Collector c1 = collector(false, FakeScorer.class);
-    Collector c2 = collector(false, FakeScorer.class);
+    Collector c1 = collector(ScoreMode.COMPLETE_NO_SCORES, FakeScorer.class);
+    Collector c2 = collector(ScoreMode.COMPLETE_NO_SCORES, FakeScorer.class);
     MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
 
     // only one collector needs scores => no caching
-    c1 = collector(true, FakeScorer.class);
-    c2 = collector(false, FakeScorer.class);
+    c1 = collector(ScoreMode.COMPLETE, FakeScorer.class);
+    c2 = collector(ScoreMode.COMPLETE_NO_SCORES, FakeScorer.class);
     MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
 
     // several collectors need scores => caching
-    c1 = collector(true, ScoreCachingWrappingScorer.class);
-    c2 = collector(true, ScoreCachingWrappingScorer.class);
+    c1 = collector(ScoreMode.COMPLETE, ScoreCachingWrappingScorer.class);
+    c2 = collector(ScoreMode.COMPLETE, ScoreCachingWrappingScorer.class);
     MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
 
     reader.close();

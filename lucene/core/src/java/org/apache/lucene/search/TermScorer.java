@@ -27,6 +27,7 @@ import org.apache.lucene.search.similarities.Similarity;
 final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;
   private final Similarity.SimScorer docScorer;
+  private final float maxFreq;
 
   /**
    * Construct a <code>TermScorer</code>.
@@ -38,11 +39,14 @@ final class TermScorer extends Scorer {
    * @param docScorer
    *          The <code>Similarity.SimScorer</code> implementation
    *          to be used for score computations.
+   * @param maxFreq
+   *          An upper bound of the term frequency of the searched term in any document.
    */
-  TermScorer(Weight weight, PostingsEnum td, Similarity.SimScorer docScorer) {
+  TermScorer(Weight weight, PostingsEnum td, Similarity.SimScorer docScorer, float maxFreq) {
     super(weight);
     this.docScorer = docScorer;
     this.postingsEnum = td;
+    this.maxFreq = maxFreq;
   }
 
   @Override
@@ -63,6 +67,11 @@ final class TermScorer extends Scorer {
   public float score() throws IOException {
     assert docID() != DocIdSetIterator.NO_MORE_DOCS;
     return docScorer.score(postingsEnum.docID(), postingsEnum.freq());
+  }
+
+  @Override
+  public float maxScore() {
+    return docScorer.maxScore(maxFreq);
   }
 
   /** Returns a string representation of this <code>TermScorer</code>. */

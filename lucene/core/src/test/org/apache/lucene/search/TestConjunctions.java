@@ -112,6 +112,11 @@ public class TestConjunctions extends LuceneTestCase {
         public float score(int doc, float freq) {
           return freq;
         }
+
+        @Override
+        public float maxScore(float maxFreq) {
+          return maxFreq;
+        }
       };
     }
   }
@@ -153,8 +158,8 @@ public class TestConjunctions extends LuceneTestCase {
         }
 
         @Override
-        public boolean needsScores() {
-          return true;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE;
         }
       });
     assertTrue(setScorerCalled[0]);

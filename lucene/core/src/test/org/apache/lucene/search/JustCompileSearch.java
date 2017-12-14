@@ -55,7 +55,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean needsScores() {
+    public ScoreMode scoreMode() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
@@ -176,6 +176,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public float maxScore() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -231,7 +236,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean needsScores() {
+    public ScoreMode scoreMode() {
       throw new UnsupportedOperationException( UNSUPPORTED_MSG );
     }
   }

@@ -140,6 +140,11 @@ public class FieldValueFeature extends Feature {
         }
         return getDefaultValue();
       }
+
+      @Override
+      public float maxScore() {
+        return Float.POSITIVE_INFINITY;
+      }
     }
   }
 }

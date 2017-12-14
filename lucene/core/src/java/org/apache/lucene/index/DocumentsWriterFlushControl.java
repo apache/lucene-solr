@@ -716,7 +716,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     return infoStream;
   }
 
-  ThreadState findLargestNonPendingWriter() {
+  synchronized ThreadState findLargestNonPendingWriter() {
     ThreadState maxRamUsingThreadState = null;
     long maxRamSoFar = 0;
     Iterator<ThreadState> activePerThreadsIterator = allActiveThreadStates();

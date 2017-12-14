@@ -34,6 +34,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -163,7 +164,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     /*float score = hits.score(0);
     for (int i =1; i < hits.length(); i++)
@@ -214,7 +215,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     //should be two matches per document
     int count = 0;

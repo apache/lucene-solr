@@ -269,7 +269,7 @@ does _not_ return that document because SpanNearQuery has no good way to handle 
 
 ==== Escaping with Complex Phrase Parser
 
-Special care has to be given when escaping: clauses between double quotes (usually whole query) is parsed twice, these parts have to be escaped as twice. eg `"foo\\: bar\\^"`.
+Special care has to be given when escaping: clauses between double quotes (usually whole query) is parsed twice, these parts have to be escaped as twice, e.g., `"foo\\: bar\\^"`.
 
 == Field Query Parser
 
@@ -450,7 +450,7 @@ The Document & Field modeling used in the above examples enumerated all of the o
 
 But in many cases it can also be possible to drastically simplify the model used.
 
-For example, the same graph shown in the diagram above can be modelled by Solr Documents that represent each node and know only the ids of the nodes they link to, with out knowing anything about the incoming links:
+For example, the same graph shown in the diagram above can be modelled by Solr Documents that represent each node and know only the ids of the nodes they link to, without knowing anything about the incoming links:
 
 [source,bash]
 ----

@@ -27,22 +27,24 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 /** Wraps a Scorer with additional checks */
 final class AssertingBulkScorer extends BulkScorer {
 
-  public static BulkScorer wrap(Random random, BulkScorer other, int maxDoc) {
+  public static BulkScorer wrap(Random random, BulkScorer other, int maxDoc, ScoreMode scoreMode) {
     if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
-    return new AssertingBulkScorer(random, other, maxDoc);
+    return new AssertingBulkScorer(random, other, maxDoc, scoreMode);
   }
 
   final Random random;
   final BulkScorer in;
   final int maxDoc;
+  final ScoreMode scoreMode;
   int max = 0;
 
-  private AssertingBulkScorer(Random random, BulkScorer in, int maxDoc) {
+  private AssertingBulkScorer(Random random, BulkScorer in, int maxDoc, ScoreMode scoreMode) {
     this.random = random;
     this.in = in;
     this.maxDoc = maxDoc;
+    this.scoreMode = scoreMode;
   }
 
   public BulkScorer getIn() {
@@ -57,7 +59,7 @@ final class AssertingBulkScorer extends BulkScorer {
   @Override
   public void score(LeafCollector collector, Bits acceptDocs) throws IOException {
     assert max == 0;
-    collector = new AssertingLeafCollector(random, collector, 0, PostingsEnum.NO_MORE_DOCS);
+    collector = new AssertingLeafCollector(random, collector, 0, PostingsEnum.NO_MORE_DOCS, scoreMode);
     if (random.nextBoolean()) {
       try {
         final int next = score(collector, acceptDocs, 0, PostingsEnum.NO_MORE_DOCS);
@@ -75,7 +77,7 @@ final class AssertingBulkScorer extends BulkScorer {
     assert min >= this.max: "Scoring backward: min=" + min + " while previous max was max=" + this.max;
     assert min <= max : "max must be greater than min, got min=" + min + ", and max=" + max;
     this.max = max;
-    collector = new AssertingLeafCollector(random, collector, min, max);
+    collector = new AssertingLeafCollector(random, collector, min, max, scoreMode);
     final int next = in.score(collector, acceptDocs, min, max);
     assert next >= max;
     if (max >= maxDoc || next >= maxDoc) {

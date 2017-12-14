@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,8 +45,8 @@ public class CosineSimilarityEvaluator extends RecursiveNumericEvaluator impleme
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
-    double[] d1 = ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
-    double[] d2 = ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+    double[] d1 = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+    double[] d2 = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
 
     return cosineSimilarity(d1, d2);
   }

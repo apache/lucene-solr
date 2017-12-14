@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.util.IntsRef;
@@ -142,7 +143,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
     Set<IntsRef> refs = new HashSet<>();
     Automaton automaton = toLevenshteinAutomata(stream.toAutomaton(unicodeAware), refs);

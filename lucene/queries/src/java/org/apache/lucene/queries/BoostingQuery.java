@@ -28,6 +28,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -56,6 +57,10 @@ public class BoostingQuery extends Query {
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;
       this.context = context; // ignore context-only matches
+      if (Float.isFinite(boost) == false || Float.compare(boost, 0f) < 0) {
+        // otherwise scores could be negative
+        throw new IllegalArgumentException("boost must be a non-negative float, got " + boost);
+      }
       this.boost = boost;
     }
 
@@ -70,12 +75,12 @@ public class BoostingQuery extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      if (needsScores == false) {
-        return match.createWeight(searcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      if (scoreMode.needsScores() == false) {
+        return match.createWeight(searcher, scoreMode, boost);
       }
-      final Weight matchWeight = searcher.createWeight(match, needsScores, boost);
-      final Weight contextWeight = searcher.createWeight(context, false, boost);
+      final Weight matchWeight = searcher.createWeight(match, scoreMode, boost);
+      final Weight contextWeight = searcher.createWeight(context, ScoreMode.COMPLETE_NO_SCORES, boost);
       return new Weight(this) {
 
         @Override
@@ -125,6 +130,14 @@ public class BoostingQuery extends Query {
                 score *= boost;
               }
               return score;
+            }
+            @Override
+            public float maxScore() {
+              float maxScore = matchScorer.maxScore();
+              if (boost > 1) {
+                maxScore *= boost;
+              }
+              return maxScore;
             }
           };
         }

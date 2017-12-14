@@ -37,6 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RandomApproximationQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -45,6 +46,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
 
@@ -225,7 +228,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
     final Query query = new QueryWrapperFilter(new RandomApproximationQuery(new TermQuery(new Term("foo", "bar")), random()));
-    final Weight weight = searcher.createNormalizedWeight(query, random().nextBoolean());
+    final Weight weight = searcher.createNormalizedWeight(query, RandomPicks.randomFrom(random(), ScoreMode.values()));
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertNotNull(scorer.twoPhaseIterator());
     reader.close();

@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -46,7 +45,7 @@ public class ArcTangentEvaluator extends RecursiveNumericEvaluator implements On
     }
     else{
       // we know it's a BigDecimal
-      return Math.atan(((BigDecimal)value).doubleValue());
+      return Math.atan(((Number)value).doubleValue());
     }
   }
 }

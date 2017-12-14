@@ -126,8 +126,8 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 
@@ -336,7 +336,7 @@ public class CheckHits {
       Assert.assertTrue("Child doc explanations are missing", detail.length > 0);
     }
     if (detail.length > 0) {
-      if (detail.length==1) {
+      if (detail.length==1 && COMPUTED_FROM_PATTERN.matcher(descr).matches() == false) {
         // simple containment, unless it's a freq of: (which lets a query explain how the freq is calculated), 
         // just verify contained expl has same score
         if (expl.getDescription().endsWith("with freq of:") == false
@@ -515,8 +515,8 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 

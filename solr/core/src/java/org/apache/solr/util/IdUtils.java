@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.common.util.TimeSource;
 
 /**
  * Helper class for generating unique ID-s.

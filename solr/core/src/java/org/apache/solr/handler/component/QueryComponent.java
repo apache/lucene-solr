@@ -1481,6 +1481,11 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }

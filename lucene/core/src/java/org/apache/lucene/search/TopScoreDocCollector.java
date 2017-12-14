@@ -49,23 +49,42 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    SimpleTopScoreDocCollector(int numHits) {
+    private final int numHits;
+    private final boolean trackTotalHits;
+    private int sumMaxDoc;
+    private int maxCollectedExactly = -1;
+
+    SimpleTopScoreDocCollector(int numHits, boolean trackTotalHits) {
       super(numHits);
+      this.numHits = numHits;
+      this.trackTotalHits = trackTotalHits;
     }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
+      sumMaxDoc += context.reader().maxDoc();
       return new ScorerLeafCollector() {
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          if (trackTotalHits == false
+              && pqTop != null
+              && pqTop.score != Float.NEGATIVE_INFINITY) {
+            // since we tie-break on doc id and collect in doc id order, we can require
+            // the next float
+            scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
+          }
+        }
 
         @Override
         public void collect(int doc) throws IOException {
           float score = scorer.score();
 
-          // This collector cannot handle these scores:
-          assert score != Float.NEGATIVE_INFINITY;
-          assert !Float.isNaN(score);
+          // This collector relies on the fact that scorers produce positive values:
+          assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
           if (score <= pqTop.score) {
@@ -77,11 +96,38 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
+          if (trackTotalHits == false && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
+            // since we tie-break on doc id and collect in doc id order, we can require
+            // the next float
+            scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
+            if (maxCollectedExactly < 0) {
+              assert totalHits == numHits;
+              maxCollectedExactly = doc + docBase;
+            }
+          }
         }
 
       };
     }
 
+    @Override
+    public TopDocs topDocs() {
+      TopDocs topDocs = super.topDocs();
+      if (trackTotalHits == false && maxCollectedExactly >= 0) {
+        // assume matches are evenly spread in the doc id space
+        // this may be completely off
+        long totalHitsEstimate = (long) numHits * sumMaxDoc / (maxCollectedExactly + 1);
+        // we take the max since the current topDocs.totalHits is a lower bound
+        // of the total hit count
+        topDocs.totalHits = Math.max(topDocs.totalHits, totalHitsEstimate);
+      }
+      return topDocs;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return trackTotalHits ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+    }
   }
 
   private static class PagingTopScoreDocCollector extends TopScoreDocCollector {
@@ -114,9 +160,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         public void collect(int doc) throws IOException {
           float score = scorer.score();
 
-          // This collector cannot handle these scores:
-          assert score != Float.NEGATIVE_INFINITY;
-          assert !Float.isNaN(score);
+          // This collector relies on the fact that scorers produce positive values:
+          assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
 
@@ -142,8 +187,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   /**
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
-   * collect and whether documents are scored in order by the input
-   * {@link Scorer} to {@link LeafCollector#setScorer(Scorer)}.
+   * collect.
    *
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
@@ -151,27 +195,30 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits) {
-    return create(numHits, null);
+    return create(numHits, null, true);
   }
 
   /**
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
-   * collect, the bottom of the previous page, and whether documents are scored in order by the input
-   * {@link Scorer} to {@link LeafCollector#setScorer(Scorer)}.
+   * collect, the bottom of the previous page, and whether the total hit count
+   * is needed.
    *
+   * <p><b>NOTE</b>: If {@code trackTotalHits} is {@code false} then the
+   * {@link TopDocs#totalHits} of the returned {@link TopDocs} will be an
+   * approximation and may be completely off.
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, ScoreDoc after) {
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, boolean trackTotalHits) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
 
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits);
+      return new SimpleTopScoreDocCollector(numHits, trackTotalHits);
     } else {
       return new PagingTopScoreDocCollector(numHits, after);
     }
@@ -209,7 +256,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 }

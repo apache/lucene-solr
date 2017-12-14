@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
@@ -484,6 +485,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       return (float)(dist * qWeight);
     }
 
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
     public Explanation explain(Explanation base, int doc) throws IOException {
       if (base.isMatch() == false) {
         return base;
@@ -532,7 +538,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     // if we were supposed to use bboxQuery, then we should have been rewritten using that query
     assert bboxQuery == null;
     return new SpatialWeight(searcher, boost);

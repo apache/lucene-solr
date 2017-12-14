@@ -61,11 +61,11 @@ final class GlobalOrdinalsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
     }
-    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
+    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f), boost);
   }
 
   @Override

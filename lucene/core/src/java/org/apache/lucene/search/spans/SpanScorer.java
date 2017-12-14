@@ -134,6 +134,11 @@ public class SpanScorer extends Scorer {
     return scoreCurrentDoc();
   }
 
+  @Override
+  public float maxScore() {
+    return Float.POSITIVE_INFINITY;
+  }
+
   /** Returns the intermediate "sloppy freq" adjusted for edit distance
    *  @lucene.internal */
   final float sloppyFreq() throws IOException {

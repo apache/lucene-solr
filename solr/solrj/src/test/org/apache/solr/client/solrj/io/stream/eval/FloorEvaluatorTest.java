@@ -75,22 +75,20 @@ public class FloorEvaluatorTest extends LuceneTestCase {
   public void floorTwoFields() throws Exception{
     factory.constructEvaluator("floor(a,b)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void floorNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
     
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
-    assertNull(result);
   }
-  @Test
+  @Test(expected = IOException.class)
   public void floorNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
     
     values.clear();
     values.put("a", null);
     Object result = evaluator.evaluate(new Tuple(values));
-    assertNull(result);
   }
 }
