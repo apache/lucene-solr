@@ -540,8 +540,6 @@ public class CoreContainer {
     // may want to add some configuration here in the future
     metricsCollectorHandler.init(null);
 
-    autoScalingHandler = createHandler(AutoScalingHandler.HANDLER_PATH, AutoScalingHandler.class.getName(), AutoScalingHandler.class);
-
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
@@ -690,6 +688,10 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       zkSys.getZkController().checkOverseerDesignate();
+      // initialize this handler here when SolrCloudManager is ready
+      autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
+      containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
+      autoScalingHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), AutoScalingHandler.HANDLER_PATH);
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;

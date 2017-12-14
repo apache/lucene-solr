@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -531,7 +532,7 @@ public class ZkTestServer {
   }
   
   public static boolean waitForServerDown(String hp, long timeoutMs) {
-    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
+    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (true) {
       try {
         HostPort hpobj = parseHostPortList(hp).get(0);

@@ -42,7 +42,7 @@ public class CloudConfigSetService extends ConfigSetService {
     try {
       // for back compat with cores that can create collections without the collections API
       if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cd.getCollectionName(), true)) {
-        CreateCollectionCmd.createCollectionZkNode(zkController.getZkClient(), cd.getCollectionName(), cd.getCloudDescriptor().getParams());
+        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), cd.getCollectionName(), cd.getCloudDescriptor().getParams());
       }
     } catch (KeeperException e) {
       SolrException.log(log, null, e);

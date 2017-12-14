@@ -68,6 +68,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
@@ -1142,7 +1143,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
                                boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
-    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS); 
+    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
     try {

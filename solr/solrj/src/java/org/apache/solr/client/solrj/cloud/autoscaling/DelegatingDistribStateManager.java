@@ -45,6 +45,11 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  public List<String> listData(String path, Watcher watcher) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+    return delegate.listData(path, watcher);
+  }
+
+  @Override
   public VersionedData getData(String path, Watcher watcher) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     return delegate.getData(path, watcher);
   }
@@ -60,12 +65,17 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
+    delegate.makePath(path, data, createMode, failOnExists);
+  }
+
+  @Override
   public String createData(String path, byte[] data, CreateMode mode) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     return delegate.createData(path, data, mode);
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public void removeData(String path, int version) throws NoSuchElementException, IOException, BadVersionException, KeeperException, InterruptedException {
     delegate.removeData(path, version);
   }
 
@@ -87,5 +97,10 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   @Override
   public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
     return delegate.getAutoScalingConfig();
+  }
+
+  @Override
+  public void close() throws IOException {
+    delegate.close();
   }
 }

@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.TimeSource;
 
 /**
  * This interface abstracts the access to a SolrCloud cluster, including interactions with Zookeeper, Solr
@@ -44,16 +45,11 @@ public interface SolrCloudManager extends SolrCloseable {
 
   ObjectCache getObjectCache();
 
+  TimeSource getTimeSource();
+
   // Solr-like methods
 
   SolrResponse request(SolrRequest req) throws IOException;
 
   byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException;
-
-  // distributed queue implementation
-
-  @Override
-  default void close() {
-
-  }
 }

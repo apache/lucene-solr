@@ -66,6 +66,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
@@ -458,7 +459,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .add("id", "7")
         .add("id", "8")
         .commit(cluster.getSolrClient(), collectionName);
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       try {
         long numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
@@ -514,7 +515,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
 
 
-    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
+    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     boolean allTimesAreCorrect = false;
     while (! timeout.hasTimedOut()) {

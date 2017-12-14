@@ -223,7 +223,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     try {
       List<ReplicaPosition> replicaPositions = Assign.identifyNodes(
-          ocmh, clusterState,
+          ocmh.cloudManager, clusterState,
           nodeList, restoreCollectionName,
           message, sliceNames,
           numNrtReplicas, numTlogReplicas, numPullReplicas);

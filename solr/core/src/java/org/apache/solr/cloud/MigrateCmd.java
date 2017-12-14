@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -63,9 +64,11 @@ import static org.apache.solr.common.util.Utils.makeMap;
 public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
+  private final TimeSource timeSource;
 
   public MigrateCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.timeSource = ocmh.cloudManager.getTimeSource();
   }
 
 
@@ -179,10 +182,10 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
-    TimeOut waitUntil = new TimeOut(60, TimeUnit.SECONDS);
+    TimeOut waitUntil = new TimeOut(60, TimeUnit.SECONDS, timeSource);
     boolean added = false;
     while (!waitUntil.hasTimedOut()) {
-      Thread.sleep(100);
+      waitUntil.sleep(100);
       sourceCollection = zkStateReader.getClusterState().getCollection(sourceCollection.getName());
       sourceSlice = sourceCollection.getSlice(sourceSlice.getName());
       Map<String, RoutingRule> rules = sourceSlice.getRoutingRules();
@@ -257,7 +260,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
     log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
         tempSourceCollectionName, targetLeader.getNodeName());
-    String tempCollectionReplica2 = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(),
+    String tempCollectionReplica2 = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(),
         zkStateReader.getClusterState().getCollection(tempSourceCollectionName), tempSourceSlice.getName(), Replica.Type.NRT);
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());

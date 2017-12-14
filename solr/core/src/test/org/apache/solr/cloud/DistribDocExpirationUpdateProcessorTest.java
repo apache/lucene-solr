@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory;
 import org.apache.solr.util.TimeOut;
@@ -175,7 +176,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
                                 SolrParams params)
       throws SolrServerException, InterruptedException, IOException {
 
-    final TimeOut timeout = new TimeOut(maxTimeLimitSeconds, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(maxTimeLimitSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     long numFound = cluster.getSolrClient().query(COLLECTION, params).getResults().getNumFound();
     while (0L < numFound && ! timeout.hasTimedOut()) {
       Thread.sleep(Math.max(1, Math.min(5000, timeout.timeLeft(TimeUnit.MILLISECONDS))));

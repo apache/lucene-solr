@@ -81,6 +81,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -1030,13 +1031,13 @@ public class CloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNodesList.get(0),
+        theUrlList.add(Utils.getBaseUrlForNodeName(liveNodesList.get(0),
             (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
       for (String liveNode : liveNodes) {
-        theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNode,
+        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
             (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
 

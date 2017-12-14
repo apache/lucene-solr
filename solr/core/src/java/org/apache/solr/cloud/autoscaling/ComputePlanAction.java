@@ -33,8 +33,10 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +59,13 @@ public class ComputePlanAction extends TriggerActionBase {
       if (autoScalingConf.isEmpty()) {
         throw new Exception("Action: " + getName() + " executed but no policy is configured");
       }
-
-      //    Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
-//    return new PolicyHelper.SessionWrapper(session, null);
       PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getSession(cloudManager);
       Policy.Session session = sessionWrapper.get();
-//      Policy policy = autoScalingConf.getPolicy();
+      if (log.isTraceEnabled()) {
+        ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
+        log.trace("-- session: {}", session);
+        log.trace("-- state: {}", state);
+      }
       try {
         Suggester suggester = getSuggester(session, event, cloudManager);
         while (true) {
@@ -99,12 +102,10 @@ public class ComputePlanAction extends TriggerActionBase {
       case NODEADDED:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODEADDED Created suggester with targetNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case NODELOST:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODELOST Created suggester with srcNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case SEARCHRATE:
         Map<String, Map<String, Double>> hotShards = (Map<String, Map<String, Double>>)event.getProperty(AutoScalingParams.SHARD);
@@ -125,13 +126,10 @@ public class ComputePlanAction extends TriggerActionBase {
         } else {
           // collection || shard || replica -> ADDREPLICA
           suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
-          Set<String> collections = new HashSet<>();
-          // XXX improve this when AddReplicaSuggester supports coll_shard hint
-          hotReplicas.forEach(r -> collections.add(r.getCollection()));
-          hotShards.forEach((coll, shards) -> collections.add(coll));
-          hotCollections.forEach((coll, rate) -> collections.add(coll));
-          for (String coll : collections) {
-            suggester = suggester.hint(Suggester.Hint.COLL, coll);
+          Set<Pair> collectionShards = new HashSet<>();
+          hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> collectionShards.add(new Pair(coll, s))));
+          for (Pair<String, String> colShard : collectionShards) {
+            suggester = suggester.hint(Suggester.Hint.COLL_SHARD, colShard);
           }
         }
         break;

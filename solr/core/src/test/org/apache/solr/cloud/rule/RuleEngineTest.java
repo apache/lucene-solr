@@ -201,6 +201,9 @@ public class RuleEngineTest extends SolrTestCaseJ4{
       public NodeStateProvider getNodeStateProvider() {
         return new NodeStateProvider() {
           @Override
+          public void close() throws IOException { }
+
+          @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
             return (Map<String, Object>) MockSnitch.nodeVsTags.get(node);
           }
