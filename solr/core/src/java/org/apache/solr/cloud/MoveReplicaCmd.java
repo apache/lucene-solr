@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.TimeOut;
@@ -54,9 +55,11 @@ public class MoveReplicaCmd implements Cmd{
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final OverseerCollectionMessageHandler ocmh;
+  private final TimeSource timeSource;
 
   public MoveReplicaCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.timeSource = ocmh.cloudManager.getTimeSource();
   }
 
   @Override
@@ -158,11 +161,11 @@ public class MoveReplicaCmd implements Cmd{
         return;
       }
 
-      TimeOut timeOut = new TimeOut(20L, TimeUnit.SECONDS);
+      TimeOut timeOut = new TimeOut(20L, TimeUnit.SECONDS, timeSource);
       while (!timeOut.hasTimedOut()) {
         coll = ocmh.zkStateReader.getClusterState().getCollection(coll.getName());
         if (coll.getReplica(replica.getName()) != null) {
-          Thread.sleep(100);
+          timeOut.sleep(100);
         } else {
           break;
         }
@@ -233,7 +236,7 @@ public class MoveReplicaCmd implements Cmd{
 
   private void moveNormalReplica(ClusterState clusterState, NamedList results, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
-    String newCoreName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), coll, slice.getName(), replica.getType());
+    String newCoreName = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), coll, slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),

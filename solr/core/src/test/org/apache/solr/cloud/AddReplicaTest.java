@@ -73,7 +73,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertFalse(rsp.toString(), rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(500);
     }
     assertTrue(success);

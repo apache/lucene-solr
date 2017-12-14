@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   public CollectionRef getState(String collection) {
     for (String nodeName: liveNodes) {
       try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
           withHttpClient(httpClient).build()) {
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
@@ -102,7 +103,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
           return null;
         }
         log.warn("Attempt to fetch cluster state from " +
-            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
@@ -160,7 +161,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS) > getCacheTimeout()) {
       for (String nodeName: liveNodes) {
         try (HttpSolrClient client = new HttpSolrClient.Builder().
-            withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+            withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
             withHttpClient(httpClient).build()) {
           Set<String> liveNodes = fetchLiveNodes(client);
           this.liveNodes = (liveNodes);
@@ -168,7 +169,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
           return liveNodes;
         } catch (Exception e) {
           log.warn("Attempt to fetch live_nodes from " +
-              ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+              Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
         }
       }
       throw new RuntimeException("Tried fetching live_nodes using all the node names we knew of, i.e. " + liveNodes +". However, "
@@ -209,7 +210,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
         TimeUnit.SECONDS.convert((System.nanoTime() - aliasesTimestamp), TimeUnit.NANOSECONDS) > getCacheTimeout()) {
       for (String nodeName: liveNodes) {
         try (HttpSolrClient client = new HttpSolrClient.Builder().
-            withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+            withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
             withHttpClient(httpClient).build()) {
 
           Map<String, List<String>> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliasesAsLists();
@@ -226,7 +227,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
             return aliases;
           }
           log.warn("Attempt to fetch cluster state from " +
-              ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+              Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
         }
       }
 
@@ -244,13 +245,13 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   public ClusterState getClusterState() throws IOException {
     for (String nodeName: liveNodes) {
       try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
           withHttpClient(httpClient).build()) {
         ClusterState cs = fetchClusterState(client, null, null);
         return cs;
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from " +
-            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
@@ -264,14 +265,14 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   public Map<String, Object> getClusterProperties() {
     for (String nodeName: liveNodes) {
       try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
           withHttpClient(httpClient).build()) {
         Map<String, Object> clusterProperties = new HashMap<>();
         fetchClusterState(client, null, clusterProperties);
         return clusterProperties;
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from " +
-            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "

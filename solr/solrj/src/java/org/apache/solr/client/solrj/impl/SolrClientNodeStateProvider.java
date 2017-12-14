@@ -67,6 +67,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   public static SolrClientNodeStateProvider INST;
 
 
+
   private final CloudSolrClient solrClient;
   private final ZkStateReader zkStateReader;
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
@@ -153,6 +154,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     } catch (Exception e) {
       log.warn("could not get tags from node " + solrNode, e);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+
   }
 
   //uses metrics API to get node information

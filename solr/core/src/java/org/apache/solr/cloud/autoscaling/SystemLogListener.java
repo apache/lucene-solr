@@ -72,8 +72,8 @@ public class SystemLogListener extends TriggerListenerBase {
   private boolean enabled = true;
 
   @Override
-  public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(dataProvider, config);
+  public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(cloudManager, config);
     collection = (String)config.properties.getOrDefault(CollectionAdminParams.COLLECTION, CollectionAdminParams.SYSTEM_COLL);
     enabled = Boolean.parseBoolean(String.valueOf(config.properties.getOrDefault("enabled", true)));
   }
@@ -119,7 +119,7 @@ public class SystemLogListener extends TriggerListenerBase {
       UpdateRequest req = new UpdateRequest();
       req.add(doc);
       req.setParam(CollectionAdminParams.COLLECTION, collection);
-      dataProvider.request(req);
+      cloudManager.request(req);
     } catch (Exception e) {
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign

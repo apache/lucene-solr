@@ -27,11 +27,11 @@ import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 public abstract class TriggerListenerBase implements TriggerListener {
 
   protected AutoScalingConfig.TriggerListenerConfig config;
-  protected SolrCloudManager dataProvider;
+  protected SolrCloudManager cloudManager;
 
   @Override
-  public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    this.dataProvider = dataProvider;
+  public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
+    this.cloudManager = cloudManager;
     this.config = config;
   }
 

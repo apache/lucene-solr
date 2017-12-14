@@ -45,6 +45,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.util.TimeOut;
@@ -273,7 +274,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         while (!closed && sendBootstrapCommand() != BootstrapStatus.SUBMITTED)  {
           Thread.sleep(BOOTSTRAP_RETRY_DELAY_MS);
         }
-        TimeOut timeOut = new TimeOut(BOOTSTRAP_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        TimeOut timeOut = new TimeOut(BOOTSTRAP_TIMEOUT_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeOut.hasTimedOut()) {
           if (closed) {
             log.warn("Cancelling waiting for bootstrap on target: {} shard: {} to complete", targetCollection, shard);
@@ -285,7 +286,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
             try {
               log.info("CDCR bootstrap running for {} seconds, sleeping for {} ms",
                   BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS), BOOTSTRAP_RETRY_DELAY_MS);
-              Thread.sleep(BOOTSTRAP_RETRY_DELAY_MS);
+              timeOut.sleep(BOOTSTRAP_RETRY_DELAY_MS);
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
             }
@@ -309,7 +310,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
               while (!closed && sendBootstrapCommand() != BootstrapStatus.SUBMITTED)  {
                 Thread.sleep(BOOTSTRAP_RETRY_DELAY_MS);
               }
-              timeOut = new TimeOut(BOOTSTRAP_TIMEOUT_SECONDS, TimeUnit.SECONDS); // reset the timer
+              timeOut = new TimeOut(BOOTSTRAP_TIMEOUT_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME); // reset the timer
               retries++;
             }
           } else if (status == BootstrapStatus.NOTFOUND || status == BootstrapStatus.CANCELLED) {
@@ -321,13 +322,13 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
               Thread.sleep(BOOTSTRAP_RETRY_DELAY_MS);
             }
             retries = 1;
-            timeOut = new TimeOut(6L * 3600L * 3600L, TimeUnit.SECONDS); // reset the timer
+            timeOut = new TimeOut(6L * 3600L * 3600L, TimeUnit.SECONDS, TimeSource.NANO_TIME); // reset the timer
           } else if (status == BootstrapStatus.UNKNOWN || status == BootstrapStatus.SUBMITTED) {
             log.info("CDCR bootstrap is " + (status == BootstrapStatus.UNKNOWN ? "unknown" : "submitted"),
                 BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
             // we were not able to query the status on the remote end
             // so just sleep for a bit and try again
-            Thread.sleep(BOOTSTRAP_RETRY_DELAY_MS);
+            timeOut.sleep(BOOTSTRAP_RETRY_DELAY_MS);
           }
         }
       } catch (InterruptedException e) {

@@ -391,7 +391,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     results.add("status", status);
   }
 
-  enum CollectionOperation implements CollectionOp {
+  public enum CollectionOperation implements CollectionOp {
     /**
      * very simple currently, you can pass a template collection, and the new collection is created on
      * every node the template collection is on

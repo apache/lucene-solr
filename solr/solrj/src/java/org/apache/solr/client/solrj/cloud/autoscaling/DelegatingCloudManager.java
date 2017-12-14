@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.TimeSource;
 
 /**
  * Base class for overriding some behavior of {@link SolrCloudManager}.
@@ -31,6 +32,7 @@ import org.apache.solr.common.util.ObjectCache;
 public class DelegatingCloudManager implements SolrCloudManager {
   private final SolrCloudManager delegate;
   private ObjectCache objectCache = new ObjectCache();
+  private TimeSource timeSource = TimeSource.NANO_TIME;
 
   public DelegatingCloudManager(SolrCloudManager delegate) {
     this.delegate = delegate;
@@ -62,6 +64,16 @@ public class DelegatingCloudManager implements SolrCloudManager {
   }
 
   @Override
+  public boolean isClosed() {
+    return delegate.isClosed();
+  }
+
+  @Override
+  public TimeSource getTimeSource() {
+    return delegate == null ? timeSource : delegate.getTimeSource();
+  }
+
+  @Override
   public SolrResponse request(SolrRequest req) throws IOException {
     return delegate.request(req);
   }
@@ -69,5 +81,10 @@ public class DelegatingCloudManager implements SolrCloudManager {
   @Override
   public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
     return delegate.httpRequest(url, method, headers, payload, timeout, followRedirects);
+  }
+
+  @Override
+  public void close() throws IOException {
+    delegate.close();
   }
 }

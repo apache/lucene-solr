@@ -16,15 +16,15 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 
-public interface ClusterStateProvider extends Closeable {
+public interface ClusterStateProvider extends SolrCloseable {
 
   /**
    * Obtain the state of the collection (cluster status).

@@ -57,7 +57,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final SolrCloudManager dataProvider;
+  private final SolrCloudManager cloudManager;
 
   private final CloudConfig cloudConfig;
 
@@ -80,11 +80,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager dataProvider, CloudConfig cloudConfig) {
-    this.dataProvider = dataProvider;
+  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager cloudManager, CloudConfig cloudConfig) {
+    this.cloudManager = cloudManager;
     this.cloudConfig = cloudConfig;
-    scheduledTriggers = new ScheduledTriggers(loader, dataProvider);
-    triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, dataProvider);
+    scheduledTriggers = new ScheduledTriggers(loader, cloudManager);
+    triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
   }
 
   @Override
@@ -114,11 +114,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     // we automatically add a trigger for auto add replicas if it does not exists already
     while (!isClosed)  {
       try {
-        AutoScalingConfig autoScalingConfig = dataProvider.getDistribStateManager().getAutoScalingConfig();
+        AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
         AutoScalingConfig withAutoAddReplicasTrigger = withAutoAddReplicasTrigger(autoScalingConfig);
         if (withAutoAddReplicasTrigger.equals(autoScalingConfig)) break;
         log.debug("Adding .autoAddReplicas trigger");
-        dataProvider.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(withAutoAddReplicasTrigger), withAutoAddReplicasTrigger.getZkVersion());
+        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(withAutoAddReplicasTrigger), withAutoAddReplicasTrigger.getZkVersion());
         break;
       } catch (BadVersionException bve) {
         // somebody else has changed the configuration so we must retry
@@ -225,7 +225,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           throw new IllegalStateException("Caught AlreadyClosedException from ScheduledTriggers, but we're not closed yet!", e);
         }
       }
-      DistribStateManager stateManager = dataProvider.getDistribStateManager();
+      DistribStateManager stateManager = cloudManager.getDistribStateManager();
       if (cleanOldNodeLostMarkers) {
         log.debug("-- clean old nodeLost markers");
         try {
@@ -259,7 +259,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   private void removeNodeMarker(String path, String nodeName) {
     path = path + "/" + nodeName;
     try {
-      dataProvider.getDistribStateManager().removeData(path, -1);
+      cloudManager.getDistribStateManager().removeData(path, -1);
       log.debug("  -- deleted " + path);
     } catch (NoSuchElementException e) {
       // ignore
@@ -297,7 +297,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       if (isClosed) {
         return;
       }
-      AutoScalingConfig currentConfig = dataProvider.getDistribStateManager().getAutoScalingConfig(watcher);
+      AutoScalingConfig currentConfig = cloudManager.getDistribStateManager().getAutoScalingConfig(watcher);
       log.debug("Refreshing {} with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, currentConfig.getZkVersion());
       if (znodeVersion >= currentConfig.getZkVersion()) {
         // protect against reordered watcher fires by ensuring that we only move forward

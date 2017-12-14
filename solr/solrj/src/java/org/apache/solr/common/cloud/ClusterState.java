@@ -92,6 +92,13 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
+   * Returns the zNode version that was used to construct this instance.
+   */
+  public int getZNodeVersion() {
+    return znodeVersion;
+  }
+
+  /**
    * Returns true if the specified collection name exists, false otherwise.
    *
    * Implementation note: This method resolves the collection reference by calling
@@ -196,7 +203,10 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
+    sb.append("znodeVersion: " + znodeVersion);
+    sb.append("\n");
     sb.append("live nodes:" + liveNodes);
+    sb.append("\n");
     sb.append("collections:" + collectionStates);
     return sb.toString();
   }

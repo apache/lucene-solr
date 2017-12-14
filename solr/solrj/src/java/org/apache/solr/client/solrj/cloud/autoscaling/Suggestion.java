@@ -38,7 +38,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class Suggestion {
-  static final String coreidxsize = "INDEX.sizeInBytes";
+  public static final String coreidxsize = "INDEX.sizeInBytes";
   static final Map<String, ConditionType> validatetypes = new HashMap<>();
 
   public static ConditionType getTagType(String name) {
