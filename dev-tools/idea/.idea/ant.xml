@@ -11,6 +11,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/icu/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/kuromoji/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/morfologik/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/analysis/opennlp/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/phonetic/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/stempel/build.xml" />

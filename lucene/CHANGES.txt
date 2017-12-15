@@ -10,6 +10,15 @@ API Changes
 * LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
   (Pulak Ghosh via Adrien Grand)
 
+New Features
+
+* LUCENE-2899: Add new module analysis/opennlp, with analysis components
+  to perform tokenization, part-of-speech tagging, lemmatization and phrase
+  chunking by invoking the corresponding OpenNLP tools. Named entity
+  recognition is also provided as a Solr update request processor.
+  (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
+  Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
+
 Improvements
 
 * LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads

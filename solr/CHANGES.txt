@@ -33,6 +33,13 @@ New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
 
+* LUCENE-2899: In the Solr analysis-extras contrib, added support for the
+  OpenNLP-based analysis components in the Lucene analysis/opennlp module:
+  tokenization, part-of-speech tagging, phrase chunking, and lemmatization.
+  Also added OpenNLP-based named entity extraction as a Solr update request
+  processor.  (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
+  Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
+
 Optimizations
 ----------------------
 
