@@ -65,6 +65,10 @@
     <ant dir="morfologik" />
   </target>
 
+  <target name="opennlp">
+    <ant dir="opennlp" />
+  </target>
+
   <target name="phonetic">
     <ant dir="phonetic" />
   </target>
@@ -82,7 +86,7 @@
   </target>
 
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel,uima" />
+  <target name="compile" depends="common,icu,kuromoji,morfologik,opennlp,phonetic,smartcn,stempel,uima" />
 
   <target name="clean">
     <forall-analyzers target="clean"/>

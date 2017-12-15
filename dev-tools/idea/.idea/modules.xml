@@ -15,6 +15,7 @@
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/icu/icu.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/kuromoji/kuromoji.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/morfologik/morfologik.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/opennlp/opennlp.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/phonetic/phonetic.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/smartcn/smartcn.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/stempel/stempel.iml" />

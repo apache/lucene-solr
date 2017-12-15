@@ -502,3 +502,7 @@ Specifies how to define whitespace for the purpose of tokenization. Valid values
 *In:* "To be, or what?"
 
 *Out:* "To", "be,", "or", "what?"
+
+== OpenNLP Tokenizer and OpenNLP Filters
+
+See <<language-analysis.adoc#opennlp-integration,OpenNLP Integration>> for information about using the OpenNLP Tokenizer, along with information about available OpenNLP token filters.

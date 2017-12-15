@@ -285,6 +285,28 @@
     <property name="analyzers-icu-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-opennlp.jar" value="${common.dir}/build/analysis/opennlp/lucene-analyzers-opennlp-${version}.jar"/>
+  <target name="check-analyzers-opennlp-uptodate" unless="analyzers-opennlp.uptodate">
+    <module-uptodate name="analysis/opennlp" jarfile="${analyzers-opennlp.jar}" property="analyzers-opennlp.uptodate"/>
+  </target>
+  <target name="jar-analyzers-opennlp" unless="analyzers-opennlp.uptodate" depends="check-analyzers-opennlp-uptodate">
+    <ant dir="${common.dir}/analysis/opennlp" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-opennlp.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-opennlp-javadoc.jar" value="${common.dir}/build/analysis/opennlp/lucene-analyzers-opennlp-${version}-javadoc.jar"/>
+  <target name="check-analyzers-opennlp-javadocs-uptodate" unless="analyzers-opennlp-javadocs.uptodate">
+    <module-uptodate name="analysis/opennlp" jarfile="${analyzers-opennlp-javadoc.jar}" property="analyzers-opennlp-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-opennlp" unless="analyzers-opennlp-javadocs.uptodate" depends="check-analyzers-opennlp-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/opennlp" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-opennlp-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-phonetic.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
   <target name="check-analyzers-phonetic-uptodate" unless="analyzers-phonetic.uptodate">
     <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic.jar}" property="analyzers-phonetic.uptodate"/>

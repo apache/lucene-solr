@@ -1576,6 +1576,38 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 
 *Out:* "Pay"[<ALPHANUM>], "Bob's"[<APOSTROPHE>], "I.O.U."[<ACRONYM>]
 
+== Type As Synonym Filter
+
+This filter adds the token's type, as a token at the same position as the token, optionally with a configurable prefix prepended.
+
+*Factory class:* `solr.TypeAsSynonymFilterFactory`
+
+*Arguments:*
+
+`prefix`:: (optional) The prefix to prepend to the token's type.
+
+*Examples:*
+
+With the example below, each token's type will be emitted verbatim at the same position:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory"/>
+</analyzer>
+----
+
+With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="_type_"/>
+</analyzer>
+----
+
 == Type Token Filter
 
 This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them. For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types. This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
