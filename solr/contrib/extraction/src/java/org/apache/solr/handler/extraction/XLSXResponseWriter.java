@@ -35,6 +35,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
@@ -116,10 +117,10 @@ class XLSXWriter extends TextResponseWriter {
       this.headerStyle = (XSSFCellStyle)swb.createCellStyle();
       this.headerStyle.setFillBackgroundColor(IndexedColors.BLACK.getIndex());
       //solid fill
-      this.headerStyle.setFillPattern((short)1);
+      this.headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
       Font headerFont = swb.createFont();
       headerFont.setFontHeightInPoints((short)14);
-      headerFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+      headerFont.setBold(true);
       headerFont.setColor(IndexedColors.WHITE.getIndex());
       this.headerStyle.setFont(headerFont);
     }
