@@ -48,7 +48,11 @@ Optimizations
   
 Other Changes
 ----------------------
+
 * SOLR-11575: Improve ref-guide solrj snippets via mock 'print()' method (Jason Gerlowski via hossman)
+
+* SOLR-11757: In tests, fix race condition on SolrException.ignoreException.
+  Also ensure we register "ignore_exception" in @BeforeClass (previously only @AfterClass)  (David Smiley)
 
 ==================  7.2.0 ==================
 

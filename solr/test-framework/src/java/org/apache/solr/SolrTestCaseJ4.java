@@ -49,15 +49,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -65,7 +65,6 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -145,10 +144,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
@@ -260,6 +258,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void setupTestCases() {
     initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
     initClassLogLevels();
+    resetExceptionIgnores();
 
     initCoreDataDir = createTempDir("init-core-data").toFile();
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
@@ -589,8 +588,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
-    if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<>();
+    if (SolrException.ignorePatterns == null) // usually initialized already but in case not...
+      resetExceptionIgnores();
     SolrException.ignorePatterns.add(pattern);
   }
 
@@ -599,9 +598,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrException.ignorePatterns.remove(pattern);
   }
 
+  /**
+   * Clears all exception patterns, although keeps {@code "ignore_exception"}.
+   * {@link SolrTestCaseJ4} calls this in {@link AfterClass} so usually tests don't need to call this.
+   */
   public static void resetExceptionIgnores() {
-    SolrException.ignorePatterns = null;
-    ignoreException("ignore_exception");  // always ignore "ignore_exception"    
+    // CopyOnWrite for safety; see SOLR-11757
+    SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
   }
 
   protected static String getClassName() {
@@ -2765,8 +2768,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
-   * A Map of "primative" java "numeric" types and the string name of the <code>class</code> used in the 
-   * corrisponding schema fieldType declaration.
+   * A Map of "primitive" java "numeric" types and the string name of the <code>class</code> used in the
+   * corresponding schema fieldType declaration.
    * <p>
    * Example: <code>java.util.Date =&gt; "solr.DatePointField"</code>
    * </p>
