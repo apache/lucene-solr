@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  *   &lt;/fieldType&gt;
  * </pre>
  * 
- * <p>See the <a href="OpenNLP website">http://opennlp.apache.org/models.html</a>
+ * <p>See the <a href="http://opennlp.apache.org/models.html">OpenNLP website"></a>
  * for information on downloading pre-trained models.</p>
  *
  * <p>
