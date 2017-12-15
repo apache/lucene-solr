@@ -1642,7 +1642,7 @@ eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA
 
 The `regress` function performs a simple regression of two numeric arrays.
 
-The result of this expression is also used by the `<<predict>>` and `<<residuals>>` functions.
+The result of this expression is also used by the `<<predict>>` function.
 
 === regress Parameters
 
