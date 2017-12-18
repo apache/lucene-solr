@@ -191,16 +191,20 @@ public class SolrException extends RuntimeException {
   }
 
 
-  /** For test code - do not log exceptions that match any of the regular expressions in ignorePatterns */
+  /**
+   * For test code - do not log exceptions that match any of these regular expressions.
+   * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
+   */
   public static Set<String> ignorePatterns;
 
   /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
   public static String doIgnore(Throwable t, String m) {
+    Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
     if (ignorePatterns == null || m == null) return null;
     if (t != null && t instanceof AssertionError) return null;
 
     for (String regex : ignorePatterns) {
-      Pattern pattern = Pattern.compile(regex);
+      Pattern pattern = Pattern.compile(regex); // TODO why do we compile late; why not up-front?
       Matcher matcher = pattern.matcher(m);
       
       if (matcher.find()) return "Ignoring exception matching " + regex;

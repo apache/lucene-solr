@@ -355,6 +355,214 @@ This can increase recall by causing more matches. On the other hand, it can redu
 </analyzer>
 ----
 
+== OpenNLP Integration
+
+The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.  In addition to these analysis components, Solr also provides an update request processor to extract named entities - see <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
+
+NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons: first, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters; and second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization, using the same models, must be used at runtime for optimal performance.
+
+See `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+=== OpenNLP Tokenizer
+
+The OpenNLP Tokenizer takes two language-specific binary model files as parameters: a sentence detector model and a tokenizer model.  The last token in each sentence is flagged, so that following OpenNLP-based filters can use this information to apply operations to tokens one sentence at a time. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+*Factory class:* `solr.OpenNLPTokenizerFactory`
+
+*Arguments:*
+
+`sentenceModel`:: (required) The path of a language-specific OpenNLP sentence detection model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+`tokenizerModel`:: (required) The path of a language-specific OpenNLP tokenization model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Example:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+</analyzer>
+----
+
+=== OpenNLP Part-Of-Speech Filter
+
+This filter sets each token's type attribute to the part of speech (POS) assigned by the configured model. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
+
+*Factory class:* `solr.OpenNLPPOSFilterFactory`
+
+*Arguments:*
+
+`posTaggerModel`:: (required) The path of a language-specific OpenNLP POS tagger model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples:*
+
+The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filter-descriptions.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
+
+.stop.pos.txt
+[source,text]
+----
+#
+$
+''
+``
+,
+-LRB-
+-RRB-
+:
+.
+----
+
+Index the POS for each token as a payload:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeAsPayloadFilterFactory"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="@"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Only index nouns - the `keep.pos.txt` file contains lines `NN`, `NNS`, `NNP` and `NNPS`:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeTokenFilterFactory" types="keep.pos.txt" useWhitelist="true"/>
+</analyzer>
+----
+
+=== OpenNLP Phrase Chunking Filter
+
+This filter sets each token's type attribute based on the output of an OpenNLP phrase chunking model.  The chunk labels replace the POS tags that previously were in each token's type attribute. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+Prerequisite: the <<OpenNLP Tokenizer>> and the <<OpenNLP Part-Of-Speech Filter>> must precede this filter.
+
+NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
+
+*Factory class:* `solr.OpenNLPChunkerFilter`
+
+*Arguments:*
+
+`chunkerModel`:: (required) The path of a language-specific OpenNLP phrase chunker model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples*:
+
+Index the phrase chunk label for each token as a payload:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPChunkerFactory" chunkerModel="en-chunker.bin"/>
+  <filter class="solr.TypeAsPayloadFilterFactory"/>
+</analyzer>
+----
+
+Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPChunkerFactory" chunkerModel="en-chunker.bin"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="#"/>
+</analyzer>
+----
+
+=== OpenNLP Lemmatizer Filter
+
+This filter replaces the text of each token with its lemma. Both a dictionary-based lemmatizer and a model-based lemmatizer are supported. If both are configured, the dictionary-based lemmatizer is tried first, and then the model-based lemmatizer is consulted for out-of-vocabulary tokens. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+*Factory class:* `solr.OpenNLPLemmatizerFilter`
+
+*Arguments:*
+
+Either `dictionary` or `lemmatizerModel` must be provided, and both may be provided - see the examples below:
+
+`dictionary`:: (optional) The path of a lemmatization dictionary file. This path may be an absolute path, or path relative to the Solr config directory. The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g. `wrote[tab]write[tab]VBD`.
+
+`lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples:*
+
+Perform dictionary-based lemmatization, and fall back to model-based lemmatization for out-of-vocabulary tokens (see the <<OpenNLP Part-Of-Speech Filter>> section above for information about using `TypeTokenFilter` to avoid indexing punctuation):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory"
+          dictionary="lemmas.txt"
+          lemmatizerModel="en-lemmatizer.bin"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Perform dictionary-based lemmatization only:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory" dictionary="lemmas.txt"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Perform model-based lemmatization only, preserving the original token and emitting the lemma as a synonym (see the <<KeywordRepeatFilterFactory,KeywordRepeatFilterFactory description>>)):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.KeywordRepeatFilterFactory"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory" lemmatizerModel="en-lemmatizer.bin"/>
+  <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
 == Language-Specific Factories
 
 These factories are each designed to work with specific languages. The languages covered here are:

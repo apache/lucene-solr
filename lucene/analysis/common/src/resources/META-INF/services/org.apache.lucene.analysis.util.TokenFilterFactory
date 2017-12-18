@@ -80,6 +80,7 @@ org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
 org.apache.lucene.analysis.miscellaneous.TruncateTokenFilterFactory
+org.apache.lucene.analysis.miscellaneous.TypeAsSynonymFilterFactory
 org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory
 org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilterFactory
 org.apache.lucene.analysis.miscellaneous.ScandinavianFoldingFilterFactory

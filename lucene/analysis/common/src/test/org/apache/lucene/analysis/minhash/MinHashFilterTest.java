@@ -183,14 +183,14 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
     TokenStream ts = createTokenStream(5, "woof woof woof woof woof", 1, 1, 100, false);
     assertTokenStreamContents(ts, hashes, new int[]{0},
         new int[]{24}, new String[]{MinHashFilter.MIN_HASH_TYPE}, new int[]{1}, new int[]{1}, 24, 0, null,
-        true);
+        true, null);
 
     ts = createTokenStream(5, "woof woof woof woof woof", 2, 1, 1, false);
     assertTokenStreamContents(ts, new String[]{new String(new char[]{0, 0, 8449, 54077, 64133, 32857, 8605, 41409}),
             new String(new char[]{0, 1, 16887, 58164, 39536, 14926, 6529, 17276})}, new int[]{0, 0},
         new int[]{24, 24}, new String[]{MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE}, new int[]{1, 0},
         new int[]{1, 1}, 24, 0, null,
-        true);
+        true, null);
   }
 
   @Test
@@ -203,7 +203,7 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
         false);
     assertTokenStreamContents(ts, hashes, new int[]{0, 0},
         new int[]{49, 49}, new String[]{MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE}, new int[]{1, 0},
-        new int[]{1, 1}, 49, 0, null, true);
+        new int[]{1, 1}, 49, 0, null, true, null);
   }
 
   private ArrayList<String> getTokens(TokenStream ts) throws IOException {
