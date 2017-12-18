@@ -102,6 +102,10 @@ public abstract class Weight implements SegmentCacheable {
    */
   public abstract Scorer scorer(LeafReaderContext context) throws IOException;
 
+  public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
+    return null;
+  }
+
   /**
    * Optional method.
    * Get a {@link ScorerSupplier}, which allows to know the cost of the {@link Scorer}

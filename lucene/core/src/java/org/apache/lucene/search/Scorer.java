@@ -178,4 +178,5 @@ public abstract class Scorer {
    * included and {@code upTo} included.
    */
   public abstract float getMaxScore(int upTo) throws IOException;
+
 }
