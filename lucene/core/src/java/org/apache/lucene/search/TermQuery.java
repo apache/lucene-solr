@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -83,6 +84,20 @@ public class TermQuery extends Query {
     @Override
     public String toString() {
       return "weight(" + TermQuery.this + ")";
+    }
+
+    @Override
+    public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
+      if (term.field().equals(field) == false) {
+        return null;
+      }
+      assert termStates == null || termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);;
+      final TermsEnum termsEnum = getTermsEnum(context);
+      if (termsEnum == null) {
+        return null;
+      }
+      PostingsEnum pe = termsEnum.postings(null, PostingsEnum.POSITIONS);
+      return Intervals.termIterator(pe);
     }
 
     @Override

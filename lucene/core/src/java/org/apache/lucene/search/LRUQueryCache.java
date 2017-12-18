@@ -715,6 +715,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
+    public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
+      return in.intervals(context, field);
+    }
+
+    @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());

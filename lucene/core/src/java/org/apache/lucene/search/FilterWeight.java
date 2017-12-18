@@ -61,6 +61,11 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
+  public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
+    return in.intervals(context, field);
+  }
+
+  @Override
   public void extractTerms(Set<Term> terms) {
     in.extractTerms(terms);
   }
