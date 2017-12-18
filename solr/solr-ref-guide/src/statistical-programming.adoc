@@ -197,12 +197,12 @@ Returns the following response:
 }
 ----
 
-We can nest arrays within a matrix function to return matrix:
+We can nest arrays within arrays to form a matrix:
 
 [source,text]
 ----
-matrix(array(1, 2, 3),
-       array(4, 5, 6))
+array(array(1, 2, 3),
+      array(4, 5, 6))
 ----
 
 Returns the following response:

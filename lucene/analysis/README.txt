@@ -28,9 +28,6 @@ lucene-analyzers-kuromoji-XX.jar
 lucene-analyzers-morfologik-XX.jar
   An analyzer using the Morfologik stemming library.
 
-lucene-analyzers-opennlp-XX.jar
-  An analyzer using the OpenNLP natural-language processing library.
-
 lucene-analyzers-phonetic-XX.jar
   An add-on analysis library that provides phonetic encoders via Apache
   Commons-Codec. Note: this module depends on the commons-codec jar 
@@ -52,7 +49,6 @@ common/src/java
 icu/src/java
 kuromoji/src/java
 morfologik/src/java
-opennlp/src/java
 phonetic/src/java
 smartcn/src/java
 stempel/src/java
@@ -63,7 +59,6 @@ common/src/test
 icu/src/test
 kuromoji/src/test
 morfologik/src/test
-opennlp/src/test
 phonetic/src/test
 smartcn/src/test
 stempel/src/test

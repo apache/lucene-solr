@@ -1209,9 +1209,9 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertEquals(collectionRates.toString(), 1, collectionRates.size());
     Double collectionRate = collectionRates.get(COLL1);
     assertNotNull(collectionRate);
-    assertTrue(collectionRate > 100.0);
-    assertTrue(totalNodeRate.get() > 100.0);
-    assertTrue(totalShardRate.get() > 100.0);
-    assertTrue(totalReplicaRate.get() > 100.0);
+    assertTrue(collectionRate > 5.0);
+    assertEquals(collectionRate, totalNodeRate.get(), 5.0);
+    assertEquals(collectionRate, totalShardRate.get(), 5.0);
+    assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
   }
 }

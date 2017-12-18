@@ -303,6 +303,7 @@ public class SimDistribStateManager implements DistribStateManager {
     for (int i = 0; i < elements.length; i++) {
       String currentName = elements[i];
       currentPath.append('/');
+      LOG.info(" - parentNode=" + parentNode + ", currentName=" + currentName);
       n = parentNode.children != null ? parentNode.children.get(currentName) : null;
       if (n == null) {
         if (create) {
