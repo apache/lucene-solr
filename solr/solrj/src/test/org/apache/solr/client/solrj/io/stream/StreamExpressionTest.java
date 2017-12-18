@@ -6796,12 +6796,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Map> listh = (List<Map>)tuples.get(0).get("h");
     Map maph = listh.get(0);
     double pcth = (double)maph.get("pct");
-    assertEquals(pcth, .5, .02 );
+    assertEquals(pcth, .5, .02);
 
     List<Map> listi = (List<Map>)tuples.get(0).get("i");
     Map mapi = listi.get(0);
     double pcti = (double)mapi.get("pct");
-    assertEquals(pcti, .8, .02 );
+    assertEquals(pcti, .8, .02);
   }
 
   @Test
@@ -7114,6 +7114,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(),21.0,0.01);
   }
 
+
   @Test
   public void testPolyfit() throws Exception {
     String cexpr = "let(echo=true," +
@@ -7138,6 +7139,44 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 5);
     assertTrue(out.get(6).intValue() == 6);
     assertTrue(out.get(7).intValue() == 7);
+  }
+
+
+  @Test
+  public void testTtest() throws Exception {
+    String cexpr = "let(echo=true," +
+                       "a=array(0,1,2,3,4,5,6,7,9,10,11,12), " +
+                       "b=array(0,1,2,3,4,5,6,7,1,1,1,1), " +
+                       "ttest=ttest(a, b)," +
+                       "sample2Mean=mean(b),"+
+                       "onesamplettest=ttest(sample2Mean, b)," +
+                       "pairedttest=pairedTtest(a,b))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map testResult = (Map)tuples.get(0).get("ttest");
+    Number tstat = (Number)testResult.get("t-statistic");
+    Number pval = (Number)testResult.get("p-value");
+    assertEquals(tstat.doubleValue(), 2.3666107120397575, .0001);
+    assertEquals(pval.doubleValue(), 0.029680704317867967, .0001);
+
+    Map testResult2 = (Map)tuples.get(0).get("onesamplettest");
+    Number tstat2 = (Number)testResult2.get("t-statistic");
+    Number pval2 = (Number)testResult2.get("p-value");
+    assertEquals(tstat2.doubleValue(), 0, .0001);
+    assertEquals(pval2.doubleValue(), 1, .0001);
+
+    Map testResult3 = (Map)tuples.get(0).get("pairedttest");
+    Number tstat3 = (Number)testResult3.get("t-statistic");
+    Number pval3 = (Number)testResult3.get("p-value");
+    assertEquals(tstat3.doubleValue(), 2.321219442769799, .0001);
+    assertEquals(pval3.doubleValue(), 0.0404907407662755, .0001);
   }
 
 
