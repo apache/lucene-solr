@@ -70,7 +70,9 @@ public abstract class Query {
    * a PrefixQuery will be rewritten into a BooleanQuery that consists
    * of TermQuerys.
    */
-  public abstract Query rewrite(IndexReader reader, RewriteContext rewriteContext) throws IOException;
+  public Query rewrite(IndexReader reader) throws IOException {
+    return this;
+  }
 
   /**
    * Override and implement query instance equivalence properly in a subclass. 
