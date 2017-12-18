@@ -377,7 +377,7 @@ copyOfRange(numericArray, startIndex, endIndex)
 
 The `corr` function returns the correlation of two numeric arrays or the correlation matrix for a matrix.
 
-The `corr` function support Pearsons, Kendals and Spearmans correlation.
+The `corr` function support Pearson's, Kendall's and Spearman's correlations.
 
 === corr Positional Parameters
 
@@ -390,7 +390,7 @@ OR
 
 === corr Named Parameters
 
-* `type`: (Optional) pearsons | kendalls | spearmans, Defaults to pearsons.
+* `type`: (Optional) The type of correlation. Possible values are `pearsons`, `kendalls`, or `spearmans`. The default is `pearsons`.
 
 === corr Syntax
 
@@ -402,7 +402,7 @@ corr(matrix, type=spearmans) // Compute the Spearmans correlation matrix for a m
 
 === corr Returns
 
-number | matrix : Either the correlation or correlation matrix.
+number | matrix: Either the correlation or correlation matrix.
 
 == cos
 The `cos` function returns the trigonometric cosine of a number.
@@ -461,7 +461,7 @@ cov(matrix) // Computes the covariance matrix for the matrix.
 
 === cov Returns
 
-number | matrix : Either the covariance or covariance matrix.
+number | matrix: Either the covariance or covariance matrix.
 
 == cumulativeProbability
 
@@ -525,8 +525,8 @@ Time series differencing is often used to make a time series stationary before f
 
 === diff Parameters
 
-* `numeric array`: The time series data
-* `integer`: (Optional)lag. Defaults to 1.
+* `numeric array`: The time series data.
+* `integer`: (Optional) The lag. Defaults to 1.
 
 === diff Syntax
 
@@ -544,16 +544,16 @@ The `distance` function computes the distance of two numeric arrays or the dista
 
 === distance Positional Parameters
 
-* `numeric array` : The first numeric array
-* `numeric array` : The second numeric array
+* `numeric array`: The first numeric array
+* `numeric array`: The second numeric array
 
 OR
 
-* `matrix` : The matrix to compute the distance matrix for. Note that distance is computed between the `columns` in the matrix.
+* `matrix`: The matrix to compute the distance matrix for. Note that distance is computed between the `columns` in the matrix.
 
 === distance Named Parameters
 
-* `type` : (Optional) euclidean | manhattan | canberra | earthMovers. Defaults to euclidean.
+* `type`: (Optional) The distance type. Possible values are `euclidean`, `manhattan`, `canberra`, or `earthMovers`. The default is `euclidean`.
 
 === distance Syntax
 
@@ -565,7 +565,7 @@ distance(matrix, type=canberra) // Computes the canberra distance matrix for a m
 
 === distance Returns
 
-number | matrix : Either the distance or distance matrix.
+number | matrix: Either the distance or distance matrix.
 
 == div
 
@@ -695,6 +695,7 @@ A probability distribution function.
 
 === empiricalDistribution Syntax
 
+[source,text]
 empiricalDistribution(numericArray)
 
 == enumeratedDistribution
@@ -912,7 +913,7 @@ The `grandSum` function sums all the values in a matrix.
 
 === grandSum Parameters
 
-* `matrix`: The matrix to operate on
+* `matrix`: The matrix to operate on.
 
 === grandSum Syntax
 
@@ -1036,8 +1037,8 @@ length(numericArray)
 == loess
 
 The `leoss` function is a smoothing curve fitter which uses a https://en.wikipedia.org/wiki/Local_regression[local regression] algorithm.
-Unlike the <<spline>> function which touches each control point, the loess function puts a smooth curve through
-the control points without having to touch the control points. The loess result can be used by the <<derivative>> function to produce smooth derivatives from
+Unlike the <<spline>> function which touches each control point, the `loess` function puts a smooth curve through
+the control points without having to touch the control points. The `loess` result can be used by the <<derivative>> function to produce smooth derivatives from
 data that is not smooth.
 
 === loess Positional Parameters
@@ -1047,8 +1048,8 @@ data that is not smooth.
 
 === loess Named Parameters
 
-* `bandwidth` : (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25. Decreasing the bandwidth increases the number of curves that loess can fit.
-* `robustIterations` : (Optional)The number of iterations used to smooth outliers, defaults to 2.
+* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25. Decreasing the bandwidth increases the number of curves that loess can fit.
+* `robustIterations`: (Optional) The number of iterations used to smooth outliers, defaults to 2.
 
 === loess Syntax
 
@@ -1059,7 +1060,7 @@ loess(xValues, yValues, bandwidth=.15) // This will fit a smooth curve through t
 
 === loess Returns
 
-function : The function can be treated as both a `numeric array` of the smoothed data points and `function`.
+function: The function can be treated as both a `numeric array` of the smoothed data points and `function`.
 
 == log
 
@@ -1165,7 +1166,7 @@ lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 == markovChain
 
 The `markovChain` function can be used to perform https://en.wikipedia.org/wiki/Markov_chain[Markov Chain] simulations.
-The markovChain function takes as its parameter a https://en.wikipedia.org/wiki/Stochastic_matrix[transition matrix] and
+The `markovChain` function takes as its parameter a https://en.wikipedia.org/wiki/Stochastic_matrix[transition matrix] and
 returns a mathematical model that can be sampled using the <<sample>> function. Each sample taken
 from the Markov Chain represents the current state of system.
 
@@ -1221,17 +1222,17 @@ meanDifference(numericArray, numericArray)
 
 == minMaxScale
 
-The `minMaxScale` function scales numeric arrays within a min and max value.
-By default minMaxScale scales between 0 and 1. The minMaxScale function can operate on
+The `minMaxScale` function scales numeric arrays within a minimum and maximum value.
+By default `minMaxScale` scales between 0 and 1. The `minMaxScale` function can operate on
 both numeric arrays and matrices.
 
-When operating on a matrix the minMaxScale function operates on each row of the matrix.
+When operating on a matrix the `minMaxScale` function operates on each row of the matrix.
 
 === minMaxScale Parameters
 
-* `numeric array` | `matrix` : The array or matrix to scale
-* `double` : (Optional) The min value. Defaults to 0.
-* `double` : (Optional) The max value. Defaults to 1.
+* `numeric array` | `matrix`: The array or matrix to scale
+* `double`: (Optional) The min value. Defaults to 0.
+* `double`: (Optional) The max value. Defaults to 1.
 
 === minMaxScale Syntax
 
@@ -1243,7 +1244,7 @@ minMaxScale(matrix, 0, 100) // Scale each row in a matrix between 0 and 100
 
 === minMaxScale Returns
 
-numeric array or matrix
+A numeric array or matrix
 
 == mod
 The `mod` function returns the remainder (modulo) of the first parameter divided by the second parameter.
@@ -1379,13 +1380,13 @@ normalDistribution(mean, stddev)
 == normalizeSum
 
 The `normalizeSum` function scales numeric arrays so that they sum to 1.
-The normalizeSum function can operate on both numeric arrays and matrices.
+The `normalizeSum` function can operate on both numeric arrays and matrices.
 
-When operating on a matrix the normalizeSum function operates on each row of the matrix.
+When operating on a matrix the `normalizeSum` function operates on each row of the matrix.
 
 === normalizeSum Parameters
 
-* `numeric array` | matrix
+* `numeric array` | `matrix`
 
 === normalizeSum Syntax
 
@@ -1423,7 +1424,7 @@ The `olsRegress` function performs https://en.wikipedia.org/wiki/Ordinary_least_
 
 The `olsRegress` function returns a single Tuple containing the regression model with estimated regression parameters, RSquared and regression diagnostics.
 
-The output of olsRegress can be used with the <<predict>> function to predict values based on the regression model.
+The output of `olsRegress` can be used with the <<predict>> function to predict values based on the regression model.
 
 === olsRegress Parameters
 
@@ -1432,6 +1433,7 @@ The output of olsRegress can be used with the <<predict>> function to predict va
 
 === olsRegress Syntax
 
+[source,text]
 olsRegress(matrix, numericArray) // This performs the olsRegression analysis on given regressor matrix and outcome array.
 
 === olsRegress Returns
@@ -1506,8 +1508,8 @@ The `pow` function returns the value of its first parameter raised to the power 
 
 === pow Parameters
 
-* `Field Name | Raw Number | Number Evaluator`: Parameter 1
-* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+* `Field Name` | `Raw Number` | `Number Evaluator`: Parameter 1
+* `Field Name` | `Raw Number` | `Number Evaluator`: Parameter 2
 
 === pow Syntax
 
@@ -1523,12 +1525,9 @@ if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > field
 
 == predict
 
-The `predict` function predicts the value of dependant variables based on regression models or functions.
+The `predict` function predicts the value of dependent variables based on regression models or functions.
 
-The `predict` function can predict values based on the output of the following functions:
-
-<<spline>>, <<loess>>, <<regress>>, <<olsRegress>>
-
+The `predict` function can predict values based on the output of the following functions: <<spline>>, <<loess>>, <<regress>>, <<olsRegress>>.
 
 === predict Parameters
 
@@ -1538,12 +1537,19 @@ The `predict` function can predict values based on the output of the following f
 === predict Syntax
 
 [source,text]
+----
 predict(regressModel, number) // predict using the output of the <<regress>> function and single numeric predictor. This will return a single numeric prediction.
+
 predict(regressModel, numericArray) // predict using the output of the <<regress>> function and a numeric array of predictors. This will return a numeric array of predictions.
+
 predict(splineFunc, number) // predict using the output of the <<spline>> function and single numeric predictor. This will return a single numeric prediction.
+
 predict(splineFunc, numericArray) // predict using the output of the <<spline>> function and a numeric array of predictors. This will return a numeric array of predictions.
+
 predict(olsRegressModel, numericArray) // predict using the output of the <<olsRegress>> function and a numeric array containing one multi-variate predictor. This will return a single numeric prediction.
+
 predict(olsRegressModel, matrix) // predict using the output of the <<olsRegress>> function and a matrix containing rows of multi-variate predictor arrays. This will return a numeric array of predictions.
+----
 
 == primes
 The `primes` function returns an array of prime numbers starting from a specified number.
@@ -1592,9 +1598,11 @@ The supported discreet distributions are:
 === probability Syntax
 
 [source,text]
+----
 probability(poissonDistribution(10), 7) // Returns the probability of a random sample of 7 in a poisson distribution with a mean of 10.
-probability(normalDistribution(10, 2), 7.5, 8.5) // Returns the probability between the range of 7.5 to 8.5 for a normal distribution with a mean of 10 and standard deviation of 2.
 
+probability(normalDistribution(10, 2), 7.5, 8.5) // Returns the probability between the range of 7.5 to 8.5 for a normal distribution with a mean of 10 and standard deviation of 2.
+----
 
 === probability Returns
 
@@ -1672,7 +1680,7 @@ The `round` function returns the closest whole number to the argument.
 
 === round Parameters
 
-* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+* `Field Name` | `Raw Number` | `Number Evaluator`: The value to return the square root of.
 
 === round Syntax
 
@@ -1689,7 +1697,7 @@ The `sample` function can be used to draw random samples from a probability dist
 
 === sample Parameters
 
-* `probability distribution` | `Markov Chain` : The distribution or Markov Chain to sample.
+* `probability distribution` | `Markov Chain`: The distribution or Markov Chain to sample.
 * `integer`: (Optional) Sample size. Defaults to 1.
 
 === sample Returns
@@ -1711,11 +1719,12 @@ with a matrix, `scalarAdd` returns a new matrix with new values.
 
 === scalarAdd Parameters
 
-number: value to add
-numeric array | matrix: the numeric array or matrix to add the value to.
+`number`: value to add
+`numeric array` | `matrix`: the numeric array or matrix to add the value to.
 
 === scalarAdd Syntax
 
+[source,text]
 scalarAdd(number, numericArray) // Adds the number to each element in the number in the array.
 scalarAdd(number, matrix) // Adds the number to each value in a matrix
 
@@ -1731,11 +1740,12 @@ with a matrix, `scalarDivide` returns a new matrix with new values.
 
 === scalarDivide Parameters
 
-number : value to divide by
-numeric array | matrix : the numeric array or matrix to divide by the value to.
+`number`: value to divide by
+`numeric array` | `matrix`: the numeric array or matrix to divide by the value to.
 
 === scalarDivide Syntax
 
+[source,text]
 scalarDivide(number, numericArray) // Divides each element in the numeric array by the number.
 scalarDivide(number, matrix) // Divides each element in the matrix by the number.
 
@@ -1751,11 +1761,12 @@ with a matrix, `scalarMultiply` returns a new matrix with new values.
 
 === scalarMultiply Parameters
 
-number: value to divide by
-numeric array | matrix: the numeric array or matrix to divide by the value to.
+`number`: value to divide by
+`numeric array` | `matrix`: the numeric array or matrix to divide by the value to.
 
 === scalarMultiply Syntax
 
+[source,text]
 scalarMultiply(number, numericArray) // Multiplies each element in the numeric array by the number.
 scalarMultiply(number, matrix) // Multiplies each element in the matrix by the number.
 
@@ -1771,11 +1782,12 @@ with a matrix, `scalarSubtract` returns a new matrix with new values.
 
 === scalarSubtract Parameters
 
-number : value to add
-numeric array | matrix : the numeric array or matrix to subtract the value from.
+`number`: value to add
+`numeric array` | `matrix`: the numeric array or matrix to subtract the value from.
 
 === scalarSubtract Syntax
 
+[source,text]
 scalarSubtract(number, numericArray) // Subtracts the number from each element in the number in the array.
 scalarSubtract(number, matrix) // Subtracts the number from each value in a matrix
 
@@ -1992,9 +2004,9 @@ probability distribution framework and is designed to work with the `<<sample>>`
 
 === triangularDistribution Parameters
 
-* `double` : low value
-* `double` : most likely value
-* `double` : high value
+* `double`: low value
+* `double`: most likely value
+* `double`: high value
 
 === triangularDistribution Syntax
 
@@ -2054,10 +2066,11 @@ When operating on a matrix the unitize function unitizes each row of the matrix.
 
 === unitize Parameters
 
-* numeric array | matrix: The array or matrix to unitize
+* `numeric array` | `matrix`: The array or matrix to unitize
 
 === unitize Syntax
 
+[source,text]
 unitize(numericArray) // Unitize a numeric array
 unitize(matrix) // Unitize each row in a matrix
 
