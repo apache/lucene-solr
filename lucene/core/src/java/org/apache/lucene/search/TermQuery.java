@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -203,25 +204,17 @@ public class TermQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final IndexReaderContext context = searcher.getTopReaderContext();
-    final TermContext termState;
-    if (perReaderTermState == null
-        || perReaderTermState.wasBuiltFor(context) == false) {
-      if (scoreMode.needsScores()) {
-        // make TermQuery single-pass if we don't have a PRTS or if the context
-        // differs!
-        termState = TermContext.build(context, term);
-      } else {
-        // do not compute the term state, this will help save seeks in the terms
-        // dict on segments that have a cache entry for this query
-        termState = null;
-      }
-    } else {
-      // PRTS was pre-build for this IS
-      termState = this.perReaderTermState;
-    }
+    if (perReaderTermState == null)
+      throw new IllegalStateException("TermQuery must be rewritten before use");
+    if (perReaderTermState.wasBuiltFor(searcher.getTopReaderContext()) == false)
+      throw new IllegalStateException("TermQuery was built against a different IndexReader");
+    return new TermWeight(searcher, scoreMode.needsScores(), boost, perReaderTermState);
+  }
 
-    return new TermWeight(searcher, scoreMode.needsScores(), boost, termState);
+  @Override
+  public Query rewrite(IndexReader reader, RewriteContext rewriteContext) throws IOException {
+    TermContext tc = rewriteContext.buildTermContext(term, reader);
+    return new TermQuery(term, tc);
   }
 
   /** Prints a user-readable version of this query. */
