@@ -41,9 +41,6 @@ public class TestOpenNLPPOSFilterFactory extends BaseTokenStreamTestCase {
   private static final int[] SENTENCES_endOffsets = {8, 15, 17, 21, 23, 29, 30, 39, 46, 48, 49, 51, 57, 58};
   private static final String[] SENTENCES_posTags
       = {"NN", "NN", "CD", "VBZ", "CD", "NNS", ".", "NN", "NN", "CD", ",", "CD", "NNS", "."};
-  private static final String NAMES2 = "Royal Flash is a tale about Harry Flashman.";
-  private static final String[] NAMES2_punc = {"Royal", "Flash", "is", "a", "tale", "about", "Harry", "Flashman", "."};
-  private static final String[] NAMES2_OUT = { "word", "word", "word", "word", "word", "word", "word", "person", "word" };
 
   private static final String NO_BREAK = "No period";
   private static final String[] NO_BREAK_terms = {"No", "period"};
