@@ -72,6 +72,9 @@ API Changes
   Users should instead use FunctionScoreQuery, possibly combined with
   a lucene expression (Alan Woodward)
 
+* LUCENE-8104: Remove facets module compile-time dependency on queries
+  (Alan Woodward)
+
 New Features
 
 * LUCENE-2899: Add new module analysis/opennlp, with analysis components

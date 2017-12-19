@@ -22,14 +22,13 @@ import java.util.List;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.util.IntsRef;
 
 /** Aggregates sum of values from {@link
- *  FunctionValues#doubleVal}, for each facet label.
+ *  DoubleValues#doubleValue()}, for each facet label.
  *
  *  @lucene.experimental */
 public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {

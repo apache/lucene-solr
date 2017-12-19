@@ -24,7 +24,6 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -53,13 +52,13 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
   }
 
   /** Create {@code LongRangeFacetCounts}, using the provided
-   *  {@link ValueSource}. */
+   *  {@link LongValuesSource}. */
   public LongRangeFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits, LongRange... ranges) throws IOException {
     this(field, valueSource, hits, null, ranges);
   }
 
   /** Create {@code LongRangeFacetCounts}, using the provided
-   *  {@link ValueSource}, and using the provided Filter as
+   *  {@link LongValuesSource}, and using the provided Filter as
    *  a fastmatch: only documents passing the filter are
    *  checked for the matching ranges, which is helpful when
    *  the provided {@link LongValuesSource} is costly per-document,
