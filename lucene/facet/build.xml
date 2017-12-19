@@ -27,20 +27,15 @@
 
   <path id="classpath">
     <path refid="base.classpath"/>
-    <pathelement path="${queries.jar}"/>
     <fileset dir="lib"/>
   </path>
 
-  <target name="compile-core" depends="jar-queries,common.compile-core" />
+  <path id="test.classpath">
+    <pathelement path="${queries.jar}"/>
+    <path refid="test.base.classpath"/>
+  </path>
 
-  <target name="javadocs" depends="javadocs-queries,compile-core,check-javadocs-uptodate"
-          unless="javadocs-uptodate-${name}">
-    <invoke-module-javadoc>
-      <links>
-        <link href="../queries"/>
-      </links>
-    </invoke-module-javadoc>
-  </target>
+  <target name="compile-core" depends="jar-queries,common.compile-core"/>
 
   <target name="run-encoding-benchmark" depends="compile-test">
     <java classname="org.apache.lucene.util.encoding.EncodingSpeed" fork="true" failonerror="true">
