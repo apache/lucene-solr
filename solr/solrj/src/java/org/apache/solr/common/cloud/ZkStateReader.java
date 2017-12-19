@@ -40,6 +40,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -70,6 +71,7 @@ import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements Closeable {
+  public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String BASE_URL_PROP = "base_url";
@@ -136,7 +138,7 @@ public class ZkStateReader implements Closeable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
-  
+
   /** Collections tracked in the legacy (shared) state format, reflects the contents of clusterstate.json. */
   private Map<String, ClusterState.CollectionRef> legacyCollectionStates = emptyMap();
 
@@ -162,6 +164,8 @@ public class ZkStateReader implements Closeable {
   private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
+
+  private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
   /**
    * Get current {@link AutoScalingConfig}.
@@ -632,19 +636,24 @@ public class ZkStateReader implements Closeable {
   }
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
-
     private final String collName;
+    private long lastUpdateTime;
+    private DocCollection cachedDocCollection;
 
     public LazyCollectionRef(String collName) {
       super(null);
       this.collName = collName;
+      this.lastUpdateTime = -1;
     }
 
     @Override
-    public DocCollection get() {
+    public synchronized DocCollection get() {
       gets.incrementAndGet();
-      // TODO: consider limited caching
-      return getCollectionLive(ZkStateReader.this, collName);
+      if (lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
+        cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+        lastUpdateTime = System.nanoTime();
+      }
+      return cachedDocCollection;
     }
 
     @Override
