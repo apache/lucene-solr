@@ -86,6 +86,7 @@ public final class OpenNLPPOSFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     moreTokensAvailable = true;
+    clear();
   }
 
   private void clear() {
