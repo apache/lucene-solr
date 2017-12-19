@@ -1,16 +1,12 @@
 <div id="cluster-suggestions">
-    <h1>Cluster Suggestions</h1>
+    <h1>Suggestions</h1>
     <br/>
-    <table id="s-table">
+    <p ng-if="parsedData.length==0">No Suggestions</p>
+    <table id="s-table" ng-if="parsedData.length>0">
         <tr>
             <td>Type</td>
             <td>Reason</td>
             <td>Action</td>
-        </tr>
-        <tr ng-if="parsedData.length==0">
-            <td>NA</td>
-            <td>NA</td>
-            <td>NA</td>
         </tr>
         <tr ng-repeat="x in parsedData">
             <td>{{ x.type }}</td>

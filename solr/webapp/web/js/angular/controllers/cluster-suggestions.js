@@ -15,6 +15,7 @@ function($scope,$http) {
     //function to perform operation
     $scope.postdata = function (x) {
         x.loading = true;
+        x.run=true;
         var path=x.operation.path;
         var command=x.operation.command;
         var fullPath='/api/'+path;
