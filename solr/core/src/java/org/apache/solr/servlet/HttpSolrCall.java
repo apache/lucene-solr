@@ -819,7 +819,7 @@ public class HttpSolrCall {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
     if (collection == null) {
       return null;
     }

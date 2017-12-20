@@ -647,9 +647,9 @@ public class ZkStateReader implements Closeable {
     }
 
     @Override
-    public synchronized DocCollection get() {
+    public synchronized DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
-      if (lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
+      if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
         lastUpdateTime = System.nanoTime();
       }
