@@ -18,12 +18,16 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.IntegerDistribution;
+import org.apache.commons.math3.distribution.MultivariateRealDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -43,7 +47,7 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
 
     Object first = objects[0];
 
-    if(!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution) && !(first instanceof MarkovChainEvaluator.MarkovChain)){
+    if(!(first instanceof MultivariateRealDistribution) && !(first instanceof RealDistribution) && !(first instanceof IntegerDistribution) && !(first instanceof MarkovChainEvaluator.MarkovChain)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a Markov Chain, Real or Integer Distribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
@@ -61,10 +65,29 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
       }
     } else if (first instanceof RealDistribution) {
       RealDistribution realDistribution = (RealDistribution) first;
-      if(second != null) {
+      if (second != null) {
         return Arrays.stream(realDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
       } else {
         return realDistribution.sample();
+      }
+    }else if(first instanceof MultivariateNormalDistribution) {
+      if(second != null) {
+        MultivariateNormalDistribution multivariateNormalDistribution = (MultivariateNormalDistribution)first;
+        int size = ((Number)second).intValue();
+        double[][] samples = new double[size][];
+        for(int i=0; i<size; ++i) {
+          samples[i] =  multivariateNormalDistribution.sample();
+        }
+
+        return new Matrix(samples);
+      } else {
+        MultivariateNormalDistribution multivariateNormalDistribution = (MultivariateNormalDistribution)first;
+        double[] sample = multivariateNormalDistribution.sample();
+        List<Number> sampleList = new ArrayList(sample.length);
+        for(int i=0; i<sample.length; i++) {
+          sampleList.add(sample[i]);
+        }
+        return sampleList;
       }
     } else {
       IntegerDistribution integerDistribution = (IntegerDistribution) first;

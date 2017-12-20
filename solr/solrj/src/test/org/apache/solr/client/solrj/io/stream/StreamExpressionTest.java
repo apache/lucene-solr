@@ -7179,6 +7179,53 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(pval3.doubleValue(), 0.0404907407662755, .0001);
   }
 
+  @Test
+  public void testMultiVariateNormalDistribution() throws Exception {
+    String cexpr = "let(echo=true," +
+        "     a=array(1,2,3,4,5,6,7)," +
+        "     b=array(100, 110, 120, 130,140,150,180)," +
+        "     c=transpose(matrix(a, b))," +
+        "     d=array(mean(a), mean(b))," +
+        "     e=cov(c)," +
+        "     f=multiVariateNormalDistribution(d, e)," +
+        "     g=sample(f, 10000)," +
+        "     h=cov(g)," +
+        "     i=sample(f))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cov = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(cov.size(), 2);
+    List<Number> row1 = cov.get(0);
+    assertEquals(row1.size(), 2);
+
+    double a = row1.get(0).doubleValue();
+    double b = row1.get(1).doubleValue();
+    assertEquals(a, 4.666666666666667, 2.5);
+    assertEquals(b, 56.66666666666667, 7);
+
+    List<Number> row2 = cov.get(1);
+
+    double c = row2.get(0).doubleValue();
+    double d = row2.get(1).doubleValue();
+    assertEquals(c, 56.66666666666667, 7);
+    assertEquals(d, 723.8095238095239, 50);
+
+    List<Number> sample = (List<Number>)tuples.get(0).get("i");
+    assertEquals(sample.size(), 2);
+    Number sample1 = sample.get(0);
+    Number sample2 = sample.get(1);
+    assertTrue(sample1.doubleValue() > -30 && sample1.doubleValue() < 30);
+    assertTrue(sample2.doubleValue() > 50 && sample2.doubleValue() < 250);
+  }
+
 
   @Test
   public void testLoess() throws Exception {
