@@ -39,6 +39,8 @@ Improvements
 
 * LUCENE-8093: TrimFilterFactory implements MultiTermAwareComponent (Alan Woodward)
 
+* LUCENE-8094: TermInSetQuery.toString now returns "field:(A B C)" (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.

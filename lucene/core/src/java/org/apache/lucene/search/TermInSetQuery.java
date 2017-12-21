@@ -148,15 +148,19 @@ public class TermInSetQuery extends Query implements Accountable {
   @Override
   public String toString(String defaultField) {
     StringBuilder builder = new StringBuilder();
-    boolean first = true;
+    builder.append(field);
+    builder.append(":(");
+
     TermIterator iterator = termData.iterator();
+    boolean first = true;
     for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
       if (!first) {
         builder.append(' ');
       }
       first = false;
-      builder.append(new Term(iterator.field(), term).toString());
+      builder.append(Term.toString(term));
     }
+    builder.append(')');
 
     return builder.toString();
   }
