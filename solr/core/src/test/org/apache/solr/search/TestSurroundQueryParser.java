@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-public class TestSurroundQueryParser extends AbstractSolrTestCase {
+public class TestSurroundQueryParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

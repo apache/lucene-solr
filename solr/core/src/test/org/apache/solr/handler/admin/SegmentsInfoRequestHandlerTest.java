@@ -18,7 +18,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.lucene.util.Version;
 import org.apache.solr.index.LogDocMergePolicyFactory;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Tests for SegmentsInfoRequestHandler. Plugin entry, returning data of created segment.
  */
-public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
+public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   private static final int DOC_COUNT = 5;
   
   private static final int DEL_COUNT = 1;

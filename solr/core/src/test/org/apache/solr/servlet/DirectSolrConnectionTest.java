@@ -19,12 +19,12 @@ package org.apache.solr.servlet;
 import java.net.URLEncoder;
 
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 
 
-public class DirectSolrConnectionTest extends AbstractSolrTestCase 
+public class DirectSolrConnectionTest extends SolrTestCaseJ4
 {
 
   

@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -34,7 +34,7 @@ import java.io.IOException;
 /**
  *
  */
-public class TestSearchPerf extends AbstractSolrTestCase {
+public class TestSearchPerf extends SolrTestCaseJ4 {
 
   
   @BeforeClass

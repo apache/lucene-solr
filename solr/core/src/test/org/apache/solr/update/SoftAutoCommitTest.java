@@ -31,7 +31,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @Slow
-public class SoftAutoCommitTest extends AbstractSolrTestCase {
+public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -528,6 +529,15 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
       }
     };
     public abstract int useValue(final int softCommitWaitMillis, final int hardCommitWaitMillis);
+  }
+
+  public String delI(String id, String... args) {
+    return TestHarness.deleteById(id, args);
+  }
+
+  public String adoc(int commitWithin, String... fieldsAndValues) {
+    XmlDoc d = doc(fieldsAndValues);
+    return add(d, "commitWithin", String.valueOf(commitWithin));
   }
 }
 
