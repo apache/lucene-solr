@@ -18,11 +18,11 @@ package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestQueryTypes extends AbstractSolrTestCase {
+public class TestQueryTypes extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

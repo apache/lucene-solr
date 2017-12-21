@@ -19,14 +19,14 @@ package org.apache.solr.search;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
+public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

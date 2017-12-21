@@ -74,6 +74,8 @@ Other Changes
 * SOLR-11757: In tests, fix race condition on SolrException.ignoreException.
   Also ensure we register "ignore_exception" in @BeforeClass (previously only @AfterClass)  (David Smiley)
 
+* SOLR-11754: Remove AbstractSolrTestCase which has long been supplanted by SolrTestCaseJ4. (David Smiley)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
