@@ -42,6 +42,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
@@ -788,6 +789,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   public void testNoCommit() throws Exception {
     String infoStream = System.getProperty("solr.tests.infostream");
     System.setProperty("solr.tests.infostream","true");
+    DirectUpdateHandler2.commitOnClose = true;
 
     CoreContainer cc = init();
     String[] coreList = new String[]{
