@@ -56,10 +56,29 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void testLinearAlgebra() {
     final ArrayList<double[][]> rawMatrices = new ArrayList<double[][]>();
-    double[][] matrixOne = { { 1.0, 2.0, 3.0, 4.0, 5.0 },
-                             { 6.0, 7.0, 8.0, 9.0, 10.0 },
-                            { 11.0, 12.0, 13.0, 14.0, 15.0 } };
-    double[][] matrixTwo = { { 1.0, 2.0, 3.0, 4.0 } };
+    final double layer1Node1Weight1 = 1.0;
+    final double layer1Node1Weight2 = 2.0;
+    final double layer1Node1Weight3 = 3.0;
+    final double layer1Node1Weight4 = 4.0;
+    final double layer1Node1Bias    = 5.0;
+    final double layer1Node2Weight1 = 6.0;
+    final double layer1Node2Weight2 = 7.0;
+    final double layer1Node2Weight3 = 8.0;
+    final double layer1Node2Weight4 = 9.0;
+    final double layer1Node2Bias    = 10.0;
+    final double layer1Node3Weight1 = 11.0;
+    final double layer1Node3Weight2 = 12.0;
+    final double layer1Node3Weight3 = 13.0;
+    final double layer1Node3Weight4 = 14.0;
+    final double layer1Node3Bias    = 15.0;
+    double[][] matrixOne = { { layer1Node1Weight1, layer1Node1Weight2, layer1Node1Weight3, layer1Node1Weight4, layer1Node1Bias },
+                             { layer1Node2Weight1, layer1Node2Weight2, layer1Node2Weight3, layer1Node2Weight4, layer1Node2Bias },
+                             { layer1Node3Weight1, layer1Node3Weight2, layer1Node3Weight3, layer1Node3Weight4, layer1Node3Bias } };
+    final double outputNodeWeight1 = 1.0;
+    final double outputNodeWeight2 = 2.0;
+    final double outputNodeWeight3 = 3.0;
+    final double outputNodeBias = 4.0;
+    double[][] matrixTwo = { { outputNodeWeight1, outputNodeWeight2, outputNodeWeight3, outputNodeBias } };
     rawMatrices.add(matrixOne);
     rawMatrices.add(matrixTwo);
     
@@ -76,22 +95,89 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     }
 
     Map<String,Object> params = new HashMap<String,Object>();
-    final List<Feature> features = getFeatures(new String[] {"constantOne", "constantTwo",
-                                                             "constantThree", "constantFour"});
-    final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    
     params.put("weights", weights);
     String nonlinearity = "relu";
     params.put("nonlinearity", nonlinearity);
-    
-    final LTRScoringModel ltrScoringModel = createNeuralNetworkModel("test_score",
-        features, norms, "test_score", features, params);
 
-    float[] testVec = {1.0f, 1.0f, 1.0f, 1.0f};
-    ltrScoringModel.score(testVec);
-    assertEquals(294, ltrScoringModel.score(testVec), 0.001);
+    final List<Feature> allFeaturesInStore
+       = getFeatures(new String[] {"constantOne", "constantTwo",
+          "constantThree", "constantFour", "constantFive"});
+    
+    final List<Feature> featuresInModel = new ArrayList<>(allFeaturesInStore);
+    Collections.shuffle(featuresInModel, random()); // store and model order of features can vary
+    featuresInModel.remove(0); // models need not use all the store's features
+    assertEquals(4, featuresInModel.size()); // the test model uses four features
+
+    final List<Normalizer> norms =
+        new ArrayList<Normalizer>(
+            Collections.nCopies(featuresInModel.size(),IdentityNormalizer.INSTANCE));
+    final LTRScoringModel ltrScoringModel = createNeuralNetworkModel("test_score",
+        featuresInModel, norms, "test_score", allFeaturesInStore, params);
+
+    {
+      // pretend all features scored zero
+      float[] testVec = {0.0f, 0.0f, 0.0f, 0.0f};
+      // with all zero inputs the layer1 node outputs are layer1 node biases only
+      final double layer1Node1Output = layer1Node1Bias;
+      final double layer1Node2Output = layer1Node2Bias;
+      final double layer1Node3Output = layer1Node3Bias;
+      // with just one layer the output node calculation is easy
+      final double outputNodeOutput =
+          (layer1Node1Output*outputNodeWeight1) +
+          (layer1Node2Output*outputNodeWeight2) +
+          (layer1Node3Output*outputNodeWeight3) +
+          outputNodeBias;
+      assertEquals(74.0, outputNodeOutput, 0.001);
+      // and the expected score is that of the output node
+      final double expectedScore = outputNodeOutput;
+      float score = ltrScoringModel.score(testVec);
+      assertEquals(expectedScore, score, 0.001);
+    }
+
+    {
+      // pretend all features scored one
+      float[] testVec = {1.0f, 1.0f, 1.0f, 1.0f};
+      // with all one inputs the layer1 node outputs are simply sum of weights and biases
+      final double layer1Node1Output = layer1Node1Weight1 + layer1Node1Weight2 + layer1Node1Weight3 + layer1Node1Weight4 + layer1Node1Bias;
+      final double layer1Node2Output = layer1Node2Weight1 + layer1Node2Weight2 + layer1Node2Weight3 + layer1Node2Weight4 + layer1Node2Bias;
+      final double layer1Node3Output = layer1Node3Weight1 + layer1Node3Weight2 + layer1Node3Weight3 + layer1Node3Weight4 + layer1Node3Bias;
+      // with just one layer the output node calculation is easy
+      final double outputNodeOutput =
+          (layer1Node1Output*outputNodeWeight1) +
+          (layer1Node2Output*outputNodeWeight2) +
+          (layer1Node3Output*outputNodeWeight3) +
+          outputNodeBias;
+      assertEquals(294.0, outputNodeOutput, 0.001);
+      // and the expected score is that of the output node
+      final double expectedScore = outputNodeOutput;
+      float score = ltrScoringModel.score(testVec);
+      assertEquals(expectedScore, score, 0.001);
+    }
+
+    {
+      // pretend all features scored random numbers in 0.0 to 1.0 range
+      final float input1 = random().nextFloat();
+      final float input2 = random().nextFloat();
+      final float input3 = random().nextFloat();
+      final float input4 = random().nextFloat();
+      float[] testVec = {input1, input2, input3, input4};
+      // the layer1 node outputs are sum of input-times-weight plus bias
+      final double layer1Node1Output = input1*layer1Node1Weight1 + input2*layer1Node1Weight2 + input3*layer1Node1Weight3 + input4*layer1Node1Weight4 + layer1Node1Bias;
+      final double layer1Node2Output = input1*layer1Node2Weight1 + input2*layer1Node2Weight2 + input3*layer1Node2Weight3 + input4*layer1Node2Weight4 + layer1Node2Bias;
+      final double layer1Node3Output = input1*layer1Node3Weight1 + input2*layer1Node3Weight2 + input3*layer1Node3Weight3 + input4*layer1Node3Weight4 + layer1Node3Bias;
+      // with just one layer the output node calculation is easy
+      final double outputNodeOutput =
+          (layer1Node1Output*outputNodeWeight1) +
+          (layer1Node2Output*outputNodeWeight2) +
+          (layer1Node3Output*outputNodeWeight3) +
+          outputNodeBias;
+      assertTrue("outputNodeOutput="+outputNodeOutput, 74.0 <= outputNodeOutput); // all zero inputs produced output 74
+      assertTrue("outputNodeOutput="+outputNodeOutput, outputNodeOutput <= 294.0); // all one inputs produced output 294
+      // and the expected score is that of the output node
+      final double expectedScore = outputNodeOutput;
+      float score = ltrScoringModel.score(testVec);
+      assertEquals(expectedScore, score, 0.001);
+    }
   }
 
   @Test
