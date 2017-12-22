@@ -284,6 +284,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("ttest", TTestEvaluator.class)
         .withFunctionName("pairedTtest", PairedTTestEvaluator.class)
         .withFunctionName("multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
+        .withFunctionName("integrate", IntegrateEvaluator.class)
 
         // Boolean Stream Evaluators
 

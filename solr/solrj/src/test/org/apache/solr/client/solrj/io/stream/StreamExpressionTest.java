@@ -7228,6 +7228,32 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testIntegrate() throws Exception {
+    String cexpr = "let(echo=true, " +
+                       "a=sequence(50, 1, 0), " +
+                       "b=spline(a), " +
+                       "c=integrate(b, 0, 49), " +
+                       "d=integrate(b, 0, 20), " +
+                       "e=integrate(b, 20, 49))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number integral = (Number)tuples.get(0).get("c");
+    assertEquals(integral.doubleValue(), 49, 0.0);
+    integral = (Number)tuples.get(0).get("d");
+    assertEquals(integral.doubleValue(), 20, 0.0);
+    integral = (Number)tuples.get(0).get("e");
+    assertEquals(integral.doubleValue(), 29, 0.0);
+  }
+
+
+  @Test
   public void testLoess() throws Exception {
     String cexpr = "let(echo=true," +
                    "    a=array(0,1,2,3,4,5,6,7)," +
