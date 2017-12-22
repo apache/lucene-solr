@@ -81,8 +81,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
       Iterator<String> it = cluster.getLiveNodesSet().get().iterator();
       String lostNodeName1 = it.next();
       String lostNodeName2 = it.next();
-      cluster.simRemoveNode(lostNodeName1, true);
-      cluster.simRemoveNode(lostNodeName2, true);
+      cluster.simRemoveNode(lostNodeName1, false);
+      cluster.simRemoveNode(lostNodeName2, false);
       timeSource.sleep(1000);
 
       AtomicBoolean fired = new AtomicBoolean(false);
@@ -223,7 +223,7 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
       trigger.run(); // starts tracking live nodes
 
       // stop the newly created node
-      cluster.simRemoveNode(newNode, true);
+      cluster.simRemoveNode(newNode, false);
 
       AtomicInteger callCount = new AtomicInteger(0);
       AtomicBoolean fired = new AtomicBoolean(false);
@@ -263,7 +263,7 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     trigger.run();
 
     // stop the newly created node
-    cluster.simRemoveNode(newNode, true);
+    cluster.simRemoveNode(newNode, false);
 
     trigger.run(); // this run should detect the lost node
     trigger.close(); // close the old trigger

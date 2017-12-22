@@ -81,15 +81,6 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     actionContextPropsRef.set(null);
 
-    if (cluster.getClusterStateProvider().getLiveNodes().size() > NODE_COUNT) {
-      // stop some to get to original state
-      int numJetties = cluster.getClusterStateProvider().getLiveNodes().size();
-      for (int i = 0; i < numJetties - NODE_COUNT; i++) {
-        String node = cluster.getSimClusterStateProvider().simGetRandomNode(random());
-        cluster.getSimClusterStateProvider().simRemoveNode(node);
-      }
-    }
-
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
@@ -202,7 +193,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
         "'waitFor' : '1s'," +
         "'enabled' : true," +
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
-        "{'name':'test','class':'" + TestComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
+        "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
@@ -245,7 +236,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null " + actionContextPropsRef.get(), operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null " + actionContextPropsRef.get() + "\nevent: " + eventRef.get(), operations);
     operations.forEach(solrRequest -> log.info(solrRequest.getParams().toString()));
     assertEquals("ComputePlanAction should have computed exactly 2 operation", 2, operations.size());
 

@@ -46,7 +46,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -64,19 +63,6 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NODE_COUNT, TimeSource.get("simTime:50"));
-  }
-
-  @Before
-  public void setUp() throws Exception  {
-    super.setUp();
-
-    if (cluster.getClusterStateProvider().getLiveNodes().size() < NODE_COUNT) {
-      // start some to get to original state
-      int numJetties = cluster.getClusterStateProvider().getLiveNodes().size();
-      for (int i = 0; i < NODE_COUNT - numJetties; i++) {
-        cluster.simAddNode();
-      }
-    }
   }
 
   @After

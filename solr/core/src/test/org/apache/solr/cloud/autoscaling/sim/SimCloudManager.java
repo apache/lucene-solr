@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -96,10 +96,10 @@ public class SimCloudManager implements SolrCloudManager {
   private TimeSource timeSource;
 
   private final List<SolrInputDocument> systemColl = Collections.synchronizedList(new ArrayList<>());
-  private final ExecutorService simCloudManagerPool;
-  private final Map<String, AtomicLong> opCounts = new ConcurrentHashMap<>();
+  private final Map<String, AtomicLong> opCounts = new ConcurrentSkipListMap<>();
 
 
+  private ExecutorService simCloudManagerPool;
   private Overseer.OverseerThread triggerThread;
   private ThreadGroup triggerThreadGroup;
   private SolrResourceLoader loader;
@@ -327,7 +327,8 @@ public class SimCloudManager implements SolrCloudManager {
 
   /**
    * Simulate the effect of restarting Overseer leader - in this case this means restarting the
-   * OverseerTriggerThread and optionally killing a node.
+   * OverseerTriggerThread and optionally killing a node. All background tasks currently in progress
+   * will be interrupted.
    * @param killNodeId optional nodeId to kill. If null then don't kill any node, just restart the thread
    */
   public void simRestartOverseer(String killNodeId) throws Exception {
@@ -335,9 +336,17 @@ public class SimCloudManager implements SolrCloudManager {
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
     if (killNodeId != null) {
-      simRemoveNode(killNodeId, true);
+      simRemoveNode(killNodeId, false);
     }
     objectCache.clear();
+
+    try {
+      simCloudManagerPool.shutdownNow();
+    } catch (Exception e) {
+      // ignore
+    }
+    simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new DefaultSolrThreadFactory("simCloudManagerPool"));
+
     OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this,
         new CloudConfig.CloudConfigBuilder("nonexistent", 0, "sim").build());
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
@@ -376,6 +385,10 @@ public class SimCloudManager implements SolrCloudManager {
    */
   public Map<String, AtomicLong> simGetOpCounts() {
     return opCounts;
+  }
+
+  public void simResetOpCounts() {
+    opCounts.clear();
   }
 
   /**
@@ -497,7 +510,7 @@ public class SimCloudManager implements SolrCloudManager {
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
-      LOG.debug("Invoking Collection Action :{} with params {}", action.toLower(), req.getParams().toQueryString());
+      LOG.trace("Invoking Collection Action :{} with params {}", action.toLower(), req.getParams().toQueryString());
       NamedList results = new NamedList();
       rsp.setResponse(results);
       incrementCount(action.name());

@@ -137,7 +137,7 @@ public class TestNodeAddedTrigger extends SimSolrCloudTestCase {
         return true;
       });
       trigger.run(); // first run should detect the new node
-      cluster.simRemoveNode(newNode, true);
+      cluster.simRemoveNode(newNode, false);
       int counter = 0;
       do {
         trigger.run();

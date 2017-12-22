@@ -37,6 +37,10 @@ public class LiveNodesSet {
     return Collections.unmodifiableSet(set);
   }
 
+  public int size() {
+    return set.size();
+  }
+
   public void registerLiveNodesListener(LiveNodesListener listener) {
     listeners.add(listener);
   }

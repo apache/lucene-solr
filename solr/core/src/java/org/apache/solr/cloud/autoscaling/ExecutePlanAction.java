@@ -74,7 +74,7 @@ public class ExecutePlanAction extends TriggerActionBase {
             req.setWaitForFinalState(true);
             String asyncId = event.getSource() + '/' + event.getId() + '/' + counter;
             String znode = saveAsyncId(cloudManager.getDistribStateManager(), event, asyncId);
-            log.debug("Saved requestId: {} in znode: {}", asyncId, znode);
+            log.trace("Saved requestId: {} in znode: {}", asyncId, znode);
             // TODO: find a better way of using async calls using dataProvider API !!!
             req.setAsyncId(asyncId);
             SolrResponse asyncResponse = cloudManager.request(req);
@@ -132,7 +132,7 @@ public class ExecutePlanAction extends TriggerActionBase {
         statusResponse = (CollectionAdminRequest.RequestStatusResponse)cloudManager.request(CollectionAdminRequest.requestStatus(requestId));
         state = statusResponse.getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          log.debug("Task with requestId={} finished with state={} in {}s", requestId, state, i * 5);
+          log.trace("Task with requestId={} finished with state={} in {}s", requestId, state, i * 5);
           cloudManager.request(CollectionAdminRequest.deleteAsyncId(requestId));
           return statusResponse;
         } else if (state == RequestStatusState.NOT_FOUND) {
@@ -156,7 +156,7 @@ public class ExecutePlanAction extends TriggerActionBase {
         throw e;
       }
       if (i > 0 && i % 5 == 0) {
-        log.debug("Task with requestId={} still not complete after {}s. Last state={}", requestId, i * 5, state);
+        log.trace("Task with requestId={} still not complete after {}s. Last state={}", requestId, i * 5, state);
       }
       cloudManager.getTimeSource().sleep(5000);
     }

@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -72,12 +71,17 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -108,7 +112,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   private final ReentrantLock lock = new ReentrantLock();
 
-  private final ActionThrottle leaderThrottle;
+  private final Map<String, Map<String, ActionThrottle>> leaderThrottles = new ConcurrentHashMap<>();
 
   // default map of: operation -> delay
   private final Map<String, Long> defaultOpDelays = new HashMap<>();
@@ -116,7 +120,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private final Map<String, Map<String, Long>> opDelays = new ConcurrentHashMap<>();
 
 
-  private volatile int clusterStateVersion = -1;
+  private volatile int clusterStateVersion = 0;
   private Map<String, Object> lastSavedProperties = null;
 
   private AtomicReference<Map<String, DocCollection>> collectionsStatesRef = new AtomicReference<>();
@@ -133,7 +137,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getSimDistribStateManager();
-    this.leaderThrottle = new ActionThrottle("leader", 5000, cloudManager.getTimeSource());
     // names are CollectionAction operation names, delays are in ms (simulated time)
     defaultOpDelays.put(CollectionParams.CollectionAction.MOVEREPLICA.name(), 5000L);
     defaultOpDelays.put(CollectionParams.CollectionAction.DELETEREPLICA.name(), 5000L);
@@ -191,10 +194,15 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   /**
-   * Reset the leader election throttle.
+   * Reset the leader election throttles.
    */
-  public void simResetLeaderThrottle() {
-    leaderThrottle.reset();
+  public void simResetLeaderThrottles() {
+    leaderThrottles.clear();
+  }
+
+  private ActionThrottle getThrottle(String collection, String shard) {
+    return leaderThrottles.computeIfAbsent(collection, coll -> new ConcurrentHashMap<>())
+        .computeIfAbsent(shard, s -> new ActionThrottle("leader", 5000, cloudManager.getTimeSource()));
   }
 
   /**
@@ -225,30 +233,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     nodeReplicaMap.putIfAbsent(nodeId, new ArrayList<>());
   }
 
-  // utility class to run leader election in a separate thread and with throttling
-  // Note: leader election is a no-op if a shard leader already exists for each shard
-  private class LeaderElection implements Callable<Boolean> {
-    Collection<String> collections;
-    boolean saveClusterState;
-
-    LeaderElection(Collection<String> collections, boolean saveClusterState) {
-      this.collections = collections;
-      this.saveClusterState = saveClusterState;
-    }
-
-    @Override
-    public Boolean call() {
-      leaderThrottle.minimumWaitBetweenActions();
-      leaderThrottle.markAttemptingAction();
-      try {
-        simRunLeaderElection(collections, saveClusterState);
-      } catch (Exception e) {
-        return false;
-      }
-      return true;
-    }
-  }
-
   /**
    * Remove node from a cluster. This is equivalent to a situation when a node is lost.
    * All replicas that were assigned to this node are marked as DOWN.
@@ -273,7 +257,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeId);
       }
       if (!collections.isEmpty()) {
-        cloudManager.submit(new LeaderElection(collections, true));
+        simRunLeaderElection(collections, true);
       }
       return res;
     } finally {
@@ -326,7 +310,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     if (!collections.isEmpty()) {
       collectionsStatesRef.set(null);
-      cloudManager.submit(new LeaderElection(collections, true));
+      simRunLeaderElection(collections, true);
       return true;
     } else {
       return false;
@@ -431,7 +415,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk - 10);
       if (runLeaderElection) {
-        cloudManager.submit(new LeaderElection(Collections.singleton(replicaInfo.getCollection()), true));
+        simRunLeaderElection(Collections.singleton(replicaInfo.getCollection()), true);
       }
     } finally {
       lock.unlock();
@@ -468,7 +452,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk + 10);
           }
           LOG.trace("-- simRemoveReplica {}", ri);
-          cloudManager.submit(new LeaderElection(Collections.singleton(ri.getCollection()), true));
+          simRunLeaderElection(Collections.singleton(ri.getCollection()), true);
           return;
         }
       }
@@ -482,14 +466,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Save clusterstate.json to {@link DistribStateManager}.
    * @return saved state
    */
-  private ClusterState saveClusterState(ClusterState state) throws IOException {
+  private synchronized ClusterState saveClusterState(ClusterState state) throws IOException {
     byte[] data = Utils.toJSON(state);
     try {
       VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
       int version = oldData != null ? oldData.getVersion() : -1;
+      Assert.assertEquals(clusterStateVersion, version + 1);
       stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
-      LOG.trace("-- saved cluster state version=" + clusterStateVersion +
-          ", zkVersion=" + (version + 1) + ", {}", state);
+      clusterStateVersion++;
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -515,75 +499,89 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param collections list of affected collections
    * @param saveClusterState if true then save cluster state regardless of changes.
    */
-  private synchronized void simRunLeaderElection(Collection<String> collections, boolean saveClusterState) throws Exception {
+  private void simRunLeaderElection(Collection<String> collections, boolean saveClusterState) throws Exception {
     ClusterState state = getClusterState();
-    AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
-
+    if (saveClusterState) {
+      collectionsStatesRef.set(null);
+    }
     state.forEachCollection(dc -> {
       if (!collections.contains(dc.getName())) {
         return;
       }
-      dc.getSlices().forEach(s -> {
-        Replica leader = s.getLeader();
-        if (leader == null || !liveNodes.contains(leader.getNodeName())) {
-          LOG.trace("Running leader election for " + dc.getName() + " / " + s.getName());
-          if (s.getReplicas().isEmpty()) { // no replicas - punt
-            return;
+      dc.getSlices().forEach(s ->
+        cloudManager.submit(() -> {
+          simRunLeaderElection(dc.getName(), s, saveClusterState);
+          return true;
+        })
+      );
+    });
+  }
+
+  private void simRunLeaderElection(String collection, Slice s, boolean saveClusterState) throws Exception {
+    AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
+    Replica leader = s.getLeader();
+    if (leader == null || !liveNodes.contains(leader.getNodeName())) {
+      LOG.trace("Running leader election for " + collection + " / " + s.getName());
+      if (s.getReplicas().isEmpty()) { // no replicas - punt
+        return;
+      }
+      ActionThrottle lt = getThrottle(collection, s.getName());
+      lt.minimumWaitBetweenActions();
+      lt.markAttemptingAction();
+
+      // mark all replicas as non-leader (probably not necessary) and collect all active and live
+      List<ReplicaInfo> active = new ArrayList<>();
+      s.getReplicas().forEach(r -> {
+        AtomicReference<ReplicaInfo> riRef = new AtomicReference<>();
+        // find our ReplicaInfo for this replica
+        nodeReplicaMap.get(r.getNodeName()).forEach(info -> {
+          if (info.getName().equals(r.getName())) {
+            riRef.set(info);
           }
-          // mark all replicas as non-leader (probably not necessary) and collect all active and live
-          List<ReplicaInfo> active = new ArrayList<>();
-          s.getReplicas().forEach(r -> {
-            AtomicReference<ReplicaInfo> riRef = new AtomicReference<>();
-            // find our ReplicaInfo for this replica
-            nodeReplicaMap.get(r.getNodeName()).forEach(info -> {
-              if (info.getName().equals(r.getName())) {
-                riRef.set(info);
-              }
-            });
-            ReplicaInfo ri = riRef.get();
-            if (ri == null) {
-              throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
+        });
+        ReplicaInfo ri = riRef.get();
+        if (ri == null) {
+          throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
+        }
+        synchronized (ri) {
+          if (ri.getVariables().remove(ZkStateReader.LEADER_PROP) != null) {
+            stateChanged.set(true);
+          }
+          if (r.isActive(liveNodes.get())) {
+            active.add(ri);
+          } else { // if it's on a node that is not live mark it down
+            if (!liveNodes.contains(r.getNodeName())) {
+              ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+              stateChanged.set(true);
             }
-            synchronized (ri) {
-              if (ri.getVariables().remove(ZkStateReader.LEADER_PROP) != null) {
-                stateChanged.set(true);
-              }
-              if (r.isActive(liveNodes.get())) {
-                active.add(ri);
-              } else { // if it's on a node that is not live mark it down
-                if (!liveNodes.contains(r.getNodeName())) {
-                  ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-                }
-              }
-            }
-          });
-          if (active.isEmpty()) {
-            LOG.warn("-- can't find any active replicas for " + dc.getName() + " / " + s.getName());
-            return;
           }
-          // pick first active one
-          ReplicaInfo ri = null;
-          for (ReplicaInfo a : active) {
-            if (!a.getType().equals(Replica.Type.PULL)) {
-              ri = a;
-              break;
-            }
-          }
-          if (ri == null) {
-            LOG.warn("-- can't find any suitable replica type for " + dc.getName() + " / " + s.getName());
-            return;
-          }
-          synchronized (ri) {
-            ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
-          }
-          stateChanged.set(true);
-          LOG.debug("-- elected new leader for " + dc.getName() + " / " + s.getName() + ": " + ri);
-        } else {
-          LOG.trace("-- already has leader for {} / {}", dc.getName(), s.getName());
         }
       });
-    });
-    if (saveClusterState || stateChanged.get()) {
+      if (active.isEmpty()) {
+        LOG.warn("-- can't find any active replicas for " + collection + " / " + s.getName());
+        return;
+      }
+      // pick first active one
+      ReplicaInfo ri = null;
+      for (ReplicaInfo a : active) {
+        if (!a.getType().equals(Replica.Type.PULL)) {
+          ri = a;
+          break;
+        }
+      }
+      if (ri == null) {
+        LOG.warn("-- can't find any suitable replica type for " + collection + " / " + s.getName());
+        return;
+      }
+      synchronized (ri) {
+        ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
+      }
+      stateChanged.set(true);
+      LOG.debug("-- elected new leader for " + collection + " / " + s.getName() + ": " + ri);
+    } else {
+      LOG.trace("-- already has leader for {} / {}", collection, s.getName());
+    }
+    if (stateChanged.get()) {
       collectionsStatesRef.set(null);
     }
   }
@@ -618,6 +616,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (sessionWrapper.get() != null) {
       sessionWrapper.get().release();
     }
+    // calculate expected number of positions
+    int numTlogReplicas = props.getInt(TLOG_REPLICAS, 0);
+    int numNrtReplicas = props.getInt(NRT_REPLICAS, props.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
+    int numPullReplicas = props.getInt(PULL_REPLICAS, 0);
+    int totalReplicas = shardNames.size() * (numNrtReplicas + numPullReplicas + numTlogReplicas);
+    Assert.assertEquals("unexpected number of replica positions", totalReplicas, replicaPositions.size());
     final CountDownLatch finalStateLatch = new CountDownLatch(replicaPositions.size());
     AtomicInteger replicaNum = new AtomicInteger(1);
     replicaPositions.forEach(pos -> {
@@ -652,7 +656,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
       });
     });
-    cloudManager.submit(new LeaderElection(Collections.singleton(collectionName), true));
+    simRunLeaderElection(Collections.singleton(collectionName), true);
     if (waitForFinalState) {
       boolean finished = finalStateLatch.await(cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, 60, TimeUnit.MILLISECONDS),
           TimeUnit.MILLISECONDS);
@@ -678,6 +682,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       collProperties.remove(collection);
       sliceProperties.remove(collection);
+      leaderThrottles.remove(collection);
 
       opDelay(collection, CollectionParams.CollectionAction.DELETE.name());
 
@@ -716,9 +721,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       nodeReplicaMap.clear();
       collProperties.clear();
       sliceProperties.clear();
-      cloudManager.getSimNodeStateProvider().simGetAllNodeValues().forEach((n, values) -> {
-        values.put("cores", 0);
-      });
+      leaderThrottles.clear();
+      cloudManager.getSimNodeStateProvider().simGetAllNodeValues().forEach((n, values) -> values.put("cores", 0));
       collectionsStatesRef.set(null);
     } finally {
       lock.unlock();
@@ -831,7 +835,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       });
       Map<String, Object> colProps = collProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>());
 
-      cloudManager.submit(new LeaderElection(Collections.singleton(collectionName), true));
+      simRunLeaderElection(Collections.singleton(collectionName), true);
       results.add("success", "");
     } finally {
       lock.unlock();
@@ -899,7 +903,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           solrCoreName, collectionName, replicaPosition.shard, replicaPosition.type, subShardNodeName, replicaProps);
       simAddReplica(replicaPosition.node, ri, false);
     }
-    cloudManager.submit(new LeaderElection(Collections.singleton(collectionName), true));
+    simRunLeaderElection(Collections.singleton(collectionName), true);
     results.add("success", "");
 
   }
@@ -1201,7 +1205,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     lock.lock();
     collectionsStatesRef.set(null);
-    clusterStateVersion++;
     saveClusterState.set(true);
     try {
       Map<String, Map<String, Map<String, Replica>>> collMap = new HashMap<>();

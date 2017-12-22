@@ -26,7 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.NodeStateProvider;
@@ -147,6 +149,35 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (values != null && values.containsKey("nodeRole")) {
       saveRoles();
     }
+  }
+
+  /**
+   * Remove values that correspond to dead nodes. If values contained a 'nodeRole'
+   * key then /roles.json is updated.
+   */
+  public void simRemoveDeadNodes() {
+    Set<String> myNodes = new HashSet<>(nodeValues.keySet());
+    myNodes.removeAll(liveNodesSet.get());
+    AtomicBoolean updateRoles = new AtomicBoolean(false);
+    myNodes.forEach(n -> {
+      LOG.debug("- removing dead node values: " + n);
+      Map<String, Object> vals = nodeValues.remove(n);
+      if (vals.containsKey("nodeRole")) {
+        updateRoles.set(true);
+      }
+    });
+    if (updateRoles.get()) {
+      saveRoles();
+    }
+  }
+
+  /**
+   * Return a set of nodes that are not live but their values are still present.
+   */
+  public Set<String> simGetDeadNodes() {
+    Set<String> myNodes = new TreeSet<>(nodeValues.keySet());
+    myNodes.removeAll(liveNodesSet.get());
+    return myNodes;
   }
 
   /**
