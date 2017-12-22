@@ -60,6 +60,9 @@ New Features
   processor.  (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
   Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
 
+* SOLR-11201: Implement autoscaling trigger for arbitrary metrics that creates events when
+  a given metric breaches a threshold (shalin)
+
 Optimizations
 ----------------------
 

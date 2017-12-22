@@ -40,6 +40,8 @@ import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
+
 /**
  * This class is responsible for using the configured policy and preferences
  * with the hints provided by the trigger event to compute the required cluster operations.
@@ -133,8 +135,30 @@ public class ComputePlanAction extends TriggerActionBase {
           }
         }
         break;
+      case METRIC:
+        Map<String, Number> sourceNodes = (Map<String, Number>) event.getProperty(AutoScalingParams.NODE);
+        String collection = (String) event.getProperty(AutoScalingParams.COLLECTION);
+        String shard = (String) event.getProperty(AutoScalingParams.SHARD);
+        String preferredOp = (String) event.getProperty(PREFERRED_OP);
+        if (sourceNodes.isEmpty()) {
+          log.warn("No nodes reported in event: " + event);
+          return NoneSuggester.INSTANCE;
+        }
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp == null ? CollectionParams.CollectionAction.MOVEREPLICA.toLower() : preferredOp);
+        suggester = session.getSuggester(action);
+        for (String node : sourceNodes.keySet()) {
+          suggester = suggester.hint(Suggester.Hint.SRC_NODE, node);
+        }
+        if (collection != null) {
+          if (shard == null) {
+            suggester = suggester.hint(Suggester.Hint.COLL, collection);
+          } else {
+            suggester = suggester.hint(Suggester.Hint.COLL_SHARD, new Pair(collection, shard));
+          }
+        }
+        break;
       default:
-        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost and searchRate, received: " + event.getEventType());
+        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate and metric. Received: " + event.getEventType());
     }
     return suggester;
   }
