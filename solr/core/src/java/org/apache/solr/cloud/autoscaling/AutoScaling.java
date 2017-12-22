@@ -155,6 +155,8 @@ public class AutoScaling {
           return new NodeLostTrigger(name, props, loader, cloudManager);
         case SEARCHRATE:
           return new SearchRateTrigger(name, props, loader, cloudManager);
+        case METRIC:
+          return new MetricTrigger(name, props, loader, cloudManager);
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }

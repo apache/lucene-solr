@@ -27,5 +27,6 @@ public enum TriggerEventType {
   SCHEDULED,
   SEARCHRATE,
   INDEXRATE,
-  INVALID
+  INVALID,
+  METRIC
 }

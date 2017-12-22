@@ -45,18 +45,22 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesListener;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
@@ -1496,5 +1500,131 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(collectionRate, totalNodeRate.get(), 5.0);
     assertEquals(collectionRate, totalShardRate.get(), 5.0);
     assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
+  }
+
+  @Test
+  public void testMetricTrigger() throws Exception {
+    // at least 3 nodes
+    for (int i = cluster.getJettySolrRunners().size(); i < 3; i++) {
+      cluster.startJettySolrRunner();
+    }
+    cluster.waitForAllNodes(5);
+
+    String collectionName = "testMetricTrigger";
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 2, 1);
+    create.process(solrClient);
+    solrClient.setDefaultCollection(collectionName);
+
+    waitForState("Timed out waiting for collection:" + collectionName + " to become active", collectionName, clusterShape(2, 1));
+
+    DocCollection docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    String shardId = "shard1";
+    Replica replica = docCollection.getSlice(shardId).getReplicas().iterator().next();
+    String coreName = replica.getCoreName();
+    String replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
+    long waitForSeconds = 2 + random().nextInt(5);
+    String registry = SolrCoreMetricManager.createRegistryName(true, collectionName, shardId, replicaName, null);
+    String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'metric_trigger'," +
+        "'event' : 'metric'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'metric': '" + tag + "'" +
+        "'above' : 100.0," +
+        "'collection': '" + collectionName + "'" +
+        "'shard':'"  + shardId + "'" +
+        "'actions' : [" +
+        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
+        "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand1 = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'srt'," +
+        "'trigger' : 'metric_trigger'," +
+        "'stage' : ['FAILED','SUCCEEDED']," +
+        "'afterAction': ['compute', 'execute', 'test']," +
+        "'class' : '" + TestTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    for (int i = 0; i < 500; i++) {
+      solrClient.add(new SolrInputDocument("id", String.valueOf(i), "x_s", "x" + i));
+    }
+    solrClient.commit();
+
+    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    // wait for listener to capture the SUCCEEDED stage
+    Thread.sleep(2000);
+    assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
+    CapturedEvent ev = listenerEvents.get("srt").get(0);
+    long now = timeSource.getTime();
+    // verify waitFor
+    assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
+    assertEquals(collectionName, ev.event.getProperties().get("collection"));
+
+    String oldReplicaName = replica.getName();
+    docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    assertEquals(2, docCollection.getReplicas().size());
+    assertNull(docCollection.getReplica(oldReplicaName));
+
+    // todo uncomment the following code once SOLR-11714 is fixed
+    // find a new replica and create its metric name
+//    replica = docCollection.getSlice(shardId).getReplicas().iterator().next();
+//    coreName = replica.getCoreName();
+//    replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
+//    registry = SolrCoreMetricManager.createRegistryName(true, collectionName, shardId, replicaName, null);
+//    tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+//
+//    setTriggerCommand = "{" +
+//        "'set-trigger' : {" +
+//        "'name' : 'metric_trigger'," +
+//        "'event' : 'metric'," +
+//        "'waitFor' : '" + waitForSeconds + "s'," +
+//        "'enabled' : true," +
+//        "'metric': '" + tag + "'" +
+//        "'above' : 100.0," +
+//        "'collection': '" + collectionName + "'" +
+//        "'shard':'"  + shardId + "'" +
+//        "'preferredOperation':'addreplica'" +
+//        "'actions' : [" +
+//        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+//        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
+//        "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
+//        "]" +
+//        "}}";
+//    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+//    response = solrClient.request(req);
+//    assertEquals(response.get("result").toString(), "success");
+//
+//    triggerFiredLatch = new CountDownLatch(1);
+//    listenerEvents.clear();
+//    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+//    assertTrue("The trigger did not fire at all", await);
+//    // wait for listener to capture the SUCCEEDED stage
+//    Thread.sleep(2000);
+//    assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
+//    ev = listenerEvents.get("srt").get(0);
+//    now = timeSource.getTime();
+//    // verify waitFor
+//    assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
+//    assertEquals(collectionName, ev.event.getProperties().get("collection"));
+//    docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+//    assertEquals(3, docCollection.getReplicas().size());
   }
 }

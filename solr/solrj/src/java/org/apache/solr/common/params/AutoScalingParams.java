@@ -46,6 +46,10 @@ public interface AutoScalingParams {
   String RATE = "rate";
   String REMOVE_LISTENERS = "removeListeners";
   String ZK_VERSION = "zkVersion";
+  String METRIC = "metric";
+  String ABOVE = "above";
+  String BELOW = "below";
+  String PREFERRED_OP = "preferredOperation";
 
   // commands
   String CMD_SET_TRIGGER = "set-trigger";
