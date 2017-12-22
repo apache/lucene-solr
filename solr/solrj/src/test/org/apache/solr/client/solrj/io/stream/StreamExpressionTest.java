@@ -7190,7 +7190,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "     f=multiVariateNormalDistribution(d, e)," +
         "     g=sample(f, 10000)," +
         "     h=cov(g)," +
-        "     i=sample(f))";
+        "     i=sample(f)," +
+        "     j=density(f, array(4.016093243274465, 138.7283428008585)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -7224,6 +7225,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Number sample2 = sample.get(1);
     assertTrue(sample1.doubleValue() > -30 && sample1.doubleValue() < 30);
     assertTrue(sample2.doubleValue() > 50 && sample2.doubleValue() < 250);
+
+    Number density = (Number)tuples.get(0).get("j");
+    assertEquals(density.doubleValue(), 0.007852638121596995, .00001);
   }
 
 
