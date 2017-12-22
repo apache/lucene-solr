@@ -47,8 +47,14 @@ import static org.apache.solr.common.util.Utils.time;
 import static org.apache.solr.common.util.Utils.timeElapsed;
 
 public class PolicyHelper {
-  private static ThreadLocal<Map<String, String>> policyMapping = new ThreadLocal<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final String POLICY_MAPPING_KEY = "PolicyHelper.policyMapping";
+
+  private static ThreadLocal<Map<String, String>> getPolicyMapping(SolrCloudManager cloudManager) {
+    return (ThreadLocal<Map<String, String>>)cloudManager.getObjectCache()
+        .computeIfAbsent(POLICY_MAPPING_KEY, k -> new ThreadLocal<>());
+  }
 
   public static List<ReplicaPosition> getReplicaLocations(String collName, AutoScalingConfig autoScalingConfig,
                                                           SolrCloudManager cloudManager,
@@ -59,6 +65,7 @@ public class PolicyHelper {
                                                           int pullReplicas,
                                                           List<String> nodesList) {
     List<ReplicaPosition> positions = new ArrayList<>();
+    ThreadLocal<Map<String, String>> policyMapping = getPolicyMapping(cloudManager);
     ClusterStateProvider stateProvider = new DelegatingClusterStateProvider(cloudManager.getClusterStateProvider()) {
       @Override
       public String getPolicyNameByCollection(String coll) {

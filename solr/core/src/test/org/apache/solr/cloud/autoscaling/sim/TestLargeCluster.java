@@ -42,6 +42,7 @@ import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
@@ -79,15 +80,10 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   @Before
   public void setupTest() throws Exception {
 
-    waitForSeconds = 1 + random().nextInt(3);
+    waitForSeconds = 5;
     triggerFiredCount.set(0);
     triggerFiredLatch = new CountDownLatch(1);
     listenerEvents.clear();
-    while (cluster.getClusterStateProvider().getLiveNodes().size() < NUM_NODES) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.simAddNode();
-    }
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
@@ -163,6 +159,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 5, 5, 5, 5);
     create.setMaxShardsPerNode(1);
+    create.setAutoAddReplicas(false);
     create.setCreateNodeSet(String.join(",", nodes));
     create.process(solrClient);
 
@@ -196,13 +193,214 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     }
 
     log.info("Ready after " + waitForState(collectionName, 30 * nodes.size(), TimeUnit.SECONDS, clusterShape(5, 15)) + "ms");
-    log.info("OP COUNTS: " + cluster.simGetOpCounts());
     long newMoveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
     log.info("==== Flaky replicas: {}. Additional MOVEREPLICA count: {}", flakyReplicas, (newMoveReplicaOps - moveReplicaOps));
     // flaky nodes lead to a number of MOVEREPLICA that is non-zero but lower than the number of flaky replicas
     assertTrue("there should be new MOVERPLICA ops", newMoveReplicaOps - moveReplicaOps > 0);
     assertTrue("there should be less than flakyReplicas=" + flakyReplicas + " MOVEREPLICA ops",
         newMoveReplicaOps - moveReplicaOps < flakyReplicas);
+  }
+
+  @Test
+  public void testAddNode() throws Exception {
+    SolrClient solrClient = cluster.simGetSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // create a collection with more than 1 replica per node
+    String collectionName = "testNodeAdded";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", NUM_NODES / 10, NUM_NODES / 10, NUM_NODES / 10, NUM_NODES / 10);
+    create.setMaxShardsPerNode(5);
+    create.setAutoAddReplicas(false);
+    create.process(solrClient);
+
+    log.info("Ready after " + waitForState(collectionName, 20 * NUM_NODES, TimeUnit.SECONDS, clusterShape(NUM_NODES / 10, NUM_NODES / 10 * 3)) + " ms");
+
+    int numAddNode = NUM_NODES / 5;
+    List<String> addNodesList = new ArrayList<>(numAddNode);
+    for (int i = 0; i < numAddNode; i++) {
+      addNodesList.add(cluster.simAddNode());
+      cluster.getTimeSource().sleep(5000);
+    }
+    List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
+    int startedEventPos = -1;
+    for (int i = 0; i < systemColl.size(); i++) {
+      SolrInputDocument d = systemColl.get(i);
+      if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
+        continue;
+      }
+      if ("NODEADDED".equals(d.getFieldValue("event.type_s")) &&
+          "STARTED".equals(d.getFieldValue("stage_s"))) {
+        startedEventPos = i;
+        break;
+      }
+    }
+    assertTrue("no STARTED event", startedEventPos > -1);
+    SolrInputDocument startedEvent = systemColl.get(startedEventPos);
+    int ignored = 0;
+    int lastIgnoredPos = startedEventPos;
+    for (int i = startedEventPos + 1; i < systemColl.size(); i++) {
+      SolrInputDocument d = systemColl.get(i);
+      if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
+        continue;
+      }
+      if ("NODEADDED".equals(d.getFieldValue("event.type_s"))) {
+        if ("IGNORED".equals(d.getFieldValue("stage_s"))) {
+          ignored++;
+          lastIgnoredPos = i;
+        }
+      }
+    }
+    assertTrue("no IGNORED events", ignored > 0);
+    // make sure some replicas have been moved
+    assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
+
+    log.info("Ready after " + waitForState(collectionName, 20 * NUM_NODES, TimeUnit.SECONDS, clusterShape(NUM_NODES / 10, NUM_NODES / 10 * 3)) + " ms");
+
+    int count = 50;
+    SolrInputDocument finishedEvent = null;
+    long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
+    while (count-- > 0) {
+      cluster.getTimeSource().sleep(150000);
+      long currentNumOps = cluster.simGetOpCount("MOVEREPLICA");
+      if (currentNumOps == lastNumOps) {
+        int size = systemColl.size() - 1;
+        for (int i = size; i > lastIgnoredPos; i--) {
+          SolrInputDocument d = systemColl.get(i);
+          if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
+            continue;
+          }
+          if ("SUCCEEDED".equals(d.getFieldValue("stage_s"))) {
+            finishedEvent = d;
+            break;
+          }
+        }
+        break;
+      } else {
+        lastNumOps = currentNumOps;
+      }
+    }
+
+    assertTrue("did not finish processing changes", finishedEvent != null);
+    long delta = (Long)finishedEvent.getFieldValue("event.time_l") - (Long)startedEvent.getFieldValue("event.time_l");
+    log.info("#### System stabilized after " + TimeUnit.NANOSECONDS.toMillis(delta) + " ms");
+    assertTrue("unexpected number of MOVEREPLICA ops", cluster.simGetOpCount("MOVEREPLICA") > 1);
+  }
+
+  @Test
+  public void testNodeLost() throws Exception {
+    SolrClient solrClient = cluster.simGetSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // create a collection with 1 replica per node
+    String collectionName = "testNodeLost";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", NUM_NODES / 5, NUM_NODES / 10);
+    create.setMaxShardsPerNode(5);
+    create.setAutoAddReplicas(false);
+    create.process(solrClient);
+
+    log.info("Ready after " + waitForState(collectionName, 20 * NUM_NODES, TimeUnit.SECONDS, clusterShape(NUM_NODES / 5, NUM_NODES / 10)) + " ms");
+
+    // start killing nodes
+    int numNodes = NUM_NODES / 5;
+    List<String> nodes = new ArrayList<>(cluster.getLiveNodesSet().get());
+    for (int i = 0; i < numNodes; i++) {
+      // this may also select a node where a replica is moved to, so the total number of
+      // MOVEREPLICA may vary
+      cluster.simRemoveNode(nodes.get(i), false);
+      cluster.getTimeSource().sleep(4000);
+    }
+    List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
+    int startedEventPos = -1;
+    for (int i = 0; i < systemColl.size(); i++) {
+      SolrInputDocument d = systemColl.get(i);
+      if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+        continue;
+      }
+      if ("NODELOST".equals(d.getFieldValue("event.type_s")) &&
+          "STARTED".equals(d.getFieldValue("stage_s"))) {
+        startedEventPos = i;
+        break;
+      }
+    }
+    assertTrue("no STARTED event: " + systemColl, startedEventPos > -1);
+    SolrInputDocument startedEvent = systemColl.get(startedEventPos);
+    int ignored = 0;
+    int lastIgnoredPos = startedEventPos;
+    for (int i = startedEventPos + 1; i < systemColl.size(); i++) {
+      SolrInputDocument d = systemColl.get(i);
+      if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+        continue;
+      }
+      if ("NODELOST".equals(d.getFieldValue("event.type_s"))) {
+        if ("IGNORED".equals(d.getFieldValue("stage_s"))) {
+          ignored++;
+          lastIgnoredPos = i;
+        }
+      }
+    }
+    assertTrue("no IGNORED events", ignored > 0);
+    // make sure some replicas have been moved
+    assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
+
+    log.info("Ready after " + waitForState(collectionName, 20 * NUM_NODES, TimeUnit.SECONDS, clusterShape(NUM_NODES / 5, NUM_NODES / 10)) + " ms");
+
+    int count = 50;
+    SolrInputDocument finishedEvent = null;
+    long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
+    while (count-- > 0) {
+      cluster.getTimeSource().sleep(150000);
+      long currentNumOps = cluster.simGetOpCount("MOVEREPLICA");
+      if (currentNumOps == lastNumOps) {
+        int size = systemColl.size() - 1;
+        for (int i = size; i > lastIgnoredPos; i--) {
+          SolrInputDocument d = systemColl.get(i);
+          if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+            continue;
+          }
+          if ("SUCCEEDED".equals(d.getFieldValue("stage_s"))) {
+            finishedEvent = d;
+            break;
+          }
+        }
+        break;
+      } else {
+        lastNumOps = currentNumOps;
+      }
+    }
+
+    assertTrue("did not finish processing changes", finishedEvent != null);
+    long delta = (Long)finishedEvent.getFieldValue("event.time_l") - (Long)startedEvent.getFieldValue("event.time_l");
+    log.info("#### System stabilized after " + TimeUnit.NANOSECONDS.toMillis(delta) + " ms");
+    long ops = cluster.simGetOpCount("MOVEREPLICA");
+    assertTrue("unexpected number of MOVEREPLICA ops: " + ops, ops >= 40);
   }
 
   @Test
@@ -255,7 +453,6 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     // simulate search traffic
     cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
 
-    Thread.sleep(1000000000);
 //    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
 //    assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage

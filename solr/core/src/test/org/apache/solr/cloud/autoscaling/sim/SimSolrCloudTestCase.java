@@ -20,15 +20,22 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
@@ -63,9 +70,11 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** The cluster. */
   protected static SimCloudManager cluster;
+  protected static int clusterNodeCount = 0;
 
   protected static void configureCluster(int nodeCount, TimeSource timeSource) throws Exception {
     cluster = SimCloudManager.createCluster(nodeCount, timeSource);
+    clusterNodeCount = nodeCount;
   }
 
   @AfterClass
@@ -77,11 +86,90 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    if (cluster != null) {
+      log.info("\n");
+      log.info("#############################################");
+      log.info("############ FINAL CLUSTER STATS ############");
+      log.info("#############################################\n");
+      log.info("## Live nodes:\t\t" + cluster.getLiveNodesSet().size());
+      int emptyNodes = 0;
+      int maxReplicas = 0;
+      int minReplicas = Integer.MAX_VALUE;
+      Map<String, Map<Replica.State, AtomicInteger>> replicaStates = new TreeMap<>();
+      int numReplicas = 0;
+      for (String node : cluster.getLiveNodesSet().get()) {
+        List<ReplicaInfo> replicas = cluster.getSimClusterStateProvider().simGetReplicaInfos(node);
+        numReplicas += replicas.size();
+        if (replicas.size() > maxReplicas) {
+          maxReplicas = replicas.size();
+        }
+        if (minReplicas > replicas.size()) {
+          minReplicas = replicas.size();
+        }
+        for (ReplicaInfo ri : replicas) {
+          replicaStates.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
+              .computeIfAbsent(ri.getState(), s -> new AtomicInteger())
+              .incrementAndGet();
+        }
+        if (replicas.isEmpty()) {
+          emptyNodes++;
+        }
+      }
+      if (minReplicas == Integer.MAX_VALUE) {
+        minReplicas = 0;
+      }
+      log.info("## Empty nodes:\t" + emptyNodes);
+      Set<String> deadNodes = cluster.getSimNodeStateProvider().simGetDeadNodes();
+      log.info("## Dead nodes:\t\t" + deadNodes.size());
+      deadNodes.forEach(n -> log.info("##\t\t" + n));
+      log.info("## Collections:\t" + cluster.getSimClusterStateProvider().simListCollections());
+      log.info("## Max replicas per node:\t" + maxReplicas);
+      log.info("## Min replicas per node:\t" + minReplicas);
+      log.info("## Total replicas:\t\t" + numReplicas);
+      replicaStates.forEach((c, map) -> {
+        AtomicInteger repCnt = new AtomicInteger();
+        map.forEach((s, cnt) -> repCnt.addAndGet(cnt.get()));
+        log.info("## * " + c + "\t\t" + repCnt.get());
+        map.forEach((s, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-12s  %4d", s, cnt.get())));
+      });
+      log.info("######### Final Solr op counts ##########");
+      cluster.simGetOpCounts().forEach((k, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get())));
+      log.info("######### Autoscaling event counts ###########");
+      TreeMap<String, Map<String, AtomicInteger>> counts = new TreeMap<>();
+      for (SolrInputDocument d : cluster.simGetSystemCollection()) {
+        if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
+          continue;
+        }
+        counts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
+            .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
+            .incrementAndGet();
+      }
+      counts.forEach((trigger, map) -> {
+        log.info("## * Trigger: " + trigger);
+        map.forEach((s, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-11s  %4d", s, cnt.get())));
+      });
+    }
+  }
+
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     if (cluster != null) {
-      // clear any persisted auto scaling configuration
+      // clear any persisted configuration
       cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
+      cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
+      // restore the expected number of nodes
+      int currentSize = cluster.getLiveNodesSet().size();
+      if (currentSize < clusterNodeCount) {
+        int addCnt = clusterNodeCount - currentSize;
+        while (addCnt-- > 0) {
+          cluster.simAddNode();
+        }
+      } else if (currentSize > clusterNodeCount) {
+        cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
+      }
       // clean any persisted trigger state or events
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
@@ -89,8 +177,12 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       cluster.getSimClusterStateProvider().simDeleteAllCollections();
       cluster.simClearSystemCollection();
-      cluster.getSimClusterStateProvider().simResetLeaderThrottle();
+      // clear any dead nodes
+      cluster.getSimNodeStateProvider().simRemoveDeadNodes();
+      cluster.getSimClusterStateProvider().simResetLeaderThrottles();
       cluster.simRestartOverseer(null);
+      cluster.getTimeSource().sleep(5000);
+      cluster.simResetOpCounts();
     }
   }
 

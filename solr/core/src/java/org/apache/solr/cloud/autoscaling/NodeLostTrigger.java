@@ -163,7 +163,7 @@ public class NodeLostTrigger extends TriggerBase {
               removeMarker(n);
             });
           } else  {
-            log.debug("NodeLostTrigger listener for lost nodes: {} is not ready, will try later", nodeNames);
+            log.debug("NodeLostTrigger processor for lost nodes: {} is not ready, will try later", nodeNames);
           }
         } else  {
           nodeNames.forEach(n -> {

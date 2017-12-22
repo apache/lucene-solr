@@ -70,7 +70,7 @@ public class ActionThrottle {
     long diff = timeSource.getTime() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
-    log.info("The last {} attempt started {}ms ago.", name, diffMs);
+    log.debug("The last {} attempt started {}ms ago.", name, diffMs);
     int sleep = 0;
     
     if (diffMs > 0 && diff < minNsBetweenActions) {
