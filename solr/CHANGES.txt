@@ -59,6 +59,8 @@ Other Changes
 
 * SOLR-11754: Remove AbstractSolrTestCase which has long been supplanted by SolrTestCaseJ4. (David Smiley)
 
+* SOLR-11701: Upgrade to Tika 1.17 when available (Tim Allison, Karthik Ramachandran via Erick Erickson)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
