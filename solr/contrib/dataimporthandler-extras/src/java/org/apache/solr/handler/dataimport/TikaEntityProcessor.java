@@ -86,7 +86,9 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
       if (tikaConfigFile == null) {
         ClassLoader classLoader = context.getSolrCore().getResourceLoader().getClassLoader();
-        tikaConfig = new TikaConfig(classLoader);
+        try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
+          tikaConfig = new TikaConfig(is);
+        }
       } else {
         File configFile = new File(tikaConfigFile);
         if (!configFile.isAbsolute()) {
