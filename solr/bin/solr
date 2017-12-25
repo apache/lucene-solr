@@ -1414,6 +1414,40 @@ if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD
   exit 1
 fi
 
+#Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
+
+if [ -z "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
+  SOLR_RECOMMENDED_MAX_PROCESSES=65000
+fi
+
+if [ -z "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
+  SOLR_RECOMMENDED_OPEN_FILES=65000
+fi
+
+if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
+  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] || [ "$SCRIPT_CMD" == "status" ]; then
+    if hash ulimit 2>/dev/null; then
+       openFiles=$(ulimit -n)
+       maxProcs=$(ulimit -u)
+       if [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
+           echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
+           echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational impariment. "
+           echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
+       fi
+
+       if [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
+           echo "*** [WARN] ***  Your Max Processes Limit is currently $maxProcs. "
+           echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational impariment. "
+           echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
+       fi
+    else
+      echo "Could not check ulimits for processes and open files, recommended values are"
+      echo "     max processes: $SOLR_RECOMMENDED_MAX_PROCESSES "
+      echo "     open files:    $SOLR_RECOMMENDED_OPEN_FILES"
+    fi
+  fi
+fi
+
 # Run in foreground (default is to run in the background)
 FG="false"
 FORCE=false

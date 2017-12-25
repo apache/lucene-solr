@@ -81,6 +81,8 @@ Other Changes
 
 * SOLR-11701: Upgrade to Tika 1.17 when available (Tim Allison, Karthik Ramachandran via Erick Erickson)
 
+* SOLR-11703: Solr Should Send Log Notifications if Ulimits are too low (Kevin Cowan via Erick Eickson)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
