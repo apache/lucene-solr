@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.OptionalInt;
 
+import org.apache.lucene.util.MathUtil;
+
 /**
  * This implements the WAND (Weak AND) algorithm for dynamic pruning
  * described in "Efficient Query Evaluation using a Two-Level Retrieval
@@ -120,6 +122,7 @@ final class WANDScorer extends Scorer {
   int tailSize;
 
   final long cost;
+  final float maxScore;
 
   WANDScorer(Weight weight, Collection<Scorer> scorers) {
     super(weight);
@@ -142,10 +145,12 @@ final class WANDScorer extends Scorer {
     // Use a scaling factor of 0 if all max scores are either 0 or +Infty
     this.scalingFactor = scalingFactor.orElse(0);
     
+    double maxScoreSum = 0;
     for (Scorer scorer : scorers) {
       DisiWrapper w = new DisiWrapper(scorer);
       float maxScore = scorer.maxScore();
       w.maxScore = scaleMaxScore(maxScore, this.scalingFactor);
+      maxScoreSum += maxScore;
       addLead(w);
     }
 
@@ -154,6 +159,12 @@ final class WANDScorer extends Scorer {
       cost += w.cost;
     }
     this.cost = cost;
+    // The error of sums depends on the order in which values are summed up. In
+    // order to avoid this issue, we compute an upper bound of the value that
+    // the sum may take. If the max relative error is b, then it means that two
+    // sums are always within 2*b of each other.
+    double maxScoreRelativeErrorBound = MathUtil.sumRelativeErrorBound(scorers.size());
+    this.maxScore = (float) ((1.0 + 2 * maxScoreRelativeErrorBound) * maxScoreSum);
   }
 
   // returns a boolean so that it can be called from assert
@@ -375,8 +386,7 @@ final class WANDScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    // TODO: implement but be careful about floating-point errors.
-    return Float.POSITIVE_INFINITY;
+    return maxScore;
   }
 
   @Override

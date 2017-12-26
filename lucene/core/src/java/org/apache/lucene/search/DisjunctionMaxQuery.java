@@ -62,6 +62,9 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
    */
   public DisjunctionMaxQuery(Collection<Query> disjuncts, float tieBreakerMultiplier) {
     Objects.requireNonNull(disjuncts, "Collection of Querys must not be null");
+    if (tieBreakerMultiplier < 0 || tieBreakerMultiplier > 1) {
+      throw new IllegalArgumentException("tieBreakerMultiplier must be in [0, 1]");
+    }
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     this.disjuncts = disjuncts.toArray(new Query[disjuncts.size()]);
   }
@@ -156,20 +159,25 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       boolean match = false;
-      float max = Float.NEGATIVE_INFINITY;
-      double sum = 0;
+      float max = 0;
+      double otherSum = 0;
       List<Explanation> subs = new ArrayList<>();
       for (Weight wt : weights) {
         Explanation e = wt.explain(context, doc);
         if (e.isMatch()) {
           match = true;
           subs.add(e);
-          sum += e.getValue();
-          max = Math.max(max, e.getValue());
+          float score = e.getValue();
+          if (score >= max) {
+            otherSum += max;
+            max = score;
+          } else {
+            otherSum += score;
+          }
         }
       }
       if (match) {
-        final float score = (float) (max + (sum - max) * tieBreakerMultiplier);
+        final float score = (float) (max + otherSum * tieBreakerMultiplier);
         final String desc = tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:";
         return Explanation.match(score, desc, subs);
       } else {
