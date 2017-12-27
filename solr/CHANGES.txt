@@ -41,6 +41,9 @@ Bug Fixes
   (Christine Poerschke and David Smiley in response to bug report/analysis
   from Dariusz Wojtas and Diego Ceccarelli)
 
+* SOLR-11555: If the query terms reduce to nothing, filter(clause) produces an NPE whereas
+  fq=clause does not (Erick Erickson)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
