@@ -491,6 +491,26 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/docs/[0]/score==10.0"
     );
 
+    assertU(adoc("id", "40", "wdf_nocase", "just some text, don't want NPE"));
+    assertU(commit());
+
+    // See SOLR-11555. If wdff removes all the characters, an NPE occurs.
+    // try q and fq
+    assertJQ(req("q", "filter(wdf_nocase:&)", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("fq", "filter(wdf_nocase:.,)", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+
+    // Insure the same behavior as with bare clause, just not filter
+    assertJQ(req("q", "wdf_nocase:&", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("fq", "wdf_nocase:.,", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+
   }
 
 

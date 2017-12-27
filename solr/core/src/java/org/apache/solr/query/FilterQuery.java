@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
@@ -34,6 +35,10 @@ public class FilterQuery extends ExtendedQueryBase {
   protected final Query q;
 
   public FilterQuery(Query q) {
+    if (q == null) {
+      this.q = new MatchNoDocsQuery();
+      return;
+    }
     this.q = q;
   }
 

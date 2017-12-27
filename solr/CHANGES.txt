@@ -68,6 +68,9 @@ Bug Fixes
 
 * SOLR-11783: Rename core in solr standalone mode is not persisted (Erick Erickson)
 
+* SOLR-11555: If the query terms reduce to nothing, filter(clause) produces an NPE whereas
+  fq=clause does not (Erick Erickson)
+
 Optimizations
 ----------------------
 
