@@ -63,6 +63,11 @@ New Features
 * SOLR-11201: Implement autoscaling trigger for arbitrary metrics that creates events when
   a given metric breaches a threshold (shalin)
 
+Bug Fixes
+----------------------
+
+* SOLR-11783: Rename core in solr standalone mode is not persisted (Erick Erickson)
+
 Optimizations
 ----------------------
 
