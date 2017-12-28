@@ -46,6 +46,9 @@ Bug Fixes
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
   (Xiaoshan Sun via Adrien Grand)
 
+* LUCENE-8110: Fix potential IndexOutOfBoundsException in *Classifier.getClasses(?,int).
+  (Christine Poerschke)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
