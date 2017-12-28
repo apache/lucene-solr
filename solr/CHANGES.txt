@@ -91,6 +91,8 @@ Other Changes
 
 * SOLR-11703: Solr Should Send Log Notifications if Ulimits are too low (Kevin Cowan via Erick Eickson)
 
+* SOLR-11793: Reduce code duplication w.r.t. RestTestHarness(es). (Christine Poerschke)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
