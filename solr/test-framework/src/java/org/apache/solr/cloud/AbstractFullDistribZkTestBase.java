@@ -33,9 +33,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -83,6 +85,7 @@ import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -135,6 +138,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<>();
   private boolean cloudInit;
   protected boolean useJettyDataDir = true;
+
+  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   protected Map<URI,SocketProxy> proxies = new HashMap<>();
 
@@ -1552,6 +1557,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (VERBOSE || printLayoutOnTearDown) {
       super.printLayout();
     }
+    closeRestTestHarnesses(); // TODO: close here or later?
     if (commonCloudSolrClient != null) {
       commonCloudSolrClient.close();
     }
@@ -2237,6 +2243,33 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   static CollectionAdminResponse getStatusResponse(String requestId, SolrClient client) throws SolrServerException, IOException {
     return CollectionAdminRequest.requestStatus(requestId).process(client);
+  }
+
+  protected void setupRestTestHarnesses() {
+    for (final SolrClient client : clients) {
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
+      restTestHarnesses.add(harness);
+    }
+  }
+
+  protected void closeRestTestHarnesses() throws IOException {
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
+  }
+
+  protected RestTestHarness randomRestTestHarness() {
+    return restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+  }
+
+  protected RestTestHarness randomRestTestHarness(Random random) {
+    return restTestHarnesses.get(random.nextInt(restTestHarnesses.size()));
+  }
+
+  protected void forAllRestTestHarnesses(UnaryOperator<RestTestHarness> op) {
+    for (RestTestHarness h : restTestHarnesses) {
+      op.apply(h);
+    }
   }
 
 }
