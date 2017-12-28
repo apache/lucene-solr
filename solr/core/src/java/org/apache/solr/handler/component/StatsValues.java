@@ -55,6 +55,13 @@ public interface StatsValues {
   void missing();
 
   /**
+   * Updates the statistics for a document that was excluded as
+   * it was out of bounds
+   */
+
+  void outOfBounds();
+
+  /**
    * Updates the statistics when multiple documents are missing a value
    *
    * @param count number of times to count a missing value

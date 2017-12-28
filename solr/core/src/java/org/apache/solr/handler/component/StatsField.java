@@ -207,7 +207,9 @@ public class StatsField {
   private final EnumSet<Stat> statsInResponse = EnumSet.noneOf(Stat.class);
   private final List<Double> percentilesList= new ArrayList<Double>();
   private final boolean isShard;
-  
+
+  private String floor;
+  private String ceil;
   private double tdigestCompression = 100.0D;
   private HllOptions hllOpts;
   
@@ -299,6 +301,11 @@ public class StatsField {
     this.excludeTagList = (null == excludeStr) 
       ? Collections.<String>emptyList()
       : StrUtils.splitSmart(excludeStr,',');
+
+    // schema-type specific, so these are pulled out as strings and
+    // dealt with by the stats values
+    this.floor = localParams.get("floor");
+    this.ceil = localParams.get("ceil");
 
     assert ( (null == this.valueSource) ^ (null == this.schemaField) ) 
       : "exactly one of valueSource & schemaField must be null";
@@ -510,6 +517,10 @@ public class StatsField {
   public List<String> getTagList() {
     return tagList;
   }
+
+  public String getFloor() {return floor;}
+
+  public String getCeil() {return ceil; }
 
   public String toString() {
     return "StatsField<" + originalParam + ">";

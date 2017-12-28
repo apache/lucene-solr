@@ -33,6 +33,7 @@ import org.apache.solr.schema.*;
 import com.tdunning.math.stats.AVLTreeDigest;
 import com.google.common.hash.HashFunction;
 
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
@@ -98,11 +99,15 @@ public class StatsValuesFactory {
  */
 abstract class AbstractStatsValues<T> implements StatsValues {
   private static final String FACETS = "facets";
-  
-  /** Tracks all data about tthe stats we need to collect */
+
+  /**
+   * Tracks all data about tthe stats we need to collect
+   */
   final protected StatsField statsField;
 
-  /** may be null if we are collecting stats directly from a function ValueSource */
+  /**
+   * may be null if we are collecting stats directly from a function ValueSource
+   */
   final protected SchemaField sf;
   /**
    * may be null if we are collecting stats directly from a function ValueSource
@@ -116,11 +121,16 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   final protected boolean computeMin;
   final protected boolean computeMax;
   final protected boolean computeMinOrMax;
-  final protected boolean computeCardinality; 
+  final protected boolean computeCardinality;
 
-  /** 
-   * Either a function value source to collect from, or the ValueSource associated 
-   * with a single valued field we are collecting from.  Will be null until/unless 
+  interface Boundable<T> {
+    boolean isWithinBounds(T value);
+  }
+
+  protected Boundable<T> bounds = (T) -> true;
+  /**
+   * Either a function value source to collect from, or the ValueSource associated
+   * with a single valued field we are collecting from.  Will be null until/unless
    * {@link #setNextReader} is called at least once
    */
   private ValueSource valueSource;
@@ -134,10 +144,11 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    * called at least once
    */
   protected FunctionValues values;
-  
+
   protected T max;
   protected T min;
   protected long missing;
+  protected long outOfBounds;
   protected long count;
   protected long countDistinct;
   protected final Set<T> distinctValues;
@@ -145,27 +156,27 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * Hash function that must be used by implementations of {@link #hash}
    */
-  protected final HashFunction hasher; 
+  protected final HashFunction hasher;
   // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
-  private HLL hll; 
+  private HLL hll;
 
   // facetField facetValue
-  protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
-  
+  protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
+
   protected AbstractStatsValues(StatsField statsField) {
     this.statsField = statsField;
     this.computeCount = statsField.calculateStats(Stat.count);
     this.computeMissing = statsField.calculateStats(Stat.missing);
-    this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct) 
-      || statsField.calculateStats(Stat.distinctValues);
+    this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct)
+        || statsField.calculateStats(Stat.distinctValues);
     this.computeMin = statsField.calculateStats(Stat.min);
     this.computeMax = statsField.calculateStats(Stat.max);
     this.computeMinOrMax = computeMin || computeMax;
-    
+
     this.distinctValues = computeCalcDistinct ? new TreeSet<>() : null;
 
     this.computeCardinality = statsField.calculateStats(Stat.cardinality);
-    if ( computeCardinality ) {
+    if (computeCardinality) {
 
       hasher = statsField.getHllOptions().getHasher();
       hll = statsField.getHllOptions().newHLL();
@@ -197,7 +208,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       this.ft = null;
     }
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -213,7 +224,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       distinctValues.addAll((Collection<T>) stv.get("distinctValues"));
       countDistinct = distinctValues.size();
     }
-    
+
     if (computeMinOrMax) {
       updateMinMax((T) stv.get("min"), (T) stv.get("max"));
     }
@@ -234,12 +245,12 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     }
 
     updateTypeSpecificStats(stv);
-    
+
     NamedList f = (NamedList) stv.get(FACETS);
     if (f == null) {
       return;
     }
-    
+
     for (int i = 0; i < f.size(); i++) {
       String field = f.getName(i);
       NamedList vals = (NamedList) f.getVal(i);
@@ -259,7 +270,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       }
     }
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -274,8 +285,13 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     accumulate(typedValue, count);
   }
 
-  public void accumulate(T value, int count) { 
+  public void accumulate(T value, int count) {
     assert null != value : "Can't accumulate null";
+
+    if (!bounds.isWithinBounds(value)) {
+      outOfBounds();
+      return;
+    }
 
     if (computeCount) {
       this.count += count;
@@ -290,14 +306,14 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     if (computeCardinality) {
       if (null == hasher) {
         assert value instanceof Number : "pre-hashed value support only works with numeric longs";
-        hll.addRaw(((Number)value).longValue());
+        hll.addRaw(((Number) value).longValue());
       } else {
         hll.addRaw(hash(value));
       }
     }
     updateTypeSpecificStats(value, count);
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -307,6 +323,11 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       missing++;
     }
   }
+
+  public void outOfBounds() {
+    outOfBounds++;
+  }
+
   
   /**
    * {@inheritDoc}
@@ -355,6 +376,9 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       } else {
         res.add("cardinality", hll.cardinality());
       }
+    }
+    if (outOfBounds > 0) {
+      res.add("outOfBounds", outOfBounds);
     }
     
     addTypeSpecificStats(res);
@@ -453,7 +477,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
 
   double minD; // perf optimization, only valid if (null != this.min)
   double maxD; // perf optimization, only valid if (null != this.max)
-  
+
   final protected boolean computeSum;
   final protected boolean computeSumOfSquares;
   final protected boolean computePercentiles;
@@ -468,6 +492,22 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if ( computePercentiles ) {
       tdigest = new AVLTreeDigest(statsField.getTdigestCompression()); 
     }
+
+
+    if (statsField.getCeil() != null || statsField.getFloor() != null) {
+      double floor = statsField.getFloor() != null ? Double.parseDouble(statsField.getFloor()) : -Double.MAX_VALUE;
+      double ceil  = statsField.getCeil() != null ? Double.parseDouble(statsField.getCeil()) : +Double.MAX_VALUE;
+
+      bounds = (Number value) -> {
+          // really we should think harder about when things are longs, but in accumulate
+          // stats component only cares about double, so we do here as well
+          if (value.doubleValue() >= floor && value.doubleValue() <=  ceil) {
+            return true;
+          }
+          return false;
+      };
+    }
+
 
   }
 
@@ -497,6 +537,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   public void accumulate(int docID) throws IOException {
     if (values.exists(docID)) {
       Number value = (Number) values.objectVal(docID);
+      double dVal = value.doubleValue();
       accumulate(value, 1);
     } else {
       missing();
@@ -713,7 +754,8 @@ class DateStatsValues extends AbstractStatsValues<Date> {
   
   private double sum = 0.0;
   double sumOfSquares = 0;
-  
+
+
   final protected boolean computeSum;
   final protected boolean computeSumOfSquares;
 
@@ -721,6 +763,24 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     super(statsField);
     this.computeSum = statsField.calculateStats(Stat.sum);
     this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
+
+    if (statsField.getCeil() != null || statsField.getFloor() != null) {
+      Date floor = statsField.getFloor() != null ? DateMathParser.parseMath(null, statsField.getFloor()) : null;
+      Date ceil  = statsField.getCeil() != null ? DateMathParser.parseMath(null, statsField.getCeil()) : null;
+
+      bounds = (Date value) -> {
+        // really we should think harder about when things are longs, but in accumulate
+        // stats component only cares about double, so we do here as well
+        if (floor != null && (value.compareTo(floor) <= 0)) {
+          return false;
+        }
+
+        if (ceil != null && value.compareTo(ceil) >= 0) {
+          return false;
+        }
+        return true;
+      };
+    }
   }
 
   @Override

@@ -867,7 +867,69 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
   }
 
-  //SOLR-3177
+  public void testStatsFencing() throws Exception {
+    SolrCore core = h.getCore();
+
+    assertU(adoc("id", "1", "foo_i", "4"));
+    assertU(adoc("id", "2", "foo_i", "5"));
+    assertU(commit());
+    assertU(adoc("id", "3", "foo_i", "6"));
+    assertU(adoc("id", "4", "foo_i", "7"));
+    assertU(adoc("id", "5"));
+    assertU(commit());
+
+    assertQ("min fence"
+        , req("q","*:*", "stats", "true", "stats.field", "{!floor=5}foo_i")
+        ,"//lst[@name='foo_i']/double[@name='min'][.='5.0']"
+        ,"//lst[@name='foo_i']/double[@name='max'][.='7.0']"
+        ,"//lst[@name='foo_i']/long[@name='outOfBounds'][.='1']"
+        ,"//lst[@name='foo_i']/long[@name='missing'][.='1']"
+    );
+
+
+    assertQ("min fence"
+        , req("q","*:*", "stats", "true", "stats.field", "{!ceil=6}foo_i")
+        ,"//lst[@name='foo_i']/double[@name='min'][.='4.0']"
+        ,"//lst[@name='foo_i']/double[@name='max'][.='6.0']"
+        ,"//lst[@name='foo_i']/long[@name='outOfBounds'][.='1']"
+        ,"//lst[@name='foo_i']/long[@name='missing'][.='1']"
+    );
+
+  }
+
+  public void testStatsDateFencing() throws Exception {
+    SolrCore core = h.getCore();
+
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    String date1 = dateFormat.format(new Date(123456789)) + "Z";
+    String date2 = dateFormat.format(new Date(987654321)) + "Z";
+
+    assertU(adoc("id", "1", "active_dt", date1));
+    assertU(adoc("id", "2", "active_dt", date2));
+    assertU(adoc("id", "3"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "{!ceil=" + dateFormat.format(new Date(987654320)) + "Z}active_dt");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test date statistics values", req,
+        "//long[@name='count'][.='1']",
+        "//long[@name='missing'][.='1']",
+        "//long[@name='outOfBounds'][.='1']",
+        "//date[@name='min'][.='1970-01-02T10:17:36Z']",
+        "//date[@name='max'][.='1970-01-02T10:17:36Z']");
+
+
+  }
+
+
+    //SOLR-3177
   public void testStatsExcludeFilterQuery() throws Exception {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
