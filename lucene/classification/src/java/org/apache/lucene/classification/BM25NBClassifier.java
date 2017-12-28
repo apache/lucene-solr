@@ -124,7 +124,6 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(text);
     Collections.sort(assignedClasses);
-    max = Math.min(max, assignedClasses.size());
     return assignedClasses.subList(0, max);
   }
 

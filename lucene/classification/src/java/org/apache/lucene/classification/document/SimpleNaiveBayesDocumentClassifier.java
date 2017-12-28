@@ -105,7 +105,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   public List<ClassificationResult<BytesRef>> getClasses(Document document, int max) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignNormClasses(document);
     Collections.sort(assignedClasses);
-    max = Math.min(max, assignedClasses.size());
     return assignedClasses.subList(0, max);
   }
 
