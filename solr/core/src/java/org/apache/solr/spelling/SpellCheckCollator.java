@@ -49,6 +49,7 @@ public class SpellCheckCollator {
   private int maxCollationEvaluations = 10000;
   private boolean suggestionsMayOverlap = false;
   private int docCollectionLimit = 0;
+  private boolean addParenthesis = true;
 
   public List<SpellCheckCollation> collate(SpellingResult result,
       String originalQuery, ResponseBuilder ultimateResponse) {
@@ -93,6 +94,8 @@ public class SpellCheckCollator {
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
       long hits = 0;
+      // Multi-term token suggestions need to be treated as same position or not
+      addParenthesis = ultimateResponse.req.getParams().getBool("spellcheck.samePositionTokens",true);
 
       if (verifyCandidateWithQuery) {
         tryNo++;
@@ -213,7 +216,6 @@ public class SpellCheckCollator {
       if (tok.getPositionIncrement() == 0)
         continue;
       corr = correction.getCorrection();
-      boolean addParenthesis = false;
       Character requiredOrProhibited = null;
       int indexOfSpace = corr.indexOf(' ');
       StringBuilder corrSb = new StringBuilder(corr);
@@ -222,7 +224,6 @@ public class SpellCheckCollator {
       //If the correction contains whitespace (because it involved breaking a word in 2+ words),
       //then be sure all of the new words have the same optional/required/prohibited status in the query.
       while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {
-        addParenthesis = true;
         char previousChar = tok.startOffset()>0 ? origQuery.charAt(tok.startOffset()-1) : ' ';
         if(previousChar=='-' || previousChar=='+') {
           corrSb.insert(indexOfSpace + bump, previousChar);
