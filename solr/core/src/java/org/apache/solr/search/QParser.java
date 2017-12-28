@@ -360,6 +360,10 @@ public abstract class QParser {
     }
 
     QParserPlugin qplug = req.getCore().getQueryPlugin(parserName);
+    if (qplug == null){
+      // error: log ?
+      return null;
+    }
     QParser parser =  qplug.createParser(qstr, localParams, req.getParams(), req);
 
     parser.stringIncludingLocalParams = stringIncludingLocalParams;
