@@ -186,7 +186,7 @@ public class QueryComponent extends SearchComponent
           } else if (rq == null){
             error = "rq parameter is null ( rq parser is " + rqparser.getClass() + " )";
           } else {
-            error = "rq parameter must be a RankQuery, but it is "+rq.getClass().getName() + " ( rqP parser is "+rqparser.getClass() +" )";
+            error = "rq parameter must be a RankQuery, but it is "+rq.getClass().getName() + " ( rq parser is "+rqparser.getClass() +" )";
           }
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, error);
         }
