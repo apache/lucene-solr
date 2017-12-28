@@ -31,10 +31,16 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -87,6 +93,10 @@ public class SolrZkClient implements Closeable {
   private int zkClientTimeout;
   private ZkACLProvider zkACLProvider;
   private String zkServerAddress;
+
+  private final ConcurrentHashMap<String, Set<DataWatch>> dataWatches = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Set<ChildWatch>> childWatches = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Integer> versions = new ConcurrentHashMap<>();
 
   public int getZkClientTimeout() {
     return zkClientTimeout;
@@ -227,6 +237,241 @@ public class SolrZkClient implements Closeable {
     }
     log.debug("Using default ZkACLProvider");
     return new DefaultZkACLProvider();
+  }
+
+  private class NodeWatcher implements Watcher {
+
+    final String node;
+
+    private NodeWatcher(String node) {
+      this.node = node;
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(event.getType())) {
+        return;
+      }
+      readNode(node, this);
+    }
+  }
+
+  /**
+   * Watch the data at a particular ZK node.
+   *
+   * Whenever data on the node changes, the new data is reported back to a
+   * {@link DataWatch} object.  The watch is also notified when a client
+   * reconnects after a session expiry.
+   *
+   * Multiple watchers added to a single node will share ZK watchers.
+   *
+   * @param node the node to watch
+   * @param watch a {@link DataWatch} object to notify
+   */
+  public void addDataWatch(String node, DataWatch watch) {
+    AtomicBoolean addWatch = new AtomicBoolean(false);
+    dataWatches.compute(node, (n, s) -> {
+      if (s == null) {
+        s = ConcurrentHashMap.newKeySet();
+        addWatch.set(true);
+      }
+      s.add(watch);
+      return s;
+    });
+
+    readNode(node, addWatch.get() ? new NodeWatcher(node) : null);
+
+  }
+
+  /**
+   * Read the data at the supplied ZNode, and notify all registered watches
+   * @param node the node to read
+   */
+  public void forceUpdateWatch(String node) {
+    readNode(node, null);
+  }
+
+  public Map<String, Integer> getWatchedVersions() {
+    return Collections.unmodifiableMap(versions);
+  }
+
+  private void readNode(String node, Watcher watcher) {
+    Stat stat = new Stat();
+    try {
+      while (true) {
+        try {
+          byte[] data = getData(node, watcher, stat, true);
+          notifyDataWatches(node, stat.getVersion(), data);
+          return;
+        } catch (KeeperException.NoNodeException e) {
+          stat = exists(node, watcher, true);
+          if (stat == null) {
+            notifyDataWatches(node, -1, null);
+            return;
+          }
+        }
+      }
+    }
+    catch (InterruptedException e) {
+      if (isClosed == false)
+        log.warn("Interrupted while setting watch on node {}", node);
+      Thread.currentThread().interrupt();
+    }
+    catch (KeeperException e) {
+      if (isClosed == false)
+        log.error("Error setting watch on node {}: {}", node, e.getMessage());
+    }
+  }
+
+  /**
+   * Remove a {@link DataWatch} from a particular ZK node
+   * @param node the node to stop watching
+   * @param watch the watcher to remove
+   */
+  public void removeDataWatch(String node, DataWatch watch) {
+    dataWatches.compute(node, (n, s) -> {
+      s.remove(watch);
+      if (s.size() == 0)
+        return null;
+      return s;
+    });
+  }
+
+  // lock to force linearization of notifications
+  private final Object notificationsLock = new Object();
+
+  private void notifyDataWatches(String node, int version, byte[] data) {
+    synchronized (notificationsLock) {
+      versions.put(node, version);
+      Set<DataWatch> watchesToRemove = dataWatches.getOrDefault(node, Collections.emptySet())
+          .stream()
+          .filter(watch -> watch.onChanged(version, data) == false)
+          .collect(Collectors.toSet());
+      for (DataWatch watch : watchesToRemove) {
+        removeDataWatch(node, watch);
+      }
+    }
+  }
+
+  private class ChildWatcher implements Watcher {
+
+    final String node;
+
+    private ChildWatcher(String node) {
+      this.node = node;
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(event.getType())) {
+        return;
+      }
+      readChildren(node, this);
+    }
+  }
+
+  /**
+   * Watch the children of a particular ZK node.
+   *
+   * Whenever the children of the node change, the new child set is reported back to a
+   * {@link ChildWatch} object.  The watch is also notified when a client
+   * reconnects after a session expiry.
+   *
+   * Multiple watchers added to a single node will share ZK watchers.
+   *
+   * @param node the node to watch
+   * @param watch a {@link ChildWatch} object to notify
+   */
+  public void addChildWatch(String node, ChildWatch watch) {
+    AtomicBoolean addWatch = new AtomicBoolean(false);
+    childWatches.compute(node, (n, s) -> {
+      if (s == null) {
+        s = ConcurrentHashMap.newKeySet();
+        addWatch.set(true);
+      }
+      s.add(watch);
+      return s;
+    });
+
+    readChildren(node, addWatch.get() ? new ChildWatcher(node) : null);
+
+  }
+
+  /**
+   * Read the children of a node from ZK, notifying all registered watchers
+   * @param node the node to check
+   */
+  public void forceUpdateChildren(String node) {
+    readChildren(node, null);
+  }
+
+  private void readChildren(String node, Watcher watcher) {
+    try {
+      while (true) {
+        try {
+          List<String> children = getChildren(node, watcher, true);
+          notifyChildWatches(node, children);
+          return;
+        } catch (KeeperException.NoNodeException e) {
+          Stat stat = exists(node, watcher, true);
+          if (stat == null) {
+            notifyChildWatches(node, Collections.emptyList());
+            return;
+          }
+        }
+      }
+    }
+    catch (InterruptedException e) {
+      if (isClosed == false)
+        log.warn("Interrupted while setting watch on node {}", node);
+      Thread.currentThread().interrupt();
+    }
+    catch (KeeperException e) {
+      if (isClosed == false)
+        log.error("Error setting watch on node {}: {}", node, e.getMessage());
+    }
+  }
+
+  /**
+   * Remove a {@link ChildWatch} from a particular ZK node
+   * @param node the node to stop watching
+   * @param watch the watcher to remove
+   */
+  public void removeChildWatch(String node, ChildWatch watch) {
+    dataWatches.compute(node, (n, s) -> {
+      s.remove(watch);
+      if (s.size() == 0)
+        return null;
+      return s;
+    });
+  }
+
+  private synchronized void notifyChildWatches(String node, List<String> children) {
+
+    Set<ChildWatch> watchesToRemove = childWatches.getOrDefault(node, Collections.emptySet())
+        .stream()
+        .filter(watch -> watch.onChanged(children) == false)
+        .collect(Collectors.toSet());
+    for (ChildWatch watch : watchesToRemove) {
+      removeChildWatch(node, watch);
+    }
+  }
+
+  /**
+   * Called by the {@link ConnectionManager} when a session has been established
+   *
+   * For internal use only
+   */
+  synchronized void onConnect() {
+    // re-establish all data watches
+    for (String node : dataWatches.keySet()) {
+      readNode(node, new NodeWatcher(node));
+    }
+    for (String node : childWatches.keySet()) {
+      readChildren(node, new ChildWatcher(node));
+    }
   }
 
   /**
