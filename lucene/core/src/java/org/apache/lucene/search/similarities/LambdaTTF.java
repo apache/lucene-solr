@@ -30,7 +30,12 @@ public class LambdaTTF extends Lambda {
 
   @Override
   public final float lambda(BasicStats stats) {
-    return (stats.getTotalTermFreq()+1F) / (stats.getNumberOfDocuments()+1F);
+    float lambda = (float) ((stats.getTotalTermFreq() + 1.0) / (stats.getNumberOfDocuments() + 1.0));
+    if (lambda == 1) {
+      // Distribution SPL cannot work with values of lambda that are equal to 1
+      lambda = Math.nextUp(lambda);
+    }
+    return lambda;
   }
 
   public final Explanation explain(BasicStats stats) {

@@ -58,7 +58,7 @@ public class AxiomaticF3EXP extends Axiomatic {
    */
   @Override
   protected double tf(BasicStats stats, double freq, double docLen) {
-    if (freq <= 0.0) return 0.0;
+    freq += 1; // otherwise gives negative scores for freqs < 1
     return 1 + Math.log(1 + Math.log(freq));
   }
 

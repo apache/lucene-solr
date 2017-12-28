@@ -17,6 +17,7 @@
 package org.apache.lucene.search.similarities;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.Explanation;
@@ -101,17 +102,42 @@ public abstract class Axiomatic extends SimilarityBase {
 
   @Override
   public double score(BasicStats stats, double freq, double docLen) {
-    return tf(stats, freq, docLen)
+    double score = tf(stats, freq, docLen)
         * ln(stats, freq, docLen)
         * tfln(stats, freq, docLen)
         * idf(stats, freq, docLen)
         - gamma(stats, freq, docLen);
+    // AxiomaticF3 similarities might produce negative scores due to their gamma component
+    return Math.max(0, score);
   }
 
   @Override
   protected double maxScore(BasicStats stats, double maxFreq) {
     // TODO: can we compute a better upper bound on the produced scores
     return Double.POSITIVE_INFINITY;
+  }
+
+  @Override
+  protected Explanation explain(
+      BasicStats stats, int doc, Explanation freq, double docLen) {    
+    List<Explanation> subs = new ArrayList<>();
+    explain(subs, stats, doc, freq.getValue(), docLen);
+    
+    double score = tf(stats, freq.getValue(), docLen)
+        * ln(stats, freq.getValue(), docLen)
+        * tfln(stats, freq.getValue(), docLen)
+        * idf(stats, freq.getValue(), docLen)
+        - gamma(stats, freq.getValue(), docLen);
+
+    Explanation explanation = Explanation.match((float) score,
+        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
+        subs);
+    if (score < 0) {
+      explanation = Explanation.match(0, "max of:",
+          Explanation.match(0, "Minimum legal score"),
+          explanation);
+    }
+    return explanation;
   }
 
   @Override

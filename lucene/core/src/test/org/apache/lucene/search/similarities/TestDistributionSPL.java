@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.search.similarities;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
-// scores go infinite, but it warns it has problems
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8010")
 public class TestDistributionSPL extends DistributionTestCase {
 
   @Override

@@ -54,6 +54,13 @@ public class TestSimilarity2 extends LuceneTestCase {
     sims = new ArrayList<>();
     sims.add(new ClassicSimilarity());
     sims.add(new BM25Similarity());
+    sims.add(new BooleanSimilarity());
+    sims.add(new AxiomaticF1EXP());
+    sims.add(new AxiomaticF1LOG());
+    sims.add(new AxiomaticF2EXP());
+    sims.add(new AxiomaticF2LOG());
+    sims.add(new AxiomaticF3EXP(0.25f, 3));
+    sims.add(new AxiomaticF3LOG(0.25f, 3));
     // TODO: not great that we dup this all with TestSimilarityBase
     for (BasicModel basicModel : TestSimilarityBase.BASIC_MODELS) {
       for (AfterEffect afterEffect : TestSimilarityBase.AFTER_EFFECTS) {
