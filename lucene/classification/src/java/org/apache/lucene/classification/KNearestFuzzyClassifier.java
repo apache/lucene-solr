@@ -140,6 +140,7 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
     TopDocs knnResults = knnSearch(text);
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     Collections.sort(assignedClasses);
+    max = Math.min(max, assignedClasses.size());
     return assignedClasses.subList(0, max);
   }
 
