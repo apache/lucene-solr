@@ -389,11 +389,13 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       for(Metric metric : _metrics) {
         String identifier = metric.getIdentifier();
         if(!identifier.startsWith("count(")) {
-          double d = (double)bucket.get("facet_"+m);
-          if(metric.outputLong) {
-            t.put(identifier, Math.round(d));
-          } else {
-            t.put(identifier, d);
+          if(bucket.get("facet_"+m) != null) {
+            Number d = (Number) bucket.get("facet_" + m);
+            if (metric.outputLong) {
+              t.put(identifier, Math.round(d.doubleValue()));
+            } else {
+              t.put(identifier, d.doubleValue());
+            }
           }
           ++m;
         } else {
