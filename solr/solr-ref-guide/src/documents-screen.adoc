@@ -68,7 +68,7 @@ Then you can choose when documents should be added to the index (Commit Within),
 
 == Solr Command
 
-The Solr Command option allows you use XML or JSON to perform specific actions on documents, such as defining documents to be added or deleted, updating only certain fields of documents, or commit and optimize commands on the index.
+The Solr Command option allows you use XML or JSON to perform specific actions on documents, such as defining documents to be added or deleted, updating only certain fields of documents, or commit commands on the index.
 
 The documents should be structured as they would be if using `/update` on the command line.
 

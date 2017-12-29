@@ -98,7 +98,6 @@ solrAdminApp.controller('DataImportController',
             verbose: false,
             clean: true,
             commit: true,
-            optimize: false,
             showDebug: false,
             custom: "",
             core: $routeParams.core
