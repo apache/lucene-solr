@@ -37,7 +37,7 @@ import org.apache.lucene.index.Term;
  *   String field;
  *   long minValue, maxValue;
  *   Query pointQuery = LongPoint.newRangeQuery(field, minValue, maxValue);
- *   Query dvQuery = SortedNumericDocValuesField.newRangeQuery(field, minValue, maxValue);
+ *   Query dvQuery = SortedNumericDocValuesField.newSlowRangeQuery(field, minValue, maxValue);
  *   Query query = new IndexOrDocValuesQuery(pointQuery, dvQuery);
  * </pre>
  * The above query will be efficient as it will use points in the case that they

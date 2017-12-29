@@ -107,6 +107,11 @@ Bug Fixes
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
   (Xiaoshan Sun via Adrien Grand)
 
+Other
+
+* LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
+  (Kai Chan via Adrien Grand)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
