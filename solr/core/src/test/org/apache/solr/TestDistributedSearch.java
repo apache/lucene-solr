@@ -56,6 +56,7 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.ReRankQParserPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -233,6 +234,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",1);
     query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.mincount",2);
+
+    // test rerank queries
+    query("q","all","fl","*,score","start","1", "rq", "{!"+ ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=quick "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
+    // change start
+    query("q","all","fl","*,score","start","5", "rq", "{!"+ ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=quick "+ReRankQParserPlugin.RERANK_DOCS+"=10}");
+    // use external rerank query
+    query("q","all","fl","*,score","start","1", "rq", "{!"+ ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=10}","rqq", "{!edismax bf=$bff}*:*", "bff", "field("+i1+")");
+    // rankquery doesn't match anything
+    query("q","all","fl","*,score","start","1", "rq", "{!"+ ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=matchesnothing "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
+    // original query doesn't match anything
+    query("q","matchesnothing","fl","*,score","start","1", "rq", "{!"+ ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=*:* "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
 
     // a facet query to test out chars out of the ascii range
     query("q","*:*", "rows",0, "facet","true", "facet.query","{!term f=foo_s}international\u00ff\u01ff\u2222\u3333");
