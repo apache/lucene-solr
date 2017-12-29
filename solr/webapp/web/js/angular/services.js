@@ -35,8 +35,7 @@ solrAdminServices.factory('System',
     "deleteReplica": {params:{action: "DELETEREPLICA"}},
     "addReplica": {params:{action: "ADDREPLICA"}},
     "deleteShard": {params:{action: "DELETESHARD"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}},
-    "optimize": {params:{}}
+    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
     });
   }])
 .factory('Cores',
@@ -49,8 +48,7 @@ solrAdminServices.factory('System',
     "unload": {params:{action: "UNLOAD", core: "@core"}},
     "rename": {params:{action: "RENAME"}},
     "swap": {params:{action: "SWAP"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}},
-    "optimize": {params:{}}
+    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}}
     });
   }])
 .factory('Logging',
@@ -106,7 +104,6 @@ solrAdminServices.factory('System',
 .factory('Update',
   ['$resource', function($resource) {
     return $resource(':core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
-      "optimize": {params: { optimize: "true"}},
       "commit": {params: {commit: "true"}},
       "post": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
       "postJson": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},

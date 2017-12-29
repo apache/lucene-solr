@@ -15,7 +15,6 @@
  limitations under the License.
 */
 
-// @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CoreAdminController',
     function($scope, $routeParams, $location, $timeout, $route, Cores, Update, Constants){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
@@ -174,20 +173,6 @@ solrAdminApp.controller('CoreAdminController',
         $scope.showRename = false;
         $scope.showAdd = false;
         $scope.showSwap = false;
-      };
-
-      $scope.optimizeCore = function() {
-        Update.optimize({core: $scope.selectedCore},
-          function(successData) {
-            $scope.optimizeSuccess = true;
-            $timeout(function() {$scope.optimizeSuccess=false}, 1000);
-            $scope.refresh();
-          },
-          function(failureData) {
-            $scope.optimizeFailure = true;
-            $timeout(function () {$scope.optimizeFailure=false}, 1000);
-            $scope.refresh();
-          });
       };
 
       $scope.refresh();

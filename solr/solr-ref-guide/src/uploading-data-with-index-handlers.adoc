@@ -87,7 +87,9 @@ The `<commit>` operation writes all documents loaded since the last commit to on
 
 Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
 
-The `<optimize>` operation requests Solr to merge internal data structures in order to improve search performance. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance will improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred. In contrast, post-commit transfers are usually much smaller.
+The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
+
+WARNING: You should only consider using optimize on static indexes, i.e. indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
@@ -95,6 +97,8 @@ The `<commit>` and `<optimize>` elements accept these optional attributes:
 Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
 `expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging them in the process.
+
+WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
 `maxSegments`:: (optimize only) Default is `1`. Merges the segments down to no more than this number of segments.
 
