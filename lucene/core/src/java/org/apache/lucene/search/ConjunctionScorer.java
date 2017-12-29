@@ -27,6 +27,7 @@ class ConjunctionScorer extends Scorer {
   final DocIdSetIterator disi;
   final Scorer[] scorers;
   final Collection<Scorer> required;
+  final MaxScoreSumPropagator maxScorePropagator;
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
   ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers) {
@@ -35,6 +36,7 @@ class ConjunctionScorer extends Scorer {
     this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
     this.required = required;
+    this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
   @Override
@@ -63,22 +65,13 @@ class ConjunctionScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    // We iterate in the same order as #score() so no need to worry
-    // about floating-point errors: we would do the same errors in
-    // #score()
-    double sum = 0d;
-    for (Scorer scorer : scorers) {
-      sum += scorer.maxScore();
-    }
-    return (float) sum;
+    return maxScorePropagator.maxScore();
   }
 
   @Override
   public void setMinCompetitiveScore(float score) {
-    if (scorers.length == 1) {
-      scorers[0].setMinCompetitiveScore(score);
-    }
-    // TODO: handle the case when there are multiple scoring clauses too
+    // Propagate to sub clauses.
+    maxScorePropagator.setMinCompetitiveScore(score);
   }
 
   @Override

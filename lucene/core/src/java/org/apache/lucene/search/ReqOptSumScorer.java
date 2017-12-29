@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /** A Scorer for queries with a required part and an optional part.
@@ -35,6 +36,7 @@ class ReqOptSumScorer extends Scorer {
   private boolean optIsRequired;
   private final DocIdSetIterator approximation;
   private final TwoPhaseIterator twoPhase;
+  final MaxScoreSumPropagator maxScorePropagator;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -51,6 +53,7 @@ class ReqOptSumScorer extends Scorer {
     this.optScorer = optScorer;
 
     this.reqMaxScore = reqScorer.maxScore();
+    this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
 
     final TwoPhaseIterator reqTwoPhase = reqScorer.twoPhaseIterator();
     this.optTwoPhase = optScorer.twoPhaseIterator();
@@ -208,14 +211,17 @@ class ReqOptSumScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    return reqScorer.maxScore() + optScorer.maxScore();
+    return maxScorePropagator.maxScore();
   }
 
   @Override
   public void setMinCompetitiveScore(float minScore) {
+    // Potentially move to a conjunction
     if (optIsRequired == false && minScore > reqMaxScore) {
       optIsRequired = true;
     }
+    // And also propagate to sub clauses.
+    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override

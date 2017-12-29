@@ -64,6 +64,11 @@ Optimizations
 * LUCENE-7993: Phrase queries are now faster if total hit counts are not
   required. (Adrien Grand)
 
+* LUCENE-8109: Boolean queries propagate information about the minimum
+  competitive score in order to make collection faster if there are disjunctions
+  or phrase queries as sub queries, which know how to leverage this information
+  to run faster. (Adrien Grand)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
