@@ -107,6 +107,7 @@ public abstract class Axiomatic extends SimilarityBase {
         * tfln(stats, freq, docLen)
         * idf(stats, freq, docLen)
         - gamma(stats, freq, docLen);
+    score *= stats.boost;
     // AxiomaticF3 similarities might produce negative scores due to their gamma component
     return Math.max(0, score);
   }
@@ -132,6 +133,11 @@ public abstract class Axiomatic extends SimilarityBase {
     Explanation explanation = Explanation.match((float) score,
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
         subs);
+    if (stats.boost != 1f) {
+      explanation = Explanation.match((float) (score * stats.boost), "Boosted score, computed as (score * boost) from:",
+          explanation,
+          Explanation.match((float) stats.boost, "Query boost"));
+    }
     if (score < 0) {
       explanation = Explanation.match(0, "max of:",
           Explanation.match(0, "Minimum legal score"),
