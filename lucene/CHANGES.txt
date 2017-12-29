@@ -61,6 +61,9 @@ Optimizations
 * LUCENE-4100: Disjunctions now support faster collection of top hits when the
   total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
 
+* LUCENE-7993: Phrase queries are now faster if total hit counts are not
+  required. (Adrien Grand)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes

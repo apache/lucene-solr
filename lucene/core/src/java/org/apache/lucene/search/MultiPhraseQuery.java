@@ -185,13 +185,13 @@ public class MultiPhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
     private final Map<Term,TermContext> termContexts = new HashMap<>();
-    private final boolean needsScores;
+    private final ScoreMode scoreMode;
 
-    public MultiPhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
+    public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
-      this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity(needsScores);
+      this.scoreMode = scoreMode;
+      this.similarity = searcher.getSimilarity(scoreMode.needsScores());
       final IndexReaderContext context = searcher.getTopReaderContext();
 
       // compute idf
@@ -283,11 +283,11 @@ public class MultiPhraseQuery extends Query {
       if (slop == 0) {
         return new ExactPhraseScorer(this, postingsFreqs,
                                       similarity.simScorer(stats, context),
-                                      needsScores, totalMatchCost);
+                                      scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
                                         similarity.simScorer(stats, context),
-                                        needsScores, totalMatchCost);
+                                        scoreMode.needsScores(), totalMatchCost);
       }
     }
 
@@ -335,7 +335,7 @@ public class MultiPhraseQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new MultiPhraseWeight(searcher, scoreMode.needsScores(), boost);
+    return new MultiPhraseWeight(searcher, scoreMode, boost);
   }
 
   /** Prints a user-readable version of this query. */

@@ -353,10 +353,10 @@ public class PhraseQuery extends Query {
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
-    private final boolean needsScores;
+    private final ScoreMode scoreMode;
     private transient TermContext states[];
 
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
+    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -365,8 +365,8 @@ public class PhraseQuery extends Query {
       } else if (positions[0] != 0) {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
-      this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity(needsScores);
+      this.scoreMode = scoreMode;
+      this.similarity = searcher.getSimilarity(scoreMode.needsScores());
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
@@ -434,11 +434,11 @@ public class PhraseQuery extends Query {
       if (slop == 0) {  // optimize exact case
         return new ExactPhraseScorer(this, postingsFreqs,
                                       similarity.simScorer(stats, context),
-                                      needsScores, totalMatchCost);
+                                      scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
                                         similarity.simScorer(stats, context),
-                                        needsScores, totalMatchCost);
+                                        scoreMode.needsScores(), totalMatchCost);
       }
     }
 
@@ -510,7 +510,7 @@ public class PhraseQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new PhraseWeight(searcher, scoreMode.needsScores(), boost);
+    return new PhraseWeight(searcher, scoreMode, boost);
   }
 
   /** Prints a user-readable version of this query. */

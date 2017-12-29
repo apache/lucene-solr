@@ -43,15 +43,17 @@ final class ExactPhraseScorer extends Scorer {
   private int freq;
 
   private final Similarity.SimScorer docScorer;
-  private final boolean needsScores;
+  private final boolean needsScores, needsTotalHitCount;
   private float matchCost;
+  private float minCompetitiveScore;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer, boolean needsScores,
+                    Similarity.SimScorer docScorer, ScoreMode scoreMode,
                     float matchCost) throws IOException {
     super(weight);
     this.docScorer = docScorer;
-    this.needsScores = needsScores;
+    this.needsScores = scoreMode.needsScores();
+    this.needsTotalHitCount = scoreMode != ScoreMode.TOP_SCORES;
 
     List<DocIdSetIterator> iterators = new ArrayList<>();
     List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
@@ -66,10 +68,25 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   @Override
+  public void setMinCompetitiveScore(float minScore) {
+    minCompetitiveScore = minScore;
+  }
+
+  @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
+        if (needsTotalHitCount == false && minCompetitiveScore > 0) {
+          int minFreq = postings[0].postings.freq();
+          for (int i = 1; i < postings.length; ++i) {
+            minFreq = Math.min(postings[i].postings.freq(), minFreq);
+          }
+          if (docScorer.score(docID(), minFreq) < minCompetitiveScore) {
+            // The maximum score we could get is less than the min competitive score
+            return false;
+          }
+        }
         return phraseFreq() > 0;
       }
 
