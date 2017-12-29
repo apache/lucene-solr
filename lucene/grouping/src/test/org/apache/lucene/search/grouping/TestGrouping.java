@@ -59,6 +59,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -135,6 +136,8 @@ public class TestGrouping extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
+    // This test relies on the fact that longer fields produce lower scores
+    indexSearcher.setSimilarity(new BM25Similarity());
     w.close();
 
     final Sort groupSort = Sort.RELEVANCE;
