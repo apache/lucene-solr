@@ -324,7 +324,9 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
 
   public void testCommonTermsQueryHighlight() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
+    IndexWriter writer = new IndexWriter(dir,
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET))
+        .setMergePolicy(newLogMergePolicy())); // don't reorder doc ids
     FieldType type = new FieldType(TextField.TYPE_STORED);
     type.setStoreTermVectorOffsets(true);
     type.setStoreTermVectorPositions(true);
@@ -353,11 +355,11 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     TopDocs hits = searcher.search(query, 10);
     assertEquals(2, hits.totalHits);
     FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);
-    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[0].doc, "field", 1000, 1);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, 1, "field", 1000, 1);
     assertEquals("This piece of <b>text</b> refers to Kennedy at the beginning then has a longer piece of <b>text</b> that is <b>very</b> <b>long</b> in the middle and finally ends with another reference to Kennedy", bestFragments[0]);
 
     fieldQuery  = highlighter.getFieldQuery(query, reader);
-    bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[1].doc, "field", 1000, 1);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, 0, "field", 1000, 1);
     assertEquals("Hello this is a piece of <b>text</b> that is <b>very</b> <b>long</b> and contains too much preamble and the meat is really here which says kennedy has been shot", bestFragments[0]);
 
     reader.close();
