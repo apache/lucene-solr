@@ -32,7 +32,7 @@ import org.apache.solr.response.SolrQueryResponse;
 public class ConfigSetsHandlerApi extends BaseHandlerApiSupport {
 
   final public static String DEFAULT_CONFIGSET_NAME = "_default";
-  final public static String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED_CONFIGSET";
+  final public static String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
 
 
   final ConfigSetsHandler configSetHandler;
