@@ -7550,6 +7550,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testSumSq() throws Exception {
+    String cexpr = "sumSq(array(-3,-2.5, 10))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number sumSq = (Number)tuples.get(0).get("return-value");
+    assertEquals(sumSq.doubleValue(), 115.25D, 0.0D);
+  }
+
+
+  @Test
   public void testMonteCarlo() throws Exception {
     String cexpr = "let(a=constantDistribution(10), b=constantDistribution(20), c=monteCarlo(add(sample(a), sample(b)), 10))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
