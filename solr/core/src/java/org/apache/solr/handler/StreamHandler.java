@@ -288,6 +288,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("density", DensityEvaluator.class)
         .withFunctionName("mannWhitney", MannWhitneyUEvaluator.class)
         .withFunctionName("sumSq", SumSqEvaluator.class)
+        .withFunctionName("akima", AkimaEvaluator.class)
+        .withFunctionName("lerp", LerpEvaluator.class)
 
         // Boolean Stream Evaluators
 

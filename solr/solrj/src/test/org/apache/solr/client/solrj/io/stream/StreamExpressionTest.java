@@ -7345,7 +7345,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testSpline() throws Exception {
     String cexpr = "let(echo=true," +
-                   "    a=array(0,1,2,3,4,5,6,7), b=array(1,70,90,10,78, 100, 1, 9)," +
+                   "    a=array(0,1,2,3,4,5,6,7), " +
+                   "    b=array(1,70,90,10,78, 100, 1, 9)," +
                    "    fit=spline(a, b), " +
                    "    der=derivative(fit))";
 
@@ -7380,6 +7381,88 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(out1.get(5).doubleValue(), -63.87117828924769, 0.0001);
     assertEquals(out1.get(6).doubleValue(), -63.17966334592923, 0.0001);
     assertEquals(out1.get(7).doubleValue(), 43.58983167296462, 0.0001);
+  }
+
+
+  @Test
+  public void testAkima() throws Exception {
+    String cexpr = "let(echo=true," +
+        "    a=array(0,1,2,3,4,5,6,7), " +
+        "    b=array(1,70,90,10,78, 100, 1, 9)," +
+        "    fit=akima(a, b), " +
+        "    der=derivative(fit))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(1).doubleValue(), 70.0, 0.0001);
+    assertEquals(out.get(2).doubleValue(), 90.0, 0.0001);
+    assertEquals(out.get(3).doubleValue(), 10.0, 0.0001);
+    assertEquals(out.get(4).doubleValue(), 78.0, 0.0001);
+    assertEquals(out.get(5).doubleValue(), 100.0, 0.0001);
+    assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 93.5, 0.0001);
+    assertEquals(out1.get(1).doubleValue(), 44.5, 0.0001);
+    assertEquals(out1.get(2).doubleValue(),-4.873096446700508, 0.0001);
+    assertEquals(out1.get(3).doubleValue(), 21.36986301369863, 0.0001);
+    assertEquals(out1.get(4).doubleValue(),42.69144981412639, 0.0001);
+    assertEquals(out1.get(5).doubleValue(),-14.379084967320262, 0.0001);
+    assertEquals(out1.get(6).doubleValue(), -45.5, 0.0001);
+    assertEquals(out1.get(7).doubleValue(), 61.5, 0.0001);
+  }
+
+
+  @Test
+  public void testLerp() throws Exception {
+    String cexpr = "let(echo=true," +
+        "    a=array(0,1,2,3,4,5,6,7), " +
+        "    b=array(1,70,90,10,78, 100, 1, 9)," +
+        "    fit=lerp(a, b), " +
+        "    der=derivative(fit))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(1).doubleValue(), 70.0, 0.0001);
+    assertEquals(out.get(2).doubleValue(), 90.0, 0.0001);
+    assertEquals(out.get(3).doubleValue(), 10.0, 0.0001);
+    assertEquals(out.get(4).doubleValue(), 78.0, 0.0001);
+    assertEquals(out.get(5).doubleValue(), 100.0, 0.0001);
+    assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 69.0, 0.0001);
+    assertEquals(out1.get(1).doubleValue(), 20.0, 0.0001);
+    assertEquals(out1.get(2).doubleValue(),-80.0, 0.0001);
+    assertEquals(out1.get(3).doubleValue(), 68, 0.0001);
+    assertEquals(out1.get(4).doubleValue(), 22.0, 0.0001);
+    assertEquals(out1.get(5).doubleValue(),-99.0, 0.0001);
+    assertEquals(out1.get(6).doubleValue(), 8.0, 0.0001);
+    assertEquals(out1.get(7).doubleValue(), 8.0, 0.0001);
   }
 
 
