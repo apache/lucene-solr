@@ -1347,24 +1347,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       for (int i = 0; i < 8; i++) {
         scheduledTriggers.remove(triggerList.get(i).getName());
       }
-
-      config = config.withProperties(Collections.singletonMap(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS, 6));
-      scheduledTriggers.setAutoScalingConfig(config);
-      lastActionExecutedAt.set(0);
-      throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(6));
-      triggerFiredLatch = new CountDownLatch(2);
-      Map<String, Object> props = map("waitFor", 0L, "actions", Collections.singletonList(map("name","throttler", "class", ThrottlingTesterAction.class.getName())));
-      scheduledTriggers.add(new NodeAddedTrigger("y1", props, resourceLoader, solrCloudManager));
-      scheduledTriggers.add(new NodeAddedTrigger("y2", props, resourceLoader, solrCloudManager));
-      scheduledTriggers.resetActionThrottle();
-      JettySolrRunner newNode = cluster.startJettySolrRunner();
-      assertTrue(getTriggerFiredLatch().await(20, TimeUnit.SECONDS));
-      for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-        if (cluster.getJettySolrRunner(i) == newNode) {
-          cluster.stopJettySolrRunner(i);
-          break;
-        }
-      }
     }
   }
 

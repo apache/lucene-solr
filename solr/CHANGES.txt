@@ -49,6 +49,14 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.20.v20170531
 
+Upgrade Notes
+----------------------
+
+* SOLR-11748: The throttling mechanism used to limit the rate of autoscaling events processed
+  has been removed. This deprecates the 'actionThrottlePeriodSeconds' setting in the set-properties
+  Autoscaling API which is now a no-op. Use the 'triggerCooldownPeriodSeconds' instead to pause event
+  processing.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -94,6 +102,8 @@ Other Changes
 * SOLR-11793: Reduce code duplication w.r.t. RestTestHarness(es). (Christine Poerschke)
 
 * SOLR-7733: remove "optimize" from the UI. (Erick Erickson)
+
+* SOLR-11748: Remove Autoscaling action throttle. (shalin)
 
 ==================  7.2.0 ==================
 

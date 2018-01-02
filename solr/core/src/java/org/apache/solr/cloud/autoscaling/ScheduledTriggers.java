@@ -39,11 +39,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -53,7 +51,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatusResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -116,8 +113,6 @@ public class ScheduledTriggers implements Closeable {
 
   private final AtomicLong triggerDelay = new AtomicLong(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
 
-  private final AtomicReference<ActionThrottle> actionThrottle;
-
   private final SolrCloudManager cloudManager;
 
   private final DistribStateManager stateManager;
@@ -136,7 +131,6 @@ public class ScheduledTriggers implements Closeable {
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
-    actionThrottle = new AtomicReference<>(new ActionThrottle("action", TimeUnit.SECONDS.toMillis(DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS), cloudManager.getTimeSource()));
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getDistribStateManager();
     this.loader = loader;
@@ -183,35 +177,15 @@ public class ScheduledTriggers implements Closeable {
           case TRIGGER_CORE_POOL_SIZE:
             this.scheduledThreadPoolExecutor.setCorePoolSize(((Number) newProps.get(key)).intValue());
             break;
-          case ACTION_THROTTLE_PERIOD_SECONDS:
-            long minMsBetweenActions = TimeUnit.SECONDS.toMillis(((Number) newProps.get(key)).longValue());
-            ActionThrottle oldThrottle = this.actionThrottle.get();
-            ActionThrottle newThrottle = null;
-            if (oldThrottle.getLastActionStartedAt() != null) {
-              newThrottle = new ActionThrottle("action",
-                  minMsBetweenActions,
-                  oldThrottle.getLastActionStartedAt(),
-                  cloudManager.getTimeSource());
-            } else  {
-              newThrottle = new ActionThrottle("action", minMsBetweenActions, cloudManager.getTimeSource());
-            }
-            this.actionThrottle.set(newThrottle);
-            break;
         }
       }
     }
     this.autoScalingConfig = autoScalingConfig;
 
-    // reset cooldown and actionThrottle
+    // reset cooldown
     cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
-    actionThrottle.get().reset();
 
     listeners.setAutoScalingConfig(autoScalingConfig);
-  }
-
-  @VisibleForTesting
-  void resetActionThrottle() {
-    actionThrottle.get().reset();
   }
 
   /**
@@ -308,11 +282,6 @@ public class ScheduledTriggers implements Closeable {
             long eventProcessingStart = cloudManager.getTimeSource().getTime();
             log.debug("-- processing actions for " + event);
             try {
-              // let the action executor thread wait instead of the trigger thread so we use the throttle here
-              ActionThrottle actionThrottle = this.actionThrottle.get();
-              actionThrottle.minimumWaitBetweenActions();
-              actionThrottle.markAttemptingAction();
-
               // in future, we could wait for pending tasks in a different thread and re-enqueue
               // this event so that we continue processing other events and not block this action executor
               waitForPendingTasks(newTrigger, actions);
