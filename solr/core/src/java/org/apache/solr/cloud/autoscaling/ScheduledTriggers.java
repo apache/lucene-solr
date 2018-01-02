@@ -85,7 +85,6 @@ public class ScheduledTriggers implements Closeable {
 
   static final Map<String, Object> DEFAULT_PROPERTIES = new HashMap<>();
 
-  // Note: values must be all in milliseconds!
   static {
     DEFAULT_PROPERTIES.put(TRIGGER_SCHEDULE_DELAY_SECONDS, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
     DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
