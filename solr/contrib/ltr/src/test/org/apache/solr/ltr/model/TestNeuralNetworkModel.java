@@ -171,8 +171,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
           (layer1Node2Output*outputNodeWeight2) +
           (layer1Node3Output*outputNodeWeight3) +
           outputNodeBias;
-      assertTrue("outputNodeOutput="+outputNodeOutput, 74.0 <= outputNodeOutput); // all zero inputs produced output 74
-      assertTrue("outputNodeOutput="+outputNodeOutput, outputNodeOutput <= 294.0); // all one inputs produced output 294
+      assertTrue("outputNodeOutput="+outputNodeOutput, 74.0 <= outputNodeOutput); // inputs between zero and one produced output less than 74
+      assertTrue("outputNodeOutput="+outputNodeOutput, outputNodeOutput <= 294.0); // inputs between zero and one produced output less than 294
       // and the expected score is that of the output node
       final double expectedScore = outputNodeOutput;
       float score = ltrScoringModel.score(testVec);
