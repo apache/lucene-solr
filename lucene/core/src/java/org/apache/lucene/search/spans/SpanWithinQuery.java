@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreMode;
 
@@ -46,15 +46,15 @@ public final class SpanWithinQuery extends SpanContainQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    SpanWeight bigWeight = big.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    SpanWeight littleWeight = little.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    return new SpanWithinWeight(searcher, scoreMode.needsScores() ? getTermContexts(bigWeight, littleWeight) : null,
+    SpanWeight bigWeight = big.createWeight(searcher, scoreMode, boost);
+    SpanWeight littleWeight = little.createWeight(searcher, scoreMode, boost);
+    return new SpanWithinWeight(searcher, scoreMode.needsScores() ? getTermStates(bigWeight, littleWeight) : null,
                                       bigWeight, littleWeight, boost);
   }
 
   public class SpanWithinWeight extends SpanContainWeight {
 
-    public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
+    public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
                             SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {
       super(searcher, terms, bigWeight, littleWeight, boost);
     }

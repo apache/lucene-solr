@@ -29,7 +29,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -49,7 +49,7 @@ public class TestTermQuery extends LuceneTestCase {
         new TermQuery(new Term("foo", "baz")));
     QueryUtils.checkEqual(
         new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "bar"), TermContext.build(new MultiReader().getContext(), new Term("foo", "bar"))));
+        new TermQuery(new Term("foo", "bar"), TermStates.build(new MultiReader().getContext(), new Term("foo", "bar"), true)));
   }
 
   public void testCreateWeightDoesNotSeekIfScoresAreNotNeeded() throws IOException {
@@ -84,7 +84,7 @@ public class TestTermQuery extends LuceneTestCase {
     searcher.search(query, collector);
     assertEquals(1, collector.getTotalHits());
     TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
-        TermContext.build(reader.getContext(), new Term("foo", "bar")));
+        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
     collector = new TotalHitCountCollector();
     searcher.search(queryWithContext, collector);
     assertEquals(1, collector.getTotalHits());

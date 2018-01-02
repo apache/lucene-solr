@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -186,8 +186,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term);
-        stats.put(term, s.termStatistics(term, termContext));
+        final TermStates termStates = TermStates.build(s.getIndexReader().getContext(), term, true);
+        stats.put(term, s.termStatistics(term, termStates));
       }
     } finally {
       node.searchers.release(s);
@@ -262,7 +262,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
 
       @Override
-      public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+      public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
         assert term != null;
         long docFreq = 0;
         long totalTermFreq = 0;

@@ -32,7 +32,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -353,7 +353,7 @@ public class PhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
-    private transient TermContext states[];
+    private transient TermStates states[];
 
     public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
@@ -367,15 +367,17 @@ public class PhraseQuery extends Query {
       this.scoreMode = scoreMode;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
-      states = new TermContext[terms.length];
+      states = new TermStates[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
       int termUpTo = 0;
       for (int i = 0; i < terms.length; i++) {
         final Term term = terms[i];
-        states[i] = TermContext.build(context, term);
-        TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
-        if (termStatistics != null) {
-          termStats[termUpTo++] = termStatistics;
+        states[i] = TermStates.build(context, term, scoreMode.needsScores());
+        if (scoreMode.needsScores()) {
+          TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+          if (termStatistics != null) {
+            termStats[termUpTo++] = termStatistics;
+          }
         }
       }
       if (termUpTo > 0) {
@@ -414,7 +416,7 @@ public class PhraseQuery extends Query {
       
       for (int i = 0; i < terms.length; i++) {
         final Term t = terms[i];
-        final TermState state = states[i].get(context.ord);
+        final TermState state = states[i].get(context);
         if (state == null) { /* term doesnt exist in this segment */
           assert termNotInReader(reader, t): "no termstate found but term exists in reader";
           return null;

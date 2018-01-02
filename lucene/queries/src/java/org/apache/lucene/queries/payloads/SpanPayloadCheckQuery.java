@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
@@ -64,8 +64,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    return new SpanPayloadCheckWeight(searcher, scoreMode.needsScores() ? getTermContexts(matchWeight) : null, matchWeight, boost);
+    SpanWeight matchWeight = match.createWeight(searcher, scoreMode, boost);
+    return new SpanPayloadCheckWeight(searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, matchWeight, boost);
   }
 
   @Override
@@ -84,8 +84,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
     final SpanWeight matchWeight;
 
-    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanWeight matchWeight, float boost) throws IOException {
-      super(SpanPayloadCheckQuery.this, searcher, termContexts, boost);
+    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermStates> termStates, SpanWeight matchWeight, float boost) throws IOException {
+      super(SpanPayloadCheckQuery.this, searcher, termStates, boost);
       this.matchWeight = matchWeight;
     }
 
@@ -95,8 +95,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      matchWeight.extractTermContexts(contexts);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      matchWeight.extractTermStates(contexts);
     }
 
     @Override

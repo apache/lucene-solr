@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
@@ -45,8 +45,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public void extractTermContexts(Map<Term, TermContext> contexts) {
-    in.extractTermContexts(contexts);
+  public void extractTermStates(Map<Term, TermStates> contexts) {
+    in.extractTermStates(contexts);
   }
 
   @Override

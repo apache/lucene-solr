@@ -35,6 +35,9 @@ API Changes
 * LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
   scoring factors. (Adrien Grand)
 
+* LUCENE-8113: TermContext has been renamed to TermStates, and can now be 
+  constructed lazily if term statistics are not required (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

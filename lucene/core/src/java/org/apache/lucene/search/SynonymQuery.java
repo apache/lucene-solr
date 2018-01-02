@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
@@ -126,7 +126,7 @@ public final class SynonymQuery extends Query {
   }
   
   class SynonymWeight extends Weight {
-    private final TermContext termContexts[];
+    private final TermStates termStates[];
     private final Similarity similarity;
     private final Similarity.SimScorer simWeight;
 
@@ -135,10 +135,10 @@ public final class SynonymQuery extends Query {
       CollectionStatistics collectionStats = searcher.collectionStatistics(terms[0].field());
       long docFreq = 0;
       long totalTermFreq = 0;
-      termContexts = new TermContext[terms.length];
-      for (int i = 0; i < termContexts.length; i++) {
-        termContexts[i] = TermContext.build(searcher.getTopReaderContext(), terms[i]);
-        TermStatistics termStats = searcher.termStatistics(terms[i], termContexts[i]);
+      termStates = new TermStates[terms.length];
+      for (int i = 0; i < termStates.length; i++) {
+        termStates[i] = TermStates.build(searcher.getTopReaderContext(), terms[i], true);
+        TermStatistics termStats = searcher.termStatistics(terms[i], termStates[i]);
         if (termStats != null) {
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += termStats.totalTermFreq();
@@ -202,7 +202,7 @@ public final class SynonymQuery extends Query {
       List<Scorer> subScorers = new ArrayList<>();
       long totalMaxFreq = 0;
       for (int i = 0; i < terms.length; i++) {
-        TermState state = termContexts[i].get(context.ord);
+        TermState state = termStates[i].get(context);
         if (state != null) {
           TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
           termsEnum.seekExact(terms[i].bytes(), state);

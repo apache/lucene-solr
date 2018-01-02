@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -79,24 +79,24 @@ public abstract class SpanWeight extends Weight {
    * Create a new SpanWeight
    * @param query the parent query
    * @param searcher the IndexSearcher to query against
-   * @param termContexts a map of terms to termcontexts for use in building the similarity.  May
+   * @param termStates a map of terms to {@link TermStates} for use in building the similarity.  May
    *                     be null if scores are not required
    * @throws IOException on error
    */
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermStates> termStates, float boost) throws IOException {
     super(query);
     this.field = query.getField();
     this.similarity = searcher.getSimilarity();
-    this.simScorer = buildSimWeight(query, searcher, termContexts, boost);
+    this.simScorer = buildSimWeight(query, searcher, termStates, boost);
   }
 
-  private Similarity.SimScorer buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
-    if (termContexts == null || termContexts.size() == 0 || query.getField() == null)
+  private Similarity.SimScorer buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermStates> termStates, float boost) throws IOException {
+    if (termStates == null || termStates.size() == 0 || query.getField() == null)
       return null;
-    TermStatistics[] termStats = new TermStatistics[termContexts.size()];
+    TermStatistics[] termStats = new TermStatistics[termStates.size()];
     int termUpTo = 0;
-    for (Term term : termContexts.keySet()) {
-      TermStatistics termStatistics = searcher.termStatistics(term, termContexts.get(term));
+    for (Term term : termStates.keySet()) {
+      TermStatistics termStatistics = searcher.termStatistics(term, termStates.get(term));
       if (termStatistics != null) {
         termStats[termUpTo++] = termStatistics;
       }
@@ -110,10 +110,10 @@ public abstract class SpanWeight extends Weight {
   }
 
   /**
-   * Collect all TermContexts used by this Weight
-   * @param contexts a map to add the TermContexts to
+   * Collect all TermStates used by this Weight
+   * @param contexts a map to add the TermStates to
    */
-  public abstract void extractTermContexts(Map<Term, TermContext> contexts);
+  public abstract void extractTermStates(Map<Term, TermStates> contexts);
 
   /**
    * Expert: Return a Spans object iterating over matches from this Weight

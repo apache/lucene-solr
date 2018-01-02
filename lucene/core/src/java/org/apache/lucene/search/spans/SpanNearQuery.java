@@ -29,7 +29,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -181,24 +181,24 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost));
+      subWeights.add(q.createWeight(searcher, scoreMode, boost));
     }
-    return new SpanNearWeight(subWeights, searcher, scoreMode.needsScores() ? getTermContexts(subWeights) : null, boost);
+    return new SpanNearWeight(subWeights, searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, boost);
   }
 
   public class SpanNearWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermStates> terms, float boost) throws IOException {
       super(SpanNearQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
+    public void extractTermStates(Map<Term, TermStates> contexts) {
       for (SpanWeight w : subWeights) {
-        w.extractTermContexts(contexts);
+        w.extractTermStates(contexts);
       }
     }
 
@@ -318,7 +318,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       @Override
-      public void extractTermContexts(Map<Term, TermContext> contexts) {
+      public void extractTermStates(Map<Term, TermStates> contexts) {
 
       }
 

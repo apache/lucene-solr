@@ -34,7 +34,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -191,7 +191,7 @@ public class MultiPhraseQuery extends Query {
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimScorer stats;
-    private final Map<Term,TermContext> termContexts = new HashMap<>();
+    private final Map<Term,TermStates> termStates = new HashMap<>();
     private final ScoreMode scoreMode;
 
     public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
@@ -205,14 +205,16 @@ public class MultiPhraseQuery extends Query {
       ArrayList<TermStatistics> allTermStats = new ArrayList<>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          TermContext termContext = termContexts.get(term);
-          if (termContext == null) {
-            termContext = TermContext.build(context, term);
-            termContexts.put(term, termContext);
+          TermStates ts = termStates.get(term);
+          if (ts == null) {
+            ts = TermStates.build(context, term, scoreMode.needsScores());
+            termStates.put(term, ts);
           }
-          TermStatistics termStatistics = searcher.termStatistics(term, termContext);
-          if (termStatistics != null) {
-            allTermStats.add(termStatistics);
+          if (scoreMode.needsScores()) {
+            TermStatistics termStatistics = searcher.termStatistics(term, ts);
+            if (termStatistics != null) {
+              allTermStats.add(termStatistics);
+            }
           }
         }
       }
@@ -260,7 +262,7 @@ public class MultiPhraseQuery extends Query {
         List<PostingsEnum> postings = new ArrayList<>();
 
         for (Term term : terms) {
-          TermState termState = termContexts.get(term).get(context.ord);
+          TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
             postings.add(termsEnum.postings(null, PostingsEnum.POSITIONS));

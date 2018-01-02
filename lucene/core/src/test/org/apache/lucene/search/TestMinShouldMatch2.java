@@ -34,7 +34,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.Directory;
@@ -329,7 +329,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
         if (ord >= 0) {
           boolean success = ords.add(ord);
           assert success; // no dups
-          TermContext context = TermContext.build(reader.getContext(), term);
+          TermStates context = TermStates.build(reader.getContext(), term, true);
           SimScorer w = weight.similarity.scorer(1f,
                         searcher.collectionStatistics("field"),
                         searcher.termStatistics(term, context));

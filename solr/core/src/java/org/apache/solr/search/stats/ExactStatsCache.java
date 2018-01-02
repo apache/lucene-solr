@@ -19,7 +19,7 @@ package org.apache.solr.search.stats;
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -162,7 +162,7 @@ public class ExactStatsCache extends StatsCache {
       HashMap<String,TermStats> statsMap = new HashMap<>();
       HashMap<String,CollectionStats> colMap = new HashMap<>();
       for (Term t : terms) {
-        TermContext termContext = TermContext.build(context, t);
+        TermStates termStates = TermStates.build(context, t, true);
 
         if (!colMap.containsKey(t.field())) { // collection stats for this field
           CollectionStatistics collectionStatistics = searcher.localCollectionStatistics(t.field());
@@ -171,7 +171,7 @@ public class ExactStatsCache extends StatsCache {
           }
         }
 
-        TermStatistics tst = searcher.localTermStatistics(t, termContext);
+        TermStatistics tst = searcher.localTermStatistics(t, termStates);
         if (tst == null) { // skip terms that are not present here
           continue;
         }
@@ -322,7 +322,7 @@ public class ExactStatsCache extends StatsCache {
       this.colStatsCache = colStatsCache;
     }
 
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermContext context)
+    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       // TermStats == null is also true if term has no docFreq anyway,

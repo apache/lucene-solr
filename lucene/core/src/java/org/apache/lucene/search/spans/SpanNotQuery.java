@@ -25,7 +25,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -99,9 +99,9 @@ public final class SpanNotQuery extends SpanQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    SpanWeight includeWeight = include.createWeight(searcher, scoreMode, boost);
     SpanWeight excludeWeight = exclude.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    return new SpanNotWeight(searcher, scoreMode.needsScores() ? getTermContexts(includeWeight, excludeWeight) : null,
+    return new SpanNotWeight(searcher, scoreMode.needsScores() ? getTermStates(includeWeight) : null,
                                   includeWeight, excludeWeight, boost);
   }
 
@@ -110,7 +110,7 @@ public final class SpanNotQuery extends SpanQuery {
     final SpanWeight includeWeight;
     final SpanWeight excludeWeight;
 
-    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
+    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
                          SpanWeight includeWeight, SpanWeight excludeWeight, float boost) throws IOException {
       super(SpanNotQuery.this, searcher, terms, boost);
       this.includeWeight = includeWeight;
@@ -118,8 +118,8 @@ public final class SpanNotQuery extends SpanQuery {
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      includeWeight.extractTermContexts(contexts);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      includeWeight.extractTermStates(contexts);
     }
 
     @Override

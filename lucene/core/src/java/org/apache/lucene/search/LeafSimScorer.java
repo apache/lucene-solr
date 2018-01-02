@@ -37,7 +37,7 @@ public final class LeafSimScorer {
   public LeafSimScorer(SimScorer scorer, LeafReader reader, boolean needsScores, float maxFreq) throws IOException {
     this.scorer = scorer;
     norms = needsScores ? reader.getNormValues(scorer.getField()) : null;
-    maxScore = scorer.maxScore(maxFreq);
+    maxScore = needsScores ? scorer.maxScore(maxFreq) : Integer.MAX_VALUE;
   }
 
   private long getNormValue(int doc) throws IOException {

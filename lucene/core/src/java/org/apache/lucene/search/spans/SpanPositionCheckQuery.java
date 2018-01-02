@@ -25,7 +25,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -69,15 +69,15 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    return new SpanPositionCheckWeight(matchWeight, searcher, scoreMode.needsScores() ? getTermContexts(matchWeight) : null, boost);
+    SpanWeight matchWeight = match.createWeight(searcher, scoreMode, boost);
+    return new SpanPositionCheckWeight(matchWeight, searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, boost);
   }
 
   public class SpanPositionCheckWeight extends SpanWeight {
 
     final SpanWeight matchWeight;
 
-    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermStates> terms, float boost) throws IOException {
       super(SpanPositionCheckQuery.this, searcher, terms, boost);
       this.matchWeight = matchWeight;
     }
@@ -93,8 +93,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      matchWeight.extractTermContexts(contexts);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      matchWeight.extractTermStates(contexts);
     }
 
     @Override

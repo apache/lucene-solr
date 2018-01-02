@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
@@ -135,8 +135,8 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      innerWeight.extractTermContexts(contexts);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      innerWeight.extractTermStates(contexts);
     }
 
     @Override
