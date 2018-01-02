@@ -104,7 +104,7 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
       }
     } while (Math.abs(planetModel.flattening) > 0.4);
     GeoPoint center = randomGeoPoint(planetModel);
-    double radius =  random().nextDouble() * 0.9 * Math.PI;
+    double radius =  random().nextDouble() * 0.9 * planetModel.minimumPoleDistance;
     checkBearingPoint(planetModel, center, radius, 0);
     checkBearingPoint(planetModel, center, radius, 0.5 * Math.PI);
     checkBearingPoint(planetModel, center, radius, Math.PI);
