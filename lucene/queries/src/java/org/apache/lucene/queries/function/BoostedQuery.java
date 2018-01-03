@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,17 +36,7 @@ import org.apache.lucene.search.Weight;
 /**
  * Query that is boosted by a ValueSource
  *
- * Instead of using this query, clients can use a {@link FunctionScoreQuery} and the
- * lucene-expressions library:
- * <pre>
- *   SimpleBindings bindings = new SimpleBindings();
- *   bindings.add("score", DoubleValuesSource.SCORES);
- *   bindings.add("boost", DoubleValuesSource.fromIntField("myboostfield"));
- *   Expression expr = JavascriptCompiler.compile("score * boost");
- *   FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
- * </pre>
- *
- * @deprecated Use {@link FunctionScoreQuery}
+ * @deprecated Use {@link FunctionScoreQuery#boostByValue(Query, DoubleValuesSource)}
  */
 @Deprecated
 public final class BoostedQuery extends Query {

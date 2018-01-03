@@ -72,18 +72,13 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   // CustomScoreQuery and BoostedQuery equivalent
   public void testScoreModifyingSource() throws Exception {
 
-    SimpleBindings bindings = new SimpleBindings();
-    bindings.add("score", DoubleValuesSource.SCORES);
-    bindings.add("iii", DoubleValuesSource.fromIntField("iii"));
-    Expression expr = JavascriptCompiler.compile("score * iii");
-
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD)
         .add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD)
         .build();
     TopDocs plain = searcher.search(bq, 1);
 
-    FunctionScoreQuery fq = new FunctionScoreQuery(bq, expr.getDoubleValuesSource(bindings));
+    FunctionScoreQuery fq = FunctionScoreQuery.boostByValue(bq, DoubleValuesSource.fromIntField("iii"));
 
     QueryUtils.check(random(), fq, searcher, rarely());
 
@@ -100,20 +95,16 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   // BoostingQuery equivalent
   public void testCombiningMultipleQueryScores() throws Exception {
 
-    SimpleBindings bindings = new SimpleBindings();
-    bindings.add("score", DoubleValuesSource.SCORES);
-    bindings.add("testquery", DoubleValuesSource.fromQuery(new TermQuery(new Term(TEXT_FIELD, "rechecking"))));
-    Expression expr = JavascriptCompiler.compile("score + (testquery * 100)");
-
     TermQuery q = new TermQuery(new Term(TEXT_FIELD, "text"));
     TopDocs plain = searcher.search(q, 1);
 
-    FunctionScoreQuery fq = new FunctionScoreQuery(q, expr.getDoubleValuesSource(bindings));
+    FunctionScoreQuery fq
+        = FunctionScoreQuery.boostByQuery(q, new TermQuery(new Term(TEXT_FIELD, "rechecking")), 100f);
 
     QueryUtils.check(random(), fq, searcher, rarely());
 
-    int[] expectedDocs = new int[]{  6, 1, 0, 2, 8 };
-    TopDocs docs = searcher.search(fq, 5);
+    int[] expectedDocs = new int[]{ 6, 1, 0, 2, 8 };
+    TopDocs docs = searcher.search(fq, 20);
     assertEquals(plain.totalHits, docs.totalHits);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);

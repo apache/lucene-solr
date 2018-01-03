@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,12 +45,15 @@ import org.apache.lucene.search.Weight;
  * 
  * @lucene.experimental
  *
- * Clients should instead use FunctionScoreQuery and the lucene-expressions library
+ * Clients should instead use FunctionScoreQuery.  For simple multiplicative boosts, use
+ * {@link FunctionScoreQuery#boostByValue(Query, DoubleValuesSource)}.  For more complex
+ * custom scores, use the lucene-expressions library
  * <pre>
  *   SimpleBindings bindings = new SimpleBindings();
  *   bindings.add("score", DoubleValuesSource.SCORES);
- *   bindings.add("boost", DoubleValuesSource.fromIntField("myboostfield"));
- *   Expression expr = JavascriptCompiler.compile("score * boost");
+ *   bindings.add("boost1", DoubleValuesSource.fromIntField("myboostfield"));
+ *   bindings.add("boost2", DoubleValuesSource.fromIntField("myotherboostfield"));
+ *   Expression expr = JavascriptCompiler.compile("score * (boost1 + ln(boost2))");
  *   FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
  * </pre>
  *
