@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -302,12 +304,64 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
   @Test
   public void testNodeLost() throws Exception {
+    doTestNodeLost(waitForSeconds, 5000, 1);
+  }
+
+  // Renard R5 series - evenly covers a log10 range
+  private static final int[] renard5 = new int[] {
+      1, 2, 3, 4, 6,
+      10
+  };
+  private static final int[] renard5x = new int[] {
+      1, 2, 3, 4, 6,
+      10, 16, 25, 40, 63,
+      100, 158, 251, 398, 631,
+      1000, 1585, 2512, 3981, 6310,
+      10000
+  };
+  // Renard R10 series
+  private static final double[] renard10 = new double[] {
+      1, 1.3, 1.6, 2, 2.5, 3.2, 4, 5, 6.3, 7.9,
+      10
+  };
+  private static final double[] renard10x = new double[] {
+      1, 1.3, 1.6, 2, 2.5, 3.2, 4, 5, 6.3, 7.9,
+      10, 12.6, 15.8, 20, 25.1, 31.6, 39.8, 50.1, 63.1, 79.4,
+      100
+  };
+
+  //@Test
+  public void benchmarkNodeLost() throws Exception {
+    List<String> results = new ArrayList<>();
+    for (int wait : renard5) {
+      for (int delay : renard5) {
+        SummaryStatistics stat = new SummaryStatistics();
+        for (int i = 0; i < 5; i++) {
+          if (cluster != null) {
+            cluster.close();
+          }
+          setupCluster();
+          setUp();
+          setupTest();
+          long total = doTestNodeLost(wait, delay * 1000, 0);
+          stat.addValue(total);
+        }
+        results.add(String.format(Locale.ROOT, "%d\t%d\t%6.0f\t%6.0f\t%6.0f\t%6.0f\t%6.0f", wait, delay,
+            stat.getMin(), stat.getMax(), stat.getMean(), stat.getVariance(), stat.getStandardDeviation()));
+      }
+    }
+    log.info("===== RESULTS ======");
+    log.info("waitFor\tkillDelay\tmin\tmax\tmean\tvar\tstdev");
+    results.forEach(s -> log.info(s));
+  }
+
+  private long doTestNodeLost(int waitFor, long killDelay, int minIgnored) throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'waitFor' : '" + waitFor + "s'," +
         "'enabled' : true," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
@@ -335,7 +389,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       // this may also select a node where a replica is moved to, so the total number of
       // MOVEREPLICA may vary
       cluster.simRemoveNode(nodes.get(i), false);
-      cluster.getTimeSource().sleep(4000);
+      cluster.getTimeSource().sleep(killDelay);
     }
     List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
     int startedEventPos = -1;
@@ -366,7 +420,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         }
       }
     }
-    assertTrue("no IGNORED events", ignored > 0);
+    assertTrue("should be at least " + minIgnored + " IGNORED events", ignored >= minIgnored);
     // make sure some replicas have been moved
     assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
 
@@ -398,9 +452,11 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
     assertTrue("did not finish processing changes", finishedEvent != null);
     long delta = (Long)finishedEvent.getFieldValue("event.time_l") - (Long)startedEvent.getFieldValue("event.time_l");
-    log.info("#### System stabilized after " + TimeUnit.NANOSECONDS.toMillis(delta) + " ms");
+    delta = TimeUnit.NANOSECONDS.toMillis(delta);
+    log.info("#### System stabilized after " + delta + " ms");
     long ops = cluster.simGetOpCount("MOVEREPLICA");
     assertTrue("unexpected number of MOVEREPLICA ops: " + ops, ops >= 40);
+    return delta;
   }
 
   @Test
