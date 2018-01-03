@@ -105,6 +105,8 @@ Other Changes
 
 * SOLR-11748: Remove Autoscaling action throttle. (shalin)
 
+* SOLR-11805: SolrJ's SolrResponse.getElaspedTime was sometimes a millisecond off. (David Smiley)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
