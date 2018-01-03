@@ -7224,6 +7224,31 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(pval3.doubleValue(), 0.0404907407662755, .0001);
   }
 
+
+  @Test
+  public void testChiSquareDataSet() throws Exception {
+    String cexpr = "let(echo=true," +
+                   "    a=array(1,1,2,3,4,5,6,7,9,10,11,12), " +
+                   "    b=array(1,1,2,3,4,5,6,7,1,1,1,1), " +
+                   "    chisquare=chiSquareDataSet(a, b))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map testResult = (Map)tuples.get(0).get("chisquare");
+    Number tstat = (Number)testResult.get("chisquare-statistic");
+    Number pval = (Number)testResult.get("p-value");
+    assertEquals(tstat.doubleValue(), 20.219464814599252, .0001);
+    assertEquals(pval.doubleValue(), 0.04242018685334226, .0001);
+  }
+
+
   @Test
   public void testMultiVariateNormalDistribution() throws Exception {
     String cexpr = "let(echo=true," +
