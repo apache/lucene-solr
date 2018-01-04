@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.Utils;
+
 /**
  * Use this class to push all entries of a Map into an output.
  * This avoids creating map instances and is supposed to be memory efficient.
@@ -31,6 +33,9 @@ import java.util.Map;
  */
 public interface MapWriter extends MapSerializable {
 
+  default String jsonStr(){
+    return Utils.toJSONString(this);
+  }
   @Override
   default Map toMap(Map<String, Object> map) {
     try {
@@ -83,6 +88,14 @@ public interface MapWriter extends MapSerializable {
      * @param v The value can be any supported object
      */
     EntryWriter put(String k, Object v) throws IOException;
+    default EntryWriter putNoEx(String k, Object v) {
+      try {
+        put(k,v);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return this;
+    }
 
     default EntryWriter putIfNotNull(String k, Object v) throws IOException {
       if(v != null) put(k,v);
