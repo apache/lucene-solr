@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Objects;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -47,7 +46,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import static java.util.stream.Collectors.toMap;
-import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * TODO!
@@ -132,19 +130,9 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("highlighting");
     if(children.isEmpty()) {
-      PluginInfo pluginInfo = core.getSolrConfig().getPluginInfo(SolrHighlighter.class.getName()); //TODO deprecated configuration remove later
-      assertWarnOrFail("solrconfig.xml <highlighting> configuration is deprecated since SOLR-1696 "
-              + "and no longer supported from Solr 7.3 onwards. "
-              + "Please configure via <searchComponent> instead.",
-          (null == pluginInfo),
-          core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_3_0));
-      if (pluginInfo != null) {
-        solrConfigHighlighter = core.createInitInstance(pluginInfo, SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
-      } else {
-        DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
-        defHighlighter.init(PluginInfo.EMPTY_INFO);
-        solrConfigHighlighter = defHighlighter;
-      }
+      DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
+      defHighlighter.init(PluginInfo.EMPTY_INFO);
+      solrConfigHighlighter = defHighlighter;
     } else {
       solrConfigHighlighter = core.createInitInstance(children.get(0),SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
     }
