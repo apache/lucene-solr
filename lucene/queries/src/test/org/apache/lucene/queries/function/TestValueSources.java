@@ -225,7 +225,7 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testIDF() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       searcher.setSimilarity(new ClassicSimilarity());
       ValueSource vs = new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"));
@@ -362,7 +362,7 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testNorm() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new ClassicSimilarity());
@@ -414,7 +414,7 @@ public class TestValueSources extends LuceneTestCase {
   }
 
   public void testQuery() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
 
     try {
       searcher.setSimilarity(new ClassicSimilarity());
@@ -521,7 +521,7 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testTF() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new ClassicSimilarity());

@@ -251,7 +251,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
         ", classFieldName='" + classFieldName + '\'' +
         ", k=" + k +
         ", query=" + query +
-        ", similarity=" + indexSearcher.getSimilarity(true) +
+        ", similarity=" + indexSearcher.getSimilarity() +
         '}';
   }
 }

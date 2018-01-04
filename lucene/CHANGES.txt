@@ -32,6 +32,9 @@ API Changes
 * LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward, 
   Robert Muir)
 
+* LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
+  scoring factors. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -45,6 +48,9 @@ Changes in Runtime Behavior
 
 * LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
   when the function produces a negative value. (Adrien Grand)
+
+* LUCENE-8116: Similarities now score fields that omit norms as if the norm was
+  1. This might change score values on fields that omit norms. (Adrien Grand)
 
 Improvements
 

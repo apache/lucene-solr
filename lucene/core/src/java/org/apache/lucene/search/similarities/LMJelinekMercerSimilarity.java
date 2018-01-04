@@ -74,7 +74,7 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   }
 
   @Override
-  protected void explain(List<Explanation> subs, BasicStats stats, int doc,
+  protected void explain(List<Explanation> subs, BasicStats stats,
       double freq, double docLen) {
     if (stats.getBoost() != 1.0d) {
       subs.add(Explanation.match((float) stats.getBoost(), "boost"));
@@ -88,18 +88,18 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
         "freq, number of occurrences of term in the document");
     subs.add(explFreq);
     subs.add(Explanation.match((float) docLen,"dl, length of field"));
-    super.explain(subs, stats, doc, freq, docLen);
+    super.explain(subs, stats, freq, docLen);
   }
 
   @Override
   protected Explanation explain(
-      BasicStats stats, int doc, Explanation freq, double docLen) {
+      BasicStats stats, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue().doubleValue(), docLen);
+    explain(subs, stats, freq.getValue().doubleValue(), docLen);
 
     return Explanation.match(
         (float) score(stats, freq.getValue().doubleValue(), docLen),
-        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+        "score(" + getClass().getSimpleName() + ", freq=" +
             freq.getValue() +"), computed as boost * " +
             "log(1 + ((1 - lambda) * freq / dl) /(lambda * P)) from:",
         subs);

@@ -17,24 +17,18 @@
 package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.similarities.Similarity.SimWeight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -54,119 +48,28 @@ import org.junit.BeforeClass;
  * test fails to catch then this test needs to be improved! */
 public abstract class BaseSimilarityTestCase extends LuceneTestCase {
 
-  static LeafReader WITHOUT_NORM;
-  static Directory WITHOUT_NORM_DIR;
-
-  static LeafReader WITH_NORM_BASE;
-  static Directory WITH_NORM_DIR;
-  static List<LeafReader> NORM_VALUES;
+  static LeafReader READER;
+  static Directory DIR;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // without norms
-    WITHOUT_NORM_DIR = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), WITHOUT_NORM_DIR);
-    Document doc = new Document();
-    doc.add(newTextField("field", "value", Field.Store.NO));
-    writer.addDocument(doc);
-    WITHOUT_NORM = getOnlyLeafReader(writer.getReader());
-    writer.close();
-
     // with norms
-    WITH_NORM_DIR = newDirectory();
-    writer = new RandomIndexWriter(random(), WITH_NORM_DIR);
-    doc = new Document();
+    DIR = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), DIR);
+    Document doc = new Document();
     FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
     fieldType.setOmitNorms(true);
     doc.add(newField("field", "value", fieldType));
     writer.addDocument(doc);
-    WITH_NORM_BASE = getOnlyLeafReader(writer.getReader());
+    READER = getOnlyLeafReader(writer.getReader());
     writer.close();
-    
-    // all possible norm values for the doc
-    NORM_VALUES = new ArrayList<>();
-    NORM_VALUES.add(WITHOUT_NORM);
-    for (int i = 1; i < 256; i++) {
-      final long value = i;
-      NORM_VALUES.add(new FilterLeafReader(WITH_NORM_BASE) {
-        @Override
-        public CacheHelper getCoreCacheHelper() {
-          return null;
-        }
-
-        @Override
-        public CacheHelper getReaderCacheHelper() {
-          return null;
-        }
-
-        @Override
-        public NumericDocValues getNormValues(String field) throws IOException {
-          if (field.equals("field")) {
-            return new CannedNorm(value);
-          } else {
-            return super.getNormValues(field);
-          }
-        }
-      });
-    }
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
-    IOUtils.close(WITH_NORM_BASE, WITH_NORM_DIR, WITHOUT_NORM, WITHOUT_NORM_DIR);
-    WITH_NORM_BASE = WITHOUT_NORM = null;
-    WITH_NORM_DIR = WITHOUT_NORM_DIR = null;
-    NORM_VALUES = null;
-  }
-  
-  /** 1-document norms impl of the given value */
-  static class CannedNorm extends NumericDocValues {
-    int docID = -1;
-    final long value;
-    
-    CannedNorm(long value) {
-      this.value = value;
-    }
-
-    @Override
-    public long longValue() throws IOException {
-      return value;
-    }
-
-    @Override
-    public boolean advanceExact(int target) throws IOException {
-      assert target == 0;
-      docID = target;
-      return true;
-    }
-
-    @Override
-    public int docID() {
-      return docID;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      if (docID == -1) {
-        return docID = 0;
-      } else {
-        return docID = NO_MORE_DOCS;
-      }
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      if (target == 0) {
-        return docID = 0;
-      } else {
-        return docID = NO_MORE_DOCS;
-      }
-    }
-
-    @Override
-    public long cost() {
-      return 0;
-    }
+    IOUtils.close(READER, DIR);
+    READER = null;
+    DIR = null;
   }
 
   /**
@@ -354,7 +257,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       Similarity similarity = getSimilarity(random);
       for (int j = 0; j < 10; j++) {
         // for each norm value...
-        for (int k = 0; k < NORM_VALUES.size(); k++) {
+        for (int k = 1; k < 256; k++) {
           CollectionStatistics corpus = newCorpus(random, k);
           for (int l = 0; l < 10; l++) {
             TermStatistics term = newTerm(random, corpus);
@@ -441,17 +344,16 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
   /** runs for a single test case, so that if you hit a test failure you can write a reproducer just for that scenario */
   private static void doTestScoring(Similarity similarity, CollectionStatistics corpus, TermStatistics term, float boost, float freq, int norm) throws IOException {
     boolean success = false;
-    SimWeight weight = similarity.computeWeight(boost, corpus, term);
-    SimScorer scorer = similarity.simScorer(weight, NORM_VALUES.get(norm).getContext());
+    SimScorer scorer = similarity.scorer(boost, corpus, term);
     try {
-      float score = scorer.score(0, freq);
+      float score = scorer.score(freq, norm);
       // check that score isn't infinite or negative
       assertTrue("infinite/NaN score: " + score, Float.isFinite(score));
       assertTrue("negative score: " + score, score >= 0);
       float maxScore = scorer.maxScore(freq);
       assertTrue("score > maxScore: " + score + " > " + maxScore, score <= maxScore);
       // check explanation matches
-      Explanation explanation = scorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
+      Explanation explanation = scorer.explain(Explanation.match(freq, "freq, occurrences of term within document"), norm);
       if (score != explanation.getValue().doubleValue()) {
         fail("expected: " + score + ", got: " + explanation);
       }
@@ -467,12 +369,12 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         prevFreq = Math.nextDown(freq);
       }
       
-      float prevScore = scorer.score(0, prevFreq);
+      float prevScore = scorer.score(prevFreq, norm);
       // check that score isn't infinite or negative
       assertTrue(Float.isFinite(prevScore));
       assertTrue(prevScore >= 0);
       // check explanation matches
-      Explanation prevExplanation = scorer.explain(0, Explanation.match(prevFreq, "freq, occurrences of term within document"));
+      Explanation prevExplanation = scorer.explain(Explanation.match(prevFreq, "freq, occurrences of term within document"), norm);
       if (prevScore != prevExplanation.getValue().doubleValue()) {
         fail("expected: " + prevScore + ", got: " + prevExplanation);
       }
@@ -486,13 +388,12 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       
       // check score(norm-1), given the same freq it should be >= score(norm) [scores non-decreasing as docs get shorter]
       if (norm > 1) {
-        SimScorer prevNormScorer = similarity.simScorer(weight, NORM_VALUES.get(norm - 1).getContext());
-        float prevNormScore = prevNormScorer.score(0, freq);
+        float prevNormScore = scorer.score(freq, norm - 1);
         // check that score isn't infinite or negative
         assertTrue(Float.isFinite(prevNormScore));
         assertTrue(prevNormScore >= 0);
         // check explanation matches
-        Explanation prevNormExplanation = prevNormScorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
+        Explanation prevNormExplanation = scorer.explain(Explanation.match(freq, "freq, occurrences of term within document"), norm - 1);
         if (prevNormScore != prevNormExplanation.getValue().doubleValue()) {
           fail("expected: " + prevNormScore + ", got: " + prevNormExplanation);
         }
@@ -508,14 +409,13 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       // check score(term-1), given the same freq/norm it should be >= score(term) [scores non-decreasing as terms get rarer]
       if (term.docFreq() > 1 && freq < term.totalTermFreq()) {
         TermStatistics prevTerm = new TermStatistics(term.term(), term.docFreq() - 1, term.totalTermFreq() - 1);
-        SimWeight prevWeight = similarity.computeWeight(boost, corpus, term);
-        SimScorer prevTermScorer = similarity.simScorer(prevWeight, NORM_VALUES.get(norm).getContext());
-        float prevTermScore = prevTermScorer.score(0, freq);
+        SimScorer prevTermScorer = similarity.scorer(boost, corpus, term);
+        float prevTermScore = prevTermScorer.score(freq, norm);
         // check that score isn't infinite or negative
         assertTrue(Float.isFinite(prevTermScore));
         assertTrue(prevTermScore >= 0);
         // check explanation matches
-        Explanation prevTermExplanation = prevTermScorer.explain(0, Explanation.match(freq, "freq, occurrences of term within document"));
+        Explanation prevTermExplanation = prevTermScorer.explain(Explanation.match(freq, "freq, occurrences of term within document"), norm);
         if (prevTermScore != prevTermExplanation.getValue().doubleValue()) {
           fail("expected: " + prevTermScore + ", got: " + prevTermExplanation);
         }

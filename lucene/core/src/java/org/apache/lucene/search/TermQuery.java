@@ -33,7 +33,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /**
  * A Query that matches documents containing a term. This may be combined with
@@ -46,7 +45,7 @@ public class TermQuery extends Query {
 
   final class TermWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.SimWeight stats;
+    private final Similarity.SimScorer simScorer;
     private final TermContext termStates;
     private final boolean needsScores;
 
@@ -58,7 +57,7 @@ public class TermQuery extends Query {
       }
       this.needsScores = needsScores;
       this.termStates = termStates;
-      this.similarity = searcher.getSimilarity(needsScores);
+      this.similarity = searcher.getSimilarity();
 
       final CollectionStatistics collectionStats;
       final TermStatistics termStats;
@@ -72,9 +71,9 @@ public class TermQuery extends Query {
       }
      
       if (termStats == null) {
-        this.stats = null; // term doesn't exist in any segment, we won't use similarity at all
+        this.simScorer = null; // term doesn't exist in any segment, we won't use similarity at all
       } else {
-        this.stats = similarity.computeWeight(boost, collectionStats, termStats);
+        this.simScorer = similarity.scorer(boost, collectionStats, termStats);
       }
     }
 
@@ -101,8 +100,8 @@ public class TermQuery extends Query {
           .getIndexOptions();
       PostingsEnum docs = termsEnum.postings(null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
       assert docs != null;
-      return new TermScorer(this, docs, similarity.simScorer(stats, context),
-          getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq()));
+      float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
+      return new TermScorer(this, docs, new LeafSimScorer(simScorer, context.reader(), needsScores, maxFreq));
     }
 
     private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
@@ -166,7 +165,7 @@ public class TermQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
+          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Integer.MAX_VALUE);
           Explanation freqExplanation = Explanation.match(freq, "freq, occurrences of term within document");
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

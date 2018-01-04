@@ -28,9 +28,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.search.spans.SpanCollector;
@@ -127,7 +127,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       if (spans == null) {
         return null;
       }
-      final Similarity.SimScorer docScorer = getSimScorer(context);
+      final LeafSimScorer docScorer = getSimScorer(context);
       return new SpanScorer(this, spans, docScorer);
     }
 

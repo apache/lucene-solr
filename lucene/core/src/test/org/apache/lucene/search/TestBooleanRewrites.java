@@ -357,7 +357,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
         return original;
       }
     };
-    searcher2.setSimilarity(searcher1.getSimilarity(true));
+    searcher2.setSimilarity(searcher1.getSimilarity());
 
     final int iters = atLeast(1000);
     for (int i = 0; i < iters; ++i) {

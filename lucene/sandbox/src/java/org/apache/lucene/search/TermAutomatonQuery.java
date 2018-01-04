@@ -335,14 +335,14 @@ public class TermAutomatonQuery extends Query {
   final class TermAutomatonWeight extends Weight {
     final Automaton automaton;
     private final Map<Integer,TermContext> termStates;
-    private final Similarity.SimWeight stats;
+    private final Similarity.SimScorer stats;
     private final Similarity similarity;
 
     public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates, float boost) throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
       this.termStates = termStates;
-      this.similarity = searcher.getSimilarity(true);
+      this.similarity = searcher.getSimilarity();
       List<TermStatistics> allTermStats = new ArrayList<>();
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
@@ -357,7 +357,7 @@ public class TermAutomatonQuery extends Query {
       if (allTermStats.isEmpty()) {
         stats = null; // no terms matched at all, will not use sim
       } else {
-        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
+        stats = similarity.scorer(boost, searcher.collectionStatistics(field),
                                          allTermStats.toArray(new TermStatistics[allTermStats.size()]));
       }
     }
@@ -397,7 +397,7 @@ public class TermAutomatonQuery extends Query {
       }
 
       if (any) {
-        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, similarity.simScorer(stats, context));
+        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, new LeafSimScorer(stats, context.reader(), true, Float.POSITIVE_INFINITY));
       } else {
         return null;
       }

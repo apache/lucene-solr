@@ -37,7 +37,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.similarities.Similarity.SimWeight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -310,7 +309,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     final int maxDoc;
 
     final Set<Long> ords = new HashSet<>();
-    final SimScorer[] sims;
+    final LeafSimScorer[] sims;
     final int minNrShouldMatch;
     
     double score = Float.NaN;
@@ -321,7 +320,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
       this.maxDoc = reader.maxDoc();
       BooleanQuery bq = (BooleanQuery) weight.getQuery();
       this.minNrShouldMatch = bq.getMinimumNumberShouldMatch();
-      this.sims = new SimScorer[(int)dv.getValueCount()];
+      this.sims = new LeafSimScorer[(int)dv.getValueCount()];
       for (BooleanClause clause : bq.clauses()) {
         assert !clause.isProhibited();
         assert !clause.isRequired();
@@ -331,10 +330,10 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           boolean success = ords.add(ord);
           assert success; // no dups
           TermContext context = TermContext.build(reader.getContext(), term);
-          SimWeight w = weight.similarity.computeWeight(1f,
+          SimScorer w = weight.similarity.scorer(1f,
                         searcher.collectionStatistics("field"),
                         searcher.termStatistics(term, context));
-          sims[(int)ord] = weight.similarity.simScorer(w, reader.getContext());
+          sims[(int)ord] = new LeafSimScorer(w, reader, true, 1);
         }
       }
     }

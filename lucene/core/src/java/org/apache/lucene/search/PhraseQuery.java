@@ -37,7 +37,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -352,7 +351,7 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.SimWeight stats;
+    private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
     private transient TermContext states[];
 
@@ -366,7 +365,7 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.scoreMode = scoreMode;
-      this.similarity = searcher.getSimilarity(scoreMode.needsScores());
+      this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
@@ -380,7 +379,7 @@ public class PhraseQuery extends Query {
         }
       }
       if (termUpTo > 0) {
-        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+        stats = similarity.scorer(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
       } else {
         stats = null; // no terms at all, we won't use similarity
       }
@@ -433,11 +432,11 @@ public class PhraseQuery extends Query {
 
       if (slop == 0) {  // optimize exact case
         return new ExactPhraseScorer(this, postingsFreqs,
-                                      similarity.simScorer(stats, context),
+                                      new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
-                                        similarity.simScorer(stats, context),
+                                        new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY),
                                         scoreMode.needsScores(), totalMatchCost);
       }
     }
@@ -459,7 +458,7 @@ public class PhraseQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
+          LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

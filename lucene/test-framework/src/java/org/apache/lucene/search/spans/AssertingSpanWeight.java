@@ -25,7 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.LeafSimScorer;
 
 /**
  * Wraps a SpanWeight with additional asserts
@@ -58,7 +58,7 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
+  public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
     return in.getSimScorer(context);
   }
 

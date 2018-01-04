@@ -28,10 +28,10 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -72,7 +72,7 @@ public abstract class SpanWeight extends Weight {
   }
 
   protected final Similarity similarity;
-  protected final Similarity.SimWeight simWeight;
+  protected final Similarity.SimScorer simScorer;
   protected final String field;
 
   /**
@@ -86,11 +86,11 @@ public abstract class SpanWeight extends Weight {
   public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
     super(query);
     this.field = query.getField();
-    this.similarity = searcher.getSimilarity(termContexts != null);
-    this.simWeight = buildSimWeight(query, searcher, termContexts, boost);
+    this.similarity = searcher.getSimilarity();
+    this.simScorer = buildSimWeight(query, searcher, termContexts, boost);
   }
 
-  private Similarity.SimWeight buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
+  private Similarity.SimScorer buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
     if (termContexts == null || termContexts.size() == 0 || query.getField() == null)
       return null;
     TermStatistics[] termStats = new TermStatistics[termContexts.size()];
@@ -103,7 +103,7 @@ public abstract class SpanWeight extends Weight {
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
     if (termUpTo > 0) {
-      return similarity.computeWeight(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+      return similarity.scorer(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
     } else {
       return null; // no terms at all exist, we won't use similarity
     }
@@ -129,18 +129,18 @@ public abstract class SpanWeight extends Weight {
     if (spans == null) {
       return null;
     }
-    final Similarity.SimScorer docScorer = getSimScorer(context);
+    final LeafSimScorer docScorer = getSimScorer(context);
     return new SpanScorer(this, spans, docScorer);
   }
 
   /**
-   * Return a SimScorer for this context
+   * Return a LeafSimScorer for this context
    * @param context the LeafReaderContext
    * @return a SimWeight
    * @throws IOException on error
    */
-  public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
-    return simWeight == null ? null : similarity.simScorer(simWeight, context);
+  public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
+    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), true, Float.POSITIVE_INFINITY);
   }
 
   @Override
@@ -150,7 +150,7 @@ public abstract class SpanWeight extends Weight {
       int newDoc = scorer.iterator().advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        SimScorer docScorer = similarity.simScorer(simWeight, context);
+        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Float.POSITIVE_INFINITY);
         Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
         Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
         return Explanation.match(scoreExplanation.getValue(),

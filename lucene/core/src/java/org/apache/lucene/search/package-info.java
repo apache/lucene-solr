@@ -378,7 +378,7 @@
  *                 scored the way it was.
  *                 Typically a weight such as TermWeight
  *                 that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementation:
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(int, Explanation) SimScorer#explain(int doc, Explanation freq)}.
+ *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(Explanation, long) SimScorer#explain(Explanation freq, long norm)}.
  *             </li>
  *         </ol>
  * <a name="scorerClass"></a>
@@ -402,7 +402,7 @@
  *                 {@link org.apache.lucene.search.Scorer#score score()} &mdash; Return the score of the
  *                 current document. This value can be determined in any appropriate way for an application. For instance, the
  *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the configured Similarity:
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(int, float) SimScorer.score(int doc, float freq)}.
+ *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(float, long) SimScorer.score(float freq, long norm)}.
  *             </li>
  *             <li>
  *                 {@link org.apache.lucene.search.Scorer#getChildren getChildren()} &mdash; Returns any child subscorers

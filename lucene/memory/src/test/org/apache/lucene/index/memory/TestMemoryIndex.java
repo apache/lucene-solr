@@ -50,7 +50,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
@@ -200,12 +199,7 @@ public class TestMemoryIndex extends LuceneTestCase {
       }
 
       @Override
-      public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+      public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
         throw new UnsupportedOperationException();
       }
 

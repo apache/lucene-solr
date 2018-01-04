@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -511,7 +509,7 @@ public abstract class TFIDFSimilarity extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     final Explanation idf = termStats.length == 1
     ? idfExplain(collectionStats, termStats[0])
     : idfExplain(collectionStats, termStats);
@@ -522,110 +520,69 @@ public abstract class TFIDFSimilarity extends Similarity {
       normTable[i] = norm;
     }
     normTable[0] = 1f / normTable[255];
-    return new IDFStats(collectionStats.field(), boost, idf, normTable);
+    return new TFIDFScorer(collectionStats.field(), boost, idf, normTable);
   }
 
-  @Override
-  public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
-    IDFStats idfstats = (IDFStats) stats;
-    // the norms only encode the length, we need a translation table that depends on how lengthNorm is implemented
-    final float[] normTable = idfstats.normTable;
-    return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field), normTable);
-  }
-  
-  private final class TFIDFSimScorer extends SimScorer {
-    private final IDFStats stats;
-    private final float weightValue;
-    private final NumericDocValues norms;
-    private final float[] normTable;
-    
-    TFIDFSimScorer(IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
-      this.stats = stats;
-      this.weightValue = stats.queryWeight;
-      this.norms = norms;
-      this.normTable = normTable;
-    }
-    
-    @Override
-    public float score(int doc, float freq) throws IOException {
-      final float raw = tf(freq) * weightValue; // compute tf(f)*weight
-
-      if (norms == null) {
-        return raw;
-      } else {
-        boolean found = norms.advanceExact(doc);
-        assert found;
-        float normValue = normTable[(int) (norms.longValue() & 0xFF)];
-        return raw * normValue;  // normalize for field
-      }
-    }
-
-    @Override
-    public float maxScore(float maxFreq) {
-      final float raw = tf(maxFreq) * weightValue;
-      if (norms == null) {
-        return raw;
-      } else {
-        float maxNormValue = Float.NEGATIVE_INFINITY;
-        for (float norm : normTable) {
-          maxNormValue = Math.max(maxNormValue, norm);
-        }
-        return raw * maxNormValue;
-      }
-    }
-
-    @Override
-    public Explanation explain(int doc, Explanation freq) throws IOException {
-      return explainScore(doc, freq, stats, norms, normTable);
-    }
-  }
   
   /** Collection statistics for the TF-IDF model. The only statistic of interest
    * to this model is idf. */
-  static class IDFStats extends SimWeight {
-    private final String field;
+  class TFIDFScorer extends SimScorer {
     /** The idf and its explanation */
     private final Explanation idf;
     private final float boost;
     private final float queryWeight;
     final float[] normTable;
     
-    public IDFStats(String field, float boost, Explanation idf, float[] normTable) {
+    public TFIDFScorer(String field, float boost, Explanation idf, float[] normTable) {
+      super(field);
       // TODO: Validate?
-      this.field = field;
       this.idf = idf;
       this.boost = boost;
       this.queryWeight = boost * idf.getValue().floatValue();
       this.normTable = normTable;
     }
+
+    @Override
+    public float score(float freq, long norm) throws IOException {
+      final float raw = tf(freq) * queryWeight; // compute tf(f)*weight
+      float normValue = normTable[(int) (norm & 0xFF)];
+      return raw * normValue;  // normalize for field
+    }
+
+    @Override
+    public float maxScore(float maxFreq) {
+      final float raw = tf(maxFreq) * queryWeight;
+      float maxNormValue = Float.NEGATIVE_INFINITY;
+      for (float norm : normTable) {
+        maxNormValue = Math.max(maxNormValue, norm);
+      }
+      return raw * maxNormValue;
+    }
+
+    @Override
+    public Explanation explain(Explanation freq, long norm) throws IOException {
+      return explainScore(freq, norm, normTable);
+    }
+
+    private Explanation explainScore(Explanation freq, long encodedNorm, float[] normTable) throws IOException {
+      List<Explanation> subs = new ArrayList<Explanation>();
+      if (boost != 1F) {
+        subs.add(Explanation.match(boost, "boost"));
+      }
+      subs.add(idf);
+      Explanation tf = Explanation.match(tf(freq.getValue().floatValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
+      subs.add(tf);
+
+      float norm = normTable[(int) (encodedNorm & 0xFF)];
+      
+      Explanation fieldNorm = Explanation.match(norm, "fieldNorm");
+      subs.add(fieldNorm);
+      
+      return Explanation.match(
+          queryWeight * tf.getValue().floatValue() * norm,
+          "score(freq="+freq.getValue()+"), product of:",
+          subs);
+    }
   }  
 
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
-    List<Explanation> subs = new ArrayList<Explanation>();
-    if (stats.boost != 1F) {
-      subs.add(Explanation.match(stats.boost, "boost"));
-    }
-    subs.add(stats.idf);
-    Explanation tf = Explanation.match(tf(freq.getValue().floatValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
-    subs.add(tf);
-
-    float norm;
-    if (norms == null) {
-      norm = 1f;
-    } else {
-      boolean found = norms.advanceExact(doc);
-      assert found;
-      norm = normTable[(int) (norms.longValue() & 0xFF)];
-    }
-    
-    Explanation fieldNorm = Explanation.match(
-        norm,
-        "fieldNorm(doc=" + doc + ")");
-    subs.add(fieldNorm);
-    
-    return Explanation.match(
-        stats.queryWeight * tf.getValue().floatValue() * norm,
-        "score(doc="+doc+",freq="+freq.getValue()+"), product of:",
-        subs);
-  }
 }

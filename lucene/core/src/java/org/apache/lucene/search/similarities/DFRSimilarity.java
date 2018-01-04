@@ -121,7 +121,7 @@ public class DFRSimilarity extends SimilarityBase {
 
   @Override
   protected void explain(List<Explanation> subs,
-      BasicStats stats, int doc, double freq, double docLen) {
+      BasicStats stats, double freq, double docLen) {
     if (stats.getBoost() != 1.0d) {
       subs.add(Explanation.match( (float)stats.getBoost(), "boost, query boost"));
     }
@@ -136,13 +136,13 @@ public class DFRSimilarity extends SimilarityBase {
 
   @Override
   protected Explanation explain(
-      BasicStats stats, int doc, Explanation freq, double docLen) {
+      BasicStats stats, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue().doubleValue(), docLen);
+    explain(subs, stats, freq.getValue().doubleValue(), docLen);
 
     return Explanation.match(
         (float) score(stats, freq.getValue().doubleValue(), docLen),
-        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+        "score(" + getClass().getSimpleName() + ", freq=" +
             freq.getValue() +"), computed as boost * " +
             "basicModel.score(stats, tfn) * afterEffect.score(stats, tfn) from:",
         subs);

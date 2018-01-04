@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.search.similarities.Similarity;
 
 final class ExactPhraseScorer extends Scorer {
 
@@ -42,13 +41,13 @@ final class ExactPhraseScorer extends Scorer {
 
   private int freq;
 
-  private final Similarity.SimScorer docScorer;
+  private final LeafSimScorer docScorer;
   private final boolean needsScores, needsTotalHitCount;
   private float matchCost;
   private float minCompetitiveScore;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer, ScoreMode scoreMode,
+                    LeafSimScorer docScorer, ScoreMode scoreMode,
                     float matchCost) throws IOException {
     super(weight);
     this.docScorer = docScorer;
@@ -123,7 +122,7 @@ final class ExactPhraseScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    return docScorer.maxScore(Integer.MAX_VALUE);
+    return docScorer.maxScore();
   }
 
   /** Advance the given pos enum to the first doc on or after {@code target}.
