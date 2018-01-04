@@ -113,6 +113,9 @@ Other Changes
 * SOLR-11798: Formally deprecate top-level <highlighting> syntax in solrconfig.xml
   in favour of <searchComponent> equivalent syntax. (Christine Poerschke)
 
+* SOLR-11801: Support customisation of the "highlighting" query response element.
+  (Ramsey Haddad, Pranav Murugappan, David Smiley, Christine Poerschke)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
