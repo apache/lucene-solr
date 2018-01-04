@@ -25,6 +25,15 @@ var format_time_content = function( time, timeZone ) {
 
 solrAdminApp.controller('LoggingController',
   function($scope, $timeout, $cookies, Logging, Constants){
+    $scope.toggleRefresh = function() {
+      if(!$scope.stopped) {
+        $scope.stopped = true;
+        $timeout.cancel($scope.timeout);
+      } else {
+        $scope.stopped = false;
+        $scope.timeout = $timeout($scope.refresh, 10000);
+      }
+    };
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
