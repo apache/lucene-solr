@@ -44,7 +44,7 @@ import org.apache.solr.common.util.Utils;
  *  b) it causes no new violations
  *
  */
-public abstract class Suggester {
+public abstract class Suggester implements MapWriter {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
@@ -105,7 +105,7 @@ public abstract class Suggester {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
           if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
-            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session.cloudManager));
+            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
         }
       }
       session.applyRules();
@@ -279,5 +279,13 @@ public abstract class Suggester {
 
   }
 
+  @Override
+  public String toString() {
+    return jsonStr();
+  }
 
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
+  }
 }

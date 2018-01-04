@@ -217,19 +217,23 @@ public class Policy implements MapWriter {
     Set<String> collections = new HashSet<>();
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
+    final NodeStateProvider nodeStateProvider;
     final int znodeVersion;
 
     private Session(List<String> nodes, SolrCloudManager cloudManager,
-                    List<Row> matrix, List<Clause> expandedClauses, int znodeVersion) {
+                    List<Row> matrix, List<Clause> expandedClauses, int znodeVersion, NodeStateProvider nodeStateProvider) {
       this.nodes = nodes;
       this.cloudManager = cloudManager;
       this.matrix = matrix;
       this.expandedClauses = expandedClauses;
       this.znodeVersion = znodeVersion;
+      this.nodeStateProvider = nodeStateProvider;
     }
+
 
     Session(SolrCloudManager cloudManager) {
       ClusterState state = null;
+      this.nodeStateProvider = cloudManager.getNodeStateProvider();
       try {
         state = cloudManager.getClusterStateProvider().getClusterState();
         LOG.trace("-- session created with cluster state: {}", state);
@@ -240,7 +244,7 @@ public class Policy implements MapWriter {
       this.nodes = new ArrayList<>(cloudManager.getClusterStateProvider().getLiveNodes());
       this.cloudManager = cloudManager;
       for (String node : nodes) {
-        collections.addAll(cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList()).keySet());
+        collections.addAll(nodeStateProvider.getReplicaInfo(node, Collections.emptyList()).keySet());
       }
 
       expandedClauses = clusterPolicy.stream()
@@ -255,7 +259,7 @@ public class Policy implements MapWriter {
       Collections.sort(expandedClauses);
 
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes,cloudManager));
+      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes,this));
       applyRules();
     }
 
@@ -272,7 +276,7 @@ public class Policy implements MapWriter {
     }
 
     Session copy() {
-      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion);
+      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider);
     }
 
     List<Row> getMatrixCopy() {
@@ -327,6 +331,10 @@ public class Policy implements MapWriter {
 
     public List<Row> getSorted() {
       return Collections.unmodifiableList(matrix);
+    }
+
+    public NodeStateProvider getNodeStateProvider() {
+      return nodeStateProvider;
     }
   }
 
