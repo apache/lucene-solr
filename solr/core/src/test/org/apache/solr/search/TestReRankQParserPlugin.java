@@ -596,10 +596,38 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "term_s:YYYY");
     params.add("start", "0");
     params.add("rows", "2");
+    ignoreException("reRankQuery parameter is mandatory");
 
     try {
       h.query(req(params));
       fail("A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified");
+    } catch (SolrException e) {
+      assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
+    }
+  }
+
+  @Test
+  public void testInvalidRqParam() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {"id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc1));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    params.add("rq", "{!invalidrq" + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq " + ReRankQParserPlugin.RERANK_DOCS + "=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("start", "0");
+    params.add("rows", "2");
+    ignoreException("rq parser is null for rankquery string");
+    try {
+      h.query(req(params));
+      fail("h.query should raise an exception if rq does not exist");
     } catch (SolrException e) {
       assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
     }

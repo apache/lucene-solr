@@ -167,8 +167,8 @@ public class QueryComponent extends SearchComponent
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
-        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
-        Query rq = rqparser.getQuery();
+        final QParser rqparser =  QParser.getParser(rankQueryString, defType, req);
+        final Query rq = (rqparser != null) ? rqparser.getQuery() : null;
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
           rb.setRankQuery(rankQuery);
@@ -180,7 +180,15 @@ public class QueryComponent extends SearchComponent
             }
           }
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"rq parameter must be a RankQuery");
+          final String error;
+          if (rqparser == null){
+            error = "rq parser is null for rankquery string "+rankQueryString;
+          } else if (rq == null){
+            error = "rq parameter is null ( rq parser is " + rqparser.getClass() + " )";
+          } else {
+            error = "rq parameter must be a RankQuery, but it is "+rq.getClass().getName() + " ( rq parser is "+rqparser.getClass() +" )";
+          }
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, error);
         }
       }
 
