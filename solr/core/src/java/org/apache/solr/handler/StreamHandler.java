@@ -291,6 +291,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("akima", AkimaEvaluator.class)
         .withFunctionName("lerp", LerpEvaluator.class)
         .withFunctionName("chiSquareDataSet", ChiSquareDataSetEvaluator.class)
+        .withFunctionName("gtestDataSet", GTestDataSetEvaluator.class)
 
         // Boolean Stream Evaluators
 
