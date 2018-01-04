@@ -139,9 +139,17 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
       // System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.toString()));
       SearchGroup<T> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
+      // We pass this around so that we can get the corresponding solr id when serializing the search group to send to the federator
+      searchGroup.topDocLuceneId = group.topDoc;
       searchGroup.sortValues = new Object[sortFieldCount];
       for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
         searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
+      }
+      // TODO: It should be possible to extend this to handle more than one FieldComparator and other types
+      if (sortFieldCount > 0 && comparators[0] instanceof FieldComparator.RelevanceComparator ){
+        searchGroup.topDocScore = (Float)comparators[0].value(group.comparatorSlot);
+      } else {
+        searchGroup.topDocScore = -1;
       }
       result.add(searchGroup);
     }

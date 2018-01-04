@@ -52,6 +52,8 @@ class GroupConverter {
     for (SearchGroup<MutableValue> original : values) {
       SearchGroup<BytesRef> converted = new SearchGroup<BytesRef>();
       converted.sortValues = original.sortValues;
+      converted.topDocLuceneId = original.topDocLuceneId;
+      converted.topDocScore = original.topDocScore;
       if (original.groupValue.exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
         fieldType.readableToIndexed(original.groupValue.toString(), binary);

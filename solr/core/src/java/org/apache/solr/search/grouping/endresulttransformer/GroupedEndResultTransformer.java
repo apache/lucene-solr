@@ -75,7 +75,13 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
           if (group.groupValue != null) {
             // use createFields so that fields having doc values are also supported
-            List<IndexableField> fields = groupField.createFields(group.groupValue.utf8ToString());
+            final String groupValue;
+            if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
+              groupValue = groupField.getType().indexedToReadable(group.groupValue.utf8ToString());
+            } else {
+              groupValue = group.groupValue.utf8ToString();
+            }
+            List<IndexableField> fields = groupField.createFields(groupValue);
             if (CollectionUtils.isNotEmpty(fields)) {
               groupResult.add("groupValue", groupFieldType.toObject(fields.get(0)));
             } else {

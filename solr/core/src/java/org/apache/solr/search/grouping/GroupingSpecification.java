@@ -16,6 +16,11 @@
  */
 package org.apache.solr.search.grouping;
 
+import java.util.Arrays;
+import java.util.Collections;
+import org.apache.lucene.search.SortField;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SortSpec;
 
@@ -36,6 +41,57 @@ public class GroupingSpecification {
   private Grouping.Format responseFormat;
   private boolean needScore;
   private boolean truncateGroups;
+  /* This is an optimization to skip the second grouping step when groupLimit is 1. The second
+  * grouping step retrieves the top K documents for each group. This is not necessary when only one
+  * document per group is required because in the first step every shard sends back the group score given
+  * by its top document.
+  */
+  private boolean skipSecondGroupingStep;
+
+  /**
+   * Validates the current GropingSpecification.
+   * It will throw a SolrException the grouping specification is not valid, otherwise
+   * it will return without side effects.
+   */
+  public void validate(){
+    if (isSkipSecondGroupingStep()) {
+      validateSkipSecondGroupingStep(withinGroupSortSpec, groupSortSpec);
+    }
+
+    // when group.format=grouped then, validate group.offset
+    // for group.main=true and group.format=simple, start value is used instead of group.offset
+    // and start is already validate above for negative values
+    if (!(main || responseFormat == Grouping.Format.simple) &&
+       withinGroupSortSpec.getOffset() < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'group.offset' parameter cannot be negative");
+    }
+  }
+
+  private void validateSkipSecondGroupingStep(final SortSpec withinGroupSpecification, final SortSpec groupSort) {
+    // Only possible if we only want one doc per group
+    final int limit =  withinGroupSpecification.getCount();
+    final int offset = withinGroupSpecification.getOffset();
+    if (limit != 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " +
+          GroupParams.GROUP_LIMIT + " != 1 ("+GroupParams.GROUP_LIMIT+" is "+limit+")");
+    }
+    if (offset != 0){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " + GroupParams.GROUP_OFFSET + " != 0 (" +
+              GroupParams.GROUP_OFFSET + " is "+offset + ")");
+    }
+
+    final SortField[] withinGroupSortFields = withinGroupSpecification.getSort().getSort();
+    final SortField[] groupSortFields = groupSort.getSort().getSort();
+
+    // Within group sort must be the same as group sort because if we skip second step no sorting within group will be done.
+    // This checks if withinGroupSortFields is a prefix of groupSortFields
+    if (Collections.indexOfSubList(Arrays.asList(groupSortFields), Arrays.asList(withinGroupSortFields)) != 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not allow the given within/global sort group configuration");
+    }
+  }
 
   public String[] getFields() {
     return fields;
@@ -128,5 +184,9 @@ public class GroupingSpecification {
   public void setWithinGroupSortSpec(SortSpec withinGroupSortSpec) {
     this.withinGroupSortSpec = withinGroupSortSpec;
   }
+
+  public boolean isSkipSecondGroupingStep() { return skipSecondGroupingStep; }
+
+  public void setSkipSecondGroupingStep(boolean skipSecondGroupingStep) { this.skipSecondGroupingStep = skipSecondGroupingStep; }
 
 }

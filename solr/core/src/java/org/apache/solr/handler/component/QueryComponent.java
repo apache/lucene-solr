@@ -99,6 +99,7 @@ import org.apache.solr.search.grouping.distributed.requestfactory.SearchGroupsRe
 import org.apache.solr.search.grouping.distributed.requestfactory.StoredFieldsShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.requestfactory.TopGroupsShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.responseprocessor.SearchGroupShardResponseProcessor;
+import org.apache.solr.search.grouping.distributed.responseprocessor.SkipSecondStepSearchGroupShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.responseprocessor.StoredFieldsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.responseprocessor.TopGroupsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
@@ -305,16 +306,17 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setNeedScore((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0);
     groupingSpec.setTruncateGroups(params.getBool(GroupParams.GROUP_TRUNCATE, false));
 
-    // when group.format=grouped then, validate group.offset
-    // for group.main=true and group.format=simple, start value is used instead of group.offset
-    // and start is already validate above for negative values
-    if (!(groupingSpec.isMain() || groupingSpec.getResponseFormat() == Grouping.Format.simple) &&
-        groupingSpec.getWithinGroupSortSpec().getOffset() < 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'group.offset' parameter cannot be negative");
+    if (params.getBool(GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND, GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND_DEFAULT)) {
+      // skip second step is enabled
+      groupingSpec.setSkipSecondGroupingStep(true);
+      // check if reranking is enabled
+      if (rb.getRankQuery() != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND+" does not support reranking parameter "+CommonParams.RQ);
+      }
     }
+    groupingSpec.validate();
   }
-
-
 
   /**
    * Actually run the query
@@ -547,7 +549,9 @@ public class QueryComponent extends SearchComponent
     } else if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
     } else if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
-      shardRequestFactory = new TopGroupsShardRequestFactory();
+      if (!rb.getGroupingSpec().isSkipSecondGroupingStep()) {
+        shardRequestFactory = new TopGroupsShardRequestFactory();
+      }
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
     } else if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
@@ -593,10 +597,18 @@ public class QueryComponent extends SearchComponent
     }
   }
 
+  protected SearchGroupShardResponseProcessor newSearchGroupShardResponseProcessor(ResponseBuilder rb) {
+    if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
+      return new SkipSecondStepSearchGroupShardResponseProcessor();
+    } else {
+      return new SearchGroupShardResponseProcessor();
+    }
+  }
+
   protected void handleGroupedResponses(ResponseBuilder rb, ShardRequest sreq) {
     ShardResponseProcessor responseProcessor = null;
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_GROUPS) != 0) {
-      responseProcessor = new SearchGroupShardResponseProcessor();
+      responseProcessor = newSearchGroupShardResponseProcessor(rb);
     } else if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       responseProcessor = new TopGroupsShardResponseProcessor();
     } else if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
@@ -1286,6 +1298,14 @@ public class QueryComponent extends SearchComponent
     return true;
   }
 
+  protected SearchGroupsResultTransformer newSearchGroupsResultTransformer(ResponseBuilder rb, SolrIndexSearcher searcher) {
+    if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
+      return new SearchGroupsResultTransformer.SkipSecondStepSearchResultResultTransformer(searcher);
+    } else {
+      return new SearchGroupsResultTransformer(searcher);
+    }
+  }
+
   private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
@@ -1315,7 +1335,7 @@ public class QueryComponent extends SearchComponent
 
     CommandHandler commandHandler = topsGroupsActionBuilder.build();
     commandHandler.execute();
-    SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
+    SearchGroupsResultTransformer serializer = newSearchGroupsResultTransformer(rb, searcher);
 
     rsp.add("firstPhase", commandHandler.processResult(result, serializer));
     rsp.add("totalHitCount", commandHandler.getTotalHitCount());
