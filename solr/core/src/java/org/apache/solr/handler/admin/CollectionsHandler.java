@@ -260,16 +260,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
-  void handleResponse(String operation, ZkNodeProps m,
+  //TODO rename to submitToOverseerRPC
+  public void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     handleResponse(operation, m, rsp, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  private SolrResponse handleResponse(String operation, ZkNodeProps m,
+  //TODO rename to submitToOverseerRPC
+  public SolrResponse handleResponse(String operation, ZkNodeProps m,
       SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
-    long time = System.nanoTime();
-
-    if (m.containsKey(ASYNC) && m.get(ASYNC) != null) {
+    if (!m.containsKey(QUEUE_OPERATION)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
+    }
+    if (m.get(ASYNC) != null) {
 
        String asyncId = m.getStr(ASYNC);
 
@@ -297,6 +300,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
        return response;
      }
 
+    long time = System.nanoTime();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
@@ -1031,7 +1035,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
+  public static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
       throws KeeperException, InterruptedException {
 
     if (response.getResponse().get("exception") != null) {

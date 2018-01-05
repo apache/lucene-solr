@@ -219,6 +219,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(DELETE, new DeleteCollectionCmd(this))
         .put(CREATEALIAS, new CreateAliasCmd(this))
         .put(DELETEALIAS, new DeleteAliasCmd(this))
+        .put(ROUTEDALIAS_CREATECOLL, new RoutedAliasCreateCollectionCmd(this))
         .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
         .put(DELETESHARD, new DeleteShardCmd(this))
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
@@ -232,7 +233,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @Override
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
-    log.debug("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
+    log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
     NamedList results = new NamedList();
     try {
