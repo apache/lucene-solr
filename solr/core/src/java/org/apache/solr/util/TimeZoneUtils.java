@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+import org.apache.solr.common.SolrException;
+
 /**
  * Simple utilities for working with TimeZones
  * @see java.util.TimeZone
@@ -82,4 +84,20 @@ public final class TimeZoneUtils {
 
   private static Pattern CUSTOM_ID_REGEX = Pattern.compile("GMT(?:\\+|\\-)(\\d{1,2})(?::?(\\d{2}))?");
 
+  /**
+   * Parse the specified timezone ID. If null input then return UTC. If we can't resolve it then
+   * throw an exception.
+   */
+  public static TimeZone parseTimezone(String tzStr) {
+    if (tzStr != null) {
+      TimeZone tz = getTimeZone(tzStr);
+      if (null == tz) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Solr JVM does not support TZ: " + tzStr);
+      }
+      return tz;
+    } else {
+      return DateMathParser.UTC; //TODO move to TimeZoneUtils
+    }
+  }
 }

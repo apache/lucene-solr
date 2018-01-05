@@ -257,7 +257,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             }
             if (runningZKTasks.contains(head.getId())) continue;
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
             final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue))
@@ -269,6 +268,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               }
             }
             String operation = message.getStr(Overseer.QUEUE_OPERATION);
+            if (operation == null) {
+              log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+              workQueue.remove(head);
+              continue;
+            }
+            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
             if (lock == null) {
               log.debug("Exclusivity check failed for [{}]", message.toString());

@@ -74,6 +74,10 @@ New Features
 * SOLR-11201: Implement autoscaling trigger for arbitrary metrics that creates events when
   a given metric breaches a threshold (shalin)
 
+* SOLR-11653: TimeRoutedAlias URP now auto-creates new collections on the fly according to alias metadata
+  rules that sets the time interval for each collection.  An internal Overseer command "ROUTEDALIAS_CREATECOLL"
+  was created to facilitate this.  (David Smiley)
+
 Bug Fixes
 ----------------------
 

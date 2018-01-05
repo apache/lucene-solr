@@ -101,17 +101,9 @@ public class SolrRequestInfo {
   }
 
   /** The TimeZone specified by the request, or null if none was specified */
-  public TimeZone getClientTimeZone() {    
-
+  public TimeZone getClientTimeZone() {
     if (tz == null)  {
-      String tzStr = req.getParams().get(CommonParams.TZ);
-      if (tzStr != null) {
-        tz = TimeZoneUtils.getTimeZone(tzStr);
-        if (null == tz) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "Solr JVM does not support TZ: " + tzStr);
-        }
-      } 
+      tz = TimeZoneUtils.parseTimezone(req.getParams().get(CommonParams.TZ));
     }
     return tz;
   }
