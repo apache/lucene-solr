@@ -637,4 +637,78 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       dir.close();
     }
   }
+
+  public void testSortedNumericAdvanceExact() throws Exception {
+    // test SORTED_WITH_ADDRESSES
+    doTestSortedNumericAdvanceExact(TestUtil.nextInt(random(), 100, 200), 17, null);
+    // test SORTED_SET_TABLE
+    long[] values = new long[255];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = random().nextLong();
+    }
+    doTestSortedNumericAdvanceExact(TestUtil.nextInt(random(), 50, 100), 4, values);
+  }
+
+  private void doTestSortedNumericAdvanceExact(int numDocs, int maxValuesPerDoc, long[] possibleValues) throws Exception {
+    Directory dir = newFSDirectory(createTempDir());
+    IndexWriterConfig conf = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    conf.setMergeScheduler(new SerialMergeScheduler());
+    // set to duel against a codec which has ordinals:
+    final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
+    final DocValuesFormat dv = new Lucene54DocValuesFormat();
+    conf.setCodec(new AssertingCodec() {
+      @Override
+      public PostingsFormat getPostingsFormatForField(String field) {
+        return pf;
+      }
+
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
+        return dv;
+      }
+    });
+    IndexWriter writer = new IndexWriter(dir, conf);
+
+    List<long[]> expected = new ArrayList<>();
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numValues = random().nextInt(maxValuesPerDoc);
+      // create a random list of strings
+      long[] values = new long[numValues];
+      for (int v = 0; v < numValues; v++) {
+        final long value;
+        if (possibleValues == null) {
+          value = random().nextLong();
+        } else {
+          value = possibleValues[TestUtil.nextInt(random(), 0, possibleValues.length-1)];
+        }
+        values[v] = value;
+        doc.add(new SortedNumericDocValuesField("numeric", value));
+      }
+      Arrays.sort(values);
+      expected.add(values);
+      writer.addDocument(doc);
+    }
+    writer.commit();
+    writer.forceMerge(1);
+    DirectoryReader ir = DirectoryReader.open(writer);
+    writer.close();
+    LeafReader ar = getOnlyLeafReader(ir);
+    for (int i = 0; i < numDocs; i++) {
+      int doc = TestUtil.nextInt(random(), 0, numDocs-1);
+      SortedNumericDocValues values = ar.getSortedNumericDocValues("numeric");
+      long[] array = expected.get(doc);
+      if (array.length == 0) {
+        assertFalse(values.advanceExact(doc));
+      } else {
+        assertTrue(values.advanceExact(doc));
+        assertEquals(array.length, values.docValueCount());
+        for (int j = 0; j < values.docValueCount(); j++) {
+          assertEquals(array[j], values.nextValue());
+        }
+      }
+    }
+    ir.close();
+    dir.close();
+  }
 }

@@ -1172,6 +1172,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           docID = target;
           startOffset = ordIndex.get(docID);
           endOffset = ordIndex.get(docID+1L);
+          upto = startOffset;
           return endOffset > startOffset;
         }
         
@@ -1244,6 +1245,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           int ord = (int) ordinals.get(docID);
           startOffset = offsets[ord];
           endOffset = offsets[ord+1];
+          upto = startOffset;
           return endOffset > startOffset;
         }
         
