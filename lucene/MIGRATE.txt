@@ -19,12 +19,14 @@ FunctionScoreQuery maps negative values to 0.
 
 ## CustomScoreQuery, BoostedQuery and BoostingQuery removed (LUCENE-8099) ##
 
-Instead use FunctionScoreQuery and a DoubleValuesSource implementation.  For example,
-to replace the functionality of BoostedQuery, you could do the following, using
-the lucene-expressions module:
+Instead use FunctionScoreQuery and a DoubleValuesSource implementation.  BoostedQuery
+and BoostingQuery may be replaced by calls to FunctionScoreQuery.boostByValue() and
+FunctionScoreQuery.boostByQuery().  To replace more complex calculations in
+CustomScoreQuery, use the lucene-expressions module:
 
 SimpleBindings bindings = new SimpleBindings();
 bindings.add("score", DoubleValuesSource.SCORES);
-bindings.add("boost", DoubleValuesSource.fromIntField("myboostfield"));
-Expression expr = JavascriptCompiler.compile("score * boost");
+bindings.add("boost1", DoubleValuesSource.fromIntField("myboostfield"));
+bindings.add("boost2", DoubleValuesSource.fromIntField("myotherboostfield"));
+Expression expr = JavascriptCompiler.compile("score * (boost1 + ln(boost2))");
 FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
