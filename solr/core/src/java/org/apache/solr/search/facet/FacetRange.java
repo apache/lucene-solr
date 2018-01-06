@@ -93,9 +93,13 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     super.process();
 
     // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
-    // But if mincount>0 then our sub mincount can be set to 1.
-
-    effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
+    // If mincount>0 then we could *potentially* set our sub mincount to 1...
+    // ...but that would require sorting the buckets (by their val) at the top level
+    //
+    // Tather then do that, which could be complicated by non trivial field types, we'll force the sub-shard effectiveMincount
+    // to be 0, ensuring that we can trivially merge all the buckets from every shard
+    // (we have to filter the merged buckets by the original mincount either way)
+    effectiveMincount = fcontext.isShard() ? 0 : freq.mincount;
     sf = fcontext.searcher.getSchema().getField(freq.field);
     response = getRangeCounts();
   }
