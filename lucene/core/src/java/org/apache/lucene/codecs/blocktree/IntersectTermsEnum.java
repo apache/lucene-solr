@@ -133,7 +133,7 @@ final class IntersectTermsEnum extends TermsEnum {
      if (startTerm != null) {
          seekToStartTerm(startTerm);
      }
-     currentTransition = currentFrame.transition
+     currentTransition = currentFrame.transition;
   }
 
   // only for assert:
