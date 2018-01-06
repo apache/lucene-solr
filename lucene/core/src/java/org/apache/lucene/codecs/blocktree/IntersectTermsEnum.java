@@ -113,27 +113,27 @@ final class IntersectTermsEnum extends TermsEnum {
     // Else the seek cost of loading the frames will be
     // too costly.
 
-     final FST.Arc<BytesRef> arc = fr.index.getFirstArc(arcs[0]);
-     // Empty string prefix must have an output in the index!
-     assert arc.isFinal();
+    final FST.Arc<BytesRef> arc = fr.index.getFirstArc(arcs[0]);
+    // Empty string prefix must have an output in the index!
+    assert arc.isFinal();
 
-     // Special pushFrame since it's the first one:
-     final IntersectTermsEnumFrame f = stack[0];
-     f.fp = f.fpOrig = fr.rootBlockFP;
-     f.prefix = 0;
-     f.setState(0);
-     f.arc = arc;
-     f.outputPrefix = arc.output;
-     f.load(fr.rootCode);
+    // Special pushFrame since it's the first one:
+    final IntersectTermsEnumFrame f = stack[0];
+    f.fp = f.fpOrig = fr.rootBlockFP;
+    f.prefix = 0;
+    f.setState(0);
+    f.arc = arc;
+    f.outputPrefix = arc.output;
+    f.load(fr.rootCode);
 
-     // for assert:
-     assert setSavedStartTerm(startTerm);
+    // for assert:
+    assert setSavedStartTerm(startTerm);
 
-     currentFrame = f;
-     if (startTerm != null) {
-         seekToStartTerm(startTerm);
-     }
-     currentTransition = currentFrame.transition;
+    currentFrame = f;
+    if (startTerm != null) {
+      seekToStartTerm(startTerm);
+    }
+    currentTransition = currentFrame.transition;
   }
 
   // only for assert:
