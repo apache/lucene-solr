@@ -66,6 +66,8 @@ Bug Fixes
 * SOLR-11555: If the query terms reduce to nothing, filter(clause) produces an NPE whereas
   fq=clause does not (Erick Erickson)
 
+* SOLR-11771: Overseer can never process some last messages (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
