@@ -66,6 +66,9 @@ Bug Fixes
 * SOLR-11555: If the query terms reduce to nothing, filter(clause) produces an NPE whereas
   fq=clause does not (Erick Erickson)
 
+* SOLR-11824: Fixed bucket ordering in distributed json.facet type:range when mincount>0 (hossman)
+
+
 Optimizations
 ----------------------
 

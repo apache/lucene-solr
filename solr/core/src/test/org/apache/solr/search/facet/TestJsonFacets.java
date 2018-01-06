@@ -1028,6 +1028,48 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",between:{count:3,x:0.0, ny:{count:2}}" +
             " } }"
     );
+    
+    // sparse range facet (with sub facets and stats), with "other:all"
+    client.testJQ(params(p, "q", "*:*", "json.facet",
+                         "{f:{range:{field:${num_d}, start:-5, end:10, gap:1, other:all,   "+
+                         "           facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}   }}}"
+                         )
+                  , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1, x:-5.0,ny:{count:1}}, "+
+                  "                                 {val:-4.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val:-3.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val:-2.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val:-1.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 0.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 1.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 2.0,count:1, x:3.0,ny:{count:0}} , "+
+                  "                                 {val: 3.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 4.0,count:1, x:2.0,ny:{count:1}} , "+
+                  "                                 {val: 5.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 6.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 7.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 8.0,count:0 /* ,x:0.0,ny:{count:0} */} ,"+
+                  "                                 {val: 9.0,count:0 /* ,x:0.0,ny:{count:0} */}"+
+                  "                               ]" +
+                  "                       ,before: {count:1,x:-5.0,ny:{count:0}}" +
+                  "                       ,after:  {count:1,x:7.0, ny:{count:0}}" +
+                  "                       ,between:{count:3,x:0.0, ny:{count:2}}" +
+                  " } }"
+    );
+    
+    // sparse range facet (with sub facets and stats), with "other:all" & mincount==1
+    client.testJQ(params(p, "q", "*:*", "json.facet",
+                         "{f:{range:{field:${num_d}, start:-5, end:10, gap:1, other:all, mincount:1,   "+
+                         "           facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}   }}}"
+                         )
+                  , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1, x:-5.0,ny:{count:1}}, "+
+                  "                                 {val: 2.0,count:1, x:3.0,ny:{count:0}} , "+
+                  "                                 {val: 4.0,count:1, x:2.0,ny:{count:1}} "+
+                  "                               ]" +
+                  "                       ,before: {count:1,x:-5.0,ny:{count:0}}" +
+                  "                       ,after:  {count:1,x:7.0, ny:{count:0}}" +
+                  "                       ,between:{count:3,x:0.0, ny:{count:2}}" +
+                  " } }"
+    );
 
     // range facet with sub facets and stats, with "other:all", on subset
     client.testJQ(params(p, "q", "id:(3 4 6)"
