@@ -124,6 +124,9 @@ Bug Fixes
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
   (Xiaoshan Sun via Adrien Grand)
 
+* SOLR-11758: Fixed FloatDocValues.boolVal to correctly return true for all values != 0.0F
+  (Munendra S N via hossman)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
