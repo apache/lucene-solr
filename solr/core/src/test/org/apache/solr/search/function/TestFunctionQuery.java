@@ -800,7 +800,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testBooleanFunctions() throws Exception {
     clearIndex();
 
-    assertU(adoc("id", "1", "text", "hello", "foo_s","A", "foo_ti", "0", "foo_tl","0"));
+    assertU(adoc("id", "1", "text", "hello", "foo_s","A", "foo_ti", "0", "foo_tl","0", "foo_tf", "0.00001"));
     assertU(adoc("id", "2"                              , "foo_ti","10", "foo_tl","11"));
     assertU(commit());
 
@@ -819,6 +819,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // test if()
     assertJQ(req("q", "id:1", "fl", "a1:if(true,'A','B')", "fl","b1:if(false,'A',testfunc('B'))")
         , "/response/docs/[0]=={'a1':'A', 'b1':'B'}");
+    // queries with positive scores < 1 should still evaluate to 'true' in boolean context
+    assertJQ(req("q", "id:1", "nested", "*:*^=0.00001",
+                 "fl", "a1:if(query($nested),'A','B')", "fl","b1:if(not(query($nested)),'A','B')")
+        , "/response/docs/[0]=={'a1':'A', 'b1':'B'}");
 
     // test boolean operators
     assertJQ(req("q", "id:1", "fl", "t1:and(testfunc(true),true)", "fl","f1:and(true,false)", "fl","f2:and(false,true)", "fl","f3:and(false,false)")
@@ -830,6 +834,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertJQ(req("q", "id:1", "fl", "t:not(testfunc(false)),f:not(true)")
         , "/response/docs/[0]=={'t':true, 'f':false}");
 
+    // test fields evaluated as booleans in wrapping functions
+    assertJQ(req("q", "id:1", "fl", "a:not(foo_ti), b:if(foo_tf,'TT','FF'), c:and(true,foo_tf)")
+        , "/response/docs/[0]=={'a':true, 'b':'TT', 'c':true}");
+    assertJQ(req("q", "id:2", "fl", "a:not(foo_ti), b:if(foo_tf,'TT','FF'), c:and(true,foo_tf)")
+        , "/response/docs/[0]=={'a':false, 'b':'FF', 'c':false}");
+    
 
     // def(), the default function that returns the first value that exists
     assertJQ(req("q", "id:1", "fl", "x:def(id,testfunc(123)), y:def(foo_f,234.0)")
@@ -838,8 +848,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         , "/response/docs/[0]=={'x':'A', 'y':'W'}");
 
     // test constant conversion to boolean
-    assertJQ(req("q", "id:1", "fl", "a:not(0), b:not(1), c:not(0.0), d:not(1.1), e:not('A')")
-        , "/response/docs/[0]=={'a':true, 'b':false, 'c':true, 'd':false, 'e':false}");
+    assertJQ(req("q", "id:1", "fl", "a:not(0), b:not(1), c:not(0.0), d:not(1.1), e:not('A'), f:not(0.001)")
+        , "/response/docs/[0]=={'a':true, 'b':false, 'c':true, 'd':false, 'e':false, 'f':false}");
 
   }
 
