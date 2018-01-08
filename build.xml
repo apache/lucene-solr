@@ -145,6 +145,7 @@
         (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
         (~$/\bTOOD:/$) : 'TOOD instead TODO',
         (~$/\t/$) : 'tabs instead spaces',
+        (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
         (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
         (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
         (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
