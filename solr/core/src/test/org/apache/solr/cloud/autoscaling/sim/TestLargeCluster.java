@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -61,6 +62,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 /**
  *
  */
+@TimeoutSuite(millis = 4 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 public class TestLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -315,6 +317,11 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   private static final int[] renard5x = new int[] {
       1, 2, 3, 4, 6,
       10, 16, 25, 40, 63,
+      100
+  };
+  private static final int[] renard5xx = new int[] {
+      1, 2, 3, 4, 6,
+      10, 16, 25, 40, 63,
       100, 158, 251, 398, 631,
       1000, 1585, 2512, 3981, 6310,
       10000
@@ -330,12 +337,18 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       100
   };
 
+  private static final AtomicInteger ZERO = new AtomicInteger(0);
+
   //@Test
   public void benchmarkNodeLost() throws Exception {
     List<String> results = new ArrayList<>();
-    for (int wait : renard5) {
-      for (int delay : renard5) {
-        SummaryStatistics stat = new SummaryStatistics();
+    for (int wait : renard5x) {
+      for (int delay : renard5x) {
+        SummaryStatistics totalTime = new SummaryStatistics();
+        SummaryStatistics ignoredOurEvents = new SummaryStatistics();
+        SummaryStatistics ignoredOtherEvents = new SummaryStatistics();
+        SummaryStatistics startedOurEvents = new SummaryStatistics();
+        SummaryStatistics startedOtherEvents = new SummaryStatistics();
         for (int i = 0; i < 5; i++) {
           if (cluster != null) {
             cluster.close();
@@ -344,14 +357,29 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
           setUp();
           setupTest();
           long total = doTestNodeLost(wait, delay * 1000, 0);
-          stat.addValue(total);
+          totalTime.addValue(total);
+          // get event counts
+          Map<String, Map<String, AtomicInteger>> counts = cluster.simGetEventCounts();
+          Map<String, AtomicInteger> map = counts.remove("node_lost_trigger");
+          startedOurEvents.addValue(map.getOrDefault("STARTED", ZERO).get());
+          ignoredOurEvents.addValue(map.getOrDefault("IGNORED", ZERO).get());
+          int otherStarted = 0;
+          int otherIgnored = 0;
+          for (Map<String, AtomicInteger> m : counts.values()) {
+            otherStarted += m.getOrDefault("STARTED", ZERO).get();
+            otherIgnored += m.getOrDefault("IGNORED", ZERO).get();
+          }
+          startedOtherEvents.addValue(otherStarted);
+          ignoredOtherEvents.addValue(otherIgnored);
         }
-        results.add(String.format(Locale.ROOT, "%d\t%d\t%6.0f\t%6.0f\t%6.0f\t%6.0f\t%6.0f", wait, delay,
-            stat.getMin(), stat.getMax(), stat.getMean(), stat.getVariance(), stat.getStandardDeviation()));
+        results.add(String.format(Locale.ROOT, "%d\t%d\t%4.0f\t%4.0f\t%4.0f\t%4.0f\t%6.0f\t%6.0f\t%6.0f\t%6.0f\t%6.0f",
+            wait, delay, startedOurEvents.getMean(), ignoredOurEvents.getMean(),
+            startedOtherEvents.getMean(), ignoredOtherEvents.getMean(),
+            totalTime.getMin(), totalTime.getMax(), totalTime.getMean(), totalTime.getStandardDeviation(), totalTime.getVariance()));
       }
     }
     log.info("===== RESULTS ======");
-    log.info("waitFor\tkillDelay\tmin\tmax\tmean\tvar\tstdev");
+    log.info("waitFor\tdelay\tSTRT\tIGN\toSTRT\toIGN\tmin\tmax\tmean\tstdev\tvar");
     results.forEach(s -> log.info(s));
   }
 
@@ -364,6 +392,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         "'waitFor' : '" + waitFor + "s'," +
         "'enabled' : true," +
         "'actions' : [" +
+        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}," +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "]" +
@@ -391,6 +420,11 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       cluster.simRemoveNode(nodes.get(i), false);
       cluster.getTimeSource().sleep(killDelay);
     }
+    // wait for the trigger to fire
+    boolean await = triggerFiredLatch.await(10 * waitFor * 1000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("trigger did not fire within timeout, " +
+        "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+        await);
     List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
     int startedEventPos = -1;
     for (int i = 0; i < systemColl.size(); i++) {
@@ -404,7 +438,9 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         break;
       }
     }
-    assertTrue("no STARTED event: " + systemColl, startedEventPos > -1);
+    assertTrue("no STARTED event: " + systemColl + ", " +
+            "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+          startedEventPos > -1);
     SolrInputDocument startedEvent = systemColl.get(startedEventPos);
     int ignored = 0;
     int lastIgnoredPos = startedEventPos;
@@ -420,9 +456,13 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         }
       }
     }
-    assertTrue("should be at least " + minIgnored + " IGNORED events", ignored >= minIgnored);
+    assertTrue("should be at least " + minIgnored + " IGNORED events, " +
+            "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+            ignored >= minIgnored);
     // make sure some replicas have been moved
-    assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
+    assertTrue("no MOVEREPLICA ops? " +
+            "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+            cluster.simGetOpCount("MOVEREPLICA") > 0);
 
     log.info("Ready after " + waitForState(collectionName, 20 * NUM_NODES, TimeUnit.SECONDS, clusterShape(NUM_NODES / 5, NUM_NODES / 10)) + " ms");
 
@@ -450,12 +490,16 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       }
     }
 
-    assertTrue("did not finish processing changes", finishedEvent != null);
+    assertTrue("did not finish processing changes, " +
+            "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+            finishedEvent != null);
     long delta = (Long)finishedEvent.getFieldValue("event.time_l") - (Long)startedEvent.getFieldValue("event.time_l");
     delta = TimeUnit.NANOSECONDS.toMillis(delta);
     log.info("#### System stabilized after " + delta + " ms");
     long ops = cluster.simGetOpCount("MOVEREPLICA");
-    assertTrue("unexpected number of MOVEREPLICA ops: " + ops, ops >= 40);
+    assertTrue("unexpected number of MOVEREPLICA ops: " + ops + ", " +
+            "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
+            ops >= 40);
     return delta;
   }
 
