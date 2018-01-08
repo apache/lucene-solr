@@ -132,6 +132,8 @@ Other
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
   (Kai Chan via Adrien Grand)
 
+* LUCENE-8122: Upgrade analysis/icu to ICU 60.2. (Robert Muir)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
