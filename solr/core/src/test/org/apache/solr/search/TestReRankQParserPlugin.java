@@ -605,4 +605,45 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testReRankQueriesWithDefType() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    final String[] doc1 = {"id","1"};
+    assertU(adoc(doc1));
+    assertU(commit());
+    final String[] doc2 = {"id","2"};
+    assertU(adoc(doc2));
+    assertU(commit());
+
+    final String preferredDocId;
+    final String lessPreferrredDocId;
+    if (random().nextBoolean()) {
+      preferredDocId = "1";
+      lessPreferrredDocId = "2";
+    } else {
+      preferredDocId = "2";
+      lessPreferrredDocId = "1";
+    }
+
+    for (final String defType : new String[] {
+        null,
+        LuceneQParserPlugin.NAME,
+        ExtendedDismaxQParserPlugin.NAME
+    }) {
+      final ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=id:"+preferredDocId+"}");
+      params.add("q", "*:*");
+      if (defType != null) {
+        params.add(QueryParsing.DEFTYPE, defType);
+      }
+      assertQ(req(params), "*[count(//doc)=2]",
+          "//result/doc[1]/str[@name='id'][.='"+preferredDocId+"']",
+          "//result/doc[2]/str[@name='id'][.='"+lessPreferrredDocId+"']"
+      );
+    }
+  }
+
 }

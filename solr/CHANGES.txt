@@ -60,6 +60,8 @@ Upgrade Notes
 * SOLR-11798: The top-level <highlighting> syntax in solrconfig.xml is now formally
   deprecated in favour of <searchComponent> equivalent syntax. See also SOLR-1696.
 
+* SOLR-11809: QueryComponent's rq parameter parsing no longer considers the defType parameter.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -130,6 +132,11 @@ Bug Fixes
 ----------------------
 
 * SOLR-11771: Overseer can never process some last messages (Cao Manh Dat)
+
+* SOLR-11809: QueryComponent.prepare rq parsing could fail under SOLR 7.2.0 - fix:
+  QueryComponent's rq parameter parsing no longer considers the defType parameter.
+  (Christine Poerschke and David Smiley in response to bug report/analysis
+  from Dariusz Wojtas and Diego Ceccarelli)
 
 ==================  7.2.0 ==================
 
