@@ -167,7 +167,7 @@ public class QueryComponent extends SearchComponent
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
-        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
+        QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
