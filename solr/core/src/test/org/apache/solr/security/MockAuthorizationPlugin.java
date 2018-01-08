@@ -30,6 +30,7 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final HashSet<String> denyUsers = new HashSet<>();
+  static final HashSet<String> protectedResources = new HashSet<>();
   static Predicate<AuthorizationContext> predicate;
 
   @Override
@@ -42,15 +43,17 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin {
       } catch (SolrException e) {
         return new AuthorizationResponse(e.code());
       }
+    } else {
+      if (!protectedResources.contains(context.getResource())) {
+        return new AuthorizationResponse(200);
+      }
+      if (uname == null) uname = context.getParams().get("uname");
+      log.info("User request: " + uname);
+      if (uname == null || denyUsers.contains(uname))
+        return new AuthorizationResponse(403);
+      else
+        return new AuthorizationResponse(200);
     }
-
-
-    if (uname == null) uname = context.getParams().get("uname");
-    log.info("User request: " + uname);
-    if (denyUsers.contains(uname))
-      return new AuthorizationResponse(403);
-    else
-      return new AuthorizationResponse(200);
   }
 
   @Override
