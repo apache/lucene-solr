@@ -103,9 +103,6 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
   }
 
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
     TopDocs knnResults = knnSearch(text);
@@ -121,9 +118,6 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
     return assignedClass;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
     TopDocs knnResults = knnSearch(text);
@@ -132,9 +126,6 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
     TopDocs knnResults = knnSearch(text);

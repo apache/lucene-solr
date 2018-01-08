@@ -34,9 +34,6 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
   private Map<String, Analysis> analysisByFieldTypeName = new HashMap<>();
   private Map<String, Analysis> analysisByFieldName = new HashMap<>();
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);

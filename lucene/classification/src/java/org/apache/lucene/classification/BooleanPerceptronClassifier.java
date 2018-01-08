@@ -195,9 +195,6 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   }
 
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<Boolean> assignClass(String text)
           throws IOException {
@@ -220,18 +217,12 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     return new ClassificationResult<>(output >= bias, score);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text)
           throws IOException {
     return null;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text, int max)
           throws IOException {

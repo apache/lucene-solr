@@ -204,9 +204,6 @@ public class FingerprintFilter extends TokenFilter {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();
