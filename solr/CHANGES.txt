@@ -68,6 +68,7 @@ Bug Fixes
 
 * SOLR-11824: Fixed bucket ordering in distributed json.facet type:range when mincount>0 (hossman)
 
+* SOLR-11821: ConcurrentModificationException in SimSolrCloudTestCase.tearDown (shalin)
 
 Optimizations
 ----------------------

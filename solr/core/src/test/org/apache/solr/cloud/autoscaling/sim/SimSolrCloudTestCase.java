@@ -138,13 +138,17 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       cluster.simGetOpCounts().forEach((k, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get())));
       log.info("######### Autoscaling event counts ###########");
       TreeMap<String, Map<String, AtomicInteger>> counts = new TreeMap<>();
-      for (SolrInputDocument d : cluster.simGetSystemCollection()) {
-        if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
-          continue;
+
+      List<SolrInputDocument> solrInputDocuments = cluster.simGetSystemCollection();
+      synchronized (solrInputDocuments) {
+        for (SolrInputDocument d : solrInputDocuments) {
+          if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
+            continue;
+          }
+          counts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
+              .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
+              .incrementAndGet();
         }
-        counts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
-            .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
-            .incrementAndGet();
       }
       counts.forEach((trigger, map) -> {
         log.info("## * Trigger: " + trigger);
