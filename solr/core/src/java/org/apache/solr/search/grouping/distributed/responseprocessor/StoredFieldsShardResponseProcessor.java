@@ -31,9 +31,6 @@ import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
  */
 public class StoredFieldsShardResponseProcessor implements ShardResponseProcessor {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;

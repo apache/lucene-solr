@@ -227,9 +227,6 @@ public class SchemaResponse extends SolrResponseBase {
     return fieldTypeRepresentations;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   @SuppressWarnings("unchecked")
   public void setResponse(NamedList<Object> response) {
@@ -246,9 +243,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class SchemaNameResponse extends SolrResponseBase {
     private String schemaName;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -266,9 +260,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class SchemaVersionResponse extends SolrResponseBase {
     private float schemaVersion;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -286,9 +277,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class FieldResponse extends SolrResponseBase {
     Map<String, Object> field = new LinkedHashMap<>();
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -307,9 +295,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class FieldsResponse extends SolrResponseBase {
     List<Map<String, Object>> fields;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -326,9 +311,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class DynamicFieldResponse extends SolrResponseBase {
     Map<String, Object> dynamicField = new LinkedHashMap<>();
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -347,9 +329,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class DynamicFieldsResponse extends SolrResponseBase {
     List<Map<String, Object>> dynamicFields;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -366,9 +345,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class UniqueKeyResponse extends SolrResponseBase {
     private String uniqueKey;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -385,9 +361,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class GlobalSimilarityResponse extends SolrResponseBase {
     Map<String, Object> similarity;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -405,9 +378,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class CopyFieldsResponse extends SolrResponseBase {
     List<Map<String, Object>> copyFields;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -424,9 +394,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class FieldTypeResponse extends SolrResponseBase {
     private FieldTypeRepresentation fieldType;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -445,9 +412,6 @@ public class SchemaResponse extends SolrResponseBase {
   public static class FieldTypesResponse extends SolrResponseBase {
     List<FieldTypeRepresentation> fieldTypes;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
@@ -462,9 +426,6 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   public static class UpdateResponse extends SolrResponseBase {
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {

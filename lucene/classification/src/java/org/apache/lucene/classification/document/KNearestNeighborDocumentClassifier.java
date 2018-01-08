@@ -72,17 +72,11 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
     this.field2analyzer = field2analyzer;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(Document document) throws IOException {
     return classifyFromTopDocs(knnSearch(document));
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(Document document) throws IOException {
     TopDocs knnResults = knnSearch(document);
@@ -91,9 +85,6 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(Document document, int max) throws IOException {
     TopDocs knnResults = knnSearch(document);

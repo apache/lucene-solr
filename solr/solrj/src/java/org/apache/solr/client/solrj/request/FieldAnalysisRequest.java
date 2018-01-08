@@ -68,9 +68,6 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return new FieldAnalysisResponse();
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
