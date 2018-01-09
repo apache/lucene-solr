@@ -103,11 +103,8 @@ final class IntersectTermsEnum extends TermsEnum {
       arcs[arcIdx] = new FST.Arc<>();
     }
 
-    if (fr.index == null) {
-      fstReader = null;
-    } else {
-      fstReader = fr.index.getBytesReader();
-    }
+    
+    fstReader = fr.index.getBytesReader();
 
     // TODO: if the automaton is "smallish" we really
     // should use the terms index to seek at least to
