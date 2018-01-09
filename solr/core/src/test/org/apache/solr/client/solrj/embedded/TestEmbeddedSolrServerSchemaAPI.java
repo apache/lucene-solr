@@ -20,14 +20,19 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -98,14 +103,17 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   }
 
   @Test 
-  public void testSchemaAddFieldAndFailOnImmutable() throws Exception {
+  public void testSchemaAddFieldAndFailOnImmutable() {
     assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
 
-      SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-      SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(server);
-      // wt hell???? assertFalse(addFieldResponse.toString(), addFieldResponse.getStatus()==0);
-      assertTrue((""+addFieldResponse).contains("schema is not editable"));
-
+    SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
+    assertFailedSchemaResponse(() -> addFieldUpdateSchemaRequest.process(server),
+        "schema is not editable");
   }
 
+  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
+    ApiBag.ExceptionWithErrObject e = expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
+    String msg = e.getErrs().get(0).get("errorMessages").toString();
+    assertTrue(msg.contains(expectedErrorMessage));
+  }
 }
