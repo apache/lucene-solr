@@ -4,7 +4,10 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.2.1 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-8117: Fix advanceExact on SortedNumericDocValues produced by Lucene54DocValues. (Jim Ferenczi).
 
 ======================= Lucene 7.2.0 =======================
 
