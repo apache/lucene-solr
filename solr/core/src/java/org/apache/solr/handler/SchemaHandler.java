@@ -80,20 +80,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     String httpMethod = (String) req.getContext().get("httpMethod");
     if ("POST".equals(httpMethod)) {
       if (isImmutableConfigSet) {
-        rsp.add("errors", "ConfigSet is immutable");
-        return;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ConfigSet is immutable");
       }
       if (req.getContentStreams() == null) {
-        rsp.add("errors", "no stream");
-        return;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no stream");
       }
 
       try {
         List errs = new SchemaManager(req).performOperations();
-        if (!errs.isEmpty()) rsp.add("errors", errs);
+        if (!errs.isEmpty())
+          throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       } catch (IOException e) {
-        rsp.add("errors", Collections.singletonList("Error reading input String " + e.getMessage()));
-        rsp.setException(e);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error reading input String " + e.getMessage(), e);
       }
     } else {
       handleGET(req, rsp);
