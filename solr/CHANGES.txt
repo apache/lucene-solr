@@ -129,6 +129,9 @@ Other Changes
 * SOLR-11801: Support customisation of the "highlighting" query response element.
   (Ramsey Haddad, Pranav Murugappan, David Smiley, Christine Poerschke)
 
+* SOLR-11692: SolrDispatchFilter's use of a "close shield" in tests should not be applied to
+  further servlet chain processing.  (Jeff Miller, David Smiley)
+
 ==================  7.2.1 ==================
 
 Bug Fixes
