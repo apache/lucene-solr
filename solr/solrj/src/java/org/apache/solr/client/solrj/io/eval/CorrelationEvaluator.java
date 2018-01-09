@@ -108,21 +108,21 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
           RealMatrix corrMatrix = pearsonsCorrelation.getCorrelationMatrix();
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix = new Matrix(corrMatrixData);
-          realMatrix.addToContext("corr", pearsonsCorrelation);
+          realMatrix.setAttribute("corr", pearsonsCorrelation);
           return realMatrix;
         } else if (type.equals(CorrelationType.kendalls)) {
           KendallsCorrelation kendallsCorrelation = new KendallsCorrelation(data);
           RealMatrix corrMatrix = kendallsCorrelation.getCorrelationMatrix();
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix =  new Matrix(corrMatrixData);
-          realMatrix.addToContext("corr", kendallsCorrelation);
+          realMatrix.setAttribute("corr", kendallsCorrelation);
           return realMatrix;
         } else if (type.equals(CorrelationType.spearmans)) {
           SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation(new Array2DRowRealMatrix(data));
           RealMatrix corrMatrix = spearmansCorrelation.getCorrelationMatrix();
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix =  new Matrix(corrMatrixData);
-          realMatrix.addToContext("corr", spearmansCorrelation.getRankCorrelation());
+          realMatrix.setAttribute("corr", spearmansCorrelation.getRankCorrelation());
           return realMatrix;
         } else {
           return null;

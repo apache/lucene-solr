@@ -44,7 +44,11 @@ public class TransposeEvaluator extends RecursiveObjectEvaluator implements OneV
       double[][] data = matrix.getData();
       Array2DRowRealMatrix amatrix = new Array2DRowRealMatrix(data);
       Array2DRowRealMatrix tmatrix = (Array2DRowRealMatrix)amatrix.transpose();
-      return new Matrix(tmatrix.getData());
+      Matrix newMatrix = new Matrix(tmatrix.getData());
+      //Switch the row and column labels
+      newMatrix.setColumnLabels(matrix.getRowLabels());
+      newMatrix.setRowLabels(matrix.getColumnLabels());
+      return newMatrix;
     } else {
       throw new IOException("matrix parameter expected for transpose function");
     }
