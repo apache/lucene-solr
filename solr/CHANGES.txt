@@ -60,6 +60,8 @@ New Features
   rules that sets the time interval for each collection.  An internal Overseer command "ROUTEDALIAS_CREATECOLL"
   was created to facilitate this.  (David Smiley)
 
+* SOLR-11062: new tag "diskType" in autoscaling policy (noble)
+
 Bug Fixes
 ----------------------
 
