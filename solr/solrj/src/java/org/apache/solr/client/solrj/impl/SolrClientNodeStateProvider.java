@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -142,14 +143,19 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return result;
   }
 
-  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, String> metricsKeyVsTag) {
+  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[metricsKeyVsTag.size()]));
     try {
       SimpleSolrResponse rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach((key, tag) -> {
         Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
-        if (v != null) ctx.getTags().put(tag, v);
+        if (tag instanceof Function) {
+          Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
+          ctx.getTags().put(p.first(), p.second());
+        } else {
+          if (v != null) ctx.getTags().put(tag.toString(), v);
+        }
       });
     } catch (Exception e) {
       log.warn("could not get tags from node " + solrNode, e);
@@ -166,13 +172,28 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
-      Map<String, String> metricsKeyVsTag = new HashMap<>();
+      Map<String, Object> metricsKeyVsTag = new HashMap<>();
       for (String tag : requestedTags) {
         if (tag.startsWith(SYSPROP)) {
           metricsKeyVsTag.put("solr.jvm:system.properties:" + tag.substring(SYSPROP.length()), tag);
         } else if (tag.startsWith(METRICS_PREFIX)) {
           metricsKeyVsTag.put(tag.substring(METRICS_PREFIX.length()), tag);
         }
+      }
+      if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
+        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", new Function<Object, Pair<String,Object>>() {
+          @Override
+          public Pair<String, Object> apply(Object o) {
+            if("true".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
+            }
+            if("false".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
+            }
+            return new Pair<>(ImplicitSnitch.DISKTYPE,null);
+
+          }
+        });
       }
       if (!metricsKeyVsTag.isEmpty()) {
         fetchMetrics(solrNode, snitchContext, metricsKeyVsTag);
