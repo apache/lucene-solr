@@ -68,6 +68,20 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
 
     if (objects.length == 1) {
       //Just docs
+      if(!(objects[0] instanceof List)) {
+        throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
+      } else {
+        List list = (List)objects[0];
+        if(list.size() > 0) {
+          Object o = list.get(0);
+          if(!(o instanceof Tuple)) {
+            throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
+          }
+        } else {
+          throw new IOException("Empty list was passed as a parameter to termVectors function.");
+        }
+      }
+
       List<Tuple> tuples = (List<Tuple>) objects[0];
       TreeMap<String, Integer> docFreqs = new TreeMap();
       List<String> features = new ArrayList();
@@ -157,7 +171,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       matrix.setAttribute("docFreqs", docFreqs);
       return matrix;
     } else {
-      throw new IOException("The termVectors function a single positional parameter.");
+      throw new IOException("The termVectors function takes a single positional parameter.");
     }
   }
 }
