@@ -92,6 +92,9 @@ Bug Fixes
 
 * SOLR-11821: ConcurrentModificationException in SimSolrCloudTestCase.tearDown (shalin)
 
+* SOLR-11631: The Schema API should return non-zero status when there are failures.
+  (Noble Paul, Steve Rowe) 
+
 Optimizations
 ----------------------
 
