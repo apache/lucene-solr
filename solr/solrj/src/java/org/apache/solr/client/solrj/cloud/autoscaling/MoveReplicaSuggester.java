@@ -17,10 +17,12 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 
 public class MoveReplicaSuggester extends Suggester {
@@ -79,4 +81,10 @@ public class MoveReplicaSuggester extends Suggester {
     return null;
   }
 
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("action", CollectionParams.CollectionAction.MOVEREPLICA.toString());
+    super.writeMap(ew);
+  }
 }

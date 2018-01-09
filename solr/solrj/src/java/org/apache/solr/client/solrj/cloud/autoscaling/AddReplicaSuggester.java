@@ -17,13 +17,16 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 
 class AddReplicaSuggester extends Suggester {
@@ -71,5 +74,11 @@ class AddReplicaSuggester extends Suggester {
     return null;
   }
 
+
+  @Override
+  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
+    ew.put("action", CollectionParams.CollectionAction.ADDREPLICA.toString());
+    super.writeMap(ew);
+  }
 
 }
