@@ -6632,6 +6632,235 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(sd, 3.5, 0.0);
   }
 
+  @Test
+  public void testTermVectors() throws Exception {
+    // Test termVectors with only documents and default termVector settings
+    String cexpr = "let(echo=true," +
+                       "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+                                     "tuple(id=\"2\", text=\"hello steve\"), " +
+                                     "tuple(id=\"3\", text=\"hello jim jim\"), " +
+                                     "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+                   "    b=termVectors(a, minDocFreq=0, maxDocFreq=1)," +
+        "               c=getRowLabels(b)," +
+        "               d=getColumnLabels(b)," +
+        "               e=getAttribute(b, docFreqs))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+
+    assertEquals(termVectors.size(), 4);
+    List<Number> termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 2.7100443424662948, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    List<String> rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    List<String> columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 5);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "jim");
+    assertEquals(columnLabels.get(3), "steve");
+    assertEquals(columnLabels.get(4), "world");
+
+    Map<String, Number> docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 5);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("jim").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
+    //Test minTermLength. This should drop off the term jim
+
+    cexpr = "let(echo=true," +
+                 "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+                               "tuple(id=\"2\", text=\"hello steve\"), " +
+                               "tuple(id=\"3\", text=\"hello jim jim\"), " +
+                               "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+            "    b=termVectors(a, minTermLength=4, minDocFreq=0, maxDocFreq=1)," +
+            "    c=getRowLabels(b)," +
+            "    d=getColumnLabels(b)," +
+            "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 4);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "steve");
+    assertEquals(columnLabels.get(3), "world");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 4);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
+
+    //Test minDocFreq attribute at .5. This should eliminate all but the term hello
+
+    cexpr = "let(echo=true," +
+        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "tuple(id=\"2\", text=\"hello steve\"), " +
+        "tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "    b=termVectors(a, minDocFreq=.5, maxDocFreq=1)," +
+        "    c=getRowLabels(b)," +
+        "    d=getColumnLabels(b)," +
+        "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 1);
+    assertEquals(columnLabels.get(0), "hello");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 1);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+
+    //Test maxDocFreq attribute at 0. This should eliminate all terms
+
+    cexpr = "let(echo=true," +
+        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "tuple(id=\"2\", text=\"hello steve\"), " +
+        "tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "    b=termVectors(a, maxDocFreq=0)," +
+        "    c=getRowLabels(b)," +
+        "    d=getColumnLabels(b)," +
+        "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    assertEquals(termVectors.get(0).size(), 0);
+  }
 
   @Test
   public void testEBESubtract() throws Exception {

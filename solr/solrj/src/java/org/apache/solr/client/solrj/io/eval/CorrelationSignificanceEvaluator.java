@@ -42,7 +42,7 @@ public class CorrelationSignificanceEvaluator extends RecursiveObjectEvaluator i
       return null;
     } else if(value instanceof Matrix) {
       Matrix matrix = (Matrix) value;
-      Object corr = matrix.getContextValue("corr");
+      Object corr = matrix.getAttribute("corr");
       if(corr instanceof PearsonsCorrelation) {
         PearsonsCorrelation pcorr = (PearsonsCorrelation)corr;
         RealMatrix  realMatrix = pcorr.getCorrelationPValues();
