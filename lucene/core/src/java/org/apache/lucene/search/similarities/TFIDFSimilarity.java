@@ -550,16 +550,6 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
 
     @Override
-    public float maxScore(float maxFreq) {
-      final float raw = tf(maxFreq) * queryWeight;
-      float maxNormValue = Float.NEGATIVE_INFINITY;
-      for (float norm : normTable) {
-        maxNormValue = Math.max(maxNormValue, norm);
-      }
-      return raw * maxNormValue;
-    }
-
-    @Override
     public Explanation explain(Explanation freq, long norm) throws IOException {
       return explainScore(freq, norm, normTable);
     }

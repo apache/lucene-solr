@@ -220,12 +220,6 @@ public class BM25Similarity extends Similarity {
     }
 
     @Override
-    public float maxScore(float maxFreq) {
-      // TODO: leverage maxFreq and the min norm from the cache
-      return weight;
-    }
-
-    @Override
     public Explanation explain(Explanation freq, long encodedNorm) throws IOException {
       List<Explanation> subs = new ArrayList<>(explainConstantFactors());
       Explanation tfExpl = explainTF(freq, encodedNorm);

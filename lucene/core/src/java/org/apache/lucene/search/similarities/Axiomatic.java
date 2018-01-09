@@ -113,12 +113,6 @@ public abstract class Axiomatic extends SimilarityBase {
   }
 
   @Override
-  protected double maxScore(BasicStats stats, double maxFreq) {
-    // TODO: can we compute a better upper bound on the produced scores
-    return Double.POSITIVE_INFINITY;
-  }
-
-  @Override
   protected Explanation explain(
       BasicStats stats, Explanation freq, double docLen) {    
     List<Explanation> subs = new ArrayList<>();

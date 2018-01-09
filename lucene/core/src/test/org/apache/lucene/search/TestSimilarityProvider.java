@@ -119,11 +119,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
         public float score(float freq, long norm) throws IOException {
           return 1;
         }
-
-        @Override
-        public float maxScore(float maxFreq) {
-          return 1;
-        }
       };
     }
 
@@ -139,14 +134,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimScorer(collectionStats.field()) {
-
         @Override
         public float score(float freq, long norm) throws IOException {
-          return 10;
-        }
-
-        @Override
-        public float maxScore(float maxFreq) {
           return 10;
         }
       };

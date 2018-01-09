@@ -125,13 +125,6 @@ public abstract class SimilarityBase extends Similarity {
   protected abstract double score(BasicStats stats, double freq, double docLen);
 
   /**
-   * Return the maximum value that may be returned by {@link #score(BasicStats, double, double)}
-   * for the given stats.
-   * @see org.apache.lucene.search.similarities.Similarity.SimScorer#maxScore(float)
-   */
-  protected abstract double maxScore(BasicStats stats, double maxFreq);
-
-  /**
    * Subclasses should implement this method to explain the score. {@code expl}
    * already contains the score, the name of the class and the doc id, as well
    * as the term frequency and its explanation; subclasses can add additional
@@ -231,11 +224,6 @@ public abstract class SimilarityBase extends Similarity {
     @Override
     public float score(float freq, long norm) throws IOException {
       return (float) SimilarityBase.this.score(stats, freq, getLengthValue(norm));
-    }
-
-    @Override
-    public float maxScore(float maxFreq) {
-      return (float) SimilarityBase.this.maxScore(stats, maxFreq);
     }
 
     @Override

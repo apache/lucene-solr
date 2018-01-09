@@ -174,7 +174,7 @@ public final class SynonymQuery extends Query {
             assert scorer instanceof TermScorer;
             freq = ((TermScorer)scorer).freq();
           }
-          LeafSimScorer docScorer = new LeafSimScorer(simWeight, context.reader(), true, Float.POSITIVE_INFINITY);
+          LeafSimScorer docScorer = new LeafSimScorer(simWeight, context.reader(), true, Float.MAX_VALUE);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

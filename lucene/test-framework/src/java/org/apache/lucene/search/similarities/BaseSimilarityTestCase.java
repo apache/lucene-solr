@@ -346,12 +346,14 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
     boolean success = false;
     SimScorer scorer = similarity.scorer(boost, corpus, term);
     try {
+      float maxScore = scorer.score(Float.MAX_VALUE, 1);
+      assertFalse("maxScore is NaN", Float.isNaN(maxScore));
+
       float score = scorer.score(freq, norm);
       // check that score isn't infinite or negative
       assertTrue("infinite/NaN score: " + score, Float.isFinite(score));
       assertTrue("negative score: " + score, score >= 0);
-      float maxScore = scorer.maxScore(freq);
-      assertTrue("score > maxScore: " + score + " > " + maxScore, score <= maxScore);
+      assertTrue("greater than maxScore: " + score + ">" + maxScore, score <= maxScore);
       // check explanation matches
       Explanation explanation = scorer.explain(Explanation.match(freq, "freq, occurrences of term within document"), norm);
       if (score != explanation.getValue().doubleValue()) {

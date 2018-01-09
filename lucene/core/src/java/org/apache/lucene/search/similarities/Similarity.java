@@ -106,7 +106,17 @@ public abstract class Similarity {
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually set smaller values when <code>state.getLength()</code> is large,
    * and larger values when <code>state.getLength()</code> is small.
-   * 
+   *
+   * <p>Note that for a given term-document frequency, greater unsigned norms
+   * must produce scores that are lower or equal, ie. for two encoded norms
+   * {@code n1} and {@code n2} so that
+   * {@code Long.compareUnsigned(n1, n2) &gt; 0} then
+   * {@code SimScorer.score(freq, n1) &lt;= SimScorer.score(freq, n2)}
+   * for any legal {@code freq}.
+   *
+   * <p>{@code 0} is not a legal norm, so {@code 1} is the norm that produces
+   * the highest scores.
+   *
    * @lucene.experimental
    * 
    * @param state current processing state for this field
@@ -148,19 +158,29 @@ public abstract class Similarity {
     }
 
     /**
-     * Score a single document
-     * @param freq sloppy term frequency
-     * @param norm encoded normalization factor, as returned by {@link Similarity#computeNorm}, or {@code 1} if norms are disabled
+     * Score a single document. {@code freq} is the document-term sloppy
+     * frequency and must be finite and positive. {@code norm} is the
+     * encoded normalization factor as computed by
+     * {@link Similarity#computeNorm(FieldInvertState)} at index time, or
+     * {@code 1} if norms are disabled. {@code norm} is never {@code 0}.
+     * <p>
+     * Score must not decrease when {@code freq} increases, ie. if
+     * {@code freq1 &gt; freq2}, then {@code score(freq1, norm) &gt;=
+     * score(freq2, norm)} for any value of {@code norm} that may be produced
+     * by {@link Similarity#computeNorm(FieldInvertState)}.
+     * <p>
+     * Score must not increase when the unsigned {@code norm} increases, ie. if
+     * {@code Long.compareUnsigned(norm1, norm2) &gt; 0} then
+     * {@code score(freq, norm1) &lt;= score(freq, norm2)} for any legal
+     * {@code freq}.
+     * <p>
+     * As a consequence, the maximum score that this scorer can produce is bound
+     * by {@code score(Float.MAX_VALUE, 1)}.
+     * @param freq sloppy term frequency, must be finite and positive
+     * @param norm encoded normalization factor or {@code 1} if norms are disabled
      * @return document's score
      */
     public abstract float score(float freq, long norm) throws IOException;
-
-    /**
-     * Return the maximum score that this scorer may produce for freqs in {@code ]0, maxFreq]}.
-     * {@code Float.POSITIVE_INFINITY} is a fine return value if scores are not bounded.
-     * @param maxFreq the maximum frequency
-     */
-    public abstract float maxScore(float maxFreq);
 
     /**
      * Explain the score for a single document

@@ -64,12 +64,6 @@ public class DFISimilarity extends SimilarityBase {
     return stats.getBoost() * log2(measure + 1);
   }
 
-  @Override
-  protected double maxScore(BasicStats stats, double maxFreq) {
-    // TODO: can we compute a better upper bound on the produced scores
-    return Double.POSITIVE_INFINITY;
-  }
-
   /**
    * Returns the measure of independence
    */

@@ -74,15 +74,6 @@ public class MultiSimilarity extends Similarity {
     }
 
     @Override
-    public float maxScore(float freq) {
-      float sumMaxScore = 0;
-      for (SimScorer subScorer : subScorers) {
-        sumMaxScore += subScorer.maxScore(freq);
-      }
-      return sumMaxScore;
-    }
-
-    @Override
     public Explanation explain(Explanation freq, long norm) throws IOException {
       List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {

@@ -106,11 +106,6 @@ public class TestConjunctions extends LuceneTestCase {
         public float score(float freq, long norm) {
           return freq;
         }
-
-        @Override
-        public float maxScore(float maxFreq) {
-          return maxFreq;
-        }
       };
     }
   }

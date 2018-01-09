@@ -43,7 +43,9 @@ public class AssertingSimilarity extends Similarity {
     assert state.getNumOverlap() < state.getLength();
     assert state.getUniqueTermCount() > 0;
     assert state.getUniqueTermCount() <= state.getLength();
-    return delegate.computeNorm(state);
+    long norm = delegate.computeNorm(state);
+    assert norm != 0;
+    return norm;
   }
 
   @Override
@@ -78,16 +80,9 @@ public class AssertingSimilarity extends Similarity {
       // result in bounds
       float score = delegate.score(freq, norm);
       assert Float.isFinite(score);
-      assert score <= maxScore(freq);
+      assert score <= delegate.score(freq, 1);
       assert score >= 0;
       return score;
-    }
-
-    @Override
-    public float maxScore(float maxFreq) {
-      float maxScore = delegate.maxScore(maxFreq);
-      assert Float.isNaN(maxScore) == false;
-      return maxScore;
     }
 
     @Override
