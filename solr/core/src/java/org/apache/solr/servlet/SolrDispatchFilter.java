@@ -326,8 +326,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     doFilter(request, response, chain, false);
   }
   
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
-    if (!(request instanceof HttpServletRequest)) return;
+  public void doFilter(ServletRequest _request, ServletResponse _response, FilterChain chain, boolean retry) throws IOException, ServletException {
+    if (!(_request instanceof HttpServletRequest)) return;
+    HttpServletRequest request = (HttpServletRequest)_request;
+    HttpServletResponse response = (HttpServletResponse)_response;
     
     try {
 
@@ -343,28 +345,24 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
-      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been
-                                                                     // sent
+      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
+      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
         return;
       }
       if (wrappedRequest.get() != null) {
         request = wrappedRequest.get();
       }
 
-      request = closeShield(request, retry);
-      response = closeShield(response, retry);
-      
       if (cores.getAuthenticationPlugin() != null) {
-        log.debug("User principal: {}", ((HttpServletRequest) request).getUserPrincipal());
+        log.debug("User principal: {}", request.getUserPrincipal());
       }
 
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
-        String requestPath = ((HttpServletRequest) request).getServletPath();
-        String extraPath = ((HttpServletRequest) request).getPathInfo();
-        if (extraPath != null) { // In embedded mode, servlet path is empty - include all post-context path here for
-                                 // testing
+        String requestPath = request.getServletPath();
+        String extraPath = request.getPathInfo();
+        if (extraPath != null) {
+          // In embedded mode, servlet path is empty - include all post-context path here for testing
           requestPath += extraPath;
         }
         for (Pattern p : excludePatterns) {
@@ -376,7 +374,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
+      HttpSolrCall call = getHttpSolrCall(closeShield(request, retry), closeShield(response, retry), retry);
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         Action result = call.call();
@@ -385,7 +383,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             chain.doFilter(request, response);
             break;
           case RETRY:
-            doFilter(request, response, chain, true);
+            doFilter(request, response, chain, true); // RECURSION
             break;
           case FORWARD:
             request.getRequestDispatcher(call.getPath()).forward(request, response);
@@ -396,7 +394,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
-      consumeInputFully((HttpServletRequest) request);
+      consumeInputFully(request);
     }
   }
   
@@ -430,7 +428,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
-  private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
+  private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
     boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
@@ -440,9 +438,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       // /admin/info/key must be always open. see SOLR-9188
       // tests work only w/ getPathInfo
       //otherwise it's just enough to have getServletPath()
-      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
-          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
-      String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
+      if (PKIAuthenticationPlugin.PATH.equals(request.getServletPath()) ||
+          PKIAuthenticationPlugin.PATH.equals(request.getPathInfo())) return true;
+      String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
@@ -450,7 +448,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         // upon successful authentication, this should call the chain's next filter.
         requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
-          wrappedRequest.set(req);
+          wrappedRequest.set((HttpServletRequest) req);
         });
       } catch (Exception e) {
         log.info("Error authenticating", e);
@@ -478,9 +476,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param retry If this is an original request or a retry.
    * @return A request object with an {@link InputStream} that will ignore calls to close.
    */
-  private ServletRequest closeShield(ServletRequest request, boolean retry) {
+  private HttpServletRequest closeShield(HttpServletRequest request, boolean retry) {
     if (testMode && !retry) {
-      return new HttpServletRequestWrapper((HttpServletRequest) request) {
+      return new HttpServletRequestWrapper(request) {
         ServletInputStream stream;
         
         @Override
@@ -510,9 +508,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param retry If this response corresponds to an original request or a retry.
    * @return A response object with an {@link OutputStream} that will ignore calls to close.
    */
-  private ServletResponse closeShield(ServletResponse response, boolean retry) {
+  private HttpServletResponse closeShield(HttpServletResponse response, boolean retry) {
     if (testMode && !retry) {
-      return new HttpServletResponseWrapper((HttpServletResponse) response) {
+      return new HttpServletResponseWrapper(response) {
         ServletOutputStream stream;
         
         @Override
