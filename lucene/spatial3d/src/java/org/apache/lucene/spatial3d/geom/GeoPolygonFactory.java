@@ -1726,5 +1726,25 @@ public class GeoPolygonFactory {
   static class MutableBoolean {
     public boolean value = false;
   }
+
+  /**
+   * Creates a convex polygon with 4 planes by providing 4 points in CCW.
+   * This is a very fast shape and there are no checks that the points currently define
+   * a convex shape.
+   *
+   * @param planetModel The planet model
+   * @param point1 the first point.
+   * @param point2 the second point.
+   * @param point3 the third point.
+   * @param point4 the four point.
+   * @return the generated shape.
+   */
+  public static GeoPolygon makeGeoS2Shape(final PlanetModel planetModel,
+                                          final GeoPoint point1,
+                                          final GeoPoint point2,
+                                          final GeoPoint point3,
+                                          final GeoPoint point4) {
+    return new GeoS2Shape(planetModel, point1, point2, point3, point4);
+  }
   
 }
