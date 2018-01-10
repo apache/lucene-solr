@@ -23,10 +23,9 @@ image::images/documents-screen/documents_add_screen.png[image,height=400]
 
 The screen allows you to:
 
-* Copy documents in JSON, CSV or XML and submit them to the index
-* Upload documents (in JSON, CSV or XML)
+* Submit JSON, CSV or XML documents in solr-specific format to Solr
+* Upload documents (in JSON, CSV or XML) to Solr
 * Construct documents by selecting fields and field values
-
 
 [TIP]
 ====
@@ -36,23 +35,23 @@ There are other ways to load data, see also these sections:
 * <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>
 ====
 
-The first step is to define the RequestHandler to use (aka, `qt`). By default `/update` will be defined. To use Solr Cell, for example, change the request handler to `/update/extract`.
+== Common Fields
+* Request-Handler: The first step is to define the RequestHandler. By default `/update` will be defined. Change the request handler to `/update/extract` to use Solr Cell.
+* Document Type: Select the Document Type to define the format of document to load. The remaining parameters may change depending on the document type selected.
+* Document(s): Enter a properly-formatted Solr document corresponding to the `Document Type` selected. XML and JSON documents must be formatted in a Solr-specific format, a small illustrative document will be shown. CSV files should have headers corresponding to fields defined in the schema. More details can be found at: <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
+* Commit Within: Specify the number of milliseconds between the time the document is submitted and when it is available for searching.
+* Overwrite: If `true` the new document will replace an existing document with the same value in the `id` field. If `false` multiple documents with the same id can be added.
 
-Then choose the Document Type to define the type of document to load. The remaining parameters will change depending on the document type selected.
+[TIP]
+====
+Setting `Overwrite` to `false` is very rare in production situations, the default is `true`.
+====
 
-== JSON Documents
+== CSV, JSON and XML Documents
 
-When using the JSON document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper JSON format.
+When using these document types the functionality is similar to submitting documents via `curl` or similar. The document structure must be in a Solr-specific format appropriate for the document type. Examples are illustrated in the Document(s) text box when you select the various types.
 
-Then you can choose when documents should be added to the index (Commit Within), & whether existing documents should be overwritten with incoming documents with the same id (if this is not `true`, then the incoming documents will be dropped).
-
-This option will only add or overwrite documents to the index; for other update tasks, see the <<Solr Command>> option.
-
-== CSV Documents
-
-When using the CSV document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper CSV format, with columns delimited and one row per document.
-
-Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not `true`, then the incoming documents will be dropped).
+These options will only add or overwrite documents; for other update tasks, see the <<Solr Command>> option.
 
 == Document Builder
 
@@ -60,22 +59,15 @@ The Document Builder provides a wizard-like interface to enter fields of a docum
 
 == File Upload
 
-The File Upload option allows choosing a prepared file and uploading it. If using only `/update` for the Request-Handler option, you will be limited to XML, CSV, and JSON.
+The File Upload option allows choosing a prepared file and uploading it. If using `/update` for the Request-Handler option, you will be limited to XML, CSV, and JSON.
 
-However, to use the ExtractingRequestHandler (aka Solr Cell), you can modify the Request-Handler to `/update/extract`. You must have this defined in your `solrconfig.xml` file, with your desired defaults. You should also add `&literal.id` shown in the "Extracting Req. Handler Params" field so the file chosen is given a unique id.
-
-Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not `true`, then the incoming documents will be dropped).
+Other document types (e.g Word, PDF etc) can be indexed using the ExtractingRequestHandler (aka Solr Cell). You must modify the Request-Handler to `/update/extract`, which must be defined in your `solrconfig.xml` file with your desired defaults. You should also add `&literal.id` shown in the "Extracting Request Handler Params" field so the file chosen is given a unique id.
+More information can be found at:  <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>
 
 == Solr Command
 
-The Solr Command option allows you use XML or JSON to perform specific actions on documents, such as defining documents to be added or deleted, updating only certain fields of documents, or commit commands on the index.
+The Solr Command option allows you use the `/update` request handler with XML or JSON formatted commands to perform specific actions. A few examples are:
 
-The documents should be structured as they would be if using `/update` on the command line.
-
-== XML Documents
-
-When using the XML document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper Solr XML format, with each document separated by `<doc>` tags and each field defined.
-
-Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not `true`, then the incoming documents will be dropped).
-
-This option will only add or overwrite documents to the index; for other update tasks, see the <<Solr Command>> option.
+* Deleting documents
+* Updating only certain fields of documents
+* Issuing commit commands on the index
