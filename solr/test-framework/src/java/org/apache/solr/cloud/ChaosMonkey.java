@@ -418,11 +418,7 @@ public class ChaosMonkey {
       CoreContainer cc = cjetty.jetty.getCoreContainer();
       if (cc != null) {
         try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          if (core == null) {
-            monkeyLog("selected jetty not running correctly - skip");
-            return null;
-          }
-          rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
+          rtIsLeader = core != null && core.getCoreDescriptor().getCloudDescriptor().isLeader();
         }
       } else {
         return null;
