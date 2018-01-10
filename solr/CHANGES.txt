@@ -95,7 +95,7 @@ Bug Fixes
 * SOLR-11821: ConcurrentModificationException in SimSolrCloudTestCase.tearDown (shalin)
 
 * SOLR-11631: The Schema API should return non-zero status when there are failures.
-  (Noble Paul, Steve Rowe) 
+  (Noble Paul, Steve Rowe)
 
 Optimizations
 ----------------------
@@ -133,6 +133,8 @@ Other Changes
 
 * SOLR-11692: SolrDispatchFilter's use of a "close shield" in tests should not be applied to
   further servlet chain processing.  (Jeff Miller, David Smiley)
+
+* SOLR-11218: Fail and return an error when attempting to delete a collection that's part of an alias (Erick Erickson)
 
 ==================  7.2.1 ==================
 

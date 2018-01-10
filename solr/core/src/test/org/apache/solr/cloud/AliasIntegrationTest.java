@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -176,7 +177,163 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
   }
-  
+
+  // Rather a long title, but it's common to recommend when people need to re-index for any reason that they:
+  // 1> create a new collection
+  // 2> index the corpus to the new collection and verify it
+  // 3> create an alias pointing to the new collection WITH THE SAME NAME as their original collection
+  // 4> delete the old collection.
+  //
+  // They may or may not have an alias already pointing to the old collection that's being replaced.
+  // If they don't already have an alias, this leaves them with:
+  //
+  // > a collection named old_collection
+  // > a collection named new_collection
+  // > an alias old_collection->new_collection
+  //
+  // What happens when they delete old_collection now?
+  //
+  // Current behavior is that delete "does the right thing" and deletes old_collection rather than new_collection,
+  // but if this behavior changes it could be disastrous for users so this test insures that this behavior.
+  //
+  @Test
+  public void testDeleteAliasWithExistingCollectionName() throws Exception {
+    CollectionAdminRequest.createCollection("collection_old", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("collection_new", "conf", 1, 1).process(cluster.getSolrClient());
+    waitForState("Expected collection_old to be created with 2 shards and 1 replica", "collection_old", clusterShape(2, 1));
+    waitForState("Expected collection_new to be created with 1 shard and 1 replica", "collection_new", clusterShape(1, 1));
+
+    new UpdateRequest()
+        .add("id", "6", "a_t", "humpty dumpy sat on a wall")
+        .add("id", "7", "a_t", "humpty dumpy3 sat on a walls")
+        .add("id", "8", "a_t", "humpty dumpy2 sat on a walled")
+        .commit(cluster.getSolrClient(), "collection_old");
+
+    new UpdateRequest()
+        .add("id", "1", "a_t", "humpty dumpy sat on an unfortunate wall")
+        .commit(cluster.getSolrClient(), "collection_new");
+
+    QueryResponse res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
+    assertEquals(3, res.getResults().getNumFound());
+
+    // Let's insure we have a "handle" to the old collection
+    CollectionAdminRequest.createAlias("collection_old_reserve", "collection_old").process(cluster.getSolrClient());
+
+    // This is the critical bit. The alias uses the _old collection name.
+    CollectionAdminRequest.createAlias("collection_old", "collection_new").process(cluster.getSolrClient());
+
+    // aliases: collection_old->collection_new, collection_old_reserve -> collection_old -> collection_new
+    // collections: collection_new and collection_old
+
+    // Now we should only see the doc in collection_new through the collection_old alias
+    res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
+    assertEquals(1, res.getResults().getNumFound());
+
+    // Now we should still transitively see collection_new
+    res = cluster.getSolrClient().query("collection_old_reserve", new SolrQuery("*:*"));
+    assertEquals(1, res.getResults().getNumFound());
+
+    // Now delete the old collection. This should fail since the collection_old_reserve points to collection_old
+    RequestStatusState delResp = CollectionAdminRequest.deleteCollection("collection_old").processAndWait(cluster.getSolrClient(), 60);
+    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+
+    // assure ourselves that the old colletion is, indeed, still there.
+    assertNotNull("collection_old should exist!", cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull("collection_old"));
+
+    // Now we should still succeed using the alias collection_old which points to collection_new
+    // aliase: collection_old -> collection_new, collection_old_reserve -> collection_old -> collection_new
+    // collections: collection_old, collection_new
+    res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
+    assertEquals(1, res.getResults().getNumFound());
+
+    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    assertTrue("collection_old should point to collection_new", aliases.resolveAliases("collection_old").contains("collection_new"));
+    assertTrue("collection_old_reserve should point to collection_new", aliases.resolveAliases("collection_old_reserve").contains("collection_new"));
+
+    // Clean up
+    CollectionAdminRequest.deleteAlias("collection_old_reserve").processAndWait(cluster.getSolrClient(), 60);
+    CollectionAdminRequest.deleteAlias("collection_old").processAndWait(cluster.getSolrClient(), 60);
+    CollectionAdminRequest.deleteCollection("collection_new").processAndWait(cluster.getSolrClient(), 60);
+    CollectionAdminRequest.deleteCollection("collection_old").processAndWait(cluster.getSolrClient(), 60);
+    // collection_old already deleted as well as collection_old_reserve
+
+    assertNull("collection_old_reserve should be gone", cluster.getSolrClient().getZkStateReader().getAliases().getCollectionAliasMap().get("collection_old_reserve"));
+    assertNull("collection_old should be gone", cluster.getSolrClient().getZkStateReader().getAliases().getCollectionAliasMap().get("collection_old"));
+
+    assertFalse("collection_new should be gone",
+        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("collection_new"));
+
+    assertFalse("collection_old should be gone",
+        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("collection_old"));
+  }
+
+  // While writing the above test I wondered what happens when an alias points to two collections and one of them
+  // is deleted.
+  @Test
+  public void testDeleteOneOfTwoCollectionsAliased() throws Exception {
+    CollectionAdminRequest.createCollection("collection_one", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("collection_two", "conf", 1, 1).process(cluster.getSolrClient());
+    waitForState("Expected collection_one to be created with 2 shards and 1 replica", "collection_one", clusterShape(2, 1));
+    waitForState("Expected collection_two to be created with 1 shard and 1 replica", "collection_two", clusterShape(1, 1));
+
+    new UpdateRequest()
+        .add("id", "1", "a_t", "humpty dumpy sat on a wall")
+        .commit(cluster.getSolrClient(), "collection_one");
+
+
+    new UpdateRequest()
+        .add("id", "10", "a_t", "humpty dumpy sat on a high wall")
+        .add("id", "11", "a_t", "humpty dumpy sat on a low wall")
+        .commit(cluster.getSolrClient(), "collection_two");
+
+    // Create an alias pointing to both
+    CollectionAdminRequest.createAlias("collection_alias_pair", "collection_one,collection_two").process(cluster.getSolrClient());
+
+    QueryResponse res = cluster.getSolrClient().query("collection_alias_pair", new SolrQuery("*:*"));
+    assertEquals(3, res.getResults().getNumFound());
+
+    // Now delete one of the collections, should fail since an alias points to it.
+    RequestStatusState delResp = CollectionAdminRequest.deleteCollection("collection_one").processAndWait(cluster.getSolrClient(), 60);
+
+    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+
+    // Now redefine the alias to only point to colletion two
+    CollectionAdminRequest.createAlias("collection_alias_pair", "collection_two").process(cluster.getSolrClient());
+
+    //Delete collection_one.
+    delResp = CollectionAdminRequest.deleteCollection("collection_one").processAndWait(cluster.getSolrClient(), 60);
+
+    assertEquals("Should not have failed to delete collection, it was removed from the alias: ", delResp, RequestStatusState.COMPLETED);
+
+    // Should only see two docs now in second collection
+    res = cluster.getSolrClient().query("collection_alias_pair", new SolrQuery("*:*"));
+    assertEquals(2, res.getResults().getNumFound());
+
+    // We shouldn't be able to ping the deleted collection directly as
+    // was deleted (and, assuming that it only points to collection_old).
+    try {
+      cluster.getSolrClient().query("collection_one", new SolrQuery("*:*"));
+    } catch (SolrServerException se) {
+      assertTrue(se.getMessage().contains("No live SolrServers"));
+    }
+
+    // Clean up
+    CollectionAdminRequest.deleteAlias("collection_alias_pair").processAndWait(cluster.getSolrClient(), 60);
+    CollectionAdminRequest.deleteCollection("collection_two").processAndWait(cluster.getSolrClient(), 60);
+    // collection_one already deleted
+
+    assertNull("collection_alias_pair should be gone",
+        cluster.getSolrClient().getZkStateReader().getAliases().getCollectionAliasMap().get("collection_alias_pair"));
+
+    assertFalse("collection_one should be gone",
+        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("collection_one"));
+
+    assertFalse("collection_two should be gone",
+        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("collection_two"));
+
+  }
+
+
   @Test
   public void test() throws Exception {
     CollectionAdminRequest.createCollection("collection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -332,6 +489,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
   public void testErrorChecks() throws Exception {
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1).process(cluster.getSolrClient());
     waitForState("Expected testErrorChecks-collection to be created with 2 shards and 1 replica", "testErrorChecks-collection", clusterShape(2, 1));
