@@ -21,14 +21,15 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -60,9 +61,15 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
+    Aliases aliases = zkStateReader.getAliases();
     final String collection = message.getStr(NAME);
-    DocCollection coll = state.getCollectionOrNull(collection);
-    String policy = coll == null ? null : coll.getPolicyName();
+    for (Map.Entry<String, List<String>> ent :  aliases.getCollectionAliasListMap().entrySet()) {
+      if (ent.getValue().contains(collection)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Collection : " + collection + " is part of alias " + ent.getKey() + " remove or modify the alias before removing this collection.");
+      }
+    }
+
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
       // should be taken care of as part of collection delete operation.
