@@ -3562,51 +3562,39 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
   }
 
-  private void doTestDatePointFunctionQuery(String field) throws Exception {
+  private void doTestDatePointFunctionQuery(String field) {
+    // This method is intentionally not randomized, because sorting by function happens
+    // at float precision, which causes ms(date) to give the same value for different dates. 
+    // See https://issues.apache.org/jira/browse/SOLR-11825
+
+    final String baseDate = "1995-01-10T10:59:10Z";
+
+    for (int i = 9; i >= 0; i--) {
+      String date = String.format(Locale.ROOT, "%s+%dSECONDS", baseDate, i+1);
+      assertU(adoc("id", String.valueOf(i), field, date));
+    }
+    assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof DatePointField);
-    int numVals = 10 * RANDOM_MULTIPLIER;
-    List<Long> values = getRandomLongs(numVals, false, MAX_DATE_EPOCH_MILLIS);
+    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1,ms(" + field + "," + baseDate +")) asc"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/date[@name='" + field + "'][.='1995-01-10T10:59:20Z']",
+        "//result/doc[2]/date[@name='" + field + "'][.='1995-01-10T10:59:19Z']",
+        "//result/doc[3]/date[@name='" + field + "'][.='1995-01-10T10:59:18Z']",
+        "//result/doc[10]/date[@name='" + field + "'][.='1995-01-10T10:59:11Z']");
 
-    String assertNumFound = "//*[@numFound='" + numVals + "']";
-    String[] idAscXpathChecks = new String[numVals + 1];
-    String[] idAscNegXpathChecks = new String[numVals + 1];
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", ms(" + field + ","+baseDate+")", "sort", "id asc"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/float[@name='ms(" + field + "," + baseDate + ")'][.='1000.0']",
+        "//result/doc[2]/float[@name='ms(" + field + "," + baseDate + ")'][.='2000.0']",
+        "//result/doc[3]/float[@name='ms(" + field + "," + baseDate + ")'][.='3000.0']",
+        "//result/doc[10]/float[@name='ms(" + field + "," + baseDate + ")'][.='10000.0']");
 
-    idAscXpathChecks[0] = assertNumFound;
-    idAscNegXpathChecks[0] = assertNumFound;
-    for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, Instant.ofEpochMilli(values.get(i)).toString()));
-      // reminder: xpath array indexes start at 1
-      idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/date[@name='field(" + field 
-          + ")'][.='" + Instant.ofEpochMilli(values.get(i)) + "']";
-      idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1,ms(" + field + "))'][.='"
-          + (-1.0f * (float)values.get(i)) + "']";
-    }
-    assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
-        idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1,ms(" + field + "))", "rows", String.valueOf(numVals), "sort", "id asc"),
-        idAscNegXpathChecks);
-
-    List<PosVal<Long>> ascNegPosVals
-        = toAscendingPosVals(values.stream().map(v -> -v).collect(Collectors.toList()), true);
-    String[] ascNegXpathChecks = new String[numVals + 1];
-    ascNegXpathChecks[0] = assertNumFound;
-    for (int i = 0 ; i < ascNegPosVals.size() ; ++i) {
-      PosVal<Long> posVal = ascNegPosVals.get(i);
-      ascNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/date[@name='" + field
-          + "'][.='" + Instant.ofEpochMilli(values.get(posVal.pos)) + "']";
-    }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1,ms(" + field + ")) asc"),
-        ascNegXpathChecks);
-
-    clearIndex();
-    assertU(adoc("id", "1", field, "1995-12-31T10:59:59Z"));
-    assertU(adoc("id", "2", field, "1996-12-31T10:59:59Z"));
-    assertU(commit());
-    assertQ(req("q", field + ":[* TO *]", "fl", "id, " + field), 
-        "//*[@numFound='2']");
-    assertQ(req("q", field + ":{* TO *}", "fl", "id, " + field), 
-        "//*[@numFound='2']");
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/date[@name='field(" + field + ")'][.='1995-01-10T10:59:11Z']",
+        "//result/doc[2]/date[@name='field(" + field + ")'][.='1995-01-10T10:59:12Z']",
+        "//result/doc[3]/date[@name='field(" + field + ")'][.='1995-01-10T10:59:13Z']",
+        "//result/doc[10]/date[@name='field(" + field + ")'][.='1995-01-10T10:59:20Z']");
   }
 
   private void doTestDatePointStats(String field, String dvField, String[] dates) {
