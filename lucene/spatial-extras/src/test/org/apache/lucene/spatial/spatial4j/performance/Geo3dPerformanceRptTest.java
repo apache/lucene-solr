@@ -66,6 +66,9 @@ import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
+/**
+ * Base class to test performance between geohash and s2.
+ */
 public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
 
   protected PlanetModel planetModel;

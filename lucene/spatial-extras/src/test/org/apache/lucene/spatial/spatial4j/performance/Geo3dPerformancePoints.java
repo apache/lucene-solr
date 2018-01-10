@@ -24,22 +24,13 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Created by ivera on 1/10/2018.
+ * Test performance between geohash and s2 for points only
  */
 public class Geo3dPerformancePoints extends Geo3dPerformanceRptTest{
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    s2RecursiveStrategy.setPointsOnly(true);
-    s2RecursiveStrategy.setDistErrPct(0.5);
-    geohashRecursiveStrategy.setPointsOnly(true);
-    geohashRecursiveStrategy.setDistErrPct(0.5);
-  }
-
-  @Override
   protected int numberIndexedshapes() {
-    return 100000;
+    return 50000;
   }
 
   @Override

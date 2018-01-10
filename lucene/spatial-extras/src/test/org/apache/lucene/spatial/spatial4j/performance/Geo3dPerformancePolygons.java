@@ -24,7 +24,7 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Created by ivera on 1/10/2018.
+ * Test performance between geohash and s2 for polygons
  */
 public class Geo3dPerformancePolygons extends Geo3dPerformanceRptTest{
 
