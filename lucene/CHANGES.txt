@@ -35,7 +35,7 @@ API Changes
 * LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
   scoring factors. (Adrien Grand)
 
-* LUCENE-8113: TermContext has been renamed to TermStates, and can now be 
+* LUCENE-8113: TermContext has been renamed to TermStates, and can now be
   constructed lazily if term statistics are not required (Alan Woodward)
 
 Changes in Runtime Behavior
@@ -136,6 +136,8 @@ Bug Fixes
   switching to the SpanCollector API.  The original Highlighter still has this
   problem (LUCENE-2287, LUCENE-5455, LUCENE-6796).  Some public but internal parts of
   the UH were refactored. (David Smiley, Steve Davids)
+
+* LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
 
 Other
 
