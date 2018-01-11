@@ -41,6 +41,10 @@ Improvements
 
 * LUCENE-8094: TermInSetQuery.toString now returns "field:(A B C)" (Mike McCandless)
 
+* LUCENE-8121: UnifiedHighlighter passage relevancy is improved for terms that are
+  position sensitive (e.g. part of a phrase) by having an accurate freq.
+  (David Smiley)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
@@ -48,6 +52,12 @@ Bug Fixes
 
 * SOLR-11758: Fixed FloatDocValues.boolVal to correctly return true for all values != 0.0F
   (Munendra S N via hossman)
+
+* LUCENE-8121: The UnifiedHighlighter would highlight some terms within some nested
+  SpanNearQueries at positions where it should not have.  It's fixed in the UH by
+  switching to the SpanCollector API.  The original Highlighter still has this
+  problem (LUCENE-2287, LUCENE-5455, LUCENE-6796).  Some public but internal parts of
+  the UH were refactored. (David Smiley, Steve Davids)
 
 Other
 

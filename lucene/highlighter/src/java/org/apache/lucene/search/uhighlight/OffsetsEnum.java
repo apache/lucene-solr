@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.search.uhighlight;
 
 import java.io.Closeable;
@@ -25,25 +26,19 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Holds the term ({@link BytesRef}), {@link PostingsEnum}, offset iteration tracking.
- * It is advanced with the underlying postings and is placed in a priority queue by
+ * An enumeration/iterator of a term and its offsets for use by {@link FieldHighlighter}.
+ * It is advanced and is placed in a priority queue by
  * {@link FieldHighlighter#highlightOffsetsEnums(List)} based on the start offset.
  *
  * @lucene.internal
  */
-public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
-  private final BytesRef term;
-  private final PostingsEnum postingsEnum; // with offsets
+public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
 
   private float weight; // set once in highlightOffsetsEnums
-  private int posCounter = 0; // the occurrence counter of this term within the text being highlighted.
-
-  public OffsetsEnum(BytesRef term, PostingsEnum postingsEnum) throws IOException {
-    this.term = term; // can be null
-    this.postingsEnum = Objects.requireNonNull(postingsEnum);
-  }
 
   // note: the ordering clearly changes as the postings enum advances
+  // note: would be neat to use some Comparator utilities with method
+  //  references but our methods throw IOException
   @Override
   public int compareTo(OffsetsEnum other) {
     try {
@@ -51,53 +46,41 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
       if (cmp != 0) {
         return cmp; // vast majority of the time we return here.
       }
-      if (this.term == null || other.term == null) {
-        if (this.term == null && other.term == null) {
+      final BytesRef thisTerm = this.getTerm();
+      final BytesRef otherTerm = other.getTerm();
+      if (thisTerm == null || otherTerm == null) {
+        if (thisTerm == null && otherTerm == null) {
           return 0;
-        } else if (this.term == null) {
+        } else if (thisTerm == null) {
           return 1; // put "this" (wildcard mtq enum) last
         } else {
           return -1;
         }
       }
-      return term.compareTo(other.term);
+      return thisTerm.compareTo(otherTerm);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  /** The term at this position; usually always the same. This term is a reference that is safe to continue to refer to,
-   * even after we move to next position. */
-  public BytesRef getTerm() throws IOException {
-    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then remove this hack here
-    return term != null ? term : postingsEnum.getPayload(); // abusing payload like this is a total hack!
-  }
+  /**
+   * Advances to the next position and returns true, or if can't then returns false.
+   * Note that the initial state of this class is not positioned.
+   */
+  public abstract boolean nextPosition() throws IOException;
 
-  public PostingsEnum getPostingsEnum() {
-    return postingsEnum;
-  }
+  /** An estimate of the number of occurrences of this term/OffsetsEnum. */
+  public abstract int freq() throws IOException;
 
-  public int freq() throws IOException {
-    return postingsEnum.freq();
-  }
+  /**
+   * The term at this position; usually always the same.
+   * This BytesRef is safe to continue to refer to, even after we move to the next position.
+   */
+  public abstract BytesRef getTerm() throws IOException;
 
-  public boolean hasMorePositions() throws IOException {
-    return posCounter < postingsEnum.freq();
-  }
+  public abstract int startOffset() throws IOException;
 
-  public void nextPosition() throws IOException {
-    assert hasMorePositions();
-    posCounter++;
-    postingsEnum.nextPosition();
-  }
-
-  public int startOffset() throws IOException {
-    return postingsEnum.startOffset();
-  }
-
-  public int endOffset() throws IOException {
-    return postingsEnum.endOffset();
-  }
+  public abstract int endOffset() throws IOException;
 
   public float getWeight() {
     return weight;
@@ -109,9 +92,66 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
 
   @Override
   public void close() throws IOException {
-    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then this base impl would be no-op.
-    if (postingsEnum instanceof Closeable) {
-      ((Closeable) postingsEnum).close();
+  }
+
+  @Override
+  public String toString() {
+    final String name = getClass().getSimpleName();
+    try {
+      return name + "(term:" + getTerm().utf8ToString() +")";
+    } catch (Exception e) {
+      return name;
     }
+  }
+
+  /**
+   * Based on a {@link PostingsEnum} -- the typical/standard OE impl.
+   */
+  public static class OfPostings extends OffsetsEnum {
+    private final BytesRef term;
+    private final PostingsEnum postingsEnum; // with offsets
+
+    private int posCounter = 0; // the occurrence counter of this term within the text being highlighted.
+
+    public OfPostings(BytesRef term, PostingsEnum postingsEnum) throws IOException {
+      this.term = Objects.requireNonNull(term);
+      this.postingsEnum = Objects.requireNonNull(postingsEnum);
+    }
+
+    public PostingsEnum getPostingsEnum() {
+      return postingsEnum;
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      if (posCounter < postingsEnum.freq()) {
+        posCounter++;
+        postingsEnum.nextPosition(); // note: we don't need to save the position
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return postingsEnum.freq();
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return term;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return postingsEnum.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return postingsEnum.endOffset();
+    }
+
   }
 }

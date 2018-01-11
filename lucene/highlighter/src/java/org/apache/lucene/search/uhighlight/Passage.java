@@ -98,6 +98,24 @@ public class Passage {
     numMatches = 0;
   }
 
+  /** For debugging.  ex: Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213 */
+  @Override
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("Passage[").append(startOffset).append('-').append(endOffset).append(']');
+    buf.append('{');
+    for (int i = 0; i < numMatches; i++) {
+      if (i != 0) {
+        buf.append(',');
+      }
+      buf.append(matchTerms[i].utf8ToString());
+      buf.append('[').append(matchStarts[i] - startOffset).append('-').append(matchEnds[i] - startOffset).append(']');
+    }
+    buf.append('}');
+    buf.append("score=").append(score);
+    return buf.toString();
+  }
+
   /**
    * Start offset of this passage.
    *
