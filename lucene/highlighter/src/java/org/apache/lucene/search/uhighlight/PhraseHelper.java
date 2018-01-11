@@ -400,7 +400,7 @@ public class PhraseHelper {
 
     @Override
     public int freq() throws IOException {
-      return startOffsets.length;
+      return numPairs;
     }
 
     @Override

@@ -163,7 +163,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
         return Arrays.toString(passages);
       }
     });
-    assertArrayEquals(new String[]{"[Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.0685003]"},
+    assertArrayEquals(new String[]{"[Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213]"},
         highlighter.highlight("body", query, topDocs));
   }
 
@@ -207,7 +207,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
         return Arrays.toString(passages);
       }
     });
-    assertArrayEquals(new String[]{"[Passage[0-41]{alpha[0-5],bravo[6-11],charlie[12-19]}score=2.723861]"},
+    assertArrayEquals(new String[]{"[Passage[0-41]{alpha[0-5],bravo[6-11],charlie[12-19]}score=3.931102]"},
         highlighter.highlight("body", query, topDocs));
   }
 
