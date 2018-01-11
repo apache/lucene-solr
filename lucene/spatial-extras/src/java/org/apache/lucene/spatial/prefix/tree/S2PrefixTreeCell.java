@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.common.geometry.S2CellId;
 import org.apache.lucene.util.BytesRef;
@@ -37,12 +38,12 @@ class S2PrefixTreeCell implements Cell {
     //Faces of S2 Geometry
     private static S2CellId[] FACES = new S2CellId[6];
     static {
-        FACES[0] = S2CellId.fromFacePosLevel(0, 0, 0);
-        FACES[1] = S2CellId.fromFacePosLevel(1, 0, 0);
-        FACES[2] = S2CellId.fromFacePosLevel(2, 0, 0);
-        FACES[3] = S2CellId.fromFacePosLevel(3, 0, 0);
-        FACES[4] = S2CellId.fromFacePosLevel(4, 0, 0);
-        FACES[5] = S2CellId.fromFacePosLevel(5, 0, 0);
+        FACES[0] = new S2CellId(1152921504606846976l);
+        FACES[1] = new S2CellId(3458764513820540928l);
+        FACES[2] = new S2CellId(5764607523034234880l);
+        FACES[3] = new S2CellId(8070450532247928832l);
+        FACES[4] = new S2CellId(-8070450532247928832l);
+        FACES[5] = new S2CellId(-5764607523034234880l);
     }
 
     /*Special character to define a cell leaf*/
@@ -144,8 +145,7 @@ class S2PrefixTreeCell implements Cell {
     private void setLevel() {
         if (this.cellId == null) {
             this.level = 0;
-        }
-        else {
+        } else {
             this.level = this.cellId.level() + 1;
         }
     }
@@ -155,8 +155,7 @@ class S2PrefixTreeCell implements Cell {
         S2CellId[] children;
         if (cellId == null){ // this is the world cell
             children =  FACES;
-        }
-        else {
+        } else {
             children = new S2CellId[4];
             children[0] = cellId.childBegin();
             children[1] = children[0].next();
@@ -174,9 +173,10 @@ class S2PrefixTreeCell implements Cell {
     public Shape getShape(){
         if (shape==null){
             if (cellId == null) { //World cell
-                return tree.getSpatialContext().getWorldBounds();
+                shape = tree.getSpatialContext().getWorldBounds();
+            } else {
+                shape = tree.s2ShapeFactory.getS2CellShape(cellId);
             }
-            return tree.s2ShapeFactory.getS2CellShape(cellId);
         }
         return shape;
     }
@@ -227,7 +227,7 @@ class S2PrefixTreeCell implements Cell {
         S2CellId cellId = FACES[face];
         //we will do it directly with cell ids for performance
         long id = cellId.id();
-        for (int i=ref.offset+1; i<ref.offset + length; i++){
+        for (int i = ref.offset + 1; i < ref.offset + length; i++){
             int pos = PIXELS.get(ref.bytes[i]);
             long oldLsb = id & -id;
             id  = id - oldLsb + (oldLsb >>> 2);
@@ -248,9 +248,9 @@ class S2PrefixTreeCell implements Cell {
             return;
         }
         int length = getLevel() + 1;
-        byte[] b = new byte[length];
+        byte[] b = bref.bytes.length >= length ? bref.bytes : new byte[length];
         b[0] = TOKENS[cellId.face()];
-        for (int i =1; i < getLevel(); i++) {
+        for (int i = 1; i < getLevel(); i++) {
             b[i] = TOKENS[cellId.childPosition(i)];
         }
         bref.bytes = b;
@@ -269,10 +269,7 @@ class S2PrefixTreeCell implements Cell {
     @Override
     public boolean equals(Object o) {
         S2PrefixTreeCell cell = (S2PrefixTreeCell)o;
-        if (cellId == null) {
-            return cell.cellId == null;
-        }
-        return (cellId.equals(cell.cellId));
+        return Objects.equals(cellId, cell.cellId);
     }
 
     @Override

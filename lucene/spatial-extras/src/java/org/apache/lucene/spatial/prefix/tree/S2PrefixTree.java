@@ -30,8 +30,8 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Spatial prefix tree for S2 Geometry. Shape factories for the given {@link SpatialContext} must
- * implement the interface {@link S2ShapeFactory}.
+ * Spatial prefix tree for <a href="https://s2geometry.io/">S2 Geometry</a>. Shape factories
+ * for the given {@link SpatialContext} must implement the interface {@link S2ShapeFactory}.
  *
  * @lucene.experimental
  */
@@ -69,15 +69,15 @@ public class S2PrefixTree extends SpatialPrefixTree {
 
     @Override
     public int getLevelForDistance(double dist) {
-        if (dist ==0){
+        if (dist == 0){
             return maxLevels;
         }
-        return Math.min(maxLevels, S2Projections.MAX_WIDTH.getClosestLevel(dist * DistanceUtils.DEGREES_TO_RADIANS) +1);
+        return Math.min(maxLevels, S2Projections.MAX_WIDTH.getClosestLevel(dist * DistanceUtils.DEGREES_TO_RADIANS) + 1);
     }
 
     @Override
     public double getDistanceForLevel(int level) {
-        return S2Projections.MAX_WIDTH.getValue(level -1) * DistanceUtils.RADIANS_TO_DEGREES;
+        return S2Projections.MAX_WIDTH.getValue(level - 1) * DistanceUtils.RADIANS_TO_DEGREES;
     }
 
     @Override
@@ -88,8 +88,9 @@ public class S2PrefixTree extends SpatialPrefixTree {
     @Override
     public Cell readCell(BytesRef term, Cell scratch) {
         S2PrefixTreeCell cell = (S2PrefixTreeCell) scratch;
-        if (cell == null)
+        if (cell == null) {
             cell = (S2PrefixTreeCell) getWorldCell();
+        }
         cell.readCell(this, term);
         return cell;
     }
@@ -102,7 +103,7 @@ public class S2PrefixTree extends SpatialPrefixTree {
         Point p = (Point) shape;
         S2CellId id = S2CellId.fromLatLng(S2LatLng.fromDegrees(p.getY(), p.getX())).parent(detailLevel-1);
         List<Cell> cells = new ArrayList<>(detailLevel);
-        for (int i=0; i < detailLevel -1; i++) {
+        for (int i=0; i < detailLevel - 1; i++) {
             cells.add(new S2PrefixTreeCell(this, id.parent(i)));
         }
         cells.add(new S2PrefixTreeCell(this, id));
