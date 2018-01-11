@@ -19,7 +19,7 @@
 #
 # Use solr -help to see available command-line options. In addition
 # to passing command-line options, this script looks for an include
-# file named solr.in.sh to set environment variables. Specifically, 
+# file named solr.in.sh to set environment variables. Specifically,
 # the following locations are searched in this order:
 #
 # ./
@@ -34,15 +34,15 @@
 #
 #   $ SOLR_INCLUDE=/path/to/solr.in.sh solr start
 #
-# Note: This is particularly handy for running multiple instances on a 
+# Note: This is particularly handy for running multiple instances on a
 # single installation, or for quick tests.
 #
-# Finally, developers and enthusiasts who frequently run from an SVN 
+# Finally, developers and enthusiasts who frequently run from an SVN
 # checkout, and do not want to locally modify bin/solr.in.sh, can put
 # a customized include file at ~/.solr.in.sh.
 #
 # If you would rather configure startup entirely from the environment, you
-# can disable the include by exporting an empty SOLR_INCLUDE, or by 
+# can disable the include by exporting an empty SOLR_INCLUDE, or by
 # ensuring that no include files exist in the aforementioned search list.
 
 SOLR_SCRIPT="$0"
@@ -287,11 +287,11 @@ fi
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
-    
+
   if [ "$ERROR_MSG" != "" ]; then
     echo -e "\nERROR: $ERROR_MSG\n"
   fi
-  
+
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
@@ -648,7 +648,7 @@ function solr_pid_by_port() {
   echo "$solrPID"
 }
 
-# extract the value of the -Djetty.port parameter from a running Solr process 
+# extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
   SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
@@ -660,11 +660,11 @@ function jetty_port() {
         local jetty_port="${pair[1]}"
         break
       fi
-    done    
+    done
   echo "$jetty_port"
 } # end jetty_port func
 
-# run a Solr command-line tool using the SolrCLI class; 
+# run a Solr command-line tool using the SolrCLI class;
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
 
@@ -723,7 +723,7 @@ function get_info() {
   return $CODE
 } # end get_info
 
-# tries to gracefully stop Solr using the Jetty 
+# tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
 function stop_solr() {
 
@@ -793,7 +793,7 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not -help or -info), 
+  # if first arg starts with a dash (and it's not -help or -info),
   # then assume they are starting Solr, such as: solr -f
   if [[ $1 == -* ]]; then
     SCRIPT_CMD="start"
@@ -804,7 +804,7 @@ if [ $# -gt 0 ]; then
 else
   # no args - just show usage and exit
   print_usage ""
-  exit  
+  exit
 fi
 
 if [ "$SCRIPT_CMD" == "status" ]; then
@@ -826,7 +826,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   VERBOSE=""
 
   if [ $# -gt 0 ]; then
-    while true; do  
+    while true; do
       case "$1" in
           -c|-collection)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
@@ -836,7 +836,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               HEALTHCHECK_COLLECTION="$2"
               shift 2
           ;;
-          -z|-zkhost)          
+          -z|-zkhost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
@@ -845,7 +845,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               shift 2
           ;;
           -help|-usage)
-              print_usage "$SCRIPT_CMD"           
+              print_usage "$SCRIPT_CMD"
               exit 0
           ;;
           -V|--verbose)
@@ -857,29 +857,29 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               break
           ;;
           *)
-              if [ "$1" != "" ]; then            
+              if [ "$1" != "" ]; then
                 print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
                 exit 1
               else
                 break # out-of-args, stop looping
-              fi 
+              fi
           ;;
       esac
     done
   fi
-  
+
   if [ -z "$ZK_HOST" ]; then
     ZK_HOST=localhost:9983
   fi
-  
+
   if [ -z "$HEALTHCHECK_COLLECTION" ]; then
     echo "collection parameter is required!"
     print_usage "healthcheck"
-    exit 1  
+    exit 1
   fi
-    
+
   run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
-    
+
   exit $?
 fi
 
@@ -973,7 +973,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   if [ -z "$CREATE_CONFDIR" ]; then
     CREATE_CONFDIR='_default'
   fi
-  
+
   # validate the confdir arg (if provided)
   if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
     echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
@@ -1431,13 +1431,13 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
        maxProcs=$(ulimit -u)
        if [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
            echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
-           echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational impariment. "
+           echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
 
        if [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
            echo "*** [WARN] ***  Your Max Processes Limit is currently $maxProcs. "
-           echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational impariment. "
+           echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
     else
@@ -1456,7 +1456,7 @@ SOLR_OPTS=($SOLR_OPTS)
 PASS_TO_RUN_EXAMPLE=
 
 if [ $# -gt 0 ]; then
-  while true; do  
+  while true; do
     case "$1" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
@@ -1854,9 +1854,9 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
   if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
     ZK_CLIENT_TIMEOUT="15000"
   fi
-  
+
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
-  
+
   if [ "$ZK_HOST" != "" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
@@ -1871,7 +1871,7 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
   if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
     CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
   fi
-    
+
 else
   if [ ! -e "$SOLR_HOME/solr.xml" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
@@ -1928,7 +1928,7 @@ function launch_solr() {
 
   run_in_foreground="$1"
   stop_port="$STOP_PORT"
-  
+
   SOLR_ADDL_ARGS="$2"
   SOLR_JETTY_ADDL_CONFIG="$3"
 
@@ -2009,10 +2009,10 @@ function launch_solr() {
     fi
     echo -e "\n"
   fi
-    
+
   # need to launch solr from the server dir
   cd "$SOLR_SERVER_DIR"
-  
+
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
     exit 1
