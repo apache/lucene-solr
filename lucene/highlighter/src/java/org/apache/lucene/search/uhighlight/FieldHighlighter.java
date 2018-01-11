@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -136,13 +137,15 @@ public class FieldHighlighter {
     BreakIterator breakIterator = this.breakIterator;
     final int contentLength = breakIterator.getText().getEndIndex();
 
+    //TODO consider moving this part to an aggregate OffsetsEnum subclass so we have one enum that already has its weight
     PriorityQueue<OffsetsEnum> offsetsEnumQueue = new PriorityQueue<>(offsetsEnums.size() + 1);
     for (OffsetsEnum off : offsetsEnums) {
       off.setWeight(scorer.weight(contentLength, off.freq()));
-      off.nextPosition(); // go to first position
-      offsetsEnumQueue.add(off);
+      if (off.nextPosition()) {// go to first position
+        offsetsEnumQueue.add(off);
+      }
     }
-    offsetsEnumQueue.add(new OffsetsEnum(null, EMPTY)); // a sentinel for termination
+    offsetsEnumQueue.add(new OffsetsEnum.OfPostings(new BytesRef(), EMPTY)); // a sentinel for termination
 
     PriorityQueue<Passage> passageQueue = new PriorityQueue<>(Math.min(64, maxPassages + 1), (left, right) -> {
       if (left.getScore() < right.getScore()) {
@@ -203,10 +206,9 @@ public class FieldHighlighter {
         assert term != null;
         passage.addMatch(start, end, term);
         // see if there are multiple occurrences of this term in this passage. If so, add them.
-        if (!off.hasMorePositions()) {
+        if (!off.nextPosition()) {
           break; // No more in the entire text. Already removed from pq; move on
         }
-        off.nextPosition();
         start = off.startOffset();
         end = off.endOffset();
         if (start >= passage.getEndOffset() || end > contentLength) { // it's beyond this passage
@@ -222,7 +224,7 @@ public class FieldHighlighter {
       p.sort();
     }
     // sort in ascending order
-    Arrays.sort(passages, (left, right) -> left.getStartOffset() - right.getStartOffset());
+    Arrays.sort(passages, Comparator.comparingInt(Passage::getStartOffset));
     return passages;
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.uhighlight;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +25,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -63,29 +61,20 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    TokenStream tokenStream = tokenStream(content);
-    PostingsEnum mtqPostingsEnum = new TokenStreamPostingsEnum(tokenStream, automata);
-    mtqPostingsEnum.advance(docId);
-    return Collections.singletonList(new OffsetsEnum(null, mtqPostingsEnum));
+    return Collections.singletonList(new TokenStreamOffsetsEnum(tokenStream(content), automata));
   }
 
-  // See class javadocs.
-  // TODO: DWS perhaps instead OffsetsEnum could become abstract and this would be an impl?  See TODOs in OffsetsEnum.
-  private static class TokenStreamPostingsEnum extends PostingsEnum implements Closeable {
+  private static class TokenStreamOffsetsEnum extends OffsetsEnum {
     TokenStream stream; // becomes null when closed
     final CharacterRunAutomaton[] matchers;
     final CharTermAttribute charTermAtt;
     final OffsetAttribute offsetAtt;
 
-    int currentDoc = -1;
     int currentMatch = -1;
-    int currentStartOffset = -1;
-
-    int currentEndOffset = -1;
 
     final BytesRef matchDescriptions[];
 
-    TokenStreamPostingsEnum(TokenStream ts, CharacterRunAutomaton[] matchers) throws IOException {
+    TokenStreamOffsetsEnum(TokenStream ts, CharacterRunAutomaton[] matchers) throws IOException {
       this.stream = ts;
       this.matchers = matchers;
       matchDescriptions = new BytesRef[matchers.length];
@@ -95,15 +84,13 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     }
 
     @Override
-    public int nextPosition() throws IOException {
+    public boolean nextPosition() throws IOException {
       if (stream != null) {
         while (stream.incrementToken()) {
           for (int i = 0; i < matchers.length; i++) {
             if (matchers[i].run(charTermAtt.buffer(), 0, charTermAtt.length())) {
-              currentStartOffset = offsetAtt.startOffset();
-              currentEndOffset = offsetAtt.endOffset();
               currentMatch = i;
-              return 0;
+              return true;
             }
           }
         }
@@ -111,8 +98,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
         close();
       }
       // exhausted
-      currentStartOffset = currentEndOffset = Integer.MAX_VALUE;
-      return Integer.MAX_VALUE;
+      return false;
     }
 
     @Override
@@ -122,43 +108,21 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
     @Override
     public int startOffset() throws IOException {
-      assert currentStartOffset >= 0;
-      return currentStartOffset;
+      return offsetAtt.startOffset();
     }
 
     @Override
     public int endOffset() throws IOException {
-      assert currentEndOffset >= 0;
-      return currentEndOffset;
+      return offsetAtt.endOffset();
     }
 
-    // TOTAL HACK; used in OffsetsEnum.getTerm()
     @Override
-    public BytesRef getPayload() throws IOException {
+    public BytesRef getTerm() throws IOException {
       if (matchDescriptions[currentMatch] == null) {
+        // these CharRunAutomata are subclassed so that toString() returns the query
         matchDescriptions[currentMatch] = new BytesRef(matchers[currentMatch].toString());
       }
       return matchDescriptions[currentMatch];
-    }
-
-    @Override
-    public int docID() {
-      return currentDoc;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return currentDoc = target;
-    }
-
-    @Override
-    public long cost() {
-      return 0;
     }
 
     @Override
