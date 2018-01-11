@@ -518,6 +518,161 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 
+[[createroutedalias]]
+== CREATEROUTEDALIAS: Create an alias that partitions data
+
+The CREATEROUTEDALIAS will create a special type of alias that automates the partitioning of data across a series of
+collections. This feature allows for indefinite indexing of data without degradation of performance otherwise
+experienced due to the continuous growth of the index. As new data arrives, a field on the document is inspected and
+the document is then assigned to a partition. Physically these partitions are modeled as separate collections,
+which can be queried independently or via the alias created by this command. These collections are created
+automatically on the fly as new data arrives based on the parameters supplied in this command.
+
+*NOTE* Presently only partitioning of time based data is available, though other schemes may become available in
+the future.
+[source,text]
+----
+localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=timedata&start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.max-future-ms=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+----
+
+If run on Jan 15, 2018 The above will create an alias named timedata, that contains collections with names such as
+`timedata` and an initial collection named `timedata_2018_01_15`. Updates sent to this alias with a (required) value
+in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60 minutes of 2018-01-15. After
+2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted. As soon as the system receives a
+document for an allowable time window for which there is no collection it will automatically create the next required
+collection (and potentially any intervening collections if router.interval is smaller than router.max-future-ms). Both
+the initial collection and any subsequent collections will be created using the specified configset. All Collection
+creation parameters other than `name` are allowed, prefixed by `collection-create.`
+
+This means that one could (for example) partition their collections by day, and within each daily collection route
+the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule based replica
+placement strategies may also be used. The values supplied in this command for collection creation will be retained
+in alias metadata, and can be verified by inspecting aliases.json in zookeeper.
+
+=== CREATEROUTEDALIAS Parameters
+
+`name`::
+The alias name to be created. This parameter is required, and also functions as a prefix for the names of the
+dependent collections that will be created. It must therefore adhere to normal requirements for alias and collection
+naming.
+
+`start`::
+The minimum allowable value for router.field. This field may contain date math expressions but MUST NOT resolve to a
+time that includes milliseconds other than 0. Particularly, this means `NOW` will fail 999 times out of 1000, though
+`NOW/SECOND`, `NOW/MINUTE`, etc. will work just fine. A pure absolute time can also be specified in the format used
+for naming collections `yyyy-MM-dd[_HH[_mm[_ss]]]` It is also important to pay attention to URL encoding to avoid
+loosing `+` symbols in your date math. This field is required.
+
+`TZ`::
+The timezone to be used when evaluating eligibility for collections. If GMT-4 is supplied for this value then a document
+dated 2018-01-14T21:00:00:01.2345Z would be stored in the myAlias_2018-01-15_01 collection (assumming an interval of
++1HOUR). The default timezone is UTC.
+
+`router.field`::
+The field to inspect to determine which partition (e.g. collection) an incoming document should be routed to. This
+field is required
+
+`router.name`::
+The type of routing to use, presently only `time` is valid. This field is required.
+
+`router.interval`::
+A fragment of a date math expression that will be appended to a timestamp to determine the next collection in the series.
+Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
+work here. This field is required.
+
+`router.max-future-ms`::
+The maximum distance beyond the current (latest) partition for which data may be sent to this alias without error.
+This field is required.
+
+`create-collection.*`::
+The * can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+are identical in requirements and naming.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+=== CREATEROUTEDALIAS Response
+
+The output will simply be a responseHeader with details of the time it took to process the request. To confirm the
+creation of the alias and the values of the associated metadata, you can look in the Solr Admin UI, under the Cloud
+section and find the `aliases.json` file. The initial collection should also be visible in various parts
+of the admin UI.
+
+=== Examples using CREATEROUTEDALIAS
+
+Create an alias named "myTimeData" for data begining on `2018-01-15` in the UTC time zone and partitioning daily
+based on the `evt_dt` field in the incomming documents. Data more than an hour beyond the latest (most recent)
+partiton is to be rejected and collections are created using a config set named myConfig and
+
+
+*Input*
+
+[source,text]
+----
+localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=myTimeData&start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.max-future-ms=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+
+A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
+Notice that the collection creation fields follow the v2 api naming convention, not the v1 naming conventions.
+
+*Input*
+
+[source,json]
+----
+POST /api/c
+{
+  "create-routed-alias" : {
+    "name": "somethingTemporalThisWayComes",
+    "router" : {
+      "name": "time",
+      "field": "evt_dt",
+      "interval":"+2HOUR",
+      "max-future-ms":"14400000"
+    },
+    "start":"NOW/MINUTE",
+    "create-collection" : {
+      "config":"_default",
+      "router": {
+        "name":"implicit",
+        "field":"foo_s"
+      },
+      "shards":"foo,bar,baz",
+      "numShards": 3,
+      "tlogReplicas":1,
+      "pullReplicas":1,
+      "maxShardsPerNode":2,
+      "properties" : {
+        "foobar":"bazbam"
+      }
+    }
+  }
+}
+----
+
+*Output*
+
+[source,xml]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+
 [[listaliases]]
 == LISTALIASES: List of all aliases in the cluster
 

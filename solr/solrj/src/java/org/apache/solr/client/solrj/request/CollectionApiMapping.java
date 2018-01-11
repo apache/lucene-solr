@@ -34,6 +34,9 @@ import org.apache.solr.common.util.Utils;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_CONFIG;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_NODE_SET;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_SHUFFLE_NODES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_DEL;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.LIST_CONFIG;
@@ -113,6 +116,15 @@ public class CollectionApiMapping {
         CREATEALIAS,
         "create-alias",
         null),
+    CREATE_ROUTED_ALIAS(COLLECTIONS_COMMANDS,
+        POST,
+        CREATEROUTEDALIAS,
+        "create-routed-alias",
+        Utils.makeMap(
+            "create-collection.collection.configName", CREATE_COLLECTION_CONFIG,
+            "createNodeSet",CREATE_COLLECTION_NODE_SET,
+            "create-collection.createNodeSet.shuffle", CREATE_COLLECTION_SHUFFLE_NODES
+        )),
 
     DELETE_ALIAS(COLLECTIONS_COMMANDS,
         POST,

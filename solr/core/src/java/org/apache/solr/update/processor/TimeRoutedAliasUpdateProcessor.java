@@ -79,7 +79,9 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * requests to create new collections on-demand.
  *
  * Depends on this core having a special core property that points to the alias name that this collection is a part of.
- * And further requires certain metadata on the Alias.
+ * And further requires certain metadata on the Alias. Collections pointed to by the alias must be named for the alias
+ * plus underscored ('_') and a time stamp of ISO_DATE plus optionally _HH_mm_ss. These collections should not be
+ * created by the user, but are created automatically by the time partitioning system.
  *
  * @since 7.2.0
  */
@@ -99,6 +101,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
       .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
       .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+      // Setting a timezone here is fine as a default, but generally need to clone with user's timezone, so that
+      // truncation of milliseconds is consistent.
       .toFormatter(Locale.ROOT).withZone(ZoneOffset.UTC);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -252,6 +256,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   /** Computes the timestamp of the next collection given the timestamp of the one before. */
   public static Instant computeNextCollTimestamp(Instant fromTimestamp, String intervalDateMath, TimeZone intervalTimeZone) {
     //TODO overload DateMathParser.parseMath to take tz and "now"
+    // GH: I don't think that's necessary, you can set the TZ on now when you pass it in?
     final DateMathParser dateMathParser = new DateMathParser(intervalTimeZone);
     dateMathParser.setNow(Date.from(fromTimestamp));
     final Instant nextCollTimestamp;
@@ -398,14 +403,14 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
   }
 
-  public static String formatCollectionNameFromInstant(String aliasName, Instant timestamp) {
-    String nextCollName = TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER.format(timestamp);
+  public static String formatCollectionNameFromInstant(String aliasName, Instant timestamp, DateTimeFormatter fmt) {
+    String nextCollName = fmt.format(timestamp);
     for (int i = 0; i < 3; i++) { // chop off seconds, minutes, hours
       if (nextCollName.endsWith("_00")) {
         nextCollName = nextCollName.substring(0, nextCollName.length()-3);
       }
     }
-    assert TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
+    assert fmt.parse(nextCollName, Instant::from).equals(timestamp);
     return aliasName + "_" + nextCollName;
   }
 

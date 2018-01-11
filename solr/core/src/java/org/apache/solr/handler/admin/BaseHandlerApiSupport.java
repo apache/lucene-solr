@@ -130,55 +130,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   }
 
   private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
-    final Map<String, String> pathValues = req.getPathTemplateValues();
-    final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
-        Collections.singletonMap("", co.getCommandData()) : co.getDataMap();
-    final SolrParams origParams = req.getParams();
-
-    req.setParams(
-        new SolrParams() {
-          @Override
-          public String get(String param) {
-            Object vals = getParams0(param);
-            if (vals == null) return null;
-            if (vals instanceof String) return (String) vals;
-            if (vals instanceof Boolean || vals instanceof Number) return String.valueOf(vals);
-            if (vals instanceof String[] && ((String[]) vals).length > 0) return ((String[]) vals)[0];
-            return null;
-          }
-
-          private Object getParams0(String param) {
-            param = cmd.meta().getParamSubstitute(param);
-            Object o = param.indexOf('.') > 0 ?
-                Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
-                map.get(param);
-            if (o == null) o = pathValues.get(param);
-            if (o == null && useRequestParams) o = origParams.getParams(param);
-            if (o instanceof List) {
-              List l = (List) o;
-              return l.toArray(new String[l.size()]);
-            }
-
-            return o;
-          }
-
-          @Override
-          public String[] getParams(String param) {
-            Object vals = getParams0(param);
-            return vals == null || vals instanceof String[] ?
-                (String[]) vals :
-                new String[]{vals.toString()};
-          }
-
-          @Override
-          public Iterator<String> getParameterNamesIterator() {
-            return cmd.meta().getParamNames(co).iterator();
-
-          }
-
-
-        });
-
+    req.setParams(new V2ToV1SolrParams(cmd.meta(), req.getPathTemplateValues(), useRequestParams, req.getParams(), co));
   }
 
   protected abstract Collection<ApiCommand> getCommands();
@@ -188,8 +140,66 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   public interface ApiCommand  {
     CommandMeta meta();
-
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }
 
+  /**
+   * Wrapper for SolrParams that converts V2 params into V1 params. Only meant for internal use within solr's
+   * admin request handling code, other usages may not be supported (hence the package-private access).
+   */
+  static class V2ToV1SolrParams extends SolrParams {
+    private final CommandMeta meta;
+    private final Map<String, Object> map;
+    private final Map<String, String> pathValues;
+    private final boolean useRequestParams;
+    private final SolrParams origParams;
+    private final CommandOperation co;
+
+    V2ToV1SolrParams(CommandMeta meta, Map<String, String> pathValues, boolean useRequestParams, SolrParams origParams, CommandOperation co) {
+      this.meta = meta;
+      this.pathValues = pathValues;
+      this.useRequestParams = useRequestParams;
+      this.origParams = origParams;
+      this.co = co;
+      this.map = co == null || !(co.getCommandData() instanceof Map) ?
+          Collections.singletonMap("", co.getCommandData()) : co.getDataMap();;
+    }
+
+    @Override
+    public String get(String param) {
+      Object vals = getParams0(param);
+      if (vals == null) return null;
+      if (vals instanceof String) return (String) vals;
+      if (vals instanceof Boolean || vals instanceof Number) return String.valueOf(vals);
+      if (vals instanceof String[] && ((String[]) vals).length > 0) return ((String[]) vals)[0];
+      return null;
+    }
+
+    private Object getParams0(String param) {
+      param = meta.getParamSubstitute(param);
+      Object o = param.indexOf('.') > 0 ?
+          Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
+          map.get(param);
+      if (o == null) o = pathValues.get(param);
+      if (o == null && useRequestParams) o = origParams.getParams(param);
+      if (o instanceof List) {
+        List l = (List) o;
+        return l.toArray(new String[l.size()]);
+      }
+      return o;
+    }
+
+    @Override
+    public String[] getParams(String param) {
+      Object vals = getParams0(param);
+      return vals == null || vals instanceof String[] ?
+          (String[]) vals :
+          new String[]{vals.toString()};
+    }
+
+    @Override
+    public Iterator<String> getParameterNamesIterator() {
+      return meta.getParamNames(co).iterator();
+    }
+  }
 }

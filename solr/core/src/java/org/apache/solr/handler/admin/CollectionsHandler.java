@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -38,6 +39,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -74,6 +76,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -99,6 +102,8 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
+import static org.apache.solr.cloud.CreateAliasCmd.NONREQUIRED_ROUTING_PARAMS;
+import static org.apache.solr.cloud.CreateAliasCmd.REQUIRED_ROUTING_PARAMS;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
@@ -146,6 +151,7 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String ROUTED_ALIAS_COLLECTION_PROP_PFX = "__collection-";
 
   protected final CoreContainer coreContainer;
   private final CollectionHandlerApi v2Handler ;
@@ -335,6 +341,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
+  /**
+   * Copy prefixed params into a map.
+   *
+   * @param params The source of params from which copies should be made
+   * @param props The map into which param names and values should be copied as keys and values respectively
+   * @param prefix The prefix to select.
+   * @return the map supplied in the props parameter, modified to contain the prefixed params.
+   */
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {
     Iterator<String> iter =  params.getParameterNamesIterator();
     while (iter.hasNext()) {
@@ -404,47 +418,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      * as well as specific replicas= options
      */
     CREATE_OP(CREATE, (req, rsp, h) -> {
-      Map<String, Object> props = req.getParams().required().getAll(null, NAME);
-      props.put("fromApi", "true");
-      req.getParams().getAll(props,
-          REPLICATION_FACTOR,
-          COLL_CONF,
-          NUM_SLICES,
-          MAX_SHARDS_PER_NODE,
-          CREATE_NODE_SET,
-          CREATE_NODE_SET_SHUFFLE,
-          SHARDS_PROP,
-          STATE_FORMAT,
-          AUTO_ADD_REPLICAS,
-          RULE,
-          SNITCH,
-          PULL_REPLICAS,
-          TLOG_REPLICAS,
-          NRT_REPLICAS,
-          POLICY,
-          WAIT_FOR_FINAL_STATE);
-
-      if (props.get(STATE_FORMAT) == null) {
-        props.put(STATE_FORMAT, "2");
-      }
-      addMapObject(props, RULE);
-      addMapObject(props, SNITCH);
-      verifyRuleParams(h.coreContainer, props);
-      final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
-      final String shardsParam = (String) props.get(SHARDS_PROP);
-      if (StringUtils.isNotEmpty(shardsParam)) {
-        verifyShardsParam(shardsParam);
-      }
-      if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-        //We must always create a .system collection with only a single shard
-        props.put(NUM_SLICES, 1);
-        props.remove(SHARDS_PROP);
-        createSysConfigSet(h.coreContainer);
-
-      }
-      copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
-      return copyPropertiesWithPrefix(req.getParams(), props, "router.");
-
+      req.getParams().required().getAll(null, NAME);
+      return parseColletionCreationProps(h, req.getParams(), null);
     }),
     DELETE_OP(DELETE, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
@@ -475,6 +450,31 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
       SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
       return req.getParams().required().getAll(null, NAME, "collections");
+    }),
+    CREATEROUTEDALIAS_OP(CREATEROUTEDALIAS, (req, rsp, h) -> {
+      String alias = req.getParams().get(NAME);
+      SolrIdentifierValidator.validateAliasName(alias);
+      Map<String, Object> params = req.getParams().required()
+          .getAll(null, REQUIRED_ROUTING_PARAMS.toArray(new String[REQUIRED_ROUTING_PARAMS.size()]));
+      req.getParams().getAll(params, NONREQUIRED_ROUTING_PARAMS);
+      // subset the params to reuse the collection creation/parsing code
+      ModifiableSolrParams collectionParams = extractPrefixedParams("create-collection.", req.getParams());
+      if (collectionParams.get(NAME) != null) {
+        SolrException solrException = new SolrException(BAD_REQUEST, "routed aliases calculate names for their " +
+            "dependent collections, you cannot specify the name.");
+        log.error("Could not create routed alias",solrException);
+        throw solrException;
+      }
+      SolrParams v1Params = convertToV1WhenRequired(req, collectionParams);
+
+      // We need to add this temporary name just to pass validation.
+      collectionParams.add(NAME, "TMP_name_TMP_name_TMP");
+      params.putAll(parseColletionCreationProps(h, v1Params, ROUTED_ALIAS_COLLECTION_PROP_PFX));
+
+      // We will be giving the collection a real name based on the partition scheme later.
+      params.remove(ROUTED_ALIAS_COLLECTION_PROP_PFX + NAME);
+      params.remove("create-collection"); // don't include a stringified version now that we've parsed things out.
+      return params;
     }),
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
@@ -931,6 +931,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "shard");
     }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
+
+    /**
+     * Extract only the params that have a given prefix. Any params with a different prefix are removed, and
+     * the params with the prefix have the prefix removed in the result
+     *
+     * @param prefix the prefix to select
+     * @param params the source of parameters that should be searched
+     * @return a SolrParams object containing only the params that had the prefix, with the prefix removed.
+     */
+    private static ModifiableSolrParams extractPrefixedParams(String prefix, SolrParams params) {
+      ModifiableSolrParams result = new ModifiableSolrParams();
+      for (Iterator<String> i = params.getParameterNamesIterator(); i.hasNext();) {
+        String name = i.next();
+        if (name.startsWith(prefix)) {
+          result.add(name.substring(prefix.length()), params.get(name));
+        }
+      }
+      return result;
+    }
+
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
@@ -960,6 +980,76 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throws Exception {
       return fun.execute(req, rsp, h);
     }
+  }
+
+  private static SolrParams convertToV1WhenRequired(SolrQueryRequest req, ModifiableSolrParams params) {
+    SolrParams v1Params = params; // (maybe...)
+
+    // in the v2 world we get a data map based on the json request, from the CommandOperation associated
+    // with the request, so locate that if we can.. if we find it we have to translate the v2 request
+    // properties to v1 params, otherwise we're already good to go.
+    List<CommandOperation> cmds = req.getCommands(true);
+    if (cmds.size() > 1) {
+      // todo: not sure if this is the right thing to do here, but also not sure what to do if there is more than one...
+      throw new SolrException(BAD_REQUEST, "Only one command is allowed when creating a routed alias");
+    }
+    CommandOperation c = cmds.size() == 0 ? null : cmds.get(0);
+    if (c != null) {  // v2 api, do conversion to v1
+      v1Params = new BaseHandlerApiSupport.V2ToV1SolrParams(CollectionApiMapping.Meta.CREATE_COLLECTION,
+              req.getPathTemplateValues(), true, params,
+              new CommandOperation("create", c.getDataMap().get("create-collection")));
+    }
+    return v1Params;
+  }
+
+  private static Map<String, Object> parseColletionCreationProps(CollectionsHandler h, SolrParams params, String prefix)
+      throws KeeperException, InterruptedException {
+    Map<String, Object> props = params.getAll(null,
+        NAME,
+        REPLICATION_FACTOR,
+        COLL_CONF,
+        NUM_SLICES,
+        MAX_SHARDS_PER_NODE,
+        CREATE_NODE_SET,
+        CREATE_NODE_SET_SHUFFLE,
+        SHARDS_PROP,
+        STATE_FORMAT,
+        AUTO_ADD_REPLICAS,
+        RULE,
+        SNITCH,
+        PULL_REPLICAS,
+        TLOG_REPLICAS,
+        NRT_REPLICAS,
+        POLICY,
+        WAIT_FOR_FINAL_STATE);
+    props.put("fromApi", "true");
+    if (props.get(STATE_FORMAT) == null) {
+      props.put(STATE_FORMAT, "2");
+    }
+    addMapObject(props, RULE);
+    addMapObject(props, SNITCH);
+    verifyRuleParams(h.coreContainer, props);
+    final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
+    final String shardsParam = (String) props.get(SHARDS_PROP);
+    if (StringUtils.isNotEmpty(shardsParam)) {
+      verifyShardsParam(shardsParam);
+    }
+    if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
+      //We must always create a .system collection with only a single shard
+      props.put(NUM_SLICES, 1);
+      props.remove(SHARDS_PROP);
+      createSysConfigSet(h.coreContainer);
+    }
+    copyPropertiesWithPrefix(params, props, COLL_PROP_PREFIX);
+    Map<String, Object> result = copyPropertiesWithPrefix(params, props, "router.");
+    if (StringUtils.isNotBlank(prefix)) {
+      result = addPrefix(prefix, result);
+    }
+    return result;
+  }
+
+  private static Map<String,Object> addPrefix(String prefix, Map<String, Object> aMap) {
+    return aMap.entrySet().stream().collect(Collectors.toMap( entry -> prefix + entry.getKey(), Map.Entry::getValue));
   }
 
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
