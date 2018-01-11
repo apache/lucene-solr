@@ -59,6 +59,8 @@ Bug Fixes
   problem (LUCENE-2287, LUCENE-5455, LUCENE-6796).  Some public but internal parts of
   the UH were refactored. (David Smiley, Steve Davids)
 
+* LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
@@ -177,8 +179,8 @@ Optimizations
 * LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
-  
-* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
+
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents
   instead of 1. (Simon Willnauer)
 
 * LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
