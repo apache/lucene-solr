@@ -194,22 +194,22 @@ An extension of the `AnalyzingInfixSuggester` which provides additional function
 This implementation uses the following additional properties:
 
 `blenderType`::
-Used to calculate weight coefficient using the position of the first matching word. Can be one of:
+Used to calculate weight coefficient using the position of the first matching word. Available options are:
 `position_linear`:::
-`weightFieldValue*(1 - 0.10*position)`: Matches to the start will be given a higher score. This is the default.
+`weightFieldValue * (1 - 0.10*position)`: Matches to the start will be given a higher score. This is the default.
 `position_reciprocal`:::
-`weightFieldValue/(1+position)`: Matches to the end will be given a higher score.
+`weightFieldValue / (1 + position)`: Matches to the end will be given a higher score.
 `exponent`::::
-An optional configuration variable for the position_reciprocal blenderType used to control how fast the score will increase or decrease. Default `2.0`.
+An optional configuration variable for `position_reciprocal` to control how fast the score will increase or decrease. Default `2.0`.
 
 `numFactor`::
 The factor to multiply the number of searched elements from which results will be pruned. Default is `10`.
 
 `indexPath`::
-When using `BlendedInfixSuggester` you can provide your own path where the index will get built. The default directory name is `blendedInfixSuggesterIndexDir` and will be created in your collections data directory.
+When using `BlendedInfixSuggester` you can provide your own path where the index will get built. The default directory name is `blendedInfixSuggesterIndexDir` and will be created in your collection's data directory.
 
 `minPrefixChars`::
-Minimum number of leading characters before PrefixQuery is used (the default is `4`). Prefixes shorter than this are indexed as character ngrams (increasing index size but making lookups faster).
+Minimum number of leading characters before PrefixQuery is used (the default is `4`). Prefixes shorter than this are indexed as character ngrams, which increases index size but makes lookups faster.
 
 This implementation supports <<Context Filtering>>.
 
