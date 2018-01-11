@@ -17,7 +17,6 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -214,13 +213,13 @@ public class BM25Similarity extends Similarity {
     }
 
     @Override
-    public float score(float freq, long encodedNorm) throws IOException {
+    public float score(float freq, long encodedNorm) {
       double norm = cache[((byte) encodedNorm) & 0xFF];
       return weight * (float) (freq / (freq + norm));
     }
 
     @Override
-    public Explanation explain(Explanation freq, long encodedNorm) throws IOException {
+    public Explanation explain(Explanation freq, long encodedNorm) {
       List<Explanation> subs = new ArrayList<>(explainConstantFactors());
       Explanation tfExpl = explainTF(freq, encodedNorm);
       subs.add(tfExpl);
@@ -228,7 +227,7 @@ public class BM25Similarity extends Similarity {
           "score(freq="+freq.getValue()+"), product of:", subs);
     }
     
-    private Explanation explainTF(Explanation freq, long norm) throws IOException {
+    private Explanation explainTF(Explanation freq, long norm) {
       List<Explanation> subs = new ArrayList<>();
       subs.add(freq);
       subs.add(Explanation.match(k1, "k1, term saturation parameter"));

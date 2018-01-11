@@ -17,7 +17,6 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -543,18 +542,18 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
 
     @Override
-    public float score(float freq, long norm) throws IOException {
+    public float score(float freq, long norm) {
       final float raw = tf(freq) * queryWeight; // compute tf(f)*weight
       float normValue = normTable[(int) (norm & 0xFF)];
       return raw * normValue;  // normalize for field
     }
 
     @Override
-    public Explanation explain(Explanation freq, long norm) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       return explainScore(freq, norm, normTable);
     }
 
-    private Explanation explainScore(Explanation freq, long encodedNorm, float[] normTable) throws IOException {
+    private Explanation explainScore(Explanation freq, long encodedNorm, float[] normTable) {
       List<Explanation> subs = new ArrayList<Explanation>();
       if (boost != 1F) {
         subs.add(Explanation.match(boost, "boost"));

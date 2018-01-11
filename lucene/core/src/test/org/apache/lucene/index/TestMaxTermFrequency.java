@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,7 +112,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
       return new SimScorer(collectionStats.field()) {
 
         @Override
-        public float score(float freq, long norm) throws IOException {
+        public float score(float freq, long norm) {
           return 0;
         }
 

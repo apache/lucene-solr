@@ -17,8 +17,6 @@
 package org.apache.lucene.search;
 
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -116,7 +114,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
       return new SimScorer(collectionStats.field()) {
 
         @Override
-        public float score(float freq, long norm) throws IOException {
+        public float score(float freq, long norm) {
           return 1;
         }
       };
@@ -135,7 +133,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(float freq, long norm) throws IOException {
+        public float score(float freq, long norm) {
           return 10;
         }
       };
