@@ -18,10 +18,9 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
@@ -42,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor;
@@ -50,10 +50,8 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TZ;
 import static org.apache.solr.handler.admin.CollectionsHandler.ROUTED_ALIAS_COLLECTION_PROP_PFX;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER;
@@ -87,6 +85,14 @@ public class CreateAliasCmd implements Cmd {
   public static final String CREATE_COLLECTION_SNITCH = "create-collection.snitch";
   public static final String CREATE_COLLECTION_POLICY = "create-collection.policy";
   public static final String CREATE_COLLECTION_PROPERTIES = "create-collection.properties";
+  public static final String FROM_API = "fromApi";
+  public static final String STATE_FORMAT = "stateFormat";
+  public static final String NAME = "name";
+
+  // These are parameters that get added by the collection creation command parsing that we
+  // will want to not store in alias metadata.
+  public static final Set<String> COLLECTION_CREATION_CRUFT =   // wanted: Set.of() from jdk9
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(FROM_API, STATE_FORMAT, NAME)));
 
 
   private final OverseerCollectionMessageHandler ocmh;
@@ -96,7 +102,7 @@ public class CreateAliasCmd implements Cmd {
    * Parameters required for creating a routed alias
    */
   public static final List<String> REQUIRED_ROUTING_PARAMS = Collections.unmodifiableList(Arrays.asList(
-          NAME,
+          CommonParams.NAME,
           START,
           ROUTING_FIELD,
           ROUTING_TYPE,
@@ -146,7 +152,7 @@ public class CreateAliasCmd implements Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results)
       throws Exception {
-    final String aliasName = message.getStr(NAME);
+    final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     ZkStateReader.AliasesManager holder = zkStateReader.aliasesHolder;
     if (!anyRoutingParams(message)) {
@@ -163,7 +169,7 @@ public class CreateAliasCmd implements Cmd {
       final String maxFutureMs = message.getStr(ROUTING_MAX_FUTURE);
 
       try {
-        if (0 > Long.valueOf(maxFutureMs)) {
+        if (0 > Long.parseLong(maxFutureMs)) {
           throw new NumberFormatException("Negative value not allowed here");
         }
       } catch (NumberFormatException e) {
@@ -173,44 +179,35 @@ public class CreateAliasCmd implements Cmd {
 
       // Validate we got everything we need
       if (routedField == null || routingType == null || start == null || increment == null) {
-        SolrException solrException = new SolrException(BAD_REQUEST, "If any of " + CREATE_ROUTED_ALIAS_PARAMS +
+        throw new SolrException(BAD_REQUEST, "If any of " + CREATE_ROUTED_ALIAS_PARAMS +
             " are supplied, then all of " + REQUIRED_ROUTING_PARAMS + " must be present.");
-        log.error("Could not create routed alias",solrException);
-        throw solrException;
       }
 
       if (!"time".equals(routingType)) {
-        SolrException solrException = new SolrException(BAD_REQUEST, "Only time based routing is supported at this time");
-        log.error("Could not create routed alias",solrException);
-        throw solrException;
+        throw new SolrException(BAD_REQUEST, "Only time based routing is supported at this time");
       }
       // Check for invalid timezone
-      if(tz != null && !TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(tz)) {
-        SolrException solrException = new SolrException(BAD_REQUEST, "Invalid timezone:" + tz);
-        log.error("Could not create routed alias",solrException);
-        throw solrException;
-
-      }
+      TimeZoneUtils.parseTimezone(tz);
       TimeZone zone;
       if (tz != null) {
         zone = TimeZoneUtils.getTimeZone(tz);
       } else {
         zone = TimeZoneUtils.getTimeZone("UTC");
       }
-      DateTimeFormatter fmt = DATE_TIME_FORMATTER.withZone(zone.toZoneId());
 
       // check that the increment is valid date math
-      String checkIncrement = ISO_INSTANT.format(Instant.now()) + increment;
-      DateMathParser.parseMath(new Date(), checkIncrement); // exception if invalid increment
+      try {
+        new DateMathParser().parseMath(increment);
+      } catch (ParseException e) {
+        throw new SolrException(BAD_REQUEST,e.getMessage(),e);
+      }
 
-      Instant startTime = validateStart(zone, fmt, start);
+      Instant startTime = validateStart(zone, start);
 
-      // check field
+      // check config
       String config = String.valueOf(message.getProperties().get(ROUTED_ALIAS_COLLECTION_PROP_PFX + COLL_CONF));
       if (!zkStateReader.getConfigManager().configExists(config)) {
-        SolrException solrException = new SolrException(BAD_REQUEST, "Could not find config '" + config + "'");
-        log.error("Could not create routed alias",solrException);
-        throw solrException;
+        throw new SolrException(BAD_REQUEST, "Could not find config '" + config + "'");
       }
 
       // It's too much work to check the routed field against the schema, there seems to be no good way to get
@@ -220,13 +217,13 @@ public class CreateAliasCmd implements Cmd {
       // field patterns too. As much as it would be nice to validate all inputs it's not worth the effort.
 
       String initialCollectionName = TimeRoutedAliasUpdateProcessor
-          .formatCollectionNameFromInstant(aliasName, startTime, fmt );
+          .formatCollectionNameFromInstant(aliasName, startTime, DATE_TIME_FORMATTER);
 
       NamedList createResults = new NamedList();
       ZkNodeProps collectionProps = selectByPrefix(ROUTED_ALIAS_COLLECTION_PROP_PFX, message)
-          .plus(NAME, initialCollectionName);
+          .plus(CommonParams.NAME, initialCollectionName);
       Map<String, String> metadata = buildAliasMap(routedField, routingType, tz, increment, maxFutureMs, collectionProps);
-      RoutedAliasCreateCollectionCmd.createCollectionAndWait(state,createResults,aliasName,metadata,initialCollectionName,ocmh);
+      RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, createResults, aliasName, metadata, initialCollectionName, ocmh);
       List<String> collectionList = Collections.singletonList(initialCollectionName);
       validateAllCollectionsExistAndNoDups(collectionList, zkStateReader);
       holder.applyModificationAndExportToZk(aliases -> aliases
@@ -252,10 +249,7 @@ public class CreateAliasCmd implements Cmd {
   private Map<String, String> buildAliasMap(String routedField, String routingType, String tz, String increment, String maxFutureMs, ZkNodeProps collectionProps) {
     Map<String, Object> properties = collectionProps.getProperties();
     Map<String,String> cleanMap = properties.entrySet().stream()
-        .filter(stringObjectEntry ->
-            !"fromApi".equals(stringObjectEntry.getKey())
-                && !"stateFormat".equals(stringObjectEntry.getKey())
-                && !"name".equals(stringObjectEntry.getKey()))
+        .filter(stringObjectEntry -> !COLLECTION_CREATION_CRUFT.contains(stringObjectEntry.getKey()))
         .collect(Collectors.toMap((e) -> "collection-create." + e.getKey(), e -> String.valueOf(e.getValue())));
     cleanMap.put(ROUTING_FIELD, routedField);
     cleanMap.put(ROUTING_TYPE, routingType);
@@ -265,31 +259,25 @@ public class CreateAliasCmd implements Cmd {
     return cleanMap;
   }
 
-  private Instant validateStart(TimeZone zone, DateTimeFormatter fmt, String start) {
+  private Instant validateStart(TimeZone zone, String start) {
     // This is the normal/easy case, if we can get away with this great!
     TemporalAccessor startTime = attemptTimeStampParsing(start, zone.toZoneId());
     if (startTime == null) {
-      // No luck, they gave us either date math, or garbage, so we have to do more work to figure out which and
-      // to make sure it's valid date math and that it doesn't encode any millisecond precision.
-      ZonedDateTime now = ZonedDateTime.now(zone.toZoneId()).truncatedTo(ChronoUnit.MILLIS);
-      try {
-        Date date = DateMathParser.parseMath(Date.from(now.toInstant()), start);
-        String reformatted = fmt.format(date.toInstant().truncatedTo(ChronoUnit.MILLIS));
-        Date reparse = Date.from(Instant.from(DATE_TIME_FORMATTER.parse(reformatted)));
-        if (!reparse.equals(date)) {
-          throw new SolrException(BAD_REQUEST,
-              "Formatted time did not have the same milliseconds as original: " + date.getTime() + " vs. " +
-                  reparse.getTime() + " This indicates that you used date math that includes milliseconds. " +
-                  "(Hint: 'NOW' used without rounding always has this problem)" );
-        }
-        return date.toInstant();
-      } catch (SolrException e) {
-        throw new SolrException(BAD_REQUEST,
-            "Start Time for the first collection must be a timestamp of the format yyyy-MM-dd_HH_mm_ss, " +
-                "or a valid date math expression not containing specific milliseconds", e);
-      }
+      Date date = DateMathParser.parseMath(new Date(), start);
+      checkMilis(date);
+      return date.toInstant();
     }
-    return Instant.from(startTime);
+    Instant startInstant = Instant.from(startTime);
+    checkMilis(Date.from(startInstant));
+    return startInstant;
+  }
+
+  private void checkMilis(Date date) {
+    if (!date.toInstant().truncatedTo(ChronoUnit.SECONDS).equals(date.toInstant())){
+      throw new SolrException(BAD_REQUEST,
+          "Date or date math for start time includes milliseconds, which is not supported. " +
+              "(Hint: 'NOW' used without rounding always has this problem)");
+    }
   }
 
   private TemporalAccessor attemptTimeStampParsing(String start, ZoneId zone) {
@@ -338,11 +326,13 @@ public class CreateAliasCmd implements Cmd {
   }
 
   private ZkNodeProps selectByPrefix(String prefix, ZkNodeProps source) {
-    final ZkNodeProps[] subSet = {new ZkNodeProps()};
-    source.getProperties().entrySet().stream()
-        .filter(entry -> entry.getKey().startsWith(prefix))
-        .forEach(e -> subSet[0] = subSet[0].plus(e.getKey().substring(prefix.length()),e.getValue()));
-    return subSet[0];
+    ZkNodeProps subSet = new ZkNodeProps();
+    for (Map.Entry<String, Object> entry : source.getProperties().entrySet()) {
+      if (entry.getKey().startsWith(prefix)) {
+        subSet = subSet.plus(entry.getKey().substring(prefix.length()), entry.getValue());
+      }
+    }
+    return subSet;
   }
 
 }

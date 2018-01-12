@@ -101,8 +101,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
       .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
       .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-      // Setting a timezone here is fine as a default, but generally need to clone with user's timezone, so that
-      // truncation of milliseconds is consistent.
       .toFormatter(Locale.ROOT).withZone(ZoneOffset.UTC);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -256,7 +254,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   /** Computes the timestamp of the next collection given the timestamp of the one before. */
   public static Instant computeNextCollTimestamp(Instant fromTimestamp, String intervalDateMath, TimeZone intervalTimeZone) {
     //TODO overload DateMathParser.parseMath to take tz and "now"
-    // GH: I don't think that's necessary, you can set the TZ on now when you pass it in?
     final DateMathParser dateMathParser = new DateMathParser(intervalTimeZone);
     dateMathParser.setNow(Date.from(fromTimestamp));
     final Instant nextCollTimestamp;

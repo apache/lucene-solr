@@ -419,7 +419,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      */
     CREATE_OP(CREATE, (req, rsp, h) -> {
       req.getParams().required().getAll(null, NAME);
-      return parseColletionCreationProps(h, req.getParams(), null);
+      return parseCollectionCreationProps(h, req.getParams(), null);
     }),
     DELETE_OP(DELETE, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
@@ -460,16 +460,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       // subset the params to reuse the collection creation/parsing code
       ModifiableSolrParams collectionParams = extractPrefixedParams("create-collection.", req.getParams());
       if (collectionParams.get(NAME) != null) {
-        SolrException solrException = new SolrException(BAD_REQUEST, "routed aliases calculate names for their " +
+        throw new SolrException(BAD_REQUEST, "routed aliases calculate names for their " +
             "dependent collections, you cannot specify the name.");
-        log.error("Could not create routed alias",solrException);
-        throw solrException;
       }
       SolrParams v1Params = convertToV1WhenRequired(req, collectionParams);
 
       // We need to add this temporary name just to pass validation.
       collectionParams.add(NAME, "TMP_name_TMP_name_TMP");
-      params.putAll(parseColletionCreationProps(h, v1Params, ROUTED_ALIAS_COLLECTION_PROP_PFX));
+      params.putAll(parseCollectionCreationProps(h, v1Params, ROUTED_ALIAS_COLLECTION_PROP_PFX));
 
       // We will be giving the collection a real name based on the partition scheme later.
       params.remove(ROUTED_ALIAS_COLLECTION_PROP_PFX + NAME);
@@ -1002,7 +1000,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return v1Params;
   }
 
-  private static Map<String, Object> parseColletionCreationProps(CollectionsHandler h, SolrParams params, String prefix)
+  private static Map<String, Object> parseCollectionCreationProps(CollectionsHandler h, SolrParams params, String prefix)
       throws KeeperException, InterruptedException {
     Map<String, Object> props = params.getAll(null,
         NAME,

@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -46,7 +47,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor;
 import org.apache.solr.util.DateMathParser;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,6 +54,7 @@ import org.junit.Test;
 /**
  * Direct http tests of the CreateRoutedAlias functionality.
  */
+@SolrTestCaseJ4.SuppressSSL
 public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   private  CloudSolrClient solrClient;
@@ -92,8 +93,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String aliasName = "testAlias";
     cluster.uploadConfigSet(configset("_default"), aliasName);
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-        HttpPost post = new HttpPost(baseUrl + "/____v2/c");
-        post.setHeader("Content-Type", ContentType.APPLICATION_JSON.getMimeType());
+    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
+    post.setHeader("Content-Type", ContentType.APPLICATION_JSON.getMimeType());
     HttpEntity httpEntity = new InputStreamEntity(org.apache.commons.io.IOUtils.toInputStream("{\n" +
         "  \"create-routed-alias\" : {\n" +
         "    \"name\": \"testaliasV2\",\n" +
@@ -186,6 +187,42 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals(null ,meta.get("start"));
   }
 
+
+  @Test
+  public void testTimezoneAbsoluteDate() throws Exception {
+
+    final String aliasName = "testAlias";
+    cluster.uploadConfigSet(configset("_default"), aliasName);
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    Instant instant = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
+    String timestamp = DateTimeFormatter.ISO_INSTANT.format(instant);
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+        "&wt=xml" +
+        "&name=testalias" +
+        "&router.field=evt_dt" +
+        "&router.name=time" +
+        "&start=2018-01-15T00:00:00Z" +
+        "&TZ=GMT-10" +
+        "&router.interval=%2B30MINUTE" +
+        "&router.max-future-ms=60000" +
+        "&create-collection.collection.configName=_default" +
+        "&create-collection.numShards=2");
+    try (CloseableHttpResponse response = httpclient.execute(get)) {
+      assertEquals(200, response.getStatusLine().getStatusCode());
+    }
+    //TODO: name like this because interval is in hours?
+    //assertInitialCollectionNameExists("testalias_2018-01-15_00_00");
+    assertInitialCollectionNameExists("testalias_2018-01-15");
+    //get = new HttpGet(baseUrl + "/____v2/c/testalias_2018-01-15_00_00");
+    get = new HttpGet(baseUrl + "/____v2/c/testalias_2018-01-15");
+    try (CloseableHttpResponse response = httpclient.execute(get)) {
+      System.out.println(responseToMap(response));
+      System.out.println(getCollectionList());
+      assertEquals(200, response.getStatusLine().getStatusCode());
+    }
+
+  }
+
   @Test
   public void testAliasNameMustBeValid() throws Exception {
 
@@ -254,22 +291,11 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&create-collection.numShards=2");
     try (CloseableHttpResponse response = httpclient.execute(get)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
-      assertErrorStartsWith(response, "Start Time for the first collection must be a timestamp of the format yyyy-MM-dd_HH_mm_ss");
+      assertErrorStartsWith(response, "Date or date math for start time includes milliseconds");
     }
   }
 
-  private void assertErrorStartsWith(CloseableHttpResponse response, String prefix) throws IOException {
-    String entity = getStringEntity(response);
-    System.out.println(entity);
-    ObjectMapper mapper = new ObjectMapper();
-    Map map = mapper.readValue(entity, new TypeReference<Map<String, Object>>() {});
-    Map exception = (Map) map.get("exception");
-    if (exception == null) {
-      exception = (Map) map.get("error");
-    }
-    String msg = (String) exception.get("msg");
-    assertTrue(msg.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)));
-  }
+
 
   private String getStringEntity(CloseableHttpResponse response) throws IOException {
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
@@ -297,7 +323,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&create-collection.numShards=2");
     try (CloseableHttpResponse response = httpclient.execute(get)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
-      assertErrorStartsWith(response,"Invalid Date Math");
+      assertErrorStartsWith(response,"Unit not recognized");
     }
   }
   @Test
@@ -347,5 +373,38 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     }
   }
 
+  private void assertErrorStartsWith(CloseableHttpResponse response, String prefix) throws IOException {
+    Map map = responseToMap(response);
+    Map exception = (Map) map.get("exception");
+    if (exception == null) {
+      exception = (Map) map.get("error");
+    }
+    String msg = (String) exception.get("msg");
+    assertTrue(msg.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)));
+  }
+
+  private Map responseToMap(CloseableHttpResponse response) throws IOException {
+    String entity = getStringEntity(response);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.readValue(entity, new TypeReference<Map<String, Object>>() {});
+  }
+
+  private void assertInitialCollectionNameExists(String name) throws IOException {
+    List collections;
+    collections = getCollectionList();
+    assertTrue(name + " not found among existing collections:" + collections,collections.contains(name));
+  }
+
+  private List getCollectionList() throws IOException {
+    List collections;
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get = new HttpGet(baseUrl + "/____v2/c");
+    try (CloseableHttpResponse response = httpclient.execute(get)) {
+      assertEquals(200, response.getStatusLine().getStatusCode());
+      Map map = responseToMap(response);
+      collections = (List) map.get("collections");
+    }
+    return collections;
+  }
   // not testing collection parameters, those should inherit error checking from the collection creation code.
 }
