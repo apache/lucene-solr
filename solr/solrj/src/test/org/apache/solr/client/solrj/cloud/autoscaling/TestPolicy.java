@@ -1620,4 +1620,46 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
   }
 
+  public void testDiskSpaceHint() {
+
+    String dataproviderdata = "{" +
+        "     liveNodes:[" +
+        "       '127.0.0.1:51078_solr'," +
+        "       '127.0.0.1:51147_solr']," +
+        "     replicaInfo:{" +
+        "       '127.0.0.1:51147_solr':{}," +
+        "       '127.0.0.1:51078_solr':{testNodeAdded:{shard1:[" +
+        "             { core_node3 : { type : NRT}}," +
+        "             { core_node4 : { type : NRT}}]}}}," +
+        "     nodeValues:{" +
+        "       '127.0.0.1:51147_solr':{" +
+        "         node:'127.0.0.1:51147_solr'," +
+        "         cores:0," +
+        "         freedisk : 100}," +
+        "       '127.0.0.1:51078_solr':{" +
+        "         node:'127.0.0.1:51078_solr'," +
+        "         cores:2," +
+        "         freedisk:200}}}";
+
+    String autoScalingjson = "cluster-preferences:[" +
+        "       {minimize : cores}]" +
+        " cluster-policy:[{cores:'<10',node:'#ANY'}," +
+        "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
+        "       { nodeRole:overseer,replica:0}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
+    Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("coll1", "shard1"))
+        .hint(Hint.MINFREEDISK, 150);
+    CollectionAdminRequest.AddReplica op = (CollectionAdminRequest.AddReplica) suggester.getSuggestion();
+
+    assertEquals("127.0.0.1:51078_solr" , op.getNode());
+
+    suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA)
+        .hint(Hint.COLL_SHARD, new Pair<>("coll1", "shard1"));
+    op = (CollectionAdminRequest.AddReplica) suggester.getSuggestion();
+
+    assertEquals("127.0.0.1:51147_solr" , op.getNode());
+  }
+
 }
