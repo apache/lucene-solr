@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -94,12 +95,9 @@ public class Policy implements MapWriter {
     }
     this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
     final SortedSet<String> paramsOfInterest = new TreeSet<>();
-    for (Preference preference : clusterPreferences) {
-      if (paramsOfInterest.contains(preference.name.name())) {
-        throw new RuntimeException(preference.name + " is repeated");
-      }
-      paramsOfInterest.add(preference.name.toString());
-    }
+    paramsOfInterest.add(ImplicitSnitch.DISK);//always get freedisk anyway.
+    paramsOfInterest.add(ImplicitSnitch.CORES);//always get cores anyway.
+    clusterPreferences.forEach(preference -> paramsOfInterest.add(preference.name.toString()));
     List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)

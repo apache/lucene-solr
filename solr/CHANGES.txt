@@ -82,6 +82,8 @@ New Features
 
 * SOLR-11062: new tag "diskType" in autoscaling policy (noble)
 
+* SOLR-11063: Suggesters should accept required freedisk as a hint (noble)
+
 Bug Fixes
 ----------------------
 

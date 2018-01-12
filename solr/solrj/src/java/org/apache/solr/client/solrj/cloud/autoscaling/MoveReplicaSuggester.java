@@ -57,8 +57,7 @@ public class MoveReplicaSuggester extends Suggester {
       for (int j = getMatrix().size() - 1; j >= stopAt; j--) {
         if (j == i) continue;
         Row targetRow = getMatrix().get(j);
-        if(!targetRow.isLive) continue;
-        if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
+        if (!isNodeSuitable(targetRow)) continue;
         targetRow = targetRow.addReplica(coll, shard, replicaInfo.getType());
         List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), srcTmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation) &&
