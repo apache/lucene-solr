@@ -48,4 +48,10 @@ public interface QueryElevationParams {
    * as excluded.
    */
   String MARK_EXCLUDES = "markExcludes";
+
+  /**
+   * Whether the priority order between elevated documents is kept, based on the definition order in the configuration file.
+   * This parameter is only taken into account if {@link QueryElevationParams#FORCE_ELEVATION} is <code>true</code>.
+   */
+  String KEEP_ELEVATION_PRIORITY = "keepElevationPriority";
 }
