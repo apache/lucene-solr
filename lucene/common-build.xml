@@ -1309,7 +1309,8 @@ ant test "-Dtests.method=*esi*"
 ant test -Dtests.seed=DEADBEEF
 
 # Repeats _all_ tests of ClassName N times. Every test repetition
-# will have a different seed.
+# will have a different seed. NOTE: does not reinitialize
+# between repetitions, use only for idempotent tests.
 ant test -Dtests.iters=N -Dtestcase=ClassName
 
 # Repeats _all_ tests of ClassName N times. Every test repetition

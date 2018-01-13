@@ -50,7 +50,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,14 +74,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   @AfterClass
   public static void finish() throws Exception {
     IOUtils.close(solrClient);
-  }
-
-  //TODO this is necessary when -Dtests.iters but why? Some other tests aren't affected
-  @Before
-  public void doBefore() throws Exception {
-    for (String col : CollectionAdminRequest.listCollections(solrClient)) {
-      CollectionAdminRequest.deleteCollection(col).process(solrClient);
-    }
   }
 
   @Test
@@ -260,9 +251,14 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
         return;
       }
-      // wait until it's committed, plus some play time for commit to become visible
-      Thread.sleep(commitWithin + 200);
-      numDocs = queryNumDocs();
+      // wait until it's committed
+      Thread.sleep(commitWithin);
+      for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
+        numDocs = queryNumDocs();
+        if (numDocsBefore + solrInputDocuments.length == numDocs) break;
+        Thread.sleep(100);
+      }
+
       assertEquals("not committed.  Bug or a slow test?",
           numDocsBefore + solrInputDocuments.length, numDocs);
     }
