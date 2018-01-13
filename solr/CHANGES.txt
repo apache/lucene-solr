@@ -99,6 +99,8 @@ Bug Fixes
 * SOLR-11631: The Schema API should return non-zero status when there are failures.
   (Noble Paul, Steve Rowe)
 
+* SOLR-11839: Fix test failures resulting from SOLR-11218 (Erick Erickson)
+
 Optimizations
 ----------------------
 
