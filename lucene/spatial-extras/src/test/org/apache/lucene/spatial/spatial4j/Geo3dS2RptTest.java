@@ -45,7 +45,8 @@ public class Geo3dS2RptTest extends RandomSpatialOpStrategyTestCase {
   private RecursivePrefixTreeStrategy rptStrategy;
 
   private void setupS2Grid() {
-    this.grid = new S2PrefixTree(ctx, 5);//A fairly shallow grid
+    int arity = random().nextInt(3) + 1;
+    this.grid = new S2PrefixTree(ctx, 5, arity);//A fairly shallow grid
     this.rptStrategy = newRPT();
   }
 

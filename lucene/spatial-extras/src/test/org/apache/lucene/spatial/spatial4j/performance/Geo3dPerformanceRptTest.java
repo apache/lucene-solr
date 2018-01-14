@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.spatial4j.performance;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
@@ -32,6 +33,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -60,6 +62,7 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -75,11 +78,15 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
   protected RandomGeo3dShapeGenerator shapeGenerator;
   SpatialContext ctx;
 
-  protected RecursivePrefixTreeStrategy s2RecursiveStrategy;
+  protected RecursivePrefixTreeStrategy s2RecursiveStrategy1;
+  protected RecursivePrefixTreeStrategy s2RecursiveStrategy2;
+  protected RecursivePrefixTreeStrategy s2RecursiveStrategy3;
   protected RecursivePrefixTreeStrategy geohashRecursiveStrategy;
 
   protected CompositeSpatialStrategy geohashStrategy;
-  protected CompositeSpatialStrategy s2Strategy;
+  protected CompositeSpatialStrategy s2Strategy1;
+  protected CompositeSpatialStrategy s2Strategy2;
+  protected CompositeSpatialStrategy s2Strategy3;
   List<Shape> indexedShapes;
   List<Shape> queryShapes;
 
@@ -93,16 +100,41 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
     factory.planetModel = planetModel;
     ctx = factory.newSpatialContext();
 
-    SpatialPrefixTree helper = new S2PrefixTree(ctx, S2PrefixTree.MAX_LEVELS);
-    SpatialPrefixTree grid = new S2PrefixTree(ctx, helper.getLevelForDistance(precision()));
-    s2RecursiveStrategy = new RecursivePrefixTreeStrategy(grid,
+    int arity = 1;
+    SpatialPrefixTree helper = new S2PrefixTree(ctx, S2PrefixTree.getMaxLevels(arity), arity);
+    SpatialPrefixTree grid = new S2PrefixTree(ctx, helper.getLevelForDistance(precision()), arity);
+    s2RecursiveStrategy1 = new RecursivePrefixTreeStrategy(grid,
         getClass().getSimpleName() + "_rpt");
-    s2RecursiveStrategy.setDistErrPct(distErrPct());
-    s2RecursiveStrategy.setPointsOnly(pointsOnly());
-    s2RecursiveStrategy.setPruneLeafyBranches(false);
+    s2RecursiveStrategy1.setDistErrPct(distErrPct());
+    s2RecursiveStrategy1.setPointsOnly(pointsOnly());
+    s2RecursiveStrategy1.setPruneLeafyBranches(false);
     SerializedDVStrategy serializedDVStrategy = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
-    this.s2Strategy = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
-        s2RecursiveStrategy, serializedDVStrategy);
+    this.s2Strategy1 = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
+        s2RecursiveStrategy1, serializedDVStrategy);
+
+    arity = 2;
+    SpatialPrefixTree helper2 = new S2PrefixTree(ctx, S2PrefixTree.getMaxLevels(arity), arity);
+    SpatialPrefixTree grid2 = new S2PrefixTree(ctx, helper2.getLevelForDistance(precision()), arity);
+    s2RecursiveStrategy2 = new RecursivePrefixTreeStrategy(grid2,
+        getClass().getSimpleName() + "_rpt");
+    s2RecursiveStrategy2.setDistErrPct(distErrPct());
+    s2RecursiveStrategy2.setPointsOnly(pointsOnly());
+    s2RecursiveStrategy2.setPruneLeafyBranches(false);
+    SerializedDVStrategy serializedDVStrategy2 = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
+    this.s2Strategy2 = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
+        s2RecursiveStrategy2, serializedDVStrategy2);
+
+    arity = 3;
+    SpatialPrefixTree helper3 = new S2PrefixTree(ctx, S2PrefixTree.getMaxLevels(arity), arity);
+    SpatialPrefixTree grid3 = new S2PrefixTree(ctx, helper3.getLevelForDistance(precision()), arity);
+    s2RecursiveStrategy3 = new RecursivePrefixTreeStrategy(grid3,
+        getClass().getSimpleName() + "_rpt");
+    s2RecursiveStrategy3.setDistErrPct(distErrPct());
+    s2RecursiveStrategy3.setPointsOnly(pointsOnly());
+    s2RecursiveStrategy3.setPruneLeafyBranches(false);
+    SerializedDVStrategy serializedDVStrategy3 = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
+    this.s2Strategy3 = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
+        s2RecursiveStrategy3, serializedDVStrategy3);
 
     helper = new GeohashPrefixTree(ctx, GeohashPrefixTree.getMaxLevelsPossible());
     grid = new GeohashPrefixTree(ctx, helper.getLevelForDistance(precision()));
@@ -135,13 +167,28 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
     indexWriter.deleteAll();
     indexWriter.forceMergeDeletes(true);
 
-    testLoad("s2", s2Strategy);
-    long s2Hits = executeQueries("s2", s2Strategy);
+    testLoad("s2 arity 1", s2Strategy1);
+    long s2Hits1 = executeQueries("s2 arity 1", s2Strategy1);
 
     indexWriter.deleteAll();
     indexWriter.forceMergeDeletes(true);
 
-    assertEquals(geoHashHits, s2Hits);
+    testLoad("s2 arity 2", s2Strategy2);
+    long s2Hits2 = executeQueries("s2 arity 2", s2Strategy2);
+
+    indexWriter.deleteAll();
+    indexWriter.forceMergeDeletes(true);
+
+
+    testLoad("s2 arity 3", s2Strategy3);
+    long s2Hits3 = executeQueries("s2 arity 3", s2Strategy3);
+
+    indexWriter.deleteAll();
+    indexWriter.forceMergeDeletes(true);
+
+    assertEquals(geoHashHits, s2Hits1);
+    assertEquals(geoHashHits, s2Hits2);
+    assertEquals(geoHashHits, s2Hits3);
   }
 
   protected void testLoad(String tree, CompositeSpatialStrategy strategy) throws IOException {

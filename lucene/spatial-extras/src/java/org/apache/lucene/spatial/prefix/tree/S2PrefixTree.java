@@ -33,38 +33,74 @@ import org.locationtech.spatial4j.shape.Shape;
  * Spatial prefix tree for <a href="https://s2geometry.io/">S2 Geometry</a>. Shape factories
  * for the given {@link SpatialContext} must implement the interface {@link S2ShapeFactory}.
  *
+ * The tree can be configured on how it divided itself by providing an arity. The default arity is 1
+ * which divided every sub-cell in 4 (except the first level that is always divided by 6) . Arity 2
+ * divides sub-cells in 16 and arity 3 in 64 sub-cells.
+ *
  * @lucene.experimental
  */
 public class S2PrefixTree extends SpatialPrefixTree {
 
-    /**
-     * Factory for creating {@link S2PrefixTree} instances with useful defaults
-     */
-    public static class Factory extends SpatialPrefixTreeFactory {
+
+    protected static class Factory extends SpatialPrefixTreeFactory {
 
         @Override
         protected int getLevelForDistance(double degrees) {
-            S2PrefixTree grid = new S2PrefixTree(ctx, S2PrefixTree.MAX_LEVELS);
+            S2PrefixTree grid = new S2PrefixTree(ctx, S2PrefixTree.getMaxLevels(1));
             return grid.getLevelForDistance(degrees);
         }
 
         @Override
         protected SpatialPrefixTree newSPT() {
             return new S2PrefixTree(ctx,
-                maxLevels != null ? maxLevels : S2PrefixTree.MAX_LEVELS);
+                maxLevels != null ? maxLevels : S2PrefixTree.getMaxLevels(1));
         }
+
     }
 
     //factory to generate S2 cell shapes
     protected final S2ShapeFactory s2ShapeFactory;
-    public static final int MAX_LEVELS = S2CellId.MAX_LEVEL + 1;
+    protected final int arity;
 
+    /**
+     * Creates a S2 spatial tree with arity 1.
+     *
+     * @param ctx The provided spatial context. The shape factor of the spatial context
+     *           must implement {@link S2ShapeFactory}
+     * @param maxLevels The provided maximum level for this tree.
+     */
     public S2PrefixTree(SpatialContext ctx, int maxLevels) {
+        this(ctx, maxLevels, 1);
+    }
+
+    /**
+     * Creates a S2 spatial tree with provided arity.
+     *
+     * @param ctx The provided spatial context. The shape factor of the spatial context
+     *           must implement {@link S2ShapeFactory}
+     * @param maxLevels The provided maximum level for this tree.
+     * @param arity The arity of the tree.
+     */
+    public S2PrefixTree(SpatialContext ctx, int maxLevels, int arity) {
         super(ctx, maxLevels);
         if (!(ctx.getShapeFactory() instanceof S2ShapeFactory)) {
             throw new IllegalArgumentException("Spatial context does not support S2 spatial index.");
         }
         this.s2ShapeFactory = (S2ShapeFactory) ctx.getShapeFactory();
+        if (arity <1 || arity > 3) {
+            throw new IllegalArgumentException("Invalid value for S2 tree arit. Posible valuea are 1, 2 or 3. Provided value is " + arity  + ".");
+        }
+        this.arity = arity;
+    }
+
+    /**
+     * Get max levels for this spatial tree.
+     *
+     * @param arity The arity of the tree.
+     * @return The maximum number of levels by the provided arity.
+     */
+    public static int getMaxLevels(int arity) {
+        return  S2CellId.MAX_LEVEL/arity + 1;
     }
 
     @Override
@@ -72,12 +108,18 @@ public class S2PrefixTree extends SpatialPrefixTree {
         if (dist == 0){
             return maxLevels;
         }
-        return Math.min(maxLevels, S2Projections.MAX_WIDTH.getClosestLevel(dist * DistanceUtils.DEGREES_TO_RADIANS) + 1);
+        int level =  S2Projections.MAX_WIDTH.getMinLevel(dist * DistanceUtils.DEGREES_TO_RADIANS);
+        int roundLevel = level % arity != 0 ? 1 : 0;
+        level = level/arity + roundLevel;
+        return Math.min(maxLevels, level + 1);
     }
 
     @Override
     public double getDistanceForLevel(int level) {
-        return S2Projections.MAX_WIDTH.getValue(level - 1) * DistanceUtils.RADIANS_TO_DEGREES;
+        if (level == 0) {
+            return 180;
+        }
+        return S2Projections.MAX_WIDTH.getValue(arity * (level - 1)) * DistanceUtils.RADIANS_TO_DEGREES;
     }
 
     @Override
@@ -101,10 +143,10 @@ public class S2PrefixTree extends SpatialPrefixTree {
             return  super.getTreeCellIterator(shape, detailLevel);
         }
         Point p = (Point) shape;
-        S2CellId id = S2CellId.fromLatLng(S2LatLng.fromDegrees(p.getY(), p.getX())).parent(detailLevel-1);
+        S2CellId id = S2CellId.fromLatLng(S2LatLng.fromDegrees(p.getY(), p.getX())).parent(arity * (detailLevel - 1));
         List<Cell> cells = new ArrayList<>(detailLevel);
         for (int i=0; i < detailLevel - 1; i++) {
-            cells.add(new S2PrefixTreeCell(this, id.parent(i)));
+            cells.add(new S2PrefixTreeCell(this, id.parent(i * arity)));
         }
         cells.add(new S2PrefixTreeCell(this, id));
         return new FilterCellIterator(cells.iterator(), null);
