@@ -45,6 +45,8 @@ Improvements
   position sensitive (e.g. part of a phrase) by having an accurate freq.
   (David Smiley)
 
+* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
