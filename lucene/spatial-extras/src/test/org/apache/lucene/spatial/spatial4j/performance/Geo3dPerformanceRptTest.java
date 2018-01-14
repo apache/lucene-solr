@@ -17,36 +17,18 @@
 package org.apache.lucene.spatial.spatial4j.performance;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.logging.Logger;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.google.common.geometry.S2;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.SpatialTestCase;
-import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
-import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.S2PrefixTree;
@@ -54,17 +36,9 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
-import org.apache.lucene.spatial.spatial4j.Geo3dPointShape;
-import org.apache.lucene.spatial.spatial4j.Geo3dShape;
 import org.apache.lucene.spatial.spatial4j.Geo3dSpatialContextFactory;
-import org.apache.lucene.spatial3d.geom.GeoAreaShape;
-import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -202,7 +176,9 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
     }
     commit();
     long end = System.currentTimeMillis();
-    printTime("load " + tree, start, end );
+    double shapesPerSecond = 1000.0 * numberIndexedshapes()/(end -start) ;
+    DecimalFormat df = new DecimalFormat("#.00");
+    System.out.println("load " + tree + " : " + df.format(shapesPerSecond) + " indexed shapes per second");
   }
 
   protected long executeQueries(String tree ,CompositeSpatialStrategy strategy) {
@@ -213,7 +189,9 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
       totalHits += executeQuery(query, 100, indexSearcher);
     }
     long end = System.currentTimeMillis();
-    printTime("query " + tree, start, end );
+    double queriesPerSecond = 1000.0 * numberQueryShapes() / (end -start);
+    DecimalFormat df = new DecimalFormat("#.00");
+    System.out.println("query " + tree + " : " + df.format(queriesPerSecond) + " queries per second");
     return totalHits;
   }
 
@@ -223,10 +201,6 @@ public abstract class Geo3dPerformanceRptTest extends SpatialTestCase {
     } catch (IOException ioe) {
       throw new RuntimeException("IOException thrown while executing query", ioe);
     }
-  }
-
-  private void printTime(String process, long start, long end) {
-    System.out.println(process + " took " + (end - start) + " ms");
   }
 
   protected Document newDoc(String id, Shape shape, CompositeSpatialStrategy strategy) {
