@@ -89,6 +89,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     return null;
   }
 
+  /** The identifier code for the default currency of this field type */
+  public String getDefaultCurrency() {
+    return defaultCurrency;
+  }
+
+
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
@@ -666,164 +672,5 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     }
   }
 
-  /**
-   * Represents a Currency field value, which includes a long amount and ISO currency code.
-   */
-  static class CurrencyValue {
-    private long amount;
-    private String currencyCode;
-  
-    /**
-     * Constructs a new currency value.
-     *
-     * @param amount       The amount.
-     * @param currencyCode The currency code.
-     */
-    public CurrencyValue(long amount, String currencyCode) {
-      this.amount = amount;
-      this.currencyCode = currencyCode;
-    }
-  
-    /**
-     * Constructs a new currency value by parsing the specific input.
-     * <p/>
-     * Currency values are expected to be in the format &lt;amount&gt;,&lt;currency code&gt;,
-     * for example, "500,USD" would represent 5 U.S. Dollars.
-     * <p/>
-     * If no currency code is specified, the default is assumed.
-     *
-     * @param externalVal The value to parse.
-     * @param defaultCurrency The default currency.
-     * @return The parsed CurrencyValue.
-     */
-    public static CurrencyValue parse(String externalVal, String defaultCurrency) {
-      if (externalVal == null) {
-        return null;
-      }
-      String amount = externalVal;
-      String code = defaultCurrency;
-  
-      if (externalVal.contains(",")) {
-        String[] amountAndCode = externalVal.split(",");
-        amount = amountAndCode[0];
-        code = amountAndCode[1];
-      }
-  
-      if (amount.equals("*")) {
-        return null;
-      }
-      
-      Currency currency = getCurrency(code);
-  
-      if (currency == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + code);
-      }
-  
-      try {
-        double value = Double.parseDouble(amount);
-        long currencyValue = Math.round(value * Math.pow(10.0, currency.getDefaultFractionDigits()));
-  
-        return new CurrencyValue(currencyValue, code);
-      } catch (NumberFormatException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
-      }
-    }
-  
-    /**
-     * The amount of the CurrencyValue.
-     *
-     * @return The amount.
-     */
-    public long getAmount() {
-      return amount;
-    }
-  
-    /**
-     * The ISO currency code of the CurrencyValue.
-     *
-     * @return The currency code.
-     */
-    public String getCurrencyCode() {
-      return currencyCode;
-    }
-  
-    /**
-     * Performs a currency conversion & unit conversion.
-     *
-     * @param exchangeRates      Exchange rates to apply.
-     * @param sourceCurrencyCode The source currency code.
-     * @param sourceAmount       The source amount.
-     * @param targetCurrencyCode The target currency code.
-     * @return The converted indexable units after the exchange rate and currency fraction digits are applied.
-     */
-    public static long convertAmount(ExchangeRateProvider exchangeRates, String sourceCurrencyCode, long sourceAmount, String targetCurrencyCode) {
-      double exchangeRate = exchangeRates.getExchangeRate(sourceCurrencyCode, targetCurrencyCode);
-      return convertAmount(exchangeRate, sourceCurrencyCode, sourceAmount, targetCurrencyCode);
-    }
-  
-    /**
-     * Performs a currency conversion & unit conversion.
-     *
-     * @param exchangeRate         Exchange rate to apply.
-     * @param sourceFractionDigits The fraction digits of the source.
-     * @param sourceAmount         The source amount.
-     * @param targetFractionDigits The fraction digits of the target.
-     * @return The converted indexable units after the exchange rate and currency fraction digits are applied.
-     */
-    public static long convertAmount(final double exchangeRate, final int sourceFractionDigits, final long sourceAmount, final int targetFractionDigits) {
-      int digitDelta = targetFractionDigits - sourceFractionDigits;
-      double value = ((double) sourceAmount * exchangeRate);
-  
-      if (digitDelta != 0) {
-        if (digitDelta < 0) {
-          for (int i = 0; i < -digitDelta; i++) {
-            value *= 0.1;
-          }
-        } else {
-          for (int i = 0; i < digitDelta; i++) {
-            value *= 10.0;
-          }
-        }
-      }
-  
-      return (long) value;
-    }
-  
-    /**
-     * Performs a currency conversion & unit conversion.
-     *
-     * @param exchangeRate       Exchange rate to apply.
-     * @param sourceCurrencyCode The source currency code.
-     * @param sourceAmount       The source amount.
-     * @param targetCurrencyCode The target currency code.
-     * @return The converted indexable units after the exchange rate and currency fraction digits are applied.
-     */
-    public static long convertAmount(double exchangeRate, String sourceCurrencyCode, long sourceAmount, String targetCurrencyCode) {
-      if (targetCurrencyCode.equals(sourceCurrencyCode)) {
-        return sourceAmount;
-      }
-  
-      int sourceFractionDigits = Currency.getInstance(sourceCurrencyCode).getDefaultFractionDigits();
-      Currency targetCurrency = Currency.getInstance(targetCurrencyCode);
-      int targetFractionDigits = targetCurrency.getDefaultFractionDigits();
-      return convertAmount(exchangeRate, sourceFractionDigits, sourceAmount, targetFractionDigits);
-    }
-  
-    /**
-     * Returns a new CurrencyValue that is the conversion of this CurrencyValue to the specified currency.
-     *
-     * @param exchangeRates      The exchange rate provider.
-     * @param targetCurrencyCode The target currency code to convert this CurrencyValue to.
-     * @return The converted CurrencyValue.
-     */
-    public CurrencyValue convertTo(ExchangeRateProvider exchangeRates, String targetCurrencyCode) {
-      return new CurrencyValue(convertAmount(exchangeRates, this.getCurrencyCode(), this.getAmount(), targetCurrencyCode), targetCurrencyCode);
-    }
-  
-    @Override
-    public String toString() {
-      return String.valueOf(amount) + "," + currencyCode;
-    }
-  }
 }
 
