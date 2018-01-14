@@ -84,6 +84,9 @@ New Features
 
 * SOLR-11063: Suggesters should accept required freedisk as a hint (noble)
 
+* SOLR-3218: Added range faceting support for CurrencyFieldType.  This includes both "facet.range" as well
+  as json.facet's "type:range" (Andrew Morrison, Jan Høydahl, Vitaliy Zhovtyuk, hossman)
+
 Bug Fixes
 ----------------------
 
