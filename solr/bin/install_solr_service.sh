@@ -193,7 +193,7 @@ else
   unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
 fi
 if [[ $SOLR_START == "true" ]] ; then
-  service --version &>/dev/null || print_error "Script requires the 'service' command"
+  service --version &>/dev/null || service --help &>/dev/null || print_error "Script requires the 'service' command"
   java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
 fi
 lsof -h &>/dev/null             || echo "We recommend installing the 'lsof' command for more stable start/stop of Solr"
