@@ -76,6 +76,12 @@ Other
 * LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
   (Pulak Ghosh via Adrien Grand)
 
+======================= Lucene 7.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-8117: Fix advanceExact on SortedNumericDocValues produced by Lucene54DocValues. (Jim Ferenczi).
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
