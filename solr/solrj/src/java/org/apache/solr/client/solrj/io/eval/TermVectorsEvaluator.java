@@ -38,6 +38,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
   private int minTermLength = 3;
   private double minDocFreq = .05; // 5% of the docs min
   private double maxDocFreq = .5;  // 50% of the docs max
+  private String[] excludes;
 
   public TermVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
@@ -57,6 +58,8 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         if (maxDocFreq < 0 || maxDocFreq > 1) {
           throw new IOException("Doc frequency percentage must be between 0 and 1");
         }
+      } else if(namedParam.getName().equals("exclude")) {
+        this.excludes = namedParam.getParameter().toString().split(",");
       } else {
         throw new IOException("Unexpected named parameter:" + namedParam.getName());
       }
@@ -100,11 +103,20 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         String id = tuple.getString("id");
         rowLabels.add(id);
 
+        OUTER:
         for (String term : terms) {
 
           if (term.length() < minTermLength) {
             //Eliminate terms due to length
             continue;
+          }
+
+          if(excludes != null) {
+            for (String exclude : excludes) {
+              if (term.indexOf(exclude) > -1) {
+                continue OUTER;
+              }
+            }
           }
 
           if (!docTerms.contains(term)) {
@@ -134,7 +146,6 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
           it.remove();
         }
       }
-
       int totalTerms = docFreqs.size();
       Set<String> keys = docFreqs.keySet();
       features.addAll(keys);

@@ -296,6 +296,15 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("getColumnLabels", GetColumnLabelsEvaluator.class)
         .withFunctionName("getRowLabels", GetRowLabelsEvaluator.class)
         .withFunctionName("getAttribute", GetAttributeEvaluator.class)
+        .withFunctionName("kmeans", KmeansEvaluator.class)
+        .withFunctionName("getCentroids", GetCentroidsEvaluator.class)
+        .withFunctionName("getCluster", GetClusterEvaluator.class)
+        .withFunctionName("topFeatures", TopFeaturesEvaluator.class)
+        .withFunctionName("featureSelect", FeatureSelectEvaluator.class)
+        .withFunctionName("rowAt", RowAtEvaluator.class)
+        .withFunctionName("colAt", ColumnAtEvaluator.class)
+        .withFunctionName("setColumnLabels", SetColumnLabelsEvaluator.class)
+        .withFunctionName("setRowLabels", SetRowLabelsEvaluator.class)
 
         // Boolean Stream Evaluators
 
