@@ -6175,7 +6175,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testMatrix() throws Exception {
-    String cexpr = "matrix(array(1, 2, 3), rev(array(4,5,6)))";
+    String cexpr = "let(echo=true," +
+        "               a=setColumnLabels(matrix(array(1, 2, 3), " +
+        "                                        rev(array(4,5,6)))," +
+        "                                 array(col1, col2, col3))," +
+        "               b=rowAt(a, 1)," +
+        "               c=colAt(a, 2)," +
+        "               d=getColumnLabels(a)," +
+        "               e=topFeatures(a, 1))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6185,7 +6192,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("return-value");
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
 
     List<Number> array1 = out.get(0);
     assertEquals(array1.size(), 3);
@@ -6198,6 +6205,31 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
     assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> row = (List<Number>)tuples.get(0).get("b");
+
+    assertEquals(row.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> col = (List<Number>)tuples.get(0).get("c");
+    assertEquals(col.size(), 2);
+    assertEquals(col.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(col.get(1).doubleValue(), 4.0, 0.0);
+
+    List<String> colLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(colLabels.size(), 3);
+    assertEquals(colLabels.get(0), "col1");
+    assertEquals(colLabels.get(1), "col2");
+    assertEquals(colLabels.get(2), "col3");
+
+    List<List<String>> features  = (List<List<String>>)tuples.get(0).get("e");
+    assertEquals(features.size(), 2);
+    assertEquals(features.get(0).size(), 1);
+    assertEquals(features.get(1).size(), 1);
+    assertEquals(features.get(0).get(0), "col3");
+    assertEquals(features.get(1).get(0), "col1");
   }
 
 
@@ -6784,6 +6816,78 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(docFreqs.get("world").intValue(), 1);
 
 
+    //Test exclude. This should drop off the term jim
+
+    cexpr = "let(echo=true," +
+        "        a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "                      tuple(id=\"2\", text=\"hello steve\"), " +
+        "                      tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "                      tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "        b=termVectors(a, exclude=jim, minDocFreq=0, maxDocFreq=1)," +
+        "        c=getRowLabels(b)," +
+        "        d=getColumnLabels(b)," +
+        "        e=getAttribute(b, docFreqs))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 4);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "steve");
+    assertEquals(columnLabels.get(3), "world");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 4);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
     //Test minDocFreq attribute at .5. This should eliminate all but the term hello
 
     cexpr = "let(echo=true," +
@@ -6884,6 +6988,84 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 6);
   }
 
+  @Test
+  public void testKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=kmeans(e, 2)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+              ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0);
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
+    }
+  }
 
   @Test
   public void testEBEMultiply() throws Exception {
