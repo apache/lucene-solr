@@ -201,7 +201,7 @@ public class Policy implements MapWriter {
     if (!getPolicies().equals(policy.getPolicies())) return false;
     if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
     if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
-    return params.equals(policy.params);
+    return true;
   }
 
   /*This stores the logical state of the system, given a policy and
