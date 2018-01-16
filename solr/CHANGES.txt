@@ -87,6 +87,8 @@ New Features
 * SOLR-3218: Added range faceting support for CurrencyFieldType.  This includes both "facet.range" as well
   as json.facet's "type:range" (Andrew Morrison, Jan Høydahl, Vitaliy Zhovtyuk, hossman)
 
+* SOLR-11064: Collection APIs should use the disk space hint when using policy framework  (noble)
+
 Bug Fixes
 ----------------------
 

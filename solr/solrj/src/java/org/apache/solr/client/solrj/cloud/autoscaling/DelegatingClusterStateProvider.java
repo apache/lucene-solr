@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 
 /**
  * Base class for overriding some behavior of {@link ClusterStateProvider}
@@ -87,6 +88,12 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     } else {
       return null;
     }
+  }
+
+  @Override
+  public DocCollection getCollection(String name) throws IOException {
+    ClusterState cs = getClusterState();
+    return cs == null ? null : cs.getCollectionOrNull(name);
   }
 
   @Override
