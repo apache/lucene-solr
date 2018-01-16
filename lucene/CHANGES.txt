@@ -47,6 +47,9 @@ Improvements
 
 * LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
 
+* LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
+  (Ere Maijala)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
