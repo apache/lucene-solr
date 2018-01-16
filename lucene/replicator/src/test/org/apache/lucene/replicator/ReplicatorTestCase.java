@@ -28,7 +28,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
@@ -109,7 +109,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
     connector.setHost("127.0.0.1");
 
     server.setConnectors(new Connector[] {connector});
-    server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
+    server.setSessionIdManager(new DefaultSessionIdManager(server, new Random(random().nextLong())));
     server.setHandler(handler);
     
     server.start();

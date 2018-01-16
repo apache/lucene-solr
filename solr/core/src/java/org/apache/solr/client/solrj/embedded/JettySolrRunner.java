@@ -53,11 +53,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.servlet.BaseHolder;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -248,7 +248,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new HashSessionIdManager(new Random()));
+      server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
       connector.setPort(port);
@@ -300,7 +300,7 @@ public class JettySolrRunner {
           String pathSpec = config.extraServlets.get(servletHolder);
           root.addServlet(servletHolder, pathSpec);
         }
-        dispatchFilter = root.getServletHandler().newFilterHolder(BaseHolder.Source.EMBEDDED);
+        dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);
         dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
         root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
