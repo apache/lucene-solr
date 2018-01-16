@@ -250,14 +250,32 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    SortField result = getSortField(field, SortField.Type.INT, top, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    if (field.multiValued()) {
+      MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, top);
+      if (null != selector) {
+        final SortField result = getSortedSetSortField(field, selector.getSortedSetSelectorType(),
+                                                       // yes: Strings, it's how SortedSetSortField works
+                                                       top, SortField.STRING_FIRST, SortField.STRING_LAST);
+        if (null == result.getMissingValue()) {
+          // special case 'enum' default behavior: assume missing values are "below" all enum values
+          result.setMissingValue(SortField.STRING_FIRST);
+        }
+        return result;
+      }
+    }
+    
+    // else...
+    // either single valued, or don't support implicit multi selector
+    // (in which case let getSortField() give the error)
+    final SortField result = getSortField(field, SortField.Type.INT, top, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    
     if (null == result.getMissingValue()) {
-      // special case default behavior: assume missing values are "below" all enum values
+      // special case 'enum' default behavior: assume missing values are "below" all enum values
       result.setMissingValue(Integer.MIN_VALUE);
     }
     return result;
   }
-
+  
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();

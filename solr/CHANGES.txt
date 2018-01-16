@@ -69,6 +69,9 @@ New Features
 
 * SOLR-11064: Collection APIs should use the disk space hint when using policy framework  (noble)
 
+* SOLR-11854: multivalued primative fields can now be sorted by implicitly choosing the min/max
+  value for asc/desc sort orders. (hossman)
+
 Bug Fixes
 ----------------------
 
