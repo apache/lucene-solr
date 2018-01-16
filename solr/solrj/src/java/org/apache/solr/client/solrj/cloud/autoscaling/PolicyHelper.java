@@ -21,7 +21,9 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Pair;
@@ -40,7 +43,10 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.util.Utils.time;
@@ -106,6 +112,30 @@ public class PolicyHelper {
 
       }
       session = sessionWrapper.session;
+      Map<String, Double> diskSpaceReqd = new HashMap<>();
+      try {
+        DocCollection coll = cloudManager.getClusterStateProvider().getCollection(collName);
+        if (coll != null) {
+          for (String shardName : shardNames) {
+            Replica ldr = coll.getLeader(shardName);
+            if (ldr != null) {
+              Map<String, Map<String, List<ReplicaInfo>>> details = cloudManager.getNodeStateProvider().getReplicaInfo(ldr.getNodeName(),
+                  Collections.singleton(FREEDISK.perReplicaValue));
+              ReplicaInfo replicaInfo = details.getOrDefault(collName, emptyMap()).getOrDefault(shardName, singletonList(null)).get(0);
+              if (replicaInfo != null) {
+                Object idxSz = replicaInfo.getVariables().get(FREEDISK.perReplicaValue);
+                if (idxSz != null) {
+                  diskSpaceReqd.put(shardName, 1.5 * (Double) Suggestion.ConditionType.FREEDISK.validate(null, idxSz, false));
+                }
+              }
+            }
+
+          }
+        }
+      } catch (IOException e) {
+        /*ignore*/
+      }
+
 
       Map<Replica.Type, Integer> typeVsCount = new EnumMap<>(Replica.Type.class);
       typeVsCount.put(Replica.Type.NRT, nrtReplicas);
@@ -122,6 +152,9 @@ public class PolicyHelper {
               for (String nodeName : nodesList) {
                 suggester = suggester.hint(Hint.TARGET_NODE, nodeName);
               }
+            }
+            if (diskSpaceReqd.get(shardName) != null) {
+              suggester.hint(Hint.MINFREEDISK, diskSpaceReqd.get(shardName));
             }
             SolrRequest op = suggester.getSuggestion();
             if (op == null) {
