@@ -150,6 +150,8 @@ Other Changes
 
 * SOLR-11218: Fail and return an error when attempting to delete a collection that's part of an alias (Erick Erickson)
 
+* SOLR-11817: Move Collections API classes to it's own package (Varun Thacker)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

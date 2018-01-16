@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;

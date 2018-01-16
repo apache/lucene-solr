@@ -132,7 +132,7 @@ public class CloudUtil {
 
   }
 
-  static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
+  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
       throws IOException, InterruptedException {
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
     return !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || collection.getPolicyName() != null;

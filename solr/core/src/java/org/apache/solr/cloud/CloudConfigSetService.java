@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigSetService;
