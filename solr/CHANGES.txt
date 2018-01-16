@@ -84,6 +84,8 @@ Bug Fixes
 
 * SOLR-11839: Fix test failures resulting from SOLR-11218 (Erick Erickson)
 
+* SOLR-11794: PULL replicas stop replicating after collection RELOAD (Samuel Tatipamula, Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
