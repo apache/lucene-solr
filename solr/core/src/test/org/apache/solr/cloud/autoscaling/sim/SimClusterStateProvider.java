@@ -47,11 +47,11 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.ActionThrottle;
-import org.apache.solr.cloud.AddReplicaCmd;
-import org.apache.solr.cloud.Assign;
-import org.apache.solr.cloud.CreateCollectionCmd;
-import org.apache.solr.cloud.CreateShardCmd;
-import org.apache.solr.cloud.SplitShardCmd;
+import org.apache.solr.cloud.api.collections.AddReplicaCmd;
+import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
+import org.apache.solr.cloud.api.collections.CreateShardCmd;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
@@ -730,7 +730,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   /**
-   * Move replica. This uses a similar algorithm as {@link org.apache.solr.cloud.MoveReplicaCmd#moveNormalReplica(ClusterState, NamedList, String, String, DocCollection, Replica, Slice, int, boolean)}.
+   * Move replica. This uses a similar algorithm as {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd#moveNormalReplica(ClusterState, NamedList, String, String, DocCollection, Replica, Slice, int, boolean)}.
    * @param message operation details
    * @param results operation results.
    */
@@ -909,7 +909,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   /**
-   * Delete a shard. This uses a similar algorithm as {@link org.apache.solr.cloud.DeleteShardCmd}
+   * Delete a shard. This uses a similar algorithm as {@link org.apache.solr.cloud.api.collections.DeleteShardCmd}
    * @param message operation details
    * @param results operation results
    */

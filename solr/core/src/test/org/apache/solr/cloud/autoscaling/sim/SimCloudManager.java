@@ -78,7 +78,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 
 /**
  * Simulated {@link SolrCloudManager}.
