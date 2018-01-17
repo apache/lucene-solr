@@ -144,6 +144,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     outOfOrderUpdatesIndividualReplicaTest();
     delayedReorderingFetchesMissingUpdateFromLeaderTest();
     updatingDVsInAVeryOldSegment();
+    updateExistedAndNonExistedDocs();
 
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
     reorderedDBQIndividualReplicaTest();
@@ -409,6 +410,28 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("updatingDVsInAVeryOldSegment: This test passed fine...");
+  }
+
+
+  private void updateExistedAndNonExistedDocs() throws Exception {
+    clearIndex();
+    index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
+    commit();
+    SolrInputDocument existedUpdate = new SolrInputDocument();
+    existedUpdate.setField("id", 1);
+    existedUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    SolrInputDocument nonExistedUpdate = new SolrInputDocument();
+    nonExistedUpdate.setField("id", 2);
+    nonExistedUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    indexDocs(Arrays.asList(existedUpdate, nonExistedUpdate));
+    commit();
+
+    for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
+      assertEquals(50.0f, client.getById("1").get("inplace_updatable_float"));
+      assertEquals(50.0f, client.getById("2").get("inplace_updatable_float"));
+    }
   }
 
   /**
