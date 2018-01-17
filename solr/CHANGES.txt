@@ -72,8 +72,6 @@ New Features
 * SOLR-11854: multivalued primitive fields can now be sorted by implicitly choosing the min/max
   value for asc/desc sort orders. (hossman)
 
-* SOLR-11810: Upgrade Jetty to 9.4.8.v20171121 (Varun Thacker, Erick Erickson)
-
 * SOLR-11592: Add OpenNLP language detection to the langid contrib. (Koji, Steve Rowe)
 
 Bug Fixes
@@ -135,6 +133,8 @@ Other Changes
 * SOLR-11218: Fail and return an error when attempting to delete a collection that's part of an alias (Erick Erickson)
 
 * SOLR-11817: Move Collections API classes to it's own package (Varun Thacker)
+
+* SOLR-11810: Upgrade Jetty to 9.4.8.v20171121 (Varun Thacker, Erick Erickson)
 
 ==================  7.2.1 ==================
 
