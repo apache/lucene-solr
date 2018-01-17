@@ -6178,11 +6178,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true," +
         "               a=setColumnLabels(matrix(array(1, 2, 3), " +
         "                                        rev(array(4,5,6)))," +
-        "                                 array(col1, col2, col3))," +
+        "                                        array(col1, col2, col3))," +
         "               b=rowAt(a, 1)," +
         "               c=colAt(a, 2)," +
         "               d=getColumnLabels(a)," +
-        "               e=topFeatures(a, 1))";
+        "               e=topFeatures(a, 1)," +
+        "               f=rowCount(a)," +
+        "               g=columnCount(a)," +
+        "               h=indexOf(d, \"col2\")," +
+        "               i=indexOf(d, col3))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6230,6 +6234,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(features.get(1).size(), 1);
     assertEquals(features.get(0).get(0), "col3");
     assertEquals(features.get(1).get(0), "col1");
+
+    assertTrue(tuples.get(0).getLong("f") == 2);
+    assertTrue(tuples.get(0).getLong("g")== 3);
+    assertTrue(tuples.get(0).getLong("h")== 1);
+    assertTrue(tuples.get(0).getLong("i")== 2);
   }
 
 

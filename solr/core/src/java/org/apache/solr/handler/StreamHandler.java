@@ -307,6 +307,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("setRowLabels", SetRowLabelsEvaluator.class)
         .withFunctionName("knn", KnnEvaluator.class)
         .withFunctionName("getAttributes", GetAttributesEvaluator.class)
+        .withFunctionName("indexOf", IndexOfEvaluator.class)
+        .withFunctionName("columnCount", ColumnCountEvaluator.class)
+        .withFunctionName("rowCount", RowCountEvaluator.class)
 
         // Boolean Stream Evaluators
 
