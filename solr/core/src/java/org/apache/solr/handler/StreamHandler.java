@@ -127,7 +127,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
         .withFunctionName("random", RandomStream.class)
-        .withFunctionName("knn", KnnStream.class)
+        .withFunctionName("knnSearch", KnnStream.class)
 
         // decorator streams
         .withFunctionName("merge", MergeStream.class)
@@ -305,6 +305,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("colAt", ColumnAtEvaluator.class)
         .withFunctionName("setColumnLabels", SetColumnLabelsEvaluator.class)
         .withFunctionName("setRowLabels", SetRowLabelsEvaluator.class)
+        .withFunctionName("knn", KnnEvaluator.class)
+        .withFunctionName("getAttributes", GetAttributesEvaluator.class)
 
         // Boolean Stream Evaluators
 
