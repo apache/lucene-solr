@@ -18,12 +18,13 @@
 
 Solr can identify languages and map text to language-specific fields during indexing using the `langid` UpdateRequestProcessor.
 
-Solr supports two implementations of this feature:
+Solr supports three implementations of this feature:
 
 * Tika's language detection feature: http://tika.apache.org/0.10/detection.html
 * LangDetect language detection: https://github.com/shuyo/language-detection
+* OpenNLP language detection: http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect 
 
-You can see a comparison between the two implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html. In general, the LangDetect implementation supports more languages with higher performance.
+You can see a comparison between the Tika and LangDetect implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html. In general, the LangDetect implementation supports more languages with higher performance.
 
 For specific information on each of these language identification implementations, including a list of supported languages for each, see the relevant project websites.
 
@@ -60,6 +61,30 @@ Here is an example of a minimal LangDetect `langid` configuration in `solrconfig
   </lst>
 </processor>
 ----
+
+=== Configuring OpenNLP Language Detection
+
+Here is an example of a minimal OpenNLP `langid` configuration in `solrconfig.xml`:
+
+[source,xml]
+----
+<processor class="org.apache.solr.update.processor.OpenNLPLangDetectUpdateProcessorFactory">
+  <lst name="defaults">
+    <str name="langid.fl">title,subject,text,keywords</str>
+    <str name="langid.langField">language_s</str>
+    <str name="langid.model">langdetect-183.bin</str>
+  </lst>
+</processor>
+----
+
+==== OpenNLP-specific parameters 
+
+`langid.model`::
+An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required. 
+
+==== OpenNLP language codes
+
+`OpenNLPLangDetectUpdateProcessor` automatically converts the 3-letter ISO 639-3 codes detected by the OpenNLP model into 2-letter ISO 639-1 codes.
 
 == langid Parameters
 
