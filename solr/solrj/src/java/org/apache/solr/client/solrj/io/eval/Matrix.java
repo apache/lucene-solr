@@ -67,6 +67,14 @@ public class Matrix implements Iterable, Attributes {
     return this.data;
   }
 
+  public int getRowCount() {
+    return data.length;
+  }
+
+  public int getColumnCount() {
+    return data[0].length;
+  }
+
   public Iterator iterator() {
     return new MatrixIterator(data);
   }
