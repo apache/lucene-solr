@@ -933,7 +933,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testKnnStream() throws Exception {
+  public void testKnnSearchStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
     update.add(id, "1", "a_t", "hello world have a very nice day blah");
@@ -947,7 +947,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       context.setSolrClientCache(cache);
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples = getTuples(solrStream);
@@ -955,26 +955,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertOrder(tuples, 2, 3, 4);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 2);
       assertOrder(tuples, 2, 3);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
@@ -7734,6 +7734,67 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(density.doubleValue(), 0.007852638121596995, .00001);
   }
 
+  @Test
+  public void testKnn() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=setRowLabels(matrix(array(1,1,1,0,0,0),"+
+        "                                     array(1,0,0,0,1,1),"+
+        "                                     array(0,0,0,1,1,1)), array(row1,row2,row3)),"+
+        "               b=array(0,0,0,1,1,1),"+
+        "               c=knn(a, b, 2),"+
+        "               d=getRowLabels(c),"+
+        "               e=getAttributes(c)," +
+        "               f=knn(a, b, 2, distance=manhattan)," +
+        "               g=getAttributes(f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<List<Number>> knnMatrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(knnMatrix.size(), 2);
+
+    List<Number> row1 = knnMatrix.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 1.0, 0.0);
+
+    List<Number> row2 = knnMatrix.get(1);
+    assertEquals(row2.size(), 6);
+
+    assertEquals(row2.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 1.0, 0.0);
+
+    Map atts = (Map)tuples.get(0).get("e");
+    List<Number> dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 1.4142135623730951, 0.0);
+
+    List<String> rowLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(rowLabels.size(), 2);
+    assertEquals(rowLabels.get(0), "row3");
+    assertEquals(rowLabels.get(1), "row2");
+
+    atts = (Map)tuples.get(0).get("g");
+    dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 2.0, 0.0);
+  }
 
   @Test
   public void testIntegrate() throws Exception {
