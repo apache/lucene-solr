@@ -62,6 +62,11 @@ Upgrade Notes
 
 * SOLR-11809: QueryComponent's rq parameter parsing no longer considers the defType parameter.
 
+* SOLR-11747: The behaviour of the autoscaling system has been modified to pause all triggers from execution between
+  the start of actions and end of cool down period. The triggers will be resumed after the cool down period expires.
+  Previously, the cool down period was a fixed period started after actions for a trigger event finish
+  executing. During the cool down period, triggers wo
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -155,6 +160,8 @@ Other Changes
 * SOLR-11817: Move Collections API classes to it's own package (Varun Thacker)
 
 * SOLR-11810: Upgrade Jetty to 9.4.8.v20171121 (Varun Thacker, Erick Erickson)
+
+* SOLR-11747: Pause triggers until actions finish executing and the cool down period expires. (shalin)
 
 ==================  7.2.1 ==================
 
