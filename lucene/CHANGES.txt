@@ -66,6 +66,8 @@ Bug Fixes
 
 * LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
 
+* LUCENE-8130: Fix NullPointerException from TermStates.toString() (Mike McCandless)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.

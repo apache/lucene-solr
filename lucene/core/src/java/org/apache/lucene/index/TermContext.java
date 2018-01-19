@@ -188,7 +188,7 @@ public final class TermContext {
     sb.append("TermContext\n");
     for(TermState termState : states) {
       sb.append("  state=");
-      sb.append(termState.toString());
+      sb.append(termState);
       sb.append('\n');
     }
 
