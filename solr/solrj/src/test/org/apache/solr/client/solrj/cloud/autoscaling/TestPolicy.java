@@ -1744,5 +1744,32 @@ public class TestPolicy extends SolrTestCaseJ4 {
         cloudManager, null, Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
     assertTrue(locations.stream().allMatch(it -> "node3".equals(it.node)));
   }
+  public void testMoveReplicaLeaderlast(){
+
+    List<Pair<ReplicaInfo, Row>> validReplicas =  new ArrayList<>();
+    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"));
+    ReplicaInfo replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    validReplicas.add(new Pair<>(replicaInfo, null));
+
+    replicaInfo = new ReplicaInfo("r4", "c1_s2_r1","c1", "s2", Replica.Type.NRT, "n1", Collections.singletonMap("leader", "true"));
+    validReplicas.add(new Pair<>(replicaInfo, null));
+
+
+    replica = new Replica("r2", Utils.makeMap("leader", false));
+    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    validReplicas.add(new Pair<>(replicaInfo, null));
+
+    replica = new Replica("r3", Utils.makeMap("leader", false));
+    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    validReplicas.add(new Pair<>(replicaInfo, null));
+
+
+    validReplicas.sort(MoveReplicaSuggester.leaderLast);
+    assertEquals("r2", validReplicas.get(0).first().getName());
+    assertEquals("r3", validReplicas.get(1).first().getName());
+    assertEquals("r1", validReplicas.get(2).first().getName());
+    assertEquals("r4", validReplicas.get(3).first().getName());
+
+  }
 
 }
