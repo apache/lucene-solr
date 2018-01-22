@@ -162,8 +162,8 @@ Other Changes
 * SOLR-11810: Upgrade Jetty to 9.4.8.v20171121 (Varun Thacker, Erick Erickson)
 
 * SOLR-11747: Pause triggers until actions finish executing and the cool down period expires. (shalin)
-SOLR-11871: MoveReplicaSuggester should not suggest leader if other replicas are available
-*  (noble)
+
+* SOLR-11871: MoveReplicaSuggester should not suggest leader if other replicas are available (noble)
 
 ==================  7.2.1 ==================
 
