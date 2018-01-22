@@ -146,6 +146,9 @@ Bug Fixes
 
 * LUCENE-8130: Fix NullPointerException from TermStates.toString() (Mike McCandless)
 
+* LUCENE-8124: Fixed HyphenationCompoundWordTokenFilter to handle correctly
+  hyphenation patterns with indicator >= 7. (Holger Bruch via Adrien Grand)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
