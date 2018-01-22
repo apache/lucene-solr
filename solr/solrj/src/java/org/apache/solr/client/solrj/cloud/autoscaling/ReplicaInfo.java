@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -27,6 +28,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 
+import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
+
 
 public class ReplicaInfo implements MapWriter {
 //  private final Replica replica;
@@ -34,6 +37,7 @@ public class ReplicaInfo implements MapWriter {
   private String core, collection, shard;
   private Replica.Type type;
   private String node;
+  public final boolean isLeader;
   private final Map<String, Object> variables = new HashMap<>();
 
   public ReplicaInfo(String coll, String shard, Replica r, Map<String, Object> vals) {
@@ -42,6 +46,7 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
+    this.isLeader = r.getBool(LEADER_PROP, false);
     if (vals != null) {
       this.variables.putAll(vals);
     }
@@ -49,10 +54,12 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
+    if(vals==null) vals = Collections.emptyMap();
     this.name = name;
     if (vals != null) {
       this.variables.putAll(vals);
     }
+    this.isLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, "false")));
     this.collection = coll;
     this.shard = shard;
     this.type = type;
