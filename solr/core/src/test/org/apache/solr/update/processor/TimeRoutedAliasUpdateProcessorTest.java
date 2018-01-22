@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -78,14 +79,21 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    // First create a config using REST API.  To do this, we create a collection with the name of the eventual config.
-    // We configure it, and ultimately delete it the collection, leaving a config with the same name behind.
-    // Then when we create the "real" collections referencing this config.
-    CollectionAdminRequest.createCollection(configName, 1, 1).process(solrClient);
+
+    // First create a configSet
+    // Then we create a collection with the name of the eventual config.
+    // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
+    // Then when we create the "real" collections referencing this modified config-set.
+    final ConfigSetAdminRequest.Create adminRequest = new ConfigSetAdminRequest.Create();
+        adminRequest.setConfigSetName(configName);
+        adminRequest.setBaseConfigSetName("_default");
+        ConfigSetAdminResponse adminResponse = adminRequest.process(solrClient);
+        assertEquals(adminResponse.getStatus(), 0);
+
+    CollectionAdminRequest.createCollection(configName, configName,1, 1).process(solrClient);
     // manipulate the config...
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
+
+        String conf = "{" +
             "  'set-user-property' : {'timePartitionAliasName':'" + alias + "'}," + // no data driven
             "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
             "  'add-updateprocessor' : {" +
@@ -95,8 +103,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
             "    'fieldName':'" + intField + "'" +
             "  }," +
-            "}").build()));
-    // only sometimes test with "tolerant" URP
+            "}";
+    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload(conf).build()));    // only sometimes test with "tolerant" URP
     final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
     checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
         .withMethod(SolrRequest.METHOD.POST)
@@ -107,6 +117,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "}").build()));
     CollectionAdminRequest.deleteCollection(configName).process(solrClient);
 
+    assertTrue(
+        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
+            .contains(configName)
+    );
+
     // start with one collection and an alias for it
     final String col23rd = alias + "_2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
@@ -114,8 +129,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         .withProperty(TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
-    assertEquals("We only expect 2 configSets",
-        Arrays.asList("_default", configName), new ConfigSetAdminRequest.List().process(solrClient).getConfigSets());
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+    assertTrue("We only expect 2 configSets",
+        expectedConfigSetNames.size() == retrievedConfigSetNames.size());
+    assertTrue("ConfigNames should be :" + expectedConfigSetNames, expectedConfigSetNames.containsAll(retrievedConfigSetNames) && retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createAlias(alias, col23rd).process(solrClient);
     //TODO use SOLR-11617 client API to set alias metadata
