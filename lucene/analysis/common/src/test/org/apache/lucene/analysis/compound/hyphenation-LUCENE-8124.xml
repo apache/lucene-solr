@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hyphenation-info SYSTEM "hyphenation.dtd">
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!--
+This file contains the hyphenation patterns for danish.
+Adapted from dkhyph.tex, dkcommon.tex and dkspecial.tex
+originally created by Frank Jensen (fj@iesd.auc.dk).
+FOP adaptation by Carlos Villegas (cav@uniscope.co.jp)
+-->
+<hyphenation-info>
+
+<hyphen-char value="-"/>
+<hyphen-min before="2" after="2"/>
+
+<classes>
+aA
+bB
+cC
+dD
+eE
+fF
+gG
+hH
+iI
+jJ
+kK
+lL
+mM
+nN
+oO
+pP
+qQ
+rR
+sS
+tT
+uU
+vV
+wW
+xX
+yY
+zZ
+æÆ
+øØ
+åÅ
+</classes>
+<patterns>
+d7f
+</patterns>
+</hyphenation-info>
