@@ -67,6 +67,10 @@ Upgrade Notes
   Previously, the cool down period was a fixed period started after actions for a trigger event finish
   executing. During the cool down period, triggers wo
 
+* SOLR-11624: Collections created without specifying a configset name use a copy of the _default configset since 7.0.
+  Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named
+  with an additional ".AUTOCREATED" suffix.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -164,6 +168,12 @@ Other Changes
 * SOLR-11747: Pause triggers until actions finish executing and the cool down period expires. (shalin)
 
 * SOLR-11871: MoveReplicaSuggester should not suggest leader if other replicas are available (noble)
+
+* SOLR-11624: Collections created from _default configset will now be associated with a configset with a suffix
+  .AUTOCREATED. For example, a new collection "mycollection", created without specifying a configset name, will
+  use the _default configset and the associated configset name will be "mycollection.AUTOCREATED". If this
+  collection is deleted and re-created, the autocreated configset will be left behind and will be re-used for
+  the re-created collection (Ishan Chattopadhyaya, Abhishek Kumar Singh)
 
 ==================  7.2.1 ==================
 
