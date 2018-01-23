@@ -594,9 +594,6 @@ Solr pauses all other triggers for this cool down period after a trigger fires s
 `triggerCorePoolSize`::
 The core pool size of the `ScheduledThreadPoolExecutor` used to schedule triggers. The default is `4` threads.
 
-`actionThrottlePeriodSeconds`::
-This is the minimum throttling delay between executing actions for triggers. It is guaranteed that actions for two trigger events are executed after this delay period. The default is `5` seconds.
-
 The command allows setting arbitrary properties in addition to the above properties. Such arbitrary properties can be useful in custom `TriggerAction` instances.
 
 .Change default `triggerScheduleDelaySeconds`

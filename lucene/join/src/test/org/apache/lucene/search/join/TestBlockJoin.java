@@ -1489,11 +1489,6 @@ public class TestBlockJoin extends LuceneTestCase {
       protected double score(BasicStats stats, double freq, double docLen) {
         return freq;
       }
-
-      @Override
-      protected double maxScore(BasicStats stats, double maxFreq) {
-        return maxFreq;
-      }
     };
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setSimilarity(sim));

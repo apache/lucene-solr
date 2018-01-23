@@ -148,7 +148,7 @@ public class WeightedSpanTermExtractor {
       }
     } else if (query instanceof CommonTermsQuery) {
       // specialized since rewriting would change the result query 
-      // this query is TermContext sensitive.
+      // this query is index sensitive.
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Query clause : ((DisjunctionMaxQuery) query)) {

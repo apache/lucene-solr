@@ -18,19 +18,26 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -183,36 +190,38 @@ public class MultiPhraseQuery extends Query {
 
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.SimWeight stats;
-    private final Map<Term,TermContext> termContexts = new HashMap<>();
+    private final Similarity.SimScorer stats;
+    private final Map<Term,TermStates> termStates = new HashMap<>();
     private final ScoreMode scoreMode;
 
     public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
       this.scoreMode = scoreMode;
-      this.similarity = searcher.getSimilarity(scoreMode.needsScores());
+      this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
 
       // compute idf
       ArrayList<TermStatistics> allTermStats = new ArrayList<>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          TermContext termContext = termContexts.get(term);
-          if (termContext == null) {
-            termContext = TermContext.build(context, term);
-            termContexts.put(term, termContext);
+          TermStates ts = termStates.get(term);
+          if (ts == null) {
+            ts = TermStates.build(context, term, scoreMode.needsScores());
+            termStates.put(term, ts);
           }
-          TermStatistics termStatistics = searcher.termStatistics(term, termContext);
-          if (termStatistics != null) {
-            allTermStats.add(termStatistics);
+          if (scoreMode.needsScores()) {
+            TermStatistics termStatistics = searcher.termStatistics(term, ts);
+            if (termStatistics != null) {
+              allTermStats.add(termStatistics);
+            }
           }
         }
       }
       if (allTermStats.isEmpty()) {
         stats = null; // none of the terms were found, we won't use sim at all
       } else {
-        stats = similarity.computeWeight(
+        stats = similarity.scorer(
           boost,
           searcher.collectionStatistics(field),
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
@@ -253,7 +262,7 @@ public class MultiPhraseQuery extends Query {
         List<PostingsEnum> postings = new ArrayList<>();
 
         for (Term term : terms) {
-          TermState termState = termContexts.get(term).get(context.ord);
+          TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
             postings.add(termsEnum.postings(null, PostingsEnum.POSITIONS));
@@ -282,11 +291,11 @@ public class MultiPhraseQuery extends Query {
 
       if (slop == 0) {
         return new ExactPhraseScorer(this, postingsFreqs,
-                                      similarity.simScorer(stats, context),
+                                      new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
-                                        similarity.simScorer(stats, context),
+                                        new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
                                         scoreMode.needsScores(), totalMatchCost);
       }
     }
@@ -303,7 +312,7 @@ public class MultiPhraseQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
+          LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

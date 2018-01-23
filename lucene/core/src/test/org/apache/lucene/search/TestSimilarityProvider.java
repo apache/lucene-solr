@@ -17,15 +17,12 @@
 package org.apache.lucene.search;
 
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -113,21 +110,11 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimWeight() {};
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimScorer(collectionStats.field()) {
 
         @Override
-        public float score(int doc, float freq) throws IOException {
-          return 1;
-        }
-
-        @Override
-        public float maxScore(float maxFreq) {
+        public float score(float freq, long norm) {
           return 1;
         }
       };
@@ -143,21 +130,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimWeight() {};
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
-
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(int doc, float freq) throws IOException {
-          return 10;
-        }
-
-        @Override
-        public float maxScore(float maxFreq) {
+        public float score(float freq, long norm) {
           return 10;
         }
       };

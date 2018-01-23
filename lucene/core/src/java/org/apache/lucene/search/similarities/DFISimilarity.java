@@ -64,12 +64,6 @@ public class DFISimilarity extends SimilarityBase {
     return stats.getBoost() * log2(measure + 1);
   }
 
-  @Override
-  protected double maxScore(BasicStats stats, double maxFreq) {
-    // TODO: can we compute a better upper bound on the produced scores
-    return Double.POSITIVE_INFINITY;
-  }
-
   /**
    * Returns the measure of independence
    */
@@ -79,12 +73,12 @@ public class DFISimilarity extends SimilarityBase {
 
   @Override
   protected Explanation explain(
-      BasicStats stats, int doc, Explanation freq, double docLen) {
+      BasicStats stats, Explanation freq, double docLen) {
     final double expected = (stats.getTotalTermFreq() + 1) * docLen /
         (stats.getNumberOfFieldTokens() + 1);
     if (freq.getValue().doubleValue() <= expected){
       return Explanation.match((float) 0, "score(" +
-          getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+          getClass().getSimpleName() + ", freq=" +
           freq.getValue() +"), equals to 0");
     }
     Explanation explExpected = Explanation.match((float) expected,
@@ -103,7 +97,7 @@ public class DFISimilarity extends SimilarityBase {
 
     return Explanation.match(
         (float) score(stats, freq.getValue().doubleValue(), docLen),
-        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+        "score(" + getClass().getSimpleName() + ", freq=" +
             freq.getValue() +"), computed as boost * log2(measure + 1) from:",
         Explanation.match( (float)stats.getBoost(), "boost, query boost"),
         explMeasure);

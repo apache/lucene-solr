@@ -161,7 +161,7 @@ public class QueryUtils {
     };
 
     IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
-    out.setSimilarity(s.getSimilarity(true));
+    out.setSimilarity(s.getSimilarity());
     return out;
   }
 
@@ -373,7 +373,7 @@ public class QueryUtils {
             if (lastReader[0] != null) {
               final LeafReader previousReader = lastReader[0];
               IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
-              indexSearcher.setSimilarity(s.getSimilarity(true));
+              indexSearcher.setSimilarity(s.getSimilarity());
               Weight w = indexSearcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
               Scorer scorer = w.scorer(ctx);
@@ -403,7 +403,7 @@ public class QueryUtils {
           // previous reader, hits NO_MORE_DOCS
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
-          indexSearcher.setSimilarity(s.getSimilarity(true));
+          indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
           LeafReaderContext ctx = previousReader.getContext();
           Scorer scorer = w.scorer(ctx);
@@ -475,7 +475,7 @@ public class QueryUtils {
         if (lastReader[0] != null) {
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
-          indexSearcher.setSimilarity(s.getSimilarity(true));
+          indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
           if (scorer != null) {
@@ -503,7 +503,7 @@ public class QueryUtils {
       // previous reader, hits NO_MORE_DOCS
       final LeafReader previousReader = lastReader[0];
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
-      indexSearcher.setSimilarity(s.getSimilarity(true));
+      indexSearcher.setSimilarity(s.getSimilarity());
       Weight w = indexSearcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
       if (scorer != null) {

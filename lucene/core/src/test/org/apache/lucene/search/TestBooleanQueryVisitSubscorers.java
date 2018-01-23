@@ -38,7 +38,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
-import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -329,20 +328,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new BasicStats("", boost);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(int doc, float freq) throws IOException {
+        public float score(float freq, long norm) {
           return freq;
-        }
-        @Override
-        public float maxScore(float maxFreq) {
-          return maxFreq;
         }
       };
     }

@@ -24,6 +24,7 @@ The `currency` FieldType provides support for monetary values to Solr/Lucene wit
 * Sorting
 * Currency parsing by either currency code or symbol
 * Symmetric & asymmetric exchange rates (asymmetric exchange rates are useful if there are fees associated with exchanging the currency)
+* Range faceting (using either `facet.range` or `type:range` in `json.facet`) as long as the `start` and `end` values are specified in the same Currency.
 
 == Configuring Currencies
 

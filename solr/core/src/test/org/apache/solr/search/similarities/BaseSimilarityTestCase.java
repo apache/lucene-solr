@@ -29,7 +29,7 @@ public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
   protected Similarity getSimilarity(String field) {
     SolrCore core = h.getCore();
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarity(true);
+    Similarity sim = searcher.get().getSimilarity();
     searcher.decref();
     while (sim instanceof PerFieldSimilarityWrapper) {
       sim = ((PerFieldSimilarityWrapper)sim).get(field);

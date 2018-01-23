@@ -26,10 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -78,7 +80,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 
 /**
  * Simulated {@link SolrCloudManager}.
@@ -303,6 +305,21 @@ public class SimCloudManager implements SolrCloudManager {
    */
   public List<SolrInputDocument> simGetSystemCollection() {
     return systemColl;
+  }
+
+  public Map<String, Map<String, AtomicInteger>> simGetEventCounts() {
+    TreeMap<String, Map<String, AtomicInteger>> counts = new TreeMap<>();
+    synchronized (systemColl) {
+      for (SolrInputDocument d : systemColl) {
+        if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
+          continue;
+        }
+        counts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
+            .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
+            .incrementAndGet();
+      }
+    }
+    return counts;
   }
 
   /**

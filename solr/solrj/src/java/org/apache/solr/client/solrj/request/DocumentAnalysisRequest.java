@@ -89,9 +89,6 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
     return new DocumentAnalysisResponse();
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ModifiableSolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();

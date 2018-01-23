@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.search.TermAutomatonQuery.EnumAndScorer;
 import org.apache.lucene.search.TermAutomatonQuery.TermAutomatonWeight;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -47,7 +46,7 @@ class TermAutomatonScorer extends Scorer {
   // This is -1 if wildcard (null) terms were not used, else it's the id
   // of the wildcard term:
   private final int anyTermID;
-  private final Similarity.SimScorer docScorer;
+  private final LeafSimScorer docScorer;
 
   private int numSubsOnDoc;
 
@@ -56,7 +55,7 @@ class TermAutomatonScorer extends Scorer {
   private int docID = -1;
   private int freq;
 
-  public TermAutomatonScorer(TermAutomatonWeight weight, EnumAndScorer[] subs, int anyTermID, Map<Integer,BytesRef> idToTerm, Similarity.SimScorer docScorer) throws IOException {
+  public TermAutomatonScorer(TermAutomatonWeight weight, EnumAndScorer[] subs, int anyTermID, Map<Integer,BytesRef> idToTerm, LeafSimScorer docScorer) throws IOException {
     super(weight);
     //System.out.println("  automaton:\n" + weight.automaton.toDot());
     this.runAutomaton = new TermRunAutomaton(weight.automaton, subs.length);
@@ -362,7 +361,7 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    return docScorer.maxScore(Float.POSITIVE_INFINITY);
+    return docScorer.maxScore();
   }
 
   static class TermRunAutomaton extends RunAutomaton {

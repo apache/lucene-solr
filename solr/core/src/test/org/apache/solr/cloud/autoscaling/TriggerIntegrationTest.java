@@ -1194,13 +1194,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // there must be at least one IGNORED event due to cooldown, and one SUCCEEDED event
     capturedEvents = listenerEvents.get("bar");
-    assertTrue(capturedEvents.toString(), capturedEvents.size() > 1);
-    for (int i = 0; i < capturedEvents.size() - 1; i++) {
-      CapturedEvent ev = capturedEvents.get(i);
-      assertEquals(ev.toString(), TriggerEventProcessorStage.IGNORED, ev.stage);
-      assertTrue(ev.toString(), ev.message.contains("cooldown"));
-    }
-    CapturedEvent ev = capturedEvents.get(capturedEvents.size() - 1);
+    assertEquals(capturedEvents.toString(),1,  capturedEvents.size());
+    CapturedEvent ev = capturedEvents.get(0);
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
     // must be larger than cooldown period
@@ -1235,19 +1230,13 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     // wait for listener to capture the SUCCEEDED stage
     Thread.sleep(2000);
 
-    // there must be at least one SUCCEEDED (due to newNode3) then for newNode4 one IGNORED
-    // event due to cooldown, and one SUCCEEDED
+    // there must be two SUCCEEDED (due to newNode3 and newNode4) and maybe some ignored events
     capturedEvents = listenerEvents.get("bar");
-    assertTrue(capturedEvents.toString(), capturedEvents.size() > 2);
+    assertTrue(capturedEvents.toString(), capturedEvents.size() >= 2);
     // first event should be SUCCEEDED
     ev = capturedEvents.get(0);
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
 
-    for (int i = 1; i < capturedEvents.size() - 1; i++) {
-      ev = capturedEvents.get(i);
-      assertEquals(ev.toString(), TriggerEventProcessorStage.IGNORED, ev.stage);
-      assertTrue(ev.toString(), ev.message.contains("cooldown"));
-    }
     ev = capturedEvents.get(capturedEvents.size() - 1);
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
@@ -1346,24 +1335,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       // reset
       for (int i = 0; i < 8; i++) {
         scheduledTriggers.remove(triggerList.get(i).getName());
-      }
-
-      config = config.withProperties(Collections.singletonMap(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS, 6));
-      scheduledTriggers.setAutoScalingConfig(config);
-      lastActionExecutedAt.set(0);
-      throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(6));
-      triggerFiredLatch = new CountDownLatch(2);
-      Map<String, Object> props = map("waitFor", 0L, "actions", Collections.singletonList(map("name","throttler", "class", ThrottlingTesterAction.class.getName())));
-      scheduledTriggers.add(new NodeAddedTrigger("y1", props, resourceLoader, solrCloudManager));
-      scheduledTriggers.add(new NodeAddedTrigger("y2", props, resourceLoader, solrCloudManager));
-      scheduledTriggers.resetActionThrottle();
-      JettySolrRunner newNode = cluster.startJettySolrRunner();
-      assertTrue(getTriggerFiredLatch().await(20, TimeUnit.SECONDS));
-      for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-        if (cluster.getJettySolrRunner(i) == newNode) {
-          cluster.stopJettySolrRunner(i);
-          break;
-        }
       }
     }
   }

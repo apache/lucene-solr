@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 
 /** basic tests for {@link ICUFoldingFilterFactory} */
 public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
-  
+
   /** basic tests to ensure the folding is working */
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
@@ -35,7 +35,24 @@ public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "resume" });
   }
-  
+
+  /** test to ensure the filter parameter is working */
+  public void testFilter() throws Exception {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("filter", "[^ö]");
+    ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(args);
+
+    Reader reader = new StringReader("Résumé");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = factory.create(stream);
+    assertTokenStreamContents(stream, new String[] { "resume" });
+
+    reader = new StringReader("Fönster");
+    stream = whitespaceMockTokenizer(reader);
+    stream = factory.create(stream);
+    assertTokenStreamContents(stream, new String[] { "fönster" });
+  }
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {

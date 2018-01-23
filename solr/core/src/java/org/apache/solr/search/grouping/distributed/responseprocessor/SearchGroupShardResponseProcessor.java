@@ -47,9 +47,6 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
  */
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();

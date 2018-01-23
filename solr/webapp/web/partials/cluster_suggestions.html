@@ -1,0 +1,49 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<div id="cluster-suggestions">
+    <h1>Cluster Suggestions</h1>
+    <br/>
+    <table id="s-table">
+        <tr>
+            <td>Type</td>
+            <td>Reason</td>
+            <td>Action</td>
+        </tr>
+        <tr ng-if="parsedData.length==0">
+            <td>NA</td>
+            <td>NA</td>
+            <td>NA</td>
+        </tr>
+        <tr ng-repeat="x in parsedData">
+            <td>{{ x.type }}</td>
+            <td>{{ x.violation.clause }}</td>
+            <td>
+                <div class="s-container">
+                    <input class="s-box1" ng-hide="x.run" type="button"
+                           title="{{ x.operation }}" ng-click="postdata(x)" ng-mouseover="showPopover()"
+                           ng-mouseleave="hidePopover()"/>
+                    <div class="s-box2" ng-show="x.loading"><img src="img/loader.gif"></div>
+                    <div class="s-box3" ng-show="x.done"><img src="img/ico/tick.png"></div>
+                    <div class="s-box4" ng-show="x.failed"><img src="img/ico/cross.png"></div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+</div>
+

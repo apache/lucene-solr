@@ -36,7 +36,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.TFIDFSimilarity.IDFStats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -157,7 +156,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
   
   public void testSaneNormValues() throws IOException {
     ClassicSimilarity sim = new ClassicSimilarity();
-    TFIDFSimilarity.IDFStats stats = (IDFStats) sim.computeWeight(1f, indexSearcher.collectionStatistics("test"));
+    TFIDFSimilarity.TFIDFScorer stats = (TFIDFSimilarity.TFIDFScorer) sim.scorer(1f, indexSearcher.collectionStatistics("test"));
     for (int i = 0; i < 256; i++) {
       float boost = stats.normTable[i];
       assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);

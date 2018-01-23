@@ -34,7 +34,6 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -100,22 +99,12 @@ public class TestConjunctions extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost,
+    public SimScorer scorer(float boost,
         CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimWeight() {};
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
+      return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(int doc, float freq) {
+        public float score(float freq, long norm) {
           return freq;
-        }
-
-        @Override
-        public float maxScore(float maxFreq) {
-          return maxFreq;
         }
       };
     }

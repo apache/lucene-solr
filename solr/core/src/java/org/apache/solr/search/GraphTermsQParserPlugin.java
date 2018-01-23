@@ -37,7 +37,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -252,15 +252,15 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
-      List<TermContext> finalContexts = new ArrayList();
+      List<TermStates> finalContexts = new ArrayList();
       List<Term> finalTerms = new ArrayList();
       List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
-      TermContext[] termContexts = new TermContext[this.queryTerms.length];
-      collectTermContext(searcher.getIndexReader(), contexts, termContexts, this.queryTerms);
-      for(int i=0; i<termContexts.length; i++) {
-        TermContext termContext = termContexts[i];
-        if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
-          finalContexts.add(termContext);
+      TermStates[] termStates = new TermStates[this.queryTerms.length];
+      collectTermStates(searcher.getIndexReader(), contexts, termStates, this.queryTerms);
+      for(int i=0; i<termStates.length; i++) {
+        TermStates ts = termStates[i];
+        if(ts != null && ts.docFreq() <= this.maxDocFreq) {
+          finalContexts.add(ts);
           finalTerms.add(queryTerms[i]);
         }
       }
@@ -285,11 +285,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i=0; i<finalContexts.size(); i++) {
-            TermContext termContext = finalContexts.get(i);
-            TermState termState = termContext.get(context.ord);
+            TermStates ts = finalContexts.get(i);
+            TermState termState = ts.get(context);
             if(termState != null) {
               Term term = finalTerms.get(i);
-              termsEnum.seekExact(term.bytes(), termContext.get(context.ord));
+              termsEnum.seekExact(term.bytes(), ts.get(context));
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.add(docs);
             }
@@ -340,10 +340,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       };
     }
 
-    private void collectTermContext(IndexReader reader,
-                                    List<LeafReaderContext> leaves,
-                                    TermContext[] contextArray,
-                                    Term[] queryTerms) throws IOException {
+    private void collectTermStates(IndexReader reader,
+                                   List<LeafReaderContext> leaves,
+                                   TermStates[] contextArray,
+                                   Term[] queryTerms) throws IOException {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
 
@@ -359,15 +359,15 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
         for (int i = 0; i < queryTerms.length; i++) {
           Term term = queryTerms[i];
-          TermContext termContext = contextArray[i];
+          TermStates termStates = contextArray[i];
 
           if (termsEnum.seekExact(term.bytes())) {
-            if (termContext == null) {
-              contextArray[i] = new TermContext(reader.getContext(),
+            if (termStates == null) {
+              contextArray[i] = new TermStates(reader.getContext(),
                   termsEnum.termState(), context.ord, termsEnum.docFreq(),
                   termsEnum.totalTermFreq());
             } else {
-              termContext.register(termsEnum.termState(), context.ord,
+              termStates.register(termsEnum.termState(), context.ord,
                   termsEnum.docFreq(), termsEnum.totalTermFreq());
             }
           }

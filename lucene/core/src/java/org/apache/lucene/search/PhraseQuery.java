@@ -32,12 +32,11 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -352,9 +351,9 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.SimWeight stats;
+    private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
-    private transient TermContext states[];
+    private transient TermStates states[];
 
     public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
@@ -366,21 +365,23 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.scoreMode = scoreMode;
-      this.similarity = searcher.getSimilarity(scoreMode.needsScores());
+      this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
-      states = new TermContext[terms.length];
+      states = new TermStates[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
       int termUpTo = 0;
       for (int i = 0; i < terms.length; i++) {
         final Term term = terms[i];
-        states[i] = TermContext.build(context, term);
-        TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
-        if (termStatistics != null) {
-          termStats[termUpTo++] = termStatistics;
+        states[i] = TermStates.build(context, term, scoreMode.needsScores());
+        if (scoreMode.needsScores()) {
+          TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+          if (termStatistics != null) {
+            termStats[termUpTo++] = termStatistics;
+          }
         }
       }
       if (termUpTo > 0) {
-        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+        stats = similarity.scorer(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
       } else {
         stats = null; // no terms at all, we won't use similarity
       }
@@ -415,7 +416,7 @@ public class PhraseQuery extends Query {
       
       for (int i = 0; i < terms.length; i++) {
         final Term t = terms[i];
-        final TermState state = states[i].get(context.ord);
+        final TermState state = states[i].get(context);
         if (state == null) { /* term doesnt exist in this segment */
           assert termNotInReader(reader, t): "no termstate found but term exists in reader";
           return null;
@@ -433,11 +434,11 @@ public class PhraseQuery extends Query {
 
       if (slop == 0) {  // optimize exact case
         return new ExactPhraseScorer(this, postingsFreqs,
-                                      similarity.simScorer(stats, context),
+                                      new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
-                                        similarity.simScorer(stats, context),
+                                        new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
                                         scoreMode.needsScores(), totalMatchCost);
       }
     }
@@ -459,7 +460,7 @@ public class PhraseQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
+          LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

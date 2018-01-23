@@ -33,7 +33,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -268,9 +268,9 @@ public class TermInSetQuery extends Query implements Accountable {
           assert builder == null;
           BooleanQuery.Builder bq = new BooleanQuery.Builder();
           for (TermAndState t : matchingTerms) {
-            final TermContext termContext = new TermContext(searcher.getTopReaderContext());
-            termContext.register(t.state, context.ord, t.docFreq, t.totalTermFreq);
-            bq.add(new TermQuery(new Term(t.field, t.term), termContext), Occur.SHOULD);
+            final TermStates termStates = new TermStates(searcher.getTopReaderContext());
+            termStates.register(t.state, context.ord, t.docFreq, t.totalTermFreq);
+            bq.add(new TermQuery(new Term(t.field, t.term), termStates), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
           final Weight weight = searcher.rewrite(q).createWeight(searcher, scoreMode, score());

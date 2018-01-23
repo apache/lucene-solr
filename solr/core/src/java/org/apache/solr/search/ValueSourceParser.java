@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
@@ -325,7 +326,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         Query q = fp.parseNestedQuery();
         ValueSource vs = fp.parseValueSource();
-        return new QueryValueSource(BoostQParserPlugin.boostQuery(q, vs), 0.0f);
+        return new QueryValueSource(FunctionScoreQuery.boostByValue(q, vs.asDoubleValuesSource()), 0.0f);
       }
     });
     addParser("joindf", new ValueSourceParser() {

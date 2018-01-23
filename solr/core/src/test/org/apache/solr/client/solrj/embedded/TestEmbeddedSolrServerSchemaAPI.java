@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -98,14 +99,17 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   }
 
   @Test 
-  public void testSchemaAddFieldAndFailOnImmutable() throws Exception {
+  public void testSchemaAddFieldAndFailOnImmutable() {
     assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
 
-      SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-      SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(server);
-      // wt hell???? assertFalse(addFieldResponse.toString(), addFieldResponse.getStatus()==0);
-      assertTrue((""+addFieldResponse).contains("schema is not editable"));
-
+    SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
+    assertFailedSchemaResponse(() -> addFieldUpdateSchemaRequest.process(server),
+        "schema is not editable");
   }
 
+  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
+    ApiBag.ExceptionWithErrObject e = expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
+    String msg = e.getErrs().get(0).get("errorMessages").toString();
+    assertTrue(msg.contains(expectedErrorMessage));
+  }
 }

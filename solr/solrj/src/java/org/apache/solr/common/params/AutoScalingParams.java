@@ -68,5 +68,7 @@ public interface AutoScalingParams {
   String TRIGGER_SCHEDULE_DELAY_SECONDS = "triggerScheduleDelaySeconds";
   String TRIGGER_COOLDOWN_PERIOD_SECONDS = "triggerCooldownPeriodSeconds";
   String TRIGGER_CORE_POOL_SIZE = "triggerCorePoolSize";
+
+  @Deprecated
   String ACTION_THROTTLE_PERIOD_SECONDS = "actionThrottlePeriodSeconds";
 }

@@ -16,13 +16,16 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
+
+import org.apache.solr.common.MapWriter;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
-public class Pair<T1, T2> implements Serializable {
+public class Pair<T1, T2> implements Serializable, MapWriter {
   private final T1 first;
   private final T2 second;
 
@@ -54,6 +57,12 @@ public class Pair<T1, T2> implements Serializable {
   @Override
   public int hashCode() {
     return Objects.hash(first, second);
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("first", first);
+    ew.put("second", second);
   }
 
 }

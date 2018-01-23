@@ -33,6 +33,8 @@ import java.io.Serializable;
  * @since solr 1.3
  */
 public abstract class SolrResponse implements Serializable {
+
+  /** Elapsed time in milliseconds for the request as seen from the client. */
   public abstract long getElapsedTime();
   
   public abstract void setResponse(NamedList<Object> rsp);

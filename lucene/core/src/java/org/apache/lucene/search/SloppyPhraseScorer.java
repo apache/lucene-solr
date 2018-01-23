@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.FixedBitSet;
 
 final class SloppyPhraseScorer extends Scorer {
@@ -36,7 +35,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-  private final Similarity.SimScorer docScorer;
+  private final LeafSimScorer docScorer;
   
   private final int slop;
   private final int numPostings;
@@ -55,7 +54,7 @@ final class SloppyPhraseScorer extends Scorer {
   private final float matchCost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SimScorer docScorer, boolean needsScores,
+      int slop, LeafSimScorer docScorer, boolean needsScores,
       float matchCost) {
     super(weight);
     this.docScorer = docScorer;
@@ -558,7 +557,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public float maxScore() {
-    return docScorer.maxScore(Float.POSITIVE_INFINITY);
+    return docScorer.maxScore();
   }
 
   @Override

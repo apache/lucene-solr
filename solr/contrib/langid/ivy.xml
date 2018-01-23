@@ -25,6 +25,7 @@
   <dependencies>
     <dependency org="com.cybozu.labs" name="langdetect" rev="${/com.cybozu.labs/langdetect}" conf="compile"/>
     <dependency org="net.arnx" name="jsonic" rev="${/net.arnx/jsonic}" conf="compile"/>
+    <dependency org="org.apache.opennlp" name="opennlp-tools" rev="${/org.apache.opennlp/opennlp-tools}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

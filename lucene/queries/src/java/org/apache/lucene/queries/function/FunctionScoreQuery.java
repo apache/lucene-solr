@@ -63,6 +63,38 @@ public final class FunctionScoreQuery extends Query {
     return in;
   }
 
+  /**
+   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
+   * the value of a DoubleValuesSource.
+   *
+   * If the source has no value for a particular document, the score for that document
+   * is preserved as-is.
+   *
+   * @param in    the query to boost
+   * @param boost a {@link DoubleValuesSource} containing the boost values
+   */
+  public static FunctionScoreQuery boostByValue(Query in, DoubleValuesSource boost) {
+    return new FunctionScoreQuery(in, new MultiplicativeBoostValuesSource(boost));
+  }
+
+  /**
+   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
+   * a boost factor if the document being scored also matches a separate boosting query.
+   *
+   * Documents that do not match the boosting query have their scores preserved.
+   *
+   * This may be used to 'demote' documents that match the boosting query, by passing in
+   * a boostValue between 0 and 1.
+   *
+   * @param in          the query to boost
+   * @param boostMatch  the boosting query
+   * @param boostValue  the amount to boost documents which match the boosting query
+   */
+  public static FunctionScoreQuery boostByQuery(Query in, Query boostMatch, float boostValue) {
+    return new FunctionScoreQuery(in,
+        new MultiplicativeBoostValuesSource(new QueryBoostValuesSource(DoubleValuesSource.fromQuery(boostMatch), boostValue)));
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     Weight inner = in.createWeight(searcher, scoreMode.needsScores() && source.needsScores() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, 1f);
@@ -188,5 +220,124 @@ public final class FunctionScoreQuery extends Query {
       return inner.isCacheable(ctx) && valueSource.isCacheable(ctx);
     }
 
+  }
+
+  private static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
+
+    private final DoubleValuesSource boost;
+
+    private MultiplicativeBoostValuesSource(DoubleValuesSource boost) {
+      this.boost = boost;
+    }
+
+    @Override
+    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      DoubleValues in = DoubleValues.withDefault(boost.getValues(ctx, scores), 1);
+      return new DoubleValues() {
+        @Override
+        public double doubleValue() throws IOException {
+          return scores.doubleValue() * in.doubleValue();
+        }
+
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          return in.advanceExact(doc);
+        }
+      };
+    }
+
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
+
+    @Override
+    public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+      return new MultiplicativeBoostValuesSource(boost.rewrite(reader));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      MultiplicativeBoostValuesSource that = (MultiplicativeBoostValuesSource) o;
+      return Objects.equals(boost, that.boost);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(boost);
+    }
+
+    @Override
+    public String toString() {
+      return "boost(" + boost.toString() + ")";
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return boost.isCacheable(ctx);
+    }
+  }
+
+  private static class QueryBoostValuesSource extends DoubleValuesSource {
+
+    private final DoubleValuesSource query;
+    private final float boost;
+
+    QueryBoostValuesSource(DoubleValuesSource query, float boost) {
+      this.query = query;
+      this.boost = boost;
+    }
+
+    @Override
+    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      DoubleValues in = query.getValues(ctx, null);
+      return DoubleValues.withDefault(new DoubleValues() {
+        @Override
+        public double doubleValue() {
+          return boost;
+        }
+
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          return in.advanceExact(doc);
+        }
+      }, 1);
+    }
+
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+
+    @Override
+    public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+      return new QueryBoostValuesSource(query.rewrite(reader), boost);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      QueryBoostValuesSource that = (QueryBoostValuesSource) o;
+      return Float.compare(that.boost, boost) == 0 &&
+          Objects.equals(query, that.query);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(query, boost);
+    }
+
+    @Override
+    public String toString() {
+      return "queryboost(" + query + ")^" + boost;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return query.isCacheable(ctx);
+    }
   }
 }

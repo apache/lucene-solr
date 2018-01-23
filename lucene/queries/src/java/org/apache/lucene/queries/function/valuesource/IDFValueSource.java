@@ -47,7 +47,7 @@ public class IDFValueSource extends DocFreqValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    TFIDFSimilarity sim = asTFIDF(searcher.getSimilarity(true), field);
+    TFIDFSimilarity sim = asTFIDF(searcher.getSimilarity(), field);
     if (sim == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as ClassicSimilarity)");
     }

@@ -173,7 +173,11 @@ $val##
 
 #macro(range_get_to_value $inval, $gapval)
 #if(${gapval.class.name} == "java.lang.String")
-$inval$gapval##
+#if($gapval.startsWith("+"))
+$inval$gapval## Typically date gaps start with +
+#else
+$inval+$gapval## If the gap does not start with a "+", we add it, such as for currency value
+#end
 #elseif(${gapval.class.name} == "java.lang.Float" || ${inval.class.name} == "java.lang.Float")
 $math.toDouble($math.add($inval,$gapval))##
 #else

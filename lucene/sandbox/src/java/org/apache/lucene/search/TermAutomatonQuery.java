@@ -29,7 +29,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
@@ -194,11 +194,11 @@ public class TermAutomatonQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
-    Map<Integer,TermContext> termStates = new HashMap<>();
+    Map<Integer,TermStates> termStates = new HashMap<>();
 
     for (Map.Entry<BytesRef,Integer> ent : termToID.entrySet()) {
       if (ent.getKey() != null) {
-        termStates.put(ent.getValue(), TermContext.build(context, new Term(field, ent.getKey())));
+        termStates.put(ent.getValue(), TermStates.build(context, new Term(field, ent.getKey()), scoreMode.needsScores()));
       }
     }
 
@@ -334,15 +334,15 @@ public class TermAutomatonQuery extends Query {
 
   final class TermAutomatonWeight extends Weight {
     final Automaton automaton;
-    private final Map<Integer,TermContext> termStates;
-    private final Similarity.SimWeight stats;
+    private final Map<Integer,TermStates> termStates;
+    private final Similarity.SimScorer stats;
     private final Similarity similarity;
 
-    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates, float boost) throws IOException {
+    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermStates> termStates, float boost) throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
       this.termStates = termStates;
-      this.similarity = searcher.getSimilarity(true);
+      this.similarity = searcher.getSimilarity();
       List<TermStatistics> allTermStats = new ArrayList<>();
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
@@ -357,7 +357,7 @@ public class TermAutomatonQuery extends Query {
       if (allTermStats.isEmpty()) {
         stats = null; // no terms matched at all, will not use sim
       } else {
-        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
+        stats = similarity.scorer(boost, searcher.collectionStatistics(field),
                                          allTermStats.toArray(new TermStatistics[allTermStats.size()]));
       }
     }
@@ -383,11 +383,11 @@ public class TermAutomatonQuery extends Query {
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];
 
       boolean any = false;
-      for(Map.Entry<Integer,TermContext> ent : termStates.entrySet()) {
-        TermContext termContext = ent.getValue();
-        assert termContext.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+      for(Map.Entry<Integer,TermStates> ent : termStates.entrySet()) {
+        TermStates termStates = ent.getValue();
+        assert termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
         BytesRef term = idToTerm.get(ent.getKey());
-        TermState state = termContext.get(context.ord);
+        TermState state = termStates.get(context);
         if (state != null) {
           TermsEnum termsEnum = context.reader().terms(field).iterator();
           termsEnum.seekExact(term, state);
@@ -397,7 +397,7 @@ public class TermAutomatonQuery extends Query {
       }
 
       if (any) {
-        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, similarity.simScorer(stats, context));
+        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, new LeafSimScorer(stats, context.reader(), true, Float.MAX_VALUE));
       } else {
         return null;
       }

@@ -189,11 +189,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * @throws IOException if there is a communication error
    */
   public final T process(SolrClient client, String collection) throws SolrServerException, IOException {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    long startNanos = System.nanoTime();
     T res = createResponse(client);
     res.setResponse(client.request(this, collection));
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
+    long endNanos = System.nanoTime();
+    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
   }
 

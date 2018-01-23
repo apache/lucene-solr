@@ -97,6 +97,12 @@ public abstract class RangeFacet<B, G> {
 
   }
 
+  public static class Currency extends RangeFacet<String, String> {
+    public Currency(String name, String start, String end, String gap, Number before, Number after, Number between) {
+      super(name, start, end, gap, before, after, between);
+    }
+  }
+
   public static class Count {
 
     private final String value;

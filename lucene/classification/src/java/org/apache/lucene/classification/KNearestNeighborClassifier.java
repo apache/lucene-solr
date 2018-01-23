@@ -119,9 +119,6 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   }
 
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
     return classifyFromTopDocs(knnSearch(text));
@@ -143,9 +140,6 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     return assignedClass;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
     TopDocs knnResults = knnSearch(text);
@@ -154,9 +148,6 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
     TopDocs knnResults = knnSearch(text);
@@ -251,7 +242,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
         ", classFieldName='" + classFieldName + '\'' +
         ", k=" + k +
         ", query=" + query +
-        ", similarity=" + indexSearcher.getSimilarity(true) +
+        ", similarity=" + indexSearcher.getSimilarity() +
         '}';
   }
 }

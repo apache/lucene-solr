@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
@@ -100,17 +100,17 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
@@ -260,16 +260,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
-  void handleResponse(String operation, ZkNodeProps m,
+  //TODO rename to submitToOverseerRPC
+  public void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     handleResponse(operation, m, rsp, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  private SolrResponse handleResponse(String operation, ZkNodeProps m,
+  //TODO rename to submitToOverseerRPC
+  public SolrResponse handleResponse(String operation, ZkNodeProps m,
       SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
-    long time = System.nanoTime();
-
-    if (m.containsKey(ASYNC) && m.get(ASYNC) != null) {
+    if (!m.containsKey(QUEUE_OPERATION)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
+    }
+    if (m.get(ASYNC) != null) {
 
        String asyncId = m.getStr(ASYNC);
 
@@ -297,6 +300,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
        return response;
      }
 
+    long time = System.nanoTime();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
@@ -1031,7 +1035,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
+  public static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
       throws KeeperException, InterruptedException {
 
     if (response.getResponse().get("exception") != null) {

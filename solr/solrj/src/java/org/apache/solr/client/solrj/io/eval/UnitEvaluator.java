@@ -53,7 +53,10 @@ public class UnitEvaluator extends RecursiveObjectEvaluator implements OneValueW
         unitData[i] = unitRow;
       }
 
-      return new Matrix(unitData);
+      Matrix m = new Matrix(unitData);
+      m.setRowLabels(matrix.getRowLabels());
+      m.setColumnLabels(matrix.getRowLabels());
+      return m;
     } else if(value instanceof List) {
       List<Number> values = (List<Number>)value;
       double[] doubles = new double[values.size()];

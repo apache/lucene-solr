@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Query;
@@ -621,18 +621,18 @@ public class TermsComponent extends SearchComponent {
         terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
       }
 
-      TermContext[] termContexts = new TermContext[terms.length];
-      collectTermContext(topReaderContext, termContexts, terms);
+      TermStates[] termStates = new TermStates[terms.length];
+      collectTermStates(topReaderContext, termStates, terms);
 
       NamedList<Object> termsMap = new SimpleOrderedMap<>();
       for (int i = 0; i < terms.length; i++) {
-        if (termContexts[i] != null) {
+        if (termStates[i] != null) {
           String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
-          int docFreq = termContexts[i].docFreq();
+          int docFreq = termStates[i].docFreq();
           if (!includeTotalTermFreq) {
             termsMap.add(outTerm, docFreq);
           } else {
-            long totalTermFreq = termContexts[i].totalTermFreq();
+            long totalTermFreq = termStates[i].totalTermFreq();
             NamedList<Long> termStats = new SimpleOrderedMap<>();
             termStats.add("df", (long) docFreq);
             termStats.add("ttf", totalTermFreq);
@@ -645,8 +645,8 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  private static void collectTermContext(IndexReaderContext topReaderContext, TermContext[] contextArray,
-      Term[] queryTerms) throws IOException {
+  private static void collectTermStates(IndexReaderContext topReaderContext, TermStates[] contextArray,
+                                        Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : topReaderContext.leaves()) {
       for (int i = 0; i < queryTerms.length; i++) {
@@ -661,13 +661,13 @@ public class TermsComponent extends SearchComponent {
 
         if (termsEnum == TermsEnum.EMPTY) continue;
 
-        TermContext termContext = contextArray[i];
+        TermStates termStates = contextArray[i];
         if (termsEnum.seekExact(term.bytes())) {
-          if (termContext == null) {
-            termContext = new TermContext(topReaderContext);
-            contextArray[i] = termContext;
+          if (termStates == null) {
+            termStates = new TermStates(topReaderContext);
+            contextArray[i] = termStates;
           }
-          termContext.accumulateStatistics(termsEnum.docFreq(), termsEnum.totalTermFreq());
+          termStates.accumulateStatistics(termsEnum.docFreq(), termsEnum.totalTermFreq());
         }
       }
     }

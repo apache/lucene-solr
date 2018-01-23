@@ -29,13 +29,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
 
 /* A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
@@ -44,7 +48,7 @@ import org.apache.solr.common.util.Utils;
  *  b) it causes no new violations
  *
  */
-public abstract class Suggester {
+public abstract class Suggester implements MapWriter {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
@@ -76,6 +80,13 @@ public abstract class Suggester {
     return this;
   }
 
+  protected boolean isNodeSuitable(Row row) {
+    if (!row.isLive) return false;
+    if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
+    if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+    return true;
+  }
+
   abstract SolrRequest init();
 
 
@@ -105,7 +116,7 @@ public abstract class Suggester {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
           if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
-            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session.cloudManager));
+            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
         }
       }
       session.applyRules();
@@ -227,11 +238,12 @@ public abstract class Suggester {
 
   protected boolean isAllowed(Object v, Hint hint) {
     Object hintVal = hints.get(hint);
+    if (hintVal == null) return true;
     if (hint.multiValued) {
       Set set = (Set) hintVal;
       return set == null || set.contains(v);
     } else {
-      return hintVal == null || Objects.equals(v, hintVal);
+      return hintVal == null || hint.valueValidator.test(new Pair<>(hintVal, v));
     }
   }
 
@@ -258,10 +270,20 @@ public abstract class Suggester {
       if (!(o instanceof Replica.Type)) {
         throw new RuntimeException("REPLICATYPE hint must use a ReplicaType");
       }
+    }),
+
+    MINFREEDISK(false, o -> {
+      if (!(o instanceof Number)) throw new RuntimeException("MINFREEDISK hint must be a number");
+    }, hintValVsActual -> {
+      Double hintFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.first(), false);
+      Double actualFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.second(), false);
+      if(actualFreediskInGb == null) return false;
+      return actualFreediskInGb > hintFreediskInGb;
     });
 
     public final boolean multiValued;
     public final Consumer<Object> validator;
+    public final Predicate<Pair<Object, Object>> valueValidator;
 
     Hint(boolean multiValued) {
       this(multiValued, v -> {
@@ -273,11 +295,27 @@ public abstract class Suggester {
     }
 
     Hint(boolean multiValued, Consumer<Object> c) {
+      this(multiValued, c, equalsPredicate);
+    }
+
+    Hint(boolean multiValued, Consumer<Object> c, Predicate<Pair<Object, Object>> testval) {
       this.multiValued = multiValued;
       this.validator = c;
+      this.valueValidator = testval;
     }
+
 
   }
 
+  static Predicate<Pair<Object, Object>> equalsPredicate = valPair -> Objects.equals(valPair.first(), valPair.second());
 
+  @Override
+  public String toString() {
+    return jsonStr();
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
+  }
 }

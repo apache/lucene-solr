@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -68,7 +68,7 @@ public class FuzzyLikeThisQuery extends Query
 {
   // TODO: generalize this query (at least it should not reuse this static sim!
   // a better way might be to convert this into multitermquery rewrite methods.
-  // the rewrite method can 'average' the TermContext's term statistics (docfreq,totalTermFreq) 
+  // the rewrite method can 'average' the TermStates's term statistics (docfreq,totalTermFreq)
   // provided to TermQuery, so that the general idea is agnostic to any scoring system...
   static TFIDFSimilarity sim=new ClassicSimilarity();
   ArrayList<FieldVals> fieldVals=new ArrayList<>();
@@ -255,9 +255,9 @@ public class FuzzyLikeThisQuery extends Query
     if (ignoreTF) {
       return new ConstantScoreQuery(new TermQuery(term));
     } else {
-      // we build an artificial TermContext that will give an overall df and ttf
+      // we build an artificial TermStates that will give an overall df and ttf
       // equal to 1
-      TermContext context = new TermContext(reader.getContext());
+      TermStates context = new TermStates(reader.getContext());
       for (LeafReaderContext leafContext : reader.leaves()) {
         Terms terms = leafContext.reader().terms(term.field());
         if (terms != null) {

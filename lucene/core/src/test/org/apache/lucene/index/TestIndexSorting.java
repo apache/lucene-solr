@@ -1947,13 +1947,8 @@ public class TestIndexSorting extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(boost, collectionStats, termStats);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return in.simScorer(weight, context);
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.scorer(boost, collectionStats, termStats);
     }
 
   }

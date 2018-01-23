@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A basic {@link Scorer} over {@link Spans}.
@@ -32,7 +32,7 @@ import org.apache.lucene.search.similarities.Similarity;
 public class SpanScorer extends Scorer {
 
   protected final Spans spans;
-  protected final Similarity.SimScorer docScorer;
+  protected final LeafSimScorer docScorer;
 
   /** accumulated sloppy freq (computed in setFreqCurrentDoc) */
   private float freq;
@@ -41,7 +41,7 @@ public class SpanScorer extends Scorer {
   private int lastScoredDoc = -1; // last doc we called setFreqCurrentDoc() for
 
   /** Sole constructor. */
-  public SpanScorer(SpanWeight weight, Spans spans, Similarity.SimScorer docScorer) {
+  public SpanScorer(SpanWeight weight, Spans spans, LeafSimScorer docScorer) {
     super(weight);
     this.spans = Objects.requireNonNull(spans);
     this.docScorer = docScorer;

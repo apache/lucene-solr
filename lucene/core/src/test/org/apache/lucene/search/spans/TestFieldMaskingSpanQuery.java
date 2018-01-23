@@ -235,7 +235,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   
   public void testSimple2() throws Exception {
     assumeTrue("Broken scoring: LUCENE-3723", 
-        searcher.getSimilarity(true) instanceof TFIDFSimilarity);
+        searcher.getSimilarity() instanceof TFIDFSimilarity);
     SpanQuery q1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery q2 = new SpanTermQuery(new Term("last", "smith"));
     SpanQuery q = new SpanNearQuery(new SpanQuery[]
@@ -291,7 +291,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   
   public void testSpans2() throws Exception {
     assumeTrue("Broken scoring: LUCENE-3723",
-        searcher.getSimilarity(true) instanceof TFIDFSimilarity);
+        searcher.getSimilarity() instanceof TFIDFSimilarity);
     SpanQuery qA1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery qA2 = new SpanTermQuery(new Term("first",  "james"));
     SpanQuery qA  = new SpanOrQuery(qA1, new FieldMaskingSpanQuery(qA2, "gender"));

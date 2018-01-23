@@ -62,9 +62,6 @@ public final class CommonGramsQueryFilter extends TokenFilter {
     super(input);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();

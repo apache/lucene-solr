@@ -71,9 +71,6 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     super(in);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public boolean incrementToken() throws IOException {
     while (!exhausted && input.incrementToken()) {
@@ -112,9 +109,6 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     return false;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();

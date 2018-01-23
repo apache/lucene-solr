@@ -97,7 +97,7 @@ The `add-field` command adds a new field definition to your schema. If a field w
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to define a new stored field named "sell-by", of type "pdate", you would POST the following request:
+For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
 
 [.dynamic-tabs]
 --
@@ -108,7 +108,7 @@ For example, to define a new stored field named "sell-by", of type "pdate", you 
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"pdate",
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
@@ -122,7 +122,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"pdate",
      "stored":true }
 }' http://localhost:8983/api/cores/gettingstarted/schema
@@ -134,7 +134,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `delete-field` command removes a field definition from your schema. If the field does not exist in the schema, or if the field is the source or destination of a copy field rule, an error is thrown.
 
-For example, to delete a field named "sell-by", you would POST the following request:
+For example, to delete a field named "sell_by", you would POST the following request:
 
 [.dynamic-tabs]
 --
@@ -144,7 +144,7 @@ For example, to delete a field named "sell-by", you would POST the following req
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-field" : { "name":"sell-by" }
+  "delete-field" : { "name":"sell_by" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 ====
@@ -155,7 +155,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-field" : { "name":"sell-by" }
+  "delete-field" : { "name":"sell_by" }
 }' http://localhost:8983/api/cores/gettingstarted/schema
 ----
 ====
@@ -167,7 +167,7 @@ The `replace-field` command replaces a field's definition. Note that you must su
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to replace the definition of an existing field "sell-by", to make it be of type "date" and to not be stored, you would POST the following request:
+For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
 
 [.dynamic-tabs]
 --
@@ -178,7 +178,7 @@ For example, to replace the definition of an existing field "sell-by", to make i
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "replace-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"date",
      "stored":false }
 }' http://localhost:8983/solr/gettingstarted/schema
@@ -192,7 +192,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "replace-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"date",
      "stored":false }
 }' http://localhost:8983/api/cores/gettingstarted/schema
@@ -572,7 +572,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.WordDelimiterFilterFactory",
            "preserveOriginal":"0" }]}},
    "add-field" : {
-      "name":"sell-by",
+      "name":"sell_by",
       "type":"myNewTxtField",
       "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
