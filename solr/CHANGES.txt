@@ -64,8 +64,8 @@ Upgrade Notes
 
 * SOLR-11747: The behaviour of the autoscaling system has been modified to pause all triggers from execution between
   the start of actions and end of cool down period. The triggers will be resumed after the cool down period expires.
-  Previously, the cool down period was a fixed period started after actions for a trigger event finish
-  executing. During the cool down period, triggers wo
+  Previously, the cool down period was a fixed period started after actions for a trigger event complete and during
+  this time, all triggers continued to run but any events were rejected to be tried later.
 
 * SOLR-11624: Collections created without specifying a configset name use a copy of the _default configset since 7.0.
   Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named
