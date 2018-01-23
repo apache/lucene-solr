@@ -123,6 +123,11 @@ Improvements
   position sensitive (e.g. part of a phrase) by having an accurate freq.
   (David Smiley)
 
+* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
+
+* LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
+  (Ere Maijala)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
@@ -139,6 +144,11 @@ Bug Fixes
 
 * LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
 
+* LUCENE-8130: Fix NullPointerException from TermStates.toString() (Mike McCandless)
+
+* LUCENE-8124: Fixed HyphenationCompoundWordTokenFilter to handle correctly
+  hyphenation patterns with indicator >= 7. (Holger Bruch via Adrien Grand)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
@@ -151,6 +161,12 @@ Other
 
 * LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
   (Pulak Ghosh via Adrien Grand)
+
+======================= Lucene 7.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-8117: Fix advanceExact on SortedNumericDocValues produced by Lucene54DocValues. (Jim Ferenczi).
 
 ======================= Lucene 7.2.0 =======================
 

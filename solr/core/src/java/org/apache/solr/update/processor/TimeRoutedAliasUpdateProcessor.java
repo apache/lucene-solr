@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.RoutedAliasCreateCollectionCmd;
+import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;

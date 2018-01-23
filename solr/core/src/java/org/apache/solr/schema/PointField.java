@@ -33,6 +33,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
@@ -294,4 +295,9 @@ public abstract class PointField extends NumericFieldType {
 
   protected abstract StoredField getStoredField(SchemaField sf, Object value);
 
+  @Override
+  public SortField getSortField(SchemaField field, boolean top) {
+    return getNumericSort(field, getNumberType(), top);
+  }
+  
 }

@@ -47,7 +47,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
-Jetty 9.3.20.v20170531
+Jetty 9.4.8.v20171121
 
 Upgrade Notes
 ----------------------
@@ -61,6 +61,15 @@ Upgrade Notes
   deprecated in favour of <searchComponent> equivalent syntax. See also SOLR-1696.
 
 * SOLR-11809: QueryComponent's rq parameter parsing no longer considers the defType parameter.
+
+* SOLR-11747: The behaviour of the autoscaling system has been modified to pause all triggers from execution between
+  the start of actions and end of cool down period. The triggers will be resumed after the cool down period expires.
+  Previously, the cool down period was a fixed period started after actions for a trigger event complete and during
+  this time, all triggers continued to run but any events were rejected to be tried later.
+
+* SOLR-11624: Collections created without specifying a configset name use a copy of the _default configset since 7.0.
+  Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named
+  with an additional ".AUTOCREATED" suffix.
 
 New Features
 ----------------------
@@ -82,6 +91,20 @@ New Features
 
 * SOLR-11062: new tag "diskType" in autoscaling policy (noble)
 
+* SOLR-11063: Suggesters should accept required freedisk as a hint (noble)
+
+* SOLR-3218: Added range faceting support for CurrencyFieldType.  This includes both "facet.range" as well
+  as json.facet's "type:range" (Andrew Morrison, Jan Høydahl, Vitaliy Zhovtyuk, hossman)
+
+* SOLR-11064: Collection APIs should use the disk space hint when using policy framework  (noble)
+
+* SOLR-11854: multivalued primitive fields can now be sorted by implicitly choosing the min/max
+  value for asc/desc sort orders. (hossman)
+
+* SOLR-11592: Add OpenNLP language detection to the langid contrib. (Koji, Steve Rowe)
+
+* SOLR-11648: A new admin UI to display and execute suggestions (Apoorv Bhawsar , noble)
+
 Bug Fixes
 ----------------------
 
@@ -96,6 +119,10 @@ Bug Fixes
 
 * SOLR-11631: The Schema API should return non-zero status when there are failures.
   (Noble Paul, Steve Rowe)
+
+* SOLR-11839: Fix test failures resulting from SOLR-11218 (Erick Erickson)
+
+* SOLR-11794: PULL replicas stop replicating after collection RELOAD (Samuel Tatipamula, Tomás Fernández Löbbe)
 
 Optimizations
 ----------------------
@@ -136,17 +163,49 @@ Other Changes
 
 * SOLR-11218: Fail and return an error when attempting to delete a collection that's part of an alias (Erick Erickson)
 
+* SOLR-11817: Move Collections API classes to it's own package (Varun Thacker)
+
+* SOLR-11810: Upgrade Jetty to 9.4.8.v20171121 (Varun Thacker, Erick Erickson)
+
+* SOLR-11747: Pause triggers until actions finish executing and the cool down period expires. (shalin)
+
+* SOLR-11871: MoveReplicaSuggester should not suggest leader if other replicas are available (noble)
+
+* SOLR-11624: Collections created from _default configset will now be associated with a configset with a suffix
+  .AUTOCREATED. For example, a new collection "mycollection", created without specifying a configset name, will
+  use the _default configset and the associated configset name will be "mycollection.AUTOCREATED". If this
+  collection is deleted and re-created, the autocreated configset will be left behind and will be re-used for
+  the re-created collection (Ishan Chattopadhyaya, Abhishek Kumar Singh)
+
+* SOLR-11051: Use disk free metric in default cluster preferences (noble)
+
 ==================  7.2.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.20.v20170531
 
 Bug Fixes
 ----------------------
 
 * SOLR-11771: Overseer can never process some last messages (Cao Manh Dat)
 
+* SOLR-11783: Rename core in solr standalone mode is not persisted (Erick Erickson)
+
 * SOLR-11809: QueryComponent.prepare rq parsing could fail under SOLR 7.2.0 - fix:
   QueryComponent's rq parameter parsing no longer considers the defType parameter.
   (Christine Poerschke and David Smiley in response to bug report/analysis
   from Dariusz Wojtas and Diego Ceccarelli)
+
+* SOLR-11555: If the query terms reduce to nothing, filter(clause) produces an NPE whereas
+  fq=clause does not (Erick Erickson)
 
 ==================  7.2.0 ==================
 

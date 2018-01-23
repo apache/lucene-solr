@@ -279,6 +279,7 @@ public class Suggestion {
     }
 
     public Object validate(String name, Object val, boolean isRuleVal) {
+      if (name == null) name = this.tagName;
       if (type == Double.class) {
         Double num = Clause.parseDouble(name, val);
         if (isRuleVal) {

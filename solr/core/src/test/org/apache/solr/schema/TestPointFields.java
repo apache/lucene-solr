@@ -167,7 +167,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, randomIntsMissing);
       doTestIntPointFunctionQuery(field);
     }
-    
+
+    // no docvalues
     for (String r : Arrays.asList("*_p_i_ni", "*_p_i_ni_ns")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -175,18 +176,38 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
     }
     
-    for (String r : Arrays.asList("*_p_i_mv", "*_p_i_ni_mv", "*_p_i_ni_mv_dv", "*_p_i_ni_dv_ns_mv",
-                                  "*_p_i_ni_ns_mv", "*_p_i_dv_ns_mv", "*_p_i_mv_dv",
-                                  "*_p_i_mv_smf", "*_p_i_mv_dv_smf", "*_p_i_ni_mv_dv_smf",
-                                  "*_p_i_mv_sml", "*_p_i_mv_dv_sml", "*_p_i_ni_mv_dv_sml")) {
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_i_mv", "*_p_i_ni_mv", "*_p_i_ni_ns_mv", 
+                                  "*_p_i_mv_smf", "*_p_i_mv_sml")) {
+           
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
-      doTestPointFieldSortError(field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestPointFieldSortError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(numValues, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
-   }
+    }
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_i_ni_mv_dv", "*_p_i_ni_dv_ns_mv",
+                                  "*_p_i_dv_ns_mv", "*_p_i_mv_dv",
+                                  "*_p_i_mv_dv_smf", "*_p_i_ni_mv_dv_smf",
+                                  "*_p_i_mv_dv_sml", "*_p_i_ni_mv_dv_sml"
+                                  )) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomInts);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
+    }
     
     assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
@@ -577,18 +598,35 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "w/o docValues", "42.34");
     }
     
-    for (String r : Arrays.asList("*_p_d_mv", "*_p_d_ni_mv", "*_p_d_ni_mv_dv", "*_p_d_ni_dv_ns_mv",
-                                  "*_p_d_ni_ns_mv", "*_p_d_dv_ns_mv", "*_p_d_mv_dv",
-                                  "*_p_d_mv_smf", "*_p_d_mv_dv_smf", "*_p_d_ni_mv_dv_smf",
-                                  "*_p_d_mv_sml", "*_p_d_mv_dv_sml", "*_p_d_ni_mv_dv_sml")) {
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_d_mv", "*_p_d_ni_mv", "*_p_d_ni_ns_mv", 
+                                  "*_p_d_mv_smf", "*_p_d_mv_sml")) {
+                                  
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
-      doTestPointFieldSortError(field, "multivalued", "42.34");
-      doTestPointFieldSortError(field, "multivalued", "42.34", "66.6");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34", "66.6");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
     
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_d_ni_mv_dv", "*_p_d_ni_dv_ns_mv",
+                                  "*_p_d_dv_ns_mv", "*_p_d_mv_dv",
+                                  "*_p_d_mv_dv_smf", "*_p_d_ni_mv_dv_smf",
+                                  "*_p_d_mv_dv_sml", "*_p_d_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDoubles);
+      
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+    }
     assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
   
@@ -983,18 +1021,36 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "w/o docValues", "42.34");
     }
     
-    for (String r : Arrays.asList("*_p_f_mv", "*_p_f_ni_mv", "*_p_f_ni_mv_dv", "*_p_f_ni_dv_ns_mv",
-                                  "*_p_f_ni_ns_mv", "*_p_f_dv_ns_mv", "*_p_f_mv_dv",  
-                                  "*_p_f_mv_smf", "*_p_f_mv_dv_smf", "*_p_f_ni_mv_dv_smf",
-                                  "*_p_f_mv_sml", "*_p_f_mv_dv_sml", "*_p_f_ni_mv_dv_sml")) {
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_f_mv", "*_p_f_ni_mv", "*_p_f_ni_ns_mv", 
+                                  "*_p_f_mv_smf", "*_p_f_mv_sml")) {
+                                  
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
-      doTestPointFieldSortError(field, "multivalued", "42.34");
-      doTestPointFieldSortError(field, "multivalued", "42.34", "66.6");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34", "66.6");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_f_ni_mv_dv", "*_p_f_ni_dv_ns_mv",
+                                  "*_p_f_dv_ns_mv", "*_p_f_mv_dv",  
+                                  "*_p_f_mv_dv_smf", "*_p_f_ni_mv_dv_smf",
+                                  "*_p_f_mv_dv_sml", "*_p_f_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomFloats);
+      
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+     
+    }    
     assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
   
@@ -1329,7 +1385,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, randomLongsMissing);
       doTestLongPointFunctionQuery(field);
     }
-
+    
+    // no docvalues
     for (String r : Arrays.asList("*_p_l_ni", "*_p_l_ni_ns")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -1337,19 +1394,37 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
     }
     
-    for (String r : Arrays.asList("*_p_l_mv", "*_p_l_ni_mv", "*_p_l_ni_mv_dv", "*_p_l_ni_dv_ns_mv",
-                                  "*_p_l_ni_ns_mv", "*_p_l_dv_ns_mv", "*_p_l_mv_dv",
-                                  "*_p_l_mv_smf", "*_p_l_mv_dv_smf", "*_p_l_ni_mv_dv_smf",
-                                  "*_p_l_mv_sml", "*_p_l_mv_dv_sml", "*_p_l_ni_mv_dv_sml")) {
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_l_mv", "*_p_l_ni_mv", "*_p_l_ni_ns_mv", 
+                                  "*_p_l_mv_smf", "*_p_l_mv_sml")) {
+                                  
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
-      doTestPointFieldSortError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestPointFieldSortError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(numValues, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
-    
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_l_ni_mv_dv", "*_p_l_ni_dv_ns_mv",
+                                  "*_p_l_dv_ns_mv", "*_p_l_mv_dv",
+                                  "*_p_l_mv_dv_smf", "*_p_l_ni_mv_dv_smf",
+                                  "*_p_l_mv_dv_sml", "*_p_l_ni_mv_dv_sml")) {
+
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, vals);
+      doTestPointFieldSort(field, randomLongs);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
+    }
     assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
   
@@ -1679,19 +1754,36 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "w/o docValues", "1995-12-31T23:59:59Z");
     }
     
-    for (String r : Arrays.asList("*_p_dt_mv", "*_p_dt_ni_mv", "*_p_dt_ni_mv_dv", "*_p_dt_ni_dv_ns_mv",
-                                  "*_p_dt_ni_ns_mv", "*_p_dt_dv_ns_mv", "*_p_dt_mv_dv",
-                                  "*_p_dt_mv_smf", "*_p_dt_mv_dv_smf", "*_p_dt_ni_mv_dv_smf",
-                                  "*_p_dt_mv_sml", "*_p_dt_mv_dv_sml", "*_p_dt_ni_mv_dv_sml")) {
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_dt_mv", "*_p_dt_ni_mv", "*_p_dt_ni_ns_mv", 
+                                  "*_p_dt_mv_smf", "*_p_dt_mv_sml")) {
+                                  
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
-      doTestPointFieldSortError(field, "multivalued", "1995-12-31T23:59:59Z");
-      doTestPointFieldSortError(field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+      doTestPointFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z");
+      doTestPointFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
       doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
       doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
                                 
     }
-    
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_dt_ni_mv_dv", "*_p_dt_ni_dv_ns_mv",
+                                  "*_p_dt_dv_ns_mv", "*_p_dt_mv_dv",
+                                  "*_p_dt_mv_dv_smf", "*_p_dt_ni_mv_dv_smf",
+                                  "*_p_dt_mv_dv_sml", "*_p_dt_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDates);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+    }    
     assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
 

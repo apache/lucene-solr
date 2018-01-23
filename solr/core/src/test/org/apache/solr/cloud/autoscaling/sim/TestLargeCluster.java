@@ -254,21 +254,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     }
     assertTrue("no STARTED event", startedEventPos > -1);
     SolrInputDocument startedEvent = systemColl.get(startedEventPos);
-    int ignored = 0;
     int lastIgnoredPos = startedEventPos;
-    for (int i = startedEventPos + 1; i < systemColl.size(); i++) {
-      SolrInputDocument d = systemColl.get(i);
-      if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
-        continue;
-      }
-      if ("NODEADDED".equals(d.getFieldValue("event.type_s"))) {
-        if ("IGNORED".equals(d.getFieldValue("stage_s"))) {
-          ignored++;
-          lastIgnoredPos = i;
-        }
-      }
-    }
-    assertTrue("no IGNORED events", ignored > 0);
     // make sure some replicas have been moved
     assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
 
@@ -306,7 +292,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
   @Test
   public void testNodeLost() throws Exception {
-    doTestNodeLost(waitForSeconds, 5000, 1);
+    doTestNodeLost(waitForSeconds, 5000, 0);
   }
 
   // Renard R5 series - evenly covers a log10 range

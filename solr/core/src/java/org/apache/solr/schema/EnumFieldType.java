@@ -32,6 +32,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
@@ -209,5 +210,15 @@ public class EnumFieldType extends AbstractEnumField {
               " (type: " + this.getTypeName() + ")");
     }
     return new MultiValuedIntFieldSource(field.getName(), selectorType);
+  }
+
+  @Override
+  public SortField getSortField(SchemaField field, boolean top) {
+    final SortField result = getNumericSort(field, NumberType.INTEGER, top);
+    if (null == result.getMissingValue()) {
+      // special case 'enum' default behavior: assume missing values are "below" all enum values
+      result.setMissingValue(Integer.MIN_VALUE);
+    }
+    return result;
   }
 }

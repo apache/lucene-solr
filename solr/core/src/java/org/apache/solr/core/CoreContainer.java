@@ -1300,6 +1300,9 @@ public class CoreContainer {
               getZkController().startReplicationFromLeader(newCore.getName(), true);
             }
 
+          } else if(replica.getType() == Replica.Type.PULL) {
+            getZkController().stopReplicationFromLeader(core.getName());
+            getZkController().startReplicationFromLeader(newCore.getName(), false);
           }
         }
       } catch (SolrCoreState.CoreIsClosedException e) {
