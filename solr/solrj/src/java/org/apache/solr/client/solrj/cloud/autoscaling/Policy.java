@@ -70,7 +70,10 @@ public class Policy implements MapWriter {
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
-  public static final Preference DEFAULT_PREFERENCE = new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}"));
+  public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
+      Arrays.asList(
+          new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
+          new Preference((Map<String, Object>) Utils.fromJSONString("{maximize : freedisk}"))));
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
@@ -91,7 +94,7 @@ public class Policy implements MapWriter {
       preference.next = initialClusterPreferences.get(i + 1);
     }
     if (initialClusterPreferences.isEmpty()) {
-      initialClusterPreferences.add(DEFAULT_PREFERENCE);
+      initialClusterPreferences.addAll(DEFAULT_PREFERENCES);
     }
     this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
     final SortedSet<String> paramsOfInterest = new TreeSet<>();
@@ -122,8 +125,7 @@ public class Policy implements MapWriter {
   private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences) {
     this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
     this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
-    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) :
-        Collections.singletonList(DEFAULT_PREFERENCE);
+    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
     this.params = Collections.unmodifiableList(buildParams(this.clusterPreferences, this.clusterPolicy, this.policies));
     perReplicaAttributes = readPerReplicaAttrs();
   }
