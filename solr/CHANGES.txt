@@ -83,6 +83,8 @@ New Features
 
 * SOLR-11592: Add OpenNLP language detection to the langid contrib. (Koji, Steve Rowe)
 
+* SOLR-11648: A new admin UI to display and execute suggestions (Apoorv Bhawsar , noble)
+
 Bug Fixes
 ----------------------
 
