@@ -155,6 +155,8 @@ Other Changes
   collection is deleted and re-created, the autocreated configset will be left behind and will be re-used for
   the re-created collection (Ishan Chattopadhyaya, Abhishek Kumar Singh)
 
+* SOLR-11051: Use disk free metric in default cluster preferences (noble)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
