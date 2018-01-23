@@ -20,20 +20,18 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
@@ -50,10 +48,9 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TZ;
-import static org.apache.solr.handler.admin.CollectionsHandler.ROUTED_ALIAS_COLLECTION_PROP_PFX;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER;
 
 
@@ -61,42 +58,15 @@ public class CreateAliasCmd implements Cmd {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String START = "start"; //TODO, router related
   public static final String ROUTING_TYPE = "router.name";
   public static final String ROUTING_FIELD = "router.field";
   public static final String ROUTING_INCREMENT = "router.interval";
   public static final String ROUTING_MAX_FUTURE = "router.max-future-ms";
-  public static final String START = "start";
-  // Collection constants should all reflect names in the v2 structured input for this command, not v1
-  // names used for CREATE
-  public static final String CREATE_COLLECTION_CONFIG = "create-collection.config";
-  public static final String CREATE_COLLECTION_ROUTER_NAME = "create-collection.router.name";
-  public static final String CREATE_COLLECTION_ROUTER_FIELD = "create-collection.router.field";
-  public static final String CREATE_COLLECTION_NUM_SHARDS = "create-collection.numShards";
-  public static final String CREATE_COLLECTION_SHARDS = "create-collection.shards";
-  public static final String CREATE_COLLECTION_REPLICATION_FACTOR = "create-collection.replicationFactor";
-  public static final String CREATE_COLLECTION_NRT_REPLICAS = "create-collection.nrtReplicas";
-  public static final String CREATE_COLLECTION_TLOG_REPLICAS = "create-collection.tlogReplicas";
-  public static final String CREATE_COLLECTION_PULL_REPLICAS = "create-collection.pullReplicas";
-  public static final String CREATE_COLLECTION_NODE_SET = "create-collection.nodeSet";
-  public static final String CREATE_COLLECTION_SHUFFLE_NODES = "create-collection.shuffleNodes";
-  public static final String CREATE_COLLECTION_MAX_SHARDS_PER_NODE = "create-collection.maxShardsPerNode";
-  public static final String CREATE_COLLECTION_AUTO_ADD_REPLICAS = "create-collection.autoAddReplicas";
-  public static final String CREATE_COLLECTION_RULE = "create-collection.rule";
-  public static final String CREATE_COLLECTION_SNITCH = "create-collection.snitch";
-  public static final String CREATE_COLLECTION_POLICY = "create-collection.policy";
-  public static final String CREATE_COLLECTION_PROPERTIES = "create-collection.properties";
-  public static final String FROM_API = "fromApi";
-  public static final String STATE_FORMAT = "stateFormat";
-  public static final String NAME = "name";
 
-  // These are parameters that get added by the collection creation command parsing that we
-  // will want to not store in alias metadata.
-  public static final Set<String> COLLECTION_CREATION_CRUFT =   // wanted: Set.of() from jdk9
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(FROM_API, STATE_FORMAT, NAME)));
-
+  public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
 
   private final OverseerCollectionMessageHandler ocmh;
-
 
   /**
    * Parameters required for creating a routed alias
@@ -114,35 +84,14 @@ public class CreateAliasCmd implements Cmd {
   public static final List<String> NONREQUIRED_ROUTING_PARAMS = Collections.unmodifiableList(Arrays.asList(
           ROUTING_MAX_FUTURE,
           TZ));
-  /**
-   * Parameters used by routed Aliases to create collections.
-   */
-  public static final List<String> COLLECTION_ROUTING_PARAMS = Collections.unmodifiableList(Arrays.asList(
-      CREATE_COLLECTION_CONFIG,
-      CREATE_COLLECTION_ROUTER_FIELD,
-      CREATE_COLLECTION_ROUTER_NAME,
-      CREATE_COLLECTION_NUM_SHARDS,
-      CREATE_COLLECTION_SHARDS,
-      CREATE_COLLECTION_REPLICATION_FACTOR,
-      CREATE_COLLECTION_NRT_REPLICAS,
-      CREATE_COLLECTION_TLOG_REPLICAS,
-      CREATE_COLLECTION_PULL_REPLICAS,
-      CREATE_COLLECTION_NODE_SET,
-      CREATE_COLLECTION_SHUFFLE_NODES,
-      CREATE_COLLECTION_MAX_SHARDS_PER_NODE,
-      CREATE_COLLECTION_AUTO_ADD_REPLICAS,
-      CREATE_COLLECTION_RULE,
-      CREATE_COLLECTION_SNITCH,
-      CREATE_COLLECTION_POLICY,
-      CREATE_COLLECTION_PROPERTIES));
 
-  public static final List<String> CREATE_ROUTED_ALIAS_PARAMS;
-  static {
-    List<String> params = new ArrayList<>();
-    params.addAll(REQUIRED_ROUTING_PARAMS);
-    params.addAll(NONREQUIRED_ROUTING_PARAMS);
-    params.addAll(COLLECTION_ROUTING_PARAMS);
-    CREATE_ROUTED_ALIAS_PARAMS = Collections.unmodifiableList(params);
+  private static Predicate<String> PARAM_IS_METADATA = key -> !key.equals(NAME) && !key.equals(START)
+      && (REQUIRED_ROUTING_PARAMS.contains(key) || NONREQUIRED_ROUTING_PARAMS.contains(key)
+      || key.startsWith(CREATE_COLLECTION_PREFIX));
+
+  private static boolean anyRoutingParams(ZkNodeProps message) {
+    return message.containsKey(ROUTING_FIELD) || message.containsKey(ROUTING_TYPE) || message.containsKey(START)
+        || message.containsKey(ROUTING_INCREMENT) || message.containsKey(TZ);
   }
 
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
@@ -155,13 +104,31 @@ public class CreateAliasCmd implements Cmd {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     ZkStateReader.AliasesManager holder = zkStateReader.aliasesHolder;
+
+    //TODO refactor callCreatePlainAlias
     if (!anyRoutingParams(message)) {
+
       final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
       final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
       validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
       holder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
-    } else {
-      final String routedField = message.getStr(ROUTING_FIELD);
+
+    } else { //TODO refactor callCreateRoutedAlias
+
+      // Validate we got everything we need
+      if (!message.getProperties().keySet().containsAll(REQUIRED_ROUTING_PARAMS)) {
+        throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + REQUIRED_ROUTING_PARAMS
+        + " plus some create-collection prefixed ones.");
+      }
+
+      Map<String, String> aliasMetadata = new LinkedHashMap<>();
+      message.getProperties().entrySet().stream()
+          .filter(entry -> PARAM_IS_METADATA.test(entry.getKey()))
+          .forEach(entry -> aliasMetadata.put(entry.getKey(), (String) entry.getValue()));
+
+      //TODO read these from metadata where appropriate. This leads to consistent logic between initial routed alias
+      //  collection creation, and subsequent collections to be created.
+
       final String routingType = message.getStr(ROUTING_TYPE);
       final String tz = message.getStr(TZ);
       final String start = message.getStr(START);
@@ -169,7 +136,7 @@ public class CreateAliasCmd implements Cmd {
       final String maxFutureMs = message.getStr(ROUTING_MAX_FUTURE);
 
       try {
-        if (0 > Long.parseLong(maxFutureMs)) {
+        if (maxFutureMs != null && 0 > Long.parseLong(maxFutureMs)) {
           throw new NumberFormatException("Negative value not allowed here");
         }
       } catch (NumberFormatException e) {
@@ -177,38 +144,21 @@ public class CreateAliasCmd implements Cmd {
             "of milliseconds greater than or equal to zero");
       }
 
-      // Validate we got everything we need
-      if (routedField == null || routingType == null || start == null || increment == null) {
-        throw new SolrException(BAD_REQUEST, "If any of " + CREATE_ROUTED_ALIAS_PARAMS +
-            " are supplied, then all of " + REQUIRED_ROUTING_PARAMS + " must be present.");
-      }
-
       if (!"time".equals(routingType)) {
         throw new SolrException(BAD_REQUEST, "Only time based routing is supported at this time");
       }
+
       // Check for invalid timezone
-      TimeZoneUtils.parseTimezone(tz);
-      TimeZone zone;
-      if (tz != null) {
-        zone = TimeZoneUtils.getTimeZone(tz);
-      } else {
-        zone = TimeZoneUtils.getTimeZone("UTC");
-      }
+      TimeZone zone = TimeZoneUtils.parseTimezone(tz);
 
       // check that the increment is valid date math
       try {
-        new DateMathParser().parseMath(increment);
+        new DateMathParser(zone).parseMath(increment);
       } catch (ParseException e) {
         throw new SolrException(BAD_REQUEST,e.getMessage(),e);
       }
 
-      Instant startTime = validateStart(zone, start);
-
-      // check config
-      String config = String.valueOf(message.getProperties().get(ROUTED_ALIAS_COLLECTION_PROP_PFX + COLL_CONF));
-      if (!zkStateReader.getConfigManager().configExists(config)) {
-        throw new SolrException(BAD_REQUEST, "Could not find config '" + config + "'");
-      }
+      Instant startTime = parseStart(start, zone);
 
       // It's too much work to check the routed field against the schema, there seems to be no good way to get
       // a copy of the schema aside from loading it directly from zookeeper based on the config name, but that
@@ -219,16 +169,15 @@ public class CreateAliasCmd implements Cmd {
       String initialCollectionName = TimeRoutedAliasUpdateProcessor
           .formatCollectionNameFromInstant(aliasName, startTime, DATE_TIME_FORMATTER);
 
+      // Create the collection
       NamedList createResults = new NamedList();
-      ZkNodeProps collectionProps = selectByPrefix(ROUTED_ALIAS_COLLECTION_PROP_PFX, message)
-          .plus(CommonParams.NAME, initialCollectionName);
-      Map<String, String> metadata = buildAliasMap(routedField, routingType, tz, increment, maxFutureMs, collectionProps);
-      RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, createResults, aliasName, metadata, initialCollectionName, ocmh);
-      List<String> collectionList = Collections.singletonList(initialCollectionName);
-      validateAllCollectionsExistAndNoDups(collectionList, zkStateReader);
+      RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, createResults, aliasName, aliasMetadata, initialCollectionName, ocmh);
+      validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
+
+      // Create/update the alias
       holder.applyModificationAndExportToZk(aliases -> aliases
           .cloneWithCollectionAlias(aliasName, initialCollectionName)
-          .cloneWithCollectionAliasMetadata(aliasName, metadata));
+          .cloneWithCollectionAliasMetadata(aliasName, aliasMetadata));
     }
 
     // Sleep a bit to allow ZooKeeper state propagation.
@@ -246,53 +195,18 @@ public class CreateAliasCmd implements Cmd {
     Thread.sleep(100);
   }
 
-  private Map<String, String> buildAliasMap(String routedField, String routingType, String tz, String increment, String maxFutureMs, ZkNodeProps collectionProps) {
-    Map<String, Object> properties = collectionProps.getProperties();
-    Map<String,String> cleanMap = properties.entrySet().stream()
-        .filter(stringObjectEntry -> !COLLECTION_CREATION_CRUFT.contains(stringObjectEntry.getKey()))
-        .collect(Collectors.toMap((e) -> "collection-create." + e.getKey(), e -> String.valueOf(e.getValue())));
-    cleanMap.put(ROUTING_FIELD, routedField);
-    cleanMap.put(ROUTING_TYPE, routingType);
-    cleanMap.put(ROUTING_INCREMENT, increment);
-    cleanMap.put(ROUTING_MAX_FUTURE, maxFutureMs);
-    cleanMap.put(TZ, tz);
-    return cleanMap;
+  private Instant parseStart(String str, TimeZone zone) {
+    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
+    checkMilis(start);
+    return start;
   }
 
-  private Instant validateStart(TimeZone zone, String start) {
-    // This is the normal/easy case, if we can get away with this great!
-    TemporalAccessor startTime = attemptTimeStampParsing(start, zone.toZoneId());
-    if (startTime == null) {
-      Date date = DateMathParser.parseMath(new Date(), start);
-      checkMilis(date);
-      return date.toInstant();
-    }
-    Instant startInstant = Instant.from(startTime);
-    checkMilis(Date.from(startInstant));
-    return startInstant;
-  }
-
-  private void checkMilis(Date date) {
-    if (!date.toInstant().truncatedTo(ChronoUnit.SECONDS).equals(date.toInstant())){
+  private void checkMilis(Instant date) {
+    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(BAD_REQUEST,
           "Date or date math for start time includes milliseconds, which is not supported. " +
               "(Hint: 'NOW' used without rounding always has this problem)");
     }
-  }
-
-  private TemporalAccessor attemptTimeStampParsing(String start, ZoneId zone) {
-    try {
-      DATE_TIME_FORMATTER.withZone(zone);
-      return DATE_TIME_FORMATTER.parse(start);
-    } catch (DateTimeParseException e) {
-      return null;
-    }
-  }
-
-  private boolean anyRoutingParams(ZkNodeProps message) {
-
-    return message.containsKey(ROUTING_FIELD) || message.containsKey(ROUTING_TYPE) || message.containsKey(START)
-        || message.containsKey(ROUTING_INCREMENT) || message.containsKey(TZ);
   }
 
   private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {

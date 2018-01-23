@@ -78,23 +78,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     IOUtils.close(solrClient);
   }
 
-  //TODO this is necessary when -Dtests.iters but why? Some other tests aren't affected
-  @Before
-  public void doBefore() throws Exception {
-    // delete aliases first to avoid problems such as: https://issues.apache.org/jira/browse/SOLR-11839
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> {
-      Aliases a = zkStateReader.getAliases();
-      for (String alias : a.getCollectionAliasMap().keySet()) {
-        a = a.cloneWithCollectionAlias(alias,null); // remove
-      }
-      return a;
-    });
-    for (String col : CollectionAdminRequest.listCollections(solrClient)) {
-      CollectionAdminRequest.deleteCollection(col).process(solrClient);
-    }
-  }
-
   @Test
   public void test() throws Exception {
     // First create a config using REST API.  To do this, we create a collection with the name of the eventual config.

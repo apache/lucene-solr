@@ -18,11 +18,11 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -35,19 +35,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_MAX_SHARDS_PER_NODE;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_NUM_SHARDS;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_PULL_REPLICAS;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_REPLICATION_FACTOR;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_ROUTER_FIELD;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_ROUTER_NAME;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_SHARDS;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_TLOG_REPLICAS;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.ROUTING_FIELD;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.ROUTING_INCREMENT;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.ROUTING_MAX_FUTURE;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.ROUTING_TYPE;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateTimeRoutedAlias.ROUTING_FIELD;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateTimeRoutedAlias.ROUTING_INCREMENT;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateTimeRoutedAlias.ROUTING_TYPE;
 
+@LuceneTestCase.Slow
 public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -87,7 +79,6 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
 
     final AtomicReference<Exception> failure = new AtomicReference<>();
-    final int timeToRunSec = 30;
 
     // Note: this number of threads seems to work regularly with the up-tweaked number of retries (50) in
     // org.apache.solr.common.cloud.ZkStateReader.AliasesManager.applyModificationAndExportToZk()
@@ -108,16 +99,13 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     int numStart = num;
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAlias" + num;
-      uploadConfig(configset("_default"), aliasName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
 
       int i = num - numStart;
-      Map<String, String> routingParams = getMinimalRoutingCommands();
-      Map<String, String> collectionParams = getMinimalCollectionParams();
       threads[i] = new CreateRoutedAliasThread("create-delete-search-" + i, aliasName, "NOW/HOUR",
-          "UTC", routingParams, collectionParams, timeToRunSec, solrClient, failure, false);
+          solrClient, failure, false);
     }
 
     startAll(threads);
@@ -130,72 +118,25 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   @Test
   public void testConcurrentCreateRoutedAliasComplex() {
     final AtomicReference<Exception> failure = new AtomicReference<>();
-    final int timeToRunSec = 30;
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[1];
     int numStart = num;
     System.out.println("NUM ==> " +num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
-      uploadConfig(configset("_default"), aliasName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
       int i = num - numStart;
-      Map<String, String> routingParams = getMinimalRoutingCommands();
-      Map<String, String> collectionParams = getComplicatedCollectionParams();
       threads[i] = new CreateRoutedAliasThread("create-routed-alias-cplx-" + i,
-          aliasName, "2017-12-25_23_24_25","EST", routingParams, collectionParams,
-          timeToRunSec, solrClient, failure, true);
+          aliasName, "2017-12-25T23:24:25Z",
+          solrClient, failure, true);
     }
 
     startAll(threads);
     joinAll(threads);
 
     assertNull("concurrent alias creation failed " + failure.get(), failure.get());
-  }
-
-  public Map<String,String> getComplicatedCollectionParams() {
-    Map<String, String> result = getMinimalCollectionParams();
-    result.put(CREATE_COLLECTION_ROUTER_NAME, "implicit");
-    result.put(CREATE_COLLECTION_ROUTER_FIELD, "implicit_s");
-    result.put(CREATE_COLLECTION_SHARDS, "foo,bar");
-    result.remove(CREATE_COLLECTION_NUM_SHARDS);
-    result.remove(CREATE_COLLECTION_REPLICATION_FACTOR);
-    result.put(CREATE_COLLECTION_REPLICATION_FACTOR,"2" );
-    result.put(CREATE_COLLECTION_NUM_SHARDS,"2");
-    result.put(CREATE_COLLECTION_MAX_SHARDS_PER_NODE, "4");
-    result.put(CREATE_COLLECTION_PULL_REPLICAS, "2");
-    result.put(CREATE_COLLECTION_TLOG_REPLICAS, "2");
-    return result;
-  }
-
-  static Map<String, String> getMinimalCollectionParams() {
-    // needs to be V1 param name below
-
-    HashMap<String, String> cparams = new HashMap<>();
-    cparams.put("create-collection.collection.configName", "_default");
-    cparams.put(CREATE_COLLECTION_NUM_SHARDS,"1" );
-    cparams.put(CREATE_COLLECTION_REPLICATION_FACTOR,"1" );
-    return cparams;
-  }
-
-  static Map<String, String> getMinimalRoutingCommands() {
-    HashMap<String, String> rparams = new HashMap<>();
-    rparams.put(ROUTING_TYPE, "time");
-    rparams.put(ROUTING_FIELD, "routedFoo_dt");
-    rparams.put(ROUTING_INCREMENT, "+12HOUR");
-    rparams.put(ROUTING_MAX_FUTURE, String.valueOf(1000 * 60 * 60));
-    return rparams;
-  }
-
-
-  private void uploadConfig(Path configDir, String configName) {
-    try {
-      solrCluster.uploadConfigSet(configDir, configName);
-    } catch (IOException | KeeperException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private void joinAll(final CreateRoutedAliasThread[] threads) {
@@ -216,30 +157,19 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   }
 
   private static class CreateRoutedAliasThread extends Thread {
-    protected final String aliasName;
+    final String aliasName;
     protected final String start;
-    protected final String tz;
-    protected final Map<String, String> routingParams;
-    protected final Map<String, String> collectionParams;
-    protected final long timeToRunSec;
     protected final SolrClient solrClient;
     protected final AtomicReference<Exception> failure;
-    private final boolean v2;
 
-    public CreateRoutedAliasThread(
-        String name, String aliasName, String start, String tz, Map<String,
-        String> routingParams, Map<String, String> collectionParams, long timeToRunSec, SolrClient solrClient,
+    CreateRoutedAliasThread(
+        String name, String aliasName, String start, SolrClient solrClient,
         AtomicReference<Exception> failure, boolean v2) {
       super(name);
       this.aliasName = aliasName;
       this.start = start;
-      this.tz = tz;
-      this.routingParams = routingParams;
-      this.collectionParams = collectionParams;
-      this.timeToRunSec = timeToRunSec;
       this.solrClient = solrClient;
       this.failure = failure;
-      this.v2 = v2;
     }
 
     @Override
@@ -247,11 +177,11 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
         doWork();
     }
 
-    protected void doWork() {
+    void doWork() {
       createAlias();
     }
 
-    protected void addFailure(Exception e) {
+    void addFailure(Exception e) {
       log.error("Add Failure", e);
       synchronized (failure) {
         if (failure.get() != null) {
@@ -264,8 +194,14 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
     private void createAlias() {
       try {
-        CollectionAdminRequest.CreateRoutedAlias rq = CollectionAdminRequest
-            .createRoutedAlias(aliasName, start, "UTC", getMinimalRoutingCommands(), getMinimalCollectionParams());
+        CollectionAdminRequest.CreateTimeRoutedAlias rq = CollectionAdminRequest
+            .createTimeRoutedAlias(
+                aliasName,
+                start,
+                "+12HOUR",
+                "routedFoo_dt",
+                CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1)
+            );
 
         final CollectionAdminResponse response = rq.process(solrClient);
         if (response.getStatus() != 0) {
@@ -278,7 +214,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     }
 
 
-    public void joinAndClose() throws InterruptedException {
+    void joinAndClose() throws InterruptedException {
       try {
         super.join(60000);
       } finally {

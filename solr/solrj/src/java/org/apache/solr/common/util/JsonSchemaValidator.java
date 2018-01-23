@@ -236,7 +236,8 @@ class RequiredValidator extends Validator<List<String>> {
       for (String requiredProp : requiredProps) {
         if (requiredProp.contains(".")) {
           if (requiredProp.endsWith(".")) {
-            errs.add("Illegal required attribute name (ends with '.'" + requiredProp + ") This is a bug.");
+            errs.add("Illegal required attribute name (ends with '.': " + requiredProp + ").  This is a bug.");
+            return false;
           }
           String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
           if (!validate(((Map)o).get(requiredProp), errs, Collections.singleton(subprop))) {

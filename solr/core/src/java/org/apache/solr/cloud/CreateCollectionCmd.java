@@ -405,9 +405,6 @@ public class CreateCollectionCmd implements Cmd {
         try {
           Map<String,Object> collectionProps = new HashMap<>();
 
-          // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
-          String defaultConfigName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, collection);
-
           if (params.size() > 0) {
             collectionProps.putAll(params);
             // if the config name wasn't passed in, use the default
@@ -417,6 +414,8 @@ public class CreateCollectionCmd implements Cmd {
             }
 
           } else if (System.getProperty("bootstrap_confdir") != null) {
+            String defaultConfigName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, collection);
+
             // if we are bootstrapping a collection, default the config for
             // a new collection to the collection we are bootstrapping
             log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
@@ -445,6 +444,7 @@ public class CreateCollectionCmd implements Cmd {
           stateManager.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, false);
 
         } catch (KeeperException e) {
+          //TODO shouldn't the stateManager ensure this does not happen; should throw AlreadyExistsException
           // it's okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
             throw e;

@@ -119,7 +119,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
-          throw new SolrException(BAD_REQUEST, e);
+          throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
         }
@@ -199,7 +199,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
     @Override
     public Iterator<String> getParameterNamesIterator() {
-      return meta.getParamNames(co).iterator();
+      return meta.getParamNamesIterator(co);
     }
   }
 }

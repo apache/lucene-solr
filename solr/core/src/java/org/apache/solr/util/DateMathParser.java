@@ -217,12 +217,25 @@ public class DateMathParser  {
   /**
    * Parses a String which may be a date (in the standard ISO-8601 format)
    * followed by an optional math expression.
-   * @param now an optional fixed date to use as "NOW"
+   * The TimeZone is taken from the {@code TZ} param retrieved via {@link SolrRequestInfo}, defaulting to UTC.
+   * @param now an optional fixed date to use as "NOW". {@link SolrRequestInfo} is consulted if unspecified.
    * @param val the string to parse
    */
+  //TODO this API is a bit clumsy.  "now" is rarely used.
   public static Date parseMath(Date now, String val) {
+    return parseMath(now, val, null);
+  }
+
+  /**
+   * Parses a String which may be a date (in the standard ISO-8601 format)
+   * followed by an optional math expression.
+   * @param now an optional fixed date to use as "NOW"
+   * @param val the string to parse
+   * @param zone the timezone to use
+   */
+  public static Date parseMath(Date now, String val, TimeZone zone) {
     String math;
-    final DateMathParser p = new DateMathParser();
+    final DateMathParser p = new DateMathParser(zone);
 
     if (null != now) p.setNow(now);
 
