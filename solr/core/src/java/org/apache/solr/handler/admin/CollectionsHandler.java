@@ -133,6 +133,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.cloud.ModifyAliasCmd.ALLOW_WHITESPACE_VALUES;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
@@ -479,14 +480,35 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
     /**
-     * Handle cluster status request.
-     * Can return status per specific collection/shard or per all collections.
+     * Change metadata for an alias (use CREATEALIAS_OP to change the actual value of the alias)
+     */
+    MODIFYALIAS_OP(MODIFYALIAS, (req, rsp, h) -> {
+      Map<String, Object> params = req.getParams().required().getAll(null, NAME);
+      req.getParams().getAll(params, ALLOW_WHITESPACE_VALUES);
+
+      // Note: success/no-op in the event of no metadata supplied is intentional. Keeps code simple and one less case
+      // for api-callers to check for.
+      return convertPrefixToMap(req.getParams(), params, "metadata");
+    }),
+
+    /**
+     * List the aliases and associated metadata.
      */
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
       Aliases aliases = zkStateReader.getAliases();
       if (aliases != null) {
+        // the aliases themselves...
         rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
+        // Any metadata for the above aliases.
+        Map<String,Map<String,String>> meta = new LinkedHashMap<>();
+        for (String alias : aliases.getCollectionAliasListMap().keySet()) {
+          Map<String, String> collectionAliasMetadata = aliases.getCollectionAliasMetadata(alias);
+          if (collectionAliasMetadata != null) {
+            meta.put(alias, collectionAliasMetadata);
+          }
+        }
+        rsp.getValues().add("metadata", meta);
       }
       return null;
     }),
@@ -931,6 +953,32 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "shard");
     }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
+
+    /**
+     * Places all prefixed properties in the sink map (or a new map) using the prefix as the key and a map of
+     * all prefixed properties as the value. The sub-map keys have the prefix removed.
+     *
+     * @param params The solr params from which to extract prefixed properties.
+     * @param sink The map to add the properties too.
+     * @param prefix The prefix to identify properties to be extracted
+     * @return The sink map, or a new map if the sink map was null
+     */
+    private static Map<String, Object> convertPrefixToMap(SolrParams params, Map<String, Object> sink, String prefix) {
+      Map<String,Object> result = new LinkedHashMap<>();
+      Iterator<String> iter =  params.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String param = iter.next();
+        if (param.startsWith(prefix)) {
+          result.put(param.substring(prefix.length()+1), params.get(param));
+        }
+      }
+      if (sink == null) {
+        sink = new LinkedHashMap<>();
+      }
+      sink.put(prefix, result);
+      return sink;
+    }
+
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
