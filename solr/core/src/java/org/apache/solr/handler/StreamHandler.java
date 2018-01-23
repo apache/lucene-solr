@@ -310,6 +310,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("indexOf", IndexOfEvaluator.class)
         .withFunctionName("columnCount", ColumnCountEvaluator.class)
         .withFunctionName("rowCount", RowCountEvaluator.class)
+        .withFunctionName("fuzzyKmeans", FuzzyKmeansEvaluator.class)
+        .withFunctionName("getMembershipMatrix", GetMembershipMatrixEvaluator.class)
 
         // Boolean Stream Evaluators
 
