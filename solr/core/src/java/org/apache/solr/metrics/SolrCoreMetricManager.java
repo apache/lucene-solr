@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.util.Utils;
@@ -150,6 +151,12 @@ public class SolrCoreMetricManager implements Closeable {
     if (getLeaderRegistryName() != null) {
       metricManager.closeReporters(getLeaderRegistryName(), tag);
     }
+    MetricRegistry metricRegistry = getRegistry();
+    metricRegistry.getGauges().forEach((k, v) -> {
+      Object val = v.getValue();
+      metricRegistry.remove(k);
+      metricRegistry.register(k, (Gauge)() -> val);
+    });
   }
 
   public SolrCore getCore() {
