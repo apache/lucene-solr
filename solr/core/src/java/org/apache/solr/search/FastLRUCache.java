@@ -60,7 +60,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   private long maxRamBytes;
 
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   @Override

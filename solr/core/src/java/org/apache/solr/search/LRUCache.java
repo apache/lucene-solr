@@ -87,7 +87,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private Map<K,V> map;
   private String description="LRU Cache";
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   private long maxRamBytes = Long.MAX_VALUE;

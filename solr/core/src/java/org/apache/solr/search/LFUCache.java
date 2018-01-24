@@ -65,7 +65,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   private int showItems = 0;
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   @Override
