@@ -41,6 +41,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
+import org.apache.solr.cloud.autoscaling.ComputePlanAction;
+import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
@@ -1142,6 +1144,8 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
         "'enabled' : true," +
         "'rate' : 1.0," +
         "'actions' : [" +
+        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}" +
+        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
         "]" +
         "}}";
@@ -1155,6 +1159,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
         "'name' : 'srt'," +
         "'trigger' : 'search_rate_trigger'," +
         "'stage' : ['FAILED','SUCCEEDED']," +
+        "'afterAction': ['compute', 'execute', 'test']," +
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
@@ -1172,9 +1177,20 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(2000);
-    assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
-    CapturedEvent ev = listenerEvents.get("srt").get(0);
+    cluster.getTimeSource().sleep(5000);
+    List<CapturedEvent> events = listenerEvents.get("srt");
+
+    assertEquals(listenerEvents.toString(), 4, events.size());
+    assertEquals("AFTER_ACTION", events.get(0).stage.toString());
+    assertEquals("compute", events.get(0).actionName);
+    assertEquals("AFTER_ACTION", events.get(1).stage.toString());
+    assertEquals("execute", events.get(1).actionName);
+    assertEquals("AFTER_ACTION", events.get(2).stage.toString());
+    assertEquals("test", events.get(2).actionName);
+    assertEquals("SUCCEEDED", events.get(3).stage.toString());
+    assertNull(events.get(3).actionName);
+
+    CapturedEvent ev = events.get(0);
     long now = cluster.getTimeSource().getTime();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
@@ -1208,5 +1224,13 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue(totalNodeRate.get() > 100.0);
     assertTrue(totalShardRate.get() > 100.0);
     assertTrue(totalReplicaRate.get() > 100.0);
+
+    // check operations
+    List<Map<String, Object>> ops = (List<Map<String, Object>>)ev.context.get("properties.operations");
+    assertNotNull(ops);
+    assertTrue(ops.size() > 1);
+    for (Map<String, Object> m : ops) {
+      assertEquals("ADDREPLICA", m.get("params.action"));
+    }
   }
 }

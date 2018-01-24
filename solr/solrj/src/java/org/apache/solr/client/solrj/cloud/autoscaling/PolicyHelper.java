@@ -273,7 +273,7 @@ public class PolicyHelper {
      *
      */
     private void returnSession(SessionWrapper sessionWrapper) {
-      TimeSource timeSource = sessionWrapper.session.cloudManager.getTimeSource();
+      TimeSource timeSource = sessionWrapper.session != null ? sessionWrapper.session.cloudManager.getTimeSource() : TimeSource.NANO_TIME;
       synchronized (lockObj) {
         sessionWrapper.status = Status.EXECUTING;
         log.info("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} ", time(timeSource, MILLISECONDS),

@@ -324,6 +324,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param results result of the operation
    */
   public void simAddReplica(ZkNodeProps message, NamedList results) throws Exception {
+    if (message.getStr(CommonAdminParams.ASYNC) != null) {
+      results.add(CoreAdminParams.REQUESTID, message.getStr(CommonAdminParams.ASYNC));
+    }
     ClusterState clusterState = getClusterState();
     DocCollection coll = clusterState.getCollection(message.getStr(ZkStateReader.COLLECTION_PROP));
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
