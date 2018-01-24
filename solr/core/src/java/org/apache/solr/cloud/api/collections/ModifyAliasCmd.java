@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
@@ -29,7 +29,7 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.*;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
