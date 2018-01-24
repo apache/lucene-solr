@@ -18,9 +18,11 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +45,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1359,97 +1362,91 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   /**
    * Returns a SolrRequest to create a routed alias. Only time based routing is supported presently,
-   * For time based routing, the start is a timestamp or date math.
+   * For time based routing, the start a standard Solr timestamp string (possibly with "date math").
    *
    * @param aliasName the name of the alias to create.
-   * @param start the the start of the routing.
-   * @param tz    the timezone on which to base date math (for time based routing)
-   * @param routingParams all router.* parameters, including the 'router.' prefix
-   * @param collectionParams all create-collection.* parameters including the 'create-collection.' prefix
-   *
+   * @param start the start of the routing.  A standard Solr date: ISO-8601 or NOW with date math.
+   * @param interval date math representing the time duration of each collection (e.g. {@code +1DAY})
+   * @param routerField the document field to contain the timestamp to route on
+   * @param createCollTemplate Holds options to create a collection.  The "name" is ignored.
    */
-  public static CreateRoutedAlias createRoutedAlias(String aliasName, String start, String tz,
-                                                    Map<String,String> routingParams,
-                                                    Map<String,String> collectionParams) {
-    return new CreateRoutedAlias(aliasName,start,tz,routingParams,collectionParams);
+  public static CreateTimeRoutedAlias createTimeRoutedAlias(String aliasName, String start,
+                                                            String interval,
+                                                            String routerField,
+                                                            Create createCollTemplate) {
+
+    return new CreateTimeRoutedAlias(aliasName, routerField, start, interval, createCollTemplate);
   }
 
-  public static class CreateRoutedAlias extends AsyncCollectionAdminRequest {
+  public static class CreateTimeRoutedAlias extends AsyncCollectionAdminRequest {
     // TODO: This and other commands in this file seem to need to share some sort of constants class with core
     // to allow this stuff not to be duplicated. (this is pasted from CreateAliasCmd.java), however I think
     // a comprehensive cleanup of this for all the requests in this class should be done as a separate ticket.
-
 
     public static final String ROUTING_TYPE = "router.name";
     public static final String ROUTING_FIELD = "router.field";
     public static final String ROUTING_INCREMENT = "router.interval";
     public static final String ROUTING_MAX_FUTURE = "router.max-future-ms";
     public static final String START = "start";
-    public static final String CREATE_COLLECTION_CONFIG = "create-collection.config";
-    public static final String CREATE_COLLECTION_ROUTER_NAME = "create-collection.router.name";
-    public static final String CREATE_COLLECTION_ROUTER_FIELD = "create-collection.router.field";
-    public static final String CREATE_COLLECTION_NUM_SHARDS = "create-collection.numShards";
-    public static final String CREATE_COLLECTION_SHARDS = "create-collection.shards";
-    public static final String CREATE_COLLECTION_REPLICATION_FACTOR = "create-collection.replicationFactor";
-    public static final String CREATE_COLLECTION_NRT_REPLICAS = "create-collection.nrtReplicas";
-    public static final String CREATE_COLLECTION_TLOG_REPLICAS = "create-collection.tlogReplicas";
-    public static final String CREATE_COLLECTION_PULL_REPLICAS = "create-collection.pullReplicas";
-    public static final String CREATE_COLLECTION_NODE_SET = "create-collection.nodeSet";
-    public static final String CREATE_COLLECTION_SHUFFLE_NODES = "create-collection.shuffleNodes";
-    public static final String CREATE_COLLECTION_MAX_SHARDS_PER_NODE = "create-collection.maxShardsPerNode";
-    public static final String CREATE_COLLECTION_AUTO_ADD_REPLICAS = "create-collection.autoAddReplicas";
-    public static final String CREATE_COLLECTION_RULE = "create-collection.rule";
-    public static final String CREATE_COLLECTION_SNITCH = "create-collection.snitch";
-    public static final String CREATE_COLLECTION_POLICY = "create-collection.policy";
-    public static final String CREATE_COLLECTION_PROPERTIES = "create-collection.properties";
 
     private final String aliasName;
+    private final String routerField;
     private final String start;
-    private final String tz;
-    private final Map<String, String> routingParams;
-    private final Map<String, String> collectionParams;
+    private final String interval;
+    //Optional:
+    private TimeZone tz;
+    private Integer maxFutureMs;
 
+    private final Create createCollTemplate;
 
-    public CreateRoutedAlias(String aliasName, String start, String tz,
-                             Map<String, String> routingParams,
-                             Map<String, String> collectionParams) {
+    public CreateTimeRoutedAlias(String aliasName, String routerField, String start, String interval, Create createCollTemplate) {
       super(CollectionAction.CREATEROUTEDALIAS);
       this.aliasName = aliasName;
       this.start = start;
+      this.interval = interval;
+      this.routerField = routerField;
+      this.createCollTemplate = createCollTemplate;
+    }
+
+    /** Sets the timezone for interpreting any Solr "date math. */
+    public CreateTimeRoutedAlias setTimeZone(TimeZone tz) {
       this.tz = tz;
-      this.routingParams = routingParams;
-      this.collectionParams = collectionParams;
+      return this;
+    }
+
+    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
+      this.maxFutureMs = maxFutureMs;
+      return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.add(CommonParams.NAME, aliasName);
+      params.add(ROUTING_TYPE, "time");
+      params.add(ROUTING_FIELD, routerField);
       params.add(START, start);
-      params.add(CommonParams.TZ, tz );
-      // these need to be V1 params, not V2
-      params.add(ROUTING_FIELD, routingParams.get(ROUTING_FIELD));
-      params.add(ROUTING_INCREMENT, routingParams.get(ROUTING_INCREMENT));
-      params.add(ROUTING_MAX_FUTURE, routingParams.get(ROUTING_MAX_FUTURE));
-      params.add(ROUTING_TYPE, routingParams.get(ROUTING_TYPE));
-      params.add("create-collection.collection.configName", collectionParams.get("create-collection.collection.configName"));
-      params.add(CREATE_COLLECTION_ROUTER_NAME, collectionParams.get(CREATE_COLLECTION_ROUTER_NAME));
-      params.add(CREATE_COLLECTION_ROUTER_FIELD, collectionParams.get(CREATE_COLLECTION_ROUTER_FIELD));
-      params.add(CREATE_COLLECTION_AUTO_ADD_REPLICAS, collectionParams.get(CREATE_COLLECTION_AUTO_ADD_REPLICAS));
-      params.add(CREATE_COLLECTION_MAX_SHARDS_PER_NODE, collectionParams.get(CREATE_COLLECTION_MAX_SHARDS_PER_NODE));
-      params.add(CREATE_COLLECTION_NODE_SET, collectionParams.get(CREATE_COLLECTION_NODE_SET));
-      params.add(CREATE_COLLECTION_NRT_REPLICAS, collectionParams.get(CREATE_COLLECTION_NRT_REPLICAS));
-      params.add(CREATE_COLLECTION_NUM_SHARDS, collectionParams.get(CREATE_COLLECTION_NUM_SHARDS));
-      params.add(CREATE_COLLECTION_POLICY, collectionParams.get(CREATE_COLLECTION_POLICY));
-      params.add(CREATE_COLLECTION_PROPERTIES, collectionParams.get(CREATE_COLLECTION_PROPERTIES));
-      params.add(CREATE_COLLECTION_PULL_REPLICAS, collectionParams.get(CREATE_COLLECTION_PULL_REPLICAS));
-      params.add(CREATE_COLLECTION_REPLICATION_FACTOR, collectionParams.get(CREATE_COLLECTION_REPLICATION_FACTOR));
-      params.add(CREATE_COLLECTION_RULE, collectionParams.get(CREATE_COLLECTION_RULE));
-      params.add(CREATE_COLLECTION_SHARDS, collectionParams.get(CREATE_COLLECTION_SHARDS));
-      params.add(CREATE_COLLECTION_SNITCH, collectionParams.get(CREATE_COLLECTION_SNITCH));
-      params.add(CREATE_COLLECTION_SHUFFLE_NODES, collectionParams.get(CREATE_COLLECTION_SHUFFLE_NODES));
-      params.add(CREATE_COLLECTION_TLOG_REPLICAS, collectionParams.get(CREATE_COLLECTION_TLOG_REPLICAS));
-      return params;
+      params.add(ROUTING_INCREMENT, interval);
+      if (tz != null) {
+        params.add(CommonParams.TZ, tz.getID());
+      }
+      if (maxFutureMs != null) {
+        params.add(ROUTING_MAX_FUTURE, ""+maxFutureMs);
+      }
+
+      // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
+      final SolrParams collParams = createCollTemplate.getParams();
+      final Iterator<String> pIter = collParams.getParameterNamesIterator();
+      while (pIter.hasNext()) {
+        String key = pIter.next();
+        if (key.equals(CollectionParams.ACTION) || key.equals("name")) {
+          continue;
+        }
+        createCollParams.set("create-collection." + key, collParams.getParams(key));
+      }
+      return SolrParams.wrapDefaults(params, createCollParams);
     }
 
   }

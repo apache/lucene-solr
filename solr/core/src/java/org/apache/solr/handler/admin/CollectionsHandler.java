@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -39,7 +39,6 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -76,7 +75,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -87,6 +85,7 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -102,6 +101,7 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
+import static org.apache.solr.cloud.CreateAliasCmd.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.CreateAliasCmd.NONREQUIRED_ROUTING_PARAMS;
 import static org.apache.solr.cloud.CreateAliasCmd.REQUIRED_ROUTING_PARAMS;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
@@ -151,7 +151,6 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String ROUTED_ALIAS_COLLECTION_PROP_PFX = "__collection-";
 
   protected final CoreContainer coreContainer;
   private final CollectionHandlerApi v2Handler ;
@@ -419,8 +418,46 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      */
     CREATE_OP(CREATE, (req, rsp, h) -> {
       req.getParams().required().getAll(null, NAME);
-      return parseCollectionCreationProps(h, req.getParams(), null);
+      SolrParams params = req.getParams();
+      Map<String, Object> props = params.getAll(null,
+          NAME,
+          REPLICATION_FACTOR,
+          COLL_CONF,
+          NUM_SLICES,
+          MAX_SHARDS_PER_NODE,
+          CREATE_NODE_SET,
+          CREATE_NODE_SET_SHUFFLE,
+          SHARDS_PROP,
+          STATE_FORMAT,
+          AUTO_ADD_REPLICAS,
+          RULE,
+          SNITCH,
+          PULL_REPLICAS,
+          TLOG_REPLICAS,
+          NRT_REPLICAS,
+          POLICY,
+          WAIT_FOR_FINAL_STATE);
+      props.put("fromApi", "true");
+      props.putIfAbsent(STATE_FORMAT, "2");
+      addMapObject(props, RULE);
+      addMapObject(props, SNITCH);
+      verifyRuleParams(h.coreContainer, props);
+      final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
+      final String shardsParam = (String) props.get(SHARDS_PROP);
+      if (StringUtils.isNotEmpty(shardsParam)) {
+        verifyShardsParam(shardsParam);
+      }
+      if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
+        //We must always create a .system collection with only a single shard
+        props.put(NUM_SLICES, 1);
+        props.remove(SHARDS_PROP);
+        createSysConfigSet(h.coreContainer);
+      }
+      copyPropertiesWithPrefix(params, props, COLL_PROP_PREFIX);
+      copyPropertiesWithPrefix(params, props, "router.");
+      return props;
     }),
+
     DELETE_OP(DELETE, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
     RELOAD_OP(RELOAD, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
@@ -447,33 +484,51 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return null;
     }),
+
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
       SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
       return req.getParams().required().getAll(null, NAME, "collections");
     }),
+
     CREATEROUTEDALIAS_OP(CREATEROUTEDALIAS, (req, rsp, h) -> {
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
-      Map<String, Object> params = req.getParams().required()
-          .getAll(null, REQUIRED_ROUTING_PARAMS.toArray(new String[REQUIRED_ROUTING_PARAMS.size()]));
-      req.getParams().getAll(params, NONREQUIRED_ROUTING_PARAMS);
-      // subset the params to reuse the collection creation/parsing code
-      ModifiableSolrParams collectionParams = extractPrefixedParams("create-collection.", req.getParams());
-      if (collectionParams.get(NAME) != null) {
+      Map<String, Object> result = req.getParams().required().getAll(null, REQUIRED_ROUTING_PARAMS);
+      req.getParams().getAll(result, NONREQUIRED_ROUTING_PARAMS);
+
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
+
+      // add to result params that start with "create-collection.".
+      //   Additionally, save these without the prefix to createCollParams
+
+      forEach(req.getParams(), (p, v) -> {
+          if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
+            // This is what SolrParams#getAll(Map, Collection)} does
+            if (v.length == 1) {
+              result.put(p, v[0]);
+            } else {
+              result.put(p, v);
+            }
+            createCollParams.set(p.substring(CREATE_COLLECTION_PREFIX.length()), v);
+          }
+        });
+
+      // Verify that the create-collection prefix'ed params appear to be valid.
+      if (createCollParams.get(NAME) != null) {
         throw new SolrException(BAD_REQUEST, "routed aliases calculate names for their " +
             "dependent collections, you cannot specify the name.");
       }
-      SolrParams v1Params = convertToV1WhenRequired(req, collectionParams);
+      if (createCollParams.get(COLL_CONF) == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "We require an explicit " + COLL_CONF );
+      }
+      // note: could insist on a config name here as well.... or wait to throw at overseer
+      createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
+      CREATE_OP.execute(new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
 
-      // We need to add this temporary name just to pass validation.
-      collectionParams.add(NAME, "TMP_name_TMP_name_TMP");
-      params.putAll(parseCollectionCreationProps(h, v1Params, ROUTED_ALIAS_COLLECTION_PROP_PFX));
-
-      // We will be giving the collection a real name based on the partition scheme later.
-      params.remove(ROUTED_ALIAS_COLLECTION_PROP_PFX + NAME);
-      params.remove("create-collection"); // don't include a stringified version now that we've parsed things out.
-      return params;
+      return result;
     }),
+
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
     /**
@@ -930,25 +985,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
 
-    /**
-     * Extract only the params that have a given prefix. Any params with a different prefix are removed, and
-     * the params with the prefix have the prefix removed in the result
-     *
-     * @param prefix the prefix to select
-     * @param params the source of parameters that should be searched
-     * @return a SolrParams object containing only the params that had the prefix, with the prefix removed.
-     */
-    private static ModifiableSolrParams extractPrefixedParams(String prefix, SolrParams params) {
-      ModifiableSolrParams result = new ModifiableSolrParams();
-      for (Iterator<String> i = params.getParameterNamesIterator(); i.hasNext();) {
-        String name = i.next();
-        if (name.startsWith(prefix)) {
-          result.add(name.substring(prefix.length()), params.get(name));
-        }
-      }
-      return result;
-    }
-
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
@@ -980,75 +1016,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private static SolrParams convertToV1WhenRequired(SolrQueryRequest req, ModifiableSolrParams params) {
-    SolrParams v1Params = params; // (maybe...)
 
-    // in the v2 world we get a data map based on the json request, from the CommandOperation associated
-    // with the request, so locate that if we can.. if we find it we have to translate the v2 request
-    // properties to v1 params, otherwise we're already good to go.
-    List<CommandOperation> cmds = req.getCommands(true);
-    if (cmds.size() > 1) {
-      // todo: not sure if this is the right thing to do here, but also not sure what to do if there is more than one...
-      throw new SolrException(BAD_REQUEST, "Only one command is allowed when creating a routed alias");
-    }
-    CommandOperation c = cmds.size() == 0 ? null : cmds.get(0);
-    if (c != null) {  // v2 api, do conversion to v1
-      v1Params = new BaseHandlerApiSupport.V2ToV1SolrParams(CollectionApiMapping.Meta.CREATE_COLLECTION,
-              req.getPathTemplateValues(), true, params,
-              new CommandOperation("create", c.getDataMap().get("create-collection")));
-    }
-    return v1Params;
-  }
-
-  private static Map<String, Object> parseCollectionCreationProps(CollectionsHandler h, SolrParams params, String prefix)
-      throws KeeperException, InterruptedException {
-    Map<String, Object> props = params.getAll(null,
-        NAME,
-        REPLICATION_FACTOR,
-        COLL_CONF,
-        NUM_SLICES,
-        MAX_SHARDS_PER_NODE,
-        CREATE_NODE_SET,
-        CREATE_NODE_SET_SHUFFLE,
-        SHARDS_PROP,
-        STATE_FORMAT,
-        AUTO_ADD_REPLICAS,
-        RULE,
-        SNITCH,
-        PULL_REPLICAS,
-        TLOG_REPLICAS,
-        NRT_REPLICAS,
-        POLICY,
-        WAIT_FOR_FINAL_STATE);
-    props.put("fromApi", "true");
-    if (props.get(STATE_FORMAT) == null) {
-      props.put(STATE_FORMAT, "2");
-    }
-    addMapObject(props, RULE);
-    addMapObject(props, SNITCH);
-    verifyRuleParams(h.coreContainer, props);
-    final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
-    final String shardsParam = (String) props.get(SHARDS_PROP);
-    if (StringUtils.isNotEmpty(shardsParam)) {
-      verifyShardsParam(shardsParam);
-    }
-    if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-      //We must always create a .system collection with only a single shard
-      props.put(NUM_SLICES, 1);
-      props.remove(SHARDS_PROP);
-      createSysConfigSet(h.coreContainer);
-    }
-    copyPropertiesWithPrefix(params, props, COLL_PROP_PREFIX);
-    Map<String, Object> result = copyPropertiesWithPrefix(params, props, "router.");
-    if (StringUtils.isNotBlank(prefix)) {
-      result = addPrefix(prefix, result);
-    }
-    return result;
-  }
-
-  private static Map<String,Object> addPrefix(String prefix, Map<String, Object> aMap) {
-    return aMap.entrySet().stream().collect(Collectors.toMap( entry -> prefix + entry.getKey(), Map.Entry::getValue));
-  }
 
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
     ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
@@ -1253,5 +1221,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  /**
+   * Calls the consumer for each parameter and with all values.
+   * This may be more convenient than using the iterator.
+   */
+  //TODO put on SolrParams, or maybe SolrParams should implement Iterable<Map.Entry<String,String[]>
+  private static void forEach(SolrParams params, BiConsumer<String, String[]> consumer) {
+    //TODO do we add a predicate for the parameter as a filter? It would avoid calling getParams
+    final Iterator<String> iterator = params.getParameterNamesIterator();
+    while (iterator.hasNext()) {
+      String param = iterator.next();
+      String[] values = params.getParams(param);
+      consumer.accept(param, values);
+    }
   }
 }

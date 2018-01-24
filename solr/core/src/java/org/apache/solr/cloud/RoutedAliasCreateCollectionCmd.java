@@ -41,6 +41,7 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.CreateAliasCmd.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA;
@@ -59,8 +60,6 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String IF_MOST_RECENT_COLL_NAME = "ifMostRecentCollName";
-
-  public static final String COLL_METAPREFIX = "collection-create.";
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -151,16 +150,16 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
 
   }
 
-   static void createCollectionAndWait(ClusterState clusterState, NamedList results, String aliasName, Map<String, String> aliasMetadata, String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
+  static void createCollectionAndWait(ClusterState clusterState, NamedList results, String aliasName, Map<String, String> aliasMetadata, String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
     for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
-      if (e.getKey().startsWith(COLL_METAPREFIX)) {
-        createReqParams.set(e.getKey().substring(COLL_METAPREFIX.length()), e.getValue());
+      if (e.getKey().startsWith(CREATE_COLLECTION_PREFIX)) {
+        createReqParams.set(e.getKey().substring(CREATE_COLLECTION_PREFIX.length()), e.getValue());
       }
     }
     if (createReqParams.get(COLL_CONF) == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "We require an explicit " + COLL_CONF );
     }
     createReqParams.set(NAME, createCollName);

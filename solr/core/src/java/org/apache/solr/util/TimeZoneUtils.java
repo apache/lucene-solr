@@ -86,7 +86,7 @@ public final class TimeZoneUtils {
 
   /**
    * Parse the specified timezone ID. If null input then return UTC. If we can't resolve it then
-   * throw an exception.
+   * throw an exception.  Does not return null.
    */
   public static TimeZone parseTimezone(String tzStr) {
     if (tzStr != null) {

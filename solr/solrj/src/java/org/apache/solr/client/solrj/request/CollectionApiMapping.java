@@ -21,8 +21,11 @@ package org.apache.solr.client.solrj.request;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -34,9 +37,6 @@ import org.apache.solr.common.util.Utils;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_CONFIG;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_NODE_SET;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateRoutedAlias.CREATE_COLLECTION_SHUFFLE_NODES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_DEL;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.LIST_CONFIG;
@@ -120,11 +120,15 @@ public class CollectionApiMapping {
         POST,
         CREATEROUTEDALIAS,
         "create-routed-alias",
-        Utils.makeMap(
-            "create-collection.collection.configName", CREATE_COLLECTION_CONFIG,
-            "createNodeSet",CREATE_COLLECTION_NODE_SET,
-            "create-collection.createNodeSet.shuffle", CREATE_COLLECTION_SHUFFLE_NODES
+        // same as the CREATE_COLLECTION but with "create-collection" prefix
+        CREATE_COLLECTION.paramstoAttr.entrySet().stream().collect(Collectors.toMap(
+            entry -> "create-collection." + entry.getKey(),
+            entry -> "create-collection." + entry.getValue()
         )),
+        CREATE_COLLECTION.prefixSubstitutes.entrySet().stream().collect(Collectors.toMap(
+          entry -> "create-collection." + entry.getKey(),
+          entry -> "create-collection." + entry.getValue()
+        ))),
 
     DELETE_ALIAS(COLLECTIONS_COMMANDS,
         POST,
@@ -215,10 +219,11 @@ public class CollectionApiMapping {
     public final String commandName;
     public final EndPoint endPoint;
     public final SolrRequest.METHOD method;
-    //mapping of http param name to json attribute
+    //mapping of http param name to json attribute (v1 -> v2)
     public final Map<String, String> paramstoAttr;
+    public final Map<String, String> attrToParams;
     //mapping of old prefix to new for instance properties.a=val can be substituted with property:{a:val}
-    public final Map<String, String> prefixSubstitutes;
+    public final Map<String, String> prefixSubstitutes; // v2 -> v1
     public final CollectionAction action;
 
     public SolrRequest.METHOD getMethod() {
@@ -243,6 +248,10 @@ public class CollectionApiMapping {
       this.endPoint = endPoint;
       this.method = method;
       this.paramstoAttr = paramstoAttr == null ? Collections.EMPTY_MAP : Collections.unmodifiableMap(paramstoAttr);
+      // flip around
+      this.attrToParams = Collections.unmodifiableMap(
+          this.paramstoAttr.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
+      );
       this.prefixSubstitutes = Collections.unmodifiableMap(prefixSubstitutes);
 
     }
@@ -262,30 +271,29 @@ public class CollectionApiMapping {
       return endPoint;
     }
 
-
     @Override
-    public Collection<String> getParamNames(CommandOperation op) {
+    public Iterator<String> getParamNamesIterator(CommandOperation op) {
       Collection<String> paramNames = getParamNames_(op, this);
+      Stream<String> pStream = paramNames.stream();
+      if (!attrToParams.isEmpty()) {
+        pStream = pStream.map(paramName -> attrToParams.getOrDefault(paramName, paramName));
+      }
       if (!prefixSubstitutes.isEmpty()) {
-        Collection<String> result = new ArrayList<>(paramNames.size());
-        for (Map.Entry<String, String> e : prefixSubstitutes.entrySet()) {
-          for (String paramName : paramNames) {
+        pStream = pStream.map(paramName -> {
+          for (Map.Entry<String, String> e : prefixSubstitutes.entrySet()) {
             if (paramName.startsWith(e.getKey())) {
-              result.add(paramName.replace(e.getKey(), e.getValue()));
-            } else {
-              result.add(paramName);
+              return paramName.replace(e.getKey(), e.getValue());
             }
           }
-          paramNames = result;
-        }
+          return paramName;
+        });
       }
-
-      return paramNames;
+      return pStream.iterator();
     }
 
     @Override
     public String getParamSubstitute(String param) {
-      String s = paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
+      String s = paramstoAttr.getOrDefault(param, param);
       if (prefixSubstitutes != null) {
         for (Map.Entry<String, String> e : prefixSubstitutes.entrySet()) {
           if (s.startsWith(e.getValue())) return s.replace(e.getValue(), e.getKey());
@@ -294,7 +302,7 @@ public class CollectionApiMapping {
       return s;
     }
     public Object getReverseParamSubstitute(String param) {
-      String s = paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
+      String s = paramstoAttr.getOrDefault(param, param);
 
       if (prefixSubstitutes != null) {
         for (Map.Entry<String, String> e : prefixSubstitutes.entrySet()) {
@@ -398,14 +406,15 @@ public class CollectionApiMapping {
 
 
   private static Collection<String> getParamNames_(CommandOperation op, CommandMeta command) {
-    List<String> result = new ArrayList<>();
     Object o = op.getCommandData();
     if (o instanceof Map) {
       Map map = (Map) o;
+      List<String> result = new ArrayList<>();
       collectKeyNames(map, result, "");
+      return result;
+    } else {
+      return Collections.emptySet();
     }
-    return result;
-
   }
 
   public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
@@ -427,10 +436,9 @@ public class CollectionApiMapping {
 
     V2EndPoint getEndPoint();
 
-    default Collection<String> getParamNames(CommandOperation op) {
-      return getParamNames_(op, CommandMeta.this);
+    default Iterator<String> getParamNamesIterator(CommandOperation op) {
+      return getParamNames_(op, CommandMeta.this).iterator();
     }
-
 
     default String getParamSubstitute(String name) {
       return name;
