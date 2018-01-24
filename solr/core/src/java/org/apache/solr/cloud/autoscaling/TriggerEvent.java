@@ -17,11 +17,14 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.IdUtils;
 
@@ -33,6 +36,41 @@ public class TriggerEvent implements MapWriter {
   public static final String REPLAYING = "replaying";
   public static final String NODE_NAMES = "nodeNames";
   public static final String EVENT_TIMES = "eventTimes";
+  public static final String REQUESTED_OPS = "requestedOps";
+
+  public static final class Op {
+    private final CollectionParams.CollectionAction action;
+    private final EnumMap<Suggester.Hint, Object> hints = new EnumMap<>(Suggester.Hint.class);
+
+    public Op(CollectionParams.CollectionAction action) {
+      this.action = action;
+    }
+
+    public Op(CollectionParams.CollectionAction action, Suggester.Hint hint, Object hintValue) {
+      this.action = action;
+      this.hints.put(hint, hintValue);
+    }
+
+    public void setHint(Suggester.Hint hint, Object value) {
+      hints.put(hint, value);
+    }
+
+    public CollectionParams.CollectionAction getAction() {
+      return action;
+    }
+
+    public EnumMap<Suggester.Hint, Object> getHints() {
+      return hints;
+    }
+
+    @Override
+    public String toString() {
+      return "Op{" +
+          "action=" + action +
+          ", hints=" + hints +
+          '}';
+    }
+  }
 
   protected final String id;
   protected final String source;
@@ -91,6 +129,18 @@ public class TriggerEvent implements MapWriter {
    */
   public Object getProperty(String name) {
     return properties.get(name);
+  }
+
+  /**
+   * Get a named event property or default value if missing.
+   */
+  public Object getProperty(String name, Object defaultValue) {
+    Object v = properties.get(name);
+    if (v == null) {
+      return defaultValue;
+    } else {
+      return v;
+    }
   }
 
   /**
