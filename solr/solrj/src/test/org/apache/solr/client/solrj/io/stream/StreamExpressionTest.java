@@ -7211,54 +7211,54 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
     if(labels1.contains("doc1")) {
-      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0001);
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.001);
 
-      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0001);
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.001);
 
       //Assert the membership matrix
-      assertEquals(membership.get(0).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(0).get(1).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(1).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(1).get(1).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(2).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(2).get(1).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(3).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(3).get(1).doubleValue(), 1.0, 0.0001);
+      assertEquals(membership.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 1.0, 0.001);
 
     } else {
-      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0001);
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.001);
 
-      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0001);
-      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0001);
-      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0001);
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.001);
 
       //Assert the membership matrix
-      assertEquals(membership.get(0).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(0).get(1).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(1).get(0).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(1).get(1).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(2).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(2).get(1).doubleValue(), 0.0, 0.0001);
-      assertEquals(membership.get(3).get(0).doubleValue(), 1.0, 0.0001);
-      assertEquals(membership.get(3).get(1).doubleValue(), 0.0, 0.0001);
+      assertEquals(membership.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 0.0, 0.001);
     }
   }
 
