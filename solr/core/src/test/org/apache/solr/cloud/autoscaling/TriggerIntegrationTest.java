@@ -1574,7 +1574,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(2, docCollection.getReplicas().size());
     assertNull(docCollection.getReplica(oldReplicaName));
 
-    // todo uncomment the following code once SOLR-11714 is fixed
     // find a new replica and create its metric name
     replica = docCollection.getSlice(shardId).getReplicas().iterator().next();
     coreName = replica.getCoreName();
