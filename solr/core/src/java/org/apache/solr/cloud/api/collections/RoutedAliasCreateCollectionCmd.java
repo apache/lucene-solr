@@ -43,6 +43,7 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.api.collections.CreateAliasCmd.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA;
@@ -61,8 +62,6 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String IF_MOST_RECENT_COLL_NAME = "ifMostRecentCollName";
-
-  public static final String COLL_METAPREFIX = "collection-create.";
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -133,30 +132,7 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
     final String createCollName = TimeRoutedAliasUpdateProcessor.formatCollectionNameFromInstant(aliasName, nextCollTimestamp);
 
     //---- CREATE THE COLLECTION
-    // Map alias metadata starting with a prefix to a create-collection API request
-    final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
-    for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
-      if (e.getKey().startsWith(COLL_METAPREFIX)) {
-        createReqParams.set(e.getKey().substring(COLL_METAPREFIX.length()), e.getValue());
-      }
-    }
-    if (createReqParams.get(COLL_CONF) == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "We require an explicit " + COLL_CONF );
-    }
-    createReqParams.set(NAME, createCollName);
-    createReqParams.set("property." + TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, aliasName);
-    // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent to the Overseer.
-    //   Although we could create the Map without it, there are a fair amount of rules we don't want to reproduce.
-    final Map<String, Object> createMsgMap = CollectionsHandler.CollectionOperation.CREATE_OP.execute(
-        new LocalSolrQueryRequest(null, createReqParams),
-        null,
-        ocmh.overseer.getCoreContainer().getCollectionsHandler());
-    createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
-    // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd
-    ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
-
-    CollectionsHandler.waitForActiveCollection(createCollName, null, ocmh.overseer.getCoreContainer(), new OverseerSolrResponse(results));
+    createCollectionAndWait(clusterState, results, aliasName, aliasMetadata, createCollName, ocmh);
 
     //TODO delete some of the oldest collection(s) ?
 
@@ -174,6 +150,33 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
       }
     });
 
+  }
+
+  static void createCollectionAndWait(ClusterState clusterState, NamedList results, String aliasName, Map<String, String> aliasMetadata, String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
+    // Map alias metadata starting with a prefix to a create-collection API request
+    final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
+    for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
+      if (e.getKey().startsWith(CREATE_COLLECTION_PREFIX)) {
+        createReqParams.set(e.getKey().substring(CREATE_COLLECTION_PREFIX.length()), e.getValue());
+      }
+    }
+    if (createReqParams.get(COLL_CONF) == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "We require an explicit " + COLL_CONF );
+    }
+    createReqParams.set(NAME, createCollName);
+    createReqParams.set("property." + TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, aliasName);
+    // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent to the Overseer.
+    //   Although we could create the Map without it, there are a fair amount of rules we don't want to reproduce.
+    final Map<String, Object> createMsgMap = CollectionsHandler.CollectionOperation.CREATE_OP.execute(
+        new LocalSolrQueryRequest(null, createReqParams),
+        null,
+        ocmh.overseer.getCoreContainer().getCollectionsHandler());
+    createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
+    // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd
+    ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
+
+    CollectionsHandler.waitForActiveCollection(createCollName, null, ocmh.overseer.getCoreContainer(), new OverseerSolrResponse(results));
   }
 
   private SolrException newAliasMustExistException(String aliasName) {

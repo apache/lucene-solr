@@ -76,6 +76,7 @@ public interface CollectionParams {
     RELOAD(true, LockLevel.COLLECTION),
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
+    CREATEROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
     ROUTEDALIAS_CREATECOLL(true, LockLevel.COLLECTION),

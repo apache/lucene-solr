@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -116,7 +117,19 @@ public class CollectionApiMapping {
         CREATEALIAS,
         "create-alias",
         null),
-
+    CREATE_ROUTED_ALIAS(COLLECTIONS_COMMANDS,
+        POST,
+        CREATEROUTEDALIAS,
+        "create-routed-alias",
+        // same as the CREATE_COLLECTION but with "create-collection" prefix
+        CREATE_COLLECTION.paramsToAttrs.entrySet().stream().collect(Collectors.toMap(
+            entry -> "create-collection." + entry.getKey(),
+            entry -> "create-collection." + entry.getValue()
+        )),
+        CREATE_COLLECTION.prefixParamsToAttrs.entrySet().stream().collect(Collectors.toMap(
+            entry -> "create-collection." + entry.getKey(),
+            entry -> "create-collection." + entry.getValue()
+        ))),
     DELETE_ALIAS(COLLECTIONS_COMMANDS,
         POST,
         DELETEALIAS,

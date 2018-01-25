@@ -1458,7 +1458,8 @@ public class ZkStateReader implements Closeable {
      */
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-      int triesLeft = 5;
+      // note: triesLeft tuning is based on ConcurrentCreateRoutedAliasTest
+      int triesLeft = 30;
       while (triesLeft > 0) {
         triesLeft--;
         // we could synchronize on "this" but there doesn't seem to be a point; we have a retry loop.
