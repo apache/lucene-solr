@@ -1035,17 +1035,19 @@ shape:
     GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434456), Geo3DUtil.fromDegrees(14.459204));
     GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.43394), Geo3DUtil.fromDegrees(14.459206));
     GeoPoint check =  new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434067), Geo3DUtil.fromDegrees(14.458927));
-    SidedPlane plane = new SidedPlane(check, point1, point2);
-    assertTrue(plane.isWithin(check));
-    assertTrue(plane.isWithin(point1));
-    assertTrue(plane.isWithin(point2));
-    //POLYGON((14.459204 -23.434456, 14.459206 -23.43394,14.458647 -23.434196, 14.458646 -23.434452,14.459204 -23.434456))
-    List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434456), Geo3DUtil.fromDegrees(14.459204)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees( -23.43394), Geo3DUtil.fromDegrees(14.459206)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434196), Geo3DUtil.fromDegrees(14.458647)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434452), Geo3DUtil.fromDegrees(14.458646)));
-    GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    if (!point1.isIdentical(point2) && !check.isIdentical(point1) && !check.isIdentical(point2)) {
+      SidedPlane plane = new SidedPlane(check, point1, point2);
+      assertTrue(plane.isWithin(check));
+      assertTrue(plane.isWithin(point1));
+      assertTrue(plane.isWithin(point2));
+      //POLYGON((14.459204 -23.434456, 14.459206 -23.43394,14.458647 -23.434196, 14.458646 -23.434452,14.459204 -23.434456))
+      List<GeoPoint> points = new ArrayList<>();
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434456), Geo3DUtil.fromDegrees(14.459204)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees( -23.43394), Geo3DUtil.fromDegrees(14.459206)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434196), Geo3DUtil.fromDegrees(14.458647)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434452), Geo3DUtil.fromDegrees(14.458646)));
+      GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    }
   }
 
 
