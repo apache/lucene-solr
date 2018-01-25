@@ -42,8 +42,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
@@ -79,7 +79,9 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * requests to create new collections on-demand.
  *
  * Depends on this core having a special core property that points to the alias name that this collection is a part of.
- * And further requires certain metadata on the Alias.
+ * And further requires certain metadata on the Alias. Collections pointed to by the alias must be named for the alias
+ * plus underscored ('_') and a time stamp of ISO_DATE plus optionally _HH_mm_ss. These collections should not be
+ * created by the user, but are created automatically by the time partitioning system.
  *
  * @since 7.2.0
  */

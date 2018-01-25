@@ -100,7 +100,7 @@ public class SolrRequestInfo {
     return now;
   }
 
-  /** The TimeZone specified by the request, or null if none was specified */
+  /** The TimeZone specified by the request, or UTC if none was specified. */
   public TimeZone getClientTimeZone() {
     if (tz == null)  {
       tz = TimeZoneUtils.parseTimezone(req.getParams().get(CommonParams.TZ));

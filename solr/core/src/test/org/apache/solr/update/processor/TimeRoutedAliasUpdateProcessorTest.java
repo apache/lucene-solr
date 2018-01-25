@@ -141,9 +141,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     zkStateReader.aliasesHolder.applyModificationAndExportToZk(a ->
         a.cloneWithCollectionAliasMetadata(alias, TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA, timeField)
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.collection.configName", configName)
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.numShards", "1")
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.replicationFactor", "1")
+        .cloneWithCollectionAliasMetadata(alias, "create-collection.collection.configName", configName)
+        .cloneWithCollectionAliasMetadata(alias, "create-collection.numShards", "1")
+        .cloneWithCollectionAliasMetadata(alias, "create-collection.replicationFactor", "1")
         .cloneWithCollectionAliasMetadata(alias, "router.interval", "+1DAY"));
 
     // now we index a document

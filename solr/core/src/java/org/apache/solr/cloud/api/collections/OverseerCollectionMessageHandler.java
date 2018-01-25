@@ -226,6 +226,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(RELOAD, this::reloadCollection)
         .put(DELETE, new DeleteCollectionCmd(this))
         .put(CREATEALIAS, new CreateAliasCmd(this))
+        .put(CREATEROUTEDALIAS, new CreateAliasCmd(this))
         .put(DELETEALIAS, new DeleteAliasCmd(this))
         .put(ROUTEDALIAS_CREATECOLL, new RoutedAliasCreateCollectionCmd(this))
         .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
