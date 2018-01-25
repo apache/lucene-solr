@@ -305,7 +305,12 @@ public class ApiBag {
         continue;
       } else {
         List<String> errs = validator.validateJson(cmd.getCommandData());
-        if (errs != null) for (String err : errs) cmd.addError(err);
+        if (errs != null){
+          // otherwise swallowed in solrj tests, and just get "Error in command payload" in test log
+          // which is quite unhelpful.
+          log.error("Command errors for {}:{}", cmd.name, errs );
+          for (String err : errs) cmd.addError(err);
+        }
       }
 
     }
