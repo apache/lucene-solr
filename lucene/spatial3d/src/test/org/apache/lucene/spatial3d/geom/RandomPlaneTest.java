@@ -51,7 +51,7 @@ public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
     }
   }
 
-  /*
+
   @Test
   @Repeat(iterations = 10)
   public void testPolygonAccuracy() {
@@ -70,5 +70,5 @@ public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
 
     }
   }
-  */
+
 }
