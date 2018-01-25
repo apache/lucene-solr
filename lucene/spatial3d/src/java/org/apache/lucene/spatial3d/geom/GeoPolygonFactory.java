@@ -162,6 +162,14 @@ public class GeoPolygonFactory {
     if (filteredPointList == null) {
       return null;
     }
+
+    //First approximation to find a point
+    final GeoPoint centerOfMass = getCenterOfMass(filteredPointList);
+    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
+    if (isCenterOfMassInside != null) {
+      return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
+    }
+    
     //System.err.println("points="+pointList);
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
@@ -181,6 +189,19 @@ public class GeoPolygonFactory {
       // If pole choice was illegal, try another one
     }
     throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
+  }
+
+  private static GeoPoint getCenterOfMass(List<GeoPoint> points) {
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    //get center of mass
+    for (GeoPoint point : points) {
+      x += point.x;
+      y += point.y;
+      z += point.z;
+    }
+    return new GeoPoint(x / points.size(), y / points.size(), z / points.size());
   }
   
   /** Use this class to specify a polygon with associated holes.
