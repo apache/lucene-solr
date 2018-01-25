@@ -124,6 +124,8 @@ Bug Fixes
 
 * SOLR-11794: PULL replicas stop replicating after collection RELOAD (Samuel Tatipamula, Tomás Fernández Löbbe)
 
+* SOLR-11714: AddReplicaSuggester  / ComputePlanAction infinite loop. (ab)
+
 Optimizations
 ----------------------
 

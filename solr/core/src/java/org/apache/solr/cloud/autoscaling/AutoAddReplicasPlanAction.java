@@ -38,7 +38,7 @@ public class AutoAddReplicasPlanAction extends ComputePlanAction {
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     String autoAddReplicas = stateProvider.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
     if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
-      return new NoneSuggester();
+      return NoneSuggester.get(session);
     }
 
     Suggester suggester = super.getSuggester(session, event, cloudManager);
@@ -57,7 +57,7 @@ public class AutoAddReplicasPlanAction extends ComputePlanAction {
       }
     }
 
-    if (!anyCollections) return new NoneSuggester();
+    if (!anyCollections) return NoneSuggester.get(session);
     return suggester;
   }
 }

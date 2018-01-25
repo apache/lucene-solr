@@ -36,7 +36,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
@@ -49,6 +51,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
@@ -490,7 +493,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -529,9 +532,10 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
     log.info("Ready after " + waitForState(collectionName, 300, TimeUnit.SECONDS, clusterShape(2, 10)) + " ms");
 
-    // collect the node names
+    // collect the node names for shard1
     Set<String> nodes = new HashSet<>();
     cluster.getSimClusterStateProvider().getClusterState().getCollection(collectionName)
+        .getSlice("shard1")
         .getReplicas()
         .forEach(r -> nodes.add(r.getNodeName()));
 
@@ -539,11 +543,28 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     // simulate search traffic
     cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
 
-//    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
-//    assertTrue("The trigger did not fire at all", await);
+    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(2000);
     assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
+    assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
+    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty("node");
+    assertNotNull(m);
+    assertEquals(nodes.size(), m.size());
+    assertEquals(nodes, m.keySet());
+    m.forEach((k, v) -> assertEquals(4.0, v.doubleValue(), 0.01));
+    List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>)ev.event.getProperty(TriggerEvent.REQUESTED_OPS);
+    assertNotNull(ops);
+    assertEquals(3, ops.size());
+    ops.forEach(op -> {
+      assertEquals(CollectionParams.CollectionAction.ADDREPLICA, op.getAction());
+      assertEquals(1, op.getHints().size());
+      Pair<String, String> hint = (Pair<String, String>)op.getHints().get(Suggester.Hint.COLL_SHARD);
+      assertNotNull(hint);
+      assertEquals(collectionName, hint.first());
+      assertEquals("shard1", hint.second());
+    });
   }
 }
