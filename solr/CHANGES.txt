@@ -108,6 +108,8 @@ New Features
 * SOLR-11722: New CREATEROUTEDALIAS SolrCloud command to create a "time routed alias" over a series of collections
   partitioned by time. (Gus Heck, David Smiley)
 
+* SOLR-11782: Refactor LatchWatcher.await to protect against spurious wakeup (Tomás Fernández Löbbe, David Smiley, Dawid Weiss)
+
 Bug Fixes
 ----------------------
 
