@@ -55,8 +55,7 @@ limitations under the License.
 {
   background-position: 0 50%;
   float: left;
-  color: #c0c0c0;
-  padding-left: 21px;
+  color: #8D8D8D;
   width: 45%;
 }
 
@@ -69,7 +68,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/ui-check-box-uncheck.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #8D8D8D;
   display: block;
   padding-left: 21px;
 }
@@ -176,14 +175,9 @@ limitations under the License.
   color: #c0c0c0;
 }
 
-#content #logging #viewer .has-data tfoot
-{
-  display: none;
-}
-
 #content #logging #viewer tfoot td
 {
-  color: #c0c0c0;
+  color: #8D8D8D;
 }
 
 #content #logging .jstree > li
