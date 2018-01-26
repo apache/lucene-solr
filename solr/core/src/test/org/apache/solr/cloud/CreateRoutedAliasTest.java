@@ -38,13 +38,13 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor;
 import org.apache.solr.util.DateMathParser;
 import org.junit.After;
 import org.junit.Before;
@@ -139,9 +139,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertSuccess(post);
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");
-    String initialCollectionName = TimeRoutedAliasUpdateProcessor
-        .formatCollectionNameFromInstant(aliasName, startDate.toInstant()
-        );
+    String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startDate.toInstant());
     // small chance could fail due to "NOW"; see above
     assertCollectionExists(initialCollectionName);
 
@@ -198,9 +196,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&create-collection.replicationFactor=2");
     assertSuccess(get);
 
-    String initialCollectionName = TimeRoutedAliasUpdateProcessor
-        .formatCollectionNameFromInstant(aliasName, start
-        );
+    String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, start);
     assertCollectionExists(initialCollectionName);
 
     // Test created collection:
@@ -271,7 +267,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.interval=%2B30MINUTE" +
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
-    assertFailure(get, "Only time based routing is supported");
+    assertFailure(get, "Only 'time' routed aliases is supported right now");
   }
 
   @Test
@@ -320,7 +316,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.max-future-ms=-60000" + // bad: negative
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
-    assertFailure(get, "router.max-future-ms must be a valid long integer");
+    assertFailure(get, "must be >= 0");
   }
   @Test
   public void testUnParseableFutureFails() throws Exception {
@@ -333,10 +329,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.name=time" +
         "&router.start=2018-01-15T00:00:00Z" +
         "&router.interval=%2B30MINUTE" +
-        "&router.max-future-ms=SixtyThousandMiliseconds" + // bad
+        "&router.max-future-ms=SixtyThousandMilliseconds" + // bad
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
-    assertFailure(get, "router.max-future-ms must be a valid long integer");
+    assertFailure(get, "SixtyThousandMilliseconds"); //TODO improve SolrParams.getLong
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {

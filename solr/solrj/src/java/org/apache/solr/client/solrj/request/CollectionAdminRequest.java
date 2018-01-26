@@ -1381,11 +1381,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     // to allow this stuff not to be duplicated. (this is pasted from CreateAliasCmd.java), however I think
     // a comprehensive cleanup of this for all the requests in this class should be done as a separate ticket.
 
-    public static final String ROUTING_TYPE = "router.name";
-    public static final String ROUTING_FIELD = "router.field";
-    public static final String ROUTING_START = "router.start";
-    public static final String ROUTING_INCREMENT = "router.interval";
-    public static final String ROUTING_MAX_FUTURE = "router.max-future-ms";
+    public static final String ROUTER_TYPE_NAME = "router.name";
+    public static final String ROUTER_FIELD = "router.field";
+    public static final String ROUTER_START = "router.start";
+    public static final String ROUTER_INTERVAL = "router.interval";
+    public static final String ROUTER_MAX_FUTURE = "router.max-future-ms";
 
     private final String aliasName;
     private final String routerField;
@@ -1422,15 +1422,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.add(CommonParams.NAME, aliasName);
-      params.add(ROUTING_TYPE, "time");
-      params.add(ROUTING_FIELD, routerField);
-      params.add(ROUTING_START, start);
-      params.add(ROUTING_INCREMENT, interval);
+      params.add(ROUTER_TYPE_NAME, "time");
+      params.add(ROUTER_FIELD, routerField);
+      params.add(ROUTER_START, start);
+      params.add(ROUTER_INTERVAL, interval);
       if (tz != null) {
         params.add(CommonParams.TZ, tz.getID());
       }
       if (maxFutureMs != null) {
-        params.add(ROUTING_MAX_FUTURE, ""+maxFutureMs);
+        params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
