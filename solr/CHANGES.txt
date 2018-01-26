@@ -85,6 +85,9 @@ New Features
 
 * SOLR-11648: A new admin UI to display and execute suggestions (Apoorv Bhawsar , noble)
 
+* SOLR-11722: New CREATEROUTEDALIAS SolrCloud command to create a "time routed alias" over a series of collections
+  partitioned by time. (Gus Heck, David Smiley)
+
 Bug Fixes
 ----------------------
 
