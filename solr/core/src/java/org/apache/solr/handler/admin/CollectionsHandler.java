@@ -102,9 +102,9 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.CreateAliasCmd.CREATE_COLLECTION_PREFIX;
-import static org.apache.solr.cloud.api.collections.CreateAliasCmd.OPTIONAL_ROUTER_PARAMS;
-import static org.apache.solr.cloud.api.collections.CreateAliasCmd.REQUIRED_ROUTER_PARAMS;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.OPTIONAL_ROUTER_PARAMS;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.REQUIRED_ROUTER_PARAMS;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;

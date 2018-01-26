@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
@@ -32,22 +31,18 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor;
-import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.CreateAliasCmd.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA;
-import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.ROUTER_INTERVAL_METADATA;
 
 /**
  * For "routed aliases", creates another collection and adds it to the alias. In some cases it will not
@@ -69,11 +64,6 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
     this.ocmh = ocmh;
   }
 
-  /* TODO:
-  There are a few classes related to time routed alias processing.  We need to share some logic better.
-   */
-
-
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     //---- PARSE PRIMARY MESSAGE PARAMS
@@ -92,17 +82,10 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
       throw newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
     }
 
-    String routeField = aliasMetadata.get(ROUTER_FIELD_METADATA);
-    if (routeField == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "This command only works on time routed aliases.  Expected alias metadata not found.");
-    }
-    String intervalDateMath = aliasMetadata.getOrDefault(ROUTER_INTERVAL_METADATA, "+1DAY");
-    TimeZone intervalTimeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
+    final TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata);
 
-    //TODO this is ugly; how can we organize the code related to this feature better?
     final List<Map.Entry<Instant, String>> parsedCollections =
-        TimeRoutedAliasUpdateProcessor.parseCollections(aliasName, aliases, () -> newAliasMustExistException(aliasName));
+        timeRoutedAlias.parseCollections(aliases, () -> newAliasMustExistException(aliasName));
 
     //---- GET MOST RECENT COLL
     final Map.Entry<Instant, String> mostRecentEntry = parsedCollections.get(0);
@@ -127,9 +110,8 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
     }
 
     //---- COMPUTE NEXT COLLECTION NAME
-    final Instant nextCollTimestamp = TimeRoutedAliasUpdateProcessor.computeNextCollTimestamp(mostRecentCollTimestamp, intervalDateMath, intervalTimeZone);
-    assert nextCollTimestamp.isAfter(mostRecentCollTimestamp);
-    final String createCollName = TimeRoutedAliasUpdateProcessor.formatCollectionNameFromInstant(aliasName, nextCollTimestamp);
+    final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(mostRecentCollTimestamp);
+    final String createCollName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, nextCollTimestamp);
 
     //---- CREATE THE COLLECTION
     createCollectionAndWait(clusterState, results, aliasName, aliasMetadata, createCollName, ocmh);
@@ -152,6 +134,11 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
 
   }
 
+  /**
+   * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
+   * If the collection already exists then this is not an error.
+   * IMPORTANT: Only call this from an {@link OverseerCollectionMessageHandler.Cmd}.
+   */
   static void createCollectionAndWait(ClusterState clusterState, NamedList results, String aliasName, Map<String, String> aliasMetadata, String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
@@ -165,7 +152,7 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
           "We require an explicit " + COLL_CONF );
     }
     createReqParams.set(NAME, createCollName);
-    createReqParams.set("property." + TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, aliasName);
+    createReqParams.set("property." + ROUTED_ALIAS_NAME_CORE_PROP, aliasName);
     // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent to the Overseer.
     //   Although we could create the Map without it, there are a fair amount of rules we don't want to reproduce.
     final Map<String, Object> createMsgMap = CollectionsHandler.CollectionOperation.CREATE_OP.execute(
@@ -173,8 +160,18 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
         null,
         ocmh.overseer.getCoreContainer().getCollectionsHandler());
     createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
-    // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd
-    ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
+
+    try {
+      // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd.
+      // note: there's doesn't seem to be any point in locking on the collection name, so we don't. We currently should
+      //   already have a lock on the alias name which should be sufficient.
+      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
+    } catch (SolrException e) {
+      // The collection might already exist, and that's okay -- we can adopt it.
+      if (!e.getMessage().contains("collection already exists")) {
+        throw e;
+      }
+    }
 
     CollectionsHandler.waitForActiveCollection(createCollName, null, ocmh.overseer.getCoreContainer(), new OverseerSolrResponse(results));
   }
