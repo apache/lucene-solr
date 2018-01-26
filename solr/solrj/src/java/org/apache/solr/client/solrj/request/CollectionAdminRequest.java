@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +42,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -1352,6 +1354,97 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.NAME, aliasName);
       params.set("collections", aliasedCollections);
       return params;
+    }
+
+  }
+
+  /**
+   * Returns a SolrRequest to create a routed alias. Only time based routing is supported presently,
+   * For time based routing, the start a standard Solr timestamp string (possibly with "date math").
+   *
+   * @param aliasName the name of the alias to create.
+   * @param start the start of the routing.  A standard Solr date: ISO-8601 or NOW with date math.
+   * @param interval date math representing the time duration of each collection (e.g. {@code +1DAY})
+   * @param routerField the document field to contain the timestamp to route on
+   * @param createCollTemplate Holds options to create a collection.  The "name" is ignored.
+   */
+  public static CreateTimeRoutedAlias createTimeRoutedAlias(String aliasName, String start,
+                                                            String interval,
+                                                            String routerField,
+                                                            Create createCollTemplate) {
+
+    return new CreateTimeRoutedAlias(aliasName, routerField, start, interval, createCollTemplate);
+  }
+
+  public static class CreateTimeRoutedAlias extends AsyncCollectionAdminRequest {
+    // TODO: This and other commands in this file seem to need to share some sort of constants class with core
+    // to allow this stuff not to be duplicated. (this is pasted from CreateAliasCmd.java), however I think
+    // a comprehensive cleanup of this for all the requests in this class should be done as a separate ticket.
+
+    public static final String ROUTER_TYPE_NAME = "router.name";
+    public static final String ROUTER_FIELD = "router.field";
+    public static final String ROUTER_START = "router.start";
+    public static final String ROUTER_INTERVAL = "router.interval";
+    public static final String ROUTER_MAX_FUTURE = "router.max-future-ms";
+
+    private final String aliasName;
+    private final String routerField;
+    private final String start;
+    private final String interval;
+    //Optional:
+    private TimeZone tz;
+    private Integer maxFutureMs;
+
+    private final Create createCollTemplate;
+
+    public CreateTimeRoutedAlias(String aliasName, String routerField, String start, String interval, Create createCollTemplate) {
+      super(CollectionAction.CREATEROUTEDALIAS);
+      this.aliasName = aliasName;
+      this.start = start;
+      this.interval = interval;
+      this.routerField = routerField;
+      this.createCollTemplate = createCollTemplate;
+    }
+
+    /** Sets the timezone for interpreting any Solr "date math. */
+    public CreateTimeRoutedAlias setTimeZone(TimeZone tz) {
+      this.tz = tz;
+      return this;
+    }
+
+    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
+      this.maxFutureMs = maxFutureMs;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.add(CommonParams.NAME, aliasName);
+      params.add(ROUTER_TYPE_NAME, "time");
+      params.add(ROUTER_FIELD, routerField);
+      params.add(ROUTER_START, start);
+      params.add(ROUTER_INTERVAL, interval);
+      if (tz != null) {
+        params.add(CommonParams.TZ, tz.getID());
+      }
+      if (maxFutureMs != null) {
+        params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
+      }
+
+      // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
+      final SolrParams collParams = createCollTemplate.getParams();
+      final Iterator<String> pIter = collParams.getParameterNamesIterator();
+      while (pIter.hasNext()) {
+        String key = pIter.next();
+        if (key.equals(CollectionParams.ACTION) || key.equals("name")) {
+          continue;
+        }
+        createCollParams.set("create-collection." + key, collParams.getParams(key));
+      }
+      return SolrParams.wrapDefaults(params, createCollParams);
     }
 
   }

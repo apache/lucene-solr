@@ -324,6 +324,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param results result of the operation
    */
   public void simAddReplica(ZkNodeProps message, NamedList results) throws Exception {
+    if (message.getStr(CommonAdminParams.ASYNC) != null) {
+      results.add(CoreAdminParams.REQUESTID, message.getStr(CommonAdminParams.ASYNC));
+    }
     ClusterState clusterState = getClusterState();
     DocCollection coll = clusterState.getCollection(message.getStr(ZkStateReader.COLLECTION_PROP));
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
@@ -394,7 +397,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       // mark replica as active
       replicaInfo.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       // add a property expected in tests
-      replicaInfo.getVariables().put(Suggestion.coreidxsize, 123450000);
+      replicaInfo.getVariables().put(Suggestion.coreidxsize, SimCloudManager.DEFAULT_IDX_SIZE_BYTES);
 
       replicas.add(replicaInfo);
       // at this point nuke our cached DocCollection state
@@ -411,9 +414,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores + 1);
       Integer disk = (Integer)values.get(ImplicitSnitch.DISK);
       if (disk == null) {
-        disk = 1000;
+        disk = SimCloudManager.DEFAULT_DISK;
       }
-      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk - 10);
+      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk - 1);
       if (runLeaderElection) {
         simRunLeaderElection(Collections.singleton(replicaInfo.getCollection()), true);
       }
@@ -449,7 +452,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             if (disk == null || disk == 0) {
               throw new Exception("Unexpected value of 'freedisk' (" + disk + ") on node: " + nodeId);
             }
-            cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk + 10);
+            cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk + 1);
           }
           LOG.trace("-- simRemoveReplica {}", ri);
           simRunLeaderElection(Collections.singleton(ri.getCollection()), true);
@@ -722,7 +725,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       collProperties.clear();
       sliceProperties.clear();
       leaderThrottles.clear();
-      cloudManager.getSimNodeStateProvider().simGetAllNodeValues().forEach((n, values) -> values.put("cores", 0));
+      cloudManager.getSimNodeStateProvider().simGetAllNodeValues().forEach((n, values) -> {
+        values.put(ImplicitSnitch.CORES, 0);
+        values.put(ImplicitSnitch.DISK, 1000);
+      });
       collectionsStatesRef.set(null);
     } finally {
       lock.unlock();

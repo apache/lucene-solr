@@ -119,7 +119,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
-          throw new SolrException(BAD_REQUEST, e);
+          throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
         }
@@ -129,6 +129,9 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   }
 
+  /**
+   * Wrapper for SolrParams that wraps V2 params and exposes them as V1 params.
+   */
   private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
     final Map<String, String> pathValues = req.getPathTemplateValues();
     final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
@@ -148,7 +151,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           private Object getParams0(String param) {
-            param = cmd.meta().getParamSubstitute(param);
+            param = cmd.meta().getParamSubstitute(param); // v1 -> v2, possibly dotted path
             Object o = param.indexOf('.') > 0 ?
                 Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
                 map.get(param);
@@ -172,10 +175,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Iterator<String> getParameterNamesIterator() {
-            return cmd.meta().getParamNames(co).iterator();
-
+            return cmd.meta().getParamNamesIterator(co);
           }
-
 
         });
 

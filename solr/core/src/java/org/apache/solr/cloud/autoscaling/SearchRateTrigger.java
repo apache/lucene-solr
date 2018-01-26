@@ -31,9 +31,12 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -145,12 +148,14 @@ public class SearchRateTrigger extends TriggerBase {
 
     Map<String, Map<String, List<ReplicaInfo>>> collectionRates = new HashMap<>();
     Map<String, AtomicDouble> nodeRates = new HashMap<>();
+    Map<String, Integer> replicationFactors = new HashMap<>();
 
     for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
       Map<String, ReplicaInfo> metricTags = new HashMap<>();
       // coll, shard, replica
       Map<String, Map<String, List<ReplicaInfo>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
       infos.forEach((coll, shards) -> {
+        replicationFactors.computeIfAbsent(coll, c -> shards.size());
         shards.forEach((sh, replicas) -> {
           replicas.forEach(replica -> {
             // we have to translate to the metrics registry name, which uses "_replica_nN" as suffix
@@ -261,13 +266,60 @@ public class SearchRateTrigger extends TriggerBase {
       }
     });
 
-    if (processor.process(new SearchRateEvent(getName(), eventTime.get(), hotNodes, hotCollections, hotShards, hotReplicas))) {
+    // calculate the number of replicas to add to each hot shard, based on how much the rate was
+    // exceeded - but within limits.
+    final List<TriggerEvent.Op> ops = new ArrayList<>();
+    if (hotShards.isEmpty() && hotCollections.isEmpty() && hotReplicas.isEmpty()) {
+      // move replicas around
+      hotNodes.forEach((n, r) -> {
+        ops.add(new TriggerEvent.Op(CollectionParams.CollectionAction.MOVEREPLICA, Suggester.Hint.SRC_NODE, n));
+      });
+    } else {
+      // add replicas
+      Map<String, Map<String, List<Pair<String, String>>>> hints = new HashMap<>();
+
+      hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> {
+        List<Pair<String, String>> perShard = hints
+            .computeIfAbsent(coll, c -> new HashMap<>())
+            .computeIfAbsent(s, sh -> new ArrayList<>());
+        addHints(coll, s, r, replicationFactors.get(coll), perShard);
+      }));
+      hotReplicas.forEach(ri -> {
+        double r = (Double)ri.getVariable(AutoScalingParams.RATE);
+        // add only if not already accounted for in hotShards
+        List<Pair<String, String>> perShard = hints
+            .computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
+            .computeIfAbsent(ri.getShard(), sh -> new ArrayList<>());
+        if (perShard.isEmpty()) {
+          addHints(ri.getCollection(), ri.getShard(), r, replicationFactors.get(ri.getCollection()), perShard);
+        }
+      });
+
+      hints.values().forEach(m -> m.values().forEach(lst -> lst.forEach(p -> {
+        ops.add(new TriggerEvent.Op(CollectionParams.CollectionAction.ADDREPLICA, Suggester.Hint.COLL_SHARD, p));
+      })));
+    }
+
+    if (processor.process(new SearchRateEvent(getName(), eventTime.get(), ops, hotNodes, hotCollections, hotShards, hotReplicas))) {
       // update lastEvent times
       hotNodes.keySet().forEach(node -> lastNodeEvent.put(node, now));
       hotCollections.keySet().forEach(coll -> lastCollectionEvent.put(coll, now));
       hotShards.entrySet().forEach(e -> e.getValue()
           .forEach((sh, rate) -> lastShardEvent.put(e.getKey() + "." + sh, now)));
       hotReplicas.forEach(r -> lastReplicaEvent.put(r.getCollection() + "." + r.getCore(), now));
+    }
+  }
+
+  private void addHints(String collection, String shard, double r, int replicationFactor, List<Pair<String, String>> hints) {
+    int numReplicas = (int)Math.round((r - rate) / (double) replicationFactor);
+    if (numReplicas < 1) {
+      numReplicas = 1;
+    }
+    if (numReplicas > 3) {
+      numReplicas = 3;
+    }
+    for (int i = 0; i < numReplicas; i++) {
+      hints.add(new Pair(collection, shard));
     }
   }
 
@@ -282,10 +334,11 @@ public class SearchRateTrigger extends TriggerBase {
   }
 
   public static class SearchRateEvent extends TriggerEvent {
-    public SearchRateEvent(String source, long eventTime, Map<String, Double> hotNodes,
+    public SearchRateEvent(String source, long eventTime, List<Op> ops, Map<String, Double> hotNodes,
                            Map<String, Double> hotCollections,
                            Map<String, Map<String, Double>> hotShards, List<ReplicaInfo> hotReplicas) {
       super(TriggerEventType.SEARCHRATE, source, eventTime, null);
+      properties.put(TriggerEvent.REQUESTED_OPS, ops);
       properties.put(AutoScalingParams.COLLECTION, hotCollections);
       properties.put(AutoScalingParams.SHARD, hotShards);
       properties.put(AutoScalingParams.REPLICA, hotReplicas);

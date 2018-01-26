@@ -17,24 +17,37 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.util.DateMathParser;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
 public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
+
   private final OverseerCollectionMessageHandler ocmh;
+
+  private static boolean anyRoutingParams(ZkNodeProps message) {
+    return message.keySet().stream().anyMatch(k -> k.startsWith(TimeRoutedAlias.ROUTER_PREFIX));
+  }
 
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
@@ -43,14 +56,14 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results)
       throws Exception {
-    final String aliasName = message.getStr(NAME);
-    final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
-    final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
-
+    final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
 
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
+    if (!anyRoutingParams(message)) {
+      callCreatePlainAlias(message, aliasName, zkStateReader);
+    } else {
+      callCreateRoutedAlias(message, aliasName, zkStateReader, state);
+    }
 
     // Sleep a bit to allow ZooKeeper state propagation.
     //
@@ -67,34 +80,86 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     Thread.sleep(100);
   }
 
-  private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {
-    final String collectionStr = StrUtils.join(collectionList, ',');
-
-    if (new HashSet<>(collectionList).size() != collectionList.size()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collectionStr));
-    }
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
-    for (String collection : collectionList) {
-      if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collectionStr, collection));
-      }
-    }
+  private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
+    final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
+    final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
+    validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
+    zkStateReader.aliasesHolder
+        .applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
   }
-  
+
   /**
    * The v2 API directs that the 'collections' parameter be provided as a JSON array (e.g. ["a", "b"]).  We also
    * maintain support for the legacy format, a comma-separated list (e.g. a,b).
    */
   @SuppressWarnings("unchecked")
   private List<String> parseCollectionsParameter(Object colls) {
-    if (colls == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing collections param");
+    if (colls == null) throw new SolrException(BAD_REQUEST, "missing collections param");
     if (colls instanceof List) return (List<String>) colls;
     return StrUtils.splitSmart(colls.toString(), ",", true).stream()
         .map(String::trim)
         .collect(Collectors.toList());
+  }
+
+  private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
+    // Validate we got everything we need
+    if (!message.getProperties().keySet().containsAll(TimeRoutedAlias.REQUIRED_ROUTER_PARAMS)) {
+      throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + TimeRoutedAlias.REQUIRED_ROUTER_PARAMS
+      + " plus some create-collection prefixed ones.");
+    }
+
+    Map<String, String> aliasMetadata = new LinkedHashMap<>();
+    message.getProperties().entrySet().stream()
+        .filter(entry -> TimeRoutedAlias.PARAM_IS_METADATA.test(entry.getKey()))
+        .forEach(entry -> aliasMetadata.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
+
+    TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata); // validates as well
+
+    String start = message.getStr(TimeRoutedAlias.ROUTER_START);
+    Instant startTime = parseStart(start, timeRoutedAlias.getTimeZone());
+
+    String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
+
+    // Create the collection
+    NamedList createResults = new NamedList();
+    RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, createResults, aliasName, aliasMetadata, initialCollectionName, ocmh);
+    validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
+
+    // Create/update the alias
+    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases
+        .cloneWithCollectionAlias(aliasName, initialCollectionName)
+        .cloneWithCollectionAliasMetadata(aliasName, aliasMetadata));
+  }
+
+  private Instant parseStart(String str, TimeZone zone) {
+    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
+    checkMilis(start);
+    return start;
+  }
+
+  private void checkMilis(Instant date) {
+    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
+      throw new SolrException(BAD_REQUEST,
+          "Date or date math for start time includes milliseconds, which is not supported. " +
+              "(Hint: 'NOW' used without rounding always has this problem)");
+    }
+  }
+
+  private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {
+    final String collectionStr = StrUtils.join(collectionList, ',');
+
+    if (new HashSet<>(collectionList).size() != collectionList.size()) {
+      throw new SolrException(BAD_REQUEST,
+          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collectionStr));
+    }
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
+    for (String collection : collectionList) {
+      if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
+        throw new SolrException(BAD_REQUEST,
+            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collectionStr, collection));
+      }
+    }
   }
 
 }

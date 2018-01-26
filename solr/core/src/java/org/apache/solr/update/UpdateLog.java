@@ -80,9 +80,9 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** 
- * This holds references to the transaction logs and pointers for the document IDs to their
- * exact positions in the transaction logs.
+/**
+ * This holds references to the transaction logs. It also keeps a map of unique key to location in log
+ * (along with the update's version). This map is only cleared on soft or hard commit
  *
  * @lucene.experimental
  */
