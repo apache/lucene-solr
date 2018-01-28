@@ -36,7 +36,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class ModifyAliasCmd implements Cmd {
 
   public static final String META_DATA = "metadata";
-  public static final String ALLOW_WHITESPACE_VALUES =  "allowWhitespaceValues";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -49,7 +48,6 @@ public class ModifyAliasCmd implements Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
-    boolean whitespaceValues = message.getBool(ALLOW_WHITESPACE_VALUES, false);
 
 
     ZkStateReader zkStateReader = messageHandler.zkStateReader;
@@ -68,15 +66,9 @@ public class ModifyAliasCmd implements Cmd {
           throw new SolrException(BAD_REQUEST, "metadata keys must not be pure whitespace");
         }
         if (!key.equals(key.trim())) {
-          throw new SolrException(BAD_REQUEST, "metadat keys should not begin or end with whitespace");
+          throw new SolrException(BAD_REQUEST, "metadata keys should not begin or end with whitespace");
         }
         String value = metadata.get(key);
-        if (value != null && !"".equals(value)) {
-          if (!whitespaceValues && "".equals(value.trim()))  {
-            value = value.trim();
-            log.warn("Pure white space value for alias metadata interpreted as null, set allowWhitespaceValue to true if you wish to store a whitespace value, or send null or empty string to avoid this message");
-          }
-        }
         if ("".equals(value)) {
           value = null;
         }

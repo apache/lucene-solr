@@ -138,7 +138,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
-import static org.apache.solr.cloud.api.collections.ModifyAliasCmd.ALLOW_WHITESPACE_VALUES;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
@@ -542,7 +541,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      */
     MODIFYALIAS_OP(MODIFYALIAS, (req, rsp, h) -> {
       Map<String, Object> params = req.getParams().required().getAll(null, NAME);
-      req.getParams().getAll(params, ALLOW_WHITESPACE_VALUES);
 
       // Note: success/no-op in the event of no metadata supplied is intentional. Keeps code simple and one less case
       // for api-callers to check for.

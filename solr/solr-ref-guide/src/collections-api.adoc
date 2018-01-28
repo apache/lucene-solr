@@ -738,10 +738,7 @@ The `MODIFYALIAS` action will Allows changing the metadata on an alias. If a key
 The alias name on which to set metadata. This parameter is required.
 
 `metadata.*`::
-The key for the metadata element to be modified replaces '*', the value for the metadata is passed as the value.
-
-`allowWhitespaceValues`::
-Flag to prevent interpretation of pure whitespace as an empty value. By default this is false and any blank value is treated as empty and removes the corresponding metadata.
+The name of the key for the metadata element to be modified replaces '*', the value for the parameter is passed as the value for the metadata.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.

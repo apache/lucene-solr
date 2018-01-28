@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -1317,6 +1318,40 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new CollectionAdminResponse();
     }
 
+  }
+
+  // MODIFYALIAS request
+
+  /**
+   * Returns a SolrRequest to add or remove metadata from a request
+   * @param aliasName         the alias to modify
+   */
+
+  public static ModifyAlias modifyAlias(String aliasName) {
+    return new ModifyAlias(aliasName);
+  }
+
+  public static class ModifyAlias extends AsyncCollectionAdminRequest {
+
+    private final String aliasName;
+    private static Map<String,String> metadata = new HashMap<>();
+
+    public ModifyAlias(String aliasName) {
+      super(CollectionAction.MODIFYALIAS);
+      this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
+    }
+
+    public void addMetadata(String key, String value) {
+      metadata.put(key,value);
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.NAME, aliasName);
+      metadata.keySet().forEach(key -> params.set("metadata." + key, metadata.get(key)));
+      return params;
+    }
   }
 
   /**

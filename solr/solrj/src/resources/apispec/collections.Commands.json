@@ -238,12 +238,8 @@
         },
         "metadata" : {
           "type": "object",
-          "description": "A map of key/value pairs that will be associated with the alias as alias metadata. empty valye will delete any existing valye for a given key",
+          "description": "A map of key/value pairs that will be associated with the alias as alias metadata. Empty value will delete any existing value for a given key",
           "additionalProperties": true
-        },
-        "allowWhitespaceValues" : {
-          "type" : "boolean",
-          "description" : "If absent or false, any values that are pure whitespace will be equated with null, and unset the metadata value, to intentionally record values with pure whitespace, set this property to true"
         },
         "async": {
           "type": "string",
