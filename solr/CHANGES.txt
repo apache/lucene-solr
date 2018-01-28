@@ -90,6 +90,9 @@ New Features
 
 * SOLR-11782: Refactor LatchWatcher.await to protect against spurious wakeup (Tomás Fernández Löbbe, David Smiley, Dawid Weiss)
 
+* SOLR-11617: Alias metadata is now mutable via a new MODIFYALIAS command.  Metadata is returned from LISTALIASES.
+  (Gus Heck via David Smiley)
+
 Bug Fixes
 ----------------------
 
