@@ -708,13 +708,64 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 [source,xml]
 ----
 <response>
+    <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+    </lst>
+    <lst name="aliases">
+        <str name="testalias1">collection1</str>
+        <str name="testalias2">collection1,collection2</str>
+    </lst>
+    <lst name="metadata">
+        <lst name="testalias1"/>
+        <lst name="testalias2">
+            <str name="someKey">someValue</str>
+        </lst>
+    </lst>
+</response>
+----
+
+[[modifyalias]]
+== MODIFYALIAS: Modify Alias Metadata for a Collection
+
+The `MODIFYALIAS` action modifies the metadata on an alias. If a key is set with a value that is empty it will be removed.
+
+`/admin/collections?action=MODIFYALIAS&name=_name_&metadata.someKey=somevalue`
+
+=== MODIFYALIAS Parameters
+
+`name`::
+The alias name on which to set metadata. This parameter is required.
+
+`metadata.*`::
+The name of the key for the metadata element to be modified replaces '*', the value for the parameter is passed as the value for the metadata.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+=== MODIFYALIAS Response
+
+The output will simply be a responseHeader with details of the time it took to process the request. To confirm the creation of the metadata, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file or use the LISTALIASES api command.
+
+=== Examples using MODIFYALIAS
+
+*Input*
+
+For an alias named "testalias2" and set the value "someValue" for a metadata key of "someKey" and "otherValue" for "otherKey".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=MODIFYALIAS&name=testalias2&metadata.someKey=someValue&metadata.otherKey=otherValue&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
   <lst name="responseHeader">
     <int name="status">0</int>
-    <int name="QTime">0</int>
-  </lst>
-  <lst name="aliases">
-    <str name="testalias1">collection1</str>
-    <str name="testalias2">collection2</str>
+    <int name="QTime">122</int>
   </lst>
 </response>
 ----

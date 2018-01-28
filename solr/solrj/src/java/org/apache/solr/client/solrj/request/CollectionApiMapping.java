@@ -58,9 +58,9 @@ import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-/** stores the mapping of v1 API parameters to v2 API parameters
- * for collection API and configset API
- *
+/**
+ * Stores the mapping of v1 API parameters to v2 API parameters
+ * for the collection API and the configset API.
  */
 public class CollectionApiMapping {
 
@@ -134,6 +134,11 @@ public class CollectionApiMapping {
         POST,
         DELETEALIAS,
         "delete-alias",
+        null),
+    MODIFY_ALIAS(COLLECTIONS_COMMANDS,
+        POST,
+        MODIFYALIAS,
+        "modify-alias",
         null),
     CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
