@@ -122,6 +122,9 @@ Bug Fixes
 
 * SOLR-11794: PULL replicas stop replicating after collection RELOAD (Samuel Tatipamula, Tomás Fernández Löbbe)
 
+* SOLR-11882: SolrMetric registries retain references to SolrCores when closed.
+  (Andrzej Bialecki, Erick Erickson)
+
 Optimizations
 ----------------------
 
