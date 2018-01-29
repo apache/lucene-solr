@@ -178,6 +178,8 @@ Bug Fixes
 
 * SOLR-10525: Stacked recovery requests do no cancel an in progress recovery first. (Mike Drob via Cao Manh Dat)
 
+* SOLR-11873: Use time based expiration cache in all necessary places in HdfsDirectoryFactory. (Mihaly Toth via Mark Miller)
+
 Optimizations
 ----------------------
 
