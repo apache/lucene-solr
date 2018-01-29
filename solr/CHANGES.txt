@@ -51,6 +51,10 @@ Upgrade Notes
   Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named
   with an additional ".AUTOCREATED" suffix.
 
+* SOLR-11702: The old LIR implementation (SOLR-5495) is now deprecated and replaced.
+  Solr will support rolling upgrades from old 7.x versions of Solr to the new one until
+  the last release of the 7.x major version.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -92,6 +96,8 @@ New Features
 
 * SOLR-11617: Alias metadata is now mutable via a new MODIFYALIAS command.  Metadata is returned from LISTALIASES.
   (Gus Heck via David Smiley)
+
+* SOLR-11702: Redesign current LIR implementation (Cao Manh Dat, shalin)
 
 Bug Fixes
 ----------------------

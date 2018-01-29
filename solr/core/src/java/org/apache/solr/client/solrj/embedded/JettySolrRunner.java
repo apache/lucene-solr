@@ -84,7 +84,7 @@ public class JettySolrRunner {
   FilterHolder debugFilter;
 
   private boolean waitOnSolr = false;
-  private int lastPort = -1;
+  private int jettyPort = -1;
 
   private final JettyConfig config;
   private final String solrHome;
@@ -280,8 +280,10 @@ public class JettySolrRunner {
       @Override
       public void lifeCycleStarted(LifeCycle arg0) {
 
-        lastPort = getFirstConnectorPort();
-        nodeProperties.setProperty("hostPort", Integer.toString(lastPort));
+        jettyPort = getFirstConnectorPort();
+        int port = jettyPort;
+        if (proxyPort != -1) port = proxyPort;
+        nodeProperties.setProperty("hostPort", Integer.toString(port));
         nodeProperties.setProperty("hostContext", config.context);
 
         root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
@@ -384,7 +386,7 @@ public class JettySolrRunner {
       // if started before, make a new server
       if (startedBefore) {
         waitOnSolr = false;
-        int port = reusePort ? lastPort : this.config.port;
+        int port = reusePort ? jettyPort : this.config.port;
         init(port);
       } else {
         startedBefore = true;
@@ -456,7 +458,7 @@ public class JettySolrRunner {
     if (0 == conns.length) {
       throw new RuntimeException("Jetty Server has no Connectors");
     }
-    return (proxyPort != -1) ? proxyPort : ((ServerConnector) conns[0]).getLocalPort();
+    return ((ServerConnector) conns[0]).getLocalPort();
   }
   
   /**
@@ -465,10 +467,10 @@ public class JettySolrRunner {
    * @exception RuntimeException if there is no Connector
    */
   public int getLocalPort() {
-    if (lastPort == -1) {
+    if (jettyPort == -1) {
       throw new IllegalStateException("You cannot get the port until this instance has started");
     }
-    return (proxyPort != -1) ? proxyPort : lastPort;
+    return (proxyPort != -1) ? proxyPort : jettyPort;
   }
   
   /**

@@ -28,8 +28,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +49,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
@@ -1067,7 +1070,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
-    ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
+    ZkController zkController = handler.coreContainer.getZkController();
+    ClusterState clusterState = zkController.getClusterState();
     String collectionName = req.getParams().required().get(COLLECTION_PROP);
     String sliceId = req.getParams().required().get(SHARD_ID_PROP);
 
@@ -1079,7 +1083,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "No shard with name " + sliceId + " exists for collection " + collectionName);
     }
 
-    try {
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, slice.getName(), zkController.getZkClient())) {
       // if an active replica is the leader, then all is fine already
       Replica leader = slice.getLeader();
       if (leader != null && leader.getState() == State.ACTIVE) {
@@ -1096,20 +1100,37 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         handler.coreContainer.getZkController().getZkClient().clean(lirPath);
       }
 
+      final Set<String> liveNodes = clusterState.getLiveNodes();
+      List<Replica> liveReplicas = slice.getReplicas().stream()
+          .filter(rep -> liveNodes.contains(rep.getNodeName())).collect(Collectors.toList());
+      boolean shouldIncreaseReplicaTerms = liveReplicas.stream()
+          .noneMatch(rep -> zkShardTerms.registered(rep.getName()) && zkShardTerms.canBecomeLeader(rep.getName()));
+      // we won't increase replica's terms if exist a live replica with term equals to leader
+      if (shouldIncreaseReplicaTerms) {
+        OptionalLong optionalMaxTerm = liveReplicas.stream()
+            .filter(rep -> zkShardTerms.registered(rep.getName()))
+            .mapToLong(rep -> zkShardTerms.getTerm(rep.getName()))
+            .max();
+        // increase terms of replicas less out-of-sync
+        if (optionalMaxTerm.isPresent()) {
+          liveReplicas.stream()
+              .filter(rep -> zkShardTerms.getTerm(rep.getName()) == optionalMaxTerm.getAsLong())
+              .forEach(rep -> zkShardTerms.setEqualsToMax(rep.getName()));
+        }
+      }
+
       // Call all live replicas to prepare themselves for leadership, e.g. set last published
       // state to active.
-      for (Replica rep : slice.getReplicas()) {
-        if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
-          ShardHandler shardHandler = handler.coreContainer.getShardHandlerFactory().getShardHandler();
+      for (Replica rep : liveReplicas) {
+        ShardHandler shardHandler = handler.coreContainer.getShardHandlerFactory().getShardHandler();
 
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CoreAdminParams.ACTION, CoreAdminAction.FORCEPREPAREFORLEADERSHIP.toString());
-          params.set(CoreAdminParams.CORE, rep.getStr("core"));
-          String nodeName = rep.getNodeName();
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.FORCEPREPAREFORLEADERSHIP.toString());
+        params.set(CoreAdminParams.CORE, rep.getStr("core"));
+        String nodeName = rep.getNodeName();
 
-          OverseerCollectionMessageHandler.sendShardRequest(nodeName, params, shardHandler, null, null,
-              CommonParams.CORES_HANDLER_PATH, handler.coreContainer.getZkController().getZkStateReader()); // synchronous request
-        }
+        OverseerCollectionMessageHandler.sendShardRequest(nodeName, params, shardHandler, null, null,
+            CommonParams.CORES_HANDLER_PATH, handler.coreContainer.getZkController().getZkStateReader()); // synchronous request
       }
 
       // Wait till we have an active leader

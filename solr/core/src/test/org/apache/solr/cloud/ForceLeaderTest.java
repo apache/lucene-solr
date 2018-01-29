@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -70,18 +71,166 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   }
 
+  /**
+   * Tests that FORCELEADER can get an active leader even only replicas with term lower than leader's term are live
+   */
+  @Test
+  @Slow
+  public void testReplicasInLowerTerms() throws Exception {
+    handle.put("maxScore", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+
+    String testCollectionName = "forceleader_lower_terms_collection";
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    cloudClient.setDefaultCollection(testCollectionName);
+
+    try {
+      List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, SHARD1, 1, 3, maxWaitSecsToSeeAllActive);
+      assertEquals("Expected 2 replicas for collection " + testCollectionName
+          + " but found " + notLeaders.size() + "; clusterState: "
+          + printClusterStateInfo(testCollectionName), 2, notLeaders.size());
+
+      Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, SHARD1);
+      JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
+      ZkController zkController = notLeader0.getCoreContainer().getZkController();
+
+      log.info("Before put non leaders into lower term: " + printClusterStateInfo());
+      putNonLeadersIntoLowerTerm(testCollectionName, SHARD1, zkController, leader, notLeaders);
+
+      for (Replica replica : notLeaders) {
+        waitForState(testCollectionName, replica.getName(), State.DOWN, 60000);
+      }
+      waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
+      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
+      ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+      int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
+      assertEquals("Expected only 0 active replica but found " + numActiveReplicas +
+          "; clusterState: " + printClusterStateInfo(), 0, numActiveReplicas);
+
+      int numReplicasOnLiveNodes = 0;
+      for (Replica rep : clusterState.getCollection(testCollectionName).getSlice(SHARD1).getReplicas()) {
+        if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
+          numReplicasOnLiveNodes++;
+        }
+      }
+      assertEquals(2, numReplicasOnLiveNodes);
+      log.info("Before forcing leader: " + printClusterStateInfo());
+      // Assert there is no leader yet
+      assertNull("Expected no leader right now. State: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1),
+          clusterState.getCollection(testCollectionName).getSlice(SHARD1).getLeader());
+
+      assertSendDocFails(3);
+
+      log.info("Do force leader...");
+      doForceLeader(cloudClient, testCollectionName, SHARD1);
+
+      // By now we have an active leader. Wait for recoveries to begin
+      waitForRecoveriesToFinish(testCollectionName, cloudClient.getZkStateReader(), true);
+
+      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
+      clusterState = cloudClient.getZkStateReader().getClusterState();
+      log.info("After forcing leader: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1));
+      // we have a leader
+      Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader();
+      assertNotNull(newLeader);
+      // leader is active
+      assertEquals(State.ACTIVE, newLeader.getState());
+
+      numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
+      assertEquals(2, numActiveReplicas);
+
+      // Assert that indexing works again
+      log.info("Sending doc 4...");
+      sendDoc(4);
+      log.info("Committing...");
+      cloudClient.commit();
+      log.info("Doc 4 sent and commit issued");
+
+      assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 1);
+      assertDocsExistInAllReplicas(notLeaders, testCollectionName, 4, 4);
+
+      // Docs 1 and 4 should be here. 2 was lost during the partition, 3 had failed to be indexed.
+      log.info("Checking doc counts...");
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("q", "*:*");
+      assertEquals("Expected only 2 documents in the index", 2, cloudClient.query(params).getResults().getNumFound());
+
+      bringBackOldLeaderAndSendDoc(testCollectionName, leader, notLeaders, 5);
+    } finally {
+      log.info("Cleaning up after the test.");
+      // try to clean up
+      attemptCollectionDelete(cloudClient, testCollectionName);
+    }
+  }
+
+  void putNonLeadersIntoLowerTerm(String collectionName, String shard, ZkController zkController, Replica leader, List<Replica> notLeaders) throws Exception {
+    SocketProxy[] nonLeaderProxies = new SocketProxy[notLeaders.size()];
+    for (int i = 0; i < notLeaders.size(); i++)
+      nonLeaderProxies[i] = getProxyForReplica(notLeaders.get(i));
+
+    sendDoc(1);
+
+    // ok, now introduce a network partition between the leader and both replicas
+    log.info("Closing proxies for the non-leader replicas...");
+    for (SocketProxy proxy : nonLeaderProxies)
+      proxy.close();
+    getProxyForReplica(leader).close();
+
+    // indexing during a partition
+    log.info("Sending a doc during the network partition...");
+    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
+    sendDoc(2, null, leaderJetty);
+    
+    for (Replica replica : notLeaders) {
+      waitForState(collectionName, replica.getName(), State.DOWN, 60000);
+    }
+
+    // Kill the leader
+    log.info("Killing leader for shard1 of " + collectionName + " on node " + leader.getNodeName() + "");
+    leaderJetty.stop();
+
+    // Wait for a steady state, till the shard is leaderless
+    log.info("Sleep and periodically wake up to check for state...");
+    for (int i = 0; i < 20; i++) {
+      ClusterState clusterState = zkController.getZkStateReader().getClusterState();
+      boolean allDown = true;
+      for (Replica replica : clusterState.getCollection(collectionName).getSlice(shard).getReplicas()) {
+        if (replica.getState() != State.DOWN) {
+          allDown = false;
+        }
+      }
+      if (allDown && clusterState.getCollection(collectionName).getSlice(shard).getLeader() == null) {
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    log.info("Waking up...");
+
+    // remove the network partition
+    log.info("Reopening the proxies for the non-leader replicas...");
+    for (SocketProxy proxy : nonLeaderProxies)
+      proxy.reopen();
+
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, shard, cloudClient.getZkStateReader().getZkClient())) {
+      for (Replica notLeader : notLeaders) {
+        assertTrue(zkShardTerms.getTerm(leader.getName()) > zkShardTerms.getTerm(notLeader.getName()));
+      }
+    }
+  }
+
   /***
    * Tests that FORCELEADER can get an active leader after leader puts all replicas in LIR and itself goes down,
    * hence resulting in a leaderless shard.
    */
   @Test
   @Slow
+  //TODO remove in SOLR-11812
   public void testReplicasInLIRNoLeader() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
 
     String testCollectionName = "forceleader_test_collection";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createOldLirCollection(testCollectionName, 3);
     cloudClient.setDefaultCollection(testCollectionName);
 
     try {
@@ -157,6 +306,28 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
+  private void createOldLirCollection(String collection, int numReplicas) throws IOException, SolrServerException {
+    if (onlyLeaderIndexes) {
+      CollectionAdminRequest
+          .createCollection(collection, "conf1", 1, 0, numReplicas, 0)
+          .setCreateNodeSet("")
+          .process(cloudClient);
+    } else {
+      CollectionAdminRequest.createCollection(collection, "conf1", 1, numReplicas)
+          .setCreateNodeSet("")
+          .process(cloudClient);
+    }
+    Properties oldLir = new Properties();
+    oldLir.setProperty("lirVersion", "old");
+    for (int i = 0; i < numReplicas; i++) {
+      // this is the only way to create replicas which run in old lir implementation
+      CollectionAdminRequest
+          .addReplicaToShard(collection, "shard1", onlyLeaderIndexes? Replica.Type.TLOG: Replica.Type.NRT)
+          .setProperties(oldLir)
+          .process(cloudClient);
+    }
+  }
+
   /**
    * Test that FORCELEADER can set last published state of all down (live) replicas to active (so
    * that they become worthy candidates for leader election).
@@ -167,7 +338,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     handle.put("timestamp", SKIPVAL);
 
     String testCollectionName = "forceleader_last_published";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createOldLirCollection(testCollectionName, 3);
     cloudClient.setDefaultCollection(testCollectionName);
     log.info("Collection created: " + testCollectionName);
 
@@ -204,33 +375,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
-  protected void unsetLeader(String collection, String slice) throws Exception {
-    ZkDistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-        ZkStateReader.SHARD_ID_PROP, slice,
-        ZkStateReader.COLLECTION_PROP, collection);
-    inQueue.offer(Utils.toJSON(m));
-
-    ClusterState clusterState = null;
-    boolean transition = false;
-    for (int counter = 10; counter > 0; counter--) {
-      clusterState = zkStateReader.getClusterState();
-      Replica newLeader = clusterState.getCollection(collection).getSlice(slice).getLeader();
-      if (newLeader == null) {
-        transition = true;
-        break;
-      }
-      Thread.sleep(1000);
-    }
-
-    if (!transition) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not unset replica leader" +
-          ". Cluster state: " + printClusterStateInfo(collection));
-    }
-  }
-
   protected void setReplicaState(String collection, String slice, Replica replica, Replica.State state) throws Exception {
     DistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -263,23 +407,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
           ". Last known state of the replica: " + replicaState);
     }
   }
-  
-  /*protected void setLastPublishedState(String collection, String slice, Replica replica, Replica.State state) throws SolrServerException, IOException,
-  KeeperException, InterruptedException {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    String baseUrl = zkStateReader.getBaseUrlForNodeName(replica.getNodeName());
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.FORCEPREPAREFORLEADERSHIP.toString());
-    params.set(CoreAdminParams.CORE, replica.getStr("core"));
-    params.set(ZkStateReader.STATE_PROP, state.toString());
-
-    SolrRequest<SimpleSolrResponse> req = new GenericSolrRequest(METHOD.GET, "/admin/cores", params);
-    NamedList resp = null;
-    try (HttpSolrClient hsc = new HttpSolrClient(baseUrl)) {
-       resp = hsc.request(req);
-    }
-  }*/
 
   protected Replica.State getLastPublishedState(String collection, String slice, Replica replica) throws SolrServerException, IOException,
   KeeperException, InterruptedException {
@@ -377,6 +504,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     // Bring back the leader which was stopped
     log.info("Bringing back originally killed leader...");
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
+    getProxyForReplica(leader).reopen();
     leaderJetty.start();
     waitForRecoveriesToFinish(collection, cloudClient.getZkStateReader(), true);
     cloudClient.getZkStateReader().forceUpdateCollection(collection);

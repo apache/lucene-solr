@@ -34,6 +34,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Test for {@link LeaderInitiatedRecoveryThread}
  */
+@Deprecated
 @SolrTestCaseJ4.SuppressSSL
 public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTestBase {
 
