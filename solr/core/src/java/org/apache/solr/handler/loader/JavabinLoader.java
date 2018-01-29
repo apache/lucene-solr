@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler.loader;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -31,13 +38,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Update handler which uses the JavaBin format
@@ -103,6 +103,7 @@ public class JavabinLoader extends ContentStreamLoader {
       }
     };
     FastInputStream in = FastInputStream.wrap(stream);
+    if (in.peek() == -1) return;
     for (; ; ) {
       try {
         update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
