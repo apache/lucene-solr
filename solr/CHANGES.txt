@@ -126,6 +126,8 @@ Bug Fixes
 * SOLR-11882: SolrMetric registries retain references to SolrCores when closed.
   (Andrzej Bialecki, Erick Erickson)
 
+* SOLR-10525: Stacked recovery requests do no cancel an in progress recovery first. (Mike Drob via Cao Manh Dat)
+
 Optimizations
 ----------------------
 
