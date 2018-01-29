@@ -18,6 +18,8 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,6 +40,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertU(adoc("id","1", "text",v,  "text_np", v, "#foo_s", v));
     v = "now cow";
     assertU(adoc("id","2", "text",v,  "text_np", v));
+    assertU(adoc("id", "3", "name", "This is a name", "title", "This is a title", "weight", "1.43"));
     assertU(commit());
   }
 
@@ -91,20 +94,32 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     }
 
     final ReturnFields rf1 = new SolrReturnFields();
-    final String rf1ToString = "SolrReturnFields=(globs=[]"
-        +",fields=[]"
-        +",okFieldNames=[]"
-        +",reqFieldNames=null"
-        +",transformer=null,wantsScore=false,wantsAllFields=true)";
+    final String rf1ToString = "SolrReturnFields{"
+        + "requestedFieldNames=null"
+        + ", wantsAllFields=true"
+        + ", wantsScore=false"
+        + ", luceneFieldNames=null"
+        + ", inclusions=null"
+        + ", exclusions=null"
+        + ", inclusionGlobs=null"
+        + ", exclusionGlobs=null"
+        + ", aliases=null"
+        + ", transformer=null}";
     assertEquals(rf1ToString, rf1.toString());
 
     final ReturnFields rf2 = new SolrReturnFields(
         req("fl", SolrReturnFields.SCORE));
-    final String rf2ToStringA = "SolrReturnFields=(globs=[]"
-        +",fields=["+SolrReturnFields.SCORE+"]"
-        +",okFieldNames=[null, "+SolrReturnFields.SCORE+"]"
-        +",reqFieldNames=["+SolrReturnFields.SCORE+"]"
-        +",transformer=score,wantsScore=true,wantsAllFields=false)";
+    final String rf2ToStringA = "SolrReturnFields{"
+        + "requestedFieldNames=[" + SolrReturnFields.SCORE + "]"
+        + ", wantsAllFields=false"
+        + ", wantsScore=true"
+        + ", luceneFieldNames=null"
+        + ", inclusions=[" + SolrReturnFields.SCORE + "]"
+        + ", exclusions=null"
+        + ", inclusionGlobs=null"
+        + ", exclusionGlobs=null"
+        + ", aliases={}"
+        + ", transformer=" + SolrReturnFields.SCORE + "}";
     final String rf2ToStringB = "SolrReturnFields=(globs=[]"
         +",fields=["+SolrReturnFields.SCORE+"]"
         +",okFieldNames=["+SolrReturnFields.SCORE+", null]"
@@ -272,6 +287,22 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "store_rpt" ) );
     assertFalse(rf.wantsAllFields());
     assertNotNull(rf.getTransformer());
+
+    rf = new SolrReturnFields(req("fl", "greeting:[value v='hello']"));
+    assertFalse(rf.wantsScore());
+    assertTrue(rf.wantsField("greeting"));
+    assertFalse(rf.wantsField("id"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+    assertEquals("greeting", rf.getTransformer().getName());
+
+    h.getCore().addTransformerFactory("mytrans5", new ExplainAugmenterFactory());
+    rf = new SolrReturnFields(req("fl", "[mytrans5 jf=pinprojectid if=type:Projects mf=project_accessibilitytype]"));
+    assertFalse(rf.wantsScore());
+    assertFalse(rf.wantsField("id"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+    assertEquals("[mytrans5]", rf.getTransformer().getName());
   }
 
   @Test
@@ -363,6 +394,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   }
 
+  @Test
   public void testWhitespace() {
     Random r = random();
     final int iters = atLeast(30);
@@ -388,11 +420,231 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       assertTrue("id ("+fl+")", rf.wantsField("id"));
       assertTrue("foo_i ("+fl+")", rf.wantsField("foo_i"));
 
-      assertEquals("aliasId ("+fl+")", aliasId, rf.wantsField("aliasId"));
-      assertEquals("aliasFoo ("+fl+")", aliasFoo, rf.wantsField("aliasFoo"));
+      if (aliasId) {
+        assertTrue("aliasId (" + fl + ")", rf.wantsField("aliasId"));
+      } else {
+        assertTrue("id (" + fl + ")", rf.wantsField("id"));
+      }
+
+      if (aliasFoo) {
+        assertTrue("aliasFoo (" + fl + ")", rf.wantsField("aliasFoo"));
+      } else {
+        assertTrue("foo_i (" + fl + ")", rf.wantsField("foo_i"));
+      }
 
       assertFalse(rf.wantsField("xxx"));
       assertFalse(rf.wantsAllFields());
+    }
+  }
+  @Test
+  public void testReturnAllRealFields() {
+    final String[] expressions = {
+        "",
+        "*",
+        "* name", "name *",
+        "* -*", "-* *",
+        "* *me", "*me *",
+        "* *e", "*e *",
+    };
+
+    assertQueryResponseCorrectness(expressions, new ReturnFieldsExpectation() {
+      @Override
+      public boolean score() {
+        return false;
+      }
+
+      @Override
+      public boolean id() {
+        return true;
+      }
+
+      @Override
+      public boolean title() {
+        return true;
+      }
+
+      @Override
+      public boolean name() {
+        return true;
+      }
+
+      @Override
+      public boolean weight() {
+        return true;
+      }
+
+      @Override
+      public boolean returnFieldsWantsAllFields() {
+        return true;
+      }
+    });
+  }
+
+  @Test
+  public void testReturnOnlyName() {
+    final String[] expressions = {
+        "name",
+        "*me", "na*", "n*e", "nam?", "n?m?",
+        "-id -title -weight",
+        "-id -title -weight name", "name -id -title -weight", "-id name -title -weight",
+        "-id -title -weight na*", "na* -id -title -weight", "-id na* -title -weight",
+        "-id name", "name -id",
+        "-id *me", "*me -id",
+        "-title name", "name -title",
+        "-title n*e", "n*e -title"
+    };
+
+    assertQueryResponseCorrectness(expressions, new ReturnFieldsExpectation() {
+      @Override
+      public boolean weight() {
+        return false;
+      }
+
+      @Override
+      public boolean title() {
+        return false;
+      }
+
+      @Override
+      public boolean score() {
+        return false;
+      }
+
+      @Override
+      public boolean returnFieldsWantsAllFields() {
+        return false;
+      }
+
+      @Override
+      public boolean name() {
+        return true;
+      }
+
+      @Override
+      public boolean id() {
+        return false;
+      }
+    });
+  }
+
+  @Test
+  public void testReturnOnlyNameAndTitle() {
+    final String[] expressions = {
+        "*e",
+        "*me titl?", "na* *le", "n*e t*e", "nam? titl?", "t?tl* n?m?",
+        "name title", "title name",
+        "-id -weight",
+        "-weigh* -i?",
+        "-weigh* -i? na* t*", "titl? n?m? -weigh* -i?",
+        "-weigh* -i? name title", "title name -weigh* -i?"
+    };
+
+    assertQueryResponseCorrectness(expressions, new ReturnFieldsExpectation() {
+      @Override
+      public boolean weight() {
+        return false;
+      }
+
+      @Override
+      public boolean title() {
+        return true;
+      }
+
+      @Override
+      public boolean score() {
+        return false;
+      }
+
+      @Override
+      public boolean returnFieldsWantsAllFields() {
+        return false;
+      }
+
+      @Override
+      public boolean name() {
+        return true;
+      }
+
+      @Override
+      public boolean id() {
+        return false;
+      }
+    });
+  }
+
+  @Test
+  public void testReturnAllRealFieldsExceptName() {
+    final String[] expressions = {
+        "-name",
+        "* -name", "-name *",
+        "-*me", "-na*", "-n*e", "-nam?", "-n?m?", "-nam*",
+        "id title weight",
+        "id title weight -name", "-name id title weight", "id -name title weight",
+        "id title weight -na*", "-na* id title weight", "id -na* title weight"
+    };
+
+    assertQueryResponseCorrectness(expressions, new ReturnFieldsExpectation() {
+      @Override
+      public boolean weight() {
+        return true;
+      }
+
+      @Override
+      public boolean title() {
+        return true;
+      }
+
+      @Override
+      public boolean score() {
+        return false;
+      }
+
+      @Override
+      public boolean returnFieldsWantsAllFields() {
+        return false;
+      }
+
+      @Override
+      public boolean name() {
+        return false;
+      }
+
+      @Override
+      public boolean id() {
+        return true;
+      }
+    });
+  }
+
+  private void assertQueryResponseCorrectness(final String[] fieldListExpressions, final ReturnFieldsExpectation expectation) {
+    for (final String expression : fieldListExpressions) {
+      final SolrQueryRequest request = req(CommonParams.Q, "id:3", CommonParams.FL, expression);
+      assertQ(request
+          , "//*[@numFound='1'] "
+          , expectation.score()
+              ? "*[count(//doc/float[@name='" + SolrReturnFields.SCORE + "'])=1] "
+              : "*[count(//doc/float[@name='" + SolrReturnFields.SCORE + "'])=0] "
+          , expectation.id()
+              ? "//doc/str[@name='id']/text()=3"
+              : "*[count(//doc/str[@name='id'])=0] "
+          , expectation.title()
+              ? "//doc/str[@name='title']/text()= 'This is a title'"
+              : "*[count(//doc/str[@name='title'])=0] "
+          , expectation.name()
+              ? "//doc/str[@name='name']/text()= 'This is a name'"
+              : "*[count(//doc/str[@name='name'])=0] "
+          , expectation.weight()
+              ? "//doc/float[@name='weight']/text()=1.43"
+              : "*[count(//doc/float[@name='weight'])=0] ");
+
+      final ReturnFields rf = new SolrReturnFields(request);
+      assertTrue(rf.wantsScore() == expectation.score());
+      assertTrue(rf.wantsAllFields() == expectation.returnFieldsWantsAllFields());
+      assertNull(rf.getTransformer());
+      assertTrue(rf.wantsField("id") == expectation.id());
+      assertTrue(rf.wantsField("name") == expectation.name());
+      assertTrue(rf.wantsField("title") == expectation.title());
+      assertTrue(rf.wantsField("weight") == expectation.weight());
     }
   }
 
@@ -430,8 +682,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   static {
     // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
-    // in the future.  if that happens, fail early with a clera msg, even if java asserts
-    // (used in randomWhitespace) are disbled
+    // in the future.  if that happens, fail early with a clear msg, even if java asserts
+    // (used in randomWhitespace) are disabled
     
     for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
       char c = WHITESPACE_CHARACTERS[offset];
@@ -457,6 +709,20 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       out.append(c);
     }
     return out.toString();
+  }
+
+  abstract class ReturnFieldsExpectation {
+    abstract public boolean weight();
+
+    abstract public boolean title();
+
+    abstract public boolean score();
+
+    abstract public boolean returnFieldsWantsAllFields();
+
+    abstract public boolean name();
+
+    abstract public boolean id();
   }
 
 }
