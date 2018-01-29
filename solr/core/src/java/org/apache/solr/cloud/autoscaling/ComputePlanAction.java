@@ -21,8 +21,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -36,6 +38,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +52,17 @@ import org.slf4j.LoggerFactory;
  */
 public class ComputePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  Set<String> collections = new HashSet<>();
+
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
+    String colString = args.get("collections");
+    if (colString != null && !colString.isEmpty()) {
+      collections.addAll(StrUtils.splitSmart(colString, ','));
+    }
+  }
 
   @Override
   public void process(TriggerEvent event, ActionContext context) throws Exception {
@@ -98,6 +113,14 @@ public class ComputePlanAction extends TriggerActionBase {
             }
           }
           log.info("Computed Plan: {}", operation.getParams());
+          if (!collections.isEmpty()) {
+            String coll = operation.getParams().get(CoreAdminParams.COLLECTION);
+            if (coll != null && !collections.contains(coll)) {
+              // discard an op that doesn't affect our collections
+              log.debug("-- discarding due to collection={} not in {}", coll, collections);
+              continue;
+            }
+          }
           Map<String, Object> props = context.getProperties();
           props.compute("operations", (k, v) -> {
             List<SolrRequest> operations = (List<SolrRequest>) v;
