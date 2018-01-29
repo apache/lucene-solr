@@ -215,7 +215,7 @@ Other Changes
 
 * SOLR-11051: Use disk free metric in default cluster preferences (noble)
 
-* SOLR-11658: Upgrade ZooKeeper dependency to 3.4.11 (Steve Rowe, Erick Erickson)
+* SOLR-11658: Upgrade ZooKeeper dependency to 3.4.11 (Jason Gerlowski, Steve Rowe, Erick Erickson)
 
 ==================  7.2.1 ==================
 
