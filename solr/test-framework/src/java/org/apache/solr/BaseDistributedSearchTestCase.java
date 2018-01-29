@@ -486,6 +486,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrClient client = clients.get(which);
     client.add(doc);
   }
+
+  protected void indexDocs(List<SolrInputDocument> docs) throws IOException, SolrServerException {
+    controlClient.add(docs);
+
+    int which = (docs.get(0).getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
+    SolrClient client = clients.get(which);
+    client.add(docs);
+  }
   
   /**
    * Indexes the document in both the control client and the specified client asserting
