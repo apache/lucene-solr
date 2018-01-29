@@ -119,6 +119,8 @@ New Features
 
 * SOLR-11702: Redesign current LIR implementation (Cao Manh Dat, shalin)
 
+* SOLR-11376: Support computing plans for only specific collections. (ab)
+
 Bug Fixes
 ----------------------
 
