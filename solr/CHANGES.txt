@@ -101,6 +101,34 @@ New Features
 
 * SOLR-11376: Support computing plans for only specific collections. (ab)
 
+* SOLR-11681: Add ttest and pairedTtest Stream Evaluators (Joel Bernstein)
+
+* SOLR-11785: Add multiVariateNormalDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11789: Add integrate Stream Evaluator to support integral calculations (Joel Bernstein)
+
+* SOLR-11791: Add density Stream Evaluator (Joel Bernstein)
+
+* SOLR-11172: Add Mann-Whitney U test Stream Evaluator (Mathew Skaria, Joel Bernstein)
+
+* SOLR-11808: Add sumSq Stream Evaluator (Joel Bernstein)
+
+* SOLR-11430: Add lerp and akima Stream Evaluators to support linear and akima spline interpolation (Joel Bernstein)
+
+* SOLR-11683: Add chiSquareDataSet Stream Evaluator (Joel Bernstein)
+
+* SOLR-10716: Add termVectors Stream Evaluator (Joel Bernstein)
+
+* SOLR-11737: Add kmeans Stream Evaluator to support kmeans clustering (Joel Bernstein)
+
+* SOLR-11736: Rename knn Streaming Expression to knnSearch and add new knn Stream Evaluator (Joel Bernstein)
+
+* SOLR-11867: Add indexOf, rowCount and columnCount StreamEvaluators (Joel Bernstein)
+
+* SOLR-11862: Add fuzzyKmeans Stream Evaluatory (Joel Bernstein)
+
+* SOLR-11890: Add multiKmeans Stream Evaluator (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
