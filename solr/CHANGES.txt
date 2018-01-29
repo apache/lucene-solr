@@ -117,6 +117,9 @@ Bug Fixes
 * SOLR-11895: Logging Screen in the Admin UI will now show "No Events available" when there are no events to show.
   Also, the spinner icon is removed to prevent users thinking the page has hung. (Cassandra Targett, Shawn Heisey)
 
+* SOLR-11882: SolrMetric registries retain references to SolrCores when closed.
+  (Andrzej Bialecki, Erick Erickson)
+
 Optimizations
 ----------------------
 
