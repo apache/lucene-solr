@@ -30,7 +30,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
-public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest {
+public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -38,7 +38,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
-  public LeaderInitiatedRecoveryOnCommitTest() {
+  public HttpPartitionOnCommitTest() {
     super();
     sliceCount = 1;
     fixShardCount(4);

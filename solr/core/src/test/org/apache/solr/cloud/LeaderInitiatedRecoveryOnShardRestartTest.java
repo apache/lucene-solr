@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -26,6 +27,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 @Nightly
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10071")
+@Deprecated
 public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -86,7 +89,14 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
     
     String testCollectionName = "all_in_lir";
     String shardId = "shard1";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    CollectionAdminRequest.createCollection(testCollectionName, "conf1", 1, 3)
+        .setCreateNodeSet("")
+        .process(cloudClient);
+    Properties oldLir = new Properties();
+    oldLir.setProperty("lirVersion", "old");
+    for (int i = 0; i < 3; i++) {
+      CollectionAdminRequest.addReplicaToShard(testCollectionName, "shard1").setProperties(oldLir).process(cloudClient);
+    }
     
     waitForRecoveriesToFinish(testCollectionName, false);
 

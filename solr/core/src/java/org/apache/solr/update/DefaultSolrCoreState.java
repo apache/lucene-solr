@@ -308,19 +308,20 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           // after the current one, and if there is, bail
           boolean locked = recoveryLock.tryLock();
           try {
-            if (!locked) {
-              if (recoveryWaiting.get() > 0) {
-                return;
-              }
-              recoveryWaiting.incrementAndGet();
-            } else {
-              recoveryWaiting.incrementAndGet();
-              cancelRecovery();
+            if (!locked && recoveryWaiting.get() > 0) {
+              return;
             }
+
+            recoveryWaiting.incrementAndGet();
+            cancelRecovery();
             
             recoveryLock.lock();
             try {
-              recoveryWaiting.decrementAndGet();
+              // don't use recoveryLock.getQueueLength() for this
+              if (recoveryWaiting.decrementAndGet() > 0) {
+                // another recovery waiting behind us, let it run now instead of after we finish
+                return;
+              }
               
               // to be air tight we must also check after lock
               if (cc.isShutDown()) {
