@@ -86,14 +86,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // make sure all aliases created are removed for the next test method
     Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases();
     for (String alias : aliases.keySet()) {
-      CollectionAdminRequest.deleteAlias(alias).processAsync(cluster.getSolrClient());
+      CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
     }
 
-    // make sure all collections are removed for the next test method
-    List<String> collections = CollectionAdminRequest.listCollections(cluster.getSolrClient());
-    for (String collection : collections) {
-      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
-    }
+    cluster.deleteAllCollections();
   }
 
   @Test
