@@ -413,6 +413,17 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
 
+  /**
+   * Test scenario is follow:
+   * <ul>
+   *   <li>Send a batch of documents to one node</li>
+   *   <li>Batch consist of an update for document which is existed and an update for documents which is not existed </li>
+   *   <li>Assumption which is made is that both updates will be applied: field for existed document will be updated,
+   *   new document will be created for a non existed one</li>
+   * </ul>
+   *
+   * @throws Exception
+   */
   private void updateExistedAndNonExistedDocs() throws Exception {
     clearIndex();
     index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
@@ -427,10 +438,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     indexDocs(Arrays.asList(existedUpdate, nonExistedUpdate));
     commit();
-
+    String[] ids = {"1", "2"};
     for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
-      assertEquals(50.0f, client.getById("1").get("inplace_updatable_float"));
-      assertEquals(50.0f, client.getById("2").get("inplace_updatable_float"));
+      for (String id : ids) {
+        SolrDocument doc = client.getById(id);
+        assertNotNull(doc);
+        assertEquals(50.0f, doc.get("inplace_updatable_float"));
+      }
     }
   }
 
