@@ -17,8 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -60,8 +58,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    return Collections.singletonList(new TokenStreamOffsetsEnum(tokenStream(content), automata));
+  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+    return new TokenStreamOffsetsEnum(tokenStream(content), automata);
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {
@@ -105,6 +103,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     public int freq() throws IOException {
       return Integer.MAX_VALUE; // lie
     }
+
 
     @Override
     public int startOffset() throws IOException {
