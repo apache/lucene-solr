@@ -104,10 +104,16 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   public void testUnlimitedRows() throws Exception {
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
         "terms.fl","lowerfilt",
-        "terms.fl","standardfilt",
-        "terms.rows","-1")
+        "terms.fl","standardfilt")
         ,"count(//lst[@name='lowerfilt']/*)=9"
         ,"count(//lst[@name='standardfilt']/*)=10"
+    );
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","lowerfilt",
+        "terms.fl","standardfilt",
+        "terms.limit","-1")
+        ,"count(//lst[@name='lowerfilt']/*)=9"
+        ,"count(//lst[@name='standardfilt']/*)=16"
     );
 
 
