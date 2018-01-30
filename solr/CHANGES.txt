@@ -240,6 +240,8 @@ Other Changes
 
 * SOLR-11658: Upgrade ZooKeeper dependency to 3.4.11 (Jason Gerlowski, Steve Rowe, Erick Erickson)
 
+* SOLR-11480: Remove unused "Admin Extra" files and mentions. (Eric Pugh, Christine Poerschke)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
