@@ -23,8 +23,6 @@ In the left-hand navigation bar, you will see a pull-down menu titled "Core Sele
 
 When you select a core from the pull-down, the main display of the page will show some basic metadata about the core, and a secondary menu will appear in the left nav with links to additional core specific administration screens.
 
-You can also define a configuration file called `admin-extra.html` that includes links or other information you would like to display in the "Admin Extra" part of this main screen.
-
 .Core overview screen
 image::images/core-specific-tools/core_dashboard.png[image,width=515,height=250]
 

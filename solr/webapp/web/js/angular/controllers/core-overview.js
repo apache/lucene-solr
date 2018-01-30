@@ -42,9 +42,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
       });
   };
 
-  $scope.refreshAdminExtra = function() {
-  };
-
   $scope.refreshSystem = function() {
     CoreSystem.get({core: $routeParams.core},
       function(data) {
@@ -87,7 +84,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.refresh = function() {
     $scope.refreshIndex();
     $scope.refreshReplication();
-    $scope.refreshAdminExtra();
     $scope.refreshSystem();
     $scope.refreshPing();
   };
