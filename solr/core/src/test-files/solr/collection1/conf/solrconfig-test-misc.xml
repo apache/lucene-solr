@@ -31,7 +31,7 @@
   <!-- see TestConfig.testAutomaticDeprecationSupport -->
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
 
   <!-- see TestConfig.testLib() -->
