@@ -160,6 +160,9 @@ Bug Fixes
 
 * SOLR-11873: Use time based expiration cache in all necessary places in HdfsDirectoryFactory. (Mihaly Toth via Mark Miller)
 
+* SOLR-11661: New HDFS collection reuses unremoved data from a deleted HDFS collection with same name causes 
+  inconsistent view of documents (Cao Manh Dat, shalin)
+
 Optimizations
 ----------------------
 

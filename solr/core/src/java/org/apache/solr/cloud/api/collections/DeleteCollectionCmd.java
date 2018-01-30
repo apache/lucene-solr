@@ -31,6 +31,7 @@ import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -71,6 +72,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
     }
 
+    boolean removeCounterNode = true;
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
       // should be taken care of as part of collection delete operation.
@@ -99,7 +101,16 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
 
-      ocmh.collectionCmd(message, params, results, null, asyncId, requestMap, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(message, params, results, null, asyncId, requestMap, okayExceptions);
+      for (Replica failedRepilca : failedReplicas) {
+        boolean isSharedFS = failedRepilca.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedRepilca.get("dataDir") != null;
+        if (isSharedFS) {
+          // if the replica use a shared FS and it did not receive the unload message, then counter node should not be removed
+          // because when a new collection with same name is created, new replicas may reuse the old dataDir
+          removeCounterNode = false;
+          break;
+        }
+      }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
@@ -124,10 +135,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     } finally {
 
       try {
-        if (zkStateReader.getZkClient().exists(
-            ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
-          zkStateReader.getZkClient().clean(
-              ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+        String collectionPath =  ZkStateReader.getCollectionPathRoot(collection);
+        if (zkStateReader.getZkClient().exists(collectionPath, true)) {
+          if (removeCounterNode) {
+            zkStateReader.getZkClient().clean(collectionPath);
+          } else {
+            final String counterNodePath = Assign.getCounterNodePath(collection);
+            zkStateReader.getZkClient().clean(collectionPath, s -> !s.equals(counterNodePath));
+          }
         }
       } catch (InterruptedException e) {
         SolrException.log(log, "Cleaning up collection in zk was interrupted:"

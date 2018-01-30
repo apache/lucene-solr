@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.NumberUtils;
@@ -63,8 +64,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static String getCounterNodePath(String collection) {
+    return ZkStateReader.COLLECTIONS_ZKNODE + "/"+collection+"/counter";
+  }
+
   public static int incAndGetId(DistribStateManager stateManager, String collection, int defaultValue) {
-    String path = "/collections/"+collection;
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/"+collection;
     try {
       if (!stateManager.hasData(path)) {
         try {

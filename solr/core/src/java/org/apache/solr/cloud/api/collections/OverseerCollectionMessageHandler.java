@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -798,13 +799,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
   
-  private void collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
+  private List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
                              NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap) {
-    collectionCmd( message, params, results, stateMatcher, asyncId, requestMap, Collections.emptySet());
+    return collectionCmd( message, params, results, stateMatcher, asyncId, requestMap, Collections.emptySet());
   }
 
-
-  void collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
+  /**
+   * Send request to all replicas of a collection
+   * @return List of replicas which is not live for receiving the request
+   */
+  List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
                      NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap, Set<String> okayExceptions) {
     log.info("Executing Collection Cmd : " + params);
     String collectionName = message.getStr(NAME);
@@ -812,30 +816,37 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollection(collectionName);
-    
+    List<Replica> notLivesReplicas = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
-      sliceCmd(clusterState, params, stateMatcher, slice, shardHandler, asyncId, requestMap);
+      notLivesReplicas.addAll(sliceCmd(clusterState, params, stateMatcher, slice, shardHandler, asyncId, requestMap));
     }
 
     processResponses(results, shardHandler, false, null, asyncId, requestMap, okayExceptions);
-
+    return notLivesReplicas;
   }
 
-  void sliceCmd(ClusterState clusterState, ModifiableSolrParams params, Replica.State stateMatcher,
+  /**
+   * Send request to all replicas of a slice
+   * @return List of replicas which is not live for receiving the request
+   */
+  List<Replica> sliceCmd(ClusterState clusterState, ModifiableSolrParams params, Replica.State stateMatcher,
                 Slice slice, ShardHandler shardHandler, String asyncId, Map<String, String> requestMap) {
-
+    List<Replica> notLiveReplicas = new ArrayList<>();
     for (Replica replica : slice.getReplicas()) {
-      if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))
-          && (stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
+      if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
+        if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          // For thread safety, only simple clone the ModifiableSolrParams
+          ModifiableSolrParams cloneParams = new ModifiableSolrParams();
+          cloneParams.add(params);
+          cloneParams.set(CoreAdminParams.CORE, replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
-        // For thread safety, only simple clone the ModifiableSolrParams
-        ModifiableSolrParams cloneParams = new ModifiableSolrParams();
-        cloneParams.add(params);
-        cloneParams.set(CoreAdminParams.CORE, replica.getStr(ZkStateReader.CORE_NAME_PROP));
-
-        sendShardRequest(replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler, asyncId, requestMap);
+          sendShardRequest(replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler, asyncId, requestMap);
+        } else {
+          notLiveReplicas.add(replica);
+        }
       }
     }
+    return notLiveReplicas;
   }
   
   private void processResponse(NamedList results, ShardResponse srsp, Set<String> okayExceptions) {
