@@ -18,8 +18,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Put something here to see if it fixes things.
-
 == search
 
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query. This is very similar to a standard Solr query, and uses many of the same parameters.
