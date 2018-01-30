@@ -17,6 +17,10 @@ API Changes
 * LUCENE-8104: Remove facets module compile-time dependency on queries
   (Alan Woodward)
 
+* LUCENE-8145: UnifiedHighlighter now uses a unitary OffsetsEnum rather
+  than a list of enums (Alan Woodward, David Smiley, Jim Ferenczi, Timothy
+  Rodriguez)
+
 New Features
 
 * LUCENE-2899: Add new module analysis/opennlp, with analysis components
