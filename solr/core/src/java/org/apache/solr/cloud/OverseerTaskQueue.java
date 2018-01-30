@@ -150,15 +150,12 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     public void await(long timeoutMs) throws InterruptedException {
       assert timeoutMs > 0;
-      long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMs);
       lock.lock();
       try {
-        while (this.event == null) {
-          if (timeoutNanos <= 0) {
-            return;
-          }
-          timeoutNanos = eventReceived.awaitNanos(timeoutNanos);
+        if (this.event != null) {
+          return;
         }
+        eventReceived.await(timeoutMs, TimeUnit.MILLISECONDS);
       } finally {
         lock.unlock();
       }
