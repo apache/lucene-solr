@@ -18,7 +18,6 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -60,12 +59,12 @@ public abstract class FieldOffsetStrategy {
    * The primary method -- return offsets for highlightable words in the specified document.
    * IMPORTANT: remember to close them all.
    */
-  public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
+  public abstract OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException;
 
-  protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+  protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
     final Terms termsIndex = leafReader.terms(field);
     if (termsIndex == null) {
-      return Collections.emptyList();
+      return OffsetsEnum.EMPTY;
     }
 
     final List<OffsetsEnum> offsetsEnums = new ArrayList<>(terms.length + automata.length);
@@ -92,7 +91,7 @@ public abstract class FieldOffsetStrategy {
       createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
     }
 
-    return offsetsEnums;
+    return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
   }
 
   protected void createOffsetsEnumsForTerms(BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {

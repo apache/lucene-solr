@@ -21,20 +21,20 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.PriorityQueue;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * An enumeration/iterator of a term and its offsets for use by {@link FieldHighlighter}.
  * It is advanced and is placed in a priority queue by
- * {@link FieldHighlighter#highlightOffsetsEnums(List)} based on the start offset.
+ * {@link FieldHighlighter#highlightOffsetsEnums(OffsetsEnum)} based on the start offset.
  *
  * @lucene.internal
  */
 public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
-
-  private float weight; // set once in highlightOffsetsEnums
 
   // note: the ordering clearly changes as the postings enum advances
   // note: would be neat to use some Comparator utilities with method
@@ -82,14 +82,6 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
   public abstract int endOffset() throws IOException;
 
-  public float getWeight() {
-    return weight;
-  }
-
-  public void setWeight(float weight) {
-    this.weight = weight;
-  }
-
   @Override
   public void close() throws IOException {
   }
@@ -134,11 +126,6 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
 
     @Override
-    public int freq() throws IOException {
-      return postingsEnum.freq();
-    }
-
-    @Override
     public BytesRef getTerm() throws IOException {
       return term;
     }
@@ -153,5 +140,93 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
       return postingsEnum.endOffset();
     }
 
+    @Override
+    public int freq() throws IOException {
+      return postingsEnum.freq();
+    }
+  }
+
+  public static final OffsetsEnum EMPTY = new OffsetsEnum() {
+    @Override
+    public boolean nextPosition() throws IOException {
+      return false;
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 0;
+    }
+
+  };
+
+  public static class MultiOffsetsEnum extends OffsetsEnum {
+
+    private final PriorityQueue<OffsetsEnum> queue;
+    private boolean started = false;
+
+    public MultiOffsetsEnum(List<OffsetsEnum> inner) throws IOException {
+      this.queue = new PriorityQueue<>();
+      for (OffsetsEnum oe : inner) {
+        if (oe.nextPosition())
+          this.queue.add(oe);
+      }
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      if (started == false) {
+        started = true;
+        return this.queue.size() > 0;
+      }
+      if (this.queue.size() > 0) {
+        OffsetsEnum top = this.queue.poll();
+        if (top.nextPosition()) {
+          this.queue.add(top);
+          return true;
+        }
+        return this.queue.size() > 0;
+      }
+      return false;
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return this.queue.peek().getTerm();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return this.queue.peek().startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return this.queue.peek().endOffset();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return this.queue.peek().freq();
+    }
+
+    @Override
+    public void close() throws IOException {
+      IOUtils.close(queue);
+    }
   }
 }
