@@ -370,7 +370,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-    throw new UnsupportedOperationException();
+    // implemented to not fail CheckIndex, but you shouldn't be using impacts on a slow reader
+    return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
   }
 
   final static class TermsEnumWithSlice {
