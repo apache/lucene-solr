@@ -40,6 +40,11 @@ public final class LeafSimScorer {
     maxScore = needsScores ? scorer.score(maxFreq, 1) : Float.MAX_VALUE;
   }
 
+  /** Return the wrapped {@link SimScorer}. */
+  public SimScorer getSimScorer() {
+    return scorer;
+  }
+
   private long getNormValue(int doc) throws IOException {
     if (norms != null) {
       boolean found = norms.advanceExact(doc);

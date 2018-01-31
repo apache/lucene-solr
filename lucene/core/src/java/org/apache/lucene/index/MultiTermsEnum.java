@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -365,6 +366,11 @@ public final class MultiTermsEnum extends TermsEnum {
     }
     
     return docsEnum.reset(subDocs, upto);
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   final static class TermsEnumWithSlice {

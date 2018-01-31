@@ -17,9 +17,13 @@
 package org.apache.lucene.codecs.blocktree;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
 
@@ -79,5 +83,10 @@ class BitSetTermsEnum extends TermsEnum {
     }
     postingsEnum.reset();
     return postingsEnum;
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    throw new UnsupportedOperationException();
   }
 }

@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LegacySortedSetDocValues;
 import org.apache.lucene.index.LegacySortedSetDocValuesWrapper;
@@ -34,6 +35,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -604,6 +606,11 @@ public class DocTermOrds implements Accountable {
     @Override    
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       return termsEnum.postings(reuse, flags);
+    }
+
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return termsEnum.impacts(scorer, flags);
     }
 
     @Override

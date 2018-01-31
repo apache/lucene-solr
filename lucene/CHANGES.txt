@@ -65,6 +65,9 @@ Improvements
 * LUCENE-8011: Improved similarity explanations.
   (Mayya Sharipova via Adrien Grand)
 
+* LUCENE-4198: Codecs now have the ability to index score impacts.
+  (Adrien Grand)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms

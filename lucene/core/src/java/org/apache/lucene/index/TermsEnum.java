@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
@@ -171,6 +172,12 @@ public abstract class TermsEnum implements BytesRefIterator {
   public abstract PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException;
 
   /**
+   * Return a {@link ImpactsEnum} that computes impacts with {@code scorer}.
+   * @see #postings(PostingsEnum, int)
+   */
+  public abstract ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException;
+  
+  /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
    * without re-seeking the term dictionary.
    * <p>
@@ -228,7 +235,12 @@ public abstract class TermsEnum implements BytesRefIterator {
     public PostingsEnum postings(PostingsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
-      
+
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      throw new IllegalStateException("this method should never be called");
+    }
+
     @Override
     public BytesRef next() {
       return null;

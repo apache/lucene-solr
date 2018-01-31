@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -181,7 +182,12 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     return tenum.postings(reuse, flags);
   }
-  
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    return tenum.impacts(scorer, flags);
+  }
+
   /** This enum does not support seeking!
    * @throws UnsupportedOperationException In general, subclasses do not
    *         support seeking.

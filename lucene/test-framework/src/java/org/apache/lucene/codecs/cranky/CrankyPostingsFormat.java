@@ -21,6 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SegmentReadState;
@@ -61,11 +62,11 @@ class CrankyPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(Fields fields, NormsProducer norms) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldsConsumer.write()");
       }  
-      delegate.write(fields);
+      delegate.write(fields, norms);
     }
 
     @Override
