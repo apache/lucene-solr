@@ -31,8 +31,8 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -105,9 +105,6 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.OPTIONAL_ROUTER_PARAMS;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.REQUIRED_ROUTER_PARAMS;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
@@ -119,6 +116,9 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.OPTIONAL_ROUTER_PARAMS;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.REQUIRED_ROUTER_PARAMS;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
@@ -987,16 +987,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> {
-      SolrParams params = req.getParams();
-      String sourceNode = params.get(CollectionParams.SOURCE_NODE, params.get("source"));
-      if (sourceNode == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.SOURCE_NODE + " is a require parameter");
-      }
-      String targetNode = params.get(CollectionParams.TARGET_NODE, params.get("target"));
-      if (targetNode == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.TARGET_NODE + " is a require parameter");
-      }
-      return params.getAll(null, "source", "target", WAIT_FOR_FINAL_STATE, CollectionParams.SOURCE_NODE, CollectionParams.TARGET_NODE);
+      return req.getParams().getAll(null,
+          "source", //legacy
+          "target",//legacy
+          WAIT_FOR_FINAL_STATE,
+          CollectionParams.SOURCE_NODE,
+          CollectionParams.TARGET_NODE);
     }),
     MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
       Map<String, Object> map = req.getParams().required().getAll(null,

@@ -222,6 +222,8 @@ Other Changes
 
 * SOLR-11480: Remove unused "Admin Extra" files and mentions. (Eric Pugh, Christine Poerschke)
 
+* SOLR-11067: REPLACENODE should identify appropriate nodes if targetNode is not provided (noble)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
