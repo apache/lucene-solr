@@ -166,7 +166,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
   }
 
-  private CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(String sourceNode, String targetNode, Boolean parallel) {
+  public static  CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(String sourceNode, String targetNode, Boolean parallel) {
     if (random().nextBoolean()) {
       return new CollectionAdminRequest.ReplaceNode(sourceNode, targetNode).setParallel(parallel);
     } else  {
@@ -177,7 +177,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
           params.set("source", sourceNode);
-          params.set("target", targetNode);
+          params.setNonNull("target", targetNode);
           if (parallel != null) params.set("parallel", parallel.toString());
           return params;
         }

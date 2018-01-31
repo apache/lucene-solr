@@ -242,9 +242,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
               collection,
               message,
               Collections.singletonList(shard),
-              replicaType == Replica.Type.NRT ? 0 : 1,
-              replicaType == Replica.Type.TLOG ? 0 : 1,
-              replicaType == Replica.Type.PULL ? 0 : 1
+              replicaType == Replica.Type.NRT ? 1 : 0,
+              replicaType == Replica.Type.TLOG ? 1 : 0,
+              replicaType == Replica.Type.PULL ? 1 : 0
           ).get(0).node;
           sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
         }
