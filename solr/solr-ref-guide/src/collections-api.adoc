@@ -2084,7 +2084,7 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in one node (the source) to another node (the target). After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
@@ -2096,7 +2096,7 @@ For source replicas that are also shard leaders the operation will wait for the 
 The source node from which the replicas need to be copied from. This parameter is required.
 
 `targetNode`::
-The target node where replicas will be copied. This parameter is required.
+The target node where replicas will be copied. If this parameter is not provided, Solr would identify nodes automatically based on policies or no:of cores in each node
 
 `parallel`::
 If this flag is set to `true`, all replicas are created in separate threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices. The default is `false`.
