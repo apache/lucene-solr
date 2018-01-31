@@ -1767,11 +1767,9 @@ Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzer
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
   <filter class="solr.StopFilterFactory" words="org/apache/lucene/analysis/uk/stopwords.txt"/>
-  <filter class="solr.MorfologikFilterFactory" dictionary="org/apache/lucene/analysis/uk/ukrainian.dict"/>
   <filter class="solr.LowerCaseFilterFactory"/>
+  <filter class="solr.MorfologikFilterFactory" dictionary="org/apache/lucene/analysis/uk/ukrainian.dict"/>
 </analyzer>
 ----
-
-Note the lower case filter is applied _after_ the Morfologik stemmer; this is because the Ukrainian dictionary contains proper names and then proper term case may be important to resolve disambiguities (or even lookup the correct lemma at all).
 
 The Morfologik `dictionary` param value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
