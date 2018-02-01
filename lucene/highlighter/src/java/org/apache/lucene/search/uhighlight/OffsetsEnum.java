@@ -102,12 +102,19 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public static class OfPostings extends OffsetsEnum {
     private final BytesRef term;
     private final PostingsEnum postingsEnum; // with offsets
+    private final int freq;
 
-    private int posCounter = 0; // the occurrence counter of this term within the text being highlighted.
+    private int posCounter = -1;
 
-    public OfPostings(BytesRef term, PostingsEnum postingsEnum) throws IOException {
+    public OfPostings(BytesRef term, int freq, PostingsEnum postingsEnum) throws IOException {
       this.term = Objects.requireNonNull(term);
       this.postingsEnum = Objects.requireNonNull(postingsEnum);
+      this.freq = freq;
+      this.posCounter = this.postingsEnum.freq();
+    }
+
+    public OfPostings(BytesRef term, PostingsEnum postingsEnum) throws IOException {
+      this(term, postingsEnum.freq(), postingsEnum);
     }
 
     public PostingsEnum getPostingsEnum() {
@@ -116,8 +123,8 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
     @Override
     public boolean nextPosition() throws IOException {
-      if (posCounter < postingsEnum.freq()) {
-        posCounter++;
+      if (posCounter > 0) {
+        posCounter--;
         postingsEnum.nextPosition(); // note: we don't need to save the position
         return true;
       } else {
@@ -142,7 +149,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
     @Override
     public int freq() throws IOException {
-      return postingsEnum.freq();
+      return freq;
     }
   }
 
@@ -199,6 +206,9 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
           this.queue.add(top);
           return true;
         }
+        else {
+          top.close();
+        }
         return this.queue.size() > 0;
       }
       return false;
@@ -226,6 +236,8 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
     @Override
     public void close() throws IOException {
+      // most child enums will have been closed in .nextPosition()
+      // here all remaining non-exhausted enums are closed
       IOUtils.close(queue);
     }
   }

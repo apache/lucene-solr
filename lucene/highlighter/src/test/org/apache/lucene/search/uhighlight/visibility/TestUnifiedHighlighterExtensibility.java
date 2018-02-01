@@ -217,7 +217,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
 
       // this code never runs; just for compilation
       Passage p;
-      try (OffsetsEnum oe = new OffsetsEnum.OfPostings(null, EMPTY)) {
+      try (OffsetsEnum oe = new OffsetsEnum.OfPostings(null, null)) {
         oe.getTerm();
         oe.nextPosition();
         oe.startOffset();
@@ -230,9 +230,11 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       p.setEndOffset(9);
       p.addMatch(1, 2, new BytesRef(), 1);
       p.reset();
+      p.setScore(new PassageScorer(), 1);
       //... getters are all exposed; custom PassageFormatter impls uses them
 
       return super.highlightOffsetsEnums(offsetsEnums);
     }
   }
+
 }

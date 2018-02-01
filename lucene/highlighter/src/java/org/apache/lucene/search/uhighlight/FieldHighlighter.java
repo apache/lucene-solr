@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -129,8 +128,9 @@ public class FieldHighlighter {
 
     final int contentLength = this.breakIterator.getText().getEndIndex();
 
-    if (off.nextPosition() == false)
+    if (off.nextPosition() == false) {
       return new Passage[0];
+    }
 
     PriorityQueue<Passage> passageQueue = new PriorityQueue<>(Math.min(64, maxPassages + 1), (left, right) -> {
       if (left.getScore() < right.getScore()) {
@@ -149,18 +149,12 @@ public class FieldHighlighter {
         throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
       }
       int end = off.endOffset();
-      // LUCENE-5166: this hit would span the content limit... however more valid
-      // hits may exist (they are sorted by start). so we pretend like we never
-      // saw this term, it won't cause a passage to be added to passageQueue or anything.
-      assert EMPTY.startOffset() == Integer.MAX_VALUE;
       if (start < contentLength && end > contentLength) {
         continue;
       }
       // See if this term should be part of a new passage.
       if (start >= passage.getEndOffset()) {
-        if (passage.getStartOffset() >= 0) { // true if this passage has terms; otherwise couldn't find any (yet)
-          passage = maybeAddPassage(passageQueue, passageScorer, passage, contentLength);
-        }
+        passage = maybeAddPassage(passageQueue, passageScorer, passage, contentLength);
         // if we exceed limit, we are done
         if (start >= contentLength) {
           break;
@@ -173,8 +167,7 @@ public class FieldHighlighter {
       BytesRef term = off.getTerm();// a reference; safe to refer to
       assert term != null;
       passage.addMatch(start, end, term, off.freq());
-    }
-    while (off.nextPosition());
+    } while (off.nextPosition());
     maybeAddPassage(passageQueue, passageScorer, passage, contentLength);
 
     Passage[] passages = passageQueue.toArray(new Passage[passageQueue.size()]);
@@ -184,9 +177,10 @@ public class FieldHighlighter {
   }
 
   private Passage maybeAddPassage(PriorityQueue<Passage> passageQueue, PassageScorer scorer, Passage passage, int contentLength) {
-    // finalize passage
-    if (passage.getStartOffset() == -1)
+    if (passage.getStartOffset() == -1) {
+      // empty passage, we can ignore it
       return passage;
+    }
     passage.setScore(scorer, contentLength);
     // new sentence: first add 'passage' to queue
     if (passageQueue.size() == maxPassages && passage.getScore() < passageQueue.peek().getScore()) {
@@ -203,51 +197,4 @@ public class FieldHighlighter {
     return passage;
   }
 
-  protected static final PostingsEnum EMPTY = new PostingsEnum() {
-
-    @Override
-    public int nextPosition() throws IOException {
-      return 0;
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      return null;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return 0;
-    }
-
-    @Override
-    public int docID() {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public long cost() {
-      return 0;
-    }
-  };
 }
