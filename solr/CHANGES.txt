@@ -129,6 +129,10 @@ New Features
 
 * SOLR-11890: Add multiKmeans Stream Evaluator (Joel Bernstein)
 
+* SOLR-11916: new SortableTextField which supports analysis/searching just like TextField, but also
+  sorting/faceting just like StrField.  By default uses only the first 1024 chars of the original
+  input string values, but this is configurable.  (hossman)
+
 Bug Fixes
 ----------------------
 

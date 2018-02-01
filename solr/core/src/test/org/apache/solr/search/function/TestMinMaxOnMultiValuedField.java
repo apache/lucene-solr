@@ -59,6 +59,11 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
                               "date_missf_", "date_missl_",
                               "enum_missf_", "enum_missl_",
                               "bool_missf_", "bool_missl_"  }, new String [] {"_dv"});
+    checkFields(new String[] {"stxt_", // no expectation on missing first/last
+                              "stxt_missf_", "stxt_missl_" }, new String [] { "_dv"});
+    checkFields(new String [] { "stxt_" }, // no expectation on missing first/last
+                new String [] { "_nodv", "_dv" });
+    checkFields(new String [] { "stxt_missf_", "stxt_missl_" }, new String [] { "_dv"});
       
   }
   
@@ -71,8 +76,9 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         SchemaField sf = schema.getField(f);
         assertTrue(f + " is not multivalued", sf.multiValued());
         assertEquals(f + " doesn't have expected docValues status",
-                     f.contains("dv") || f.endsWith("_p")
-                     || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP), sf.hasDocValues());
+                     ((f.contains("dv") || f.endsWith("_p") || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP))
+                      && !f.contains("nodv")),
+                     sf.hasDocValues());
         assertEquals(f + " doesn't have expected index status",
                      ! f.contains("ni"), sf.indexed());
 
@@ -178,19 +184,27 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
 
   public void testBasicStrings() {
+    checkBasicStrings("val_strs_dv");
+  }
+  public void testBasicSortableText() {
+    checkBasicStrings("val_stxt_s_dv");
+    checkBasicStrings("val_stxt_missf_s_dv");
+    checkBasicStrings("val_stxt_missl_s_dv");
+  }
+  private void checkBasicStrings(final String field) {
     assertU(adoc(sdoc("id", "1",
-                      "val_strs_dv", "dog",
-                      "val_strs_dv", "xyz",
-                      "val_strs_dv", "cat")));
-    assertU(adoc(sdoc("id", "2"))); // 2 has no val_strs_dv values
+                      field, "dog",
+                      field, "xyz",
+                      field, "cat")));
+    assertU(adoc(sdoc("id", "2"))); // 2 has no values in tested field
     assertU(commit());
 
     // id=1: has values
     assertQ(req("q","id:1"
-                ,"fl","exists_min_str:exists(field(val_strs_dv,min))"
-                ,"fl","exists_max_str:exists(field(val_strs_dv,max))"
-                ,"fl","min_str:field(val_strs_dv,min)"
-                ,"fl","max_str:field(val_strs_dv,max)"
+                ,"fl","exists_min_str:exists(field("+field+",min))"
+                ,"fl","exists_max_str:exists(field("+field+",max))"
+                ,"fl","min_str:field("+field+",min)"
+                ,"fl","max_str:field("+field+",max)"
                 
                 )
             ,"//*[@numFound='1']"
@@ -201,10 +215,10 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             );
     // id=2: no values
     assertQ(req("q","id:2"
-                ,"fl","exists_min_str:exists(field(val_strs_dv,min))"
-                ,"fl","exists_max_str:exists(field(val_strs_dv,max))"
-                ,"fl","min_str:field(val_strs_dv,min)"
-                ,"fl","max_str:field(val_strs_dv,max)"
+                ,"fl","exists_min_str:exists(field("+field+",min))"
+                ,"fl","exists_max_str:exists(field("+field+",max))"
+                ,"fl","min_str:field("+field+",min)"
+                ,"fl","max_str:field("+field+",max)"
                 
                 )
             ,"//*[@numFound='1']"
@@ -219,6 +233,10 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testExpectedSortOrdering("val_strs_dv", false,
                              null, "a", "cat", "dog", "wako", "xyz", "zzzzz");
   }
+  public void testExpectedSortOrderingSortableText() {
+    testExpectedSortOrdering("val_stxt_s_dv", false,
+                             null, "a", "cat", "dog", "wako", "xyz", "zzzzz");
+  }
 
   public void testExpectedSortMissingOrderings() {
 
@@ -226,7 +244,9 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     // (in this simple test) we aren't using a secondary sort, so there is no way to disambiguate
     // docs that have those values from docs that have those *effective* sort values
 
-    testSortMissingMinMax("val_str", "a", "aaaaaa", "xxxxx", "zzzzzzzzzzzzzzzzzzz");
+    testSortMissingMinMax("val_str",  "a", "aaaaaa", "xxxxx", "zzzzzzzzzzzzzzzzzzz");
+    testSortMissingMinMax("val_stxt", "a", "aaaaaa", "xxxxx", "zzzzzzzzzzzzzzzzzzz");
+    
     testSortMissingMinMax("val_int",
                           Integer.MIN_VALUE+1L, -9999, 0, 99999, Integer.MAX_VALUE-1L);
     testSortMissingMinMax("val_long",
@@ -382,6 +402,15 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
               "docValues",
               req("q","*:*", "fl", "field(cat,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx("no error mentioning field name when asking for max on a non-dv sortable text field",
+              "val_stxt_s_nodv",
+              req("q","*:*", "fl", "field(val_stxt_s_nodv,'max')"),
+              SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx("no error mentioning 'docValues' when asking for max on a non-dv sortable field",
+              "docValues",
+              req("q","*:*", "fl", "field(val_stxt_s_nodv,'max')"),
+              SolrException.ErrorCode.BAD_REQUEST);
+
     
   }
 
