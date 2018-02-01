@@ -230,7 +230,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       p.setEndOffset(9);
       p.addMatch(1, 2, new BytesRef(), 1);
       p.reset();
-      p.setScore(new PassageScorer(), 1);
+      p.setScore(1);
       //... getters are all exposed; custom PassageFormatter impls uses them
 
       return super.highlightOffsetsEnums(offsetsEnums);

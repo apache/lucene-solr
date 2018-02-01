@@ -181,7 +181,7 @@ public class FieldHighlighter {
       // empty passage, we can ignore it
       return passage;
     }
-    passage.setScore(scorer, contentLength);
+    passage.setScore(scorer.score(passage, contentLength));
     // new sentence: first add 'passage' to queue
     if (passageQueue.size() == maxPassages && passage.getScore() < passageQueue.peek().getScore()) {
       passage.reset(); // can't compete, just reset it

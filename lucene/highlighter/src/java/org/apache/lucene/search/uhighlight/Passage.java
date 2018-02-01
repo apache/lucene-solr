@@ -17,11 +17,8 @@
 package org.apache.lucene.search.uhighlight;
 
 
-import java.util.Arrays;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -40,10 +37,8 @@ public class Passage {
   private int[] matchStarts = new int[8];
   private int[] matchEnds = new int[8];
   private BytesRef[] matchTerms = new BytesRef[8];
+  private int[] matchTermFreqInDoc = new int[8];
   private int numMatches = 0;
-  private final BytesRefHash termsHash = new BytesRefHash();
-  private int[] termFreqsInDoc = new int[8];
-  private int[] termFreqsInPassage = new int[8];
 
   /** @lucene.internal */
   public void addMatch(int startOffset, int endOffset, BytesRef term, int termFreqInDoc) {
@@ -52,38 +47,23 @@ public class Passage {
       int newLength = ArrayUtil.oversize(numMatches + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       int newMatchStarts[] = new int[newLength];
       int newMatchEnds[] = new int[newLength];
+      int newMatchTermFreqInDoc[] = new int[newLength];
       BytesRef newMatchTerms[] = new BytesRef[newLength];
       System.arraycopy(matchStarts, 0, newMatchStarts, 0, numMatches);
       System.arraycopy(matchEnds, 0, newMatchEnds, 0, numMatches);
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
+      System.arraycopy(matchTermFreqInDoc, 0, newMatchTermFreqInDoc, 0, numMatches);
       matchStarts = newMatchStarts;
       matchEnds = newMatchEnds;
       matchTerms = newMatchTerms;
+      matchTermFreqInDoc = newMatchTermFreqInDoc;
     }
     assert matchStarts.length == matchEnds.length && matchEnds.length == matchTerms.length;
     matchStarts[numMatches] = startOffset;
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;
+    matchTermFreqInDoc[numMatches] = termFreqInDoc;
     numMatches++;
-    int termIndex = termsHash.add(term);
-    if (termIndex >= termFreqsInDoc.length) {
-      int newLength = ArrayUtil.oversize(termFreqsInDoc.length + 1, Integer.BYTES);
-      int newTermFreqsInDoc[] = new int[newLength];
-      int newTermFreqsInPassage[] = new int[newLength];
-      System.arraycopy(termFreqsInDoc, 0, newTermFreqsInDoc, 0, termFreqsInDoc.length);
-      System.arraycopy(termFreqsInPassage, 0, newTermFreqsInPassage, 0, termFreqsInDoc.length);
-      Arrays.fill(newTermFreqsInDoc, termFreqsInDoc.length, newTermFreqsInDoc.length - 1, 0);
-      Arrays.fill(newTermFreqsInPassage, termFreqsInPassage.length, newTermFreqsInPassage.length - 1, 0);
-      termFreqsInDoc = newTermFreqsInDoc;
-      termFreqsInPassage = newTermFreqsInPassage;
-    }
-    if (termIndex < 0) {
-      termIndex = -(termIndex + 1);
-    }
-    else {
-      termFreqsInDoc[termIndex] = termFreqInDoc;
-    }
-    termFreqsInPassage[termIndex]++;
   }
 
   /** @lucene.internal */
@@ -91,9 +71,6 @@ public class Passage {
     startOffset = endOffset = -1;
     score = 0.0f;
     numMatches = 0;
-    Arrays.fill(termFreqsInPassage, 0);
-    termsHash.clear();
-    termsHash.reinit();
   }
 
   /** For debugging.  ex: Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213 */
@@ -145,12 +122,8 @@ public class Passage {
     return score;
   }
 
-  public void setScore(PassageScorer scorer, int contentLength) {
-    score = 0;
-    for (int termIndex = 0; termIndex < termsHash.size(); termIndex++) {
-      score += scorer.tf(termFreqsInPassage[termIndex], getLength()) * scorer.weight(contentLength, termFreqsInDoc[termIndex]);
-    }
-    score *= scorer.norm(startOffset);
+  public void setScore(float score) {
+    this.score = score;
   }
 
   /**
@@ -190,6 +163,10 @@ public class Passage {
    */
   public BytesRef[] getMatchTerms() {
     return matchTerms;
+  }
+
+  public int[] getMatchTermFreqsInDoc() {
+    return matchTermFreqInDoc;
   }
 
   /** @lucene.internal */
