@@ -247,6 +247,8 @@ Other Changes
 
 * SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas via Cassandra Targett)
 
+* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
