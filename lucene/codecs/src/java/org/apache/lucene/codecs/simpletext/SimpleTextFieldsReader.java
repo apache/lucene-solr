@@ -235,7 +235,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-      return new SlowImpactsEnum(postings(null, PostingsEnum.FREQS), scorer.score(Float.MAX_VALUE, 1));
+      return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
     }
   }
 
