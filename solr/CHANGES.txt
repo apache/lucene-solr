@@ -133,6 +133,8 @@ New Features
   sorting/faceting just like StrField.  By default uses only the first 1024 chars of the original
   input string values, but this is configurable.  (hossman)
 
+* SOLR-11778: Add per-stage RequestHandler metrics. (ab)
+
 Bug Fixes
 ----------------------
 
