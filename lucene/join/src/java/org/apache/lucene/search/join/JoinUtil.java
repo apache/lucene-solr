@@ -199,10 +199,7 @@ public final class JoinUtil {
 
         @Override
         public void collect(int doc) throws IOException {
-          if (doc > sortedNumericDocValues.docID()) {
-            sortedNumericDocValues.advance(doc);
-          }
-          if (doc == sortedNumericDocValues.docID()) {
+          if (sortedNumericDocValues.advanceExact(doc)) {
             for (int i = 0; i < sortedNumericDocValues.docValueCount(); i++) {
               long value = sortedNumericDocValues.nextValue();
               joinValues.add(value);
