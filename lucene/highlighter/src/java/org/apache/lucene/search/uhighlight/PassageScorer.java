@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.search.uhighlight;
 
+import java.util.Arrays;
+
+import org.apache.lucene.util.BytesRefHash;
+
 /**
  * Ranks passages found by {@link UnifiedHighlighter}.
  * <p>
@@ -109,5 +113,31 @@ public class PassageScorer {
    */
   public float norm(int passageStart) {
     return 1 + 1 / (float) Math.log(pivot + passageStart);
+  }
+
+  public float score(Passage passage, int contentLength) {
+    float score = 0;
+    BytesRefHash termsHash = new BytesRefHash();
+    int hitCount = passage.getNumMatches();
+    int[] termFreqsInPassage = new int[hitCount]; // maximum size
+    int[] termFreqsInDoc = new int[hitCount];
+    Arrays.fill(termFreqsInPassage, 0);
+
+    for (int i = 0; i < passage.getNumMatches(); i++) {
+      int termIndex = termsHash.add(passage.getMatchTerms()[i]);
+      if (termIndex < 0) {
+        termIndex = -(termIndex + 1);
+      }
+      else {
+        termFreqsInDoc[termIndex] = passage.getMatchTermFreqsInDoc()[i];
+      }
+      termFreqsInPassage[termIndex]++;
+    }
+
+    for (int i = 0; i < termsHash.size(); i++) {
+      score += tf(termFreqsInPassage[i], passage.getLength()) * weight(contentLength, termFreqsInDoc[i]);
+    }
+    score *= norm(passage.getStartOffset());
+    return score;
   }
 }

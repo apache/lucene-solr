@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.search.uhighlight;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -38,10 +42,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Random;
 
 public class TestUnifiedHighlighterRanking extends LuceneTestCase {
 
