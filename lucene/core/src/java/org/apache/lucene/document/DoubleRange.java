@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -147,10 +148,7 @@ public class DoubleRange extends Field {
    * @return the decoded min value
    */
   public double getMin(int dimension) {
-    if (dimension < 0 || dimension >= type.pointDimensionCount()/2) {
-      throw new IllegalArgumentException("dimension request (" + dimension +
-          ") out of bounds for field (name=" + name + " dimensions=" + type.pointDimensionCount()/2 + "). ");
-    }
+    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -160,10 +158,7 @@ public class DoubleRange extends Field {
    * @return the decoded max value
    */
   public double getMax(int dimension) {
-    if (dimension < 0 || dimension >= type.pointDimensionCount()/2) {
-      throw new IllegalArgumentException("dimension request (" + dimension +
-          ") out of bounds for field (name=" + name + " dimensions=" + type.pointDimensionCount()/2 + "). ");
-    }
+    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 

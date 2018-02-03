@@ -93,34 +93,28 @@ public final class BytesRefArray implements SortableBytesRefArray {
    * @return the <i>n'th</i> element of this {@link BytesRefArray}
    */
   public BytesRef get(BytesRefBuilder spare, int index) {
-    if (lastElement > index) {
-      int offset = offsets[index];
-      int length = index == lastElement - 1 ? currentOffset - offset
-          : offsets[index + 1] - offset;
-      spare.grow(length);
-      spare.setLength(length);
-      pool.readBytes(offset, spare.bytes(), 0, spare.length());
-      return spare.get();
-    }
-    throw new IndexOutOfBoundsException("index " + index
-        + " must be less than the size: " + lastElement);
+    FutureObjects.checkIndex(index, lastElement);
+    int offset = offsets[index];
+    int length = index == lastElement - 1 ? currentOffset - offset
+        : offsets[index + 1] - offset;
+    spare.grow(length);
+    spare.setLength(length);
+    pool.readBytes(offset, spare.bytes(), 0, spare.length());
+    return spare.get();
   }
 
   /** Used only by sort below, to set a {@link BytesRef} with the specified slice, avoiding copying bytes in the common case when the slice
    *  is contained in a single block in the byte block pool. */
   private void setBytesRef(BytesRefBuilder spare, BytesRef result, int index) {
-    if (index < lastElement) {
-      int offset = offsets[index];
-      int length;
-      if (index == lastElement - 1) {
-        length = currentOffset - offset;
-      } else {
-        length = offsets[index + 1] - offset;
-      }
-      pool.setBytesRef(spare, result, offset, length);
+    FutureObjects.checkIndex(index, lastElement);
+    int offset = offsets[index];
+    int length;
+    if (index == lastElement - 1) {
+      length = currentOffset - offset;
     } else {
-      throw new IndexOutOfBoundsException("index " + index + " must be less than the size: " + lastElement);
+      length = offsets[index + 1] - offset;
     }
+    pool.setBytesRef(spare, result, offset, length);
   }
   
   private int[] sort(final Comparator<BytesRef> comp) {

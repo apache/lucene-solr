@@ -26,7 +26,7 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 
 /** 
  * An indexed binary field for fast range filters.  If you also
@@ -222,7 +222,7 @@ public final class BinaryPoint extends Field {
                 new Comparator<byte[]>() {
                   @Override
                   public int compare(byte[] a, byte[] b) {
-                    return StringHelper.compare(a.length, a, 0, b, 0);
+                    return FutureArrays.compareUnsigned(a, 0, a.length, b, 0, b.length);
                   }
                 });
 

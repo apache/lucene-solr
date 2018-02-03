@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -61,11 +62,8 @@ final class LZ4 {
 
   private static int commonBytes(byte[] b, int o1, int o2, int limit) {
     assert o1 < o2;
-    int count = 0;
-    while (o2 < limit && b[o1++] == b[o2++]) {
-      ++count;
-    }
-    return count;
+    // never -1 because lengths always differ
+    return FutureArrays.mismatch(b, o1, limit, b, o2, limit);
   }
 
   private static int commonBytesBackward(byte[] b, int o1, int o2, int l1, int l2) {
