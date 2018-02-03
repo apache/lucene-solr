@@ -25,10 +25,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.apache.lucene.util.ArrayUtil;
+import java.util.Arrays;
+import java.util.List;
 
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
@@ -45,8 +43,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasPointValues;
   
   // used only by fieldInfo(int)
-  private final FieldInfo[] byNumberTable; // contiguous
-  private final SortedMap<Integer,FieldInfo> byNumberMap; // sparse
+  private final FieldInfo[] byNumber; // contiguous
   
   private final HashMap<String,FieldInfo> byName = new HashMap<>();
   private final Collection<FieldInfo> values; // for an unmodifiable iterator
@@ -63,21 +60,30 @@ public class FieldInfos implements Iterable<FieldInfo> {
     boolean hasNorms = false;
     boolean hasDocValues = false;
     boolean hasPointValues = false;
-    
-    TreeMap<Integer, FieldInfo> byNumber = new TreeMap<>();
+
+    int size = 0; // number of elements in byNumberTemp
+    int capacity = 10; // byNumberTemp's capacity
+    FieldInfo[] byNumberTemp = new FieldInfo[capacity];
     for (FieldInfo info : infos) {
       if (info.number < 0) {
         throw new IllegalArgumentException("illegal field number: " + info.number + " for field " + info.name);
       }
-      FieldInfo previous = byNumber.put(info.number, info);
+      size = info.number >= size ? info.number+1 : size;
+      if (info.number >= capacity){ //grow array
+        capacity = info.number + 1;
+        byNumberTemp = Arrays.copyOf(byNumberTemp, capacity);
+      }
+      FieldInfo previous = byNumberTemp[info.number];
       if (previous != null) {
         throw new IllegalArgumentException("duplicate field numbers: " + previous.name + " and " + info.name + " have: " + info.number);
       }
+      byNumberTemp[info.number] = info;
+
       previous = byName.put(info.name, info);
       if (previous != null) {
         throw new IllegalArgumentException("duplicate field names: " + previous.number + " and " + info.number + " have: " + info.name);
       }
-      
+
       hasVectors |= info.hasVectors();
       hasProx |= info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       hasFreq |= info.getIndexOptions() != IndexOptions.DOCS;
@@ -96,25 +102,19 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
     this.hasPointValues = hasPointValues;
-    Integer max = byNumber.isEmpty() ? null : byNumber.lastKey();
-    
-    // Only usee TreeMap in the very sparse case (< 1/16th of the numbers are used),
-    // because TreeMap uses ~ 64 (32 bit JVM) or 120 (64 bit JVM w/o compressed oops)
-    // overall bytes per entry, but array uses 4 (32 bit JMV) or 8
-    // (64 bit JVM w/o compressed oops):
-    if (max != null && max < ArrayUtil.MAX_ARRAY_LENGTH && max < 16L*byNumber.size()) {
-      // Pull infos into an arraylist to avoid holding a reference to the TreeMap
-      values = Collections.unmodifiableCollection(new ArrayList<>(byNumber.values()));
-      byNumberMap = null;
-      byNumberTable = new FieldInfo[max+1];
-      for (Map.Entry<Integer,FieldInfo> entry : byNumber.entrySet()) {
-        byNumberTable[entry.getKey()] = entry.getValue();
+
+    List<FieldInfo> valuesTemp = new ArrayList<>();
+    if (size > 0){
+      byNumber = new FieldInfo[size];
+      for(int i=0; i<size; i++){
+        byNumber[i] = byNumberTemp[i];
+        if (byNumberTemp[i] != null)
+          valuesTemp.add(byNumberTemp[i]);
       }
     } else {
-      byNumberMap = byNumber;
-      values = Collections.unmodifiableCollection(byNumber.values());
-      byNumberTable = null;
+      byNumber = null;
     }
+    values = Collections.unmodifiableCollection(valuesTemp);
   }
   
   /** Returns true if any fields have freqs */
@@ -192,14 +192,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
     if (fieldNumber < 0) {
       throw new IllegalArgumentException("Illegal field number: " + fieldNumber);
     }
-    if (byNumberTable != null) {
-      if (fieldNumber >= byNumberTable.length) {
-        return null;
-      }
-      return byNumberTable[fieldNumber];
-    } else {
-      return byNumberMap.get(fieldNumber);
+    if (fieldNumber >= byNumber.length) {
+      return null;
     }
+    return byNumber[fieldNumber];
   }
 
   static final class FieldDimensions {
