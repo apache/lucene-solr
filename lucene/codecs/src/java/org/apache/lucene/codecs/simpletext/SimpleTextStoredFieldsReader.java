@@ -36,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -202,8 +203,8 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   }
   
   private boolean equalsAt(BytesRef a, BytesRef b, int bOffset) {
-    return a.length == b.length - bOffset && 
-        ArrayUtil.equals(a.bytes, a.offset, b.bytes, b.offset + bOffset, b.length - bOffset);
+    return a.length == b.length - bOffset &&
+        FutureArrays.equals(a.bytes, a.offset, a.offset + a.length, b.bytes, b.offset + bOffset, b.offset + b.length);
   }
 
   @Override
