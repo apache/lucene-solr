@@ -166,6 +166,10 @@
 
   <!-- Display at most this many failures as a summary at the end of junit4 run. -->
   <property name="tests.showNumFailures" value="10" />
+  
+  <!-- If we detect Java 9+, should we test the patched classes of the
+   multi-release JAR or still run with our own classes? -->
+  <property name="tests.withJava9Patches" value="true" />
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -552,10 +556,48 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <target name="jar-core" depends="compile-core">
+  <!-- Special targets to patch all class files by replacing some method calls with new Java 9 methods: -->
+  <target name="-mrjar-classes-uptodate">
+    <uptodate property="mrjar-classes-uptodate" targetfile="${build.dir}/patch-mrjar.stamp">
+      <srcfiles dir= "${build.dir}/classes/java" includes="**/*.class"/>
+    </uptodate>
+  </target>
+  
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="patch-mrjar-classes" depends="-mrjar-classes-uptodate,ivy-availability-check,ivy-configure,resolve-groovy,compile-core"
+    unless="mrjar-classes-uptodate" description="Patches compiled class files for usage with Java 9 in MR-JAR">
+    <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
+    <ivy:cachepath organisation="org.ow2.asm" module="asm-commons" revision="${ivyversions./org.ow2.asm/asm-commons}"
+      inline="true" conf="default" transitive="true" log="download-only" pathid="asm.classpath"/>
+    <groovy classpathref="asm.classpath" src="${common.dir}/tools/src/groovy/patch-mrjar-classes.groovy"/>
+    <touch file="${build.dir}/patch-mrjar.stamp"/>
+  </target>
+  
+  <target name="-mrjar-check" depends="patch-mrjar-classes">
+    <zipfileset id="mrjar-patched-files" prefix="META-INF/versions/9" dir="${build.dir}/classes/java9"/>
+    <condition property="has-mrjar-patched-files">
+      <resourcecount refid="mrjar-patched-files" when="greater" count="0" />
+    </condition>
+  </target>
+  
+  <target name="-mrjar-core" depends="-mrjar-check" if="has-mrjar-patched-files">
+    <jarify>
+      <filesets>
+        <zipfileset refid="mrjar-patched-files"/>
+      </filesets>
+      <jarify-additional-manifest-attributes>
+        <attribute name="Multi-Release" value="true"/>
+      </jarify-additional-manifest-attributes>
+    </jarify>
+  </target>
+  
+  <target name="-jar-core" depends="-mrjar-check" unless="has-mrjar-patched-files">
     <jarify/>
   </target>
+  
+  <target name="jar-core" depends="-mrjar-core,-jar-core"/>
 
+  <!-- Packaging targets: -->
+  
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
   <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
@@ -1459,8 +1501,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </taskdef>
   </target>
 
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
-  <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+  <target name="test" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
+  <target name="beast" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
           description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>
