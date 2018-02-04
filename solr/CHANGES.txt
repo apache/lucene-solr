@@ -166,6 +166,9 @@ Bug Fixes
 * SOLR-11661: New HDFS collection reuses unremoved data from a deleted HDFS collection with same name causes
   inconsistent view of documents (Cao Manh Dat, shalin)
 
+* SOLR-11459: In-place update of nonexistent doc following existing doc update fails to create the doc.
+  (Andrey Kudryavtsev via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 

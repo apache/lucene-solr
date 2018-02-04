@@ -144,6 +144,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     outOfOrderUpdatesIndividualReplicaTest();
     delayedReorderingFetchesMissingUpdateFromLeaderTest();
     updatingDVsInAVeryOldSegment();
+    updateExistingThenNonExistentDoc();
 
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
     reorderedDBQIndividualReplicaTest();
@@ -409,6 +410,45 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("updatingDVsInAVeryOldSegment: This test passed fine...");
+  }
+
+
+  /**
+   * Test scenario:
+   * <ul>
+   *   <li>Send a batch of documents to one node</li>
+   *   <li>Batch consist of an update for document which is existed and an update for documents which is not existed </li>
+   *   <li>Assumption which is made is that both updates will be applied: field for existed document will be updated,
+   *   new document will be created for a non existed one</li>
+   * </ul>
+   *
+   */
+  private void updateExistingThenNonExistentDoc() throws Exception {
+    clearIndex();
+    index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
+    commit();
+    SolrInputDocument existingDocUpdate = new SolrInputDocument();
+    existingDocUpdate.setField("id", 1);
+    existingDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    SolrInputDocument nonexistentDocUpdate = new SolrInputDocument();
+    nonexistentDocUpdate.setField("id", 2);
+    nonexistentDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+    
+    SolrInputDocument docs[] = new SolrInputDocument[] {existingDocUpdate, nonexistentDocUpdate};
+
+    SolrClient solrClient = clients.get(random().nextInt(clients.size()));
+    add(solrClient, null, docs);
+    commit();
+    for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
+      for (SolrInputDocument expectDoc : docs) {
+        String docId = expectDoc.getFieldValue("id").toString();
+        SolrDocument actualDoc = client.getById(docId);
+        assertNotNull("expected to get doc by id:" + docId, actualDoc);
+        assertEquals("expected to update "+actualDoc, 
+            50.0f, actualDoc.get("inplace_updatable_float"));
+      }
+    }
   }
 
   /**
