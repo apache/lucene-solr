@@ -46,9 +46,10 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, content.length);
-    expectThrows(IndexOutOfBoundsException.class, () -> {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       t.setLength(-1);
     });
+    assertTrue(expected.getMessage().contains("must not be negative"));
   }
 
   public void testGrow() {

@@ -26,7 +26,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Prefix codes term instances (prefixes are shared). This is expected to be
@@ -75,19 +74,14 @@ public class PrefixCodedTerms implements Accountable {
       assert lastTerm.equals(new Term("")) || new Term(field, bytes).compareTo(lastTerm) > 0;
 
       try {
-        final int prefix;
-        if (size > 0 && field.equals(lastTerm.field)) {
-          // same field as the last term
-          prefix = StringHelper.bytesDifference(lastTerm.bytes, bytes);
+        int prefix = sharedPrefix(lastTerm.bytes, bytes);
+        int suffix = bytes.length - prefix;
+        if (field.equals(lastTerm.field)) {
           output.writeVInt(prefix << 1);
         } else {
-          // field change
-          prefix = 0;
-          output.writeVInt(1);
+          output.writeVInt(prefix << 1 | 1);
           output.writeString(field);
         }
-
-        int suffix = bytes.length - prefix;
         output.writeVInt(suffix);
         output.writeBytes(bytes.bytes, bytes.offset + prefix, suffix);
         lastTermBytes.copyBytes(bytes);
@@ -107,6 +101,20 @@ public class PrefixCodedTerms implements Accountable {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+    
+    private int sharedPrefix(BytesRef term1, BytesRef term2) {
+      int pos1 = 0;
+      int pos1End = pos1 + Math.min(term1.length, term2.length);
+      int pos2 = 0;
+      while(pos1 < pos1End) {
+        if (term1.bytes[term1.offset + pos1] != term2.bytes[term2.offset + pos2]) {
+          return pos1;
+        }
+        pos1++;
+        pos2++;
+      }
+      return pos1;
     }
   }
 

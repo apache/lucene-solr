@@ -54,12 +54,6 @@ Improvements
 * LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
   (Ere Maijala)
 
-* LUCENE-7966: Build Multi-Release JARs to enable usage of optimized intrinsic methods
-  from Java 9 for index bounds checking and array comparison/mismatch. This change
-  introduces Java 8 replacements for those Java 9 methods and patches the compiled
-  classes to use the optimized variants through the MR-JAR mechanism.
-  (Uwe Schindler, Robert Muir, Adrien Grand, Mike McCandless)
-
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.

@@ -107,15 +107,46 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   }
 
   public boolean charsEquals(CharsRef other) {
-    return FutureArrays.equals(this.chars, this.offset, this.offset + this.length, 
-                               other.chars, other.offset, other.offset + other.length);
+    if (length == other.length) {
+      int otherUpto = other.offset;
+      final char[] otherChars = other.chars;
+      final int end = offset + length;
+      for (int upto = offset; upto < end; upto++, otherUpto++) {
+        if (chars[upto] != otherChars[otherUpto]) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(CharsRef other) {
-    return FutureArrays.compare(this.chars, this.offset, this.offset + this.length, 
-                                other.chars, other.offset, other.offset + other.length);
+    if (this == other)
+      return 0;
+
+    final char[] aChars = this.chars;
+    int aUpto = this.offset;
+    final char[] bChars = other.chars;
+    int bUpto = other.offset;
+
+    final int aStop = aUpto + Math.min(this.length, other.length);
+
+    while (aUpto < aStop) {
+      int aInt = aChars[aUpto++];
+      int bInt = bChars[bUpto++];
+      if (aInt > bInt) {
+        return 1;
+      } else if (aInt < bInt) {
+        return -1;
+      }
+    }
+
+    // One is a prefix of the other, or, they are equal:
+    return this.length - other.length;
   }
 
   @Override
@@ -131,14 +162,18 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   @Override
   public char charAt(int index) {
     // NOTE: must do a real check here to meet the specs of CharSequence
-    FutureObjects.checkIndex(index, length);
+    if (index < 0 || index >= length) {
+      throw new IndexOutOfBoundsException();
+    }
     return chars[offset + index];
   }
 
   @Override
   public CharSequence subSequence(int start, int end) {
     // NOTE: must do a real check here to meet the specs of CharSequence
-    FutureObjects.checkFromToIndex(start, end, length);
+    if (start < 0 || end > length || start > end) {
+      throw new IndexOutOfBoundsException();
+    }
     return new CharsRef(chars, offset + start, end - start);
   }
   
@@ -160,33 +195,40 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
 
     @Override
     public int compare(CharsRef a, CharsRef b) {
-      int aEnd = a.offset + a.length;
-      int bEnd = b.offset + b.length;
-      int i = FutureArrays.mismatch(a.chars, a.offset, aEnd, 
-                                    b.chars, b.offset, bEnd);
+      if (a == b)
+        return 0;
 
-      if (i >= 0 && i < Math.min(a.length, b.length)) {
-        // http://icu-project.org/docs/papers/utf16_code_point_order.html
+      final char[] aChars = a.chars;
+      int aUpto = a.offset;
+      final char[] bChars = b.chars;
+      int bUpto = b.offset;
 
-        char aChar = a.chars[a.offset + i];
-        char bChar = b.chars[b.offset + i];        
-        /* aChar != bChar, fix up each one if they're both in or above the surrogate range, then compare them */
-        if (aChar >= 0xd800 && bChar >= 0xd800) {
-          if (aChar >= 0xe000) {
-            aChar -= 0x800;
-          } else {
-            aChar += 0x2000;
+      final int aStop = aUpto + Math.min(a.length, b.length);
+
+      while (aUpto < aStop) {
+        char aChar = aChars[aUpto++];
+        char bChar = bChars[bUpto++];
+        if (aChar != bChar) {
+          // http://icu-project.org/docs/papers/utf16_code_point_order.html
+          
+          /* aChar != bChar, fix up each one if they're both in or above the surrogate range, then compare them */
+          if (aChar >= 0xd800 && bChar >= 0xd800) {
+            if (aChar >= 0xe000) {
+              aChar -= 0x800;
+            } else {
+              aChar += 0x2000;
+            }
+            
+            if (bChar >= 0xe000) {
+              bChar -= 0x800;
+            } else {
+              bChar += 0x2000;
+            }
           }
           
-          if (bChar >= 0xe000) {
-            bChar -= 0x800;
-          } else {
-            bChar += 0x2000;
-          }
+          /* now aChar and bChar are in code point order */
+          return (int)aChar - (int)bChar; /* int must be 32 bits wide */
         }
-
-        /* now aChar and bChar are in code point order */
-        return (int)aChar - (int)bChar; /* int must be 32 bits wide */
       }
 
       // One is a prefix of the other, or, they are equal:

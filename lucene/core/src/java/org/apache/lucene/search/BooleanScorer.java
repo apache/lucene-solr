@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -106,7 +105,9 @@ final class BooleanScorer extends BulkScorer {
     }
 
     public BulkScorerAndDoc get(int i) {
-      FutureObjects.checkIndex(i, size());
+      if (i < 0 || i >= size()) {
+        throw new IndexOutOfBoundsException();
+      }
       return (BulkScorerAndDoc) getHeapArray()[1 + i];
     }
 

@@ -504,13 +504,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
       if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
         writer.add(offset);
-        final int sortKeyLength;
-        if (ord == 0) {
-          // no previous term: no bytes to write
-          sortKeyLength = 0;
-        } else {
-          sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
-        }
+        int sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
         offset += sortKeyLength;
         data.writeBytes(term.bytes, term.offset, sortKeyLength);
       } else if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {

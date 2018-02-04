@@ -555,7 +555,4 @@
   <target name="test" unless="tests.disable-solr">
     <antcall target="common.test" inheritrefs="true" inheritall="true"/>
   </target>
-  
-  <!-- In Solr we do not generate MR-JARs yet; disable completely so we do not accidentally patch -->
-  <target name="patch-mrjar-classes"/>
 </project>

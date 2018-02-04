@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.FutureObjects;
 
 /**
  * LeafReader implemented by codec APIs.
@@ -95,7 +94,9 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   private void checkBounds(int docID) {
-    FutureObjects.checkIndex(docID, maxDoc());
+    if (docID < 0 || docID >= maxDoc()) {       
+      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
+    }
   }
 
   @Override

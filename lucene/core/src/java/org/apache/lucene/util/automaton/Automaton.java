@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Sorter;
@@ -115,8 +114,14 @@ public class Automaton implements Accountable {
 
   /** Set or clear this state as an accept state. */
   public void setAccept(int state, boolean accept) {
-    FutureObjects.checkIndex(state, getNumStates());
-    isAccept.set(state, accept);
+    if (state >= getNumStates()) {
+      throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
+    }
+    if (accept) {
+      isAccept.set(state);
+    } else {
+      isAccept.clear(state);
+    }
   }
 
   /** Sugar to get all transitions for all states.  This is
@@ -156,9 +161,12 @@ public class Automaton implements Accountable {
   public void addTransition(int source, int dest, int min, int max) {
     assert nextTransition%3 == 0;
 
-    int bounds = nextState/2;
-    FutureObjects.checkIndex(source, bounds);
-    FutureObjects.checkIndex(dest, bounds);
+    if (source >= nextState/2) {
+      throw new IllegalArgumentException("source=" + source + " is out of bounds (maxState is " + (nextState/2-1) + ")");
+    }
+    if (dest >= nextState/2) {
+      throw new IllegalArgumentException("dest=" + dest + " is out of bounds (max state is " + (nextState/2-1) + ")");
+    }
 
     growTransitions();
     if (curState != source) {
@@ -834,7 +842,10 @@ public class Automaton implements Accountable {
 
     /** Set or clear this state as an accept state. */
     public void setAccept(int state, boolean accept) {
-      FutureObjects.checkIndex(state, getNumStates());      
+      if (state >= getNumStates()) {
+        throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
+      }
+      
       this.isAccept.set(state, accept);
     }
 

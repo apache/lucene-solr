@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FutureObjects;
 
 /** This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge instances when you ask for the codec readers. */
 class MergeReaderWrapper extends LeafReader {
@@ -227,7 +226,9 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   private void checkBounds(int docID) {
-    FutureObjects.checkIndex(docID, maxDoc());
+    if (docID < 0 || docID >= maxDoc()) {       
+      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
+    }
   }
 
   @Override
