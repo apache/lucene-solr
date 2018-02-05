@@ -140,9 +140,6 @@ public class ValueFeature extends Feature {
     }
 
 
-
-
-
   }
 
 }

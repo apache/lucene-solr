@@ -42,6 +42,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -292,7 +293,7 @@ public class RealTimeGetComponent extends SearchComponent
          if (rb.getFilters() != null) {
            for (Query raw : rb.getFilters()) {
              Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
-             Scorer scorer = searcherInfo.getSearcher().createWeight(q, false, 1f).scorer(ctx);
+             Scorer scorer = searcherInfo.getSearcher().createWeight(q, ScoreMode.COMPLETE_NO_SCORES, 1f).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
                docid = -1;

@@ -19,6 +19,8 @@
 
 The JSON Request API allows a JSON body to be passed for the entire search request.
 
+The <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> is part of the JSON Request API, and allows specification of faceted analytics in JSON.
+
 Here's an example of a search request using query parameters only:
 [source,bash]
 curl "http://localhost:8983/solr/techproducts/query?q=memory&fq=inStock:true"
@@ -75,7 +77,7 @@ In fact, you don’t even need to start with a JSON body for smart merging to be
 [source,bash]
 curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
   json.facet.avg_price="avg(price)"&
-  json.facet.top_cats.terms={field:"cat",limit:5}'
+  json.facet.top_cats={type:terms,field:"cat",limit:5}'
 
 That is equivalent to having the following JSON body or `json` parameter:
 
@@ -84,10 +86,15 @@ That is equivalent to having the following JSON body or `json` parameter:
   "facet": {
     "avg_price": "avg(price)",
     "top_cats": {
-      "terms": {
-        "field": "cat",
-        "limit": 5
-      }}}}
+      "type": "terms",
+      "field": "cat",
+      "limit": 5
+    }
+  }
+}
+
+See the <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> for more on faceting and analytics commands in specified in JSON.
+
 
 === Debugging
 
@@ -134,6 +141,9 @@ Right now only some standard query parameters have JSON equivalents. Unmapped pa
 
 |`json.facet`
 |`facet`
+
+|`json.<param_name>`
+|`<param_name>`
 |===
 
 == Error Detection

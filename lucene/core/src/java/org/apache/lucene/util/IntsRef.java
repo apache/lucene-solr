@@ -93,45 +93,15 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   }
 
   public boolean intsEquals(IntsRef other) {
-    if (length == other.length) {
-      int otherUpto = other.offset;
-      final int[] otherInts = other.ints;
-      final int end = offset + length;
-      for(int upto=offset;upto<end;upto++,otherUpto++) {
-        if (ints[upto] != otherInts[otherUpto]) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
+    return FutureArrays.equals(this.ints, this.offset, this.offset + this.length, 
+                               other.ints, other.offset, other.offset + other.length);
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(IntsRef other) {
-    if (this == other) return 0;
-
-    final int[] aInts = this.ints;
-    int aUpto = this.offset;
-    final int[] bInts = other.ints;
-    int bUpto = other.offset;
-
-    final int aStop = aUpto + Math.min(this.length, other.length);
-
-    while(aUpto < aStop) {
-      int aInt = aInts[aUpto++];
-      int bInt = bInts[bUpto++];
-      if (aInt > bInt) {
-        return 1;
-      } else if (aInt < bInt) {
-        return -1;
-      }
-    }
-
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+    return FutureArrays.compare(this.ints, this.offset, this.offset + this.length, 
+                                other.ints, other.offset, other.offset + other.length);
   }
 
   @Override

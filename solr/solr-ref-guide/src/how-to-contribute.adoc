@@ -1,6 +1,6 @@
 = How to Contribute to Solr Documentation
 :page-tocclass: right
-:page-toclevels: 2
+:page-toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -46,5 +46,5 @@ include::meta-docs/jekyll.adoc[leveloffset=+2]
 include::meta-docs/pdf.adoc[leveloffset=+2]
 
 == Building & Publishing the Guide
-include::meta-docs/publish.adoc[leveloffset=+2]
+include::meta-docs/publish.adoc[leveloffset=+1]
 endif::[]

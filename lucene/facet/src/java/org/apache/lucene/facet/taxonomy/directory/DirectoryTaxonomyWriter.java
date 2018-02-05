@@ -61,6 +61,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureObjects;
 
 /**
  * {@link TaxonomyWriter} which uses a {@link Directory} to store the taxonomy
@@ -763,9 +764,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // Note: the following if() just enforces that a user can never ask
     // for the parent of a nonexistant category - even if the parent array
     // was allocated bigger than it really needs to be.
-    if (ordinal >= nextID) {
-      throw new ArrayIndexOutOfBoundsException("requested ordinal is bigger than the largest ordinal in the taxonomy");
-    }
+    FutureObjects.checkIndex(ordinal, nextID);
     
     int[] parents = getTaxoArrays().parents();
     assert ordinal < parents.length : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";

@@ -16,20 +16,18 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
-import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -41,12 +39,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class SliceMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PREFERRED_LEADER_PROP = COLL_PROP_PREFIX + "preferredleader";
+  public static final String PREFERRED_LEADER_PROP = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + "preferredleader";
 
   public static final Set<String> SLICE_UNIQUE_BOOLEAN_PROPERTIES = ImmutableSet.of(PREFERRED_LEADER_PROP);
 
@@ -73,7 +72,7 @@ public class SliceMutator {
     if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
       coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     } else {
-      coreNodeName = Assign.assignNode(stateManager, collection);
+      coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
     }
     Replica replica = new Replica(coreNodeName,
         makeMap(

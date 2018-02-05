@@ -16,6 +16,9 @@
  <directoryFactory name="DirectoryFactory"
   class="${solr.directoryFactory:solr.RAMDirectoryFactory}" />
 
+ <!-- for use with the DefaultWrapperModel class -->
+ <lib dir="${solr.solr.home:.}/models" />
+
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
  <requestDispatcher>

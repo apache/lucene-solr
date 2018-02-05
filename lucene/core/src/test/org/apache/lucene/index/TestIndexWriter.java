@@ -29,6 +29,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -2746,6 +2748,235 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     assertEquals(Version.LATEST.major, SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor());
     dir.close();
+  }
+
+  public void testFlushLargestWriter() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    int numDocs = indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+
+    int numRamDocs = w.numRamDocs();
+    int numDocsInDWPT = largestNonPendingWriter.dwpt.getNumDocsInRAM();
+    assertTrue(w.flushNextBuffer());
+    assertNull(largestNonPendingWriter.dwpt);
+    assertEquals(numRamDocs-numDocsInDWPT, w.numRamDocs());
+
+    // make sure it's not locked
+    largestNonPendingWriter.lock();
+    largestNonPendingWriter.unlock();
+    if (random().nextBoolean()) {
+      w.commit();
+    }
+    DirectoryReader reader = DirectoryReader.open(w, true, true);
+    assertEquals(numDocs, reader.numDocs());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  private int indexDocsForMultipleThreadStates(IndexWriter w) throws InterruptedException {
+    Thread[] threads = new Thread[3];
+    CountDownLatch latch = new CountDownLatch(threads.length);
+    int numDocsPerThread = 10 + random().nextInt(30);
+    // ensure we have more than on thread state
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        try {
+          latch.await();
+          for (int j = 0; j < numDocsPerThread; j++) {
+            Document doc = new Document();
+            doc.add(new StringField("id", "foo", Field.Store.YES));
+            w.addDocument(doc);
+          }
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    for (Thread t : threads) {
+      t.join();
+    }
+    return numDocsPerThread * threads.length;
+  }
+
+  public void testNeverCheckOutOnFullFlush() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    w.docWriter.flushControl.markForFullFlush();
+    DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
+    assertNull(documentsWriterPerThread);
+    assertEquals(activeThreadStateCount, w.docWriter.flushControl.numQueuedFlushes());
+    w.docWriter.flushControl.abortFullFlushes();
+    assertNull("was aborted", w.docWriter.flushControl.checkoutLargestNonPendingWriter());
+    assertEquals(0, w.docWriter.flushControl.numQueuedFlushes());
+    w.close();
+    dir.close();
+  }
+
+  public void testHoldLockOnLargestWriter() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    int numDocs = indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+
+    CountDownLatch wait = new CountDownLatch(1);
+    CountDownLatch locked = new CountDownLatch(1);
+    Thread lockThread = new Thread(() -> {
+      try {
+        largestNonPendingWriter.lock();
+        locked.countDown();
+        wait.await();
+      } catch (InterruptedException e) {
+        throw new AssertionError(e);
+      } finally {
+        largestNonPendingWriter.unlock();
+      }
+    });
+    lockThread.start();
+    Thread flushThread = new Thread(() -> {
+      try {
+        locked.await();
+        assertTrue(w.flushNextBuffer());
+      } catch (Exception e) {
+        throw new AssertionError(e);
+      }
+    });
+    flushThread.start();
+
+    locked.await();
+    // access a synced method to ensure we never lock while we hold the flush control monitor
+    w.docWriter.flushControl.activeBytes();
+    wait.countDown();
+    lockThread.join();
+    flushThread.join();
+
+    assertNull("largest DWPT should be flushed", largestNonPendingWriter.dwpt);
+    // make sure it's not locked
+    largestNonPendingWriter.lock();
+    largestNonPendingWriter.unlock();
+    if (random().nextBoolean()) {
+      w.commit();
+    }
+    DirectoryReader reader = DirectoryReader.open(w, true, true);
+    assertEquals(numDocs, reader.numDocs());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testCheckPendingFlushPostUpdate() throws IOException, InterruptedException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    Set<String> flushingThreads = Collections.synchronizedSet(new HashSet<>());
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("flush".equals(trace[i].getMethodName())
+              && "org.apache.lucene.index.DocumentsWriterPerThread".equals(trace[i].getClassName())) {
+            flushingThreads.add(Thread.currentThread().getName());
+            break;
+          }
+        }
+      }
+    });
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig()
+        .setCheckPendingFlushUpdate(false)
+        .setMaxBufferedDocs(Integer.MAX_VALUE)
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    AtomicBoolean done = new AtomicBoolean(false);
+    int numThreads = 2 + random().nextInt(3);
+    CountDownLatch latch = new CountDownLatch(numThreads);
+    Set<String> indexingThreads = new HashSet<>();
+    Thread[] threads = new Thread[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        int numDocs = 0;
+        while (done.get() == false) {
+
+          Document doc = new Document();
+          doc.add(new StringField("id", "foo", Field.Store.YES));
+          try {
+            w.addDocument(doc);
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+          if (numDocs++ % 10 == 0) {
+            Thread.yield();
+          }
+        }
+      });
+      indexingThreads.add(threads[i].getName());
+      threads[i].start();
+    }
+    latch.await();
+    try {
+      int numIters = rarely() ? 1 + random().nextInt(5) : 1;
+      for (int i = 0; i < numIters; i++) {
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
+        w.commit();
+        assertTrue(flushingThreads.toString(), flushingThreads.contains(Thread.currentThread().getName()));
+        flushingThreads.retainAll(indexingThreads);
+        assertTrue(flushingThreads.toString(), flushingThreads.isEmpty());
+      }
+      w.getConfig().setCheckPendingFlushUpdate(true);
+      numIters = 0;
+      while (true) {
+        assertFalse("should finish in less than 100 iterations", numIters++ >= 100);
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
+        w.flush();
+        flushingThreads.retainAll(indexingThreads);
+        if (flushingThreads.isEmpty() == false) {
+          break;
+        }
+      }
+    } finally {
+      done.set(true);
+      for (int i = 0; i < numThreads; i++) {
+        threads[i].join();
+      }
+      IOUtils.close(w, dir);
+    }
+  }
+
+  private static void waitForDocsInBuffers(IndexWriter w, int buffersWithDocs) {
+    // wait until at least N threadstates have a doc in order to observe
+    // who flushes the segments.
+    while(true) {
+      int numStatesWithDocs = 0;
+      DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
+      for (int i = 0; i < perThreadPool.getActiveThreadStateCount(); i++) {
+        DocumentsWriterPerThreadPool.ThreadState threadState = perThreadPool.getThreadState(i);
+        threadState.lock();
+        try {
+          DocumentsWriterPerThread dwpt = threadState.dwpt;
+          if (dwpt != null && dwpt.getNumDocsInRAM() > 1) {
+            numStatesWithDocs++;
+          }
+        } finally {
+          threadState.unlock();
+        }
+      }
+      if (numStatesWithDocs >= buffersWithDocs) {
+        return;
+      }
+    }
   }
 
 }

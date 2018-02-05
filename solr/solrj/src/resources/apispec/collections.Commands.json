@@ -152,6 +152,63 @@
         "collections"
       ]
     },
+    "create-routed-alias": {
+      "type": "object",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
+      "description": "Creates an alias that manages a series of time-partitioned collections.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The alias name to be created."
+        },
+        "router" : {
+          "type":"object",
+          "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
+          "description":"routing specific attributes",
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description": "The type of routing to perform. Currently only 'time' is supported, and it's required."
+            },
+            "field" : {
+              "type": "string",
+              "description": "The date field name in incoming documents that is consulted to decide which collection the document should be routed to."
+            },
+            "start": {
+              "type": "string",
+              "description": "The earliest date/time in a document that may be indexed into this alias. Documents with values less than this will return an error. For time based routing this may be a date math expression."
+            },
+            "interval" : {
+              "type": "string",
+              "description": "A specification of the width of the interval for each partition collection. For time based routing this should be a date math expression fragment starting with the + character."
+            },
+            "max-future-ms": {
+              "type": "integer",
+              "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + max-future-ms will be rejected to avoid provisioning too much resources."
+            }
+          }
+        },
+        "TZ": {
+          "type": "string",
+          "description": "Optional timezone for use with any date math that may exist in other parameters.  Defaults to UTC."
+        },
+        "create-collection": {
+          "type": "object",
+          "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
+          "description": "The settings to use to create a collection for each new time partition. Most options from the collection create command are available, except for 'name', 'async' and 'waitForFinalState'.",
+          "additionalProperties": true
+        },
+        "async": {
+          "type": "string",
+          "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
+        }
+      },
+      "required": [
+        "name",
+        "router",
+        "create-collection"
+      ]
+    },
     "delete-alias": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletealias",
       "description": "Deletes a collection alias",
@@ -166,7 +223,32 @@
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
         }
       },
-      "required":["name"]
+      "required": [
+        "name"
+      ]
+    },
+    "modify-alias": {
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#modifyalias",
+      "description": "Allows changing the metadata on an alias. If a key is set with an empty string then it will be removed",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The alias name on which to set metadata."
+        },
+        "metadata" : {
+          "type": "object",
+          "description": "A map of key/value pairs that will be associated with the alias as alias metadata. An empty value will delete any existing value for a given key.",
+          "additionalProperties": true
+        },
+        "async": {
+          "type": "string",
+          "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
+        }
+      },
+      "required": [
+        "name"
+      ]
     },
     "backup-collection": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#backup",

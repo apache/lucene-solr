@@ -82,7 +82,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
-import static org.apache.solr.core.Config.assertWarnOrFail;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -91,10 +90,9 @@ import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -111,6 +109,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
@@ -530,39 +529,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return status;
   }
 
-  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp,
-      SolrQueryRequest req) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
       int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
       if (numberToKeep > 0 && numberBackupsToKeep > 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot use "
-            + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM + " if "
-            + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM
-            + " was specified in the configuration.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot use " + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM +
+            " if " + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM + " was specified in the configuration.");
       }
       numberToKeep = Math.max(numberToKeep, numberBackupsToKeep);
       if (numberToKeep < 1) {
         numberToKeep = Integer.MAX_VALUE;
-      }
-
-      IndexCommit indexCommit = null;
-      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
-      if (commitName != null) {
-        SolrSnapshotMetaDataManager snapshotMgr = core.getSnapshotMetaDataManager();
-        Optional<IndexCommit> commit = snapshotMgr.getIndexCommitByName(commitName);
-        if(commit.isPresent()) {
-          indexCommit = commit.get();
-        } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " + commitName +
-              " for core " + core.getName());
-        }
-      } else {
-        IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
-        indexCommit = delPolicy.getLatestCommit();
-
-        if (indexCommit == null) {
-          indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
-        }
       }
 
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
@@ -586,12 +562,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       // small race here before the commit point is saved
       URI locationUri = repo.createURI(location);
+      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapAsync(indexCommit, numberToKeep, (nl) -> snapShootDetails = nl);
-
+      snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
     } catch (Exception e) {
-      LOG.warn("Exception during creating a snapshot", e);
+      LOG.error("Exception during creating a snapshot", e);
       rsp.add("exception", e);
     }
   }
@@ -1441,7 +1417,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             SnapShooter snapShooter = new SnapShooter(core, null, null);
             snapShooter.validateCreateSnapshot();
-            snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, (nl) -> snapShootDetails = nl);
+            snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

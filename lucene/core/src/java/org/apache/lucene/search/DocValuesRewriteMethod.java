@@ -72,7 +72,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     public final String getField() { return query.getField(); }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -86,17 +86,17 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
 
             @Override
             public long getSumTotalTermFreq() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override
             public long getSumDocFreq() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override
             public int getDocCount() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override
@@ -158,6 +158,12 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           });
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return DocValues.isCacheable(ctx, query.field);
+        }
+
       };
     }
   }

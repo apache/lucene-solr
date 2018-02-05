@@ -288,7 +288,9 @@ final class IntersectTermsEnumFrame {
 
       // stats
       termState.docFreq = statsReader.readVInt();
-      if (ite.fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
+      if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+        termState.totalTermFreq = termState.docFreq; // all postings have freq=1
+      } else {
         termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
       }
       // metadata 

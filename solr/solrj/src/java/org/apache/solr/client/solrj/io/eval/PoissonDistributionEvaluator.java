@@ -39,6 +39,6 @@ public class PoissonDistributionEvaluator extends RecursiveNumericEvaluator impl
 
     Number mean = (Number)first;
 
-    return new PoissonDistribution(mean.intValue());
+    return new PoissonDistribution(mean.doubleValue());
   }
 }

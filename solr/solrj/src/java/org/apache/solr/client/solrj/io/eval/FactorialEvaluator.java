@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -48,7 +47,7 @@ public class FactorialEvaluator extends RecursiveNumericEvaluator implements One
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      return CombinatoricsUtils.factorialDouble(((BigDecimal)value).intValue());
+      return CombinatoricsUtils.factorialDouble(((Number)value).intValue());
     }
   }
 }

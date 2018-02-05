@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.ZkIndexSchemaReader.SchemaWatcher;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -35,6 +36,8 @@ public class SchemaWatcherTest {
 
   @Before
   public void setUp() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     mockSchemaReader = mock(ZkIndexSchemaReader.class);
     schemaWatcher = new SchemaWatcher(mockSchemaReader);
   }

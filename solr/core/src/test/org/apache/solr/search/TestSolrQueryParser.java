@@ -222,12 +222,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
     assertEquals(3.0, ((BoostQuery) q).getBoost(), 0.0f);
 
-    qParser = QParser.getParser("(text:x text:y)^=-3", req);
-    q = qParser.getQuery();
-    assertTrue(q instanceof BoostQuery);
-    assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
-    assertEquals(-3.0, ((BoostQuery) q).getBoost(), 0.0f);
-
     req.close();
   }
 
@@ -495,6 +489,26 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "+filter(*:*)^=10 +filter(id:1)", "fl", "id,score", "sort", "id asc")
         , "/response/docs/[0]/score==10.0"
+    );
+
+    assertU(adoc("id", "40", "wdf_nocase", "just some text, don't want NPE"));
+    assertU(commit());
+
+    // See SOLR-11555. If wdff removes all the characters, an NPE occurs.
+    // try q and fq
+    assertJQ(req("q", "filter(wdf_nocase:&)", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("fq", "filter(wdf_nocase:.,)", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+
+    // Insure the same behavior as with bare clause, just not filter
+    assertJQ(req("q", "wdf_nocase:&", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("fq", "wdf_nocase:.,", "fl", "id", "debug", "query")
+        , "/response/numFound==0"
     );
 
   }
@@ -1057,7 +1071,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
-  
+
+
+  public void testSynonymQueryStyle() throws Exception {
+
+    Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
+    assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
+
+    q = QParser.getParser("tabby", req(params("df", "t_as_distinct_foo"))).getQuery();
+    assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
+
+    /*confirm autoGeneratePhraseQueries always builds OR queries*/
+    q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)", q.toString());
+
+    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_pick_best_foo:\"denim pant\" t_pick_best_foo:jean)", q.toString());
+
+  }
+
   @Test
   public void testBadRequestInSetQuery() throws SyntaxError {
     SolrQueryRequest req = req();

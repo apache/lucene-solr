@@ -118,6 +118,7 @@ class DocumentsWriterPerThread {
   void abort() {
     //System.out.println(Thread.currentThread().getName() + ": now abort seg=" + segmentInfo.name);
     aborted = true;
+    pendingNumDocs.addAndGet(-numDocsInRAM);
     try {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "now abort");
@@ -491,7 +492,7 @@ class DocumentsWriterPerThread {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
       }
-      
+
       return fs;
     } catch (Throwable th) {
       abort();
@@ -522,7 +523,6 @@ class DocumentsWriterPerThread {
    */
   void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap) throws IOException {
     assert flushedSegment != null;
-
     SegmentCommitInfo newSegment = flushedSegment.segmentInfo;
 
     IndexWriter.setDiagnostics(newSegment.info, IndexWriter.SOURCE_FLUSH);

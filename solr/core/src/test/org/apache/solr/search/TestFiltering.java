@@ -109,29 +109,38 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
     int prevCount;
 
+    // default cost uses post filtering (for frange)
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false cost=100}val_i")
+    assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false}val_i")
         ,"/response/numFound==2"
     );
     assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
 
     // The exact same query the second time will be cached by the queryCache
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false cost=100}val_i")
+    assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false}val_i")
         ,"/response/numFound==2"
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
 
-    // cache is true by default
+    // cache is true by default, even w/explicit low/high costs
     prevCount = DelegatingCollector.setLastDelegateCount;
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=4}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertJQ(req("q","*:*", "fq","{!frange l=2 u=4 cost=0}val_i")
+        ,"/response/numFound==3"
+    );
+    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertJQ(req("q","*:*", "fq","{!frange l=2 u=4 cost=999}val_i")
+        ,"/response/numFound==3"
+    );
+    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
 
-    // default cost avoids post filtering
+    // no caching and explicitly low cost avoids post filtering
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("q","*:*", "fq","{!frange l=2 u=5 cache=false}val_i")
+    assertJQ(req("q","*:*", "fq","{!frange l=2 u=5 cache=false cost=0}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
@@ -139,29 +148,38 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
     // now re-do the same tests w/ faceting on to get the full docset
 
+    // default cost uses post filtering (for frange)
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false cost=100}val_i")
+    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
 
     // since we need the docset and the filter was not cached, the collector will need to be used again
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false cost=100}val_i")
+    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
 
-    // cache is true by default
+    // cache is true by default, even w/explicit low/high costs
     prevCount = DelegatingCollector.setLastDelegateCount;
     assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7 cost=0}val_i")
+        ,"/response/numFound==3"
+    );
+    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7 cost=999}val_i")
+        ,"/response/numFound==3"
+    );
+    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
 
-    // default cost avoids post filtering
+    // no caching and explicitly low cost avoids post filtering
     prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=8 cache=false}val_i")
+    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=8 cache=false cost=0}val_i")
         ,"/response/numFound==3"
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);

@@ -32,12 +32,14 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -139,8 +141,9 @@ public class BlockTermsReader extends FieldsProducer {
         assert numTerms >= 0;
         final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : in.readVLong();
-        final long sumDocFreq = in.readVLong();
+        final long sumTotalTermFreq = in.readVLong();
+        // when frequencies are omitted, sumDocFreq=totalTermFreq and we only write one value
+        final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = in.readVInt();
         if (docCount < 0 || docCount > state.segmentInfo.maxDoc()) { // #docs with field must be <= #docs
@@ -149,7 +152,7 @@ public class BlockTermsReader extends FieldsProducer {
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
         }
-        if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
+        if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, in);
         }
         FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount, longsSize));
@@ -658,6 +661,12 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
+      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+        decodeMetaData();
+        return postingsReader.impacts(fieldInfo, state, scorer, flags);
+      }
+
+      @Override
       public void seekExact(BytesRef target, TermState otherState) {
         //System.out.println("BTR.seekExact termState target=" + target.utf8ToString() + " " + target + " this=" + this);
         assert otherState != null && otherState instanceof BlockTermState;
@@ -810,7 +819,9 @@ public class BlockTermsReader extends FieldsProducer {
             // docFreq, totalTermFreq
             state.docFreq = freqReader.readVInt();
             //System.out.println("    dF=" + state.docFreq);
-            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
+            if (fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+              state.totalTermFreq = state.docFreq; // all postings have tf=1
+            } else {
               state.totalTermFreq = state.docFreq + freqReader.readVLong();
               //System.out.println("    totTF=" + state.totalTermFreq);
             }

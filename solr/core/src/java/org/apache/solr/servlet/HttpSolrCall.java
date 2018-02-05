@@ -78,6 +78,7 @@ import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
@@ -114,12 +115,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
@@ -285,8 +286,13 @@ public class HttpSolrCall {
           }
         } else {
           // if we couldn't find it locally, look on other nodes
-          extractRemotePath(collectionName, origCorename, idx);
-          if (action != null) return;
+          if (idx > 0) {
+            extractRemotePath(collectionName, origCorename);
+            if (action == REMOTEQUERY) {
+              path = path.substring(idx);
+              return;
+            }
+          }
           //core is not available locally or remotely
           autoCreateSystemColl(collectionName);
           if (action != null) return;
@@ -342,7 +348,7 @@ public class HttpSolrCall {
       if (rsp.getValues().get("success") == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not auto-create " + SYSTEM_COLL + " collection: "+ Utils.toJSONString(rsp.getValues()));
       }
-      TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS);
+      TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       for (; ; ) {
         if (cores.getZkController().getClusterState().getCollectionOrNull(SYSTEM_COLL) != null) {
           break;
@@ -350,7 +356,7 @@ public class HttpSolrCall {
           if (timeOut.hasTimedOut()) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
           }
-          Thread.sleep(50);
+          timeOut.sleep(50);
         }
       }
 
@@ -422,29 +428,24 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename, int idx) throws UnsupportedEncodingException, KeeperException, InterruptedException {
-    if (core == null && idx > 0) {
-      coreUrl = getRemotCoreUrl(collectionName, origCorename);
-      // don't proxy for internal update requests
-      invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
-      if (coreUrl != null
-          && queryParams
-          .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
-        path = path.substring(idx);
-        if (invalidStates != null) {
-          //it does not make sense to send the request to a remote node
-          throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
-        }
-        action = REMOTEQUERY;
-      } else {
-        if (!retry) {
-          // we couldn't find a core to work with, try reloading aliases
-          // TODO: it would be nice if admin ui elements skipped this...
-          ZkStateReader reader = cores.getZkController()
-              .getZkStateReader();
-          reader.updateAliases();
-          action = RETRY;
-        }
+  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException {
+    assert core == null;
+    coreUrl = getRemotCoreUrl(collectionName, origCorename);
+    // don't proxy for internal update requests
+    invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+    if (coreUrl != null
+        && queryParams.get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
+      if (invalidStates != null) {
+        //it does not make sense to send the request to a remote node
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+      }
+      action = REMOTEQUERY;
+    } else {
+      if (!retry) {
+        // we couldn't find a core to work with, try reloading aliases
+        // TODO: it would be nice if admin ui elements skipped this...
+        cores.getZkController().getZkStateReader().aliasesHolder.update();
+        action = RETRY;
       }
     }
   }

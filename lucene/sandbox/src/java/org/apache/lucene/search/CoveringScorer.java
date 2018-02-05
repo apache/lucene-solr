@@ -201,12 +201,6 @@ final class CoveringScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    setTopListAndFreqIfNecessary();
-    return freq;
-  }
-
-  @Override
   public float score() throws IOException {
     // we need to know about all matches
     setTopListAndFreqIfNecessary();
@@ -215,6 +209,12 @@ final class CoveringScorer extends Scorer {
       score += w.scorer.score();
     }
     return (float) score;
+  }
+
+  @Override
+  public float maxScore() {
+    // TODO: implement but beware of floating-point errors
+    return Float.POSITIVE_INFINITY;
   }
 
   @Override

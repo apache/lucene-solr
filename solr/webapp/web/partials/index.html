@@ -209,7 +209,7 @@ limitations under the License.
 
               <li class="command_line_args"><dl class="clearfix">
                 <dt><span>Args</span></dt>
-                <dd ng-repeat="arg in commandLineArgs" ng-class="{'odd':$odd}">{{arg}}</dd>
+                <dd ng-repeat="arg in commandLineArgs track by $index" ng-class="{'odd':$odd}">{{arg}}</dd>
               </dl></li>
             
             </ul>

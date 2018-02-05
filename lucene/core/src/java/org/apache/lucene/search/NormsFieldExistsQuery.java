@@ -62,7 +62,7 @@ public final class NormsFieldExistsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -74,6 +74,11 @@ public final class NormsFieldExistsQuery extends Query {
         LeafReader reader = context.reader();
         DocIdSetIterator iterator = reader.getNormValues(field);
         return new ConstantScoreScorer(this, score(), iterator);
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
     };
   }

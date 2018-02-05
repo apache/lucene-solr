@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.commons.math3.stat.StatUtils;
 
-
 public class MeanEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 

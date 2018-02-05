@@ -20,11 +20,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -227,8 +230,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     for (String tag : tags) {
       assertNotNull( "missing : "+ tag , val.get(tag));
     }
-
-
+    val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), Collections.singleton("diskType"));
+    Set<String> diskTypes = ImmutableSet.of("rotational", "ssd");
+    assertTrue(diskTypes.contains(val.get("diskType")));
   }
 
   public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {

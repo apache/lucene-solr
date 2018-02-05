@@ -419,7 +419,7 @@ public class MiniSolrCloudCluster {
     return jetty;
   }
 
-  protected JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
+  public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.stop();
     return jetty;
   }

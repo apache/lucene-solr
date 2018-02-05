@@ -116,6 +116,12 @@ public class CorePropertiesLocator implements CoresLocator {
 
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
+    String oldName = newCD.getPersistableStandardProperties().getProperty(CoreDescriptor.CORE_NAME);
+    String newName = newCD.coreProperties.getProperty(CoreDescriptor.CORE_NAME);
+    if (oldName == null ||
+        (newName != null && oldName.equals(newName) == false)) {
+      newCD.getPersistableStandardProperties().put(CoreDescriptor.CORE_NAME, newName);
+    }
     persist(cc, newCD);
   }
 

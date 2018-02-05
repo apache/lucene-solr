@@ -154,8 +154,19 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public abstract SolrParams getParams();
 
-  public abstract Collection<ContentStream> getContentStreams() throws IOException;
+  /**
+   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
+   */
+  @Deprecated
+  public Collection<ContentStream> getContentStreams() throws IOException {
+    return null;
+  }
 
+  /**
+   * If a request object wants to do a push write, implement this method.
+   *
+   * @param expectedType This is the type that the RequestWriter would like to get. But, it is OK to send any format
+   */
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return null;
   }
@@ -178,11 +189,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * @throws IOException if there is a communication error
    */
   public final T process(SolrClient client, String collection) throws SolrServerException, IOException {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    long startNanos = System.nanoTime();
     T res = createResponse(client);
     res.setResponse(client.request(this, collection));
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
+    long endNanos = System.nanoTime();
+    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
   }
 

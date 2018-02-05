@@ -15,7 +15,6 @@
  limitations under the License.
 */
 
-// @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CollectionsController',
     function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);

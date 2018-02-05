@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
@@ -38,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -73,7 +75,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new ClassicSimilarity());
     scorerSearcher = new ScorerIndexSearcher(reader);
-    scorerSearcher.setSimilarity(new ClassicSimilarity());
+    scorerSearcher.setSimilarity(new CountingSimilarity());
   }
   
   @Override
@@ -113,7 +115,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term(F2, "lucene")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(F2, "is")), BooleanClause.Occur.MUST);
-    Map<Integer,Integer> tfs = getDocCounts(searcher, bq.build());
+    Map<Integer,Integer> tfs = getDocCounts(scorerSearcher, bq.build());
     assertEquals(3, tfs.size()); // 3 documents
     assertEquals(2, tfs.get(0).intValue()); // f2:lucene + f2:is
     assertEquals(3, tfs.get(1).intValue()); // f2:is + f2:is + f2:lucene
@@ -159,7 +161,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
           int freq = 0;
           for(Scorer scorer : tqsSet) {
             if (doc == scorer.docID()) {
-              freq += scorer.freq();
+              freq += scorer.score();
             }
           }
           docCounts.put(doc + docBase, freq);
@@ -194,7 +196,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq1.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq1.add(new PhraseQuery(F2, "search", "engine"), Occur.SHOULD);
 
-    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), true);
+    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), ScoreMode.COMPLETE);
     Scorer s1 = w1.scorer(reader.leaves().get(0));
     assertEquals(0, s1.iterator().nextDoc());
     assertEquals(2, s1.getChildren().size());
@@ -203,7 +205,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq2.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq2.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
 
-    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), true);
+    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), ScoreMode.COMPLETE);
     Scorer s2 = w2.scorer(reader.leaves().get(0));
     assertEquals(0, s2.iterator().nextDoc());
     assertEquals(1, s2.getChildren().size());
@@ -216,7 +218,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
     bq.setMinimumNumberShouldMatch(2);
 
-    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), true);
+    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
     Scorer s = w.scorer(reader.leaves().get(0));
     assertEquals(0, s.iterator().nextDoc());
     assertEquals(2, s.getChildren().size());
@@ -272,8 +274,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
     @Override
@@ -314,6 +316,25 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
         builder.append("    ");
       }
       return builder;
+    }
+  }
+
+  // Similarity that just returns the frequency as the score
+  private static class CountingSimilarity extends Similarity {
+
+    @Override
+    public long computeNorm(FieldInvertState state) {
+      return 1;
+    }
+
+    @Override
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimScorer(collectionStats.field()) {
+        @Override
+        public float score(float freq, long norm) {
+          return freq;
+        }
+      };
     }
   }
 

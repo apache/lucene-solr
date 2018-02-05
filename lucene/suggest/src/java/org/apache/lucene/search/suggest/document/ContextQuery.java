@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -164,8 +165,8 @@ public class ContextQuery extends CompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores, boost));
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well

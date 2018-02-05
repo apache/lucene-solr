@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -77,7 +78,10 @@ public class SolrZkClient implements Closeable {
 
   private ZkCmdExecutor zkCmdExecutor;
 
-  private final ExecutorService zkCallbackExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+  private final ExecutorService zkCallbackExecutor =
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+  private final ExecutorService zkConnManagerCallbackExecutor =
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -259,7 +263,11 @@ public class SolrZkClient implements Closeable {
       public void process(final WatchedEvent event) {
         log.debug("Submitting job to respond to event " + event);
         try {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
+          if (watcher instanceof ConnectionManager) {
+            zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+          } else {
+            zkCallbackExecutor.submit(() -> watcher.process(event));
+          }
         } catch (RejectedExecutionException e) {
           // If not a graceful shutdown
           if (!isClosed()) {
@@ -680,6 +688,12 @@ public class SolrZkClient implements Closeable {
     } catch (Exception e) {
       SolrException.log(log, e);
     }
+
+    try {
+      ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
+    } catch (Exception e) {
+      SolrException.log(log, e);
+    }
   }
 
 
@@ -746,6 +760,10 @@ public class SolrZkClient implements Closeable {
   // Some pass-throughs to allow less code disruption to other classes that use SolrZkClient.
   public void clean(String path) throws InterruptedException, KeeperException {
     ZkMaintenanceUtils.clean(this, path);
+  }
+
+  public void clean(String path, Predicate<String> nodeFilter) throws InterruptedException, KeeperException {
+    ZkMaintenanceUtils.clean(this, path, nodeFilter);
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {

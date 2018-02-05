@@ -22,14 +22,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.PrefixCodedTerms;
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
@@ -105,7 +106,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -150,6 +151,12 @@ public abstract class PointInSetQuery extends Query {
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 

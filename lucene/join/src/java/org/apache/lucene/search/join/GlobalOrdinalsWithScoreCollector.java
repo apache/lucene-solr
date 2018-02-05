@@ -96,8 +96,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE;
   }
 
   final class OrdinalMapCollector implements LeafCollector {
@@ -304,8 +304,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
 
     @Override
-    public boolean needsScores() {
-      return false;
+    public org.apache.lucene.search.ScoreMode scoreMode() {
+      return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

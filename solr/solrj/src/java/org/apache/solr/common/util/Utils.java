@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -35,11 +37,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -59,6 +64,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -324,11 +330,27 @@ public class Utils {
   }
 
   private static boolean isMapLike(Object o) {
-    return o instanceof Map || o instanceof NamedList;
+    return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
   private static Object getVal(Object obj, String key) {
-    if(obj instanceof NamedList) return ((NamedList) obj).get(key);
+    if (obj instanceof MapWriter) {
+      Object[] result = new Object[1];
+      try {
+        ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+            if (key.equals(k)) result[0] = v;
+            return this;
+          }
+        });
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return result[0];
+    }
+
+    if (obj instanceof NamedList) return ((NamedList) obj).get(key);
     else if (obj instanceof Map) return ((Map) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
@@ -364,6 +386,17 @@ public class Utils {
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {}
+  }
+
+  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
+    VersionedData data = null;
+    try {
+      data = distribStateManager.getData(path);
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyMap();
+    }
+    if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();
+    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   /**
@@ -412,5 +445,27 @@ public class Utils {
         return null;
       }
     }
+  }
+
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+    final int _offset = nodeName.indexOf("_");
+    if (_offset < 0) {
+      throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
+    }
+    final String hostAndPort = nodeName.substring(0,_offset);
+    try {
+      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
+  }
+
+  public static long time(TimeSource timeSource, TimeUnit unit) {
+    return unit.convert(timeSource.getTime(), TimeUnit.NANOSECONDS);
+  }
+
+  public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
+    return unit.convert(timeSource.getTime() - NANOSECONDS.convert(start, unit), NANOSECONDS);
   }
 }

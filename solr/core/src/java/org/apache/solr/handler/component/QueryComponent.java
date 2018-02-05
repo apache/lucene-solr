@@ -167,7 +167,7 @@ public class QueryComponent extends SearchComponent
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
-        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
+        QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
@@ -1481,8 +1481,8 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public int freq() throws IOException {
-      throw new UnsupportedOperationException();
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
     }
 
     @Override

@@ -42,5 +42,5 @@ Upgrading large indexes may take a long time. As a rule of thumb, the upgrade pr
 
 [WARNING]
 ====
-This tool may reorder documents if the index was partially upgraded before execution (e.g., documents were added). If your application relies on monotonicity of document IDs (i.e., the order in which the documents were added to the index is preserved), do a full forceMerge instead.
+This tool may reorder documents if the index was partially upgraded before execution (e.g., documents were added). If your application relies on monotonicity of document IDs (i.e., the order in which the documents were added to the index is preserved), do a full optimize instead.
 ====

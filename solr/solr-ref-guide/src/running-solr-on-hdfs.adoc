@@ -195,16 +195,48 @@ The delay (in ms) after which a replica marked as down would be unmarked. The de
 
 When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for *all collections in the cluster*:
 
-Disable auto addition of replicas cluster wide by setting the cluster property `autoAddReplicas` to `false`:
+Disable automatic addition of replicas cluster-wide by setting the cluster property `autoAddReplicas` to `false`, as in these examples:
 
-[source,text]
+[.dynamic-tabs]
+--
+[example.tab-pane#v1disableautoadd]
+====
+[.tab-label]*V1 API*
+[source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas&val=false
 ----
+====
 
-Re-enable auto addition of replicas (for those collections created with autoAddReplica=true) by unsetting the `autoAddReplicas` cluster property (when no `val` param is provided, the cluster property is unset):
+[example.tab-pane#v2disableautoadd]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas", "val":false}}' http://localhost:8983/api/cluster
+----
+====
+--
 
-[source,text]
+Re-enable automatic addition of replicas (for those collections created with `autoAddReplica=true`) by unsetting the `autoAddReplicas` cluster property. When no `val` param is provided, the cluster property is unset:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1enableautoadd]
+====
+[.tab-label]*V1 API*
+[source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas
 ----
+====
+
+[example.tab-pane#v2enableautoadd]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas"}}' http://localhost:8983/api/cluster
+----
+====
+--

@@ -190,6 +190,7 @@ public class SidedPlane extends Plane implements Membership {
   @Override
   public boolean isWithin(double x, double y, double z) {
     double evalResult = evaluate(x, y, z);
+    //System.out.println(Math.abs(evalResult));
     if (Math.abs(evalResult) < MINIMUM_RESOLUTION)
       return true;
     double sigNum = Math.signum(evalResult);

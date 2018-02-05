@@ -70,6 +70,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
+    assumeWorkingMockito();
+    
     AtomicReference<Principal> principal = new AtomicReference<>();
     String nodeName = "node_x_233";
 

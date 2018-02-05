@@ -72,20 +72,78 @@ public class Vector {
    * @param BZ is the Z value of the second
    */
   public Vector(final Vector A, final double BX, final double BY, final double BZ) {
+    // We're really looking at two vectors and computing a perpendicular one from that.
+    // We can think of this as having three points -- the origin, and two points that aren't the origin.
+    // Normally, we can compute the perpendicular vector this way:
     // x = u2v3 - u3v2
     // y = u3v1 - u1v3
     // z = u1v2 - u2v1
+    // Sometimes that produces a plane that does not contain the original three points, however, due to
+    // numerical precision issues.  Then we continue making the answer more precise using the
+    // Gram-Schmidt process: https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
+    
+    // Compute the naive perpendicular
     final double thisX = A.y * BZ - A.z * BY;
     final double thisY = A.z * BX - A.x * BZ;
     final double thisZ = A.x * BY - A.y * BX;
+    
     final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
+    if (magnitude < MINIMUM_RESOLUTION) {
       throw new IllegalArgumentException("Degenerate/parallel vector constructed");
     }
-    final double inverseMagnitude = 1.0 / magnitude;
-    this.x = thisX * inverseMagnitude;
-    this.y = thisY * inverseMagnitude;
-    this.z = thisZ * inverseMagnitude;
+    
+    final double inverseMagnitude = 1.0/magnitude;
+    
+    double normalizeX = thisX * inverseMagnitude;
+    double normalizeY = thisY * inverseMagnitude;
+    double normalizeZ = thisZ * inverseMagnitude;
+    // For a plane to work, the dot product between the normal vector
+    // and the points needs to be less than the minimum resolution.
+    // This is sometimes not true for points that are very close. Therefore
+    // we need to adjust
+    int i = 0;
+    while (true) {
+      final double currentDotProdA = A.x * normalizeX + A.y * normalizeY + A.z * normalizeZ;
+      final double currentDotProdB = BX * normalizeX + BY * normalizeY + BZ * normalizeZ;
+      if (Math.abs(currentDotProdA) < MINIMUM_RESOLUTION && Math.abs(currentDotProdB) < MINIMUM_RESOLUTION) {
+        break;
+      }
+      // Converge on the one that has largest dot product
+      final double currentVectorX;
+      final double currentVectorY;
+      final double currentVectorZ;
+      final double currentDotProd;
+      if (Math.abs(currentDotProdA) > Math.abs(currentDotProdB)) {
+        currentVectorX = A.x;
+        currentVectorY = A.y;
+        currentVectorZ = A.z;
+        currentDotProd = currentDotProdA;
+      } else {
+        currentVectorX = BX;
+        currentVectorY = BY;
+        currentVectorZ = BZ;
+        currentDotProd = currentDotProdB;
+      }
+
+      // Adjust
+      normalizeX = normalizeX - currentDotProd * currentVectorX;
+      normalizeY = normalizeY - currentDotProd * currentVectorY;
+      normalizeZ = normalizeZ - currentDotProd * currentVectorZ;
+      // Normalize
+      final double correctedMagnitude = magnitude(normalizeX, normalizeY, normalizeZ);
+      final double inverseCorrectedMagnitude = 1.0 / correctedMagnitude;
+      normalizeX = normalizeX * inverseCorrectedMagnitude;
+      normalizeY = normalizeY * inverseCorrectedMagnitude;
+      normalizeZ = normalizeZ * inverseCorrectedMagnitude;
+      //This is  probably not needed as the method seems to converge
+      //quite quickly. But it is safer to have a way out.
+      if (i++ > 10) {
+        throw new IllegalArgumentException("Plane could not be constructed! Could not find a normal vector.");
+      }
+    }
+    this.x = normalizeX;
+    this.y = normalizeY;
+    this.z = normalizeZ;
   }
 
   /**
@@ -98,20 +156,7 @@ public class Vector {
    * @param B is the second
    */
   public Vector(final Vector A, final Vector B) {
-    // x = u2v3 - u3v2
-    // y = u3v1 - u1v3
-    // z = u1v2 - u2v1
-    final double thisX = A.y * B.z - A.z * B.y;
-    final double thisY = A.z * B.x - A.x * B.z;
-    final double thisZ = A.x * B.y - A.y * B.x;
-    final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
-      throw new IllegalArgumentException("Degenerate/parallel vector constructed");
-    }
-    final double inverseMagnitude = 1.0 / magnitude;
-    this.x = thisX * inverseMagnitude;
-    this.y = thisY * inverseMagnitude;
-    this.z = thisZ * inverseMagnitude;
+    this(A, B.x, B.y, B.z);
   }
 
   /** Compute a magnitude of an x,y,z value.

@@ -540,7 +540,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         m = (Map) ObjectBuilder.getVal(new JSONParser(
             new StringReader(response)));
       } catch (JSONParser.ParseException e) {
-        fail(e.getMessage());
+        System.err.println("err response: " + response);
+        throw new AssertionError(e);
       }
     } finally {
       httpPost.releaseConnection();

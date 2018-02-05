@@ -823,7 +823,7 @@ Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Fil
 
 *Factory class:* `solr.ManagedSynonymFilterFactory`
 
-For arguments and examples, see the <<Managed Synonym Graph Filter>> below.
+For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
@@ -852,7 +852,7 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 
-See <<Managed Synonym Filter>> for example input/output.
+See <<Synonym Graph Filter>> below for example input/output.
 
 == N-Gram Filter
 
@@ -1575,6 +1575,38 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 *Tokenizer to Filter:* "Pay", "Bob's", "I.O.U."
 
 *Out:* "Pay"[<ALPHANUM>], "Bob's"[<APOSTROPHE>], "I.O.U."[<ACRONYM>]
+
+== Type As Synonym Filter
+
+This filter adds the token's type, as a token at the same position as the token, optionally with a configurable prefix prepended.
+
+*Factory class:* `solr.TypeAsSynonymFilterFactory`
+
+*Arguments:*
+
+`prefix`:: (optional) The prefix to prepend to the token's type.
+
+*Examples:*
+
+With the example below, each token's type will be emitted verbatim at the same position:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory"/>
+</analyzer>
+----
+
+With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="_type_"/>
+</analyzer>
+----
 
 == Type Token Filter
 

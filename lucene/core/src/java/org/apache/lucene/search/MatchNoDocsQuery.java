@@ -42,7 +42,7 @@ public class MatchNoDocsQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -58,6 +58,10 @@ public class MatchNoDocsQuery extends Query {
         return null;
       }
 
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
     };
   }
 

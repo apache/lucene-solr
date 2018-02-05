@@ -36,7 +36,7 @@ public abstract class Normalizer {
   public abstract LinkedHashMap<String,Object> paramsToMap();
 
   public Explanation explain(Explanation explain) {
-    final float normalized = normalize(explain.getValue());
+    final float normalized = normalize(explain.getValue().floatValue());
     final String explainDesc = "normalized using " + toString();
 
     return Explanation.match(normalized, explainDesc, explain);

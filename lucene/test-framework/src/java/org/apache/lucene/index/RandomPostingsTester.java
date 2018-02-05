@@ -32,10 +32,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.IntToLongFunction;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -59,6 +63,9 @@ import static org.junit.Assert.assertTrue;
 
 /** Helper class extracted from BasePostingsFormatTestCase to exercise a postings format. */
 public class RandomPostingsTester {
+
+  private static final IntToLongFunction DOC_TO_NORM = doc -> 1 + (doc & 0x0f);
+  private static final long MAX_NORM = 0x10;
 
   /** Which features to test. */
   public enum Option {
@@ -599,6 +606,11 @@ public class RandomPostingsTester {
       }
       return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, maxAllowed, allowPayloads);
     }
+
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 
   private static class ThreadState {
@@ -653,10 +665,70 @@ public class RandomPostingsTester {
 
     Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
 
+    NormsProducer fakeNorms = new NormsProducer() {
+
+      @Override
+      public void close() throws IOException {}
+
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+
+      @Override
+      public NumericDocValues getNorms(FieldInfo field) throws IOException {
+        if (newFieldInfos.fieldInfo(field.number).hasNorms()) {
+          return new NumericDocValues() {
+            
+            int doc = -1;
+            
+            @Override
+            public int nextDoc() throws IOException {
+              if (++doc == segmentInfo.maxDoc()) {
+                return doc = NO_MORE_DOCS;
+              }
+              return doc;
+            }
+            
+            @Override
+            public int docID() {
+              return doc;
+            }
+            
+            @Override
+            public long cost() {
+              return segmentInfo.maxDoc();
+            }
+            
+            @Override
+            public int advance(int target) throws IOException {
+              return doc = target >= segmentInfo.maxDoc() ? DocIdSetIterator.NO_MORE_DOCS : target;
+            }
+            
+            @Override
+            public boolean advanceExact(int target) throws IOException {
+              doc = target;
+              return true;
+            }
+            
+            @Override
+            public long longValue() throws IOException {
+              return DOC_TO_NORM.applyAsLong(doc);
+            }
+          };
+        } else {
+          return null;
+        }
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {}
+      
+    };
     FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState);
     boolean success = false;
     try {
-      consumer.write(seedFields);
+      consumer.write(seedFields, fakeNorms);
       success = true;
     } finally {
       if (success) {
@@ -972,6 +1044,136 @@ public class RandomPostingsTester {
             assertEquals("startOffset isn't -1", -1, postingsEnum.startOffset());
             assertEquals("endOffset isn't -1", -1, postingsEnum.endOffset());
           }
+        }
+      }
+    }
+
+    if (options.contains(Option.SKIPPING)) {
+      final IntToLongFunction docToNorm;
+      if (fieldInfo.hasNorms()) {
+        docToNorm = DOC_TO_NORM;
+      } else {
+        docToNorm = doc -> 1L;
+      }
+      for (int s = 0; s < 3; ++s) {
+        final int scoreMode = s;
+        SimScorer scorer = new SimScorer(field) {
+          @Override
+          public float score(float freq, long norm) {
+            switch (scoreMode) {
+              case 0:
+                return freq; // make sure the postings record the best freq
+              case 1:
+                return 1f / norm; // make sure the postings record the best norm
+              default:
+                return freq - norm + MAX_NORM; // now a combination that could make intermediate pairs more competitive
+            }
+          }
+        };
+
+        // First check max scores and block uptos
+        int max = -1;
+        float maxScore = 0;
+        int flags = PostingsEnum.FREQS;
+        if (doCheckPositions) {
+          flags |= PostingsEnum.POSITIONS;
+          if (doCheckOffsets) {
+            flags |= PostingsEnum.OFFSETS;
+          }
+          if (doCheckPayloads) {
+            flags |= PostingsEnum.PAYLOADS;
+          }
+        }
+
+        ImpactsEnum impacts = termsEnum.impacts(scorer, flags);
+        PostingsEnum postings = termsEnum.postings(null, flags);
+        for (int doc = impacts.nextDoc(); ; doc = impacts.nextDoc()) {
+          assertEquals(postings.nextDoc(), doc);
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }
+          int freq = postings.freq();
+          assertEquals("freq is wrong", freq, impacts.freq());
+          for (int i = 0; i < freq; ++i) {
+            int pos = postings.nextPosition();
+            assertEquals("position is wrong", pos, impacts.nextPosition());
+            if (doCheckOffsets) {
+              assertEquals("startOffset is wrong", postings.startOffset(), impacts.startOffset());
+              assertEquals("endOffset is wrong", postings.endOffset(), impacts.endOffset());
+            }
+            if (doCheckPayloads) {
+              assertEquals("payload is wrong", postings.getPayload(), impacts.getPayload());
+            }
+          }
+          if (doc > max) {
+            max = impacts.advanceShallow(doc);
+            assertTrue(max >= doc);
+            maxScore = impacts.getMaxScore(max);
+          }
+          assertEquals(max, impacts.advanceShallow(doc));
+          assertTrue(scorer.score(impacts.freq(), docToNorm.applyAsLong(doc)) <= maxScore);
+        }
+
+        // Now check advancing
+        impacts = termsEnum.impacts(scorer, flags);
+        postings = termsEnum.postings(postings, flags);
+
+        max = -1;
+        while (true) {
+          int doc = impacts.docID();
+          boolean advance;
+          int target;
+          if (random.nextBoolean()) {
+            advance = false;
+            target = doc + 1;
+          } else {
+            advance = true;
+            int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
+            target = impacts.docID() + delta;
+          }
+
+          if (target > max && random.nextBoolean()) {
+            int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
+            max = target + delta;
+            int m = impacts.advanceShallow(target);
+            assertTrue(m >= target);
+            maxScore = impacts.getMaxScore(max);
+          }
+
+          if (advance) {
+            doc = impacts.advance(target);
+          } else {
+            doc = impacts.nextDoc();
+          }
+
+          assertEquals(postings.advance(target), doc);
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }
+          int freq = postings.freq();
+          assertEquals("freq is wrong", freq, impacts.freq());
+          for (int i = 0; i < postings.freq(); ++i) {
+            int pos = postings.nextPosition();
+            assertEquals("position is wrong", pos, impacts.nextPosition());
+            if (doCheckOffsets) {
+              assertEquals("startOffset is wrong", postings.startOffset(), impacts.startOffset());
+              assertEquals("endOffset is wrong", postings.endOffset(), impacts.endOffset());
+            }
+            if (doCheckPayloads) {
+              assertEquals("payload is wrong", postings.getPayload(), impacts.getPayload());
+            }
+          }
+
+          if (doc > max) {
+            int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
+            max = doc + delta;
+            int m = impacts.advanceShallow(doc);
+            assertTrue(m >= doc);
+            maxScore = impacts.getMaxScore(max);
+          }
+
+          float score = scorer.score(impacts.freq(), docToNorm.applyAsLong(doc));
+          assertTrue(score <= maxScore);
         }
       }
     }

@@ -145,6 +145,7 @@
         (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
         (~$/\bTOOD:/$) : 'TOOD instead TODO',
         (~$/\t/$) : 'tabs instead spaces',
+        (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
         (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
         (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
         (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
@@ -186,20 +187,26 @@
       }
 
       def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
-          def contentMatcher = contentPattern.matcher(text);
-          if (contentMatcher.find()) {
-            def contentStartPos = contentMatcher.start();
-            def commentMatcher = commentPattern.matcher(text);
-            while (commentMatcher.find()) {
-              if (isLicense(commentMatcher, ratDocument)) {
-                if (commentMatcher.start() < contentStartPos) {
-                  break; // This file is all good, so break loop: license header precedes 'description' definition
-                } else {
-                  reportViolation(f, description+' declaration precedes license header');
-                }
+        def contentMatcher = contentPattern.matcher(text);
+        if (contentMatcher.find()) {
+          def contentStartPos = contentMatcher.start();
+          def commentMatcher = commentPattern.matcher(text);
+          while (commentMatcher.find()) {
+            if (isLicense(commentMatcher, ratDocument)) {
+              if (commentMatcher.start() < contentStartPos) {
+                break; // This file is all good, so break loop: license header precedes 'description' definition
+              } else {
+                reportViolation(f, description+' declaration precedes license header');
               }
             }
           }
+        }
+      }
+
+      def checkMockitoAssume = { f, text ->
+        if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+          reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
+        }
       }
 
       def checkForUnescapedSymbolSubstitutions = { f, text ->
@@ -265,18 +272,21 @@
               ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
           }
         }
-        if (f.toString().endsWith('.java')) {
+        if (f.name.endsWith('.java')) {
           if (text.contains('org.slf4j.LoggerFactory')) {
             if (!validLoggerPattern.matcher(text).find()) {
               reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
             }
           }
           checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+          if (f.name.contains("Test")) {
+            checkMockitoAssume(f, text);
+          }
         }
-        if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
+        if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
           checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
         }
-        if (f.toString().endsWith('.adoc')) {
+        if (f.name.endsWith('.adoc')) {
           checkForUnescapedSymbolSubstitutions(f, text);
         }
       };
@@ -840,12 +850,12 @@ Test args: [${args}]</echo>
   </target>
   
   <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
-    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
+    <!-- step 1: build, install, validate and publish ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
-      <!-- this implicitely publishes the maven artifacts: -->
       <target name="validate-maven-dependencies"/>
+      <target name="generate-maven-artifacts"/>
     </antcall>
     <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
     <antcall>
@@ -864,4 +874,5 @@ Test args: [${args}]</echo>
 
   <!-- useless targets (override common-build.xml): -->
   <target name="generate-test-reports"/>
+  <target name="patch-mrjar-classes"/>
 </project>

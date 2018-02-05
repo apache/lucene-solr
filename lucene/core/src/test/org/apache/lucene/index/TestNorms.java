@@ -116,12 +116,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   } 

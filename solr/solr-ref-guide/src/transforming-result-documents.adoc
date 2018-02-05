@@ -199,7 +199,7 @@ fl=id,source_s:[json]&wt=json
 This transformer executes a separate query per transforming document passing document fields as an input for subquery parameters. It's usually used with `{!join}` and `{!parent}` query parsers, and is intended to be an improvement for `[child]`.
 
 * It must be given an unique name: `fl=*,children:[subquery]`
-* There might be a few of them, eg `fl=*,sons:[subquery],daughters:[subquery]`.
+* There might be a few of them, e.g., `fl=*,sons:[subquery],daughters:[subquery]`.
 * Every `[subquery]` occurrence adds a field into a result document with the given name, the value of this field is a document list, which is a result of executing subquery using document fields as an input.
 
 Here is how it looks like in various formats:
@@ -250,14 +250,12 @@ Here is how it looks like in various formats:
 
 ==== Subquery Result Fields
 
-To appear in subquery document list, a field should be specified both fl parameters, in main one fl (despite the main result documents have no this field) and in subquery's one eg `foo.fl`. Of course, you can use wildcard in any or both of these parameters. For example, if field title should appear in categories subquery, it can be done via one of these ways.
+To appear in subquery document list, a field should be specified in subquery's `fl` parameter e.g., `foo.fl` (it is not necessary to specify in main one's `fl`). Of course, you can use wildcard in this parameter. For example, if field title should appear in categories subquery, it can be done via one of these ways.
 
 [source,plain]
 ----
-fl=...title,categories:[subquery]&categories.fl=title&categories.q=...
-fl=...title,categories:[subquery]&categories.fl=*&categories.q=...
-fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
-fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
+fl=...id,categories:[subquery]&categories.fl=title&categories.q=...
+fl=...id,categories:[subquery]&categories.fl=*&categories.q=...
 ----
 
 ==== Subquery Parameters Shift

@@ -32,9 +32,6 @@ import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
  */
 public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ShardRequest[] constructRequest(ResponseBuilder rb) {
     ShardRequest sreq = new ShardRequest();

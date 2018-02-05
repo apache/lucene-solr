@@ -24,7 +24,6 @@ import java.util.Collection;
 final class FakeScorer extends Scorer {
   float score;
   int doc = -1;
-  int freq = 1;
 
   public FakeScorer() {
     super(null);
@@ -36,13 +35,13 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
-  public int freq() {
-    return freq;
-  }
-    
-  @Override
   public float score() {
     return score;
+  }
+
+  @Override
+  public float maxScore() {
+    return Float.POSITIVE_INFINITY;
   }
 
   @Override

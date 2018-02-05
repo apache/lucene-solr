@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -68,6 +70,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
@@ -183,6 +186,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final boolean cloneRequiredOnLeader;
   private final Replica.Type replicaType;
 
+  @Deprecated
+  // this flag, used for testing rolling updates, should be removed by SOLR-11812
+  private final boolean isOldLIRMode;
+
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
@@ -201,6 +208,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
     this.vinfo = ulog == null ? null : ulog.getVersionInfo();
+    this.isOldLIRMode = !"new".equals(req.getCore().getCoreDescriptor().getCoreProperty("lirVersion", "new"));
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
     returnVersions = req.getParams().getBool(UpdateParams.VERSIONS ,false);
 
@@ -342,13 +350,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
 
         List<Node> nodes = new ArrayList<>(replicaProps.size());
+        ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
         for (ZkCoreNodeProps props : replicaProps) {
-          if (skipList != null) {
-            boolean skip = skipListSet.contains(props.getCoreUrl());
-            log.info("check url:" + props.getCoreUrl() + " against:" + skipListSet + " result:" + skip);
-            if (!skip) {
-              nodes.add(new StdNode(props, collection, shardId));
-            }
+          String coreNodeName = ((Replica) props.getNodeProps()).getName();
+          if (skipList != null && skipListSet.contains(props.getCoreUrl())) {
+            log.info("check url:" + props.getCoreUrl() + " against:" + skipListSet + " result:true");
+          } else if(!isOldLIRMode && zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
+            log.info("skip url:{} cause its term is less than leader", props.getCoreUrl());
           } else {
             nodes.add(new StdNode(props, collection, shardId));
           }
@@ -750,7 +758,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO - we may need to tell about more than one error...
 
     List<Error> errorsForClient = new ArrayList<>(errors.size());
-    
+    Map<ShardInfo, Set<String>> failedReplicas = new HashMap<>();
     for (final SolrCmdDistributor.Error error : errors) {
       
       if (error.req.node instanceof RetryNode) {
@@ -842,18 +850,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             && foundErrorNodeInReplicaList // we found an error for one of replicas
             && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
           try {
+            String coreNodeName = ((Replica) stdNode.getNodeProps().getNodeProps()).getName();
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
             Throwable rootCause = SolrException.getRootCause(error.e);
-            log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
-            zkController.ensureReplicaInLeaderInitiatedRecovery(
-                req.getCore().getCoreContainer(),
-                collection,
-                shardId,
-                stdNode.getNodeProps(),
-                req.getCore().getCoreDescriptor(),
-                false /* forcePublishState */
-            );
+            if (!isOldLIRMode && zkController.getShardTerms(collection, shardId).registered(coreNodeName)) {
+              log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
+              ShardInfo shardInfo = new ShardInfo(collection, shardId, leaderCoreNodeName);
+              failedReplicas.putIfAbsent(shardInfo, new HashSet<>());
+              failedReplicas.get(shardInfo).add(coreNodeName);
+            } else {
+              // The replica did not registered its term, so it must run with old LIR implementation
+              log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
+              zkController.ensureReplicaInLeaderInitiatedRecovery(
+                  req.getCore().getCoreContainer(),
+                  collection,
+                  shardId,
+                  stdNode.getNodeProps(),
+                  req.getCore().getCoreDescriptor(),
+                  false /* forcePublishState */
+              );
+            }
           } catch (Exception exc) {
             Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
             log.error("Leader failed to set replica " +
@@ -870,6 +887,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 + shardId + " or we tried to put ourself into LIR, no request recovery command will be sent!");
           }
         }
+      }
+    }
+    if (!isOldLIRMode) {
+      for (Map.Entry<ShardInfo, Set<String>> entry : failedReplicas.entrySet()) {
+        ShardInfo shardInfo = entry.getKey();
+        zkController.getShardTerms(shardInfo.collection, shardInfo.shard).ensureTermsIsHigher(shardInfo.leader, entry.getValue());
       }
     }
     // in either case, we need to attach the achieved and min rf to the response.
@@ -901,6 +924,38 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     if (0 < errorsForClient.size()) {
       throw new DistributedUpdatesAsyncException(errorsForClient);
+    }
+  }
+
+  private class ShardInfo {
+    private String collection;
+    private String shard;
+    private String leader;
+
+    public ShardInfo(String collection, String shard, String leader) {
+      this.collection = collection;
+      this.shard = shard;
+      this.leader = leader;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      ShardInfo shardInfo = (ShardInfo) o;
+
+      if (!collection.equals(shardInfo.collection)) return false;
+      if (!shard.equals(shardInfo.shard)) return false;
+      return leader.equals(shardInfo.leader);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = collection.hashCode();
+      result = 31 * result + shard.hashCode();
+      result = 31 * result + leader.hashCode();
+      return result;
     }
   }
 
@@ -1142,7 +1197,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
                                boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
-    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS); 
+    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
     try {

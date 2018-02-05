@@ -39,7 +39,7 @@ The `IndexBasedSpellChecker` uses a Solr index as the basis for a parallel index
     <str name="field">content</str>
     <str name="buildOnCommit">true</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
@@ -99,7 +99,7 @@ The `FileBasedSpellChecker` uses an external file as a spelling dictionary. This
     <str name="characterEncoding">UTF-8</str>
     <str name="spellcheckIndexDir">./spellcheckerFile</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
@@ -192,7 +192,7 @@ If set to `true`, this parameter reloads the spellchecker. The results depend on
 This parameter specifies the maximum number of suggestions that the spellchecker should return for a term. If this parameter isn't set, the value defaults to `1`. If the parameter is set but not assigned a number, the value defaults to `5`. If the parameter is set to a positive integer, that number becomes the maximum number of suggestions returned by the spellchecker.
 
 `spellcheck.onlyMorePopular`::
-If `true`, Solr will to return suggestions that result in more hits for the query than the existing query. Note that this will return more popular suggestions even when the given query term is present in the index and considered "correct".
+If `true`, Solr will return suggestions that result in more hits for the query than the existing query. Note that this will return more popular suggestions even when the given query term is present in the index and considered "correct".
 
 `spellcheck.maxResultsForSuggest`::
 If, for example, this is set to `5` and the user's query returns 5 or fewer results, the spellchecker will report "correctlySpelled=false" and also offer suggestions (and collations if requested). Setting this greater than zero is useful for creating "did-you-mean?" suggestions for queries that return a low number of hits.

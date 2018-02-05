@@ -76,8 +76,11 @@ public interface CollectionParams {
     RELOAD(true, LockLevel.COLLECTION),
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
+    CREATEROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
+    MODIFYALIAS(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
+    ROUTEDALIAS_CREATECOLL(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
     CREATESHARD(true, LockLevel.COLLECTION),
@@ -105,6 +108,7 @@ public interface CollectionParams {
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
+    UTILIZENODE(false, LockLevel.NONE),
     //only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks

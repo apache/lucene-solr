@@ -31,6 +31,7 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
@@ -46,12 +47,10 @@ public class TestOmitTf extends LuceneTestCase {
   public static class SimpleSimilarity extends TFIDFSimilarity {
     @Override public float lengthNorm(int length) { return 1; }
     @Override public float tf(float freq) { return freq; }
-    @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long docCount) { return 1.0f; }
     @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
       return Explanation.match(1.0f, "Inexplicable");
     }
-    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }
 
   private static final FieldType omitType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -312,8 +311,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -334,8 +333,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -359,8 +358,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -382,8 +381,8 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
-                      public boolean needsScores() {
-                        return true;
+                      public ScoreMode scoreMode() {
+                        return ScoreMode.COMPLETE;
                       }
                       @Override
                       public final void setScorer(Scorer scorer) {
@@ -440,12 +439,12 @@ public class TestOmitTf extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
   
-  /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are -1 */
+  /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are docFreq, and sumDocFreq */
   public void testStats() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
@@ -459,8 +458,8 @@ public class TestOmitTf extends LuceneTestCase {
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
-    assertEquals(-1, ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
-    assertEquals(-1, ir.getSumTotalTermFreq("foo"));
+    assertEquals(ir.docFreq(new Term("foo", new BytesRef("bar"))), ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
+    assertEquals(ir.getSumDocFreq("foo"), ir.getSumTotalTermFreq("foo"));
     ir.close();
     dir.close();
   }

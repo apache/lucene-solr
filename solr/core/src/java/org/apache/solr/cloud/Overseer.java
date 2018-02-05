@@ -29,6 +29,7 @@ import java.util.Set;
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -39,6 +40,7 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -80,7 +82,7 @@ public class Overseer implements SolrCloseable {
   enum LeaderStatus {DONT_KNOW, NO, YES}
 
   private class ClusterStateUpdater implements Runnable, Closeable {
-    
+
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
     private final String myId;
@@ -88,7 +90,7 @@ public class Overseer implements SolrCloseable {
     private final ZkDistributedQueue stateUpdateQueue;
     //TODO remove in 9.0, we do not push message into this queue anymore
     //Internal queue where overseer stores events that have not yet been published into cloudstate
-    //If Overseer dies while extracting the main queue a new overseer will start from this queue 
+    //If Overseer dies while extracting the main queue a new overseer will start from this queue
     private final ZkDistributedQueue workQueue;
     // Internal map which holds the information about running tasks.
     private final DistributedMap runningMap;
@@ -120,7 +122,7 @@ public class Overseer implements SolrCloseable {
     public Stats getWorkQueueStats()  {
       return workQueue.getZkStats();
     }
-    
+
     @Override
     public void run() {
 
@@ -200,7 +202,7 @@ public class Overseer implements SolrCloseable {
           LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, Long.MAX_VALUE, (x) -> true));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
           } catch (KeeperException.SessionExpiredException e) {
             log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
             return;
@@ -267,6 +269,9 @@ public class Overseer implements SolrCloseable {
 
     private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       final String operation = message.getStr(QUEUE_OPERATION);
+      if (operation == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
+      }
       List<ZkWriteCommand> zkWriteCommands = null;
       final Timer.Context timerContext = stats.time(operation);
       try {
@@ -442,7 +447,7 @@ public class Overseer implements SolrCloseable {
 
   }
 
-  static class OverseerThread extends Thread implements Closeable {
+  public static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
     private Closeable thread;
@@ -466,9 +471,9 @@ public class Overseer implements SolrCloseable {
     public boolean isClosed() {
       return this.isClosed;
     }
-    
+
   }
-  
+
   private OverseerThread ccThread;
 
   private OverseerThread updaterThread;
@@ -478,7 +483,7 @@ public class Overseer implements SolrCloseable {
   private final ZkStateReader reader;
 
   private final ShardHandler shardHandler;
-  
+
   private final UpdateShardHandler updateShardHandler;
 
   private final String adminPath;
@@ -505,7 +510,7 @@ public class Overseer implements SolrCloseable {
     this.stats = new Stats();
     this.config = config;
   }
-  
+
   public synchronized void start(String id) {
     this.id = id;
     closed = false;

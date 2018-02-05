@@ -55,6 +55,8 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
   protected Object normalizeInputType(Object value){
     if(null == value){
       return null;
+    } else if (value instanceof VectorFunction) {
+      return value;
     }
     else if(value instanceof Double){
       if(Double.isNaN((Double)value)){
@@ -97,8 +99,9 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
   protected Object normalizeOutputType(Object value) {
     if(null == value){
       return null;
-    }
-    else if(value instanceof BigDecimal){
+    } else if (value instanceof VectorFunction) {
+      return value;
+    } else if(value instanceof BigDecimal){
       BigDecimal bd = (BigDecimal)value;
       if(bd.signum() == 0 || bd.scale() <= 0 || bd.stripTrailingZeros().scale() <= 0){
         try{

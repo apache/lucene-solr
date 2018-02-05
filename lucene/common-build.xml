@@ -80,13 +80,15 @@
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.3.0" /> <!-- UPGRADE NOTE: update disallowed.ivy.jars regex in ivy-availability-check -->
+  <property name="ivy.bootstrap.version" value="2.4.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
+  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[0123].*\.jar"/>
+
   <property name="ivy.default.configuration" value="*"/>
 
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
-  <property name="ivy.lock-strategy" value="artifact-lock"/>
+  <property name="ivy.lock-strategy" value="artifact-lock-nio"/>
 
   <property name="local.caches" location="${common.dir}/../.caches" />
   <property name="tests.cachedir"  location="${local.caches}/test-stats" />
@@ -158,6 +160,10 @@
 
   <!-- Display at most this many failures as a summary at the end of junit4 run. -->
   <property name="tests.showNumFailures" value="10" />
+  
+  <!-- If we detect Java 9+, should we test the patched classes of the
+   multi-release JAR or still run with our own classes? -->
+  <property name="tests.withJava9Patches" value="true" />
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -413,12 +419,12 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
-  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
+  <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <path id="disallowed.ivy.jars">
       <fileset dir="${ivy_install_path}">
-        <filename regex="ivy-2\.[012].*\.jar"/> <!-- TODO: Update this regex to disallow Ivy versions -->
+        <filename regex="${disallowed_ivy_jars_regex}"/>
       </fileset>
     </path>
     <loadresource property="disallowed.ivy.jars.list">
@@ -482,19 +488,20 @@
     <fail>Ivy is not available</fail>
   </target>
 
-  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" depends="ivy-bootstrap1,ivy-bootstrap2,ivy-checksum"/>
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" 
+          depends="-ivy-bootstrap1,-ivy-bootstrap2,-ivy-checksum,-ivy-remove-old-versions"/>
 
   <!-- try to download from repo1.maven.org -->
-  <target name="ivy-bootstrap1">
+  <target name="-ivy-bootstrap1">
     <ivy-download src="${ivy_bootstrap_url1}" dest="${ivy_install_path}"/>
     <available file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar" property="ivy.bootstrap1.success" />
   </target> 
 
-  <target name="ivy-bootstrap2" unless="ivy.bootstrap1.success">
+  <target name="-ivy-bootstrap2" unless="ivy.bootstrap1.success">
     <ivy-download src="${ivy_bootstrap_url2}" dest="${ivy_install_path}"/>
   </target>
 
-  <target name="ivy-checksum">
+  <target name="-ivy-checksum">
     <checksum file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar"
               property="${ivy_checksum_sha1}"
               algorithm="SHA"
@@ -504,6 +511,14 @@
         <isfalse value="${ivy.checksum.success}"/>
       </condition>
     </fail>
+  </target>
+  
+  <target name="-ivy-remove-old-versions">
+    <delete verbose="true" failonerror="true">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="${disallowed_ivy_jars_regex}"/>
+      </fileset>
+    </delete>
   </target>
    
   <macrodef name="ivy-download">
@@ -535,10 +550,48 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <target name="jar-core" depends="compile-core">
+  <!-- Special targets to patch all class files by replacing some method calls with new Java 9 methods: -->
+  <target name="-mrjar-classes-uptodate">
+    <uptodate property="mrjar-classes-uptodate" targetfile="${build.dir}/patch-mrjar.stamp">
+      <srcfiles dir= "${build.dir}/classes/java" includes="**/*.class"/>
+    </uptodate>
+  </target>
+  
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="patch-mrjar-classes" depends="-mrjar-classes-uptodate,ivy-availability-check,ivy-configure,resolve-groovy,compile-core"
+    unless="mrjar-classes-uptodate" description="Patches compiled class files for usage with Java 9 in MR-JAR">
+    <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
+    <ivy:cachepath organisation="org.ow2.asm" module="asm-commons" revision="${ivyversions./org.ow2.asm/asm-commons}"
+      inline="true" conf="default" transitive="true" log="download-only" pathid="asm.classpath"/>
+    <groovy classpathref="asm.classpath" src="${common.dir}/tools/src/groovy/patch-mrjar-classes.groovy"/>
+    <touch file="${build.dir}/patch-mrjar.stamp"/>
+  </target>
+  
+  <target name="-mrjar-check" depends="patch-mrjar-classes">
+    <zipfileset id="mrjar-patched-files" prefix="META-INF/versions/9" dir="${build.dir}/classes/java9"/>
+    <condition property="has-mrjar-patched-files">
+      <resourcecount refid="mrjar-patched-files" when="greater" count="0" />
+    </condition>
+  </target>
+  
+  <target name="-mrjar-core" depends="-mrjar-check" if="has-mrjar-patched-files">
+    <jarify>
+      <filesets>
+        <zipfileset refid="mrjar-patched-files"/>
+      </filesets>
+      <jarify-additional-manifest-attributes>
+        <attribute name="Multi-Release" value="true"/>
+      </jarify-additional-manifest-attributes>
+    </jarify>
+  </target>
+  
+  <target name="-jar-core" depends="-mrjar-check" unless="has-mrjar-patched-files">
     <jarify/>
   </target>
+  
+  <target name="jar-core" depends="-mrjar-core,-jar-core"/>
 
+  <!-- Packaging targets: -->
+  
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
   <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
@@ -948,6 +1001,12 @@
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
           <istrue value="${tests.useSecurityManager}"/>
         </condition>
+        
+        <!-- additional arguments for Java 9+ -->
+        <local name="tests.runtimespecific.args"/>
+        <condition property="tests.runtimespecific.args" value="" else="--illegal-access=deny">
+          <equals arg1="${build.java.runtime}" arg2="1.8"/>
+        </condition>
 
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
@@ -1029,6 +1088,7 @@
             <jvmarg line="${tests.clover.args}"/>
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
+            <jvmarg line="${tests.runtimespecific.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
@@ -1291,7 +1351,8 @@ ant test "-Dtests.method=*esi*"
 ant test -Dtests.seed=DEADBEEF
 
 # Repeats _all_ tests of ClassName N times. Every test repetition
-# will have a different seed.
+# will have a different seed. NOTE: does not reinitialize
+# between repetitions, use only for idempotent tests.
 ant test -Dtests.iters=N -Dtestcase=ClassName
 
 # Repeats _all_ tests of ClassName N times. Every test repetition
@@ -1434,8 +1495,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </taskdef>
   </target>
 
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
-  <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+  <target name="test" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
+  <target name="beast" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
           description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>

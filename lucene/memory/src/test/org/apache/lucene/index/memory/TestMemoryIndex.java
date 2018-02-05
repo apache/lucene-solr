@@ -50,7 +50,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
@@ -59,6 +58,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -199,12 +199,7 @@ public class TestMemoryIndex extends LuceneTestCase {
       }
 
       @Override
-      public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+      public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
         throw new UnsupportedOperationException();
       }
 
@@ -274,6 +269,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     NumericDocValues numericDocValues = leafReader.getNumericDocValues("numeric");
     assertEquals(0, numericDocValues.nextDoc());
     assertEquals(29L, numericDocValues.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, numericDocValues.nextDoc());
     SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
     assertEquals(0, sortedNumericDocValues.nextDoc());
     assertEquals(5, sortedNumericDocValues.docValueCount());
@@ -282,14 +278,17 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(32L, sortedNumericDocValues.nextValue());
     assertEquals(32L, sortedNumericDocValues.nextValue());
     assertEquals(33L, sortedNumericDocValues.nextValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedNumericDocValues.nextDoc());
     BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("binary");
     assertEquals(0, binaryDocValues.nextDoc());
     assertEquals("a", binaryDocValues.binaryValue().utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, binaryDocValues.nextDoc());
     SortedDocValues sortedDocValues = leafReader.getSortedDocValues("sorted");
     assertEquals(0, sortedDocValues.nextDoc());
     assertEquals("b", sortedDocValues.binaryValue().utf8ToString());
     assertEquals(0, sortedDocValues.ordValue());
     assertEquals("b", sortedDocValues.lookupOrd(0).utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedDocValues.nextDoc());
     SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
     assertEquals(3, sortedSetDocValues.getValueCount());
     assertEquals(0, sortedSetDocValues.nextDoc());
@@ -300,6 +299,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals("c", sortedSetDocValues.lookupOrd(0L).utf8ToString());
     assertEquals("d", sortedSetDocValues.lookupOrd(1L).utf8ToString());
     assertEquals("f", sortedSetDocValues.lookupOrd(2L).utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedDocValues.nextDoc());
   }
 
   public void testDocValues_resetIterator() throws Exception {

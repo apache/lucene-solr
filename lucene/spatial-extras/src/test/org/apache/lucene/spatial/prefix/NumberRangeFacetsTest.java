@@ -25,6 +25,7 @@ import java.util.List;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -226,8 +227,8 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
         });
     return bitSet;

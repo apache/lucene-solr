@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -45,7 +44,7 @@ public class EmpiricalDistributionEvaluator extends RecursiveNumericEvaluator im
 
     EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
     
-    double[] backingValues = ((List<?>)value).stream().mapToDouble(innerValue -> ((BigDecimal)innerValue).doubleValue()).sorted().toArray();
+    double[] backingValues = ((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).sorted().toArray();
     empiricalDistribution.load(backingValues);
 
     return empiricalDistribution;

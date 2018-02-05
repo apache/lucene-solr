@@ -33,9 +33,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -54,6 +56,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -71,6 +74,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
@@ -82,6 +86,7 @@ import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -92,9 +97,6 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
@@ -135,6 +137,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   private boolean cloudInit;
   protected boolean useJettyDataDir = true;
 
+  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
+
   protected Map<URI,SocketProxy> proxies = new HashMap<>();
 
   public static class CloudJettyRunner {
@@ -168,7 +172,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  static class CloudSolrServerClient {
+  public static class CloudSolrServerClient {
     SolrClient solrClient;
     String shardName;
     int port;
@@ -178,6 +182,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     public CloudSolrServerClient(SolrClient client) {
       this.solrClient = client;
+    }
+
+    public SolrClient getSolrClient() {
+      return solrClient;
     }
 
     @Override
@@ -296,7 +304,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000);
-    client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -1552,6 +1559,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (VERBOSE || printLayoutOnTearDown) {
       super.printLayout();
     }
+    closeRestTestHarnesses(); // TODO: close here or later?
     if (commonCloudSolrClient != null) {
       commonCloudSolrClient.close();
     }
@@ -1615,9 +1623,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
       if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
     }
-    Integer numShards = (Integer) collectionProps.get(NUM_SLICES);
+    Integer numShards = (Integer) collectionProps.get(OverseerCollectionMessageHandler.NUM_SLICES);
     if(numShards==null){
-      String shardNames = (String) collectionProps.get(SHARDS_PROP);
+      String shardNames = (String) collectionProps.get(OverseerCollectionMessageHandler.SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
     Integer numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.NRT_REPLICAS);
@@ -1679,12 +1687,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-        NUM_SLICES, numShards,
-        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
-        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
-        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
+            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr,
+            ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configSetName);
   }
 
@@ -1695,12 +1703,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-        NUM_SLICES, numShards,
-        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
-        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
-        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
+            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr,
+            ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
   }
 
@@ -1798,7 +1806,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       List<Integer> numShardsNumReplicaList,
       List<String> nodesAllowedToRunShards) throws Exception {
     // check for an expectedSlices new collection - we poll the state
-    final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     boolean success = false;
     String checkResult = "Didnt get to perform a single check";
     while (! timeout.hasTimedOut()) {
@@ -1821,14 +1829,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CloudSolrClient getCommonCloudSolrClient() {
     synchronized (this) {
       if (commonCloudSolrClient == null) {
-        boolean updatesToLeaders = random().nextBoolean();
-        boolean parallelUpdates = random().nextBoolean();
         commonCloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(),
-                updatesToLeaders, 5000, 120000);
-        commonCloudSolrClient.setParallelUpdates(parallelUpdates);
+            random().nextBoolean(), 5000, 120000);
         commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
         commonCloudSolrClient.connect();
-        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}", updatesToLeaders, parallelUpdates);
+        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
+            commonCloudSolrClient.isUpdatesToLeaders(), commonCloudSolrClient.isParallelUpdates());
       }
     }
     return commonCloudSolrClient;
@@ -1859,7 +1865,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
  public static void waitForNon403or404or503(HttpSolrClient collectionClient)
       throws Exception {
     SolrException exp = null;
-    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (! timeout.hasTimedOut()) {
       boolean missing = false;
@@ -1901,7 +1907,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ZkStateReader.NRT_REPLICAS, numNrtReplicas,
         ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
         ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        NUM_SLICES, numShards);
+        OverseerCollectionMessageHandler.NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
   }
@@ -1957,6 +1963,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
     Replica leader = null;
+    ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, shardId, cloudClient.getZkStateReader().getZkClient());
     while (waitMs < maxWaitMs && !allReplicasUp) {
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
@@ -1975,7 +1982,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
-        if (replica.getState() != Replica.State.ACTIVE) {
+        if (!zkShardTerms.canBecomeLeader(replica.getName()) ||
+            replica.getState() != Replica.State.ACTIVE) {
           log.info("Replica {} is currently {}", replica.getName(), replica.getState());
           allReplicasUp = false;
         }
@@ -1992,6 +2000,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     } // end while
 
+    zkShardTerms.close();
     if (!allReplicasUp)
       fail("Didn't see all replicas for shard "+shardId+" in "+testCollectionName+
           " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());
@@ -2210,7 +2219,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   static RequestStatusState getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
       throws IOException, SolrServerException {
     RequestStatusState state = null;
-    final TimeOut timeout = new TimeOut(waitForSeconds, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(waitForSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (!timeout.hasTimedOut())  {
       state = getRequestState(requestId, client);
@@ -2239,6 +2248,33 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   static CollectionAdminResponse getStatusResponse(String requestId, SolrClient client) throws SolrServerException, IOException {
     return CollectionAdminRequest.requestStatus(requestId).process(client);
+  }
+
+  protected void setupRestTestHarnesses() {
+    for (final SolrClient client : clients) {
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
+      restTestHarnesses.add(harness);
+    }
+  }
+
+  protected void closeRestTestHarnesses() throws IOException {
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
+  }
+
+  protected RestTestHarness randomRestTestHarness() {
+    return restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+  }
+
+  protected RestTestHarness randomRestTestHarness(Random random) {
+    return restTestHarnesses.get(random.nextInt(restTestHarnesses.size()));
+  }
+
+  protected void forAllRestTestHarnesses(UnaryOperator<RestTestHarness> op) {
+    for (RestTestHarness h : restTestHarnesses) {
+      op.apply(h);
+    }
   }
 
 }

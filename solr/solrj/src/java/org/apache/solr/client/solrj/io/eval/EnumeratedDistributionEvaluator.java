@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,13 +40,13 @@ public class EnumeratedDistributionEvaluator extends RecursiveNumericEvaluator i
 
     if(values.length == 1) {
       List<Number> first = (List<Number>)values[0];
-      int[] samples = ((List) first).stream().mapToInt(value -> ((BigDecimal) value).intValue()).toArray();
+      int[] samples = ((List) first).stream().mapToInt(value -> ((Number) value).intValue()).toArray();
       return new EnumeratedIntegerDistribution(samples);
     } else {
       List<Number> first = (List<Number>)values[0];
       List<Number> second = (List<Number>)values[1];
-      int[] singletons = ((List) first).stream().mapToInt(value -> ((BigDecimal) value).intValue()).toArray();
-      double[] probs = ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray();
+      int[] singletons = ((List) first).stream().mapToInt(value -> ((Number) value).intValue()).toArray();
+      double[] probs = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       return new EnumeratedIntegerDistribution(singletons, probs);
     }
   }

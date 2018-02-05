@@ -133,13 +133,13 @@ public class AutoScaling {
    */
   public static class TriggerFactoryImpl extends TriggerFactory {
 
-    private final SolrCloudManager dataProvider;
+    private final SolrCloudManager cloudManager;
     private final SolrResourceLoader loader;
 
-    public TriggerFactoryImpl(SolrResourceLoader loader, SolrCloudManager dataProvider) {
-      Objects.requireNonNull(dataProvider);
+    public TriggerFactoryImpl(SolrResourceLoader loader, SolrCloudManager cloudManager) {
+      Objects.requireNonNull(cloudManager);
       Objects.requireNonNull(loader);
-      this.dataProvider = dataProvider;
+      this.cloudManager = cloudManager;
       this.loader = loader;
     }
 
@@ -150,11 +150,13 @@ public class AutoScaling {
       }
       switch (type) {
         case NODEADDED:
-          return new NodeAddedTrigger(name, props, loader, dataProvider);
+          return new NodeAddedTrigger(name, props, loader, cloudManager);
         case NODELOST:
-          return new NodeLostTrigger(name, props, loader, dataProvider);
+          return new NodeLostTrigger(name, props, loader, cloudManager);
         case SEARCHRATE:
-          return new SearchRateTrigger(name, props, loader, dataProvider);
+          return new SearchRateTrigger(name, props, loader, cloudManager);
+        case METRIC:
+          return new MetricTrigger(name, props, loader, cloudManager);
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }

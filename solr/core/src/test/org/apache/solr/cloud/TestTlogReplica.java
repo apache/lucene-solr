@@ -60,6 +60,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
@@ -232,7 +233,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       //TODO: assert replication < REPLICATION_TIMEOUT_SECS
       try (HttpSolrClient tlogReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
@@ -400,7 +401,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     docCollection = assertNumberOfReplicas(0, 1, 0, true, true);
     
     // Wait until a new leader is elected
-    TimeOut t = new TimeOut(30, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!t.hasTimedOut()) {
       docCollection = getCollectionState(collectionName);
       Replica leader = docCollection.getSlice("shard1").getLeader();
@@ -488,7 +489,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     waitForNumDocsInAllActiveReplicas(2);
     // There are a small delay between new searcher and copy over old updates operation
-    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       if (assertCopyOverOldUpdates(1, timeCopyOverPerCores)) {
         break;
@@ -748,7 +749,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
   
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, int timeout) throws IOException, SolrServerException, InterruptedException {
-    TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
       if (!r.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
         continue;
@@ -772,7 +773,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
   
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
       try {
         Thread.sleep(100);

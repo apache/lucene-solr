@@ -17,11 +17,14 @@
 package org.apache.solr.handler.admin;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Properties;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
@@ -256,6 +259,13 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", StandardCharsets.UTF_8);
+
+    copySolrHomeToTemp(solrHomeDirectory, "corerename");
+
+    File coreRename = new File(solrHomeDirectory, "corerename");
+    File renamePropFile = new File(coreRename, "core.properties");
+    FileUtils.write(renamePropFile, "", StandardCharsets.UTF_8);
+
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
@@ -273,10 +283,35 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
+    // Make sure a renamed core
+    // 1> has the property persisted (SOLR-11783)
+    // 2> is deleted after rename properly.
+
+    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl().toString(), DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)) {
+      CoreAdminRequest.renameCore("corerename", "brand_new_core_name", client);
+      Properties props = new Properties();
+      try (InputStreamReader is = new InputStreamReader(new FileInputStream(renamePropFile), StandardCharsets.UTF_8)) {
+        props.load(is);
+      }
+      assertEquals("Name should have been persisted!", "brand_new_core_name", props.getProperty("name"));
+    }
+
+
+    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl().toString(), DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)) {
+      CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
+      req.setDeleteInstanceDir(true);
+      req.setCoreName("brand_new_core_name");
+      req.process(client);
+    }
+
+
     runner.stop();
 
     assertFalse("Instance directory exists after core unload with deleteInstanceDir=true : " + corex,
         corex.exists());
+
+    assertFalse("Instance directory exists after core unload with deleteInstanceDir=true : " + coreRename,
+        coreRename.exists());
 
   }
 

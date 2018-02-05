@@ -16,15 +16,10 @@
  */
 package org.apache.lucene.search.similarities;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.BytesRef;
 
 /** wraps a similarity with checks for testing */
 public class AssertingSimilarity extends Similarity {
@@ -46,104 +41,61 @@ public class AssertingSimilarity extends Similarity {
     assert state.getNumOverlap() < state.getLength();
     assert state.getUniqueTermCount() > 0;
     assert state.getUniqueTermCount() <= state.getLength();
-    return delegate.computeNorm(state);
+    long norm = delegate.computeNorm(state);
+    assert norm != 0;
+    return norm;
   }
 
   @Override
-  public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    assert boost >= 0;
     assert collectionStats != null;
     assert termStats.length > 0;
     for (TermStatistics term : termStats) {
       assert term != null;
     }
     // TODO: check that TermStats is in bounds with respect to collection? e.g. docFreq <= maxDoc
-    SimWeight weight = delegate.computeWeight(boost, collectionStats, termStats);
-    assert weight != null;
-    return new AssertingWeight(weight, boost);
+    SimScorer scorer = delegate.scorer(boost, collectionStats, termStats);
+    assert scorer != null;
+    return new AssertingSimScorer(scorer, boost);
   }
   
-  static class AssertingWeight extends SimWeight {
-    final SimWeight delegate;
+  static class AssertingSimScorer extends SimScorer {
+    final SimScorer delegate;
     final float boost;
     
-    AssertingWeight(SimWeight delegate, float boost) {
+    AssertingSimScorer(SimScorer delegate, float boost) {
+      super(delegate.getField());
       this.delegate = delegate;
       this.boost = boost;
     }
-  }
 
-  @Override
-  public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-    assert weight != null;
-    assert context != null;
-    AssertingWeight assertingWeight = (AssertingWeight)weight;
-    SimScorer delegateScorer = delegate.simScorer(assertingWeight.delegate, context);
-    assert delegateScorer != null;
+    @Override
+    public float score(float freq, long norm) {
+      // freq in bounds
+      assert Float.isFinite(freq);
+      assert freq > 0;
+      // result in bounds
+      float score = delegate.score(freq, norm);
+      assert Float.isFinite(score);
+      assert score <= delegate.score(freq, 1);
+      assert score >= 0;
+      return score;
+    }
 
-    return new SimScorer() {
-      @Override
-      public float score(int doc, float freq) throws IOException {
-        // doc in bounds
-        assert doc >= 0;
-        assert doc < context.reader().maxDoc();
-        // freq in bounds
-        assert Float.isFinite(freq);
-        assert freq > 0;
-        // result in bounds
-        float score = delegateScorer.score(doc, freq);
-        assert Float.isFinite(score);
-        // TODO: some tests have negative boosts today
-        assert score >= 0 || assertingWeight.boost < 0;
-        return score;
-      }
-
-      @Override
-      public float computeSlopFactor(int distance) {
-        // distance in bounds
-        assert distance >= 0;
-        // result in bounds
-        float slopFactor = delegateScorer.computeSlopFactor(distance);
-        assert Float.isFinite(slopFactor);
-        assert slopFactor > 0;
-        assert slopFactor <= 1;
-        return slopFactor;
-      }
-
-      @Override
-      public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-        // doc in bounds
-        assert doc >= 0;
-        assert doc < context.reader().maxDoc();
-        // payload in bounds
-        assert payload.isValid();
-        // position range in bounds
-        assert start >= 0;
-        assert start != Spans.NO_MORE_POSITIONS;
-        assert end > start;
-        // result in bounds
-        float payloadFactor = delegateScorer.computePayloadFactor(doc, start, end, payload);
-        assert Float.isFinite(payloadFactor);
-        assert payloadFactor >= 0;
-        return payloadFactor;
-      }
-
-      @Override
-      public Explanation explain(int doc, Explanation freq) throws IOException {
-        // doc in bounds
-        assert doc >= 0;
-        assert doc < context.reader().maxDoc();
-        // freq in bounds 
-        assert freq != null;
-        assert Float.isFinite(freq.getValue());
-        // result in bounds
-        Explanation explanation = delegateScorer.explain(doc, freq);
-        assert explanation != null;
-        assert Float.isFinite(explanation.getValue());
-        // result matches score exactly
-        assert explanation.getValue() == delegateScorer.score(doc, freq.getValue());
-        return explanation;
-      }
-    };
+    @Override
+    public Explanation explain(Explanation freq, long norm) {
+      // freq in bounds 
+      assert freq != null;
+      assert Float.isFinite(freq.getValue().floatValue());
+      // result in bounds
+      Explanation explanation = delegate.explain(freq, norm);
+      assert explanation != null;
+      assert Float.isFinite(explanation.getValue().floatValue());
+      // result matches score exactly
+      assert explanation.getValue().floatValue() == delegate.score(freq.getValue().floatValue(), norm);
+      return explanation;
+    }
   }
 
   @Override

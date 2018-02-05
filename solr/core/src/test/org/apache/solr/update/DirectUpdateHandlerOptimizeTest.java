@@ -21,7 +21,7 @@ import java.io.FileFilter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 
@@ -29,7 +29,7 @@ import org.junit.BeforeClass;
  *
  *
  **/
-public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
+public class DirectUpdateHandlerOptimizeTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

@@ -30,7 +30,7 @@ Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as 
 
 Solr supports several modifiers that atomically update values of a document. This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
 
-To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if a number.
+To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if the field has a numeric type.
 
 `set`::
 Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
@@ -182,7 +182,7 @@ When the client resubmits a changed document to Solr, the `\_version_` can be in
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added with out needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
 
 For example:
 

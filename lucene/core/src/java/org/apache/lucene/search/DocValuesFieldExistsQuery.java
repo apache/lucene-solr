@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -61,7 +62,7 @@ public final class DocValuesFieldExistsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -97,6 +98,12 @@ public final class DocValuesFieldExistsQuery extends Query {
 
         return new ConstantScoreScorer(this, score(), iterator);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
+      }
+
     };
   }
 }

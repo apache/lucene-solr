@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -45,8 +44,7 @@ public class SineEvaluator extends RecursiveNumericEvaluator implements OneValue
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      // we know it's a BigDecimal
-      return Math.sin(((BigDecimal)value).doubleValue());
+      return Math.sin(((Number)value).doubleValue());
     }
   }
 }

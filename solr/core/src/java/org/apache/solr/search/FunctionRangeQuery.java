@@ -33,6 +33,7 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
     super(filter);
     this.rangeFilt = filter;
+    this.cost = 100; // default behavior should be PostFiltering
   }
 
   @Override

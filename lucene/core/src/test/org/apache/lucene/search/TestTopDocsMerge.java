@@ -281,7 +281,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
           topHits = searcher.search(query, numHits);
         }
       } else {
-        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
+        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, true);
         searcher.search(query, c);
         if (useFrom) {
           from = TestUtil.nextInt(random(), 0, numHits - 1);
@@ -316,7 +316,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // ... then all shards:
-      final Weight w = searcher.createNormalizedWeight(query, true);
+      final Weight w = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
 
       final TopDocs[] shardHits;
       if (sort == null) {
@@ -330,7 +330,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (sort == null) {
           subHits = subSearcher.search(w, numHits);
         } else {
-          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
+          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, true);
           subSearcher.search(w, c);
           subHits = c.topDocs(0, numHits);
         }
@@ -377,4 +377,5 @@ public class TestTopDocsMerge extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
 }

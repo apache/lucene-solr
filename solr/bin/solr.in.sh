@@ -149,3 +149,14 @@
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 
+
+# Settings for common system values that may cause operational imparement when system defaults are used.
+# Solr can use many processes and many file handles. On modern operating systems the savings by leaving
+# these settings low is minuscule, while the consequence can be Solr instability. To turn these checks off, set
+# SOLR_ULIMIT_CHECKS=false either here or as part of your profile.
+
+# Different limits can be set in solr.in.sh or your profile if you prefer as well.
+#SOLR_RECOMMENDED_OPEN_FILES=
+#SOLR_RECOMMENDED_MAX_PROCESSES=
+#SOLR_ULIMIT_CHECKS=
+

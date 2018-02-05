@@ -25,6 +25,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -72,7 +73,7 @@ public class TestSpanContainQuery extends LuceneTestCase {
   }
 
   Spans makeSpans(SpanQuery sq) throws Exception {
-    return sq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    return sq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   void tstEqualSpans(String mes, SpanQuery expectedQ, SpanQuery actualQ) throws Exception {

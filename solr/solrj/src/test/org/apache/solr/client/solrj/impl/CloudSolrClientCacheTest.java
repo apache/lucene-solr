@@ -36,11 +36,18 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
+
 import static org.mockito.Mockito.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
 
   public void testCaching() throws Exception {
     String collName = "gettingstarted";

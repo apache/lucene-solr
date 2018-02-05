@@ -38,9 +38,11 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -698,8 +700,8 @@ public class MemoryIndex {
         }
         
         @Override
-        public boolean needsScores() {
-          return true;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE;
         }
       });
       float score = scores[0];
@@ -929,7 +931,7 @@ public class MemoryIndex {
     }
 
     int docId() {
-      return doc > 1 ? NumericDocValues.NO_MORE_DOCS : doc;
+      return doc > 0 ? NumericDocValues.NO_MORE_DOCS : doc;
     }
 
   }
@@ -1421,6 +1423,11 @@ public class MemoryIndex {
         }
         final int ord = info.sortedTerms[termUpto];
         return ((MemoryPostingsEnum) reuse).reset(info.sliceArray.start[ord], info.sliceArray.end[ord], info.sliceArray.freq[ord]);
+      }
+
+      @Override
+      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+        return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1L));
       }
 
       @Override

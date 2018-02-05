@@ -100,7 +100,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
     // note: don't need LimitTokenOffsetFilter since content is already truncated to maxLength
     TokenStream tokenStream = tokenStream(content);
 
@@ -110,7 +110,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     memoryIndex.addField(field, tokenStream);//note: calls tokenStream.reset() & close()
     docId = 0;
 
-    return createOffsetsEnumsFromReader(leafReader, docId);
+    return createOffsetsEnumFromReader(leafReader, docId);
   }
 
 

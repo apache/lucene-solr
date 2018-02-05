@@ -18,12 +18,12 @@
 
 In SolrCloud mode, custom plugins need to be shared across all nodes of the cluster.
 
-When running Solr in SolrCloud mode and you want to use custom code (such as custom analyzers, tokenizers, query parsers, and other plugins), it can be cumbersome to add jars to the classpath on all nodes in your cluster. Using the <<blob-store-api.adoc#blob-store-api,Blob Store API>> and special commands with the <<config-api.adoc#config-api,Config API>>, you can upload jars to a special system-level collection and dynamically load plugins from them at runtime with out needing to restart any nodes.
+When running Solr in SolrCloud mode and you want to use custom code (such as custom analyzers, tokenizers, query parsers, and other plugins), it can be cumbersome to add jars to the classpath on all nodes in your cluster. Using the <<blob-store-api.adoc#blob-store-api,Blob Store API>> and special commands with the <<config-api.adoc#config-api,Config API>>, you can upload jars to a special system-level collection and dynamically load plugins from them at runtime without needing to restart any nodes.
 
 .This Feature is Disabled By Default
 [IMPORTANT]
 ====
-In addition to requiring that Solr by running in <<solrcloud.adoc#solrcloud,SolrCloud>> mode, this feature is also disabled by default unless all Solr nodes are run with the `-Denable.runtime.lib=true` option on startup.
+In addition to requiring that Solr is running in <<solrcloud.adoc#solrcloud,SolrCloud>> mode, this feature is also disabled by default unless all Solr nodes are run with the `-Denable.runtime.lib=true` option on startup.
 
 Before enabling this feature, users should carefully consider the issues discussed in the <<Securing Runtime Libraries>> section below.
 ====
@@ -42,6 +42,12 @@ The following commands are used to manage runtime libs:
 * `update-runtimelib`
 * `delete-runtimelib`
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1manage-libs]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json' -d '{
@@ -50,6 +56,22 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
    "delete-runtimelib": "jarblobname"
 }'
 ----
+====
+
+[example.tab-pane#v2manage-libs]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:application/json' -d '{
+   "add-runtimelib": { "name":"jarblobname", "version":2 },
+   "update-runtimelib": { "name":"jarblobname", "version":3 },
+   "delete-runtimelib": "jarblobname"
+}'
+----
+====
+--
 
 The name to use is the name of the blob that you specified when you uploaded your jar to the blob store. You should also include the version of the jar found in the blob store that you want to use. These details are added to `configoverlay.json`.
 
@@ -58,6 +80,12 @@ The default `SolrResourceLoader` does not have visibility to the jars that have 
 Every pluggable component can have an optional extra attribute called `runtimeLib=true`, which means that the components are not loaded at core load time. Instead, they will be loaded on demand. If all the dependent jars are not available when the component is loaded, an error is thrown.
 
 This example shows creating a ValueSourceParser using a jar that has been loaded to the Blob store.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-jar]
+====
+[.tab-label]*V1 API*
 
 [source,bash]
 ----
@@ -69,6 +97,24 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
     "nvlFloatValue": 0.0 }
 }'
 ----
+====
+
+[example.tab-pane#v2add-jar]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:application/json' -d '{
+  "create-valuesourceparser": {
+    "name": "nvl",
+    "runtimeLib": true,
+    "class": "solr.org.apache.solr.search.function.NvlValueSourceParser,
+    "nvlFloatValue": 0.0 }
+}'
+----
+====
+--
 
 == Securing Runtime Libraries
 
@@ -100,7 +146,7 @@ The `.der` files that are output from Step 2 should then be loaded to ZooKeeper 
 
 At the current time, you can only use the ZooKeeper `zkCli.sh` (or `zkCli.cmd` on Windows) script to issue these commands (the Solr version has the same name, but is not the same). If you have your own ZooKeeper ensemble running already, you can find the script in `$ZK_INSTALL/bin/zkCli.sh` (or `zkCli.cmd` if you are using Windows).
 
-NOTE: If you are running the embedded ZooKeeper that is included with Solr, you *do not* have this script already; in order to use it, you will need to download a copy of ZooKeeper v3.4.10 from http://zookeeper.apache.org/. Don't worry about configuring the download, you're just trying to get the command line utility script. When you start the script, you will connect to the embedded ZooKeeper.
+NOTE: If you are running the embedded ZooKeeper that is included with Solr, you *do not* have this script already; in order to use it, you will need to download a copy of ZooKeeper v3.4.11 from http://zookeeper.apache.org/. Don't worry about configuring the download, you're just trying to get the command line utility script. When you start the script, you will connect to the embedded ZooKeeper.
 
 To load the keys, you will need to connect to ZooKeeper with `zkCli.sh`, create the directories, and then create the key file, as in the following example.
 
@@ -149,6 +195,12 @@ The blob name that you give the jar file in this step will be used as the name i
 
 Finally, add the jar to the classpath using the Config API as detailed above. In this step, you will need to provide the signature of the jar that you got in Step 4.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-jar2]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json'  -d '{
@@ -159,3 +211,21 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
            PYgUB1nsr9pk4EFyD9KfJ8TqeH/ijQ9waa/vjqyiKEI9U550EtSzruLVZ32wJ7smvV0fj2YYhrUaaPzOn9g0=" }
 }'
 ----
+====
+
+[example.tab-pane#v2add-jar2]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:application/json'  -d '{
+  "add-runtimelib": {
+    "name":"blobname",
+    "version":2,
+    "sig":"mW1Gwtz2QazjfVdrLFHfbGwcr8xzFYgUOLu68LHqWRDvLG0uLcy1McQ+AzVmeZFBf1yLPDEHBWJb5KXr8bdbHN/
+           PYgUB1nsr9pk4EFyD9KfJ8TqeH/ijQ9waa/vjqyiKEI9U550EtSzruLVZ32wJ7smvV0fj2YYhrUaaPzOn9g0=" }
+}'
+----
+====
+--

@@ -17,20 +17,62 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 
 import java.util.Iterator;
 
-public class Matrix implements Iterable {
+public class Matrix implements Iterable, Attributes {
 
   private double[][] data;
+  private List<String> columnLabels;
+  private List<String> rowLabels;
+
+  private Map<String, Object> attributes = new HashMap();
 
   public Matrix(double[][] data) {
     this.data = data;
   }
 
+  public Map getAttributes() {
+    return this.attributes;
+  }
+
+  public void setAttribute(String key, Object value) {
+    this.attributes.put(key, value);
+  }
+
+  public Object getAttribute(String key) {
+    return this.attributes.get(key);
+  }
+
+  public List<String> getColumnLabels() {
+    return this.columnLabels;
+  }
+
+  public void setColumnLabels(List<String> columnLabels) {
+    this.columnLabels = columnLabels;
+  }
+
+  public List<String> getRowLabels() {
+    return rowLabels;
+  }
+
+  public void setRowLabels(List<String> rowLables) {
+    this.rowLabels = rowLables;
+  }
+
   public double[][] getData() {
     return this.data;
+  }
+
+  public int getRowCount() {
+    return data.length;
+  }
+
+  public int getColumnCount() {
+    return data[0].length;
   }
 
   public Iterator iterator() {

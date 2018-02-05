@@ -48,6 +48,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1253,6 +1254,10 @@ public final class CheckIndex implements Closeable {
         continue;
       }
       
+      if (terms.getDocCount() > maxDoc) {
+        throw new RuntimeException("docCount > maxDoc for field: " + field + ", docCount=" + terms.getDocCount() + ", maxDoc=" + maxDoc);
+      }
+      
       final boolean hasFreqs = terms.hasFreqs();
       final boolean hasPositions = terms.hasPositions();
       final boolean hasPayloads = terms.hasPayloads();
@@ -1293,12 +1298,6 @@ public final class CheckIndex implements Closeable {
 
       if (hasFreqs != expectedHasFreqs) {
         throw new RuntimeException("field \"" + field + "\" should have hasFreqs=" + expectedHasFreqs + " but got " + hasFreqs);
-      }
-
-      if (hasFreqs == false) {
-        if (terms.getSumTotalTermFreq() != -1) {
-          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
-        }
       }
 
       if (!isVectors) {
@@ -1375,8 +1374,8 @@ public final class CheckIndex implements Closeable {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
-          if (termsEnum.totalTermFreq() != -1) {
-            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be -1)");   
+          if (termsEnum.totalTermFreq() != termsEnum.docFreq()) {
+            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be " + termsEnum.docFreq() + ")");
           }
         }
         
@@ -1406,14 +1405,11 @@ public final class CheckIndex implements Closeable {
             break;
           }
           visitedDocs.set(doc);
-          int freq = -1;
-          if (hasFreqs) {
-            freq = postings.freq();
-            if (freq <= 0) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
-            }
-            totalTermFreq += freq;
-          } else {
+          int freq = postings.freq();
+          if (freq <= 0) {
+            throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
+          }
+          if (hasFreqs == false) {
             // When a field didn't index freq, it must
             // consistently "lie" and pretend that freq was
             // 1:
@@ -1421,6 +1417,8 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
             }
           }
+          totalTermFreq += freq;
+
           if (liveDocs == null || liveDocs.get(doc)) {
             hasNonDeletedDocs = true;
             status.totFreq++;
@@ -1490,19 +1488,25 @@ public final class CheckIndex implements Closeable {
         }
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
-        final boolean hasTotalTermFreq = hasFreqs && totalTermFreq2 != -1;
         
         if (docCount != docFreq) {
           throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
         }
-        if (hasTotalTermFreq) {
-          if (totalTermFreq2 <= 0) {
-            throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
-          }
-          sumTotalTermFreq += totalTermFreq;
-          if (totalTermFreq != totalTermFreq2) {
-            throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
-          }
+        if (docFreq > terms.getDocCount()) {
+          throw new RuntimeException("term " + term + " docFreq=" + docFreq + " > docCount=" + terms.getDocCount());
+        }
+        if (totalTermFreq2 <= 0) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
+        }
+        sumTotalTermFreq += totalTermFreq;
+        if (totalTermFreq != totalTermFreq2) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
+        }
+        if (totalTermFreq2 < docFreq) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds, docFreq=" + docFreq);
+        }
+        if (hasFreqs == false && totalTermFreq != docFreq) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq + " !=  docFreq=" + docFreq);
         }
         
         // Test skipping
@@ -1595,8 +1599,109 @@ public final class CheckIndex implements Closeable {
             }
           }
         }
+
+        // Test score blocks
+        // We only score on freq to keep things simple and not pull norms
+        SimScorer scorer = new SimScorer(field) {
+          @Override
+          public float score(float freq, long norm) {
+            return freq;
+          }
+        };
+
+        // First check max scores and block uptos
+        int max = -1;
+        float maxScore = 0;
+        ImpactsEnum impacts = termsEnum.impacts(scorer, PostingsEnum.FREQS);
+        postings = termsEnum.postings(postings, PostingsEnum.FREQS);
+        for (int doc = impacts.nextDoc(); ; doc = impacts.nextDoc()) {
+          if (postings.nextDoc() != doc) {
+            throw new RuntimeException("Wrong next doc: " + doc + ", expected " + postings.docID());
+          }
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }
+          if (postings.freq() != impacts.freq()) {
+            throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impacts.freq());
+          }
+          if (doc > max) {
+            max = impacts.advanceShallow(doc);
+            if (max < doc) {
+              throw new RuntimeException("max block doc id " + max + " must be greater than the target: " + doc);
+            }
+            maxScore = impacts.getMaxScore(max);
+          }
+          int max2 = impacts.advanceShallow(doc);
+          if (max != max2) {
+            throw new RuntimeException("max is not stable, initially had " + max + " but now " + max2);
+          }
+          float score = scorer.score(impacts.freq(), 1);
+          if (score > maxScore) {
+            throw new RuntimeException("score " + score + " is greater than the max score " + maxScore);
+          }
+        }
+
+        // Now check advancing
+        impacts = termsEnum.impacts(scorer, PostingsEnum.FREQS);
+        postings = termsEnum.postings(postings, PostingsEnum.FREQS);
+
+        max = -1;
+        while (true) {
+          int doc = impacts.docID();
+          boolean advance;
+          int target;
+          if (((field.hashCode() + doc) & 1) == 1) {
+            advance = false;
+            target = doc + 1;
+          } else {
+            advance = true;
+            int delta = Math.min(1 + ((31 * field.hashCode() + doc) & 0x1ff), DocIdSetIterator.NO_MORE_DOCS - doc);
+            target = impacts.docID() + delta;
+          }
+
+          if (target > max && target % 2 == 1) {
+            int delta = Math.min((31 * field.hashCode() + target) & 0x1ff, DocIdSetIterator.NO_MORE_DOCS - target);
+            max = target + delta;
+            int m = impacts.advanceShallow(target);
+            if (m < target) {
+              throw new RuntimeException("Block max doc: " + m + " is less than the target " + target);
+            }
+            maxScore = impacts.getMaxScore(max);
+          }
+
+          if (advance) {
+            doc = impacts.advance(target);
+          } else {
+            doc = impacts.nextDoc();
+          }
+
+          if (postings.advance(target) != doc) {
+            throw new RuntimeException("Impacts do not advance to the same document as postings for target " + target + ", postings: " + postings.docID() + ", impacts: " + doc);
+          }
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }
+          if (postings.freq() != impacts.freq()) {
+            throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impacts.freq());
+          }
+
+          if (doc >= max) {
+            int delta = Math.min((31 * field.hashCode() + target & 0x1ff), DocIdSetIterator.NO_MORE_DOCS - doc);
+            max = doc + delta;
+            int m = impacts.advanceShallow(doc);
+            if (m < doc) {
+              throw new RuntimeException("Block max doc: " + m + " is less than the target " + doc);
+            }
+            maxScore = impacts.getMaxScore(max);
+          }
+
+          float score = scorer.score(impacts.freq(), 1);
+          if (score > maxScore) {
+            throw new RuntimeException("score " + score + " is greater than the max score " + maxScore);
+          }
+        }
       }
-      
+
       if (minTerm != null && status.termCount + status.delTermCount == 0) {
         throw new RuntimeException("field=\"" + field + "\": minTerm is non-null yet we saw no terms: " + minTerm);
       }
@@ -1626,22 +1731,22 @@ public final class CheckIndex implements Closeable {
         }
         status.blockTreeStats.put(field, stats);
 
-        if (sumTotalTermFreq != 0) {
-          final long v = fields.terms(field).getSumTotalTermFreq();
-          if (v != -1 && sumTotalTermFreq != v) {
-            throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
-          }
+        final long actualSumDocFreq = fields.terms(field).getSumDocFreq();
+        if (sumDocFreq != actualSumDocFreq) {
+          throw new RuntimeException("sumDocFreq for field " + field + "=" + actualSumDocFreq + " != recomputed sumDocFreq=" + sumDocFreq);
         }
+
+        final long actualSumTotalTermFreq = fields.terms(field).getSumTotalTermFreq();
+        if (sumTotalTermFreq != actualSumTotalTermFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + actualSumTotalTermFreq + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+        } 
         
-        if (sumDocFreq != 0) {
-          final long v = fields.terms(field).getSumDocFreq();
-          if (v != -1 && sumDocFreq != v) {
-            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
-          }
+        if (hasFreqs == false && sumTotalTermFreq != sumDocFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + " should be " + sumDocFreq + ", got sumTotalTermFreq=" + sumTotalTermFreq);
         }
         
         final int v = fieldTerms.getDocCount();
-        if (v != -1 && visitedDocs.cardinality() != v) {
+        if (visitedDocs.cardinality() != v) {
           throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
         
@@ -2192,7 +2297,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " has unstable advanceExact");
         }
 
-        if (i % 1 == 0) {
+        if (i % 2 == 0) {
           int doc2 = it2.nextDoc();
           if (doc != doc2) {
             throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");

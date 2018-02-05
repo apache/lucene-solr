@@ -43,12 +43,18 @@ If you modify your schema, you will likely need to re-index all documents. If yo
 Modifying your schema will never modify any documents that are already indexed. You must re-index documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
 ====
 
+////
+// Commented out section because this makes less sense with 2 API endpoints available.
 The base address for the API is `\http://<host>:<port>/solr/<collection_name>`. If, for example, you run Solr's "```cloud```" example (via the `bin/solr` command shown below), which creates a "```gettingstarted```" collection, then the base URL for that collection (as in all the sample URLs in this section) would be: `\http://localhost:8983/solr/gettingstarted`.
 
 [source,bash]
 ----
 bin/solr -e cloud -noprompt
 ----
+////
+
+////
+// TODO this needs to probably go away with v2 APIs?
 
 == Schema API Entry Points
 
@@ -61,10 +67,9 @@ bin/solr -e cloud -noprompt
 * `/schema/version`: <<Show the Schema Version,retrieve>> the schema version
 * `/schema/uniquekey`: <<List UniqueKey,retrieve>> the defined uniqueKey
 * `/schema/similarity`: <<Show Global Similarity,retrieve>> the global similarity definition
+////
 
 == Modify the Schema
-
-`POST /_collection_/schema`
 
 To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/collection/schema/` endpoint with a sequence of commands to perform the requested actions. The following commands are supported:
 
@@ -92,30 +97,69 @@ The `add-field` command adds a new field definition to your schema. If a field w
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to define a new stored field named "sell-by", of type "pdate", you would POST the following request:
+For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"pdate",
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2add]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field":{
+     "name":"sell_by",
+     "type":"pdate",
+     "stored":true }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Delete a Field
 
 The `delete-field` command removes a field definition from your schema. If the field does not exist in the schema, or if the field is the source or destination of a copy field rule, an error is thrown.
 
-For example, to delete a field named "sell-by", you would POST the following request:
+For example, to delete a field named "sell_by", you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-field" : { "name":"sell-by" }
+  "delete-field" : { "name":"sell_by" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2delete]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-field" : { "name":"sell_by" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Replace a Field
 
@@ -123,17 +167,38 @@ The `replace-field` command replaces a field's definition. Note that you must su
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to replace the definition of an existing field "sell-by", to make it be of type "date" and to not be stored, you would POST the following request:
+For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "replace-field":{
-     "name":"sell-by",
+     "name":"sell_by",
      "type":"date",
      "stored":false }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2replace]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-field":{
+     "name":"sell_by",
+     "type":"date",
+     "stored":false }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Add a Dynamic Field Rule
 
@@ -143,6 +208,11 @@ All of the properties available when editing `schema.xml` can be passed with the
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-dynamic]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -152,6 +222,22 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2add-dynamic]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-dynamic-field":{
+     "name":"*_s",
+     "type":"string",
+     "stored":true }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Delete a Dynamic Field Rule
 
@@ -159,12 +245,30 @@ The `delete-dynamic-field` command deletes a dynamic field rule from your schema
 
 For example, to delete a dynamic field rule matching "*_s", you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-dynamic]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2delete-dynamic]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-dynamic-field":{ "name":"*_s" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Replace a Dynamic Field Rule
 
@@ -174,6 +278,11 @@ All of the properties available when editing `schema.xml` can be passed with the
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace-dynamic]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -183,6 +292,22 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "stored":false }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2replace-dynamic]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-dynamic-field":{
+     "name":"*_s",
+     "type":"text_general",
+     "stored":false }
+}' http://localhost:8983/solr/gettingstarted/schema
+----
+====
+--
 
 === Add a New Field Type
 
@@ -192,6 +317,11 @@ All of the field type properties available when editing `schema.xml` by hand are
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1-single-analyzer]
+====
+[tab-label]*V1 API with Single Analysis*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -212,7 +342,14 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 
-Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis. If we wanted to define separate analysis, we would replace the `analyzer` section in the above example with separate sections for `indexAnalyzer` and `queryAnalyzer`. As in this example:
+Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis.
+====
+
+[example.tab-pane#v1-two-analyzers]
+====
+[tab-label]*V1 API with Two Analyzers*
+
+If we wanted to define separate analysis, we would replace the `analyzer` section in the above example with separate sections for `indexAnalyzer` and `queryAnalyzer`. As in this example:
 
 [source,bash]
 ----
@@ -229,6 +366,30 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.KeywordTokenizerFactory" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2-two-analyzers]
+====
+[tab-label]*V2 API with Two Analyzers*
+
+To define two analyzers with the V2 API, we just use a different endpoint:
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field-type":{
+     "name":"myNewTextField",
+     "class":"solr.TextField",
+     "indexAnalyzer":{
+        "tokenizer":{
+           "class":"solr.PathHierarchyTokenizerFactory",
+           "delimiter":"/" }},
+     "queryAnalyzer":{
+        "tokenizer":{
+           "class":"solr.KeywordTokenizerFactory" }}}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Delete a Field Type
 
@@ -236,12 +397,30 @@ The `delete-field-type` command removes a field type from your schema. If the fi
 
 For example, to delete the field type named "myNewTxtField", you can make a POST request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-type]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2delete-type]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-field-type":{ "name":"myNewTxtField" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Replace a Field Type
 
@@ -251,6 +430,11 @@ All of the field type properties available when editing `schema.xml` by hand are
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace-type]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -263,6 +447,25 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.StandardTokenizerFactory" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2replace-type]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-field-type":{
+     "name":"myNewTxtField",
+     "class":"solr.TextField",
+     "positionIncrementGap":"100",
+     "analyzer":{
+        "tokenizer":{
+           "class":"solr.StandardTokenizerFactory" }}}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Add a New Copy Field Rule
 
@@ -279,9 +482,13 @@ A field or an array of fields to which the source field will be copied. This par
 `maxChars`::
 The upper limit for the number of characters to be copied. The section <<copying-fields.adoc#copying-fields,Copying Fields>> has more details.
 
-
 For example, to define a rule to copy the field "shelf" to the "location" and "catchall" fields, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-copyfield]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -290,6 +497,21 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "dest":[ "location", "catchall" ]}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2add-copyfield]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-copy-field":{
+     "source":"shelf",
+     "dest":[ "location", "catchall" ]}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Delete a Copy Field Rule
 
@@ -299,12 +521,30 @@ The `source` and `dest` attributes are required by this command.
 
 For example, to delete a rule to copy the field "shelf" to the "location" field, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-copyfield]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
+
+[example.tab-pane#v2delete-copyfield]
+====
+[tab-label]*V1 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-copy-field":{ "source":"shelf", "dest":"location" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
 
 === Multiple Commands in a Single POST
 
@@ -332,7 +572,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.WordDelimiterFilterFactory",
            "preserveOriginal":"0" }]}},
    "add-field" : {
-      "name":"sell-by",
+      "name":"sell_by",
       "type":"myNewTxtField",
       "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema

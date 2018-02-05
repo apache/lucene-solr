@@ -24,14 +24,14 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -72,48 +72,48 @@ public abstract class SpanWeight extends Weight {
   }
 
   protected final Similarity similarity;
-  protected final Similarity.SimWeight simWeight;
+  protected final Similarity.SimScorer simScorer;
   protected final String field;
 
   /**
    * Create a new SpanWeight
    * @param query the parent query
    * @param searcher the IndexSearcher to query against
-   * @param termContexts a map of terms to termcontexts for use in building the similarity.  May
+   * @param termStates a map of terms to {@link TermStates} for use in building the similarity.  May
    *                     be null if scores are not required
    * @throws IOException on error
    */
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermStates> termStates, float boost) throws IOException {
     super(query);
     this.field = query.getField();
-    this.similarity = searcher.getSimilarity(termContexts != null);
-    this.simWeight = buildSimWeight(query, searcher, termContexts, boost);
+    this.similarity = searcher.getSimilarity();
+    this.simScorer = buildSimWeight(query, searcher, termStates, boost);
   }
 
-  private Similarity.SimWeight buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
-    if (termContexts == null || termContexts.size() == 0 || query.getField() == null)
+  private Similarity.SimScorer buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermStates> termStates, float boost) throws IOException {
+    if (termStates == null || termStates.size() == 0 || query.getField() == null)
       return null;
-    TermStatistics[] termStats = new TermStatistics[termContexts.size()];
+    TermStatistics[] termStats = new TermStatistics[termStates.size()];
     int termUpTo = 0;
-    for (Term term : termContexts.keySet()) {
-      TermStatistics termStatistics = searcher.termStatistics(term, termContexts.get(term));
+    for (Term term : termStates.keySet()) {
+      TermStatistics termStatistics = searcher.termStatistics(term, termStates.get(term));
       if (termStatistics != null) {
         termStats[termUpTo++] = termStatistics;
       }
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
     if (termUpTo > 0) {
-      return similarity.computeWeight(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+      return similarity.scorer(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
     } else {
       return null; // no terms at all exist, we won't use similarity
     }
   }
 
   /**
-   * Collect all TermContexts used by this Weight
-   * @param contexts a map to add the TermContexts to
+   * Collect all TermStates used by this Weight
+   * @param contexts a map to add the TermStates to
    */
-  public abstract void extractTermContexts(Map<Term, TermContext> contexts);
+  public abstract void extractTermStates(Map<Term, TermStates> contexts);
 
   /**
    * Expert: Return a Spans object iterating over matches from this Weight
@@ -129,18 +129,18 @@ public abstract class SpanWeight extends Weight {
     if (spans == null) {
       return null;
     }
-    final Similarity.SimScorer docScorer = getSimScorer(context);
+    final LeafSimScorer docScorer = getSimScorer(context);
     return new SpanScorer(this, spans, docScorer);
   }
 
   /**
-   * Return a SimScorer for this context
+   * Return a LeafSimScorer for this context
    * @param context the LeafReaderContext
    * @return a SimWeight
    * @throws IOException on error
    */
-  public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
-    return simWeight == null ? null : similarity.simScorer(simWeight, context);
+  public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
+    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
   }
 
   @Override
@@ -150,7 +150,7 @@ public abstract class SpanWeight extends Weight {
       int newDoc = scorer.iterator().advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        SimScorer docScorer = similarity.simScorer(simWeight, context);
+        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
         Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
         Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
         return Explanation.match(scoreExplanation.getValue(),

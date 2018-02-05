@@ -118,7 +118,7 @@ Solr ships with many out-of-the-box request handlers that may only be configured
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
-To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. E.g. for the `/export` request handler:
+To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. As an example, for the `/export` request handler:
 
 [source,bash]
 ----

@@ -36,6 +36,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -165,7 +166,7 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher, boost);
   }
 
@@ -282,6 +283,10 @@ class JoinQuery extends Query {
       return new ConstantScoreScorer(this, score(), readerSetIterator);
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
 
     // most of these statistics are only used for the enum method
     int fromSetSize;          // number of docs in the fromSet (that match the from query)

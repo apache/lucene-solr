@@ -56,7 +56,7 @@ public class ExecutePlanAction extends TriggerActionBase {
   @Override
   public void process(TriggerEvent event, ActionContext context) throws Exception {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
-    SolrCloudManager dataProvider = context.getCloudManager();
+    SolrCloudManager cloudManager = context.getCloudManager();
     List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
     if (operations == null || operations.isEmpty()) {
       log.info("No operations to execute for event: {}", event);
@@ -64,7 +64,7 @@ public class ExecutePlanAction extends TriggerActionBase {
     }
     try {
       for (SolrRequest operation : operations) {
-        log.info("Executing operation: {}", operation.getParams());
+        log.debug("Executing operation: {}", operation.getParams());
         try {
           SolrResponse response = null;
           int counter = 0;
@@ -73,22 +73,22 @@ public class ExecutePlanAction extends TriggerActionBase {
             // waitForFinalState so that the end effects of operations are visible
             req.setWaitForFinalState(true);
             String asyncId = event.getSource() + '/' + event.getId() + '/' + counter;
-            String znode = saveAsyncId(dataProvider.getDistribStateManager(), event, asyncId);
-            log.debug("Saved requestId: {} in znode: {}", asyncId, znode);
+            String znode = saveAsyncId(cloudManager.getDistribStateManager(), event, asyncId);
+            log.trace("Saved requestId: {} in znode: {}", asyncId, znode);
             // TODO: find a better way of using async calls using dataProvider API !!!
             req.setAsyncId(asyncId);
-            SolrResponse asyncResponse = dataProvider.request(req);
+            SolrResponse asyncResponse = cloudManager.request(req);
             if (asyncResponse.getResponse().get("error") != null) {
               throw new IOException("" + asyncResponse.getResponse().get("error"));
             }
             asyncId = (String)asyncResponse.getResponse().get("requestid");
-            CollectionAdminRequest.RequestStatusResponse statusResponse = waitForTaskToFinish(dataProvider, asyncId,
+            CollectionAdminRequest.RequestStatusResponse statusResponse = waitForTaskToFinish(cloudManager, asyncId,
                 DEFAULT_TASK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (statusResponse != null) {
               RequestStatusState state = statusResponse.getRequestStatus();
               if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED || state == RequestStatusState.NOT_FOUND) {
                 try {
-                  dataProvider.getDistribStateManager().removeData(znode, -1);
+                  cloudManager.getDistribStateManager().removeData(znode, -1);
                 } catch (Exception e) {
                   log.warn("Unexpected exception while trying to delete znode: " + znode, e);
                 }
@@ -96,7 +96,7 @@ public class ExecutePlanAction extends TriggerActionBase {
               response = statusResponse;
             }
           } else {
-            response = dataProvider.request(operation);
+            response = cloudManager.request(operation);
           }
           NamedList<Object> result = response.getResponse();
           context.getProperties().compute("responses", (s, o) -> {
@@ -106,16 +106,15 @@ public class ExecutePlanAction extends TriggerActionBase {
             return responses;
           });
         } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to talk to ZooKeeper", e);
-//        } catch (InterruptedException e) {
-//          Thread.currentThread().interrupt();
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Unexpected exception executing operation: " + operation.getParams(), e);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         }
-
-//        counter++;
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -124,22 +123,22 @@ public class ExecutePlanAction extends TriggerActionBase {
   }
 
 
-  static CollectionAdminRequest.RequestStatusResponse waitForTaskToFinish(SolrCloudManager dataProvider, String requestId, long duration, TimeUnit timeUnit) throws IOException, InterruptedException {
+  static CollectionAdminRequest.RequestStatusResponse waitForTaskToFinish(SolrCloudManager cloudManager, String requestId, long duration, TimeUnit timeUnit) throws IOException, InterruptedException {
     long timeoutSeconds = timeUnit.toSeconds(duration);
     RequestStatusState state = RequestStatusState.NOT_FOUND;
     CollectionAdminRequest.RequestStatusResponse statusResponse = null;
     for (int i = 0; i < timeoutSeconds; i++) {
       try {
-        statusResponse = (CollectionAdminRequest.RequestStatusResponse)dataProvider.request(CollectionAdminRequest.requestStatus(requestId));
+        statusResponse = (CollectionAdminRequest.RequestStatusResponse)cloudManager.request(CollectionAdminRequest.requestStatus(requestId));
         state = statusResponse.getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          log.info("Task with requestId={} finished with state={} in {}s", requestId, state, i * 5);
-          dataProvider.request(CollectionAdminRequest.deleteAsyncId(requestId));
+          log.trace("Task with requestId={} finished with state={} in {}s", requestId, state, i * 5);
+          cloudManager.request(CollectionAdminRequest.deleteAsyncId(requestId));
           return statusResponse;
         } else if (state == RequestStatusState.NOT_FOUND) {
           // the request for this id was never actually submitted! no harm done, just bail out
           log.warn("Task with requestId={} was not found on overseer", requestId);
-          dataProvider.request(CollectionAdminRequest.deleteAsyncId(requestId));
+          cloudManager.request(CollectionAdminRequest.deleteAsyncId(requestId));
           return statusResponse;
         }
       } catch (Exception e) {
@@ -154,11 +153,12 @@ public class ExecutePlanAction extends TriggerActionBase {
           throw e;
         }
         log.error("Unexpected Exception while querying status of requestId=" + requestId, e);
+        throw e;
       }
       if (i > 0 && i % 5 == 0) {
-        log.debug("Task with requestId={} still not complete after {}s. Last state={}", requestId, i * 5, state);
+        log.trace("Task with requestId={} still not complete after {}s. Last state={}", requestId, i * 5, state);
       }
-      TimeUnit.SECONDS.sleep(5);
+      cloudManager.getTimeSource().sleep(5000);
     }
     log.debug("Task with requestId={} did not complete within 5 minutes. Last state={}", requestId, state);
     return statusResponse;

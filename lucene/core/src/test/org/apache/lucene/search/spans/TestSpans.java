@@ -18,30 +18,23 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -201,7 +194,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearOrderedOverlap() throws Exception {
     final SpanQuery query = spanNearOrderedQuery(field, 1, "t1", "t2", "t3");
     
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
     assertEquals("first doc", 11, spans.nextDoc());
     assertEquals("first start", 0, spans.nextStartPosition());
@@ -216,7 +209,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearUnOrdered() throws Exception {
     //See http://www.gossamer-threads.com/lists/lucene/java-dev/52270 for discussion about this test
     SpanQuery senq = spanNearUnorderedQuery(field, 0, "u1", "u2");
-    Spans spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = senq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 1, 3);
     assertNext(spans, 5, 2, 4);
     assertNext(spans, 8, 2, 4);
@@ -225,7 +218,7 @@ public class TestSpans extends LuceneTestCase {
     assertFinished(spans);
 
     senq = spanNearUnorderedQuery(1, senq, spanTermQuery(field, "u2")); 
-    spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    spans = senq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 0, 3);
     assertNext(spans, 4, 1, 3); // unordered spans can be subsets
     assertNext(spans, 5, 0, 4);
@@ -239,7 +232,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   private Spans orSpans(String[] terms) throws Exception {
-    return spanOrQuery(field, terms).createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    return spanOrQuery(field, terms).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   public void testSpanOrEmpty() throws Exception {
@@ -288,40 +281,6 @@ public class TestSpans extends LuceneTestCase {
     assertNext(spans, 11, 4, 5);
     assertNext(spans, 11, 5, 6);
     assertFinished(spans);
-  }
-
-  public void testSpanScorerZeroSloppyFreq() throws Exception {
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<LeafReaderContext> leaves = topReaderContext.leaves();
-    int subIndex = ReaderUtil.subIndex(11, leaves);
-    for (int i = 0, c = leaves.size(); i < c; i++) {
-      final LeafReaderContext ctx = leaves.get(i);
-     
-      final Similarity sim = new ClassicSimilarity() {
-        @Override
-        public float sloppyFreq(int distance) {
-          return 0.0f;
-        }
-      };
-  
-      final Similarity oldSim = searcher.getSimilarity(true);
-      Scorer spanScorer;
-      try {
-        searcher.setSimilarity(sim);
-        SpanQuery snq = spanNearOrderedQuery(field, 1, "t1", "t2");
-        spanScorer = searcher.createNormalizedWeight(snq, true).scorer(ctx);
-      } finally {
-        searcher.setSimilarity(oldSim);
-      }
-      if (i == subIndex) {
-        assertTrue("first doc", spanScorer.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-        assertEquals("first doc number", spanScorer.docID() + ctx.docBase, 11);
-        float score = spanScorer.score();
-        assertTrue("first doc score should be zero, " + score, score == 0.0f);
-      } else {
-        assertTrue("no second doc", spanScorer == null || spanScorer.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
-      }
-    }
   }
 
   // LUCENE-1404
@@ -455,7 +414,7 @@ public class TestSpans extends LuceneTestCase {
      SpanQuery iq = includeTerms.length == 1 ? spanTermQuery(field, include) : spanNearOrderedQuery(field, slop, includeTerms);
      SpanQuery eq = spanTermQuery(field, exclude);
      SpanQuery snq = spanNotQuery(iq, eq, pre, post);
-     Spans spans = snq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+     Spans spans = snq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
      int i = 0;
      if (spans != null) {

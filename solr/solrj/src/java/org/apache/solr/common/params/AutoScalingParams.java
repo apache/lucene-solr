@@ -46,6 +46,10 @@ public interface AutoScalingParams {
   String RATE = "rate";
   String REMOVE_LISTENERS = "removeListeners";
   String ZK_VERSION = "zkVersion";
+  String METRIC = "metric";
+  String ABOVE = "above";
+  String BELOW = "below";
+  String PREFERRED_OP = "preferredOperation";
 
   // commands
   String CMD_SET_TRIGGER = "set-trigger";
@@ -58,4 +62,14 @@ public interface AutoScalingParams {
   String CMD_REMOVE_POLICY = "remove-policy";
   String CMD_SET_CLUSTER_PREFERENCES = "set-cluster-preferences";
   String CMD_SET_CLUSTER_POLICY = "set-cluster-policy";
+  String CMD_SET_PROPERTIES = "set-properties";
+
+  // properties
+  String TRIGGER_SCHEDULE_DELAY_SECONDS = "triggerScheduleDelaySeconds";
+  String TRIGGER_COOLDOWN_PERIOD_SECONDS = "triggerCooldownPeriodSeconds";
+  String TRIGGER_CORE_POOL_SIZE = "triggerCorePoolSize";
+  String MAX_COMPUTE_OPERATIONS = "maxComputeOperations";
+
+  @Deprecated
+  String ACTION_THROTTLE_PERIOD_SECONDS = "actionThrottlePeriodSeconds";
 }

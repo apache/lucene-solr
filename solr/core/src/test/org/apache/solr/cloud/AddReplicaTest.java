@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud=DEBUG")
+@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class AddReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -73,7 +73,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertFalse(rsp.toString(), rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(500);
     }
     assertTrue(success);

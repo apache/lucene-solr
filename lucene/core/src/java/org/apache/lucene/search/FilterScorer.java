@@ -59,10 +59,8 @@ public abstract class FilterScorer extends Scorer {
     return in.score();
   }
 
-  @Override
-  public int freq() throws IOException {
-    return in.freq();
-  }
+  // Leave maxScore abstract on purpose since the goal of this Filter class is
+  // to change the way the score is computed.
 
   @Override
   public final int docID() {

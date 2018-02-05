@@ -20,20 +20,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.util.hll.HLL;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.hll.HLL;
 
 abstract class UniqueSlotAcc extends SlotAcc {
   HLLAgg.HLLFactory factory;
   SchemaField field;
   FixedBitSet[] arr;
-  int currentDocBase;
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
@@ -51,11 +49,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
       if (bits == null) continue;
       bits.clear(0, bits.length());
     }
-  }
-
-  @Override
-  public void setNextReader(LeafReaderContext readerContext) throws IOException {
-    currentDocBase = readerContext.docBase;
   }
 
   @Override

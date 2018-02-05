@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +43,6 @@ import org.slf4j.LoggerFactory;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final TimeSource timeSource;
-
   private Set<String> lastLiveNodes;
 
   private Map<String, Long> nodeNameVsTimeRemoved = new HashMap<>();
@@ -54,7 +51,6 @@ public class NodeLostTrigger extends TriggerBase {
                          SolrResourceLoader loader,
                          SolrCloudManager dataProvider) {
     super(TriggerEventType.NODELOST, name, properties, loader, dataProvider);
-    this.timeSource = TimeSource.CURRENT_TIME;
     lastLiveNodes = new HashSet<>(dataProvider.getClusterStateProvider().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
   }
@@ -69,7 +65,7 @@ public class NodeLostTrigger extends TriggerBase {
         // don't add nodes that have since came back
         if (!lastLiveNodes.contains(n)) {
           log.debug("Adding lost node from marker path: {}", n);
-          nodeNameVsTimeRemoved.put(n, timeSource.getTime());
+          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
         }
         removeMarker(n);
       });
@@ -122,12 +118,12 @@ public class NodeLostTrigger extends TriggerBase {
       synchronized (this) {
         if (isClosed) {
           log.warn("NodeLostTrigger ran but was already closed");
-          throw new RuntimeException("Trigger has been closed");
+          return;
         }
       }
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes);
+      log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes.size());
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
@@ -139,7 +135,7 @@ public class NodeLostTrigger extends TriggerBase {
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
         log.debug("Tracking lost node: {}", n);
-        nodeNameVsTimeRemoved.put(n, timeSource.getTime());
+        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
       });
 
       // has enough time expired to trigger events for a node?
@@ -149,7 +145,7 @@ public class NodeLostTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
-        long now = timeSource.getTime();
+        long now = cloudManager.getTimeSource().getTime();
         if (TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeRemoved);
@@ -167,7 +163,7 @@ public class NodeLostTrigger extends TriggerBase {
               removeMarker(n);
             });
           } else  {
-            log.debug("NodeLostTrigger listener for lost nodes: {} is not ready, will try later", nodeNames);
+            log.debug("NodeLostTrigger processor for lost nodes: {} is not ready, will try later", nodeNames);
           }
         } else  {
           nodeNames.forEach(n -> {

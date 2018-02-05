@@ -27,6 +27,9 @@ import org.apache.lucene.index.IndexReader;
  * Boost values that are less than one will give less importance to this
  * query compared to other ones while values that are greater than one will
  * give more importance to the scores returned by this query.
+ *
+ * More complex boosts can be applied by using FunctionScoreQuery in the
+ * lucene-queries module
  */
 public final class BoostQuery extends Query {
 
@@ -37,6 +40,9 @@ public final class BoostQuery extends Query {
    *  scores will be boosted by {@code boost}. */
   public BoostQuery(Query query, float boost) {
     this.query = Objects.requireNonNull(query);
+    if (Float.isFinite(boost) == false || Float.compare(boost, 0f) < 0) {
+      throw new IllegalArgumentException("boost must be a positive float, got " + boost);
+    }
     this.boost = boost;
   }
 
@@ -110,8 +116,8 @@ public final class BoostQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return query.createWeight(searcher, needsScores, BoostQuery.this.boost * boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return query.createWeight(searcher, scoreMode, BoostQuery.this.boost * boost);
   }
 
 }

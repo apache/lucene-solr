@@ -55,6 +55,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
@@ -814,8 +815,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
 
           @Override

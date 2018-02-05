@@ -107,8 +107,8 @@ public class TestValueSources extends LuceneTestCase {
 
   static final List<String[]> documents = Arrays.asList(new String[][] {
       /*             id,  double, float, int,  long,   string, text,                       double MV (x3),             int MV (x3)*/ 
-      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test", "2.13", "3.69",  "-0.11",   "1", "7", "5"},
-      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test",              "12.79", "123.456", "0.01", "12", "900", "-1" },
+      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test", "2.13", "3.69",  "0.11",   "1", "7", "5"},
+      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test",              "12.79", "123.456", "0.01", "12", "900", "3" },
   });
   
   @BeforeClass
@@ -203,7 +203,7 @@ public class TestValueSources extends LuceneTestCase {
     assertAllExist(vs);
     
     vs = new MultiValuedDoubleFieldSource("doubleMv", Type.MIN);
-    assertHits(new FunctionQuery(vs), new float[] { -0.11f, 0.01f });
+    assertHits(new FunctionQuery(vs), new float[] { 0.11f, 0.01f });
     assertAllExist(vs);
   }
   
@@ -220,12 +220,12 @@ public class TestValueSources extends LuceneTestCase {
     assertAllExist(vs);
     
     vs = new MultiValuedFloatFieldSource("floatMv", Type.MIN);
-    assertHits(new FunctionQuery(vs), new float[] { -0.11f, 0.01f });
+    assertHits(new FunctionQuery(vs), new float[] { 0.11f, 0.01f });
     assertAllExist(vs);
   }
   
   public void testIDF() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       searcher.setSimilarity(new ClassicSimilarity());
       ValueSource vs = new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"));
@@ -277,7 +277,7 @@ public class TestValueSources extends LuceneTestCase {
     assertAllExist(vs);
     
     vs = new MultiValuedIntFieldSource("intMv", Type.MIN);
-    assertHits(new FunctionQuery(vs), new float[] { 1f, -1f });
+    assertHits(new FunctionQuery(vs), new float[] { 1f, 3f });
     assertAllExist(vs);
   }
   
@@ -309,7 +309,7 @@ public class TestValueSources extends LuceneTestCase {
     assertAllExist(vs);
     
     vs = new MultiValuedLongFieldSource("longMv", Type.MIN);
-    assertHits(new FunctionQuery(vs), new float[] { 1f, -1f });
+    assertHits(new FunctionQuery(vs), new float[] { 1f, 3f });
     assertAllExist(vs);
   }
   
@@ -362,7 +362,7 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testNorm() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new ClassicSimilarity());
@@ -414,7 +414,7 @@ public class TestValueSources extends LuceneTestCase {
   }
 
   public void testQuery() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
 
     try {
       searcher.setSimilarity(new ClassicSimilarity());
@@ -521,7 +521,7 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testTF() throws Exception {
-    Similarity saved = searcher.getSimilarity(true);
+    Similarity saved = searcher.getSimilarity();
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new ClassicSimilarity());

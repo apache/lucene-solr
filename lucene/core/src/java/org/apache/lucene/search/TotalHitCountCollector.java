@@ -35,7 +35,7 @@ public class TotalHitCountCollector extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
 }

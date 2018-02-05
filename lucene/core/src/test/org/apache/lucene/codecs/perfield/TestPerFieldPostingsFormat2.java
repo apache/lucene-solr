@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
@@ -407,17 +408,17 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       final FieldsConsumer consumer = delegate.fieldsConsumer(state);
       return new FieldsConsumer() {
         @Override
-        public void write(Fields fields) throws IOException {
-          consumer.write(fields);
+        public void write(Fields fields, NormsProducer norms) throws IOException {
+          consumer.write(fields, norms);
         }
 
         @Override
-        public void merge(MergeState mergeState) throws IOException {
+        public void merge(MergeState mergeState, NormsProducer norms) throws IOException {
           nbMergeCalls++;
           for (FieldInfo fi : mergeState.mergeFieldInfos) {
             fieldNames.add(fi.name);
           }
-          consumer.merge(mergeState);
+          consumer.merge(mergeState, norms);
         }
 
         @Override

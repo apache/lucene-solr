@@ -92,45 +92,15 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   }
 
   public boolean longsEquals(LongsRef other) {
-    if (length == other.length) {
-      int otherUpto = other.offset;
-      final long[] otherInts = other.longs;
-      final long end = offset + length;
-      for(int upto=offset; upto<end; upto++,otherUpto++) {
-        if (longs[upto] != otherInts[otherUpto]) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
+    return FutureArrays.equals(this.longs, this.offset, this.offset + this.length, 
+                               other.longs, other.offset, other.offset + other.length);
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(LongsRef other) {
-    if (this == other) return 0;
-
-    final long[] aInts = this.longs;
-    int aUpto = this.offset;
-    final long[] bInts = other.longs;
-    int bUpto = other.offset;
-
-    final long aStop = aUpto + Math.min(this.length, other.length);
-
-    while(aUpto < aStop) {
-      long aInt = aInts[aUpto++];
-      long bInt = bInts[bUpto++];
-      if (aInt > bInt) {
-        return 1;
-      } else if (aInt < bInt) {
-        return -1;
-      }
-    }
-
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+    return FutureArrays.compare(this.longs, this.offset, this.offset + this.length, 
+                                other.longs, other.offset, other.offset + other.length);
   }
 
   @Override

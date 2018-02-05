@@ -16,13 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -108,24 +111,23 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   /**
    * Watcher that blocks until a WatchedEvent occurs for a znode.
    */
-  private static final class LatchWatcher implements Watcher {
+  static final class LatchWatcher implements Watcher {
 
-    private final Object lock;
+    private final Lock lock;
+    private final Condition eventReceived;
     private WatchedEvent event;
     private Event.EventType latchEventType;
-
-    LatchWatcher(Object lock) {
-      this(lock, null);
+    
+    LatchWatcher() {
+      this(null);
     }
-
+    
     LatchWatcher(Event.EventType eventType) {
-      this(new Object(), eventType);
-    }
-
-    LatchWatcher(Object lock, Event.EventType eventType) {
-      this.lock = lock;
+      this.lock = new ReentrantLock();
+      this.eventReceived = lock.newCondition();
       this.latchEventType = eventType;
     }
+
 
     @Override
     public void process(WatchedEvent event) {
@@ -136,17 +138,26 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // If latchEventType is not null, only fire if the type matches
       LOG.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
       if (latchEventType == null || event.getType() == latchEventType) {
-        synchronized (lock) {
+        lock.lock();
+        try {
           this.event = event;
-          lock.notifyAll();
+          eventReceived.signalAll();
+        } finally {
+          lock.unlock();
         }
       }
     }
 
-    public void await(long timeout) throws InterruptedException {
-      synchronized (lock) {
-        if (this.event != null) return;
-        lock.wait(timeout);
+    public void await(long timeoutMs) throws InterruptedException {
+      assert timeoutMs > 0;
+      lock.lock();
+      try {
+        if (this.event != null) {
+          return;
+        }
+        eventReceived.await(timeoutMs, TimeUnit.MILLISECONDS);
+      } finally {
+        lock.unlock();
       }
     }
 
@@ -187,17 +198,14 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // otherwise we may miss the response.
       String watchID = createResponseNode();
 
-      Object lock = new Object();
-      LatchWatcher watcher = new LatchWatcher(lock);
+      LatchWatcher watcher = new LatchWatcher();
       Stat stat = zookeeper.exists(watchID, watcher, true);
 
       // create the request node
       createRequestNode(data, watchID);
 
-      synchronized (lock) {
-        if (stat != null && watcher.getWatchedEvent() == null) {
-          watcher.await(timeout);
-        }
+      if (stat != null) {
+        watcher.await(timeout);
       }
       byte[] bytes = zookeeper.getData(watchID, null, null, true);
       // create the event before deleting the node, otherwise we can get the deleted

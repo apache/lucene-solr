@@ -47,10 +47,11 @@ import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedSetSortField;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
@@ -662,7 +663,8 @@ public abstract class FieldType extends FieldProperties {
    * Returns the SortField instance that should be used to sort fields
    * of this type.
    * @see SchemaField#checkSortability
-   * @see #getSortField(SchemaField,SortField.Type,boolean,Object,Object)
+   * @see #getStringSort
+   * @see #getNumericSort
    */
   public abstract SortField getSortField(SchemaField field, boolean top);
 
@@ -703,8 +705,21 @@ public abstract class FieldType extends FieldProperties {
                                                    boolean reverse, Object missingLow, Object missingHigh) {
                                                    
     field.checkSortability();
-
     SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
+    applySetMissingValue(field, sf, missingLow, missingHigh);
+    
+    return sf;
+  }
+  
+  /**
+   * Same as {@link #getSortField} but using {@link SortedNumericSortField}.
+   */
+  protected static SortField getSortedNumericSortField(SchemaField field, SortField.Type sortType,
+                                                       SortedNumericSelector.Type selector,
+                                                       boolean reverse, Object missingLow, Object missingHigh) {
+                                                   
+    field.checkSortability();
+    SortField sf = new SortedNumericSortField(field.getName(), sortType, reverse, selector);
     applySetMissingValue(field, sf, missingLow, missingHigh);
     
     return sf;
@@ -729,10 +744,48 @@ public abstract class FieldType extends FieldProperties {
    * Utility usable by subclasses when they want to get basic String sorting
    * using common checks.
    * @see SchemaField#checkSortability
+   * @see #getSortedSetSortField
+   * @see #getSortField
    */
   protected SortField getStringSort(SchemaField field, boolean reverse) {
+    if (field.multiValued()) {
+      MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
+      if (null != selector) {
+        return getSortedSetSortField(field, selector.getSortedSetSelectorType(),
+                                     reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
+      }
+    }
+    
+    // else...
+    // either single valued, or don't support implicit multi selector
+    // (in which case let getSortField() give the error)
     return getSortField(field, SortField.Type.STRING, reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
+
+  /**
+   * Utility usable by subclasses when they want to get basic Numeric sorting
+   * using common checks.
+   *
+   * @see SchemaField#checkSortability
+   * @see #getSortedNumericSortField
+   * @see #getSortField
+   */
+  protected SortField getNumericSort(SchemaField field, NumberType type, boolean reverse) {
+    if (field.multiValued()) {
+      MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
+      if (null != selector) {
+        return getSortedNumericSortField(field, type.sortType, selector.getSortedNumericSelectorType(),
+                                         reverse, type.sortMissingLow, type.sortMissingHigh);
+      }
+    }
+    
+    // else...
+    // either single valued, or don't support implicit multi selector
+    // (in which case let getSortField() give the error)
+    return getSortField(field, type.sortType, reverse, type.sortMissingLow, type.sortMissingHigh);
+  }
+
+  
 
   /** called to get the default value source (normally, from the
    *  Lucene FieldCache.)
@@ -760,8 +813,23 @@ public abstract class FieldType extends FieldProperties {
     
     throw new SolrException(ErrorCode.BAD_REQUEST, "Selecting a single value from a multivalued field is not supported for this field: " + field.getName() + " (type: " + this.getTypeName() + ")");
   }
-
-
+  
+  /**
+   * Method for indicating which {@link MultiValueSelector} (if any) should be used when
+   * sorting on a multivalued field of this type for the specified direction (asc/desc).  
+   * The default implementation returns <code>null</code> (for all inputs).
+   *
+   * @param field The SchemaField (of this type) in question
+   * @param reverse false if this is an ascending sort, true if this is a descending sort.
+   * @return the implicit selector to use for this direction, or null if implicit sorting on the specified direction is not supported and should return an error.
+   * @see MultiValueSelector
+   */
+  public MultiValueSelector getDefaultMultiValueSelectorForSort(SchemaField field, boolean reverse) {
+    // trivial base case
+    return null;
+  }
+  
+  
   
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
@@ -905,6 +973,7 @@ public abstract class FieldType extends FieldProperties {
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
+  protected static final String SYNONYM_QUERY_STYLE = "synonymQueryStyle";
 
   /**
    * Get a map of property name -&gt; value for this field type. 
@@ -926,6 +995,7 @@ public abstract class FieldType extends FieldProperties {
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
         namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
+        namedPropertyValues.add(SYNONYM_QUERY_STYLE, ((TextField) this).getSynonymQueryStyle());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));

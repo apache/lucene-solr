@@ -1,5 +1,5 @@
 = Deployment and Operations
-:page-children: solr-control-script-reference, solr-configuration-files, taking-solr-to-production, making-and-restoring-backups, running-solr-on-hdfs, upgrading-a-solr-cluster, solr-upgrade-notes
+:page-children: solr-control-script-reference, solr-configuration-files, taking-solr-to-production, making-and-restoring-backups, running-solr-on-hdfs, aws-solrcloud-tutorial, upgrading-a-solr-cluster, solr-upgrade-notes
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,6 +30,8 @@ Common administrative tasks include:
 <<making-and-restoring-backups.adoc#making-and-restoring-backups,Making and Restoring Backups>>: Describes backup strategies for your Solr indexes.
 
 <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>: How to use HDFS to store your Solr indexes and transaction logs.
+
+<<aws-solrcloud-tutorial.adoc#aws-solrcloud-tutorial,SolrCloud on AWS EC2>>: A tutorial on deploying Solr in Amazon Web Services (AWS) using EC2 instances.
 
 <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>: Information for upgrading a production SolrCloud cluster.
 

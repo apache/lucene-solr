@@ -303,8 +303,8 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void reset() throws IOException {
-      super.reset();
+    public void resetIterators() throws IOException {
+      super.resetIterators();
       topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field, null);
       if (topLevel instanceof MultiDocValues.MultiSortedDocValues) {
         ordMap = ((MultiDocValues.MultiSortedDocValues)topLevel).mapping;
@@ -322,13 +322,11 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      if (topLevel == null) {
-        reset();
-      }
       super.setNextReader(readerContext);
       if (subDvs != null) {
         subDv = subDvs[readerContext.ord];
         toGlobal = ordMap.getGlobalOrds(readerContext.ord);
+        assert toGlobal != null;
       } else {
         assert readerContext.ord==0 || topLevel.getValueCount() == 0;
         subDv = topLevel;

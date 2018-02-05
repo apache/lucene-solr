@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,6 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,7 @@ public class ImplicitSnitch extends Snitch {
   public static final String SYSPROP = "sysprop.";
   public static final String SYSLOADAVG = "sysLoadAvg";
   public static final String HEAPUSAGE = "heapUsage";
+  public static final String DISKTYPE = "diskType";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
   public static final Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4")));
 
@@ -79,13 +80,20 @@ public class ImplicitSnitch extends Snitch {
   }
 
   protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    if (requestedTags.contains(CORES)) params.add(CORES, "1");
-    if (requestedTags.contains(DISK)) params.add(DISK, "1");
+    HashMap<String, Object> params = new HashMap<>();
+    if (requestedTags.contains(CORES)) params.put(CORES, "1");
+    if (requestedTags.contains(DISK)) params.put(DISK, "1");
     for (String tag : requestedTags) {
-      if (tag.startsWith(SYSPROP)) params.add(SYSPROP, tag.substring(SYSPROP.length()));
+      if (tag.startsWith(SYSPROP)) params.put(tag, tag.substring(SYSPROP.length()));
     }
-    if (params.size() > 0) ctx.invokeRemote(solrNode, params, "org.apache.solr.cloud.rule.ImplicitSnitch", null);
+
+    if (params.size() > 0) {
+      Map<String, Object> vals = ctx.getNodeValues(solrNode, params.keySet());
+      for (Map.Entry<String, Object> e : vals.entrySet()) {
+        if(e.getValue() != null) params.put(e.getKey(), e.getValue());
+      }
+    }
+    ctx.getTags().putAll(params);
   }
 
   private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {

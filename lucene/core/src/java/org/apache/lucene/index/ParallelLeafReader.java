@@ -129,7 +129,7 @@ public class ParallelLeafReader extends LeafReader {
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {
-          builder.add(fieldInfo);
+          builder.add(fieldInfo, fieldInfo.getDocValuesGen());
           fieldToReader.put(fieldInfo.name, reader);
           // only add these if the reader responsible for that field name is the current:
           // TODO consider populating 1st leaf with vectors even if the field name has been seen on a previous leaf

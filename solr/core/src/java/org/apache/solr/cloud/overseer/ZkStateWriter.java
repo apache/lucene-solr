@@ -189,9 +189,9 @@ public class ZkStateWriter {
           DocCollection c = entry.getValue();
 
           if (c == null) {
-            // let's clean up the collections path for this collection
-            log.debug("going to delete_collection {}", path);
-            reader.getZkClient().clean("/collections/" + name);
+            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+            log.debug("going to delete state.json {}", path);
+            reader.getZkClient().clean(path);
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {

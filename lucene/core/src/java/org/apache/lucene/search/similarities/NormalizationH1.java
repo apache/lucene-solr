@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 /**
  * Normalization model that assumes a uniform distribution of the term frequency.
  * <p>While this model is parameterless in the
@@ -53,6 +55,21 @@ public class NormalizationH1 extends Normalization {
   @Override
   public final double tfn(BasicStats stats, double tf, double len) {
     return tf * c * (stats.getAvgFieldLength() / len);
+  }
+
+  @Override
+  public Explanation explain(BasicStats stats, double tf, double len) {
+    return Explanation.match(
+        (float) tfn(stats, tf, len),
+        getClass().getSimpleName()
+            + ", computed as tf * c * (avgfl / fl) from:",
+        Explanation.match((float) tf,
+            "tf, number of occurrences of term in the document"),
+        Explanation.match(c,
+            "c, hyper-parameter"),
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgfl, average length of field across all documents"),
+        Explanation.match((float) len, "fl, field length of the document"));
   }
 
   @Override

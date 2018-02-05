@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -908,23 +908,20 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
       commit();
 
-      // TODO: Could try checking ZK for LIR flags to ensure LIR has not kicked in
-      // Check every 10ms, 100 times, for a replica to go down (& assert that it doesn't)
-      ZkController zkController = shardToLeaderJetty.get(SHARD1).jetty.getCoreContainer().getZkController();
-      String lirPath = zkController.getLeaderInitiatedRecoveryZnodePath(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
-      assertFalse (zkController.getZkClient().exists(lirPath, true));
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
+        for (int i=0; i<100; i++) {
+          Thread.sleep(10);
+          cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+          ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
-      for (int i=0; i<100; i++) {
-        Thread.sleep(10);
-        cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
-        ClusterState state = cloudClient.getZkStateReader().getClusterState();
-
-        int numActiveReplicas = 0;
-        for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
-          if (rep.getState().equals(Replica.State.ACTIVE))
-            numActiveReplicas++;
-
-        assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+          int numActiveReplicas = 0;
+          for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
+            assertTrue(zkShardTerms.canBecomeLeader(rep.getName()));
+            if (rep.getState().equals(Replica.State.ACTIVE))
+              numActiveReplicas++;
+          }
+          assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+        }
       }
 
       for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), 

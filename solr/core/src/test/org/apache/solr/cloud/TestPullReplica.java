@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -213,45 +214,59 @@ public class TestPullReplica extends SolrCloudTestCase {
   
   @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
-    int numReadOnlyReplicas = 1 + random().nextInt(3);
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numReadOnlyReplicas)
+    int numPullReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
     .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
-    waitForState("Expected collection to be created with 1 shard and " + (numReadOnlyReplicas + 1) + " replicas", collectionName, clusterShape(1, numReadOnlyReplicas + 1));
-    DocCollection docCollection = assertNumberOfReplicas(1, 0, numReadOnlyReplicas, false, true);
+    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
+    DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
     assertEquals(1, docCollection.getSlices().size());
     
-    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
-    cluster.getSolrClient().commit(collectionName);
-    
-    Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
-    
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS);
-    for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
-      //TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (HttpSolrClient readOnlyReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
-        while (true) {
-          try {
-            assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
-                1, readOnlyReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
+    boolean reloaded = false;
+    int numDocs = 0;
+    while (true) {
+      numDocs++;
+      cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(numDocs), "foo", "bar"));
+      cluster.getSolrClient().commit(collectionName);
+      
+      Slice s = docCollection.getSlices().iterator().next();
+      try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      }
+      
+      TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
+        //TODO: assert replication < REPLICATION_TIMEOUT_SECS
+        try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+          while (true) {
+            try {
+              assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
+                  numDocs, pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+              break;
+            } catch (AssertionError e) {
+              if (t.hasTimedOut()) {
+                throw e;
+              } else {
+                Thread.sleep(100);
+              }
             }
           }
+          SolrQuery req = new SolrQuery(
+              "qt", "/admin/plugins",
+              "stats", "true");
+          QueryResponse statsResponse = pullReplicaClient.query(req);
+          assertEquals("Replicas shouldn't process the add document request: " + statsResponse, 
+              0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
-        SolrQuery req = new SolrQuery(
-            "qt", "/admin/plugins",
-            "stats", "true");
-        QueryResponse statsResponse = readOnlyReplicaClient.query(req);
-        assertEquals("Replicas shouldn't process the add document request: " + statsResponse, 
-            0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
+      }
+      if (reloaded) {
+        break;
+      } else {
+        // reload
+        CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
+        .process(cluster.getSolrClient());
+        assertEquals(0, response.getStatus());
+        reloaded = true;
       }
     }
     assertUlogPresence(docCollection);
@@ -500,7 +515,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
       try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
@@ -521,7 +536,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS);
+    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
       LOG.info("Collection not yet deleted");
       try {

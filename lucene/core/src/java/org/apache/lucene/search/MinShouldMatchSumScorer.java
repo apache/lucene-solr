@@ -315,13 +315,6 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    // we need to know about all matches
-    updateFreq();
-    return freq;
-  }
-
-  @Override
   public float score() throws IOException {
     // we need to know about all matches
     updateFreq();
@@ -330,6 +323,12 @@ final class MinShouldMatchSumScorer extends Scorer {
       score += s.scorer.score();
     }
     return (float) score;
+  }
+
+  @Override
+  public float maxScore() {
+    // TODO: implement but be careful about floating-point errors.
+    return Float.POSITIVE_INFINITY;
   }
 
   @Override

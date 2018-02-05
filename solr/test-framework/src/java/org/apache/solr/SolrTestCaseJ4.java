@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
@@ -48,18 +49,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
@@ -116,7 +118,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -142,16 +143,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import static java.util.Objects.requireNonNull;
-
 /**
- * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
+ * A junit4 Solr test harness that extends LuceneTestCaseJ4.
+ * To change which core is used when loading the schema and solrconfig.xml, simply
  * invoke the {@link #initCore(String, String, String, String)} method.
- * 
- * Unlike {@link AbstractSolrTestCase}, a new core is not created for each test method.
  */
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
@@ -257,6 +256,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void setupTestCases() {
     initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
     initClassLogLevels();
+    resetExceptionIgnores();
 
     initCoreDataDir = createTempDir("init-core-data").toFile();
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
@@ -326,6 +326,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
     savedClassLogLevels.clear();
     StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+  }
+  
+  /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
+  public static void assumeWorkingMockito() {
+    // we use reflection here, because we do not have ByteBuddy/Mockito in all modules and the test framework!
+    try {
+      Class.forName("net.bytebuddy.ClassFileVersion").getMethod("ofThisVm").invoke(null);
+    } catch (InvocationTargetException e) {
+      RandomizedTest.assumeNoException("SOLR-11606: ByteBuddy used by Mockito is not working with this JVM version.",
+          e.getTargetException());
+    } catch (ReflectiveOperationException e) {
+      fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
+    }
   }
   
   /**
@@ -573,8 +586,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
-    if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<>();
+    if (SolrException.ignorePatterns == null) // usually initialized already but in case not...
+      resetExceptionIgnores();
     SolrException.ignorePatterns.add(pattern);
   }
 
@@ -583,9 +596,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrException.ignorePatterns.remove(pattern);
   }
 
+  /**
+   * Clears all exception patterns, although keeps {@code "ignore_exception"}.
+   * {@link SolrTestCaseJ4} calls this in {@link AfterClass} so usually tests don't need to call this.
+   */
   public static void resetExceptionIgnores() {
-    SolrException.ignorePatterns = null;
-    ignoreException("ignore_exception");  // always ignore "ignore_exception"    
+    // CopyOnWrite for safety; see SOLR-11757
+    SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
   }
 
   protected static String getClassName() {
@@ -2211,20 +2228,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes receive updates
-   * unless otherwise specified by the caller.
-   *
-   * @see #sendDirectUpdatesToAnyShardReplica
-   * @see #sendDirectUpdatesToShardLeadersOnly
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize
+   * some internal settings.
    */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
 
-    private boolean configuredDUTflag = false;
-
     public CloudSolrClientBuilder() {
-      super();
+      this.directUpdatesToLeadersOnly = random().nextBoolean();
+      this.shardLeadersOnly = random().nextBoolean();
+      this.parallelUpdates = random().nextBoolean();
     }
 
+    /** Randomly chooses the cluster state provider -- either ZK based or HTTP. */
     public CloudSolrClient.Builder withCluster(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         return withZkHost(cluster.getZkServer().getZkAddress());
@@ -2233,40 +2248,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
     }
 
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToShardLeadersOnly();
-    }
-
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToAnyShardReplica() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToAnyShardReplica();
-    }
-
-    private void randomlyChooseDirectUpdatesToLeadersOnly() {
-      if (random().nextBoolean()) {
-        sendDirectUpdatesToShardLeadersOnly();
-      } else {
-        sendDirectUpdatesToAnyShardReplica();
-      }
-    }
-
-    @Override
-    public CloudSolrClient build() {
-      if (configuredDUTflag == false) {
-        // flag value not explicitly configured
-        if (random().nextBoolean()) {
-          // so randomly choose a value
-          randomlyChooseDirectUpdatesToLeadersOnly();
-        } else {
-          // or go with whatever the default value is
-          configuredDUTflag = true;
-        }
-      }
-      return super.build();
-    }
   }
 
   /**
@@ -2785,8 +2766,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
-   * A Map of "primative" java "numeric" types and the string name of the <code>class</code> used in the 
-   * corrisponding schema fieldType declaration.
+   * A Map of "primitive" java "numeric" types and the string name of the <code>class</code> used in the
+   * corresponding schema fieldType declaration.
    * <p>
    * Example: <code>java.util.Date =&gt; "solr.DatePointField"</code>
    * </p>

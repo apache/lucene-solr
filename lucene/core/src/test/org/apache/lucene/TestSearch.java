@@ -33,48 +33,6 @@ import org.apache.lucene.util.LuceneTestCase;
 /** JUnit adaptation of an older test case SearchTest. */
 public class TestSearch extends LuceneTestCase {
 
-  public void testNegativeQueryBoost() throws Exception {
-    BoostQuery q = new BoostQuery(new TermQuery(new Term("foo", "bar")), -42f);
-    assertEquals(-42f, q.getBoost(), 0f);
-
-    Directory directory = newDirectory();
-    try {
-      Analyzer analyzer = new MockAnalyzer(random());
-      IndexWriterConfig conf = newIndexWriterConfig(analyzer);
-      
-      IndexWriter writer = new IndexWriter(directory, conf);
-      try {
-        Document d = new Document();
-        d.add(newTextField("foo", "bar", Field.Store.YES));
-        writer.addDocument(d);
-      } finally {
-        writer.close();
-      }
-      
-      IndexReader reader = DirectoryReader.open(directory);
-      try {
-        IndexSearcher searcher = newSearcher(reader);
-        
-        ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
-        assertEquals(1, hits.length);
-        assertTrue("score is positive: " + hits[0].score,
-                   hits[0].score <= 0);
-
-        Explanation explain = searcher.explain(q, hits[0].doc);
-        assertEquals("score doesn't match explanation",
-                     hits[0].score, explain.getValue(), 0.001f);
-        assertTrue("explain doesn't think doc is a match",
-                   explain.isMatch());
-
-      } finally {
-        reader.close();
-      }
-    } finally {
-      directory.close();
-    }
-
-  }
-
     /** This test performs a number of searches. It also compares output
      *  of searches using multi-file index segments with single-file
      *  index segments.

@@ -16,37 +16,46 @@
 // specific language governing permissions and limitations
 // under the License.
 
-If you have JSON documents that you would like to index without transforming them into Solr's structure, you can add them to Solr by including some parameters with the update request. These parameters provide information on how to split a single JSON file into multiple Solr documents and how to map fields to Solr's schema. One or more valid JSON documents can be sent to the `/update/json/docs` path with the configuration params.
+If you have JSON documents that you would like to index without transforming them into Solr's structure, you can add them to Solr by including some parameters with the update request.
+
+These parameters provide information on how to split a single JSON file into multiple Solr documents and how to map fields to Solr's schema. One or more valid JSON documents can be sent to the `/update/json/docs` path with the configuration params.
 
 == Mapping Parameters
 
 These parameters allow you to define how a JSON file should be read for multiple Solr documents.
 
-split::
-Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file. If the entire JSON makes a single solr document, the path must be “`/`”. It is possible to pass multiple `split` paths by separating them with a pipe `(|)`, for example: `split=/|/foo|/foo/bar`. If one path is a child of another, they automatically become a child document.
+`split`::
+Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file. If the entire JSON makes a single Solr document, the path must be “`/`”.
++
+It is possible to pass multiple `split` paths by separating them with a pipe `(|)`, for example: `split=/|/foo|/foo/bar`. If one path is a child of another, they automatically become a child document.
 
-f::
-A multivalued mapping parameter. The format of the parameter is `target-field-name:json-path`. The `json-path` is required. The `target-field-name` is the Solr document field name, and is optional. If not specified, it is automatically derived from the input JSON. The default target field name is the fully qualified name of the field.
+`f`::
+Provides multivalued mapping to map document field names to Solr field names. The format of the parameter is `target-field-name:json-path`, as in `f=first:/first`. The `json-path` is required. The `target-field-name` is the Solr document field name, and is optional. If not specified, it is automatically derived from the input JSON. The default target field name is the fully qualified name of the field.
 +
 Wildcards can be used here, see <<Using Wildcards for Field Names>> below for more information.
 
-mapUniqueKeyOnly::
+`mapUniqueKeyOnly`::
 (boolean) This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#schemaless-mode,schemaless mode>> is not enabled. This will index all the fields into the default search field (using the `df` parameter, below) and only the `uniqueKey` field is mapped to the corresponding field in the schema. If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
 
-df::
+`df`::
 If the `mapUniqueKeyOnly` flag is used, the update handler needs a field where the data should be indexed to. This is the same field that other handlers use as a default search field.
 
-srcField::
+`srcField`::
 This is the name of the field to which the JSON source will be stored into. This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document). Note that atomic updates will cause the field to be out-of-sync with the document.
 
-echo::
+`echo`::
 This is for debugging purpose only. Set it to `true` if you want the docs to be returned as a response. Nothing will be indexed.
 
 For example, if we have a JSON file that includes two documents, we could define an update request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1transform]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/exams'\
 '&f=first:/first'\
 '&f=last:/last'\
@@ -71,39 +80,72 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
   ]
 }'
 ----
+====
 
-You can store and reuse the params by using <<request-parameters-api.adoc#request-parameters-api,Request Parameters>>.
-
+[example.tab-pane#v2transform]
+====
+[.tab-label]*V2 API Standalone Solr*
 [source,bash]
 ----
- curl http://localhost:8983/solr/my_collection/config/params -H 'Content-type:application/json' -d '{
- "set": {
- "my_params": {
- "split": "/exams",
- "f": ["first:/first","last:/last","grade:/grade","subject:/exams/subject","test:/exams/test"]
- }}}'
-----
-
-and use it as follows:
-
-[source,bash]
-----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs?useParams=my_params' -H 'Content-type:application/json' -d '{
-"first": "John",
-"last": "Doe",
-"grade": 8,
-"exams": [
+curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
+'?split=/exams'\
+'&f=first:/first'\
+'&f=last:/last'\
+'&f=grade:/grade'\
+'&f=subject:/exams/subject'\
+'&f=test:/exams/test'\
+'&f=marks:/exams/marks'\
+ -H 'Content-type:application/json' -d '
 {
-"subject": "Maths",
-"test" : "term1",
-"marks" : 90},
-{
-"subject": "Biology",
-"test" : "term1",
-"marks" : 86}
-]
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
 }'
 ----
+====
+
+[example.tab-pane#v2transformcloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json/docs'\
+'?split=/exams'\
+'&f=first:/first'\
+'&f=last:/last'\
+'&f=grade:/grade'\
+'&f=subject:/exams/subject'\
+'&f=test:/exams/test'\
+'&f=marks:/exams/marks'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+--
 
 With this request, we have defined that "exams" contains multiple documents. In addition, we have mapped several fields from the input document to Solr fields.
 
@@ -129,11 +171,16 @@ When the update request is complete, the following two documents will be added t
 }
 ----
 
-In the prior example, all of the fields we wanted to use in Solr had the same names as they did in the input JSON. When that is the case, we can simplify the request as follows:
+In the prior example, all of the fields we wanted to use in Solr had the same names as they did in the input JSON. When that is the case, we can simplify the request by only specifying the `json-path` portion of the `f` parameter, as in this example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1simpler]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/exams'\
 '&f=/first'\
 '&f=/last'\
@@ -158,13 +205,207 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
   ]
 }'
 ----
+====
+
+[example.tab-pane#v2simpler]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
+'?split=/exams'\
+'&f=/first'\
+'&f=/last'\
+'&f=/grade'\
+'&f=/exams/subject'\
+'&f=/exams/test'\
+'&f=/exams/marks'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2simplercloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json/docs'\
+'?split=/exams'\
+'&f=/first'\
+'&f=/last'\
+'&f=/grade'\
+'&f=/exams/subject'\
+'&f=/exams/test'\
+'&f=/exams/marks'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+--
 
 In this example, we simply named the field paths (such as `/exams/test`). Solr will automatically attempt to add the content of the field from the JSON input to the index in a field with the same name.
 
 [TIP]
 ====
-Documents WILL get rejected if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, pre-create those fields. If you are working in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, fields that don't exist will be created on the fly with Solr's best guess for the field type.
+Documents will be rejected during indexing if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, you must pre-create all fields. If you are working in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
 ====
+
+=== Reusing Parameters in Multiple Requests
+
+You can store and re-use parameters with Solr's <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>.
+
+Say we wanted to define parameters to split documents at the `exams` field, and map several other fields. We could make an API request such as:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1splitparams]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
+ curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+ "set": {
+   "my_params": {
+     "split": "/exams",
+     "f": ["first:/first","last:/last","grade:/grade","subject:/exams/subject","test:/exams/test"]
+ }}}'
+----
+====
+
+[example.tab-pane#v2splitparams]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
+ "set": {
+   "my_params": {
+     "split": "/exams",
+     "f": ["first:/first","last:/last","grade:/grade","subject:/exams/subject","test:/exams/test"]
+ }}}'
+----
+====
+
+[example.tab-pane#v2splitparamscloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+ "set": {
+   "my_params": {
+     "split": "/exams",
+     "f": ["first:/first","last:/last","grade:/grade","subject:/exams/subject","test:/exams/test"]
+ }}}'
+----
+====
+--
+
+When we send the documents, we'd use the `useParams` parameter with the name of the parameter set we defined:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1useparams]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
+curl 'http://localhost:8983/solr/techproducts/update/json/docs?useParams=my_params' -H 'Content-type:application/json' -d '{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [{
+      "subject": "Maths",
+      "test": "term1",
+      "marks": 90
+    },
+    {
+      "subject": "Biology",
+      "test": "term1",
+      "marks": 86
+    }
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2useparams]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json?useParams=my_params' -H 'Content-type:application/json' -d '{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [{
+      "subject": "Maths",
+      "test": "term1",
+      "marks": 90
+    },
+    {
+      "subject": "Biology",
+      "test": "term1",
+      "marks": 86
+    }
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2useparamscloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json?useParams=my_params' -H 'Content-type:application/json' -d '{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [{
+      "subject": "Maths",
+      "test": "term1",
+      "marks": 90
+    },
+    {
+      "subject": "Biology",
+      "test": "term1",
+      "marks": 86
+    }
+  ]
+}'
+----
+====
+--
 
 == Using Wildcards for Field Names
 
@@ -182,9 +423,14 @@ A single asterisk `\*` maps only to direct children, and a double asterisk `**` 
 
 With wildcards we can further simplify our previous example as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1wildcards]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/exams'\
 '&f=/**'\
  -H 'Content-type:application/json' -d '
@@ -204,14 +450,75 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
   ]
 }'
 ----
+====
+
+[example.tab-pane#v2wildcards]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json'\
+'?split=/exams'\
+'&f=/**'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2wildcardscloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
+'?split=/exams'\
+'&f=/**'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+--
 
 Because we want the fields to be indexed with the field names as they are found in the JSON input, the double wildcard in `f=/**` will map all fields and their descendants to the same fields in Solr.
 
 It is also possible to send all the values to a single field and do a full text search on that. This is a good option to blindly index and query JSON documents without worrying about fields and schema.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1wildcardtxt]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/'\
 '&f=txt:/**'\
  -H 'Content-type:application/json' -d '
@@ -231,14 +538,75 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs'\
   ]
 }'
 ----
+====
+
+[example.tab-pane#v2wildcardtxt]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json'\
+'?split=/'\
+'&f=txt:/**'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2wildcardtxtcloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
+'?split=/'\
+'&f=txt:/**'\
+ -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+--
 
 In the above example, we've said all of the fields should be added to a field in Solr named 'txt'. This will add multiple fields to a single field, so whatever field you choose should be multi-valued.
 
 The default behavior is to use the fully qualified name (FQN) of the node. So, if we don't define any field mappings, like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1wildcardfqn]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs?split=/exams'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/exams'\
     -H 'Content-type:application/json' -d '
 {
   "first": "John",
@@ -256,6 +624,58 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs?split=/exams'\
   ]
 }'
 ----
+====
+
+[example.tab-pane#v2wildcardfqn]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json?split=/exams'\
+    -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2wildcardfqncloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json?split=/exams'\
+    -H 'Content-type:application/json' -d '
+{
+  "first": "John",
+  "last": "Doe",
+  "grade": 8,
+  "exams": [
+    {
+      "subject": "Maths",
+      "test"   : "term1",
+      "marks"  : 90},
+    {
+      "subject": "Biology",
+      "test"   : "term1",
+      "marks"  : 86}
+  ]
+}'
+----
+====
+--
 
 The indexed documents would be added to the index with fields that look like this:
 
@@ -283,29 +703,92 @@ This functionality supports documents in the http://jsonlines.org/[JSON Lines] f
 
 For example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1multidocs]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject": "Social Science", "test" : "term1", "marks" : 90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject": "Political Science", "test" : "term1", "marks" : 86}'
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '
+{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
+{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
 ----
+====
+
+[example.tab-pane#v2multidocs]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
+{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
+{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
+----
+====
+
+[example.tab-pane#v2multidocscloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
+{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
+{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
+----
+====
+--
 
 Or even an array of documents, as in this example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1array]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs' -H 'Content-type:application/json' -d '[
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject": "Computer Science", "test"   : "term1", "marks"  : 90},
-{ "first":"Steve", "last":"Woz", "grade":1, "subject": "Calculus", "test"   : "term1", "marks"  : 86}]'
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '[
+{"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
+{"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
 ----
+====
+
+[example.tab-pane#v2array]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json' -H 'Content-type:application/json' -d '[
+{"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
+{"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
+----
+====
+
+[example.tab-pane#v2arraycloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '[
+{"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
+{"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
+----
+====
+--
 
 == Indexing Nested Documents
 
 The following is an example of indexing nested documents:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1nested]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs?split=/|/orgs'\
+curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/|/orgs'\
     -H 'Content-type:application/json' -d '{
   "name": "Joe Smith",
   "phone": 876876687,
@@ -323,6 +806,58 @@ curl 'http://localhost:8983/solr/my_collection/update/json/docs?split=/|/orgs'\
   ]
 }'
 ----
+====
+
+[example.tab-pane#v2nested]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+curl 'http://localhost:8983/api/cores/techproducts/update/json?split=/|/orgs'\
+    -H 'Content-type:application/json' -d '{
+  "name": "Joe Smith",
+  "phone": 876876687,
+  "orgs": [
+    {
+      "name": "Microsoft",
+      "city": "Seattle",
+      "zip": 98052
+    },
+    {
+      "name": "Apple",
+      "city": "Cupertino",
+      "zip": 95014
+    }
+  ]
+}'
+----
+====
+
+[example.tab-pane#v2nestedcloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update/json?split=/|/orgs'\
+    -H 'Content-type:application/json' -d '{
+  "name": "Joe Smith",
+  "phone": 876876687,
+  "orgs": [
+    {
+      "name": "Microsoft",
+      "city": "Seattle",
+      "zip": 98052
+    },
+    {
+      "name": "Apple",
+      "city": "Cupertino",
+      "zip": 95014
+    }
+  ]
+}'
+----
+====
+--
 
 With this example, the documents indexed would be, as follows:
 
@@ -350,13 +885,13 @@ With this example, the documents indexed would be, as follows:
 
 == Setting JSON Defaults
 
-It is possible to send any json to the `/update/json/docs` endpoint and the default configuration of the component is as follows:
+It is possible to send any JSON to the `/update/json/docs` endpoint and the default configuration of the component is as follows:
 
 [source,xml]
 ----
 <initParams path="/update/json/docs">
   <lst name="defaults">
-    <!-- this ensures that the entire json doc will be stored verbatim into one field -->
+    <!-- this ensures that the entire JSON doc will be stored verbatim into one field -->
     <str name="srcField">_src_</str>
     <!-- This means a the uniqueKeyField will be extracted from the fields and
          all fields go into the 'df' field. In this config df is already configured to be 'text'
@@ -368,19 +903,56 @@ It is possible to send any json to the `/update/json/docs` endpoint and the defa
 </initParams>
 ----
 
-So, if no params are passed, the entire json file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
+So, if no params are passed, the entire JSON file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
 
-Alternately, use the Request Parameters feature to set these params
+Alternately, use the Request Parameters feature to set these parameters, as shown earlier in the section <<Reusing Parameters in Multiple Requests>>.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1jsondefault]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
- curl http://localhost:8983/solr/my_collection/config/params -H 'Content-type:application/json' -d '{
- "set": {
- "full_txt": {
-     "srcField": "_src_",
-     "mapUniqueKeyOnly" : true,
-     "df": "text"
- }}}'
+ curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+"set": {
+  "full_txt": {
+    "srcField": "_src_",
+    "mapUniqueKeyOnly" : true,
+    "df": "text"
+}}}'
 ----
+====
 
-Send the parameter `useParams=full_txt` with each request.
+[example.tab-pane#v2jsondefault]
+====
+[.tab-label]*V2 API Standalone Solr*
+[source,bash]
+----
+ curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
+"set": {
+  "full_txt": {
+    "srcField": "_src_",
+    "mapUniqueKeyOnly" : true,
+    "df": "text"
+}}}'
+----
+====
+
+[example.tab-pane#v2jsondefaultcloud]
+====
+[.tab-label]*V2 API SolrCloud*
+[source,bash]
+----
+ curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+"set": {
+  "full_txt": {
+    "srcField": "_src_",
+    "mapUniqueKeyOnly" : true,
+    "df": "text"
+}}}'
+----
+====
+--
+
+To use these parameters, send the parameter `useParams=full_txt` with each request.

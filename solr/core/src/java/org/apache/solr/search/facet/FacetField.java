@@ -101,6 +101,11 @@ public class FacetField extends FacetRequestSorted {
 
     if (fcontext.facetInfo != null) {
       // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets
+      if (multiToken && !sf.hasDocValues() && method!=FacetMethod.DV) {
+        // Match the access method from the first phase.
+        // It won't always matter, but does currently for an all-values bucket
+        return new FacetFieldProcessorByArrayUIF(fcontext, this, sf);
+      }
       return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
     }
 

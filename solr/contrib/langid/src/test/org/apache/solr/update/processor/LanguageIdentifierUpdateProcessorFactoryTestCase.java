@@ -38,7 +38,11 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   public static void beforeClass() throws Exception {
     initCore("solrconfig-languageidentifier.xml", "schema.xml", getFile("langid/solr").getAbsolutePath());
     SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id");
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");
+    assertNotNull(chained);
+    chained = core.getUpdateProcessingChain("lang_id_lang_detect");
+    assertNotNull(chained);
+    chained = core.getUpdateProcessingChain("lang_id_opennlp");
     assertNotNull(chained);
   }
 
@@ -208,6 +212,19 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = tooShortDoc();
+    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+  }
+
+  @Test
+  public void testMissingFieldEmptyString() throws Exception {
+    SolrInputDocument doc;
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "no_such_field");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.enforceSchema", "false");
+    liProcessor = createLangIdProcessor(parameters);
+
+    doc = new SolrInputDocument();
     assertEquals("", liProcessor.process(doc).getFieldValue("language"));
   }
 

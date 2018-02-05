@@ -19,9 +19,14 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.SortedSet;
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.codecs.CompetitiveFreqNormAccumulator;
+import org.apache.lucene.codecs.CompetitiveFreqNormAccumulator.FreqAndNorm;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
 
 /**
  * Write skip lists with multiple levels, and support skip within block ints.
@@ -60,6 +65,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   private long curPayPointer;
   private int curPosBufferUpto;
   private int curPayloadByteUpto;
+  private CompetitiveFreqNormAccumulator[] curCompetitiveFreqNorms;
   private boolean fieldHasPositions;
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
@@ -78,6 +84,10 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
         lastSkipPayPointer = new long[maxSkipLevels];
       }
       lastPayloadByteUpto = new int[maxSkipLevels];
+    }
+    curCompetitiveFreqNorms = new CompetitiveFreqNormAccumulator[maxSkipLevels];
+    for (int i = 0; i < maxSkipLevels; ++i) {
+      curCompetitiveFreqNorms[i] = new CompetitiveFreqNormAccumulator();
     }
   }
 
@@ -105,10 +115,15 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
         lastPayFP = payOut.getFilePointer();
       }
     }
+    if (initialized) {
+      for (CompetitiveFreqNormAccumulator acc : curCompetitiveFreqNorms) {
+        acc.clear();
+      }
+    }
     initialized = false;
   }
   
-  public void initSkip() {
+  private void initSkip() {
     if (!initialized) {
       super.resetSkip();
       Arrays.fill(lastSkipDoc, 0);
@@ -122,6 +137,11 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
           Arrays.fill(lastSkipPayPointer, lastPayFP);
         }
       }
+      // sets of competitive freq,norm pairs should be empty at this point
+      assert Arrays.stream(curCompetitiveFreqNorms)
+          .map(CompetitiveFreqNormAccumulator::getCompetitiveFreqNormPairs)
+          .mapToInt(Set::size)
+          .sum() == 0;
       initialized = true;
     }
   }
@@ -129,7 +149,8 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   /**
    * Sets the values for the current skip data. 
    */
-  public void bufferSkip(int doc, int numDocs, long posFP, long payFP, int posBufferUpto, int payloadByteUpto) throws IOException {
+  public void bufferSkip(int doc, CompetitiveFreqNormAccumulator competitiveFreqNorms,
+      int numDocs, long posFP, long payFP, int posBufferUpto, int payloadByteUpto) throws IOException {
     initSkip();
     this.curDoc = doc;
     this.curDocPointer = docOut.getFilePointer();
@@ -137,11 +158,15 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     this.curPayPointer = payFP;
     this.curPosBufferUpto = posBufferUpto;
     this.curPayloadByteUpto = payloadByteUpto;
+    this.curCompetitiveFreqNorms[0].addAll(competitiveFreqNorms);
     bufferSkip(numDocs);
   }
-  
+
+  private final RAMOutputStream freqNormOut = new RAMOutputStream();
+
   @Override
   protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
+
     int delta = curDoc - lastSkipDoc[level];
 
     skipBuffer.writeVInt(delta);
@@ -164,6 +189,36 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
         skipBuffer.writeVLong(curPayPointer - lastSkipPayPointer[level]);
         lastSkipPayPointer[level] = curPayPointer;
       }
+    }
+
+    CompetitiveFreqNormAccumulator competitiveFreqNorms = curCompetitiveFreqNorms[level];
+    assert competitiveFreqNorms.getCompetitiveFreqNormPairs().size() > 0;
+    if (level + 1 < numberOfSkipLevels) {
+      curCompetitiveFreqNorms[level + 1].addAll(competitiveFreqNorms);
+    }
+    writeImpacts(competitiveFreqNorms, freqNormOut);
+    skipBuffer.writeVInt(Math.toIntExact(freqNormOut.getFilePointer()));
+    freqNormOut.writeTo(skipBuffer);
+    freqNormOut.reset();
+    competitiveFreqNorms.clear();
+  }
+
+  static void writeImpacts(CompetitiveFreqNormAccumulator acc, IndexOutput out) throws IOException {
+    SortedSet<FreqAndNorm> freqAndNorms = acc.getCompetitiveFreqNormPairs();
+    FreqAndNorm previous = new FreqAndNorm(0, 0);
+    for (FreqAndNorm freqAndNorm : freqAndNorms) {
+      assert freqAndNorm.freq > previous.freq;
+      assert Long.compareUnsigned(freqAndNorm.norm, previous.norm) > 0;
+      int freqDelta = freqAndNorm.freq - previous.freq - 1;
+      long normDelta = freqAndNorm.norm - previous.norm - 1;
+      if (normDelta == 0) {
+        // most of time, norm only increases by 1, so we can fold everything in a single byte
+        out.writeVInt(freqDelta << 1);
+      } else {
+        out.writeVInt((freqDelta << 1) | 1);
+        out.writeZLong(normDelta);
+      }
+      previous = freqAndNorm;
     }
   }
 }

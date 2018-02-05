@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -186,8 +186,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term);
-        stats.put(term, s.termStatistics(term, termContext));
+        final TermStates termStates = TermStates.build(s.getIndexReader().getContext(), term, true);
+        stats.put(term, s.termStatistics(term, termStates));
       }
     } finally {
       node.searchers.release(s);
@@ -230,7 +230,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public Query rewrite(Query original) throws IOException {
         final IndexSearcher localSearcher = new IndexSearcher(getIndexReader());
-        final Weight weight = localSearcher.createNormalizedWeight(original, true);
+        final Weight weight = localSearcher.createNormalizedWeight(original, ScoreMode.COMPLETE);
         final Set<Term> terms = new HashSet<>();
         weight.extractTerms(terms);
 
@@ -262,7 +262,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
 
       @Override
-      public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+      public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
         assert term != null;
         long docFreq = 0;
         long totalTermFreq = 0;
@@ -281,18 +281,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           }
         
           long nodeDocFreq = subStats.docFreq();
-          if (docFreq >= 0 && nodeDocFreq >= 0) {
-            docFreq += nodeDocFreq;
-          } else {
-            docFreq = -1;
-          }
+          docFreq += nodeDocFreq;
           
           long nodeTotalTermFreq = subStats.totalTermFreq();
-          if (totalTermFreq >= 0 && nodeTotalTermFreq >= 0) {
-            totalTermFreq += nodeTotalTermFreq;
-          } else {
-            totalTermFreq = -1;
-          }
+          totalTermFreq += nodeTotalTermFreq;
         }
 
         if (docFreq == 0) {
@@ -325,25 +317,13 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           }
           
           long nodeDocCount = nodeStats.docCount();
-          if (docCount >= 0 && nodeDocCount >= 0) {
-            docCount += nodeDocCount;
-          } else {
-            docCount = -1;
-          }
+          docCount += nodeDocCount;
           
           long nodeSumTotalTermFreq = nodeStats.sumTotalTermFreq();
-          if (sumTotalTermFreq >= 0 && nodeSumTotalTermFreq >= 0) {
-            sumTotalTermFreq += nodeSumTotalTermFreq;
-          } else {
-            sumTotalTermFreq = -1;
-          }
+          sumTotalTermFreq += nodeSumTotalTermFreq;
           
           long nodeSumDocFreq = nodeStats.sumDocFreq();
-          if (sumDocFreq >= 0 && nodeSumDocFreq >= 0) {
-            sumDocFreq += nodeSumDocFreq;
-          } else {
-            sumDocFreq = -1;
-          }
+          sumDocFreq += nodeSumDocFreq;
           
           assert nodeStats.maxDoc() >= 0;
           maxDoc += nodeStats.maxDoc();

@@ -148,26 +148,22 @@ public class TestMultiTermsEnum extends LuceneTestCase {
 
         @Override
         public long size() throws IOException {
-          // Docs say we can return -1 if we don't know.
-          return -1;
+          throw new UnsupportedOperationException();
         }
 
         @Override
         public long getSumTotalTermFreq() throws IOException {
-          // Docs say we can return -1 if we don't know.
-          return -1;
+          throw new UnsupportedOperationException();
         }
 
         @Override
         public long getSumDocFreq() throws IOException {
-          // Docs say we can return -1 if we don't know.
-          return -1;
+          throw new UnsupportedOperationException();
         }
 
         @Override
         public int getDocCount() throws IOException {
-          // Docs say we can return -1 if we don't know.
-          return -1;
+          throw new UnsupportedOperationException();
         }
 
         @Override

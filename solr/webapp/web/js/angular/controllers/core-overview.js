@@ -30,18 +30,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
     );
   };
 
-  $scope.optimizeIndex = function(core) {
-    Update.optimize({core: $routeParams.core},
-      function(response) {
-        $scope.refresh();
-        delete $scope.indexMessage;
-      },
-      function(error) {
-        $scope.statisticsDisabled = true;
-        $scope.indexMessage = "Optimize broken.";
-      });
-  };
-
   $scope.refreshReplication = function() {
     Replication.details({core: $routeParams.core},
       function(data) {
@@ -52,9 +40,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
       function(error) {
         $scope.replicationMessage = "Replication is not configured";
       });
-  };
-
-  $scope.refreshAdminExtra = function() {
   };
 
   $scope.refreshSystem = function() {
@@ -99,7 +84,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.refresh = function() {
     $scope.refreshIndex();
     $scope.refreshReplication();
-    $scope.refreshAdminExtra();
     $scope.refreshSystem();
     $scope.refreshPing();
   };

@@ -339,10 +339,35 @@ valued. -->
    <field name="cat_floatDocValues" type="float"  indexed="true" stored="true" docValues="true" multiValued="true" />
    <field name="cat_length" type="text_length" indexed="true" stored="true" multiValued="true"/>
 
+   <!-- see TestMinMaxOnMultiValuedField -->
+   <!-- NOTE: "string" type configured with sortMissingLast="true" 
+        we need a multivalued string for sort testing using sortMissing*="false"
+   -->
+   <field name="val_strs_dv" type="string" indexed="true" stored="true"
+          docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="false" />
+   <!-- specific multivalued fields of each type with sortMissing First/Last -->
+   <field name="val_str_missf_s_dv" type="string" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_str_missl_s_dv" type="string" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_int_missf_s_dv" type="int" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_int_missl_s_dv" type="int" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_long_missf_s_dv" type="long" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_long_missl_s_dv" type="long" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_float_missf_s_dv" type="float" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_float_missl_s_dv" type="float" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_double_missf_s_dv" type="double" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_double_missl_s_dv" type="double" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_date_missf_s_dv" type="date" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_date_missl_s_dv" type="date" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_bool_missf_s_dv" type="boolean" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_bool_missl_s_dv" type="boolean" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_enum_missf_s_dv" type="severityType" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_enum_missl_s_dv" type="severityType" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   
 
    <!-- Enum type -->
    <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
+   
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -494,6 +519,20 @@ valued. -->
     </analyzer>
   </fieldType>
 
+  <!-- See TestMinMaxOnMultiValuedField -->
+  <field name="val_stxt_s_dv" type="whitespace_stxt" multiValued="true"/>
+  <field name="val_stxt_missf_s_dv" type="whitespace_stxt" multiValued="true" sortMissingFirst="true"/>
+  <field name="val_stxt_missl_s_dv" type="whitespace_stxt" multiValued="true" sortMissingLast="true"/>
+  <field name="val_stxt_s_nodv" type="whitespace_stxt" multiValued="true" docValues="false" />
+  <!-- NOTE: explicitly not specifying docValues=true, it should be implicit default -->
+  <fieldType name="whitespace_stxt" class="solr.SortableTextField" indexed="true" stored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  
  <!-- Field to use to determine and enforce document uniqueness. 
       Unless this field is marked with required="false", it will be a required field
    -->

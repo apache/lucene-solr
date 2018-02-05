@@ -71,8 +71,9 @@ public class ExportQParserPlugin extends QParserPlugin {
       return null;
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
-      return mainQuery.createWeight(searcher, true, boost);
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException{
+      return mainQuery.createWeight(searcher, ScoreMode.COMPLETE, boost);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
@@ -175,8 +176,8 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public boolean needsScores() {
-      return true; // TODO: is this the case?
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE; // TODO: is this the case?
     }
   }
 

@@ -96,20 +96,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * @lucene.internal
    */
   public boolean bytesEquals(BytesRef other) {
-    assert other != null;
-    if (length == other.length) {
-      int otherUpto = other.offset;
-      final byte[] otherBytes = other.bytes;
-      final int end = offset + length;
-      for(int upto=offset;upto<end;upto++,otherUpto++) {
-        if (bytes[upto] != otherBytes[otherUpto]) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
+    return FutureArrays.equals(this.bytes, this.offset, this.offset + this.length, 
+                               other.bytes, other.offset, other.offset + other.length);
   }
 
   /**
@@ -172,27 +160,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** Unsigned byte order comparison */
   @Override
   public int compareTo(BytesRef other) {
-    // TODO: Once we are on Java 9 replace this by java.util.Arrays#compareUnsigned()
-    // which is implemented by a Hotspot intrinsic! Also consider building a
-    // Multi-Release-JAR!
-    final byte[] aBytes = this.bytes;
-    int aUpto = this.offset;
-    final byte[] bBytes = other.bytes;
-    int bUpto = other.offset;
-    
-    final int aStop = aUpto + Math.min(this.length, other.length);
-    while(aUpto < aStop) {
-      int aByte = aBytes[aUpto++] & 0xff;
-      int bByte = bBytes[bUpto++] & 0xff;
-
-      int diff = aByte - bByte;
-      if (diff != 0) {
-        return diff;
-      }
-    }
-
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+    return FutureArrays.compareUnsigned(this.bytes, this.offset, this.offset + this.length, 
+                                        other.bytes, other.offset, other.offset + other.length);
   }
     
   /**

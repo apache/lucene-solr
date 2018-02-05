@@ -203,29 +203,30 @@ public class LatLonBoundingBox extends Field {
     sb.append(" <");
     sb.append(name);
     sb.append(':');
+    sb.append('[');
     byte[] b = ((BytesRef)fieldsData).bytes;
-    toString(b, 0);
+    sb.append(toString(b, 0));
+    sb.append(',');
+    sb.append(toString(b, 1));
+    sb.append(']');
     sb.append('>');
-
     return sb.toString();
   }
 
   private static String toString(byte[] ranges, int dimension) {
-    double min, max;
-    int minOfs = 0;
-    int maxOfs = ranges.length/2;
+    double lat, lon;
     switch (dimension) {
       case 0:
-        min = decodeLatitude(ranges, minOfs);
-        max = decodeLatitude(ranges, maxOfs);
+        lat = decodeLatitude(ranges, 0);
+        lon = decodeLongitude(ranges, 4);
         break;
       case 1:
-        min = decodeLongitude(ranges, minOfs);
-        max = decodeLongitude(ranges, maxOfs);
+        lat = decodeLatitude(ranges, 8);
+        lon = decodeLongitude(ranges, 12);
         break;
       default:
         throw new IllegalArgumentException("invalid dimension [" + dimension + "] in toString");
     }
-    return "[" + min + " : " + max + "]";
+    return lat + "," + lon;
   }
 }

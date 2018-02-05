@@ -175,7 +175,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     QueryUtils.check(random(), dq, s);
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
-    final Weight dw = s.createNormalizedWeight(dq, true);
+    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     final boolean skipOk = ds.iterator().advance(3) != DocIdSetIterator.NO_MORE_DOCS;
@@ -191,7 +191,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     QueryUtils.check(random(), dq, s);
-    final Weight dw = s.createNormalizedWeight(dq, true);
+    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     assertTrue("firsttime skipTo found no match",
@@ -506,22 +506,6 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     indexReader.close();
     assertEquals(hits, 1);
     directory.close();
-  }
-  
-  public void testNegativeScore() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
-        Arrays.asList(
-            new BoostQuery(tq("hed", "albino"), -1f), 
-            new BoostQuery(tq("hed", "elephant"), -1f)
-        ), 0.0f);
-    
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
-
-    assertEquals("all docs should match " + q.toString(), 4, h.length);
-    
-    for (int i = 0; i < h.length; i++) {
-      assertTrue("score should be negative", h[i].score < 0);
-    }
   }
 
   public void testRewriteBoolean() throws Exception {

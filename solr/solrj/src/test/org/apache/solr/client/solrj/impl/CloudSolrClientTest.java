@@ -220,29 +220,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testHandlingOfStaleAlias() throws Exception {
-    CloudSolrClient client = getRandomClient();
-
-    CollectionAdminRequest.createCollection("nemesis", "conf", 2, 1).process(client);
-    CollectionAdminRequest.createAlias("misconfigured-alias", "nemesis").process(client);
-    CollectionAdminRequest.deleteCollection("nemesis").process(client);
-
-    List<SolrInputDocument> docs = new ArrayList<>();
-
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField(id, Integer.toString(1));
-    docs.add(doc);
-
-    try {
-      client.add("misconfigured-alias", docs);
-      fail("Alias points to non-existing collection, add should fail");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-      assertTrue("Unexpected exception", e.getMessage().contains("Collection not found"));
-    }
-  }
-
-  @Test
   public void testRouting() throws Exception {
     
     AbstractUpdateRequest request = new UpdateRequest()
@@ -292,8 +269,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(0, docs.getNumFound());
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    try (CloudSolrClient threadedClient = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
-      threadedClient.setParallelUpdates(true);
+    try (CloudSolrClient threadedClient = new CloudSolrClientBuilder()
+        .withZkHost(cluster.getZkServer().getZkAddress())
+        .withParallelUpdates(true)
+        .build()) {
       threadedClient.setDefaultCollection(COLLECTION);
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
@@ -810,7 +789,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final String old_leader_core_node_name = slice.getLeader().getName();
 
     // NOTE: creating our own CloudSolrClient whose settings we can muck with...
-    try (CloudSolrClient stale_client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
+    try (CloudSolrClient stale_client = new CloudSolrClientBuilder()
+        .withZkHost(cluster.getZkServer().getZkAddress())
+        .sendDirectUpdatesToAnyShardReplica()
+        .withParallelUpdates(true)
+        .build()) {
       // don't let collection cache entries get expired, even on a slow machine...
       stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
       stale_client.setDefaultCollection(COL);

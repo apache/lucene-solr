@@ -20,7 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLevenshteinDistance extends LuceneTestCase {
 
-  private StringDistance sd = new LevensteinDistance();
+  private StringDistance sd = new LevenshteinDistance();
   
   public void testGetDistance() {
     float d = sd.getDistance("al", "al");

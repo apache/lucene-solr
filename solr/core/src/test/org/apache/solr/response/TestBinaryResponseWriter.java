@@ -30,7 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 /**
@@ -39,7 +39,7 @@ import org.junit.BeforeClass;
  *
  * @since solr 1.4
  */
-public class TestBinaryResponseWriter extends AbstractSolrTestCase {
+public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
 
   
   @BeforeClass

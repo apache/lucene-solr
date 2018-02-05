@@ -108,7 +108,7 @@ emitted by the analyzer. The `analyze` function can be called on its own or with
 The expressions below show the various ways in which you can use the `analyze` evaluator.
 
 * Analyze the raw text: `analyze("hello world", analyzerField)`
-* Analyze a text field within a `select` expression. This will annotate the tuples with output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
+* Analyze a text field within a `select` expression. This will annotate tuples with the output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
 * Analyze a text field with a `cartesianProduct` expression. This will stream each token emitted by the analyzer in its own tuple: `cartesianProduct(expr, analyze(textField, analyzer) as outField)`
 
 == and
@@ -256,24 +256,6 @@ A probability distribution function.
 [source,text]
 binomialDistribution(1000, .5)
 
-== canberraDistance
-
-The `canberraDistance` function calculates the https://en.wikipedia.org/wiki/Canberra_distance[Canberra distance] of two numeric arrays.
-
-=== canberraDistance Parameters
-
-* `numeric array`
-* `numeric array`
-
-=== canberraDistance Returns
-
-A numeric.
-
-=== canberraDistance Syntax
-
-[source,text]
-canberraDistance(numericArray1, numuericArray2))
-
 == cbrt
 
 The `cbrt` function returns the trigonometric cube root of a number.
@@ -308,25 +290,6 @@ ceil(100.4) // returns 101.
 ceil(fieldA) // returns the next highest whole number for fieldA.
 if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
 ----
-
-== chebyshevDistance
-
-The `chebyshevDistance` function calculates the https://en.wikipedia.org/wiki/Chebyshev_distance[Chebyshev distance] of two numeric arrays.
-
-=== chebyshevDistance Parameters
-
-* `numeric array`
-* `numeric array`
-
-=== chebyshevDistance Returns
-
-A numeric.
-
-=== chebyshevDistance Syntax
-
-[source,text]
-chebyshevDistance(numericArray1, numuericArray2))
-
 
 == col
 
@@ -412,22 +375,34 @@ copyOfRange(numericArray, startIndex, endIndex)
 
 == corr
 
-The `corr` function returns the Pearson Product Moment Correlation of two numeric arrays.
+The `corr` function returns the correlation of two numeric arrays or the correlation matrix for a matrix.
 
-=== corr Parameters
+The `corr` function support Pearson's, Kendall's and Spearman's correlations.
 
-//TODO fill in details of Parameters
-* `numeric array`
-* `numeric array`
+=== corr Positional Parameters
 
-=== corr Returns
+* `numeric array`: The first numeric array
+* `numeric array`: The second numeric array
 
-A double between -1 and 1.
+OR
+
+* `matrix`: The matrix to compute the correlation matrix for. Note that correlation is computed between the `columns` in the matrix.
+
+=== corr Named Parameters
+
+* `type`: (Optional) The type of correlation. Possible values are `pearsons`, `kendalls`, or `spearmans`. The default is `pearsons`.
 
 === corr Syntax
 
 [source,text]
-corr(numericArray1, numericArray2)
+corr(numericArray1, numericArray2) // Compute the Pearsons correlation for two numeric arrays
+corr(numericArray1, numericArray2, type=kendalls) // Compute the Kendalls correlation for two numeric arrays
+corr(matrix) // Compute the Pearsons correlation matrix for a matrix
+corr(matrix, type=spearmans) // Compute the Spearmans correlation matrix for a matrix
+
+=== corr Returns
+
+number | matrix: Either the correlation or correlation matrix.
 
 == cos
 The `cos` function returns the trigonometric cosine of a number.
@@ -467,18 +442,26 @@ cosineSimilarity(numericArray, numericArray)
 
 == cov
 
-The `cov` function returns the covariance of two numeric arrays.
+The `cov` function returns the covariance of two numeric array or the covariance matrix for matrix.
 
 === cov Parameters
 
-//TODO fill in details of Parameters
-* `numeric array`
-* `numeric array`
+* `numeric array`: The first numeric array
+* `numeric array`: The second numeric array
+
+OR
+
+* `matrix`: The matrix to compute the covariance matrix from. Note that covariance is computed between the `columns` in the matrix.
 
 === cov Syntax
 
 [source,text]
-cov(numericArray, numericArray)
+cov(numericArray, numericArray) // Computes the covariance of a two numeric arrays
+cov(matrix) // Computes the covariance matrix for the matrix.
+
+=== cov Returns
+
+number | matrix: Either the covariance or covariance matrix.
 
 == cumulativeProbability
 
@@ -500,6 +483,27 @@ A double: the cumulative probability.
 [source,text]
 cumulativeProbability(normalDistribution(500, 25), 502) // Returns the cumulative probability of the random sample 502 in a normal distribution with a mean of 500 and standard deviation of 25.
 
+== derivative
+
+The `derivative` function returns the https://en.wikipedia.org/wiki/Derivative[derivative] of a function. The derivative function
+can compute the derivative of the <<spline>> function and the <<loess>> function. The derivative can also
+take the derivative of a derivative.
+
+=== derivative Parameters
+
+* `spline` | `loess` | `derivative`: The functions to compute the derivative for.
+
+=== derivative Syntax
+
+[source,text]
+derivative(spline(...))
+derivative(loess(...))
+derivative(derivative(...))
+
+=== derivative Returns
+
+function: The function can be treated as both a `numeric array` and `function`.
+
 == describe
 
 The `describe` function returns a tuple containing the descriptive statistics for an array.
@@ -513,19 +517,55 @@ The `describe` function returns a tuple containing the descriptive statistics fo
 [source,text]
 describe(numericArray)
 
+== diff
+
+The `diff` functions performs https://www.otexts.org/fpp/8/1[time series differencing].
+
+Time series differencing is often used to make a time series stationary before further analysis.
+
+=== diff Parameters
+
+* `numeric array`: The time series data.
+* `integer`: (Optional) The lag. Defaults to 1.
+
+=== diff Syntax
+
+[source,text]
+diff(numericArray1) // Perform time series differencing with a default lag of 1.
+diff(numericArray1, 30) // Perform time series differencing with a lag of 30.
+
+=== diff Returns
+
+numeric array: The differenced time series data. The size of the array will be equal to (original array size - lag).
+
 == distance
 
-The `distance` function calculates the Euclidian distance of two numeric arrays.
+The `distance` function computes the distance of two numeric arrays or the distance matrix for a matrix.
 
-=== distance Parameters
+=== distance Positional Parameters
 
-* `numeric array`
-* `numeric array`
+* `numeric array`: The first numeric array
+* `numeric array`: The second numeric array
+
+OR
+
+* `matrix`: The matrix to compute the distance matrix for. Note that distance is computed between the `columns` in the matrix.
+
+=== distance Named Parameters
+
+* `type`: (Optional) The distance type. Possible values are `euclidean`, `manhattan`, `canberra`, or `earthMovers`. The default is `euclidean`.
 
 === distance Syntax
 
 [source,text]
-distance(numericArray1, numuericArray2))
+distance(numericArray1, numuericArray2) // Computes the euclidean distance for two numeric arrays.
+distance(numericArray1, numuericArray2, type=manhattan) // Computes the manhattan distance for two numeric arrays.
+distance(matrix) // Computes the euclidean distance matrix for a matrix.
+distance(matrix, type=canberra) // Computes the canberra distance matrix for a matrix.
+
+=== distance Returns
+
+number | matrix: Either the distance or distance matrix.
 
 == div
 
@@ -564,24 +604,6 @@ A number.
 
 [source,text]
 dotProduct(numericArray)
-
-== earthMoversDistance
-
-The `earthMoversDistance` function calculates the https://en.wikipedia.org/wiki/Earth_mover%27s_distance[Earth Movers distance] of two numeric arrays.
-
-=== earthMoversDistance Parameters
-
-* `numeric array`
-* `numeric array`
-
-=== earthMoversDistance Returns
-
-A numeric.
-
-=== earthMoversDistance Syntax
-
-[source,text]
-earthMoversDistance(numericArray1, numericArray2))
 
 == ebeAdd
 
@@ -673,6 +695,7 @@ A probability distribution function.
 
 === empiricalDistribution Syntax
 
+[source,text]
 empiricalDistribution(numericArray)
 
 == enumeratedDistribution
@@ -847,6 +870,24 @@ A list of tuples containing the frequency information for each discrete value.
 freqTable(integerArray)
 ----
 
+== geometricDistribution
+
+The `geometricDistribution` function returns a https://en.wikipedia.org/wiki/Geometric_distribution[geometric probability distribution] based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the <<sample>>, <<probability>> and <<cumulativeProbability>> functions.
+
+=== geometricDistribution Parameters
+
+* `double`: probability
+
+=== geometricDistribution Syntax
+
+[source,text]
+geometricDistribution(.5) // Creates a geometric distribution with probability of .5
+
+=== geometricDistribution Returns
+
+A probability distribution function
+
 == gammaDistribution
 
 The `gammaDistribution` function returns a https://en.wikipedia.org/wiki/Gamma_distribution[gamma probability distribution] based on its parameters. This function is part of the
@@ -865,6 +906,23 @@ A probability distribution function,
 
 [source,text]
 gammaDistribution(1, 10)
+
+== grandSum
+
+The `grandSum` function sums all the values in a matrix.
+
+=== grandSum Parameters
+
+* `matrix`: The matrix to operate on.
+
+=== grandSum Syntax
+
+[source,text]
+grandSum(matrix)
+
+=== grandSum Returns
+
+number: the sum of all the values in the matrix.
 
 == gt
 
@@ -962,25 +1020,6 @@ if(gt(fieldA,5), fieldA, 5) // if fieldA > 5 then fieldA else 5
 if(eq(fieldB,null), null, div(fieldA,fieldB)) // if fieldB is null then null else fieldA / fieldB
 ----
 
-
-== kendallsCorr
-
-The `kendallsCorr` function returns the https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient[Kendall's Tau-b Rank Correlation] of two numeric arrays.
-
-=== kendallsCorr Parameters
-
-* `numeric array`
-* `numeric array`
-
-=== kendalsCorr Returns
-
-A double between -1 and 1.
-
-=== kendalsCorr Syntax
-
-[source,text]
-kendallsCorr(numericArray1, numericArray2)
-
 == length
 
 The `length` function returns the length of a numeric array.
@@ -994,6 +1033,34 @@ The `length` function returns the length of a numeric array.
 
 [source,text]
 length(numericArray)
+
+== loess
+
+The `leoss` function is a smoothing curve fitter which uses a https://en.wikipedia.org/wiki/Local_regression[local regression] algorithm.
+Unlike the <<spline>> function which touches each control point, the `loess` function puts a smooth curve through
+the control points without having to touch the control points. The `loess` result can be used by the <<derivative>> function to produce smooth derivatives from
+data that is not smooth.
+
+=== loess Positional Parameters
+
+* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array`: y values
+
+=== loess Named Parameters
+
+* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25. Decreasing the bandwidth increases the number of curves that loess can fit.
+* `robustIterations`: (Optional) The number of iterations used to smooth outliers, defaults to 2.
+
+=== loess Syntax
+
+[source,text]
+loess(yValues) // This creates the xValues automatically and fits a smooth curve through the data points.
+loess(xValues, yValues) // This will fit a smooth curve through the data points.
+loess(xValues, yValues, bandwidth=.15) // This will fit a smooth curve through the data points using 15 percent of the data points for each local regression line.
+
+=== loess Returns
+
+function: The function can be treated as both a `numeric array` of the smoothed data points and `function`.
 
 == log
 
@@ -1096,23 +1163,42 @@ lteq(fieldA,val(foo)) fieldA <= "foo"
 lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 ----
 
-== manhattanDistance
+== markovChain
 
-The `manhattanDistance` function calculates the https://en.wiktionary.org/wiki/Manhattan_distance[Manhattan distance] of two numeric arrays.
+The `markovChain` function can be used to perform https://en.wikipedia.org/wiki/Markov_chain[Markov Chain] simulations.
+The `markovChain` function takes as its parameter a https://en.wikipedia.org/wiki/Stochastic_matrix[transition matrix] and
+returns a mathematical model that can be sampled using the <<sample>> function. Each sample taken
+from the Markov Chain represents the current state of system.
 
-=== manhattanDistance Parameters
+=== markovChain Parameters
 
-* `numeric array`
-* `numeric array`
+* `matrix`: Transition matrix
 
-=== manhattanDistance Returns
-
-A numeric.
-
-=== manhattanDistance Syntax
+=== markovChain Syntax
 
 [source,text]
-manhattanDistance(numericArray1, numuericArray2))
+sample(markovChain(transitionMatrix), 5)  // This creates a Markov Chain given a specific transition matrix. The sample function takes 5 samples from the Markov Chain, representing the next five states of the system.
+
+=== markovChain Returns
+
+Markov Chain model: The Markoff Chain model can be used with <<sample>> function.
+
+== matrix
+
+The matrix function returns a https://en.wikipedia.org/wiki/Matrix_(mathematics)[matrix] which can be operated on by functions that support matrix operations.
+
+=== matrix Parameters
+
+* `numeric array` ...: One or more numeric arrays that will be the rows of the matrix.
+
+=== matrix Syntax
+
+[source,text]
+matrix(numericArray1, numericArray2, numericArray3) // Returns a matrix with three rows of data: numericaArray1, numericArray2, numericArray3
+
+=== matrix Returns
+
+matrix
 
 == meanDifference
 
@@ -1133,6 +1219,32 @@ A numeric.
 ----
 meanDifference(numericArray, numericArray)
 ----
+
+== minMaxScale
+
+The `minMaxScale` function scales numeric arrays within a minimum and maximum value.
+By default `minMaxScale` scales between 0 and 1. The `minMaxScale` function can operate on
+both numeric arrays and matrices.
+
+When operating on a matrix the `minMaxScale` function operates on each row of the matrix.
+
+=== minMaxScale Parameters
+
+* `numeric array` | `matrix`: The array or matrix to scale
+* `double`: (Optional) The min value. Defaults to 0.
+* `double`: (Optional) The max value. Defaults to 1.
+
+=== minMaxScale Syntax
+
+[source,text]
+minMaxScale(numericArray) // scale a numeric array between 0 and 1
+minMaxScale(numericArray, 0, 100) // scale a numeric array between 1 and 100
+minMaxScale(matrix) // Scale each row in a matrix between 0 and 1
+minMaxScale(matrix, 0, 100) // Scale each row in a matrix between 0 and 100
+
+=== minMaxScale Returns
+
+A numeric array or matrix
 
 == mod
 The `mod` function returns the remainder (modulo) of the first parameter divided by the second parameter.
@@ -1265,19 +1377,27 @@ A probability distribution function.
 [source,text]
 normalDistribution(mean, stddev)
 
-== normalize
+== normalizeSum
 
-The `normalize` function normalizes a numeric array so that values within the array
-have a mean of 0 and standard deviation of 1.
+The `normalizeSum` function scales numeric arrays so that they sum to 1.
+The `normalizeSum` function can operate on both numeric arrays and matrices.
 
-=== normalize Parameters
+When operating on a matrix the `normalizeSum` function operates on each row of the matrix.
 
-* `numeric array`
+=== normalizeSum Parameters
 
-=== normalize Syntax
+* `numeric array` | `matrix`
+
+=== normalizeSum Syntax
 
 [source,text]
-normalize(numericArray)
+normalizeSum(numericArray)
+normalizeSum(matrix)
+
+=== normalizeSum Returns
+
+numeric array | matrix
+
 
 == not
 
@@ -1297,6 +1417,28 @@ not(true) // false
 not(fieldA) // true if fieldA is false else false
 not(eq(fieldA,fieldB)) // true if fieldA != fieldB
 ----
+
+== olsRegress
+
+The `olsRegress` function performs https://en.wikipedia.org/wiki/Ordinary_least_squares[ordinary least squares], multivariate, linear regression.
+
+The `olsRegress` function returns a single Tuple containing the regression model with estimated regression parameters, RSquared and regression diagnostics.
+
+The output of `olsRegress` can be used with the <<predict>> function to predict values based on the regression model.
+
+=== olsRegress Parameters
+
+* `matrix`: The regressor observation matrix. Each row in the matrix represents a single multi-variate regressor observation. Note that there is no need to add an initial unitary column (column of 1's) when specifying a model including an intercept term, this column will be added automatically.
+* `numeric array`: The outcomes array which matches up with each row in the regressor observation matrix.
+
+=== olsRegress Syntax
+
+[source,text]
+olsRegress(matrix, numericArray) // This performs the olsRegression analysis on given regressor matrix and outcome array.
+
+=== olsRegress Returns
+
+Tuple: The regression model including the estimated regression parameters and diagnostics.
 
 == or
 
@@ -1361,34 +1503,13 @@ polyFit(yValues) // This creates the xValues automatically and fits a curve thro
 polyFit(yValues, 5) // This creates the xValues automatically and fits a curve through the data points using a 5 degree polynomial.
 polyFit(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial.
 
-== polyfitDerivative
-
-The `polyfitDerivative` function returns the derivative of the curve created by the polynomial curve fitter.
-
-=== polyfitDerivative Parameters
-
-* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
-* `numeric array`: y values
-* `integer`: (Optional) polynomial degree. Defaults to 3.
-
-=== polyfitDerivative Returns
-
-A numeric array: The curve for the derivative created by the polynomial curve fitter.
-
-=== polyfitDerivative Syntax
-
-[source,text]
-polyfitDerivative(yValues) // This creates the xValues automatically and returns the polyfit derivative
-polyfitDerivative(yValues, 5) //  This creates the xValues automatically and fits a curve through the data points using a 5 degree polynomial and returns the polyfit derivative.
-polyfitDerivative(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial and returns the polyfit derivative.
-
 == pow
 The `pow` function returns the value of its first parameter raised to the power of its second parameter.
 
 === pow Parameters
 
-* `Field Name | Raw Number | Number Evaluator`: Parameter 1
-* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+* `Field Name` | `Raw Number` | `Number Evaluator`: Parameter 1
+* `Field Name` | `Raw Number` | `Number Evaluator`: Parameter 2
 
 === pow Syntax
 
@@ -1404,19 +1525,31 @@ if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > field
 
 == predict
 
-The `predict` function predicts the value of an dependent variable based on
-the output of the regress function.
+The `predict` function predicts the value of dependent variables based on regression models or functions.
+
+The `predict` function can predict values based on the output of the following functions: <<spline>>, <<loess>>, <<regress>>, <<olsRegress>>.
 
 === predict Parameters
 
-//TODO fill in details of Parameters
-* `regress output`
-* `numeric predictor`
+* `regression model` | `function`: The model or function used for the prediction
+* `number` | `numeric array` | `matrix`: Depending on the regression model or function used, the predictor variable can be a number, numeric array or matrix.
 
 === predict Syntax
 
 [source,text]
-predict(regressOutput, predictor)
+----
+predict(regressModel, number) // predict using the output of the <<regress>> function and single numeric predictor. This will return a single numeric prediction.
+
+predict(regressModel, numericArray) // predict using the output of the <<regress>> function and a numeric array of predictors. This will return a numeric array of predictions.
+
+predict(splineFunc, number) // predict using the output of the <<spline>> function and single numeric predictor. This will return a single numeric prediction.
+
+predict(splineFunc, numericArray) // predict using the output of the <<spline>> function and a numeric array of predictors. This will return a numeric array of predictions.
+
+predict(olsRegressModel, numericArray) // predict using the output of the <<olsRegress>> function and a numeric array containing one multi-variate predictor. This will return a single numeric prediction.
+
+predict(olsRegressModel, matrix) // predict using the output of the <<olsRegress>> function and a matrix containing rows of multi-variate predictor arrays. This will return a numeric array of predictions.
+----
 
 == primes
 The `primes` function returns an array of prime numbers starting from a specified number.
@@ -1439,21 +1572,42 @@ primes(100, 2000) // returns 100 primes starting from 2000
 
 == probability
 
-The `probability` function returns the probability of a random variable within a discrete probability distribution.
+The `probability` function returns the probability of a random variable within a probability distribution.
+
+The `probability` function computes the probability between random variable ranges for both https://en.wikipedia.org/wiki/Probability_distribution#Continuous_probability_distribution[continuous] and
+https://en.wikipedia.org/wiki/Probability_distribution#Discrete_probability_distribution[discrete] probability distributions.
+
+The `probability` function can compute probabilities for a specific random variable for
+discrete probability distributions only.
+
+The supported continuous distribution functions are:
+<<normalDistribution>>, <<logNormalDistribution>>, <<betaDistribution>>, <<gammaDistribution>>,
+<<empiricalDistribution>>, <<triangularDistribution>>, <<weibullDistribution>>,
+<<uniformDistribution>>, <<constantDistribution>>
+
+The supported discreet distributions are:
+<<poissonDistribution>>, <<binomialDistribution>>, <<enumeratedDistribution>>, <<zipFDistribution>>,
+<<geometricDistribution>>, <<uniformIntegerDistribution>>
 
 === probability Parameters
 
-* `discrete probability distribution`: poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
-* `integer`: Value of the random variable to compute the probability for.
-
-=== probability Returns
-
-A double: the probability.
+* `probability distribution`: the probability distribution to compute the probability from.
+* `number`: low value of the range.
+* `number`: (Optional for discrete probability distributions) high value of the range. If the high range is omitted then the probability function will compute a probability for the low range value.
 
 === probability Syntax
 
 [source,text]
+----
 probability(poissonDistribution(10), 7) // Returns the probability of a random sample of 7 in a poisson distribution with a mean of 10.
+
+probability(normalDistribution(10, 2), 7.5, 8.5) // Returns the probability between the range of 7.5 to 8.5 for a normal distribution with a mean of 10 and standard deviation of 2.
+----
+
+=== probability Returns
+
+double: probability
+
 
 == rank
 
@@ -1494,7 +1648,7 @@ eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA
 
 The `regress` function performs a simple regression of two numeric arrays.
 
-The result of this expression is also used by the `<<predict>>` and `<<residuals>>` functions.
+The result of this expression is also used by the `<<predict>>` function.
 
 === regress Parameters
 
@@ -1506,28 +1660,6 @@ The result of this expression is also used by the `<<predict>>` and `<<residuals
 
 [source,text]
 regress(numericArray1, numericArray2)
-
-== residuals
-
-The `residuals` function takes three parameters: a simple regression model, an array of predictor values
-and an array of actual values. The residuals function applies the simple regression model to the
-array of predictor values and computes a predictions array. The predicted values array is then
-subtracted from the actual value array to compute the residuals array.
-
-=== residuals Parameters
-
-* `regress output`
-* `numeric array`: The array of predictor values
-* `numeric array`: The array of actual values
-
-=== residuals Returns
-
-A numeric array of residuals.
-
-=== residuals Syntax
-
-[source,text]
-residuals(regressOutput, numericArray, numericArray)
 
 == rev
 
@@ -1548,7 +1680,7 @@ The `round` function returns the closest whole number to the argument.
 
 === round Parameters
 
-* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+* `Field Name` | `Raw Number` | `Number Evaluator`: The value to return the square root of.
 
 === round Syntax
 
@@ -1561,11 +1693,11 @@ if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then retur
 
 == sample
 
-The `sample` function can be used to draw random samples from a probability distribution.
+The `sample` function can be used to draw random samples from a probability distribution or Markov Chain.
 
 === sample Parameters
 
-* `probability distribution`: The distribution to sample.
+* `probability distribution` | `Markov Chain`: The distribution or Markov Chain to sample.
 * `integer`: (Optional) Sample size. Defaults to 1.
 
 === sample Returns
@@ -1577,6 +1709,91 @@ Either a single numeric random sample, or a numeric array depending on the sampl
 [source,text]
 sample(poissonDistribution(5)) // Returns a single random sample from a poissonDistribution with mean of 5.
 sample(poissonDistribution(5), 1000) // Returns 1000 random samples from poissonDistribution with a mean of 5.
+sample(markovChain(transitionMatrix), 1000) // Returns 1000 random samples from a Markov Chain.
+
+== scalarAdd
+
+The `scalarAdd` function adds a scalar value to every value in a numeric array or matrix.
+When working with numeric arrays, `scalarAdd` returns a new array with the new values. When working
+with a matrix, `scalarAdd` returns a new matrix with new values.
+
+=== scalarAdd Parameters
+
+`number`: value to add
+`numeric array` | `matrix`: the numeric array or matrix to add the value to.
+
+=== scalarAdd Syntax
+
+[source,text]
+scalarAdd(number, numericArray) // Adds the number to each element in the number in the array.
+scalarAdd(number, matrix) // Adds the number to each value in a matrix
+
+=== scalarAdd Returns
+
+numericArray | matrix: Depending on what is being operated on.
+
+== scalarDivide
+
+The `scalarDivide` function divides each number in numeric array or matrix by a scalar value.
+When working with numeric arrays, `scalarDivide` returns a new array with the new values. When working
+with a matrix, `scalarDivide` returns a new matrix with new values.
+
+=== scalarDivide Parameters
+
+`number`: value to divide by
+`numeric array` | `matrix`: the numeric array or matrix to divide by the value to.
+
+=== scalarDivide Syntax
+
+[source,text]
+scalarDivide(number, numericArray) // Divides each element in the numeric array by the number.
+scalarDivide(number, matrix) // Divides each element in the matrix by the number.
+
+=== scalarDivide Returns
+
+numericArray | matrix: depending on what is being operated on.
+
+== scalarMultiply
+
+The `scalarMultiply` function multiplies each element in a numeric array or matrix by a
+scalar value. When working with numeric arrays, `scalarMultiply` returns a new array with the new values. When working
+with a matrix, `scalarMultiply` returns a new matrix with new values.
+
+=== scalarMultiply Parameters
+
+`number`: value to divide by
+`numeric array` | `matrix`: the numeric array or matrix to divide by the value to.
+
+=== scalarMultiply Syntax
+
+[source,text]
+scalarMultiply(number, numericArray) // Multiplies each element in the numeric array by the number.
+scalarMultiply(number, matrix) // Multiplies each element in the matrix by the number.
+
+=== scalarMultiply Returns
+
+numericArray | matrix: depending on what is being operated on
+
+== scalarSubtract
+
+The `scalarSubtract` function subtracts a scalar value from every value in a numeric array or matrix.
+When working with numeric arrays, `scalarSubtract` returns a new array with the new values. When working
+with a matrix, `scalarSubtract` returns a new matrix with new values.
+
+=== scalarSubtract Parameters
+
+`number`: value to add
+`numeric array` | `matrix`: the numeric array or matrix to subtract the value from.
+
+=== scalarSubtract Syntax
+
+[source,text]
+scalarSubtract(number, numericArray) // Subtracts the number from each element in the number in the array.
+scalarSubtract(number, matrix) // Subtracts the number from each value in a matrix
+
+=== scalarSubtract Returns
+
+numericArray | matrix: depending on what is being operated on.
 
 == scale
 
@@ -1625,23 +1842,27 @@ sine(fieldA) // returns the sine for fieldA.
 if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the sine of fieldA, else return the sine of fieldB
 ----
 
-== spearmansCorr
+== spline
 
-The `spearmansCorr` function returns the https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient[Spearmans Rank Correlation] of two numeric arrays.
+The `spline` function performs a cubic spline interpolation (https://en.wikiversity.org/wiki/Cubic_Spline_Interpolation) of a curve
+given a set of x,y coordinates. The return value of the spline function is an
+interpolation function which can be used to <<predict>> values along the curve and generate a <<derivative>> of
+the curve.
 
-=== spearmansCorr Parameters
+=== spline Parameters
 
-* `numeric array`
-* `numeric array`
+* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array`: y values
 
-=== spearmansCorr Returns
-
-A double between -1 and 1.
-
-=== spearmansCorr Syntax
+=== spline Syntax
 
 [source,text]
-spearmansCorr(numericArray1, numericArray2)
+spline(yValues) // This creates the xValues automatically and fits a spline through the data points.
+spline(xValues, yValues) // This will fit a spline through the data points.
+
+=== spline Returns
+
+function: the function can be treated as both a `numeric array` and `function`.
 
 == sqrt
 
@@ -1659,6 +1880,25 @@ sqrt(100.4)  // returns the square root of 100.4
 sqrt(fieldA) // returns the square root for fieldA.
 if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the sqrt of fieldA, else return the sqrt of fieldB
 ----
+
+
+== standardize
+
+The `standardize` function standardizes a numeric array so that values within the array
+have a mean of 0 and standard deviation of 1.
+
+=== standardize Parameters
+
+* `numeric array`: the array to standardize
+
+=== standardize Syntax
+
+[source,text]
+standardize(numericArray)
+
+=== standardize Returns
+
+numeric array: the standardized values
 
 == sub
 
@@ -1705,6 +1945,78 @@ A numeric.
 sumDifference(numericArray, numericArray)
 ----
 
+== sumColumns
+
+The `sumColumns` function sums the columns in a matrix and returns a numeric array with the result.
+
+=== sumColumns Parameters
+
+* `matrix`: the matrix to operate on
+
+=== sumColumns Syntax
+
+[source,text]
+sumColumns(matrix)
+
+=== sumColumns Returns
+
+numeric array: the sum of the columns
+
+== sumRows
+
+The `sumRows` function sums the rows in a matrix and returns a numeric array with the result.
+
+=== sumRows Parameters
+
+* `matrix`: the matrix to operate on
+
+=== sumRows Syntax
+
+[source,text]
+sumRows(matrix)
+
+=== sumRows Returns
+
+numeric array: sum of the rows.
+
+== transpose
+
+The `transpose` function https://en.wikipedia.org/wiki/Transpose[transposes] a matrix .
+
+=== transpose Parameters
+
+* `matrix`: the matrix to transpose
+
+=== transpose Syntax
+
+[source,text]
+transpose(matrix)
+
+=== transpose Returns
+
+matrix: the transposed matrix
+
+== triangularDistribution
+
+The `triangularDistribution` function returns a https://en.wikipedia.org/wiki/Triangular_distribution[triangular probability distribution]
+based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+
+=== triangularDistribution Parameters
+
+* `double`: low value
+* `double`: most likely value
+* `double`: high value
+
+=== triangularDistribution Syntax
+
+[source,text]
+triangularDistribution(10, 15, 20) // A triangular distribution with a low value of 10, most likely value of 15 and high value of 20.
+
+=== triangularDistribution Returns
+
+Probability distribution function
+
 == uniformDistribution
 
 The `uniformDistribution` function returns a https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)[continuous uniform probability distribution]
@@ -1718,7 +2030,7 @@ probability distribution framework and is designed to work with the `<<sample>>`
 
 === uniformDistribution Returns
 
-A probability distribution function.
+Probability distribution function.
 
 === uniformDistribution Syntax
 
@@ -1744,6 +2056,27 @@ A probability distribution function.
 
 [source,text]
 uniformDistribution(1, 6)
+
+== unitize
+
+The `unitize` function scales numeric arrays to a magnitude of 1, often called https://en.wikipedia.org/wiki/Unit_vector[unit vectors].
+The unitize function can operate on both numeric arrays and matrices.
+
+When operating on a matrix the unitize function unitizes each row of the matrix.
+
+=== unitize Parameters
+
+* `numeric array` | `matrix`: The array or matrix to unitize
+
+=== unitize Syntax
+
+[source,text]
+unitize(numericArray) // Unitize a numeric array
+unitize(matrix) // Unitize each row in a matrix
+
+=== unitize Returns
+
+numeric array | matrix
 
 == weibullDistribution
 

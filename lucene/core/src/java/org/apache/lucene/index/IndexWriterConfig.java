@@ -459,7 +459,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
                                                                                      SortField.Type.FLOAT);
 
   /**
-   * Set the {@link Sort} order to use when merging segments.
+   * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
     for(SortField sortField : sort.getSort()) {
@@ -478,6 +478,11 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     StringBuilder sb = new StringBuilder(super.toString());
     sb.append("writer=").append(writer.get()).append("\n");
     return sb.toString();
+  }
+
+  @Override
+  public IndexWriterConfig setCheckPendingFlushUpdate(boolean checkPendingFlushOnUpdate) {
+    return (IndexWriterConfig) super.setCheckPendingFlushUpdate(checkPendingFlushOnUpdate);
   }
   
 }

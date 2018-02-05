@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -43,7 +44,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-import org.apache.solr.common.cloud.rule.RemoteCallback;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -66,6 +66,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   //only for debugging
   public static SolrClientNodeStateProvider INST;
+
 
 
   private final CloudSolrClient solrClient;
@@ -142,18 +143,28 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return result;
   }
 
-  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, String> metricsKeyVsTag) {
+  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[metricsKeyVsTag.size()]));
     try {
       SimpleSolrResponse rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach((key, tag) -> {
         Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
-        if (v != null) ctx.getTags().put(tag, v);
+        if (tag instanceof Function) {
+          Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
+          ctx.getTags().put(p.first(), p.second());
+        } else {
+          if (v != null) ctx.getTags().put(tag.toString(), v);
+        }
       });
     } catch (Exception e) {
       log.warn("could not get tags from node " + solrNode, e);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+
   }
 
   //uses metrics API to get node information
@@ -161,13 +172,28 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
-      Map<String, String> metricsKeyVsTag = new HashMap<>();
+      Map<String, Object> metricsKeyVsTag = new HashMap<>();
       for (String tag : requestedTags) {
         if (tag.startsWith(SYSPROP)) {
           metricsKeyVsTag.put("solr.jvm:system.properties:" + tag.substring(SYSPROP.length()), tag);
         } else if (tag.startsWith(METRICS_PREFIX)) {
           metricsKeyVsTag.put(tag.substring(METRICS_PREFIX.length()), tag);
         }
+      }
+      if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
+        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", new Function<Object, Pair<String,Object>>() {
+          @Override
+          public Pair<String, Object> apply(Object o) {
+            if("true".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
+            }
+            if("false".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
+            }
+            return new Pair<>(ImplicitSnitch.DISKTYPE,null);
+
+          }
+        });
       }
       if (!metricsKeyVsTag.isEmpty()) {
         fetchMetrics(solrNode, snitchContext, metricsKeyVsTag);
@@ -226,6 +252,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
   }
 
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
+  }
+
   static class ClientSnitchCtx
       extends SnitchContext {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -247,9 +278,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
-    public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {
-
-    }
 
     public SimpleSolrResponse invoke(String solrNode, String path, SolrParams params)
         throws IOException, SolrServerException {

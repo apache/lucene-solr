@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -315,7 +316,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(Fields fields, NormsProducer norms) throws IOException {
     //if (DEBUG) System.out.println("\nBTTW.write seg=" + segment);
 
     String lastField = null;
@@ -340,7 +341,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         }
 
         //if (DEBUG) System.out.println("write field=" + fieldInfo.name + " term=" + brToString(term));
-        termsWriter.write(term, termsEnum);
+        termsWriter.write(term, termsEnum, norms);
       }
 
       termsWriter.finish();
@@ -852,7 +853,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     }
     
     /** Writes one term's worth of postings. */
-    public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
+    public void write(BytesRef text, TermsEnum termsEnum, NormsProducer norms) throws IOException {
       /*
       if (DEBUG) {
         int[] tmp = new int[lastTerm.length];
@@ -861,7 +862,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
       */
 
-      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen, norms);
       if (state != null) {
 
         assert state.docFreq != 0;

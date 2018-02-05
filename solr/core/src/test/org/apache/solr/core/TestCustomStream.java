@@ -17,11 +17,8 @@
 
 package org.apache.solr.core;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.handler.TestBlobHandler;
@@ -33,32 +30,16 @@ import org.junit.Test;
  * Created by caomanhdat on 6/3/16.
  */
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
 
   @BeforeClass
   public static void enableRuntimeLib() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
   }
 
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness r : restTestHarnesses) {
-      r.close();
-    }
-  }
-
   @Test
   public void testDynamicLoadingCustomStream() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    setupHarnesses();
+    setupRestTestHarnesses();
 
     String blobName = "colltest";
 
@@ -73,7 +54,7 @@ public class TestCustomStream extends AbstractFullDistribZkTestBase {
         "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n" +
         "}";
 
-    RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    RestTestHarness client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client,"/config",payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,

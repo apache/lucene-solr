@@ -71,7 +71,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
-          false, false);
+          false, false, true);
       
       is.search(q, tdc);
       
@@ -90,10 +90,35 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, false,
-          false);
+          false, true);
       
       is.search(q, tdc);
       
+      TopDocs td = tdc.topDocs();
+      ScoreDoc[] sd = td.scoreDocs;
+      for(int j = 0; j < sd.length; j++) {
+        assertTrue(Float.isNaN(sd[j].score));
+      }
+      assertTrue(Float.isNaN(td.getMaxScore()));
+    }
+  }
+
+  public void testSortWithoutTotalHitTracking() throws Exception {
+    Sort sort = new Sort(SortField.FIELD_DOC);
+    for(int i = 0; i < 2; i++) {
+      Query q = new MatchAllDocsQuery();
+      // check that setting trackTotalHits to false does not throw an NPE because
+      // the index is not sorted
+      TopDocsCollector<Entry> tdc;
+      if (i % 2 == 0) {
+        tdc =  TopFieldCollector.create(sort, 10, true, false, false, false);
+      } else {
+        FieldDoc fieldDoc = new FieldDoc(1, Float.NaN, new Object[] { 1 });
+        tdc = TopFieldCollector.create(sort, 10, fieldDoc, true, false, false, false);
+      }
+
+      is.search(q, tdc);
+
       TopDocs td = tdc.topDocs();
       ScoreDoc[] sd = td.scoreDocs;
       for(int j = 0; j < sd.length; j++) {
@@ -110,7 +135,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false);
+          false, true);
       
       is.search(q, tdc);
       
@@ -131,7 +156,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false);
+          false, true);
 
       is.search(q, tdc);
       
@@ -151,7 +176,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          true);
+          true, true);
       
       is.search(q, tdc);
       
@@ -169,7 +194,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));
@@ -204,7 +229,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for (Sort sort : new Sort[] {new Sort(SortField.FIELD_SCORE), new Sort(new SortField("f", SortField.Type.SCORE))}) {
       for (boolean doDocScores : new boolean[] {false, true}) {
         for (boolean doMaxScore : new boolean[] {false, true}) {
-          final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true, doDocScores, doMaxScore);
+          final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true, doDocScores, doMaxScore, true);
           final Collector assertingCollector = new Collector() {
             @Override
             public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -226,8 +251,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     }
 
                     @Override
-                    public int freq() throws IOException {
-                      return scorer.freq();
+                    public float maxScore() {
+                      return scorer.maxScore();
                     }
 
                     @Override
@@ -246,8 +271,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
               };
             }
             @Override
-            public boolean needsScores() {
-              return topCollector.needsScores();
+            public ScoreMode scoreMode() {
+              return topCollector.scoreMode();
             }
           };
           searcher.search(query, assertingCollector);

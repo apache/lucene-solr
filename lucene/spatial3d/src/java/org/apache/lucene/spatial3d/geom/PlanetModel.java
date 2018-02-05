@@ -60,7 +60,12 @@ public class PlanetModel implements SerializableObject {
   public final double flattening;
   /** The square ratio */
   public final double squareRatio;
-  
+  /** The scale of the planet */
+  public final double scale;
+  /** The inverse of scale */
+  public final double inverseScale;
+
+
   // We do NOT include radius, because all computations in geo3d are in radians, not meters.
   
   // Compute north and south pole for planet model, since these are commonly used.
@@ -77,6 +82,8 @@ public class PlanetModel implements SerializableObject {
   public final GeoPoint MIN_Y_POLE;
   /** Max Y pole */
   public final GeoPoint MAX_Y_POLE;
+  /** Minimum surface distance between poles */
+  public final double minimumPoleDistance;
   
   /** Constructor.
    * @param ab is the x/y scaling factor.
@@ -97,6 +104,9 @@ public class PlanetModel implements SerializableObject {
     this.MAX_X_POLE = new GeoPoint(ab, 1.0, 0.0, 0.0, 0.0, 0.0);
     this.MIN_Y_POLE = new GeoPoint(ab, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
     this.MAX_Y_POLE = new GeoPoint(ab, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
+    this.scale = (2.0 * ab + c)/3.0;
+    this.inverseScale = 1.0 / scale;
+    this.minimumPoleDistance  = Math.min(surfaceDistance(NORTH_POLE, SOUTH_POLE), surfaceDistance(MIN_X_POLE, MAX_X_POLE));
   }
 
   /** Deserialization constructor.
@@ -110,6 +120,13 @@ public class PlanetModel implements SerializableObject {
   public void write(final OutputStream outputStream) throws IOException {
     SerializableObject.writeDouble(outputStream, ab);
     SerializableObject.writeDouble(outputStream, c);
+  }
+  
+  /** Does this planet model describe a sphere?
+   *@return true if so.
+   */
+  public boolean isSphere() {
+    return this.ab == this.c;
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.
@@ -312,14 +329,13 @@ public class PlanetModel implements SerializableObject {
       lambda = L + (1.0 - C) * flattening * sinAlpha *
         (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1.0 + 2.0 * cos2SigmaM *cos2SigmaM)));
     } while (Math.abs(lambda-lambdaP) >= Vector.MINIMUM_RESOLUTION && ++iterLimit < 100);
-
     final double uSq = cosSqAlpha * this.squareRatio;
     final double A = 1.0 + uSq / 16384.0 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
     final double B = uSq / 1024.0 * (256.0 + uSq * (-128.0 + uSq * (74.0 - 47.0 * uSq)));
     final double deltaSigma = B * sinSigma * (cos2SigmaM + B / 4.0 * (cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM)-
                                         B / 6.0 * cos2SigmaM * (-3.0 + 4.0 * sinSigma * sinSigma) * (-3.0 + 4.0 * cos2SigmaM * cos2SigmaM)));
 
-    return c * A * (sigma - deltaSigma);
+    return c * inverseScale * A * (sigma - deltaSigma);
   }
 
   /** Compute new point given original point, a bearing direction, and an adjusted angle (as would be computed by
@@ -357,7 +373,7 @@ public class PlanetModel implements SerializableObject {
     double cosσ;
     double Δσ;
 
-    double σ = dist / (c * A);
+    double σ = dist / (c * inverseScale * A);
     double σʹ;
     double iterations = 0;
     do {
@@ -367,9 +383,8 @@ public class PlanetModel implements SerializableObject {
       Δσ = B * sinσ * (cos2σM + B / 4.0 * (cosσ * (-1.0 + 2.0 * cos2σM * cos2σM) -
           B / 6.0 * cos2σM * (-3.0 + 4.0 * sinσ * sinσ) * (-3.0 + 4.0 * cos2σM * cos2σM)));
       σʹ = σ;
-      σ = dist / (c * A) + Δσ;
+      σ = dist / (c * inverseScale * A) + Δσ;
     } while (Math.abs(σ - σʹ) >= Vector.MINIMUM_RESOLUTION && ++iterations < 100);
-
     double x = sinU1 * sinσ - cosU1 * cosσ * cosα1;
     double φ2 = Math.atan2(sinU1 * cosσ + cosU1 * sinσ * cosα1, (1.0 - flattening) * Math.sqrt(sinα * sinα + x * x));
     double λ = Math.atan2(sinσ * sinα1, cosU1 * cosσ - sinU1 * sinσ * cosα1);

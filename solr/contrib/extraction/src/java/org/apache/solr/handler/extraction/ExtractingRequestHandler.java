@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,9 +38,10 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.tika.config.TikaConfig;
-import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.exception.TikaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 
 /**
@@ -110,9 +112,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
       }
     }
     if (config == null) {
-      try {
-        config = getDefaultConfig(core.getResourceLoader().getClassLoader());
-      } catch (MimeTypeException | IOException e) {
+      try (InputStream is = core.getResourceLoader().getClassLoader().getResourceAsStream("solr-default-tika-config.xml")){
+        config = new TikaConfig(is);
+      } catch (IOException | SAXException | TikaException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }
@@ -120,10 +122,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
       parseContextConfig = new ParseContextConfig();
     }
     factory = createFactory();
-  }
-
-  private TikaConfig getDefaultConfig(ClassLoader classLoader) throws MimeTypeException, IOException {
-    return new TikaConfig(classLoader);
   }
 
   protected SolrContentHandlerFactory createFactory() {

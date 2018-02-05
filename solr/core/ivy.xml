@@ -130,7 +130,7 @@
     <dependency org="org.apache.directory.api" name="api-all" rev="${/org.apache.directory.api/api-all}" conf="test.MiniKdc"/>
     <dependency org="org.apache.directory.jdbm" name="apacheds-jdbm1" rev="${/org.apache.directory.jdbm/apacheds-jdbm1}" conf="test.MiniKdc"/>
     <dependency org="org.apache.mina" name="mina-core" rev="${/org.apache.mina/mina-core}" conf="test.MiniKdc"/>
-    <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="${/org.bouncycastle/bcprov-jdk15}" conf="test.MiniKdc"/>
+    <dependency org="org.bouncycastle" name="bcprov-jdk15on" rev="${/org.bouncycastle/bcprov-jdk15on}" conf="test.MiniKdc"/>
     <dependency org="antlr" name="antlr" rev="${/antlr/antlr}" conf="test.MiniKdc"/>
     <dependency org="net.sf.ehcache" name="ehcache-core" rev="${/net.sf.ehcache/ehcache-core}" conf="test.MiniKdc"/>
 

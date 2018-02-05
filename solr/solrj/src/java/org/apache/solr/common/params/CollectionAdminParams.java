@@ -28,6 +28,8 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
+  String ROLE = "role";
+
   /** Predefined system collection name. */
   String SYSTEM_COLL = ".system";
 

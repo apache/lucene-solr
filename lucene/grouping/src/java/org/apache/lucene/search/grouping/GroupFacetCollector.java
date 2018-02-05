@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
@@ -113,8 +114,8 @@ public abstract class GroupFacetCollector extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
 
   /**

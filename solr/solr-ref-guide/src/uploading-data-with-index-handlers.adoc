@@ -87,7 +87,9 @@ The `<commit>` operation writes all documents loaded since the last commit to on
 
 Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
 
-The `<optimize>` operation requests Solr to merge internal data structures in order to improve search performance. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance will improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred. In contrast, post-commit transfers are usually much smaller.
+The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
+
+WARNING: You should only consider using optimize on static indexes, i.e. indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
@@ -95,6 +97,8 @@ The `<commit>` and `<optimize>` elements accept these optional attributes:
 Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
 `expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging them in the process.
+
+WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
 `maxSegments`:: (optimize only) Default is `1`. Merges the segments down to no more than this number of segments.
 
@@ -132,6 +136,26 @@ When using the Join query parser in a Delete By Query, you should use the `score
 
 The rollback command rolls back all add and deletes made to the index since the last commit. It neither calls any event listeners nor creates a new searcher. Its syntax is simple: `<rollback/>`.
 
+==== Grouping Operations
+
+You can post several commands in a single XML file by grouping them with the surrounding `<update>` element.
+
+[source,xml]
+----
+<update>
+  <add>
+    <doc><!-- doc 1 content --></doc>
+  </add>
+  <add>
+    <doc><!-- doc 2 content --></doc>
+  </add>
+  <delete>
+    <id>0002166313</id>
+  </delete>
+</update>
+----
+
+
 === Using curl to Perform Updates
 
 You can use the `curl` utility to perform any of the above commands, using its `--data-binary` option to append the XML message to the `curl` command, and generating a HTTP POST request. For example:
@@ -156,6 +180,13 @@ For posting XML messages contained in a file, you can use the alternative form:
 [source,bash]
 ----
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
+----
+
+The approach above works well, but using the `--data-binary` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server. This may be problematic when dealing with multi-gigabyte files. This alternative `curl` command performs equivalent operations but with minimal `curl` memory usage:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
 Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> element, URL-encoding the request, as in the following. Note the escaping of "<" and ">":

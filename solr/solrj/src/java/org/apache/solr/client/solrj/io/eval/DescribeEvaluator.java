@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +47,7 @@ public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneV
     
     // we know each value is a BigDecimal or a list of BigDecimals
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-    ((List<?>)value).stream().mapToDouble(innerValue -> ((BigDecimal)innerValue).doubleValue()).forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
+    ((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
 
     Map<String,Number> map = new HashMap<>();
     map.put("max", descriptiveStatistics.getMax());

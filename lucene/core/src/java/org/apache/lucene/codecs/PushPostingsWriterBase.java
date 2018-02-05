@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -74,7 +75,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   /** Start a new term.  Note that a matching call to {@link
    *  #finishTerm(BlockTermState)} is done, only if the term has at least one
    *  document. */
-  public abstract void startTerm() throws IOException;
+  public abstract void startTerm(NumericDocValues norms) throws IOException;
 
   /** Finishes the current term.  The provided {@link
    *  BlockTermState} contains the term's summary statistics, 
@@ -117,8 +118,14 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   }
 
   @Override
-  public final BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException {
-    startTerm();
+  public final BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms) throws IOException {
+    NumericDocValues normValues;
+    if (fieldInfo.hasNorms() == false) {
+      normValues = null;
+    } else {
+      normValues = norms.getNorms(fieldInfo);
+    }
+    startTerm(normValues);
     postingsEnum = termsEnum.postings(postingsEnum, enumFlags);
     assert postingsEnum != null;
 

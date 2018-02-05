@@ -17,6 +17,8 @@
 package org.apache.solr.schema;
 
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -114,5 +116,17 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
       assertEquals("Expecting a field type defined as " + expectedDefinition,
                    6, ((TrieDateField)tdatedv).getPrecisionStep());
     }
+  }
+
+  @Test // LUCENE-5803
+  public void testReuseAnalysisComponents() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    Analyzer solrAnalyzer = schema.getIndexAnalyzer();
+    // Get the tokenStream for two fields that both have the same field type (name "text")
+    TokenStream ts1 = solrAnalyzer.tokenStream("text", "foo bar"); // a non-dynamic field
+    TokenStream ts2 = solrAnalyzer.tokenStream("t_text", "whatever"); // a dynamic field
+    assertSame(ts1, ts2);
+    ts1.close();
+    ts2.close();
   }
 }

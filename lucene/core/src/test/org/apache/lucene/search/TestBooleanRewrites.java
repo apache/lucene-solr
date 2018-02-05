@@ -93,7 +93,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
     BooleanQuery.Builder query2 = new BooleanQuery.Builder();
     query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
     query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
-    final Weight weight = searcher.createNormalizedWeight(query2.build(), true);
+    final Weight weight = searcher.createNormalizedWeight(query2.build(), ScoreMode.COMPLETE);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertEquals(0, scorer.iterator().nextDoc());
     assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
@@ -357,7 +357,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
         return original;
       }
     };
-    searcher2.setSimilarity(searcher1.getSimilarity(true));
+    searcher2.setSimilarity(searcher1.getSimilarity());
 
     final int iters = atLeast(1000);
     for (int i = 0; i < iters; ++i) {

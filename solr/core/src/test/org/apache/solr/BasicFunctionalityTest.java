@@ -57,7 +57,7 @@ import org.junit.Test;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
- * Best Practices for using AbstractSolrTestCase
+ * Best Practices for using SolrTestCaseJ4
  */
 public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 

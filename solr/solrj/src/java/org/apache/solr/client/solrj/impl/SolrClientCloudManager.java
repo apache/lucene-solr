@@ -43,6 +43,9 @@ import org.apache.solr.client.solrj.cloud.autoscaling.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +60,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
+  private final ObjectCache objectCache;
   private volatile boolean isClosed;
 
   public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
@@ -66,16 +70,28 @@ public class SolrClientCloudManager implements SolrCloudManager {
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;
+    this.objectCache = new ObjectCache();
   }
 
   @Override
   public void close() {
     isClosed = true;
+    IOUtils.closeQuietly(objectCache);
   }
 
   @Override
   public boolean isClosed() {
     return isClosed;
+  }
+
+  @Override
+  public ObjectCache getObjectCache() {
+    return objectCache;
+  }
+
+  @Override
+  public TimeSource getTimeSource() {
+    return TimeSource.NANO_TIME;
   }
 
   @Override

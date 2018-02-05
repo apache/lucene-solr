@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
@@ -74,8 +75,8 @@ public abstract class AbstractSolrQueryFacet extends AnalyticsFacet {
     }
 
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
 
     @Override

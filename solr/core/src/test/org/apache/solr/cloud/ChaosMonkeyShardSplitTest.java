@@ -24,6 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.ElectionContext;
+import org.apache.solr.cloud.LeaderElector;
+import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.ShardSplitTest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;

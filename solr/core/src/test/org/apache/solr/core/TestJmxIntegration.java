@@ -20,7 +20,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class TestJmxIntegration extends AbstractSolrTestCase {
+public class TestJmxIntegration extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

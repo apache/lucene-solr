@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -26,6 +28,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 
+import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
+
 
 public class ReplicaInfo implements MapWriter {
 //  private final Replica replica;
@@ -33,21 +37,29 @@ public class ReplicaInfo implements MapWriter {
   private String core, collection, shard;
   private Replica.Type type;
   private String node;
-  private Map<String, Object> variables;
+  public final boolean isLeader;
+  private final Map<String, Object> variables = new HashMap<>();
 
-  public ReplicaInfo(String coll,String shard, Replica r, Map<String, Object> vals){
+  public ReplicaInfo(String coll, String shard, Replica r, Map<String, Object> vals) {
     this.name = r.getName();
     this.core = r.getCoreName();
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
-    this.variables = vals;
+    this.isLeader = r.getBool(LEADER_PROP, false);
+    if (vals != null) {
+      this.variables.putAll(vals);
+    }
     this.node = r.getNodeName();
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
+    if(vals==null) vals = Collections.emptyMap();
     this.name = name;
-    this.variables = vals;
+    if (vals != null) {
+      this.variables.putAll(vals);
+    }
+    this.isLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, "false")));
     this.collection = coll;
     this.shard = shard;
     this.type = type;
@@ -58,12 +70,22 @@ public class ReplicaInfo implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(name, (MapWriter) ew1 -> {
-      if (variables != null) {
-        for (Map.Entry<String, Object> e : variables.entrySet()) {
-          ew1.put(e.getKey(), e.getValue());
-        }
+      for (Map.Entry<String, Object> e : variables.entrySet()) {
+        ew1.put(e.getKey(), e.getValue());
       }
-      if (type != null) ew1.put("type", type.toString());
+      if (core != null && !variables.containsKey(ZkStateReader.CORE_NAME_PROP)) {
+        ew1.put(ZkStateReader.CORE_NAME_PROP, core);
+      }
+      if (shard != null && !variables.containsKey(ZkStateReader.SHARD_ID_PROP)) {
+        ew1.put(ZkStateReader.SHARD_ID_PROP, shard);
+      }
+      if (collection != null && !variables.containsKey(ZkStateReader.COLLECTION_PROP)) {
+        ew1.put(ZkStateReader.COLLECTION_PROP, collection);
+      }
+      if (node != null && !variables.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+        ew1.put(ZkStateReader.NODE_NAME_PROP, node);
+      }
+      if (type != null) ew1.put(ZkStateReader.REPLICA_TYPE, type.toString());
     });
   }
 

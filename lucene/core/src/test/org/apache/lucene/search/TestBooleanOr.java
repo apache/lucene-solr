@@ -186,7 +186,7 @@ public class TestBooleanOr extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
-    Weight w = s.createNormalizedWeight(bq.build(), true);
+    Weight w = s.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
 
     assertEquals(1, s.getIndexReader().leaves().size());
     BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0));
@@ -202,8 +202,8 @@ public class TestBooleanOr extends LuceneTestCase {
         }
         
         @Override
-        public boolean needsScores() {
-          return false;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
         }
       };
 

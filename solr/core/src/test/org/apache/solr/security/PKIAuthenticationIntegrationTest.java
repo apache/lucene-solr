@@ -16,12 +16,10 @@
  */
 package org.apache.solr.security;
 
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -77,9 +75,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
     final AtomicInteger count = new AtomicInteger();
 
 
-    MockAuthorizationPlugin.predicate = new Predicate<AuthorizationContext>() {
-      @Override
-      public boolean test(AuthorizationContext context) {
+    MockAuthorizationPlugin.predicate = context -> {
         if ("/select".equals(context.getResource())) {
           Principal principal = context.getUserPrincipal();
           log.info("principalIs : {}", principal);
@@ -88,22 +84,19 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
           }
         }
         return true;
-      }
     };
 
-    MockAuthenticationPlugin.predicate = new Predicate<ServletRequest>() {
-      @Override
-      public boolean test(ServletRequest servletRequest) {
+    MockAuthenticationPlugin.predicate = servletRequest -> {
         String s = ((HttpServletRequest) servletRequest).getQueryString();
         if (s != null && s.contains("__user=solr") && s.contains("__pwd=SolrRocks")) {
           servletRequest.setAttribute(Principal.class.getName(), "solr");
         }
         return true;
-      }
     };
     QueryRequest query = new QueryRequest(params);
     query.process(cluster.getSolrClient(), "collection");
-    assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(),count.get() > 2);
+    assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(), count.get() > 2);
+
   }
 
   @After

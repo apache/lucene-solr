@@ -62,6 +62,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...
@@ -102,13 +104,13 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
-    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, false, 1f);
+    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
     Set<Term> terms = new HashSet<>();
     weight.extractTerms(terms);
     Term[] termArr =terms.toArray(new Term[0]);
     assertEquals(1, termArr.length);
 
-    weight = toChildBlockJoinQuery.createWeight(indexSearcher, false, 1f);
+    weight = toChildBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
     terms = new HashSet<>();
     weight.extractTerms(terms);
     termArr =terms.toArray(new Term[0]);
@@ -831,7 +833,7 @@ public class TestBlockJoin extends LuceneTestCase {
           int childId = Integer.parseInt(document.get("childID"));
           //System.out.println("  hit docID=" + hit.doc + " childId=" + childId + " parentId=" + document.get("parentID"));
           assertTrue(explanation.isMatch());
-          assertEquals(hit.score, explanation.getValue(), 0.0f);
+          assertEquals(hit.score, explanation.getValue().doubleValue(), 0.0f);
           Matcher m = Pattern.compile("Score based on ([0-9]+) child docs in range from ([0-9]+) to ([0-9]+), best match:").matcher(explanation.getDescription());
           assertTrue("Block Join description not matches", m.matches());
           assertTrue("Matched children not positive", Integer.parseInt(m.group(1)) > 0);
@@ -1111,7 +1113,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, org.apache.lucene.search.ScoreMode.COMPLETE);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(1, sc.iterator().advance(1));
     r.close();
@@ -1145,7 +1147,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, org.apache.lucene.search.ScoreMode.COMPLETE);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(2, sc.iterator().advance(0));
     r.close();
@@ -1197,7 +1199,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(r, parentsFilter);
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    Weight weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    Weight weight = searcher.createNormalizedWeight(childJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1205,7 +1207,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childQuery = new TermQuery(new Term("bogus", "bogus"));
     childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    weight = searcher.createNormalizedWeight(childJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1371,7 +1373,7 @@ public class TestBlockJoin extends LuceneTestCase {
     TopDocs hits = s.search(toChildQuery, 10);
     assertEquals(hits.scoreDocs.length, 2);
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      assertEquals(hits.scoreDocs[i].score, s.explain(toChildQuery, hits.scoreDocs[i].doc).getValue(), 0.01);
+      assertEquals(hits.scoreDocs[i].score, s.explain(toChildQuery, hits.scoreDocs[i].doc).getValue().doubleValue(), 0f);
     }
 
     r.close();
@@ -1399,7 +1401,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentFilter);
 
-    Weight weight = s.createNormalizedWeight(parentJoinQuery, random().nextBoolean());
+    Weight weight = s.createNormalizedWeight(parentJoinQuery, RandomPicks.randomFrom(random(), org.apache.lucene.search.ScoreMode.values()));
     Scorer advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
     Scorer nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
 

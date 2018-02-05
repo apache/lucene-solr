@@ -43,14 +43,13 @@ public class Row implements MapWriter {
   boolean anyValueMissing = false;
   boolean isLive = true;
 
-  public Row(String node, List<String> params, List<String> perReplicaAttributes, SolrCloudManager cloudManager) {
-    NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
-    collectionVsShardVsReplicas = nodeStateProvider.getReplicaInfo(node, perReplicaAttributes);
+  public Row(String node, List<String> params, List<String> perReplicaAttributes, Policy.Session session) {
+    collectionVsShardVsReplicas = session.nodeStateProvider.getReplicaInfo(node, perReplicaAttributes);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    isLive = cloudManager.getClusterStateProvider().getLiveNodes().contains(node);
-    Map<String, Object> vals = isLive ? nodeStateProvider.getNodeValues(node, params) : Collections.emptyMap();
+    isLive = session.cloudManager.getClusterStateProvider().getLiveNodes().contains(node);
+    Map<String, Object> vals = isLive ? session.nodeStateProvider.getNodeValues(node, params) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
       cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));

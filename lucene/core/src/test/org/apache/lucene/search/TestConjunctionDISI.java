@@ -147,10 +147,9 @@ public class TestConjunctionDISI extends LuceneTestCase {
       }
 
       @Override
-      public int freq() throws IOException {
+      public float maxScore() {
         return 0;
       }
-
     };
   }
 

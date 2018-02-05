@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -29,6 +30,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -41,6 +43,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
+  protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -72,6 +75,12 @@ public class TextField extends FieldType {
     String autoGeneratePhraseQueriesStr = args.remove(AUTO_GENERATE_PHRASE_QUERIES);
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
+
+    synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
+    String synonymQueryStyle = args.remove(SYNONYM_QUERY_STYLE);
+    if (synonymQueryStyle != null) {
+      this.synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase(Locale.ROOT));
+    }
     
     enableGraphQueries = true;
     String enableGraphQueriesStr = args.remove(ENABLE_GRAPH_QUERIES);
@@ -104,11 +113,18 @@ public class TextField extends FieldType {
     return enableGraphQueries;
   }
 
+  public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}
+
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in its chain? */
-    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, reverse,
-                                 SortField.STRING_FIRST, SortField.STRING_LAST);
+    return getSortedSetSortField(field,
+                                 // historical behavior based on how the early versions of the FieldCache
+                                 // would deal with multiple indexed terms in a singled valued field...
+                                 //
+                                 // Always use the 'min' value from the (Uninverted) "psuedo doc values"
+                                 SortedSetSelector.Type.MIN,
+                                 reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
   
   @Override

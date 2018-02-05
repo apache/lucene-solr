@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -42,7 +40,6 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -55,32 +52,14 @@ import org.slf4j.LoggerFactory;
 public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
-  
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness h : restTestHarnesses) {
-      h.close();
-    }
-  }
 
   @Test
   public void test() throws Exception {
-    setupHarnesses();
+    setupRestTestHarnesses();
     try {
       reloadTest();
     } finally {
-      for (RestTestHarness h : restTestHarnesses) {
-        h.close();
-      }
+      closeRestTestHarnesses();
     }
   }
 

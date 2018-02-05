@@ -22,8 +22,10 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  *
@@ -32,6 +34,7 @@ import org.junit.BeforeClass;
     BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
+@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   private static MiniDFSCluster dfsCluster;
@@ -52,6 +55,18 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     cluster.shutdown(); // need to close before the MiniDFSCluster
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
+  }
+
+  @Test
+  public void testNormalMove() throws Exception {
+    inPlaceMove = false;
+    test();
+  }
+
+  @Test
+  public void testNormalFailedMove() throws Exception {
+    inPlaceMove = false;
+    testFailedMove();
   }
 
   public static class ForkJoinThreadsFilter implements ThreadFilter {

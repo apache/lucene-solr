@@ -22,7 +22,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
@@ -33,6 +35,10 @@ public class FilterQuery extends ExtendedQueryBase {
   protected final Query q;
 
   public FilterQuery(Query q) {
+    if (q == null) {
+      this.q = new MatchNoDocsQuery();
+      return;
+    }
     this.q = q;
   }
 
@@ -73,18 +79,18 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     // SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
 
     if (!(searcher instanceof SolrIndexSearcher)) {
       // delete-by-query won't have SolrIndexSearcher
-      return new BoostQuery(new ConstantScoreQuery(q), 0).createWeight(searcher, needScores, 1f);
+      return new BoostQuery(new ConstantScoreQuery(q), 0).createWeight(searcher, scoreMode, 1f);
     }
 
     SolrIndexSearcher solrSearcher = (SolrIndexSearcher)searcher;
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, needScores, 1f);
+    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, scoreMode, 1f);
   }
 }

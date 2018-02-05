@@ -35,6 +35,23 @@ To create a configset, simply add a new directory under the configset base direc
 
 The default base directory is `$SOLR_HOME/configsets`, and it can be configured in `solr.xml`.
 
-To create a new core using a configset, pass `configSet` as one of the core properties. For example, if you do this via the core admin API:
+To create a new core using a configset, pass `configSet` as one of the core properties. For example, if you do this via the CoreAdmin API:
 
-`\http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2`
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1api]
+====
+[.tab-label]*V1 API*
+
+[source,text]
+curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
+====
+
+[example.tab-pane#v2api]
+====
+[.tab-label]*V2 API*
+[source,text]
+curl -v -X POST -H 'Content-type: application/json' -d '{"create":[{"name":"mycore", "instanceDir":"path/to/instance", "configSet":"configSet2"}]}' http://localhost:8983/api/cores
+====
+--

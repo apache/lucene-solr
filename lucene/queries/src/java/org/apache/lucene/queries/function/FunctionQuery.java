@@ -27,6 +27,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -75,6 +76,11 @@ public class FunctionQuery extends Query {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context)).explain(doc);
     }
@@ -110,23 +116,28 @@ public class FunctionQuery extends Query {
 
     @Override
     public float score() throws IOException {
-      float score = boost * vals.floatVal(docID());
-
-      // Current Lucene priority queues can't handle NaN and -Infinity, so
-      // map to -Float.MAX_VALUE. This conditional handles both -infinity
-      // and NaN since comparisons with NaN are always false.
-      return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+      float val = vals.floatVal(docID());
+      if (val >= 0 == false) { // this covers NaN as well since comparisons with NaN return false
+        return 0;
+      } else {
+        return boost * val;
+      }
     }
 
     @Override
-    public int freq() throws IOException {
-      return 1;
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
     }
 
     public Explanation explain(int doc) throws IOException {
-      float sc = boost * vals.floatVal(doc);
+      Explanation expl = vals.explain(doc);
+      if (expl.getValue().floatValue() < 0) {
+        expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
+      } else if (Float.isNaN(expl.getValue().floatValue())) {
+        expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+      }
 
-      return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
+      return Explanation.match(boost * expl.getValue().floatValue(), "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
           Explanation.match(weight.boost, "boost"));
     }
@@ -135,7 +146,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
 

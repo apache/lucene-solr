@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 
@@ -213,7 +214,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       writer.writePendingUpdates();
 
       boolean found = false;
-      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeOut.hasTimedOut())  {
         DocCollection c1 = reader.getClusterState().getCollection("c1");
         if ("y".equals(c1.getStr("x"))) {

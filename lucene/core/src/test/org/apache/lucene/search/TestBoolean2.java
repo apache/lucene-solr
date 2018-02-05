@@ -148,7 +148,7 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     singleSegmentReader = DirectoryReader.open(singleSegmentDirectory);
     singleSegmentSearcher = newSearcher(singleSegmentReader);
-    singleSegmentSearcher.setSimilarity(searcher.getSimilarity(true));
+    singleSegmentSearcher.setSimilarity(searcher.getSimilarity());
     
     // Make big index
     dir2 = copyOf(directory);
@@ -379,17 +379,17 @@ public class TestBoolean2 extends LuceneTestCase {
         QueryUtils.check(random(), q1,searcher); // baseline sim
         try {
           // a little hackish, QueryUtils.check is too costly to do on bigSearcher in this loop.
-          searcher.setSimilarity(bigSearcher.getSimilarity(true)); // random sim
+          searcher.setSimilarity(bigSearcher.getSimilarity()); // random sim
           QueryUtils.check(random(), q1, searcher);
         } finally {
           searcher.setSimilarity(new ClassicSimilarity()); // restore
         }
 
         // check diff (randomized) scorers (from AssertingSearcher) produce the same results
-        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, false, true, true);
+        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, false, true, true, false);
         searcher.search(q1, collector);
         ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000, false, true, true);
+        collector = TopFieldCollector.create(sort, 1000, false, true, true, false);
         searcher.search(q1, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
         tot+=hits2.length;
@@ -402,10 +402,10 @@ public class TestBoolean2 extends LuceneTestCase {
         assertEquals(mulFactor*collector.totalHits + NUM_EXTRA_DOCS/2, hits4.totalHits);
 
         // test diff (randomized) scorers produce the same results on bigSearcher as well
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false, true, true);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false, true, true, false);
         bigSearcher.search(q1, collector);
         hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false, true, true);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false, true, true, false);
         bigSearcher.search(q1, collector);
         hits2 = collector.topDocs().scoreDocs;
         CheckHits.checkEqual(q1, hits1, hits2);

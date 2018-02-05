@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.handler.TestBlobHandler;
@@ -30,9 +29,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -41,32 +38,16 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
 public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
 
   @BeforeClass
   public static void enableRuntimeLib() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
   }
 
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness r : restTestHarnesses) {
-      r.close();
-    }
-  }
-
   @Test
   public void testDynamicLoading() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    setupHarnesses();
+    setupRestTestHarnesses();
 
     String blobName = "colltest";
     boolean success = false;
@@ -78,7 +59,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     String payload = "{\n" +
         "'add-runtimelib' : { 'name' : 'colltest' ,'version':1}\n" +
         "}";
-    RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    RestTestHarness client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
@@ -92,7 +73,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "'create-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandler' ,registerPath: '/solr,/v2',  'runtimeLib' : true }\n" +
         "}";
 
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client,"/config",payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
@@ -156,7 +137,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "'create-searchcomponent' : { 'name' : 'get', 'class': 'org.apache.solr.core.RuntimeLibSearchComponent' , 'runtimeLib':true }," +
         "'create-queryResponseWriter' : { 'name' : 'json1', 'class': 'org.apache.solr.core.RuntimeLibResponseWriter' , 'runtimeLib':true }" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
 
     Map result = TestSolrConfigHandler.testForResponseElement(client,
@@ -197,7 +178,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     payload = "{\n" +
         "'update-runtimelib' : { 'name' : 'colltest' ,'version':2}\n" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,

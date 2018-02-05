@@ -17,11 +17,13 @@
 package org.apache.lucene.search;
 
 
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
@@ -270,6 +272,11 @@ public final class FuzzyTermsEnum extends TermsEnum {
   @Override
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     return actualEnum.postings(reuse, flags);
+  }
+  
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    return actualEnum.impacts(scorer, flags);
   }
   
   @Override

@@ -67,9 +67,6 @@ public abstract class Scorer {
    */
   public abstract float score() throws IOException;
 
-  /** Returns the freq of this Scorer on the current document */
-  public abstract int freq() throws IOException;
-
   /** returns parent Weight
    * @lucene.experimental
    */
@@ -146,4 +143,21 @@ public abstract class Scorer {
   public TwoPhaseIterator twoPhaseIterator() {
     return null;
   }
+
+  /**
+   * Optional method: Tell the scorer that its iterator may safely ignore all
+   * documents whose score is less than the given {@code minScore}. This is a
+   * no-op by default.
+   *
+   * This method may only be called from collectors that use
+   * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
+   * values of {@code minScore}.
+   */
+  public void setMinCompetitiveScore(float minScore) {
+    // no-op by default
+  }
+
+  /** Return the maximum score that this scorer may produce. If scores are not
+   *  bounded, {@link Float#POSITIVE_INFINITY} must be returned. */
+  public abstract float maxScore();
 }

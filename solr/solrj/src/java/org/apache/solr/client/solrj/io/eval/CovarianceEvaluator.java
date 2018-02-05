@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 
 import org.apache.commons.math3.linear.RealMatrix;
@@ -41,8 +40,8 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
       Covariance covariance = new Covariance();
 
       return covariance.covariance(
-          ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
     } else if(values.length == 1) {
       Matrix matrix = (Matrix) values[0];

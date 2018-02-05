@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,6 +37,10 @@ public class NestedQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    if (localParams == null) { // avoid an NPE later
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "the 'query' QParser must be invoked with local-params, e.g. {!query defType=...}");
+    }
     return new QParser(qstr, localParams, params, req) {
       QParser baseParser;
       ValueSource vs;

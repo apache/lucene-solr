@@ -293,7 +293,13 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
     assert freq >= 1;
-    final int prefix = StringHelper.bytesDifference(lastTerm, term);
+    final int prefix;
+    if (lastTerm.length == 0) {
+      // no previous term: no bytes to write
+      prefix = 0;
+    } else {
+      prefix = StringHelper.bytesDifference(lastTerm, term);
+    }
     curField.addTerm(freq, prefix, term.length - prefix);
     termSuffixes.writeBytes(term.bytes, term.offset + prefix, term.length - prefix);
     // copy last term

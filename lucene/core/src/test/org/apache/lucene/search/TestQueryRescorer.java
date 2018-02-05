@@ -257,7 +257,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertTrue(s.contains("combined first and second pass score"));
     assertTrue(s.contains("first pass score"));
     assertTrue(s.contains("= second pass score"));
-    assertEquals(hits2.scoreDocs[0].score, explain.getValue(), 0.0f);
+    assertEquals(hits2.scoreDocs[0].score, explain.getValue().doubleValue(), 0.0f);
 
     docID = hits2.scoreDocs[1].doc;
     explain = rescorer.explain(searcher,
@@ -269,7 +269,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertTrue(s.contains("first pass score"));
     assertTrue(s.contains("no second pass score"));
     assertFalse(s.contains("= second pass score"));
-    assertEquals(hits2.scoreDocs[1].score, explain.getValue(), 0.0f);
+    assertEquals(hits2.scoreDocs[1].score, explain.getValue().doubleValue(), 0.0f);
 
     r.close();
     dir.close();
@@ -418,7 +418,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
@@ -435,11 +435,6 @@ public class TestQueryRescorer extends LuceneTestCase {
             @Override
             public int docID() {
               return docID;
-            }
-
-            @Override
-            public int freq() {
-              return 1;
             }
 
             @Override
@@ -481,10 +476,20 @@ public class TestQueryRescorer extends LuceneTestCase {
                 return num;
               } else {
                 //System.out.println("score doc=" + docID + " num=" + -num);
-                return -num;
+                return 1f / (1 + num);
               }
             }
+
+            @Override
+            public float maxScore() {
+              return Float.POSITIVE_INFINITY;
+            }
           };
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
         }
 
         @Override

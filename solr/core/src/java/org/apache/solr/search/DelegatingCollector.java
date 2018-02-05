@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
@@ -63,8 +64,8 @@ public class DelegatingCollector extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return delegate.needsScores();
+  public ScoreMode scoreMode() {
+    return delegate.scoreMode();
   }
 
   @Override

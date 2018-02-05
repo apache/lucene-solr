@@ -1,5 +1,5 @@
 = Searching
-:page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, json-request-api, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface
+:page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, json-request-api, json-facet-api, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface, analytics
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,6 +32,7 @@ This section describes how Solr works with search requests. It covers the follow
 ** <<other-parsers.adoc#other-parsers,Other Parsers>>: More parsers designed for use in specific situations.
 * <<json-request-api.adoc#json-request-api,JSON Request API>>: Overview of Solr's JSON Request API.
 ** <<json-query-dsl.adoc#json-query-dsl,JSON Query DSL>>: Detailed information about a simple yet powerful query language for JSON Request API.
+* <<json-facet-api.adoc#json-facet-api,JSON Facet API>>: Overview of Solr's JSON Facet API.
 * <<faceting.adoc#faceting,Faceting>>: Detailed information about categorizing search results based on indexed terms.
 * <<highlighting.adoc#highlighting,Highlighting>>: Detailed information about Solr's highlighting capabilities, including multiple underlying highlighter implementations.
 * <<spell-checking.adoc#spell-checking,Spell Checking>>: Detailed information about Solr's spelling checker.
@@ -55,3 +56,4 @@ This section describes how Solr works with search requests. It covers the follow
 * <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
 * <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
 * <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>: An interface for sending SQL statements to Solr, and using advanced parallel query processing and relational algebra for complex data analysis.
+* <<analytics.adoc#analytics,The Analytics Component>>: A framework to compute complex analytics over a result set.

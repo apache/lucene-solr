@@ -417,7 +417,9 @@ final class SegmentTermsEnumFrame {
       // stats
       state.docFreq = statsReader.readVInt();
       //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      if (ste.fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
+      if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+        state.totalTermFreq = state.docFreq; // all postings have freq=1
+      } else {
         state.totalTermFreq = state.docFreq + statsReader.readVLong();
         //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
       }

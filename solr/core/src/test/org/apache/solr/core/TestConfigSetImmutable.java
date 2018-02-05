@@ -93,8 +93,10 @@ public class TestConfigSetImmutable extends RestTestBase {
 
     String response = restTestHarness.post("/schema", json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
-    assertNotNull(map.get("errors"));
-    assertTrue(map.get("errors").toString().contains("immutable"));
+    Map error = (Map)map.get("error");
+    assertNotNull("No errors", error);
+    String msg = (String)error.get("msg");
+    assertTrue(msg.contains("immutable"));
   }
 
   @Test

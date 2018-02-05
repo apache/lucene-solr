@@ -43,12 +43,27 @@ import org.apache.solr.search.SolrIndexSearcher;
 public abstract class SlotAcc implements Closeable {
   String key; // todo...
   protected final FacetContext fcontext;
+  protected LeafReaderContext currentReaderContext;
+  protected int currentDocBase;
 
   public SlotAcc(FacetContext fcontext) {
     this.fcontext = fcontext;
   }
 
-  public void setNextReader(LeafReaderContext readerContext) throws IOException {}
+  /**
+   * NOTE: this currently detects when it is being reused and calls resetIterators by comparing reader ords
+   * with previous calls to setNextReader.  For this reason, current users must call setNextReader
+   * in segment order.  Failure to do so will cause worse performance.
+   */
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    LeafReaderContext lastReaderContext = currentReaderContext;
+    currentReaderContext = readerContext;
+    currentDocBase = currentReaderContext.docBase;
+    if (lastReaderContext == null || lastReaderContext.ord >= currentReaderContext.ord) {
+      // if we went backwards (or reused) a reader, we need to reset iterators that can be used only once.
+      resetIterators();
+    }
+  }
 
   public abstract void collect(int doc, int slot) throws IOException;
 
@@ -96,7 +111,11 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
+  /** Called to reset the acc to a fresh state, ready for reuse */
   public abstract void reset() throws IOException;
+
+  /** Typically called from setNextReader to reset docValue iterators */
+  protected void resetIterators() throws IOException {};
 
   public abstract void resize(Resizer resizer);
 
@@ -208,6 +227,7 @@ abstract class FuncSlotAcc extends SlotAcc {
 
   @Override
   public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    super.setNextReader(readerContext);
     values = valueSource.getValues(fcontext.qcontext, readerContext);
   }
 }

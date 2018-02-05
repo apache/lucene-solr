@@ -26,8 +26,11 @@ import java.util.Set;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RTimer;
+
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -456,6 +459,238 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
             ,"//str[@name='id']='10'"
             );
 
+  }
+
+  @Test
+  public void testStringValue() throws Exception {
+    assertEquals("3.14,USD", new CurrencyValue(314, "USD").strValue());
+    assertEquals("-3.14,GBP", new CurrencyValue(-314, "GBP").strValue());
+    assertEquals("3.14,GBP", new CurrencyValue(314, "GBP").strValue());
+
+    CurrencyValue currencyValue = new CurrencyValue(314, "XYZ");
+    try {
+      String string = currencyValue.strValue();
+      fail("Expected SolrException");
+    } catch (SolrException exception) {
+    } catch (Throwable throwable) {
+      fail("Expected SolrException");
+    }
+  }
+
+  @Test
+  public void testRangeFacet() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider " +
+               "because it excercies the asymetric exchange rates option it supports",
+               expectedProviderClass.equals(FileExchangeRateProvider.class));
+    
+    clearIndex();
+    
+    // NOTE: in our test conversions EUR uses an asynetric echange rate
+    // these are the equivilent values when converting to:     USD        EUR        GBP
+    assertU(adoc("id", "" + 1, fieldName, "10.00,USD"));   // 10.00,USD  25.00,EUR   5.00,GBP
+    assertU(adoc("id", "" + 2, fieldName, "15.00,EUR"));   //  7.50,USD  15.00,EUR   7.50,GBP
+    assertU(adoc("id", "" + 3, fieldName, "6.00,GBP"));    // 12.00,USD  12.00,EUR   6.00,GBP
+    assertU(adoc("id", "" + 4, fieldName, "7.00,EUR"));    //  3.50,USD   7.00,EUR   3.50,GBP
+    assertU(adoc("id", "" + 5, fieldName, "2,GBP"));       //  4.00,USD   4.00,EUR   2.00,GBP
+    assertU(commit());
+
+    for (String suffix : Arrays.asList("", ",USD")) {
+      assertQ("Ensure that we get correct facet counts back in USD (explicit or implicit default) (facet.range)",
+              req("fl", "*,score", "q", "*:*", "rows", "0", "facet", "true",
+                  "facet.range", fieldName,
+                  "f." + fieldName + ".facet.range.start", "4.00" + suffix,
+                  "f." + fieldName + ".facet.range.end", "11.00" + suffix,
+                  "f." + fieldName + ".facet.range.gap", "1.00" + suffix,
+                  "f." + fieldName + ".facet.range.other", "all")
+              ,"count(//lst[@name='counts']/int)=7"
+              ,"//lst[@name='counts']/int[@name='4.00,USD']='1'"
+              ,"//lst[@name='counts']/int[@name='5.00,USD']='0'"
+              ,"//lst[@name='counts']/int[@name='6.00,USD']='0'"
+              ,"//lst[@name='counts']/int[@name='7.00,USD']='1'"
+              ,"//lst[@name='counts']/int[@name='8.00,USD']='0'"
+              ,"//lst[@name='counts']/int[@name='9.00,USD']='0'"
+              ,"//lst[@name='counts']/int[@name='10.00,USD']='1'"
+              ,"//int[@name='after']='1'"
+              ,"//int[@name='before']='1'"
+              ,"//int[@name='between']='3'"
+              );
+      assertQ("Ensure that we get correct facet counts back in USD (explicit or implicit default) (json.facet)",
+              req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
+                  "{ xxx : { type:range, field:" + fieldName + ", " +
+                  "          start:'4.00"+suffix+"', gap:'1.00"+suffix+"', end:'11.00"+suffix+"', other:all } }")
+              ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+              ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='1']"
+              ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
+              ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+              );
+    }
+
+    assertQ("Zero value as start range point + mincount (facet.range)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "facet", "true", "facet.mincount", "1",
+                "facet.range", fieldName,
+                "f." + fieldName + ".facet.range.start", "0,USD",
+                "f." + fieldName + ".facet.range.end", "11.00,USD",
+                "f." + fieldName + ".facet.range.gap", "1.00,USD",
+                "f." + fieldName + ".facet.range.other", "all")
+            ,"count(//lst[@name='counts']/int)=4"
+            ,"//lst[@name='counts']/int[@name='3.00,USD']='1'"
+            ,"//lst[@name='counts']/int[@name='4.00,USD']='1'"
+            ,"//lst[@name='counts']/int[@name='7.00,USD']='1'"
+            ,"//lst[@name='counts']/int[@name='10.00,USD']='1'"
+            ,"//int[@name='before']='0'"
+            ,"//int[@name='after']='1'"
+            ,"//int[@name='between']='4'"
+            );
+    assertQ("Zero value as start range point + mincount (json.facet)", 
+            req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
+                "{ xxx : { type:range, mincount:1, field:" + fieldName +
+                ", start:'0.00,USD', gap:'1.00,USD', end:'11.00,USD', other:all } }")
+            ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=4"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='3.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='0']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='4']"
+            );
+
+    // NOTE: because of asymetric EUR exchange rate, these buckets are diff then the similar looking USD based request above
+    // This request converts the values in each doc into EUR to decide what range buck it's in.
+    assertQ("Ensure that we get correct facet counts back in EUR (facet.range)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "facet", "true",
+                "facet.range", fieldName,
+                "f." + fieldName + ".facet.range.start", "8.00,EUR",
+                "f." + fieldName + ".facet.range.end", "22.00,EUR",
+                "f." + fieldName + ".facet.range.gap", "2.00,EUR",
+                "f." + fieldName + ".facet.range.other", "all"
+                )
+            , "count(//lst[@name='counts']/int)=7"
+            , "//lst[@name='counts']/int[@name='8.00,EUR']='0'"
+            , "//lst[@name='counts']/int[@name='10.00,EUR']='0'"
+            , "//lst[@name='counts']/int[@name='12.00,EUR']='1'"
+            , "//lst[@name='counts']/int[@name='14.00,EUR']='1'"
+            , "//lst[@name='counts']/int[@name='16.00,EUR']='0'"
+            , "//lst[@name='counts']/int[@name='18.00,EUR']='0'"
+            , "//lst[@name='counts']/int[@name='20.00,EUR']='0'"
+            , "//int[@name='before']='2'"
+            , "//int[@name='after']='1'"
+            , "//int[@name='between']='2'"
+            );
+    assertQ("Ensure that we get correct facet counts back in EUR (json.facet)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
+                "{ xxx : { type:range, field:" + fieldName + ", start:'8.00,EUR', gap:'2.00,EUR', end:'22.00,EUR', other:all } }")
+            ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='10.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='12.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='14.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='16.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='18.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='20.00,EUR']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='2']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='2']"
+            );
+
+    
+    // GBP has a symetric echange rate with USD, so these counts are *similar* to the USD based request above...
+    // but the asymetric EUR/USD rate means that when computing counts realtive to GBP the EUR based docs wind up in
+    // diff buckets
+    assertQ("Ensure that we get correct facet counts back in GBP (facet.range)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "facet", "true",
+                "facet.range", fieldName,
+                "f." + fieldName + ".facet.range.start", "2.00,GBP",
+                "f." + fieldName + ".facet.range.end", "5.50,GBP",
+                "f." + fieldName + ".facet.range.gap", "0.50,GBP",
+                "f." + fieldName + ".facet.range.other", "all"
+                )
+            , "count(//lst[@name='counts']/int)=7"
+            , "//lst[@name='counts']/int[@name='2.00,GBP']='1'"
+            , "//lst[@name='counts']/int[@name='2.50,GBP']='0'"
+            , "//lst[@name='counts']/int[@name='3.00,GBP']='0'"
+            , "//lst[@name='counts']/int[@name='3.50,GBP']='1'"
+            , "//lst[@name='counts']/int[@name='4.00,GBP']='0'"
+            , "//lst[@name='counts']/int[@name='4.50,GBP']='0'"
+            , "//lst[@name='counts']/int[@name='5.00,GBP']='1'"
+            , "//int[@name='before']='0'"
+            , "//int[@name='after']='2'"
+            , "//int[@name='between']='3'"
+            );
+    assertQ("Ensure that we get correct facet counts back in GBP (json.facet)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
+                "{ xxx : { type:range, field:" + fieldName + ", start:'2.00,GBP', gap:'0.50,GBP', end:'5.50,GBP', other:all } }")
+            ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='2.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='2.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='3.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='3.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='4.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='4.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='5.00,GBP']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='0']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='2']"
+            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+            );
+
+    assertQ("Ensure that we can set a gap in a currency other than the start and end currencies (facet.range)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "facet", "true",
+                "facet.range", fieldName,
+                "f." + fieldName + ".facet.range.start", "4.00,USD",
+                "f." + fieldName + ".facet.range.end", "11.00,USD",
+                "f." + fieldName + ".facet.range.gap", "0.50,GBP",
+                "f." + fieldName + ".facet.range.other", "all"
+                )
+            , "count(//lst[@name='counts']/int)=7"
+            , "//lst[@name='counts']/int[@name='4.00,USD']='1'"
+            , "//lst[@name='counts']/int[@name='5.00,USD']='0'"
+            , "//lst[@name='counts']/int[@name='6.00,USD']='0'"
+            , "//lst[@name='counts']/int[@name='7.00,USD']='1'"
+            , "//lst[@name='counts']/int[@name='8.00,USD']='0'"
+            , "//lst[@name='counts']/int[@name='9.00,USD']='0'"
+            , "//lst[@name='counts']/int[@name='10.00,USD']='1'"
+            , "//int[@name='before']='1'"
+            , "//int[@name='after']='1'"
+            , "//int[@name='between']='3'"
+            );
+    assertQ("Ensure that we can set a gap in a currency other than the start and end currencies (json.facet)",
+            req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
+                "{ xxx : { type:range, field:" + fieldName + ", start:'4.00,USD', gap:'0.50,GBP', end:'11.00,USD', other:all } }")
+            ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+            
+            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+            );
+
+    for (SolrParams facet : Arrays.asList(params("facet", "true",
+                                                 "facet.range", fieldName,
+                                                 "f." + fieldName + ".facet.range.start", "4.00,USD",
+                                                 "f." + fieldName + ".facet.range.end", "11.00,EUR",
+                                                 "f." + fieldName + ".facet.range.gap", "1.00,USD",
+                                                 "f." + fieldName + ".facet.range.other", "all"),
+                                          params("json.facet",
+                                                 "{ xxx : { type:range, field:" + fieldName + ", start:'4.00,USD', " +
+                                                 "          gap:'1.00,USD', end:'11.00,EUR', other:all } }"))) {
+      assertQEx("Ensure that we throw an error if we try to use different start and end currencies",
+                "Cannot compare CurrencyValues when their currencies are not equal", 
+                req(facet, "q", "*:*"),
+                SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test

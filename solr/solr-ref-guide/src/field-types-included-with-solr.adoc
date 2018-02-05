@@ -69,6 +69,8 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
 
+|SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis -- the number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
+
 |TextField |Text, usually multiple words or tokens.
 
 |TrieDateField |*Deprecated*. Use DatePointField instead.
@@ -87,3 +89,8 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 *Note*: configuring a UUIDField instance with a default value of `NEW` is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using UUIDUpdateProcessorFactory to generate UUID values when documents are added is recommended instead.
 |===
+
+NOTE: All Trie* numeric and date field types have been deprecated in favor of *Point field types.
+      Point field types are better at range queries (speed, memory, disk), however simple field:value queries underperform
+      relative to Trie. Either accept this, or continue to use Trie fields.
+      This shortcoming may be addressed in a future release.

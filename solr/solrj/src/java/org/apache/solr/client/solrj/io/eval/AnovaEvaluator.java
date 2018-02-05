@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +47,7 @@ public class AnovaEvaluator extends RecursiveNumericListEvaluator implements Man
     
     List<double[]> anovaInput = Arrays.stream(values)
         // for each List, convert to double[]
-        .map(value -> ((List<BigDecimal>)value).stream().mapToDouble(BigDecimal::doubleValue).toArray())
+        .map(value -> ((List<Number>)value).stream().mapToDouble(Number::doubleValue).toArray())
         // turn into List<double[]>
         .collect(Collectors.toList());
     

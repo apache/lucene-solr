@@ -27,6 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.model.WrapperModel;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
@@ -231,7 +232,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
       }
     }
 
-    return LTRScoringModel.getInstance(solrResourceLoader,
+    final LTRScoringModel ltrScoringModel = LTRScoringModel.getInstance(solrResourceLoader,
         (String) modelMap.get(CLASS_KEY), // modelClassName
         (String) modelMap.get(NAME_KEY), // modelName
         features,
@@ -239,6 +240,28 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
         featureStore.getName(),
         featureStore.getFeatures(),
         (Map<String,Object>) modelMap.get(PARAMS_KEY));
+
+    if (ltrScoringModel instanceof WrapperModel) {
+      initWrapperModel(solrResourceLoader, (WrapperModel)ltrScoringModel, managedFeatureStore);
+    }
+
+    return ltrScoringModel;
+  }
+
+  private static void initWrapperModel(SolrResourceLoader solrResourceLoader,
+                                       WrapperModel wrapperModel, ManagedFeatureStore managedFeatureStore) {
+    wrapperModel.setSolrResourceLoader(solrResourceLoader);
+    final LTRScoringModel model = fromLTRScoringModelMap(
+        solrResourceLoader,
+        wrapperModel.fetchModelMap(),
+        managedFeatureStore);
+    if (model instanceof WrapperModel) {
+      log.warn("It is unusual for one WrapperModel ({}) to wrap another WrapperModel ({})",
+          wrapperModel.getName(),
+          model.getName());
+      initWrapperModel(solrResourceLoader, (WrapperModel)model, managedFeatureStore);
+    }
+    wrapperModel.updateModel(model);
   }
 
   private static LinkedHashMap<String,Object> toLTRScoringModelMap(LTRScoringModel model) {
@@ -249,10 +272,12 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     modelMap.put(STORE_KEY, model.getFeatureStoreName());
 
     final List<Map<String,Object>> features = new ArrayList<>();
-    final List<Feature> featuresList = model.getFeatures();
-    final List<Normalizer> normsList = model.getNorms();
-    for (int ii=0; ii<featuresList.size(); ++ii) {
-      features.add(toFeatureMap(featuresList.get(ii), normsList.get(ii)));
+    if (!(model instanceof WrapperModel)) {
+      final List<Feature> featuresList = model.getFeatures();
+      final List<Normalizer> normsList = model.getNorms();
+      for (int ii = 0; ii < featuresList.size(); ++ii) {
+        features.add(toFeatureMap(featuresList.get(ii), normsList.get(ii)));
+      }
     }
     modelMap.put(FEATURES_KEY, features);
 

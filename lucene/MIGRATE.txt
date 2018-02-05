@@ -1,146 +1,32 @@
 # Apache Lucene Migration Guide
 
-## Changed SPI lookups for codecs and analysis changed (LUCENE-7873) ##
+## Similarity.SimScorer.computeXXXFactor methods removed (LUCENE-8014) ##
 
-Due to serious problems with context class loaders in several frameworks
-(OSGI, Java 9 Jigsaw), the lookup of Codecs, PostingsFormats, DocValuesFormats
-and all analysis factories was changed to only inspect the current classloader
-that defined the interface class (`lucene-core.jar`). Normal applications
-should not encounter any issues with that change, because the application
-classloader (unnamed module in Java 9) can load all SPIs from all JARs
-from classpath.
+SpanQuery and PhraseQuery now always calculate their slops as (1.0 / (1.0 +
+distance)).  Payload factor calculation is performed by PayloadDecoder in the
+queries module
 
-For any code that relies on the old behaviour (e.g., certain web applications
-or components in application servers) one can manually instruct the Lucene
-SPI implementation to also inspect the context classloader. To do this,
-add this code to the early startup phase of your application before any
-Apache Lucene component is used:
 
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
-    // Codecs:
-    PostingsFormat.reloadPostingsFormats(cl);
-    DocValuesFormat.reloadDocValuesFormats(cl);
-    Codec.reloadCodecs(cl);
-    // Analysis:
-    CharFilterFactory.reloadCharFilters(cl);
-    TokenFilterFactory.reloadTokenFilters(cl);
-    TokenizerFactory.reloadTokenizers(cl);
+## Scorer must produce positive scores (LUCENE-7996) ##
 
-This code will reload all service providers from the given class loader
-(in our case the context class loader). Of course, instead of specifying
-the context class loader, it is receommended to use the application's main
-class loader or the module class loader.
+Scorers are no longer allowed to produce negative scores. If you have custom
+query implementations, you should make sure their score formula may never produce
+negative scores.
 
-If you are migrating your project to Java 9 Jigsaw module system, keep in mind
-that Lucene currently does not yet support `module-info.java` declarations of
-service provider impls (`provides` statement). It is therefore recommended
-to keep all of Lucene in one Uber-Module and not try to split Lucene into
-several modules. As soon as Lucene will migrate to Java 9 as minimum
-requirement, we will work on improving that.
+As a side-effect of this change, negative boosts are now rejected and
+FunctionScoreQuery maps negative values to 0.
 
-For OSGI, the same applies. You have to create a bundle with all of Lucene for
-SPI to work correctly.
 
-## CustomAnalyzer resources (LUCENE-7883)##
+## CustomScoreQuery, BoostedQuery and BoostingQuery removed (LUCENE-8099) ##
 
-Lucene no longer uses the context class loader when resolving resources in
-CustomAnalyzer or ClassPathResourceLoader. Resources are only resolved
-against Lucene's class loader by default. Please use another builder method
-to change to a custom classloader.
+Instead use FunctionScoreQuery and a DoubleValuesSource implementation.  BoostedQuery
+and BoostingQuery may be replaced by calls to FunctionScoreQuery.boostByValue() and
+FunctionScoreQuery.boostByQuery().  To replace more complex calculations in
+CustomScoreQuery, use the lucene-expressions module:
 
-## Query.hashCode and Query.equals are now abstract methods (LUCENE-7277)
-
-Any custom query subclasses should redeclare equivalence relationship according
-to the subclass's details. See code patterns used in existing core Lucene query
-classes for details.
-
-## CompressionTools removed (LUCENE-7322)
-
-Per-field compression has been superseded by codec-level compression, which has
-the benefit of being able to compress several fields, or even documents at once,
-yielding better compression ratios. In case you would still like to compress on
-top of the codec, you can do it on the application side by using the utility
-classes from the java.util.zip package.
-
-## Explanation.toHtml() removed (LUCENE-7360)
-
-Clients wishing to render Explanations as HTML should implement their own
-utilities for this.
-
-## Similarity.coord and BooleanQuery.disableCoord removed (LUCENE-7369)
-
-Coordination factors were a workaround for the fact that the ClassicSimilarity
-does not have strong enough term frequency saturation. This causes disjunctions
-to get better scores on documents that have many occurrences of a few query
-terms than on documents that match most clauses, which is most of time
-undesirable. The new BM25Similarity does not suffer from this problem since it
-has better saturation for the contribution of the term frequency so the coord
-factors have been removed from scores. Things now work as if coords were always
-disabled when constructing boolean queries.
-
-## Weight.getValueForNormalization() and Weight.normalize() removed (LUCENE-7368)
-
-Query normalization's goal was to make scores comparable across queries, which
-was only implemented by the ClassicSimilarity. Since ClassicSimilarity is not
-the default similarity anymore, this functionality has been removed. Boosts are
-now propagated through Query#createWeight.
-
-## AnalyzingQueryParser removed (LUCENE-7355)
-
-The functionality of AnalyzingQueryParser has been folded into the classic
-QueryParser, which now passes terms through Analyzer#normalize when generating
-queries.
-
-## CommonQueryParserConfiguration.setLowerCaseExpandedTerms removed (LUCENE-7355)
-
-This option has been removed as expanded terms are now normalized through
-Analyzer#normalize.
-
-## Cache key and close listener refactoring (LUCENE-7410)
-
-The way to access cache keys and add close listeners has been refactored in
-order to be less trappy. You should now use IndexReader.getReaderCacheHelper()
-to have manage caches that take deleted docs and doc values updates into
-account, and LeafReader.getCoreCacheHelper() to manage per-segment caches that
-do not take deleted docs and doc values updates into account.
-
-## Index-time boosts removal (LUCENE-6819)
-
-Index-time boosts are not supported anymore. As a replacement, index-time
-scoring factors should be indexed in a doc value field and combined with the
-score at query time using FunctionScoreQuery for instance.
-
-## Grouping collector refactoring (LUCENE-7701)
-
-Groups are now defined by GroupSelector classes, making it easier to define new
-types of groups.  Rather than having term or function specific collection
-classes, FirstPassGroupingCollector, AllGroupsCollector and
-AllGroupHeadsCollector are now concrete classes taking a GroupSelector.
-
-SecondPassGroupingCollector is no longer specifically aimed at
-collecting TopDocs for each group, but instead takes a GroupReducer that will
-perform any type of reduction on the top groups collected on a first-pass.  To
-reproduce the old behaviour of SecondPassGroupingCollector, you should instead
-use TopGroupsCollector.
-
-## Removed legacy numerics (LUCENE-7850)
-
-Support for legacy numerics has been removed since legacy numerics had been
-deprecated since Lucene 6.0. Points should be used instead, see
-org.apache.lucene.index.PointValues for an introduction.
-
-## TopDocs.totalHits is now a long (LUCENE-7872)
-
-TopDocs.totalHits is now a long so that TopDocs instances can be used to
-represent top hits that have more than 2B matches. This is necessary for the
-case that multiple TopDocs instances are merged together with TopDocs#merge as
-they might have more than 2B matches in total. However TopDocs instances
-returned by IndexSearcher will still have a total number of hits which is less
-than 2B since Lucene indexes are still bound to at most 2B documents, so it
-can safely be casted to an int in that case.
-
-## PrefixAwareTokenFilter and PrefixAndSuffixAwareTokenFilter removed
-(LUCENE-7877)
-
-Instead use ConcatentingTokenStream, which will allow for the use of custom
-attributes.
+SimpleBindings bindings = new SimpleBindings();
+bindings.add("score", DoubleValuesSource.SCORES);
+bindings.add("boost1", DoubleValuesSource.fromIntField("myboostfield"));
+bindings.add("boost2", DoubleValuesSource.fromIntField("myotherboostfield"));
+Expression expr = JavascriptCompiler.compile("score * (boost1 + ln(boost2))");
+FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));

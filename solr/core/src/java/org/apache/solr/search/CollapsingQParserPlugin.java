@@ -47,6 +47,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -450,6 +451,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return score;
     }
 
+    @Override
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
+    }
+
     public int freq() {
       return 0;
     }
@@ -534,7 +540,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    @Override public boolean needsScores() { return true; }
+    @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE; }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
@@ -769,7 +775,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     }
 
-    @Override public boolean needsScores() { return true; }
+    @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE; }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
@@ -987,7 +993,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    @Override public boolean needsScores() { return needsScores || super.needsScores(); }
+    @Override public ScoreMode scoreMode() { return needsScores ? ScoreMode.COMPLETE : super.scoreMode(); }
 
     public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
@@ -1177,7 +1183,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    @Override public boolean needsScores() { return needsScores || super.needsScores(); }
+    @Override public ScoreMode scoreMode() { return needsScores ? ScoreMode.COMPLETE : super.scoreMode(); }
 
     public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
