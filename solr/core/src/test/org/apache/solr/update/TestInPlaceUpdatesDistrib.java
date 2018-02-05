@@ -144,6 +144,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     outOfOrderUpdatesIndividualReplicaTest();
     delayedReorderingFetchesMissingUpdateFromLeaderTest();
     updatingDVsInAVeryOldSegment();
+    updateExistedAndNonExistedDocs();
 
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
     reorderedDBQIndividualReplicaTest();
@@ -409,6 +410,42 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("updatingDVsInAVeryOldSegment: This test passed fine...");
+  }
+
+
+  /**
+   * Test scenario:
+   * <ul>
+   *   <li>Send a batch of documents to one node</li>
+   *   <li>Batch consist of an update for document which is existed and an update for documents which is not existed </li>
+   *   <li>Assumption which is made is that both updates will be applied: field for existed document will be updated,
+   *   new document will be created for a non existed one</li>
+   * </ul>
+   *
+   * @throws Exception
+   */
+  private void updateExistedAndNonExistedDocs() throws Exception {
+    clearIndex();
+    index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
+    commit();
+    SolrInputDocument existedUpdate = new SolrInputDocument();
+    existedUpdate.setField("id", 1);
+    existedUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    SolrInputDocument nonExistedUpdate = new SolrInputDocument();
+    nonExistedUpdate.setField("id", 2);
+    nonExistedUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    indexDocs(Arrays.asList(existedUpdate, nonExistedUpdate));
+    commit();
+    String[] ids = {"1", "2"};
+    for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
+      for (String id : ids) {
+        SolrDocument doc = client.getById(id);
+        assertNotNull(doc);
+        assertEquals(50.0f, doc.get("inplace_updatable_float"));
+      }
+    }
   }
 
   /**
