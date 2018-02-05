@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -106,20 +104,6 @@ public class TestArrayUtil extends LuceneTestCase {
     assertTrue(test + " does not equal: " + -1, test == -1);
     test = ArrayUtil.parseInt("foo 1923 bar".toCharArray(), 4, 4);
     assertTrue(test + " does not equal: " + 1923, test == 1923);
-  }
-
-  public void testSliceEquals() {
-    String left = "this is equal";
-    String right = left;
-    byte[] leftChars = left.getBytes(StandardCharsets.UTF_8);
-    byte[] rightChars = right.getBytes(StandardCharsets.UTF_8);
-    assertTrue(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 0, rightChars, 0, left.length()));
-    
-    assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 1, rightChars, 0, left.length()));
-    assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 1, rightChars, 2, left.length()));
-
-    assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 25, rightChars, 0, left.length()));
-    assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 12, rightChars, 0, left.length()));
   }
   
   private Integer[] createRandomArray(int maxSize) {

@@ -31,10 +31,19 @@
 
   <path id="classpath"/>
   
+  <!-- if we run with Java 9+, we refer to the java9 classes directory and insert this before the main classpath (to "emulate" a MR-JAR): -->
+  <condition property="-test.classpath.java9.addon" value="${build.dir}/classes/java9" else="${build.dir}/classes/java">
+    <and>
+      <not><equals arg1="${build.java.runtime}" arg2="1.8"/></not>
+      <istrue value="${tests.withJava9Patches}"/>
+    </and>
+  </condition>
+
   <path id="test.classpath">
     <pathelement location="${common.dir}/build/codecs/classes/java"/>
     <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="junit-path"/>
+    <pathelement location="${-test.classpath.java9.addon}"/><!-- if it's a duplicate it gets removed by Ant! -->
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>

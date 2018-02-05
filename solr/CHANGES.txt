@@ -149,6 +149,12 @@ New Features
 
 * SOLR-11890: Add multiKmeans Stream Evaluator (Joel Bernstein)
 
+* SOLR-11916: new SortableTextField which supports analysis/searching just like TextField, but also
+  sorting/faceting just like StrField.  By default uses only the first 1024 chars of the original
+  input string values, but this is configurable.  (hossman)
+
+* SOLR-11778: Add per-stage RequestHandler metrics. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -173,14 +179,11 @@ Bug Fixes
 * SOLR-11895: Logging Screen in the Admin UI will now show "No Events available" when there are no events to show.
   Also, the spinner icon is removed to prevent users thinking the page has hung. (Cassandra Targett, Shawn Heisey)
 
-* SOLR-11882: SolrMetric registries retain references to SolrCores when closed.
-  (Andrzej Bialecki, Erick Erickson)
-
 * SOLR-10525: Stacked recovery requests do no cancel an in progress recovery first. (Mike Drob via Cao Manh Dat)
 
 * SOLR-11873: Use time based expiration cache in all necessary places in HdfsDirectoryFactory. (Mihaly Toth via Mark Miller)
 
-* SOLR-11661: New HDFS collection reuses unremoved data from a deleted HDFS collection with same name causes 
+* SOLR-11661: New HDFS collection reuses unremoved data from a deleted HDFS collection with same name causes
   inconsistent view of documents (Cao Manh Dat, shalin)
 
 Optimizations
@@ -188,6 +191,9 @@ Optimizations
 
 * SOLR-11711: Fixed distributed processing of facet.field/facet.pivot sub requests to prevent requesting
   unneccessary and excessive '0' count terms from each shard (Houston Putman via hossman)
+
+* LUCENE-8149: NRTCachingDirectory does not need to preemptively delete segment files and generate exceptions
+  (Erick Erickson)
 
 Other Changes
 ----------------------
@@ -241,6 +247,12 @@ Other Changes
 * SOLR-11658: Upgrade ZooKeeper dependency to 3.4.11 (Jason Gerlowski, Steve Rowe, Erick Erickson)
 
 * SOLR-11480: Remove unused "Admin Extra" files and mentions. (Eric Pugh, Christine Poerschke)
+
+* SOLR-11067: REPLACENODE should identify appropriate nodes if targetNode is not provided (noble)
+
+* SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas via Cassandra Targett)
+
+* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
 
 ==================  7.2.1 ==================
 

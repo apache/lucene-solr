@@ -64,7 +64,9 @@ This registry is returned at `solr.node` and includes the following information.
 
 The <<Core Level Metrics,Core (SolrCore) Registry>> includes `solr.core.<collection>`, one for each core. When making requests with the <<Metrics API>>, you can specify `&group=core` to limit to only these metrics.
 
-* all common RequestHandler-s report: request timers / counters, timeouts, errors.
+* all common RequestHandler-s report: request timers / counters, timeouts, errors. Handlers that support
+  process distributed shard requests also report `shardRequests` sub-counters for each type of distributed
+  request.
 * <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, gauges for currently running merges and their size.
 * shard replication and transaction log replay on replicas (TBD, SOLR-9856)
 * open / available / pending connections for shard handler and update handler
@@ -518,6 +520,9 @@ type:: The type of metric to retrieve. The default is `all` to retrieve all metr
 
 prefix:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with `group` and/or `type` parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
 
+regex:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, eg.
+`QUERY\./select\..*` is a valid regex that matches all metrics with the `QUERY./select.` prefix.
+
 property:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.
 
 key:: fully-qualified metric name, which specifies one concrete metric instance (parameter can be
@@ -588,6 +593,11 @@ Request only "core" group metrics that start with "INDEX", returned in XML:
 
 [source,text]
 http://localhost:8983/solr/admin/metrics?wt=xml&prefix=INDEX&group=core
+
+Request only "core" group metrics that end with ".requests":
+
+[source,text]
+http://localhost:8983/solr/admin/metrics?regex=.*\.requests&group=core
 
 Request only "user.name" property of "system.properties" metric from registry "solr.jvm":
 

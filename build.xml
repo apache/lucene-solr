@@ -874,4 +874,5 @@ Test args: [${args}]</echo>
 
   <!-- useless targets (override common-build.xml): -->
   <target name="generate-test-reports"/>
+  <target name="patch-mrjar-classes"/>
 </project>

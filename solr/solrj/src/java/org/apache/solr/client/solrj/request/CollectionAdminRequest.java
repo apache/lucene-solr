@@ -584,7 +584,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public ReplaceNode(String source, String target) {
       super(CollectionAction.REPLACENODE);
       this.sourceNode = checkNotNull(CollectionParams.SOURCE_NODE, source);
-      this.targetNode = checkNotNull(CollectionParams.TARGET_NODE, target);
+      this.targetNode = target;
     }
 
     public ReplaceNode setParallel(Boolean flag) {

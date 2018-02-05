@@ -19,16 +19,20 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SlowImpactsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -234,6 +238,16 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     }
   }
 
+  @Override
+  public ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, SimScorer scorer, int flags) throws IOException {
+    Objects.requireNonNull(scorer);
+    if (state.docFreq <= BLOCK_SIZE || version < Lucene50PostingsFormat.VERSION_IMPACT_SKIP_DATA) {
+      // no skip data
+      return new SlowImpactsEnum(postings(fieldInfo, state, null, flags), scorer.score(Float.MAX_VALUE, 1));
+    }
+    return new BlockImpactsEverythingEnum(fieldInfo, (IntBlockTermState) state, scorer, flags);
+  }
+
   final class BlockDocsEnum extends PostingsEnum {
     private final byte[] encoded;
     
@@ -401,7 +415,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          skipper = new Lucene50SkipReader(docIn.clone(),
+          skipper = new Lucene50SkipReader(version,
+                                           docIn.clone(),
                                            MAX_SKIP_LEVELS,
                                            indexHasPos,
                                            indexHasOffsets,
@@ -666,7 +681,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       if (target > nextSkipDoc) {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          skipper = new Lucene50SkipReader(docIn.clone(),
+          skipper = new Lucene50SkipReader(version,
+                                           docIn.clone(),
                                            MAX_SKIP_LEVELS,
                                            true,
                                            indexHasOffsets,
@@ -1082,7 +1098,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       if (target > nextSkipDoc) {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          skipper = new Lucene50SkipReader(docIn.clone(),
+          skipper = new Lucene50SkipReader(version,
+                                        docIn.clone(),
                                         MAX_SKIP_LEVELS,
                                         true,
                                         indexHasOffsets,
@@ -1270,6 +1287,469 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     public long cost() {
       return docFreq;
     }
+  }
+
+  final class BlockImpactsEverythingEnum extends ImpactsEnum {
+    
+    private final byte[] encoded;
+
+    private final int[] docDeltaBuffer = new int[MAX_DATA_SIZE];
+    private final int[] freqBuffer = new int[MAX_DATA_SIZE];
+    private final int[] posDeltaBuffer = new int[MAX_DATA_SIZE];
+
+    private final int[] payloadLengthBuffer;
+    private final int[] offsetStartDeltaBuffer;
+    private final int[] offsetLengthBuffer;
+
+    private byte[] payloadBytes;
+    private int payloadByteUpto;
+    private int payloadLength;
+
+    private int lastStartOffset;
+    private int startOffset = -1;
+    private int endOffset = -1;
+
+    private int docBufferUpto;
+    private int posBufferUpto;
+
+    private final Lucene50ScoreSkipReader skipper;
+
+    final IndexInput docIn;
+    final IndexInput posIn;
+    final IndexInput payIn;
+    final BytesRef payload;
+
+    final boolean indexHasFreq;
+    final boolean indexHasPos;
+    final boolean indexHasOffsets;
+    final boolean indexHasPayloads;
+
+    private int docFreq;                              // number of docs in this posting list
+    private long totalTermFreq;                       // number of positions in this posting list
+    private int docUpto;                              // how many docs we've read
+    private int doc;                                  // doc we last read
+    private int accum;                                // accumulator for doc deltas
+    private int freq;                                 // freq we last read
+    private int position;                             // current position
+
+    // how many positions "behind" we are; nextPosition must
+    // skip these to "catch up":
+    private int posPendingCount;
+
+    // Lazy pos seek: if != -1 then we must seek to this FP
+    // before reading positions:
+    private long posPendingFP;
+
+    // Lazy pay seek: if != -1 then we must seek to this FP
+    // before reading payloads/offsets:
+    private long payPendingFP;
+
+    // Where this term's postings start in the .doc file:
+    private long docTermStartFP;
+
+    // Where this term's postings start in the .pos file:
+    private long posTermStartFP;
+
+    // Where this term's payloads/offsets start in the .pay
+    // file:
+    private long payTermStartFP;
+
+    // File pointer where the last (vInt encoded) pos delta
+    // block is.  We need this to know whether to bulk
+    // decode vs vInt decode the block:
+    private long lastPosBlockFP;
+
+    private int nextSkipDoc = -1;
+    
+    private final boolean needsPositions;
+    private final boolean needsOffsets; // true if we actually need offsets
+    private final boolean needsPayloads; // true if we actually need payloads
+    
+    private long seekTo = -1;
+    
+    public BlockImpactsEverythingEnum(FieldInfo fieldInfo, IntBlockTermState termState, SimScorer scorer, int flags) throws IOException {
+      indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+      indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      indexHasPayloads = fieldInfo.hasPayloads();
+      
+      needsPositions = PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS);
+      needsOffsets = PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS);
+      needsPayloads = PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS);
+      
+      this.docIn = Lucene50PostingsReader.this.docIn.clone();
+      
+      encoded = new byte[MAX_ENCODED_SIZE];
+
+      if (indexHasPos && needsPositions) {
+        this.posIn = Lucene50PostingsReader.this.posIn.clone();
+      } else {
+        this.posIn = null;
+      }
+      
+      if ((indexHasOffsets && needsOffsets) || (indexHasPayloads && needsPayloads)) {
+        this.payIn = Lucene50PostingsReader.this.payIn.clone();
+      } else {
+        this.payIn = null;
+      }
+      
+      if (indexHasOffsets) {
+        offsetStartDeltaBuffer = new int[MAX_DATA_SIZE];
+        offsetLengthBuffer = new int[MAX_DATA_SIZE];
+      } else {
+        offsetStartDeltaBuffer = null;
+        offsetLengthBuffer = null;
+        startOffset = -1;
+        endOffset = -1;
+      }
+
+      if (indexHasPayloads) {
+        payloadLengthBuffer = new int[MAX_DATA_SIZE];
+        payloadBytes = new byte[128];
+        payload = new BytesRef();
+      } else {
+        payloadLengthBuffer = null;
+        payloadBytes = null;
+        payload = null;
+      }
+
+      docFreq = termState.docFreq;
+      docTermStartFP = termState.docStartFP;
+      posTermStartFP = termState.posStartFP;
+      payTermStartFP = termState.payStartFP;
+      totalTermFreq = termState.totalTermFreq;
+      docIn.seek(docTermStartFP);
+      posPendingFP = posTermStartFP;
+      payPendingFP = payTermStartFP;
+      posPendingCount = 0;
+      if (termState.totalTermFreq < BLOCK_SIZE) {
+        lastPosBlockFP = posTermStartFP;
+      } else if (termState.totalTermFreq == BLOCK_SIZE) {
+        lastPosBlockFP = -1;
+      } else {
+        lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
+      }
+
+      doc = -1;
+      accum = 0;
+      docUpto = 0;
+      docBufferUpto = BLOCK_SIZE;
+
+      skipper = new Lucene50ScoreSkipReader(version,
+          docIn.clone(),
+          MAX_SKIP_LEVELS,
+          indexHasPos,
+          indexHasOffsets,
+          indexHasPayloads,
+          scorer);
+      skipper.init(docTermStartFP+termState.skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
+
+      if (indexHasFreq == false) {
+        Arrays.fill(freqBuffer, 1);
+      }
+    }
+    
+    @Override
+    public int freq() throws IOException {
+      return freq;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    private void refillDocs() throws IOException {
+      final int left = docFreq - docUpto;
+      assert left > 0;
+
+      if (left >= BLOCK_SIZE) {
+        forUtil.readBlock(docIn, encoded, docDeltaBuffer);
+        if (indexHasFreq) {
+          forUtil.readBlock(docIn, encoded, freqBuffer);
+        }
+      } else {
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
+      }
+      docBufferUpto = 0;
+    }
+    
+    private void refillPositions() throws IOException {
+      if (posIn.getFilePointer() == lastPosBlockFP) {
+        final int count = (int) (totalTermFreq % BLOCK_SIZE);
+        int payloadLength = 0;
+        int offsetLength = 0;
+        payloadByteUpto = 0;
+        for(int i=0;i<count;i++) {
+          int code = posIn.readVInt();
+          if (indexHasPayloads) {
+            if ((code & 1) != 0) {
+              payloadLength = posIn.readVInt();
+            }
+            payloadLengthBuffer[i] = payloadLength;
+            posDeltaBuffer[i] = code >>> 1;
+            if (payloadLength != 0) {
+              if (payloadByteUpto + payloadLength > payloadBytes.length) {
+                payloadBytes = ArrayUtil.grow(payloadBytes, payloadByteUpto + payloadLength);
+              }
+              posIn.readBytes(payloadBytes, payloadByteUpto, payloadLength);
+              payloadByteUpto += payloadLength;
+            }
+          } else {
+            posDeltaBuffer[i] = code;
+          }
+
+          if (indexHasOffsets) {
+            int deltaCode = posIn.readVInt();
+            if ((deltaCode & 1) != 0) {
+              offsetLength = posIn.readVInt();
+            }
+            offsetStartDeltaBuffer[i] = deltaCode >>> 1;
+            offsetLengthBuffer[i] = offsetLength;
+          }
+        }
+        payloadByteUpto = 0;
+      } else {
+        forUtil.readBlock(posIn, encoded, posDeltaBuffer);
+
+        if (indexHasPayloads && payIn != null) {
+          if (needsPayloads) {
+            forUtil.readBlock(payIn, encoded, payloadLengthBuffer);
+            int numBytes = payIn.readVInt();
+
+            if (numBytes > payloadBytes.length) {
+              payloadBytes = ArrayUtil.grow(payloadBytes, numBytes);
+            }
+            payIn.readBytes(payloadBytes, 0, numBytes);
+          } else {
+            // this works, because when writing a vint block we always force the first length to be written
+            forUtil.skipBlock(payIn); // skip over lengths
+            int numBytes = payIn.readVInt(); // read length of payloadBytes
+            payIn.seek(payIn.getFilePointer() + numBytes); // skip over payloadBytes
+          }
+          payloadByteUpto = 0;
+        }
+
+        if (indexHasOffsets && payIn != null) {
+          if (needsOffsets) {
+            forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
+            forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
+          } else {
+            // this works, because when writing a vint block we always force the first length to be written
+            forUtil.skipBlock(payIn); // skip over starts
+            forUtil.skipBlock(payIn); // skip over lengths
+          }
+        }
+      }
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(doc + 1);
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return skipper.getMaxScore(upTo);
+    }
+
+    @Override
+    public int advanceShallow(int target) throws IOException {
+      if (target > nextSkipDoc) {
+        // always plus one to fix the result, since skip position in Lucene50SkipReader 
+        // is a little different from MultiLevelSkipListReader
+        final int newDocUpto = skipper.skipTo(target) + 1; 
+  
+        if (newDocUpto > docUpto) {
+          // Skipper moved
+          assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
+          docUpto = newDocUpto;
+
+          // Force to read next block
+          docBufferUpto = BLOCK_SIZE;
+          accum = skipper.getDoc();
+          posPendingFP = skipper.getPosPointer();
+          payPendingFP = skipper.getPayPointer();
+          posPendingCount = skipper.getPosBufferUpto();
+          lastStartOffset = 0; // new document
+          payloadByteUpto = skipper.getPayloadByteUpto();             // actually, this is just lastSkipEntry
+          seekTo = skipper.getDocPointer();       // delay the seek
+        }
+        // next time we call advance, this is used to 
+        // foresee whether skipper is necessary.
+        nextSkipDoc = skipper.getNextSkipDoc();
+      }
+      assert nextSkipDoc >= target;
+      return nextSkipDoc;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target > nextSkipDoc) {
+        advanceShallow(target);
+      }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
+      }
+      if (docBufferUpto == BLOCK_SIZE) {
+        if (seekTo >= 0) {
+          docIn.seek(seekTo);
+          seekTo = -1;
+        }
+        refillDocs();
+      }
+
+      // Now scan:
+      while (true) {
+        accum += docDeltaBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
+        posPendingCount += freq;
+        docBufferUpto++;
+        docUpto++;
+
+        if (accum >= target) {
+          break;
+        }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
+        }
+      }
+      position = 0;
+      lastStartOffset = 0;
+
+      return doc = accum;
+    }
+
+    // TODO: in theory we could avoid loading frq block
+    // when not needed, ie, use skip data to load how far to
+    // seek the pos pointer ... instead of having to load frq
+    // blocks only to sum up how many positions to skip
+    private void skipPositions() throws IOException {
+      // Skip positions now:
+      int toSkip = posPendingCount - freq;
+      // if (DEBUG) {
+      //   System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
+      // }
+
+      final int leftInBlock = BLOCK_SIZE - posBufferUpto;
+      if (toSkip < leftInBlock) {
+        int end = posBufferUpto + toSkip;
+        while(posBufferUpto < end) {
+          if (indexHasPayloads) {
+            payloadByteUpto += payloadLengthBuffer[posBufferUpto];
+          }
+          posBufferUpto++;
+        }
+      } else {
+        toSkip -= leftInBlock;
+        while(toSkip >= BLOCK_SIZE) {
+          assert posIn.getFilePointer() != lastPosBlockFP;
+          forUtil.skipBlock(posIn);
+  
+          if (indexHasPayloads && payIn != null) {
+            // Skip payloadLength block:
+            forUtil.skipBlock(payIn);
+
+            // Skip payloadBytes block:
+            int numBytes = payIn.readVInt();
+            payIn.seek(payIn.getFilePointer() + numBytes);
+          }
+
+          if (indexHasOffsets && payIn != null) {
+            forUtil.skipBlock(payIn);
+            forUtil.skipBlock(payIn);
+          }
+          toSkip -= BLOCK_SIZE;
+        }
+        refillPositions();
+        payloadByteUpto = 0;
+        posBufferUpto = 0;
+        while(posBufferUpto < toSkip) {
+          if (indexHasPayloads) {
+            payloadByteUpto += payloadLengthBuffer[posBufferUpto];
+          }
+          posBufferUpto++;
+        }
+      }
+
+      position = 0;
+      lastStartOffset = 0;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      if (indexHasPos == false || needsPositions == false) {
+        return -1;
+      }
+      assert posPendingCount > 0;
+      
+      if (posPendingFP != -1) {
+        posIn.seek(posPendingFP);
+        posPendingFP = -1;
+
+        if (payPendingFP != -1 && payIn != null) {
+          payIn.seek(payPendingFP);
+          payPendingFP = -1;
+        }
+
+        // Force buffer refill:
+        posBufferUpto = BLOCK_SIZE;
+      }
+
+      if (posPendingCount > freq) {
+        skipPositions();
+        posPendingCount = freq;
+      }
+
+      if (posBufferUpto == BLOCK_SIZE) {
+        refillPositions();
+        posBufferUpto = 0;
+      }
+      position += posDeltaBuffer[posBufferUpto];
+
+      if (indexHasPayloads) {
+        payloadLength = payloadLengthBuffer[posBufferUpto];
+        payload.bytes = payloadBytes;
+        payload.offset = payloadByteUpto;
+        payload.length = payloadLength;
+        payloadByteUpto += payloadLength;
+      }
+
+      if (indexHasOffsets && needsOffsets) {
+        startOffset = lastStartOffset + offsetStartDeltaBuffer[posBufferUpto];
+        endOffset = startOffset + offsetLengthBuffer[posBufferUpto];
+        lastStartOffset = startOffset;
+      }
+
+      posBufferUpto++;
+      posPendingCount--;
+      return position;
+    }
+
+    @Override
+    public int startOffset() {
+      return startOffset;
+    }
+  
+    @Override
+    public int endOffset() {
+      return endOffset;
+    }
+  
+    @Override
+    public BytesRef getPayload() {
+      if (payloadLength == 0) {
+        return null;
+      } else {
+        return payload;
+      }
+    }
+    
+    @Override
+    public long cost() {
+      return docFreq;
+    }
+
   }
 
   @Override

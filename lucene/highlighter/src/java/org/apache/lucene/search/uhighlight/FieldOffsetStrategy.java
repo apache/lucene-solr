@@ -18,7 +18,6 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -58,14 +57,15 @@ public abstract class FieldOffsetStrategy {
 
   /**
    * The primary method -- return offsets for highlightable words in the specified document.
-   * IMPORTANT: remember to close them all.
+   *
+   * Callers are expected to close the returned OffsetsEnum when it has been finished with
    */
-  public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
+  public abstract OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException;
 
-  protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+  protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
     final Terms termsIndex = leafReader.terms(field);
     if (termsIndex == null) {
-      return Collections.emptyList();
+      return OffsetsEnum.EMPTY;
     }
 
     final List<OffsetsEnum> offsetsEnums = new ArrayList<>(terms.length + automata.length);
@@ -92,7 +92,7 @@ public abstract class FieldOffsetStrategy {
       createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
     }
 
-    return offsetsEnums;
+    return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
   }
 
   protected void createOffsetsEnumsForTerms(BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
@@ -137,14 +137,17 @@ public abstract class FieldOffsetStrategy {
     for (int i = 0; i < automata.length; i++) {
       CharacterRunAutomaton automaton = automata[i];
       List<PostingsEnum> postingsEnums = automataPostings.get(i);
-      int size = postingsEnums.size();
-      if (size > 0) { //only add if we have offsets
-        BytesRef wildcardTerm = new BytesRef(automaton.toString());
-        if (size == 1) { //don't wrap in a composite if there's only one OffsetsEnum
-          results.add(new OffsetsEnum.OfPostings(wildcardTerm, postingsEnums.get(0)));
-        } else {
-          results.add(new OffsetsEnum.OfPostings(wildcardTerm, new CompositeOffsetsPostingsEnum(postingsEnums)));
-        }
+      if (postingsEnums.isEmpty()) {
+        continue;
+      }
+      // Build one OffsetsEnum exposing the automata.toString as the term, and the sum of freq
+      BytesRef wildcardTerm = new BytesRef(automaton.toString());
+      int sumFreq = 0;
+      for (PostingsEnum postingsEnum : postingsEnums) {
+        sumFreq += postingsEnum.freq();
+      }
+      for (PostingsEnum postingsEnum : postingsEnums) {
+        results.add(new OffsetsEnum.OfPostings(wildcardTerm, sumFreq, postingsEnum));
       }
     }
 

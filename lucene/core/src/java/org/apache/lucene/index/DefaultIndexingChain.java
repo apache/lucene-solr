@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
@@ -126,6 +127,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
     }
+    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, IOContext.READ, state.segmentSuffix);
     
     t0 = System.nanoTime();
     writeDocValues(state, sortMap);
@@ -159,7 +161,16 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     }
 
-    termsHash.flush(fieldsToFlush, state, sortMap);
+    try (NormsProducer norms = readState.fieldInfos.hasNorms()
+        ? state.segmentInfo.getCodec().normsFormat().normsProducer(readState)
+        : null) {
+      NormsProducer normsMergeInstance = null;
+      if (norms != null) {
+        // Use the merge instance in order to reuse the same IndexInput for all terms
+        normsMergeInstance = norms.getMergeInstance();
+      }
+      termsHash.flush(fieldsToFlush, state, sortMap, normsMergeInstance);
+    }
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write postings and finish vectors");
     }
@@ -693,6 +704,9 @@ final class DefaultIndexingChain extends DocConsumer {
           normValue = 0;
         } else {
           normValue = similarity.computeNorm(invertState);
+          if (normValue == 0) {
+            throw new IllegalStateException("Similarity " + similarity + " return 0 for non-empty field");
+          }
         }
         norms.addValue(docState.docID, normValue);
       }

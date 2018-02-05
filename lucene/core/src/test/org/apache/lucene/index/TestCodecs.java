@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,10 +29,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -676,6 +679,10 @@ public class TestCodecs extends LuceneTestCase {
       return new DataPostingsEnum(fieldData.terms[upto]);
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 
   private static class DataPostingsEnum extends PostingsEnum {
@@ -752,9 +759,65 @@ public class TestCodecs extends LuceneTestCase {
 
     Arrays.sort(fields);
     FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
+    NormsProducer fakeNorms = new NormsProducer() {
+      
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+      
+      @Override
+      public void close() throws IOException {}
+      
+      @Override
+      public NumericDocValues getNorms(FieldInfo field) throws IOException {
+        return new NumericDocValues() {
+          
+          int doc = -1;
+          
+          @Override
+          public int nextDoc() throws IOException {
+            return advance(doc + 1);
+          }
+          
+          @Override
+          public int docID() {
+            return doc;
+          }
+          
+          @Override
+          public long cost() {
+            return si.maxDoc();
+          }
+          
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= si.maxDoc()) {
+              return doc = NO_MORE_DOCS;
+            } else {
+              return doc = target;
+            }
+          }
+          
+          @Override
+          public boolean advanceExact(int target) throws IOException {
+            doc = target;
+            return true;
+          }
+          
+          @Override
+          public long longValue() throws IOException {
+            return 1;
+          }
+        };
+      }
+      
+      @Override
+      public void checkIntegrity() throws IOException {}
+    };
     boolean success = false;
     try {
-      consumer.write(new DataFields(fields));
+      consumer.write(new DataFields(fields), fakeNorms);
       success = true;
     } finally {
       if (success) {

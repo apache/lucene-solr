@@ -519,6 +519,20 @@ valued. -->
     </analyzer>
   </fieldType>
 
+  <!-- See TestMinMaxOnMultiValuedField -->
+  <field name="val_stxt_s_dv" type="whitespace_stxt" multiValued="true"/>
+  <field name="val_stxt_missf_s_dv" type="whitespace_stxt" multiValued="true" sortMissingFirst="true"/>
+  <field name="val_stxt_missl_s_dv" type="whitespace_stxt" multiValued="true" sortMissingLast="true"/>
+  <field name="val_stxt_s_nodv" type="whitespace_stxt" multiValued="true" docValues="false" />
+  <!-- NOTE: explicitly not specifying docValues=true, it should be implicit default -->
+  <fieldType name="whitespace_stxt" class="solr.SortableTextField" indexed="true" stored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  
  <!-- Field to use to determine and enforce document uniqueness. 
       Unless this field is marked with required="false", it will be a required field
    -->

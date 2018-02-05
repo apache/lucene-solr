@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -186,7 +187,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(Fields fields, NormsProducer norms) throws IOException {
     for(String field : fields) {
       Terms terms = fields.terms(field);
       if (terms == null) {
@@ -205,7 +206,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         if (term == null) {
           break;
         }
-        BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen);
+        BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen, norms);
         if (termState != null) {
           termsWriter.finishTerm(term, termState);
           sumTotalTermFreq += termState.totalTermFreq;

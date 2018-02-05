@@ -108,7 +108,8 @@ The `bbox` filter is very similar to `geofilt` except it uses the _bounding box_
 
 Here's a sample query:
 
-`&q=*:*&fq={!bbox sfield=store}&pt=45.15,-93.85&d=5`
+[source,text]
+&q=*:*&fq={!bbox sfield=store}&pt=45.15,-93.85&d=5
 
 The rectangular shape is faster to compute and so it's sometimes used as an alternative to `geofilt` when it's acceptable to return points outside of the radius. However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius). This will return results outside the radius but it will do so somewhat uniformly around the shape.
 
@@ -125,7 +126,8 @@ Sometimes the spatial search requirement calls for finding everything in a recta
 
 Here's an example:
 
-`&q=*:*&fq=store:[45,-94 TO 46,-93]`
+[source,text]
+&q=*:*&fq=store:[45,-94 TO 46,-93]
 
 LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g., `"x y"`.
 
@@ -136,7 +138,8 @@ It's most common to put a spatial query into an "fq" parameter – a filter quer
 
 If you know the filter query (be it spatial or not) is fairly unique and not likely to get a cache hit then specify `cache="false"` as a local-param as seen in the following example. The only spatial types which stand to benefit from this technique are LatLonPointSpatialField and LatLonType (deprecated). Enable docValues on the field (if it isn't already). LatLonType (deprecated) additionally requires a `cost="100"` (or more) local-param.
 
-`&q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5`
+[source,text]
+&q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5
 
 LLPSF does not support Solr's "PostFilter".
 
@@ -155,9 +158,15 @@ For more information about these function queries, see the section on <<function
 
 `geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`. You can use the `geodist` function to sort results by distance or score return results.
 
-For example, to sort your results by ascending distance, enter `...&q=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist() asc`.
+For example, to sort your results by ascending distance, use a request like:
 
-To return the distance as the document score, enter `...&q={!func}geodist()&sfield=store&pt=45.15,-93.85&sort=score+asc`.
+[source,text]
+&q=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist() asc
+
+To return the distance as the document score, use a request like:
+
+[source,text]
+&q={!func}geodist()&sfield=store&pt=45.15,-93.85&sort=score+asc&fl=*,score
 
 == More Spatial Search Examples
 
@@ -167,21 +176,24 @@ Here are a few more useful examples of what you can do with spatial search in So
 
 Here we will query for results in Jacksonville, Florida, or within 50 kilometers of 45.15,-93.85 (near Buffalo, Minnesota):
 
-`&q=*:*&fq=(state:"FL" AND city:"Jacksonville") OR {!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist()+asc`
+[source,text]
+&q=*:*&fq=(state:"FL" AND city:"Jacksonville") OR {!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist()+asc
 
 === Facet by Distance
 
-To facet by distance, you can use the Frange query parser:
+To facet by distance, you can use the `frange` query parser:
 
-`&q=*:*&sfield=store&pt=45.15,-93.85&facet.query={!frange l=0 u=5}geodist()&facet.query={!frange l=5.001 u=3000}geodist()`
+[source,text]
+&q=*:*&sfield=store&pt=45.15,-93.85&facet.query={!frange l=0 u=5}geodist()&facet.query={!frange l=5.001 u=3000}geodist()
 
-There are other ways to do it too, like using a \{!geofilt} in each facet.query.
+There are other ways to do it too, like using a `{!geofilt}` in each facet.query.
 
 === Boost Nearest Results
 
 Using the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
 
-`&q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc`
+[source,text]
+&q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc
 
 == RPT
 
@@ -202,9 +214,9 @@ RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are
   In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
 * Sort/boost via `geodist` -- _although not recommended_
 
-[TIP]
+[IMPORTANT]
 ====
-*Important*: Although RPT supports distance sorting/boosting, it is so inefficient at doing this that it might be
+Although RPT supports distance sorting/boosting, it is so inefficient at doing this that it might be
  removed in the future.  Fortunately, you can use LatLonPointSpatialField _as well_ as RPT.  Use LLPSF for the distance
  sorting/boosting; it only needs to have docValues for this; the index attribute can be disabled as it won't be used.
 ====
@@ -227,10 +239,10 @@ If `true`, the default, latitude and longitude coordinates will be used and the 
 
 `format`:: Defines the shape syntax/format to be used. Defaults to `WKT` but `GeoJSON` is another popular format. Spatial4j governs this feature and supports https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/io/package-frame.html[other formats]. If a given shape is parseable as "lat,lon" or "x y" then that is always supported.
 
-`distanceUnits`:: a|
+`distanceUnits`::
 This is used to specify the units for distance measurements used throughout the use of this field. This can be `degrees`, `kilometers` or `miles`. It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`. However, it doesn't affect distances embedded in WKT strings, (e.g., `BUFFER(POINT(200 10),0.2)`), which are still in degrees.
 +
-`distanceUnits` defaults to either `kilometers` if `geo` is true`, or `degrees` if `geo` is `false`.
+`distanceUnits` defaults to either `kilometers` if `geo` is `true`, or `degrees` if `geo` is `false`.
 +
 `distanceUnits` replaces the `units` attribute; which is now deprecated and mutually exclusive with this attribute.
 
@@ -247,7 +259,7 @@ NOTE: For RPTWithGeometrySpatialField (see below), there's always complete accur
 Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`. If `geo="true"`, the standard lat-lon world boundaries are assumed. If `geo=false`, you should define your boundaries.
 
 `distCalculator`::
-Defines the distance calculation algorithm. If `geo=true`, "haversine" is the default. If `geo=false`, "cartesian" will be the default. Other possible values are "lawOfCosines", "vincentySphere" and "cartesian^2".
+Defines the distance calculation algorithm. If `geo=true`, `haversine` is the default. If `geo=false`, `cartesian` will be the default. Other possible values are `lawOfCosines`, `vincentySphere` and `cartesian^2`.
 
 `prefixTree`:: Defines the spatial grid implementation. Since a PrefixTree (such as RecursivePrefixTree) maps the world as a grid, each grid cell is decomposed to another set of grid cells at the next level.
 +

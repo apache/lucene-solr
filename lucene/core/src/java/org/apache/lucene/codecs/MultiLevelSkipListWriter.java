@@ -53,13 +53,13 @@ import org.apache.lucene.util.MathUtil;
 
 public abstract class MultiLevelSkipListWriter {
   /** number of levels in this skip list */
-  protected int numberOfSkipLevels;
+  protected final int numberOfSkipLevels;
   
   /** the skip interval in the list with level = 0 */
-  private int skipInterval;
+  private final int skipInterval;
 
   /** skipInterval used for level &gt; 0 */
-  private int skipMultiplier;
+  private final int skipMultiplier;
   
   /** for every skip level a different buffer is used  */
   private RAMOutputStream[] skipBuffer;
@@ -69,6 +69,7 @@ public abstract class MultiLevelSkipListWriter {
     this.skipInterval = skipInterval;
     this.skipMultiplier = skipMultiplier;
     
+    int numberOfSkipLevels;
     // calculate the maximum number of skip levels for this document frequency
     if (df <= skipInterval) {
       numberOfSkipLevels = 1;
@@ -80,6 +81,7 @@ public abstract class MultiLevelSkipListWriter {
     if (numberOfSkipLevels > maxSkipLevels) {
       numberOfSkipLevels = maxSkipLevels;
     }
+    this.numberOfSkipLevels = numberOfSkipLevels;
   }
   
   /** Creates a {@code MultiLevelSkipListWriter}, where
