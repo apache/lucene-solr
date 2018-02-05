@@ -195,6 +195,9 @@ Optimizations
 * LUCENE-8149: NRTCachingDirectory does not need to preemptively delete segment files and generate exceptions
   (Erick Erickson)
 
+* SOLR-11879: avoid EOFException for empty input streams (noble)
+
+
 Other Changes
 ----------------------
 
