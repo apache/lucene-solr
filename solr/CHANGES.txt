@@ -172,6 +172,9 @@ Optimizations
 * SOLR-11711: Fixed distributed processing of facet.field/facet.pivot sub requests to prevent requesting
   unneccessary and excessive '0' count terms from each shard (Houston Putman via hossman)
 
+* LUCENE-8149: NRTCachingDirectory does not need to preemptively delete segment files and generate exceptions
+  (Erick Erickson)
+
 Other Changes
 ----------------------
 
