@@ -91,7 +91,22 @@ public class GeoPolygonTest {
     }
 
   }
-  
+
+  @Test
+  public void testPolygonPointFiltering2() {
+    //all coplanar
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, 1.1264101919629863, -0.9108307879480759);
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, 1.1264147298190414, -0.9108309624810013);
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, 1.1264056541069312, -0.9108306134151508);
+    final List<GeoPoint> originalPoints = new ArrayList<>();
+    originalPoints.add(point1);
+    originalPoints.add(point2);
+    originalPoints.add(point3);
+    final List<GeoPoint> filteredPoints = GeoPolygonFactory.filterEdges(GeoPolygonFactory.filterPoints(originalPoints), 0.0);
+    assertEquals(null, filteredPoints);
+  }
+
+
   @Test
   public void testPolygonClockwise() {
     GeoPolygon c;
@@ -1029,5 +1044,39 @@ shape:
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
     assertEquals(polygon,polygon2);
   }
-  
+
+  @Test
+  public void testLUCENE8133() {
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434456), Geo3DUtil.fromDegrees(14.459204));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.43394), Geo3DUtil.fromDegrees(14.459206));
+    GeoPoint check =  new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434067), Geo3DUtil.fromDegrees(14.458927));
+    if (!point1.isIdentical(point2) && !check.isIdentical(point1) && !check.isIdentical(point2)) {
+      SidedPlane plane = new SidedPlane(check, point1, point2);
+      assertTrue(plane.isWithin(check));
+      assertTrue(plane.isWithin(point1));
+      assertTrue(plane.isWithin(point2));
+      //POLYGON((14.459204 -23.434456, 14.459206 -23.43394,14.458647 -23.434196, 14.458646 -23.434452,14.459204 -23.434456))
+      List<GeoPoint> points = new ArrayList<>();
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434456), Geo3DUtil.fromDegrees(14.459204)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees( -23.43394), Geo3DUtil.fromDegrees(14.459206)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434196), Geo3DUtil.fromDegrees(14.458647)));
+      points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-23.434452), Geo3DUtil.fromDegrees(14.458646)));
+      GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    }
+  }
+
+  @Test
+  public void testLUCENE8140() throws Exception {
+    //POINT(15.426026 68.35078) is coplanar
+    //"POLYGON((15.426411 68.35069,15.4261 68.35078,15.426026 68.35078,15.425868 68.35078,15.425745 68.350746,15.426411 68.35069))";
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(68.35069), Geo3DUtil.fromDegrees(15.426411)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(68.35078), Geo3DUtil.fromDegrees(15.4261)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(68.35078), Geo3DUtil.fromDegrees(15.426026)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(68.35078), Geo3DUtil.fromDegrees(15.425868)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(68.350746), Geo3DUtil.fromDegrees(15.426411)));
+    assertTrue(GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points) != null);
+  }
+
+
 }

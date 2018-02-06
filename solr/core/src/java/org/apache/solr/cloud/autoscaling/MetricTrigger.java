@@ -18,9 +18,11 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,12 +32,15 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +70,7 @@ public class MetricTrigger extends TriggerBase {
       throw new IllegalArgumentException("When 'shard' is other than #ANY then collection name must be also other than #ANY");
     }
     node = (String) properties.getOrDefault(AutoScalingParams.NODE, Policy.ANY);
-    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, null);
+    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
   }
 
   @Override
@@ -182,9 +187,23 @@ public class MetricTrigger extends TriggerBase {
       if (!shard.equals(Policy.ANY))  {
         properties.put(AutoScalingParams.SHARD, shard);
       }
-      if (preferredOp != null)  {
-        properties.put(PREFERRED_OP, preferredOp);
+      properties.put(PREFERRED_OP, preferredOp);
+
+      // specify requested ops
+      List<Op> ops = new ArrayList<>(hotNodes.size());
+      for (String n : hotNodes.keySet()) {
+        Op op = new Op(CollectionParams.CollectionAction.get(preferredOp));
+        op.setHint(Suggester.Hint.SRC_NODE, n);
+        if (!collection.equals(Policy.ANY)) {
+          if (!shard.equals(Policy.ANY)) {
+            op.setHint(Suggester.Hint.COLL_SHARD, new Pair<>(collection, shard));
+          } else {
+            op.setHint(Suggester.Hint.COLL, collection);
+          }
+        }
+        ops.add(op);
       }
+      properties.put(TriggerEvent.REQUESTED_OPS, ops);
     }
   }
 }

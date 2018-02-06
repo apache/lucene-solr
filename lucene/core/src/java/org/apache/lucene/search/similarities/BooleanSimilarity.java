@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.search.similarities;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -59,12 +57,12 @@ public class BooleanSimilarity extends Similarity {
     }
 
     @Override
-    public float score(float freq, long norm) throws IOException {
+    public float score(float freq, long norm) {
       return boost;
     }
 
     @Override
-    public Explanation explain(Explanation freq, long norm) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       Explanation queryBoostExpl = Explanation.match(boost, "boost, query boost");
       return Explanation.match(
           queryBoostExpl.getValue(),

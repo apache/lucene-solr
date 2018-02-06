@@ -27,10 +27,13 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -410,6 +413,10 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return e;
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, PostingsEnum.FREQS), scorer.score(Float.MAX_VALUE, 1));
+    }
   }
 
   // note: these two enum classes are exactly like the Default impl...

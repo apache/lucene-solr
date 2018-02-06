@@ -24,6 +24,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.misc.SweetSpotSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.schema.SimilarityFactory;
@@ -84,7 +85,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
-    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -840,7 +840,61 @@ public class TestBulkSchemaAPI extends RestTestBase {
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("error"));
   }
+  public void testSortableTextFieldWithAnalyzer() throws Exception {
+    String fieldTypeName = "sort_text_type";
+    String fieldName = "sort_text";
+    String payload = "{\n" +
+        "  'add-field-type' : {" +
+        "    'name' : '" + fieldTypeName + "',\n" +
+        "    'stored':true,\n" +
+        "    'indexed':true\n" +
+        "    'maxCharsForDocValues':6\n" +
+        "    'class':'solr.SortableTextField',\n" +
+        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
+        "  },\n"+
+        "  'add-field' : {\n" +
+        "    'name':'" + fieldName + "',\n" +
+        "    'type': '"+fieldTypeName+"',\n" +
+        "  }\n" +
+        "}\n";
 
+    String response = restTestHarness.post("/schema", json(payload));
+
+    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    Map fields = getObj(restTestHarness, fieldName, "fields");
+    assertNotNull("field " + fieldName + " not created", fields);
+
+    assertEquals(0,
+                 getSolrClient().add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
+                                                   sdoc("id","2",fieldName,"xxx bbb aaa"),
+                                                   sdoc("id","3",fieldName,"xxx bbb zzz"))).getStatus());
+                                                   
+    assertEquals(0, getSolrClient().commit().getStatus());
+    {
+      SolrDocumentList docs = getSolrClient().query
+        (params("q",fieldName+":xxx","sort", fieldName + " asc, id desc")).getResults();
+         
+      assertEquals(3L, docs.getNumFound());
+      assertEquals(3L, docs.size());
+      assertEquals("1", docs.get(0).getFieldValue("id"));
+      assertEquals("3", docs.get(1).getFieldValue("id"));
+      assertEquals("2", docs.get(2).getFieldValue("id"));
+    }
+    {
+      SolrDocumentList docs = getSolrClient().query
+        (params("q",fieldName+":xxx", "sort", fieldName + " desc, id asc")).getResults();
+                                                           
+      assertEquals(3L, docs.getNumFound());
+      assertEquals(3L, docs.size());
+      assertEquals("2", docs.get(0).getFieldValue("id"));
+      assertEquals("3", docs.get(1).getFieldValue("id"));
+      assertEquals("1", docs.get(2).getFieldValue("id"));
+    }
+    
+  }
+  
   public void testSimilarityParser() throws Exception {
     RestTestHarness harness = restTestHarness;
 

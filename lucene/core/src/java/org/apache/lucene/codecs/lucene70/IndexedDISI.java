@@ -100,7 +100,13 @@ final class IndexedDISI extends DocIdSetIterator {
   private final long cost;
 
   IndexedDISI(IndexInput in, long offset, long length, long cost) throws IOException {
-    this.slice = in.slice("docs", offset, length);
+    this(in.slice("docs", offset, length), cost);
+  }
+
+  // This constructor allows to pass the slice directly in case it helps reuse
+  // see eg. Lucene70 norms producer's merge instance
+  IndexedDISI(IndexInput slice, long cost) throws IOException {
+    this.slice = slice;
     this.cost = cost;
   }
 

@@ -238,19 +238,36 @@ public class Aliases {
    * @param metadataValue the metadata to add/replace, null to remove the key.
    *                      @return An immutable copy of the aliases with the new metadata.
    */
-  public Aliases cloneWithCollectionAliasMetadata(String alias, String metadataKey, String metadataValue){
+  public Aliases cloneWithCollectionAliasMetadata(String alias, String metadataKey, String metadataValue) {
+    return cloneWithCollectionAliasMetadata(alias, Collections.singletonMap(metadataKey,metadataValue));
+  }
+
+  /**
+   * Set the values for some metadata keys on a collection alias. This is done by creating a new Aliases instance
+   * with the same data as the current one but with a modification based on the parameters.
+   * <p>
+   * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
+   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   *
+   * @param alias the alias to update
+   * @param metadata the metadata to add/replace, null values in the map will remove the key.
+   * @return An immutable copy of the aliases with the new metadata.
+   */
+  public Aliases cloneWithCollectionAliasMetadata(String alias, Map<String,String> metadata) {
     if (!collectionAliases.containsKey(alias)) {
       throw new IllegalArgumentException(alias + " is not a valid alias");
     }
-    if (metadataKey == null) {
-      throw new IllegalArgumentException("Null is not a valid metadata key");
+    if (metadata == null) {
+      throw new IllegalArgumentException("Null is not a valid metadata map");
     }
     Map<String,Map<String,String>> newColMetadata = new LinkedHashMap<>(this.collectionAliasMetadata);//clone to modify
     Map<String, String> newMetaMap = new LinkedHashMap<>(newColMetadata.getOrDefault(alias, Collections.emptyMap()));
-    if (metadataValue != null) {
-      newMetaMap.put(metadataKey, metadataValue);
-    } else {
-      newMetaMap.remove(metadataKey);
+    for (Map.Entry<String, String> metaEntry : metadata.entrySet()) {
+      if (metaEntry.getValue() != null) {
+        newMetaMap.put(metaEntry.getKey(), metaEntry.getValue());
+      } else {
+        newMetaMap.remove(metaEntry.getKey());
+      }
     }
     newColMetadata.put(alias, Collections.unmodifiableMap(newMetaMap));
     return new Aliases(collectionAliases, newColMetadata, zNodeVersion);

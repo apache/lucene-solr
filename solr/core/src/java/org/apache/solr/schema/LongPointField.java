@@ -27,7 +27,6 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
@@ -127,11 +126,6 @@ public class LongPointField extends PointField implements LongValueFieldType {
     result.grow(Long.BYTES);
     result.setLength(Long.BYTES);
     LongPoint.encodeDimension(parseLongFromUser(null, val.toString()), result.bytes(), 0);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    return getSortField(field, SortField.Type.LONG, top, Long.MIN_VALUE, Long.MAX_VALUE);
   }
 
   @Override

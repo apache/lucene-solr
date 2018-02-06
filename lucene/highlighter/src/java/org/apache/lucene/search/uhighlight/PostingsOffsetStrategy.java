@@ -40,7 +40,7 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
     final LeafReader leafReader;
     if (reader instanceof LeafReader) {
       leafReader = (LeafReader) reader;
@@ -51,7 +51,7 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
       docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
     }
 
-    return createOffsetsEnumsFromReader(leafReader, docId);
+    return createOffsetsEnumFromReader(leafReader, docId);
   }
 
 

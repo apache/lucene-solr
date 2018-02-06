@@ -18,6 +18,7 @@
 package org.apache.solr.common.util;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -226,12 +227,27 @@ class RequiredValidator extends Validator<List<String>> {
 
   @Override
   boolean validate(Object o, List<String> errs) {
+    return validate(o,errs,requiredProps);
+  }
+
+  boolean validate( Object o, List<String> errs, Set<String> requiredProps) {
     if (o instanceof Map) {
       Set fnames = ((Map) o).keySet();
       for (String requiredProp : requiredProps) {
-        if (!fnames.contains(requiredProp)) {
-          errs.add("Missing required attribute '" + requiredProp + "' in object " + Utils.toJSONString(o));
-          return false;
+        if (requiredProp.contains(".")) {
+          if (requiredProp.endsWith(".")) {
+            errs.add("Illegal required attribute name (ends with '.': " + requiredProp + ").  This is a bug.");
+            return false;
+          }
+          String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
+          if (!validate(((Map)o).get(requiredProp), errs, Collections.singleton(subprop))) {
+            return false;
+          }
+        } else {
+          if (!fnames.contains(requiredProp)) {
+            errs.add("Missing required attribute '" + requiredProp + "' in object " + Utils.toJSONString(o));
+            return false;
+          }
         }
       }
       return true;

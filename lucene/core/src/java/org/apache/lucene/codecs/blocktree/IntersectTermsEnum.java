@@ -19,10 +19,12 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -230,6 +232,12 @@ final class IntersectTermsEnum extends TermsEnum {
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     currentFrame.decodeMetaData();
     return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.termState, reuse, flags);
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    currentFrame.decodeMetaData();
+    return fr.parent.postingsReader.impacts(fr.fieldInfo, currentFrame.termState, scorer, flags);
   }
 
   private int getState() {

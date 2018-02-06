@@ -29,11 +29,14 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -230,6 +233,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return docsEnum.reset(docsStart, indexOptions == IndexOptions.DOCS, docFreq);
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    }
   }
 
   private class SimpleTextDocsEnum extends PostingsEnum {

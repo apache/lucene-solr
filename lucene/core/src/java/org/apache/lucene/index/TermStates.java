@@ -224,7 +224,7 @@ public final class TermStates {
     sb.append("TermStates\n");
     for(TermState termState : states) {
       sb.append("  state=");
-      sb.append(termState.toString());
+      sb.append(termState);
       sb.append('\n');
     }
 

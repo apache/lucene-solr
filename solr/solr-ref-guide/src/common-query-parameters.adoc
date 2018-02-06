@@ -30,27 +30,32 @@ If no defType param is specified, then by default, the <<the-standard-query-pars
 
 == sort Parameter
 
-The `sort` parameter arranges search results in either ascending (`asc`) or descending (`desc`) order. The parameter can be used with either numerical or alphabetical content. The directions can be entered in either all lowercase or all uppercase letters (i.e., both `asc` or `ASC`).
+The `sort` parameter arranges search results in either ascending (`asc`) or descending (`desc`) order. The parameter can be used with either numerical or alphabetical content. The directions can be entered in either all lowercase or all uppercase letters (i.e., both `asc` and `ASC` are accepted).
 
-Solr can sort query responses according to document scores or the value of any field with a single value that is either indexed or uses <<docvalues.adoc#docvalues,DocValues>> (that is, any field whose attributes in the Schema include `multiValued="false"` and either `docValues="true"` or `indexed="true"` – if the field does not have DocValues enabled, the indexed terms are used to build them on the fly at runtime), provided that:
+Solr can sort query responses according to:
 
-* the field is non-tokenized (that is, the field has no analyzer and its contents have been parsed into tokens, which would make the sorting inconsistent), or
+* Document scores
+* <<function-queries.adoc#sort-by-function,Function results>>
+* The value of any primative field (numerics, string, boolean, dates, etc...) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"` in which case the indexed terms will used to build DocValue like structures on the fly at runtime)
+* A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
+* A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.  TextField does not support docValues="true", but a DocValue like structure will be built on the fly at runtime.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#copying-fields,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
 
-* the field uses an analyzer (such as the KeywordTokenizer) that produces only a single term.
+In the case of primative fields, or SortableTextFields, that are `multiValued="true"` the representantive value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.  This default behavior is equivilent to explicitly sorting using the 2 argument `<<function-queries.adoc#field-function,field()>>` function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
 
-If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#copying-fields,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
-
-The table explains how Solr responds to various settings of the `sort` parameter.
+The table below explains how Solr responds to various settings of the `sort` parameter.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
 [cols="30,70",options="header"]
 |===
 |Example |Result
-| |If the sort parameter is omitted, sorting is performed as though the parameter were set to score `desc`.
+| |If the sort parameter is omitted, sorting is performed as though the parameter were set to `score desc`.
 |score desc |Sorts in descending order from the highest score to the lowest score.
 |price asc |Sorts in ascending order of the price field
-|inStock desc, price asc |Sorts by the contents of the `inStock` field in descending order, then within those results sorts in ascending order by the contents of the price field.
+|div(popularity,price) desc |Sorts in descending order of the result of the function `popularity / price`
+|inStock desc, price asc |Sorts by the contents of the `inStock` field in descending order, then when multiple documents have the same value for the `inStock` field, those results are sorted in ascending order by the contents of the price field.
+|categories asc, price asc |Sorts by the lowest value of the (multivalued) `categories` field in ascending order, then when multiple documents have the same lowest `categories` value, those results are sorted in ascending order by the contents of the price field.
 |===
 
 Regarding the sort parameter's arguments:

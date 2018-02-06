@@ -155,7 +155,7 @@ Custom shard handlers can be defined in `solr.xml` if you wish to create a custo
 <shardHandlerFactory name="ShardHandlerFactory" class="qualified.class.name">
 ----
 
-Since this is a custom shard handler, sub-elements are specific to the implementation. The default and only shard handler provided by Solr is the HttpShardHandlerFactory in which case, the following sub-elements can be specified:
+Since this is a custom shard handler, sub-elements are specific to the implementation. The default and only shard handler provided by Solr is the `HttpShardHandlerFactory` in which case, the following sub-elements can be specified:
 
 `socketTimeout`::
 The read timeout for intra-cluster query and administrative requests. The default is the same as the `distribUpdateSoTimeout` specified in the `<solrcloud>` section.

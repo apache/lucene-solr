@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -40,7 +41,9 @@ public class MoveReplicaSuggester extends Suggester {
     Integer targetNodeIndex = null;
     Integer sourceNodeIndex = null;
     ReplicaInfo sourceReplicaInfo = null;
-    for (Pair<ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
+    List<Pair<ReplicaInfo, Row>> validReplicas = getValidReplicas(true, true, -1);
+    validReplicas.sort(leaderLast);
+    for (Pair<ReplicaInfo, Row> fromReplica : validReplicas) {
       Row fromRow = fromReplica.second();
       ReplicaInfo replicaInfo = fromReplica.first();
       String coll = replicaInfo.getCollection();
@@ -57,8 +60,7 @@ public class MoveReplicaSuggester extends Suggester {
       for (int j = getMatrix().size() - 1; j >= stopAt; j--) {
         if (j == i) continue;
         Row targetRow = getMatrix().get(j);
-        if(!targetRow.isLive) continue;
-        if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
+        if (!isNodeSuitable(targetRow)) continue;
         targetRow = targetRow.addReplica(coll, shard, replicaInfo.getType());
         List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), srcTmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation) &&
@@ -80,6 +82,11 @@ public class MoveReplicaSuggester extends Suggester {
     }
     return null;
   }
+  static Comparator<Pair<ReplicaInfo, Row>> leaderLast = (r1, r2) -> {
+    if (r1.first().isLeader) return 1;
+    if (r2.first().isLeader) return -1;
+    return 0;
+  };
 
 
   @Override

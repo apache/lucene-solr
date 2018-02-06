@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 /*
  * Some of this code came from the excellent Unicode
  * conversion examples from:
@@ -143,7 +142,7 @@ public class TestUnicodeUtil extends LuceneTestCase {
       final int utf32Len = UnicodeUtil.UTF8toUTF32(new BytesRef(utf8, 0, utf8Len), utf32);
       
       int[] codePoints = s.codePoints().toArray();
-      if (!ArrayUtil.equals(codePoints, 0, utf32, 0, codePoints.length)) {
+      if (!FutureArrays.equals(codePoints, 0, codePoints.length, utf32, 0, codePoints.length)) {
         System.out.println("FAILED");
         for(int j=0;j<s.length();j++) {
           System.out.println("  char[" + j + "]=" + Integer.toHexString(s.charAt(j)));

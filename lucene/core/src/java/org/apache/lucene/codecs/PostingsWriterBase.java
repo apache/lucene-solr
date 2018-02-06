@@ -60,7 +60,7 @@ public abstract class PostingsWriterBase implements Closeable {
    *  FixedBitSet} for every docID written.  If no docs
    *  were written, this method should return null, and the
    *  terms dict will skip the term. */
-  public abstract BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException;
+  public abstract BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms) throws IOException;
 
   /**
    * Encode metadata as long[] and byte[]. {@code absolute} controls whether 

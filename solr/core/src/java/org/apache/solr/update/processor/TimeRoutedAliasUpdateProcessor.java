@@ -19,31 +19,22 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.RoutedAliasCreateCollectionCmd;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
+import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
@@ -51,7 +42,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -65,8 +55,6 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +67,9 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * requests to create new collections on-demand.
  *
  * Depends on this core having a special core property that points to the alias name that this collection is a part of.
- * And further requires certain metadata on the Alias.
+ * And further requires certain metadata on the Alias. Collections pointed to by the alias must be named for the alias
+ * plus underscored ('_') and a time stamp of ISO_DATE plus optionally _HH_mm_ss. These collections should not be
+ * created by the user, but are created automatically by the time partitioning system.
  *
  * @since 7.2.0
  */
@@ -87,19 +77,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   //TODO do we make this more generic to others who want to partition collections using something else?
 
   public static final String ALIAS_DISTRIB_UPDATE_PARAM = "alias." + DISTRIB_UPDATE_PARAM; // param
-  public static final String TIME_PARTITION_ALIAS_NAME_CORE_PROP = "timePartitionAliasName"; // core prop
-  // alias metadata:
-  public static final String ROUTER_FIELD_METADATA = "router.field";
-  public static final String ROUTER_MAX_FUTURE_TIME_METADATA = "router.maxFutureMs";
-  public static final String ROUTER_INTERVAL_METADATA = "router.interval";
-
-  // This format must be compatible with collection name limitations
-  public static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
-      .append(DateTimeFormatter.ISO_LOCAL_DATE).appendPattern("[_HH[_mm[_ss]]]") //brackets mean optional
-      .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
-      .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
-      .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-      .toFormatter(Locale.ROOT).withZone(ZoneOffset.UTC);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -107,11 +84,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private static ConcurrentHashMap<String, Semaphore> aliasToSemaphoreMap = new ConcurrentHashMap<>(4);
 
   private final String thisCollection;
-  private final String aliasName;
-  private final String routeField;
-  private final long maxFutureMs;
-  private final String intervalDateMath;
-  private final TimeZone intervalTimeZone;
+
+  private final TimeRoutedAlias timeRoutedAlias;
 
   private final ZkController zkController;
   private final SolrCmdDistributor cmdDistrib;
@@ -123,19 +97,19 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
-    final String timePartitionAliasName = req.getCore().getCoreDescriptor()
-        .getCoreProperty(TIME_PARTITION_ALIAS_NAME_CORE_PROP, null);
+    final String aliasName = req.getCore().getCoreDescriptor()
+        .getCoreProperty(TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, null);
     final DistribPhase shardDistribPhase =
         DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
     final DistribPhase aliasDistribPhase =
         DistribPhase.parseParam(req.getParams().get(ALIAS_DISTRIB_UPDATE_PARAM));
-    if (timePartitionAliasName == null || aliasDistribPhase != DistribPhase.NONE || shardDistribPhase != DistribPhase.NONE) {
+    if (aliasName == null || aliasDistribPhase != DistribPhase.NONE || shardDistribPhase != DistribPhase.NONE) {
       // if aliasDistribPhase is not NONE, then there is no further collection routing to be done here.
       //    TODO this may eventually not be true but at the moment it is
       // if shardDistribPhase is not NONE, then the phase is after the scope of this URP
       return next;
     } else {
-      return new TimeRoutedAliasUpdateProcessor(req, rsp, next, timePartitionAliasName, aliasDistribPhase);
+      return new TimeRoutedAliasUpdateProcessor(req, rsp, next, aliasName, aliasDistribPhase);
     }
   }
 
@@ -146,7 +120,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     assert aliasDistribPhase == DistribPhase.NONE;
     final SolrCore core = req.getCore();
     this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    this.aliasName = aliasName;
     CoreContainer cc = core.getCoreContainer();
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
@@ -156,15 +129,11 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     if (aliasMetadata == null) {
       throw newAliasMustExistException(); // if it did exist, we'd have a non-null map
     }
-    routeField = aliasMetadata.get(ROUTER_FIELD_METADATA);
-    intervalDateMath = aliasMetadata.getOrDefault(ROUTER_INTERVAL_METADATA, "+1DAY");
-    String futureTimeStr = aliasMetadata.get(ROUTER_MAX_FUTURE_TIME_METADATA);
-    if (futureTimeStr != null) {
-      maxFutureMs = Long.parseLong(futureTimeStr);
-    } else {
-      maxFutureMs = TimeUnit.MINUTES.toMillis(10);
+    try {
+      this.timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata);
+    } catch (Exception e) { // ensure we throw SERVER_ERROR not BAD_REQUEST at this stage
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid metadata: " + e, e);
     }
-    intervalTimeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
 
     ModifiableSolrParams outParams = new ModifiableSolrParams(req.getParams());
     // Don't distribute these params; they will be distributed from the local processCommit separately.
@@ -183,9 +152,13 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     outParamsToLeader = outParams;
   }
 
+  private String getAliasName() {
+    return timeRoutedAlias.getAliasName();
+  }
+
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    final Object routeValue = cmd.getSolrInputDocument().getFieldValue(routeField);
+    final Object routeValue = cmd.getSolrInputDocument().getFieldValue(timeRoutedAlias.getRouteField());
     final Instant routeTimestamp = parseRouteKey(routeValue);
 
     updateParsedCollectionAliases();
@@ -195,7 +168,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
       if (targetCollection == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Doc " + cmd.getPrintableId() + " couldn't be routed with " + routeField + "=" + routeTimestamp);
+            "Doc " + cmd.getPrintableId() + " couldn't be routed with " + timeRoutedAlias.getRouteField() + "=" + routeTimestamp);
       }
 
       // Note: the following rule is tempting but not necessary and is not compatible with
@@ -215,15 +188,15 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       }
 
       // Check the doc isn't too far in the future
-      final Instant maxFutureTime = Instant.now().plusMillis(maxFutureMs);
+      final Instant maxFutureTime = Instant.now().plusMillis(timeRoutedAlias.getMaxFutureMs());
       if (routeTimestamp.isAfter(maxFutureTime)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "The document's time routed key of " + routeValue + " is too far in the future given " +
-                ROUTER_MAX_FUTURE_TIME_METADATA + "=" + maxFutureMs);
+                TimeRoutedAlias.ROUTER_MAX_FUTURE + "=" + timeRoutedAlias.getMaxFutureMs());
       }
 
       // Create a new collection?
-      final Instant nextCollTimestamp = computeNextCollTimestamp(mostRecentCollTimestamp, intervalDateMath, intervalTimeZone);
+      final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(mostRecentCollTimestamp);
       if (routeTimestamp.isBefore(nextCollTimestamp)) {
         break; // thus we don't need another collection
       }
@@ -249,22 +222,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  /** Computes the timestamp of the next collection given the timestamp of the one before. */
-  public static Instant computeNextCollTimestamp(Instant fromTimestamp, String intervalDateMath, TimeZone intervalTimeZone) {
-    //TODO overload DateMathParser.parseMath to take tz and "now"
-    final DateMathParser dateMathParser = new DateMathParser(intervalTimeZone);
-    dateMathParser.setNow(Date.from(fromTimestamp));
-    final Instant nextCollTimestamp;
-    try {
-      nextCollTimestamp = dateMathParser.parseMath(intervalDateMath).toInstant();
-    } catch (ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid Date Math String:'" + intervalDateMath +'\'', e);
-    }
-    assert nextCollTimestamp.isAfter(fromTimestamp);
-    return nextCollTimestamp;
-  }
-
   private Instant parseRouteKey(Object routeKey) {
     final Instant docTimestamp;
     if (routeKey instanceof Instant) {
@@ -288,9 +245,9 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
     if (this.parsedCollectionsAliases != aliases) {
       if (this.parsedCollectionsAliases != null) {
-        log.debug("Observing possibly updated alias: {}", aliasName);
+        log.debug("Observing possibly updated alias: {}", getAliasName());
       }
-      this.parsedCollectionsDesc = parseCollections(aliasName, aliases, this::newAliasMustExistException);
+      this.parsedCollectionsDesc = timeRoutedAlias.parseCollections(aliases, this::newAliasMustExistException);
       this.parsedCollectionsAliases = aliases;
       return true;
     }
@@ -319,13 +276,13 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     //   Alternatively a Lock or CountDownLatch could have been used but they didn't seem
     //   to make it any easier.
 
-    final Semaphore semaphore = aliasToSemaphoreMap.computeIfAbsent(aliasName, n -> new Semaphore(1));
+    final Semaphore semaphore = aliasToSemaphoreMap.computeIfAbsent(getAliasName(), n -> new Semaphore(1));
     if (semaphore.tryAcquire()) {
       try {
         final String operation = CollectionParams.CollectionAction.ROUTEDALIAS_CREATECOLL.toLower();
         Map<String, Object> msg = new HashMap<>();
         msg.put(Overseer.QUEUE_OPERATION, operation);
-        msg.put(CollectionParams.NAME, aliasName);
+        msg.put(CollectionParams.NAME, getAliasName());
         msg.put(RoutedAliasCreateCollectionCmd.IF_MOST_RECENT_COLL_NAME, mostRecentCollName);
         SolrQueryResponse rsp = new SolrQueryResponse();
         try {
@@ -371,42 +328,10 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  /** Parses the timestamp from the collection list and returns them in reverse sorted order (most recent 1st) */
-  public static List<Map.Entry<Instant,String>> parseCollections(String aliasName, Aliases aliases, Supplier<SolrException> aliasNotExist) {
-    final List<String> collections = aliases.getCollectionAliasListMap().get(aliasName);
-    if (collections == null) {
-      throw aliasNotExist.get();
-    }
-    // note: I considered TreeMap but didn't like the log(N) just to grab the most recent when we use it later
-    List<Map.Entry<Instant,String>> result = new ArrayList<>(collections.size());
-    for (String collection : collections) {
-      Instant colStartTime = parseInstantFromCollectionName(aliasName, collection);
-      result.add(new AbstractMap.SimpleImmutableEntry<>(colStartTime, collection));
-    }
-    result.sort((e1, e2) -> e2.getKey().compareTo(e1.getKey())); // reverse sort by key
-    return result;
-  }
-
   private SolrException newAliasMustExistException() {
     throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        "Collection " + thisCollection + " created for use with alias " + aliasName + " which doesn't exist anymore." +
+        "Collection " + thisCollection + " created for use with alias " + getAliasName() + " which doesn't exist anymore." +
             " You cannot write to this unless the alias exists.");
-  }
-
-  static Instant parseInstantFromCollectionName(String aliasName, String collection) {
-    final String dateTimePart = collection.substring(aliasName.length() + 1);
-    return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
-  }
-
-  public static String formatCollectionNameFromInstant(String aliasName, Instant timestamp) {
-    String nextCollName = TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER.format(timestamp);
-    for (int i = 0; i < 3; i++) { // chop off seconds, minutes, hours
-      if (nextCollName.endsWith("_00")) {
-        nextCollName = nextCollName.substring(0, nextCollName.length()-3);
-      }
-    }
-    assert TimeRoutedAliasUpdateProcessor.DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
-    return aliasName + "_" + nextCollName;
   }
 
   @Override
@@ -451,7 +376,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   private List<SolrCmdDistributor.Node> lookupShardLeadersOfCollections() {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
-    List<String> collections = aliases.getCollectionAliasListMap().get(aliasName);
+    List<String> collections = aliases.getCollectionAliasListMap().get(getAliasName());
     if (collections == null) {
       throw newAliasMustExistException();
     }

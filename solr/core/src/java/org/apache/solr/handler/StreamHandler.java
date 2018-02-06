@@ -127,7 +127,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
         .withFunctionName("random", RandomStream.class)
-        .withFunctionName("knn", KnnStream.class)
+        .withFunctionName("knnSearch", KnnStream.class)
 
         // decorator streams
         .withFunctionName("merge", MergeStream.class)
@@ -296,6 +296,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("getColumnLabels", GetColumnLabelsEvaluator.class)
         .withFunctionName("getRowLabels", GetRowLabelsEvaluator.class)
         .withFunctionName("getAttribute", GetAttributeEvaluator.class)
+        .withFunctionName("kmeans", KmeansEvaluator.class)
+        .withFunctionName("getCentroids", GetCentroidsEvaluator.class)
+        .withFunctionName("getCluster", GetClusterEvaluator.class)
+        .withFunctionName("topFeatures", TopFeaturesEvaluator.class)
+        .withFunctionName("featureSelect", FeatureSelectEvaluator.class)
+        .withFunctionName("rowAt", RowAtEvaluator.class)
+        .withFunctionName("colAt", ColumnAtEvaluator.class)
+        .withFunctionName("setColumnLabels", SetColumnLabelsEvaluator.class)
+        .withFunctionName("setRowLabels", SetRowLabelsEvaluator.class)
+        .withFunctionName("knn", KnnEvaluator.class)
+        .withFunctionName("getAttributes", GetAttributesEvaluator.class)
+        .withFunctionName("indexOf", IndexOfEvaluator.class)
+        .withFunctionName("columnCount", ColumnCountEvaluator.class)
+        .withFunctionName("rowCount", RowCountEvaluator.class)
+        .withFunctionName("fuzzyKmeans", FuzzyKmeansEvaluator.class)
+        .withFunctionName("getMembershipMatrix", GetMembershipMatrixEvaluator.class)
+        .withFunctionName("multiKmeans", MultiKmeansEvaluator.class)
 
         // Boolean Stream Evaluators
 

@@ -26,8 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -243,6 +246,33 @@ public class ZkMaintenanceUtils {
         return;
       }
     });
+  }
+
+  /**
+   * Delete a path and all of its sub nodes
+   * @param filter for node to be deleted
+   */
+  public static void clean(SolrZkClient zkClient, String path, Predicate<String> filter) throws InterruptedException, KeeperException {
+    if (filter == null) {
+      clean(zkClient, path);
+      return;
+    }
+
+    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+
+    traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
+      if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
+    });
+
+    for (String subpath : paths) {
+      if (!subpath.equals("/")) {
+        try {
+          zkClient.delete(subpath, -1, true);
+        } catch (KeeperException.NotEmptyException | KeeperException.NoNodeException e) {
+          // expected
+        }
+      }
+    }
   }
   
   public static void uploadToZK(SolrZkClient zkClient, final Path fromPath, final String zkPath,

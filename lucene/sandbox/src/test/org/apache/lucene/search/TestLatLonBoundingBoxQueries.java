@@ -97,6 +97,12 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
     dir.close();
   }
 
+  public void testToString() {
+    LatLonBoundingBox field = new LatLonBoundingBox(FIELD_NAME, -20d, -180d, 20d, -100d);
+    String expected = "LatLonBoundingBox <geoBoundingBoxField:[-20.000000023283064,-180.0,19.99999998137355,-100.0000000745058]>";
+    assertEquals(expected, field.toString());
+  }
+
   @Override
   protected int dimension() {
     return 2;

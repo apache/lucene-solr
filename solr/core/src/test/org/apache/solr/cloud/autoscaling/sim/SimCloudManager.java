@@ -80,7 +80,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 
 /**
  * Simulated {@link SolrCloudManager}.
@@ -107,6 +107,8 @@ public class SimCloudManager implements SolrCloudManager {
   private SolrResourceLoader loader;
 
   private static int nodeIdPort = 10000;
+  public static int DEFAULT_DISK = 1000; // 1000 GB
+  public static int DEFAULT_IDX_SIZE_BYTES = 1000000000; // 1 GB
 
   /**
    * Create a simulated cluster. This cluster uses the following components:
@@ -227,7 +229,7 @@ public class SimCloudManager implements SolrCloudManager {
     values.put(ImplicitSnitch.PORT, port);
     values.put(ImplicitSnitch.NODE, nodeId);
     values.put(ImplicitSnitch.CORES, 0);
-    values.put(ImplicitSnitch.DISK, 1000);
+    values.put(ImplicitSnitch.DISK, DEFAULT_DISK);
     values.put(ImplicitSnitch.SYSLOADAVG, 1.0);
     values.put(ImplicitSnitch.HEAPUSAGE, 123450000);
     values.put("sysprop.java.version", System.getProperty("java.version"));

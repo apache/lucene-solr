@@ -16,14 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.util.Utils;
-import org.noggit.JSONUtil;
-import org.noggit.JSONWriter;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.solr.common.util.Utils;
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
 
 /**
  * ZkNodeProps contains generic immutable properties.
@@ -148,7 +148,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   public boolean getBool(String key, boolean b) {
     Object o = propMap.get(key);
-    if(o==null) return b;
+    if (o == null) return b;
+    if (o instanceof Boolean) return (boolean) o;
     return Boolean.parseBoolean(o.toString());
   }
 

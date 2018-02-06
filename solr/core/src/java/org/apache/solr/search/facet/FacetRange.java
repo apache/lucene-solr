@@ -29,6 +29,9 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.CurrencyFieldType;
+import org.apache.solr.schema.CurrencyValue;
+import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
@@ -120,6 +123,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
 
+  /**
+   * Returns a {@link Calc} instance to use for <em>term</em> faceting over a numeric field.
+   * This metod is unused for <code>range</code> faceting, and exists solely as a helper method for other classes
+   * 
+   * @param sf A field to facet on, must be of a type such that {@link FieldType#getNumberType} is non null
+   * @return a <code>Calc</code> instance with {@link Calc#bitsToValue} and {@link Calc#bitsToSortableBits} methods suitable for the specified field.
+   * @see FacetFieldProcessorByHashDV
+   */
   public static Calc getNumericCalc(SchemaField sf) {
     Calc calc;
     final FieldType ft = sf.getType();
@@ -203,6 +214,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               (SolrException.ErrorCode.BAD_REQUEST,
                   "Unable to range facet on tried field of unexpected type:" + freq.field);
       }
+    } else if (ft instanceof CurrencyFieldType) {
+      calc = new CurrencyCalc(sf);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -260,7 +273,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
                   0 == high.compareTo(end)));
 
-      Range range = new Range(low, low, high, incLower, incUpper);
+      Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
       rangeList.add( range );
 
       low = high;
@@ -400,14 +413,28 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       this.field = field;
     }
 
+    /**
+     * Used by {@link FacetFieldProcessorByHashDV} for field faceting on numeric types -- not used for <code>range</code> faceting
+     */
     public Comparable bitsToValue(long bits) {
       return bits;
     }
 
+    /**
+     * Used by {@link FacetFieldProcessorByHashDV} for field faceting on numeric types -- not used for <code>range</code> faceting
+     */
     public long bitsToSortableBits(long bits) {
       return bits;
     }
 
+    /**
+     * Given the low value for a bucket, generates the appropraite "label" object to use. 
+     * By default return the low object unmodified.
+     */
+    public Object buildRangeLabel(Comparable low) {
+      return low;
+    }
+    
     /**
      * Formats a value into a label used in a response
      * Default Impl just uses toString()
@@ -605,6 +632,84 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
 
+  private static class CurrencyCalc extends Calc {
+    private String defaultCurrencyCode;
+    private ExchangeRateProvider exchangeRateProvider;
+    public CurrencyCalc(final SchemaField field) {
+      super(field);
+      if(!(this.field.getType() instanceof CurrencyFieldType)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Cannot perform range faceting over non CurrencyField fields");
+      }
+      defaultCurrencyCode =
+        ((CurrencyFieldType)this.field.getType()).getDefaultCurrency();
+      exchangeRateProvider =
+        ((CurrencyFieldType)this.field.getType()).getProvider();
+    }
+
+    /** 
+     * Throws a Server Error that this type of operation is not supported for this field 
+     * {@inheritDoc} 
+     */
+    @Override
+    public Comparable bitsToValue(long bits) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Currency Field " + field.getName() + " can not be used in this way");
+    }
+
+    /** 
+     * Throws a Server Error that this type of operation is not supported for this field 
+     * {@inheritDoc} 
+     */
+    @Override
+    public long bitsToSortableBits(long bits) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Currency Field " + field.getName() + " can not be used in this way");
+    }
+
+    /**
+     * Returns the short string representation of the CurrencyValue
+     * @see CurrencyValue#strValue
+     */
+    @Override
+    public Object buildRangeLabel(Comparable low) {
+      return ((CurrencyValue)low).strValue();
+    }
+    
+    @Override
+    public String formatValue(Comparable val) {
+      return ((CurrencyValue)val).strValue();
+    }
+
+    @Override
+    protected Comparable parseStr(final String rawval) throws java.text.ParseException {
+      return CurrencyValue.parse(rawval, defaultCurrencyCode);
+    }
+
+    @Override
+    protected Object parseGap(final String rawval) throws java.text.ParseException {
+      return parseStr(rawval);
+    }
+
+    @Override
+    protected Comparable parseAndAddGap(Comparable value, String gap) throws java.text.ParseException{
+      if (value == null) {
+        throw new NullPointerException("Cannot perform range faceting on null CurrencyValue");
+      }
+      CurrencyValue val = (CurrencyValue) value;
+      CurrencyValue gapCurrencyValue =
+        CurrencyValue.parse(gap, defaultCurrencyCode);
+      long gapAmount =
+        CurrencyValue.convertAmount(this.exchangeRateProvider,
+                                    gapCurrencyValue.getCurrencyCode(),
+                                    gapCurrencyValue.getAmount(),
+                                    val.getCurrencyCode());
+      return new CurrencyValue(val.getAmount() + gapAmount,
+                               val.getCurrencyCode());
+
+    }
+
+  }
 
   // this refineFacets method is patterned after FacetFieldProcessor.refineFacets and should
   // probably be merged when range facet becomes more like field facet in it's ability to sort and limit
@@ -709,16 +814,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
             (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
                 0 == high.compareTo(end)));
 
-    Range range = new Range(low, low, high, incLower, incUpper);
+    Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
 
 
     // now refine this range
 
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
-    FieldType ft = sf.getType();
-    bucket.add("val", range.low); // use "low" instead of bucketVal because it will be the right type (we may have been passed back long instead of int for example)
-    // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
-
+    bucket.add("val", range.label);
+    
     Query domainQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 

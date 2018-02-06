@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -46,21 +45,21 @@ public class TermQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimScorer simScorer;
     private final TermStates termStates;
-    private final boolean needsScores;
+    private final ScoreMode scoreMode;
 
-    public TermWeight(IndexSearcher searcher, boolean needsScores,
+    public TermWeight(IndexSearcher searcher, ScoreMode scoreMode,
         float boost, TermStates termStates) throws IOException {
       super(TermQuery.this);
-      if (needsScores && termStates == null) {
+      if (scoreMode.needsScores() && termStates == null) {
         throw new IllegalStateException("termStates are required when scores are needed");
       }
-      this.needsScores = needsScores;
+      this.scoreMode = scoreMode;
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
 
       final CollectionStatistics collectionStats;
       final TermStatistics termStats;
-      if (needsScores) {
+      if (scoreMode.needsScores()) {
         collectionStats = searcher.collectionStatistics(term.field());
         termStats = searcher.termStatistics(term, termStates);
       } else {
@@ -97,10 +96,9 @@ public class TermQuery extends Query {
           .getFieldInfos()
           .fieldInfo(getTerm().field())
           .getIndexOptions();
-      PostingsEnum docs = termsEnum.postings(null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
-      assert docs != null;
       float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
-      return new TermScorer(this, docs, new LeafSimScorer(simScorer, context.reader(), needsScores, maxFreq));
+      LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
+      return new TermScorer(this, termsEnum, scoreMode, scorer);
     }
 
     private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
@@ -198,7 +196,7 @@ public class TermQuery extends Query {
       termState = this.perReaderTermState;
     }
 
-    return new TermWeight(searcher, scoreMode.needsScores(), boost, termState);
+    return new TermWeight(searcher, scoreMode, boost, termState);
   }
 
   /** Prints a user-readable version of this query. */

@@ -17,7 +17,6 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -180,7 +179,7 @@ public abstract class Similarity {
      * @param norm encoded normalization factor or {@code 1} if norms are disabled
      * @return document's score
      */
-    public abstract float score(float freq, long norm) throws IOException;
+    public abstract float score(float freq, long norm);
 
     /**
      * Explain the score for a single document
@@ -188,7 +187,7 @@ public abstract class Similarity {
      * @param norm encoded normalization factor, as returned by {@link Similarity#computeNorm}, or {@code 1} if norms are disabled
      * @return document's score
      */
-    public Explanation explain(Explanation freq, long norm) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       return Explanation.match(
           score(freq.getValue().floatValue(), norm),
           "score(freq=" + freq.getValue() +"), with freq of:",

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
@@ -76,13 +77,14 @@ abstract class TermsHash {
     bytePool.reset(false, false);
   }
 
-  void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
+  void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state,
+      Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
     if (nextTermsHash != null) {
       Map<String,TermsHashPerField> nextChildFields = new HashMap<>();
       for (final Map.Entry<String,TermsHashPerField> entry : fieldsToFlush.entrySet()) {
         nextChildFields.put(entry.getKey(), entry.getValue().nextPerField);
       }
-      nextTermsHash.flush(nextChildFields, state, sortMap);
+      nextTermsHash.flush(nextChildFields, state, sortMap, norms);
     }
   }
 

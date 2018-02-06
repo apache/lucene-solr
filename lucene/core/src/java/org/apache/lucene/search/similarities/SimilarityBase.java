@@ -17,7 +17,6 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -217,17 +216,17 @@ public abstract class SimilarityBase extends Similarity {
       this.stats = stats;
     }
 
-    double getLengthValue(long norm) throws IOException {
+    double getLengthValue(long norm) {
       return LENGTH_TABLE[Byte.toUnsignedInt((byte) norm)];
     }
     
     @Override
-    public float score(float freq, long norm) throws IOException {
+    public float score(float freq, long norm) {
       return (float) SimilarityBase.this.score(stats, freq, getLengthValue(norm));
     }
 
     @Override
-    public Explanation explain(Explanation freq, long norm) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       return SimilarityBase.this.explain(stats, freq, getLengthValue(norm));
     }
 

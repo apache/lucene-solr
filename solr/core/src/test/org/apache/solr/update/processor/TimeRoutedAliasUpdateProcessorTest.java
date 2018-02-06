@@ -36,21 +36,21 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,25 +77,23 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     IOUtils.close(solrClient);
   }
 
-  //TODO this is necessary when -Dtests.iters but why? Some other tests aren't affected
-  @Before
-  public void doBefore() throws Exception {
-    for (String col : CollectionAdminRequest.listCollections(solrClient)) {
-      CollectionAdminRequest.deleteCollection(col).process(solrClient);
-    }
-  }
-
   @Test
   public void test() throws Exception {
-    // First create a config using REST API.  To do this, we create a collection with the name of the eventual config.
-    // We configure it, and ultimately delete it the collection, leaving a config with the same name behind.
-    // Then when we create the "real" collections referencing this config.
-    CollectionAdminRequest.createCollection(configName, 1, 1).process(solrClient);
+
+    // First create a configSet
+    // Then we create a collection with the name of the eventual config.
+    // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
+    // Then when we create the "real" collections referencing this modified config-set.
+    final ConfigSetAdminRequest.Create adminRequest = new ConfigSetAdminRequest.Create();
+        adminRequest.setConfigSetName(configName);
+        adminRequest.setBaseConfigSetName("_default");
+        ConfigSetAdminResponse adminResponse = adminRequest.process(solrClient);
+        assertEquals(adminResponse.getStatus(), 0);
+
+    CollectionAdminRequest.createCollection(configName, configName,1, 1).process(solrClient);
     // manipulate the config...
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set-user-property' : {'timePartitionAliasName':'" + alias + "'}," + // no data driven
+
+        String conf = "{" +
             "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
             "  'add-updateprocessor' : {" +
             "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
@@ -104,8 +102,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
             "    'fieldName':'" + intField + "'" +
             "  }," +
-            "}").build()));
-    // only sometimes test with "tolerant" URP
+            "}";
+    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload(conf).build()));    // only sometimes test with "tolerant" URP
     final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
     checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
         .withMethod(SolrRequest.METHOD.POST)
@@ -116,26 +116,29 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "}").build()));
     CollectionAdminRequest.deleteCollection(configName).process(solrClient);
 
-    // start with one collection and an alias for it
+    assertTrue(
+        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
+            .contains(configName)
+    );
+
+    // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
+    //  This tests we may pre-create the collection and it's acceptable.
     final String col23rd = alias + "_2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
         .setMaxShardsPerNode(2)
-        .withProperty(TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, alias)
+        .withProperty(TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
-    assertEquals("We only expect 2 configSets",
-        Arrays.asList("_default", configName), new ConfigSetAdminRequest.List().process(solrClient).getConfigSets());
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+    assertTrue("We only expect 2 configSets",
+        expectedConfigSetNames.size() == retrievedConfigSetNames.size());
+    assertTrue("ConfigNames should be :" + expectedConfigSetNames, expectedConfigSetNames.containsAll(retrievedConfigSetNames) && retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    CollectionAdminRequest.createAlias(alias, col23rd).process(solrClient);
-    //TODO use SOLR-11617 client API to set alias metadata
-    final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(a ->
-        a.cloneWithCollectionAliasMetadata(alias, TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA, timeField)
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.collection.configName", configName)
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.numShards", "1")
-        .cloneWithCollectionAliasMetadata(alias, "collection-create.replicationFactor", "1")
-        .cloneWithCollectionAliasMetadata(alias, "router.interval", "+1DAY"));
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", timeField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2))
+        .process(solrClient);
 
     // now we index a document
     assertUpdateResponse(solrClient.add(alias, newDoc(Instant.parse("2017-10-23T00:00:00Z"))));
@@ -149,12 +152,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // a document which is too far into the future
     testFailedDocument(Instant.now().plus(30, ChronoUnit.MINUTES), "too far in the future");
 
-    // add another collection, add to alias  (soonest comes first)
+    // add another collection with the precise name we expect, but don't add to alias explicitly.  When we add a document
+    //   destined for this collection, Solr will see it already exists and add it to the alias.
     final String col24th = alias + "_2017-10-24";
     CollectionAdminRequest.createCollection(col24th, configName,  1, 1) // more shards and replicas now
-        .withProperty("timePartitionAliasName", alias)
+        .withProperty(TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
-    CollectionAdminRequest.createAlias(alias, col24th + "," + col23rd).process(solrClient);
 
     // index 3 documents in a random fashion
     addDocsAndCommit(
@@ -260,9 +263,14 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
         return;
       }
-      // wait until it's committed, plus some play time for commit to become visible
-      Thread.sleep(commitWithin + 200);
-      numDocs = queryNumDocs();
+      // wait until it's committed
+      Thread.sleep(commitWithin);
+      for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
+        numDocs = queryNumDocs();
+        if (numDocsBefore + solrInputDocuments.length == numDocs) break;
+        Thread.sleep(100);
+      }
+
       assertEquals("not committed.  Bug or a slow test?",
           numDocsBefore + solrInputDocuments.length, numDocs);
     }
@@ -291,7 +299,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     int totalNumFound = 0;
     Instant colEndInstant = null; // exclusive end
     for (String col : cols) { // ASSUMPTION: reverse sorted order
-      final Instant colStartInstant = TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, col);
+      final Instant colStartInstant = TimeRoutedAlias.parseInstantFromCollectionName(alias, col);
       final QueryResponse colStatsResp = solrClient.query(col, params(
           "q", "*:*",
           "rows", "0",
@@ -322,13 +330,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   @Test
   public void testParse() {
     assertEquals(Instant.parse("2017-10-02T03:04:05Z"),
-      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04_05"));
+      TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04_05"));
     assertEquals(Instant.parse("2017-10-02T03:04:00Z"),
-      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04"));
+      TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04"));
     assertEquals(Instant.parse("2017-10-02T03:00:00Z"),
-      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03"));
+      TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03"));
     assertEquals(Instant.parse("2017-10-02T00:00:00Z"),
-      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02"));
+      TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + "_2017-10-02"));
   }
 
   public static class IncrementURPFactory extends FieldMutatingUpdateProcessorFactory {

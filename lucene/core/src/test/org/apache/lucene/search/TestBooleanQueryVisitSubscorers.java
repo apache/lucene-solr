@@ -331,7 +331,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(float freq, long norm) throws IOException {
+        public float score(float freq, long norm) {
           return freq;
         }
       };

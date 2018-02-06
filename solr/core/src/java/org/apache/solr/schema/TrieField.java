@@ -160,30 +160,25 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
+  public SortField getSortField(SchemaField field, boolean reverse) {
+    // NOTE: can't use getNumericSort because our multivalued case is special: we use SortedSet
 
-    Object missingValue = null;
-    boolean sortMissingLast  = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    SortField sf;
-
-    switch (type) {
-      case INTEGER:
-        return getSortField(field, SortField.Type.INT, top, Integer.MIN_VALUE, Integer.MAX_VALUE);
-      case FLOAT:
-        return getSortField(field, SortField.Type.FLOAT, top, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
-      case DATE: // fallthrough
-      case LONG:
-        return getSortField(field, SortField.Type.LONG, top, Long.MIN_VALUE, Long.MAX_VALUE);
-      case DOUBLE:
-        return getSortField(field, SortField.Type.DOUBLE, top, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
+    if (field.multiValued()) {
+      MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
+      if (null != selector) {
+        return getSortedSetSortField(field, selector.getSortedSetSelectorType(),
+                                     // yes: we really want Strings here, regardless of NumberType
+                                     reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
+      }
     }
+    
+    // else...
+    // either single valued, or don't support implicit multi selector
+    // (in which case let getSortField() give the error)
+    NumberType type = getNumberType();
+    return getSortField(field, type.sortType, reverse, type.sortMissingLow, type.sortMissingHigh);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {

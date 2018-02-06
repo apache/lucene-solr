@@ -35,7 +35,7 @@ API Changes
 * LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
   scoring factors. (Adrien Grand)
 
-* LUCENE-8113: TermContext has been renamed to TermStates, and can now be 
+* LUCENE-8113: TermContext has been renamed to TermStates, and can now be
   constructed lazily if term statistics are not required (Alan Woodward)
 
 Changes in Runtime Behavior
@@ -64,6 +64,9 @@ Improvements
 
 * LUCENE-8011: Improved similarity explanations.
   (Mayya Sharipova via Adrien Grand)
+
+* LUCENE-4198: Codecs now have the ability to index score impacts.
+  (Adrien Grand)
 
 Optimizations
 
@@ -95,6 +98,10 @@ API Changes
 * LUCENE-8104: Remove facets module compile-time dependency on queries
   (Alan Woodward)
 
+* LUCENE-8145: UnifiedHighlighter now uses a unitary OffsetsEnum rather
+  than a list of enums (Alan Woodward, David Smiley, Jim Ferenczi, Timothy
+  Rodriguez)
+
 New Features
 
 * LUCENE-2899: Add new module analysis/opennlp, with analysis components
@@ -119,6 +126,21 @@ Improvements
 
 * LUCENE-8094: TermInSetQuery.toString now returns "field:(A B C)" (Mike McCandless)
 
+* LUCENE-8121: UnifiedHighlighter passage relevancy is improved for terms that are
+  position sensitive (e.g. part of a phrase) by having an accurate freq.
+  (David Smiley)
+
+* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
+
+* LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
+  (Ere Maijala)
+
+* LUCENE-7966: Build Multi-Release JARs to enable usage of optimized intrinsic methods
+  from Java 9 for index bounds checking and array comparison/mismatch. This change
+  introduces Java 8 replacements for those Java 9 methods and patches the compiled
+  classes to use the optimized variants through the MR-JAR mechanism.
+  (Uwe Schindler, Robert Muir, Adrien Grand, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
@@ -126,6 +148,19 @@ Bug Fixes
 
 * SOLR-11758: Fixed FloatDocValues.boolVal to correctly return true for all values != 0.0F
   (Munendra S N via hossman)
+
+* LUCENE-8121: The UnifiedHighlighter would highlight some terms within some nested
+  SpanNearQueries at positions where it should not have.  It's fixed in the UH by
+  switching to the SpanCollector API.  The original Highlighter still has this
+  problem (LUCENE-2287, LUCENE-5455, LUCENE-6796).  Some public but internal parts of
+  the UH were refactored. (David Smiley, Steve Davids)
+
+* LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
+
+* LUCENE-8130: Fix NullPointerException from TermStates.toString() (Mike McCandless)
+
+* LUCENE-8124: Fixed HyphenationCompoundWordTokenFilter to handle correctly
+  hyphenation patterns with indicator >= 7. (Holger Bruch via Adrien Grand)
 
 Other
 
@@ -139,6 +174,12 @@ Other
 
 * LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
   (Pulak Ghosh via Adrien Grand)
+
+======================= Lucene 7.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-8117: Fix advanceExact on SortedNumericDocValues produced by Lucene54DocValues. (Jim Ferenczi).
 
 ======================= Lucene 7.2.0 =======================
 

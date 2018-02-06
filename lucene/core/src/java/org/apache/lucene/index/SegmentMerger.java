@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -109,10 +110,33 @@ final class SegmentMerger {
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.mergeFieldInfos, null, context);
+    final SegmentReadState segmentReadState = new SegmentReadState(directory, mergeState.segmentInfo, mergeState.mergeFieldInfos,
+                                                                   IOContext.READ, segmentWriteState.segmentSuffix);
+
+    if (mergeState.mergeFieldInfos.hasNorms()) {
+      if (mergeState.infoStream.isEnabled("SM")) {
+        t0 = System.nanoTime();
+      }
+      mergeNorms(segmentWriteState);
+      if (mergeState.infoStream.isEnabled("SM")) {
+        long t1 = System.nanoTime();
+        mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge norms [" + numMerged + " docs]");
+      }
+    }
+
     if (mergeState.infoStream.isEnabled("SM")) {
       t0 = System.nanoTime();
     }
-    mergeTerms(segmentWriteState);
+    try (NormsProducer norms = mergeState.mergeFieldInfos.hasNorms()
+        ? codec.normsFormat().normsProducer(segmentReadState)
+        : null) {
+      NormsProducer normsMergeInstance = null;
+      if (norms != null) {
+        // Use the merge instance in order to reuse the same IndexInput for all terms
+        normsMergeInstance = norms.getMergeInstance();
+      }
+      mergeTerms(segmentWriteState, normsMergeInstance);
+    }
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge postings [" + numMerged + " docs]");
@@ -138,17 +162,6 @@ final class SegmentMerger {
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge points [" + numMerged + " docs]");
-    }
-    
-    if (mergeState.mergeFieldInfos.hasNorms()) {
-      if (mergeState.infoStream.isEnabled("SM")) {
-        t0 = System.nanoTime();
-      }
-      mergeNorms(segmentWriteState);
-      if (mergeState.infoStream.isEnabled("SM")) {
-        long t1 = System.nanoTime();
-        mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge norms [" + numMerged + " docs]");
-      }
     }
 
     if (mergeState.mergeFieldInfos.hasVectors()) {
@@ -225,9 +238,9 @@ final class SegmentMerger {
     }
   }
 
-  private void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
+  private void mergeTerms(SegmentWriteState segmentWriteState, NormsProducer norms) throws IOException {
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState)) {
-      consumer.merge(mergeState);
+      consumer.merge(mergeState, norms);
     }
   }
 }

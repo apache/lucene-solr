@@ -384,7 +384,7 @@ public class QueryResponse extends SolrResponseBase
         Number between = (Number) values.get("between");
 
         rangeFacet = new RangeFacet.Numeric(facet.getKey(), start, end, gap, before, after, between);
-      } else {
+      } else if (rawGap instanceof String && values.get("start") instanceof Date) {
         String gap = (String) rawGap;
         Date start = (Date) values.get("start");
         Date end = (Date) values.get("end");
@@ -394,8 +394,18 @@ public class QueryResponse extends SolrResponseBase
         Number between = (Number) values.get("between");
 
         rangeFacet = new RangeFacet.Date(facet.getKey(), start, end, gap, before, after, between);
+      } else {
+        String gap = (String) rawGap;
+        String start = (String) values.get("start");
+        String end = (String) values.get("end");
+        
+        Number before = (Number) values.get("before");
+        Number after = (Number) values.get("after");
+        Number between = (Number) values.get("between");
+        
+        rangeFacet = new RangeFacet.Currency(facet.getKey(), start, end, gap, before, after, between);
       }
-
+      
       NamedList<Integer> counts = (NamedList<Integer>) values.get("counts");
       for (Map.Entry<String, Integer> entry : counts)   {
         rangeFacet.addCount(entry.getKey(), entry.getValue());

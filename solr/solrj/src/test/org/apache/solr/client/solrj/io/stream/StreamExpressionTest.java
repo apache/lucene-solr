@@ -933,7 +933,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testKnnStream() throws Exception {
+  public void testKnnSearchStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
     update.add(id, "1", "a_t", "hello world have a very nice day blah");
@@ -947,7 +947,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       context.setSolrClientCache(cache);
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples = getTuples(solrStream);
@@ -955,26 +955,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertOrder(tuples, 2, 3, 4);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 2);
       assertOrder(tuples, 2, 3);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
@@ -6175,7 +6175,18 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testMatrix() throws Exception {
-    String cexpr = "matrix(array(1, 2, 3), rev(array(4,5,6)))";
+    String cexpr = "let(echo=true," +
+        "               a=setColumnLabels(matrix(array(1, 2, 3), " +
+        "                                        rev(array(4,5,6)))," +
+        "                                        array(col1, col2, col3))," +
+        "               b=rowAt(a, 1)," +
+        "               c=colAt(a, 2)," +
+        "               d=getColumnLabels(a)," +
+        "               e=topFeatures(a, 1)," +
+        "               f=rowCount(a)," +
+        "               g=columnCount(a)," +
+        "               h=indexOf(d, \"col2\")," +
+        "               i=indexOf(d, col3))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6185,7 +6196,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("return-value");
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
 
     List<Number> array1 = out.get(0);
     assertEquals(array1.size(), 3);
@@ -6198,6 +6209,36 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
     assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> row = (List<Number>)tuples.get(0).get("b");
+
+    assertEquals(row.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> col = (List<Number>)tuples.get(0).get("c");
+    assertEquals(col.size(), 2);
+    assertEquals(col.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(col.get(1).doubleValue(), 4.0, 0.0);
+
+    List<String> colLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(colLabels.size(), 3);
+    assertEquals(colLabels.get(0), "col1");
+    assertEquals(colLabels.get(1), "col2");
+    assertEquals(colLabels.get(2), "col3");
+
+    List<List<String>> features  = (List<List<String>>)tuples.get(0).get("e");
+    assertEquals(features.size(), 2);
+    assertEquals(features.get(0).size(), 1);
+    assertEquals(features.get(1).size(), 1);
+    assertEquals(features.get(0).get(0), "col3");
+    assertEquals(features.get(1).get(0), "col1");
+
+    assertTrue(tuples.get(0).getLong("f") == 2);
+    assertTrue(tuples.get(0).getLong("g")== 3);
+    assertTrue(tuples.get(0).getLong("h")== 1);
+    assertTrue(tuples.get(0).getLong("i")== 2);
   }
 
 
@@ -6784,6 +6825,78 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(docFreqs.get("world").intValue(), 1);
 
 
+    //Test exclude. This should drop off the term jim
+
+    cexpr = "let(echo=true," +
+        "        a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "                      tuple(id=\"2\", text=\"hello steve\"), " +
+        "                      tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "                      tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "        b=termVectors(a, exclude=jim, minDocFreq=0, maxDocFreq=1)," +
+        "        c=getRowLabels(b)," +
+        "        d=getColumnLabels(b)," +
+        "        e=getAttribute(b, docFreqs))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 4);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "steve");
+    assertEquals(columnLabels.get(3), "world");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 4);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
     //Test minDocFreq attribute at .5. This should eliminate all but the term hello
 
     cexpr = "let(echo=true," +
@@ -6884,6 +6997,270 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 6);
   }
 
+  @Test
+  public void testKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=kmeans(e, 2)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+              ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0);
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
+    }
+  }
+
+  @Test
+  public void testMultiKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=multiKmeans(e, 2, 5)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+        ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0);
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
+    }
+  }
+
+
+
+
+  @Test
+  public void testFuzzyKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=fuzzyKmeans(e, 2)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h)," +
+        "               l=getMembershipMatrix(f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<List<Number>> membership = (List<List<Number>>)tuples.get(0).get("l");
+
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+        ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.001);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.001);
+
+      //Assert the membership matrix
+      assertEquals(membership.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 1.0, 0.001);
+
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.001);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.001);
+
+      //Assert the membership matrix
+      assertEquals(membership.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 0.0, 0.001);
+    }
+  }
 
   @Test
   public void testEBEMultiply() throws Exception {
@@ -7552,6 +7929,67 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(density.doubleValue(), 0.007852638121596995, .00001);
   }
 
+  @Test
+  public void testKnn() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=setRowLabels(matrix(array(1,1,1,0,0,0),"+
+        "                                     array(1,0,0,0,1,1),"+
+        "                                     array(0,0,0,1,1,1)), array(row1,row2,row3)),"+
+        "               b=array(0,0,0,1,1,1),"+
+        "               c=knn(a, b, 2),"+
+        "               d=getRowLabels(c),"+
+        "               e=getAttributes(c)," +
+        "               f=knn(a, b, 2, distance=manhattan)," +
+        "               g=getAttributes(f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<List<Number>> knnMatrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(knnMatrix.size(), 2);
+
+    List<Number> row1 = knnMatrix.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 1.0, 0.0);
+
+    List<Number> row2 = knnMatrix.get(1);
+    assertEquals(row2.size(), 6);
+
+    assertEquals(row2.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 1.0, 0.0);
+
+    Map atts = (Map)tuples.get(0).get("e");
+    List<Number> dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 1.4142135623730951, 0.0);
+
+    List<String> rowLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(rowLabels.size(), 2);
+    assertEquals(rowLabels.get(0), "row3");
+    assertEquals(rowLabels.get(1), "row2");
+
+    atts = (Map)tuples.get(0).get("g");
+    dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 2.0, 0.0);
+  }
 
   @Test
   public void testIntegrate() throws Exception {

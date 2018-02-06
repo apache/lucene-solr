@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.search.similarities;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -73,7 +71,7 @@ public class AssertingSimilarity extends Similarity {
     }
 
     @Override
-    public float score(float freq, long norm) throws IOException {
+    public float score(float freq, long norm) {
       // freq in bounds
       assert Float.isFinite(freq);
       assert freq > 0;
@@ -86,7 +84,7 @@ public class AssertingSimilarity extends Similarity {
     }
 
     @Override
-    public Explanation explain(Explanation freq, long norm) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       // freq in bounds 
       assert freq != null;
       assert Float.isFinite(freq.getValue().floatValue());

@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -96,9 +97,6 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
@@ -174,7 +172,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  static class CloudSolrServerClient {
+  public static class CloudSolrServerClient {
     SolrClient solrClient;
     String shardName;
     int port;
@@ -184,6 +182,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     public CloudSolrServerClient(SolrClient client) {
       this.solrClient = client;
+    }
+
+    public SolrClient getSolrClient() {
+      return solrClient;
     }
 
     @Override
@@ -1621,9 +1623,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
       if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
     }
-    Integer numShards = (Integer) collectionProps.get(NUM_SLICES);
+    Integer numShards = (Integer) collectionProps.get(OverseerCollectionMessageHandler.NUM_SLICES);
     if(numShards==null){
-      String shardNames = (String) collectionProps.get(SHARDS_PROP);
+      String shardNames = (String) collectionProps.get(OverseerCollectionMessageHandler.SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
     Integer numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.NRT_REPLICAS);
@@ -1685,12 +1687,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-        NUM_SLICES, numShards,
-        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
-        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
-        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
+            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr,
+            ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configSetName);
   }
 
@@ -1701,12 +1703,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-        NUM_SLICES, numShards,
-        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
-        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
-        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
+            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr,
+            ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
   }
 
@@ -1905,7 +1907,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ZkStateReader.NRT_REPLICAS, numNrtReplicas,
         ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
         ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        NUM_SLICES, numShards);
+        OverseerCollectionMessageHandler.NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
   }
@@ -1961,6 +1963,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
     Replica leader = null;
+    ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, shardId, cloudClient.getZkStateReader().getZkClient());
     while (waitMs < maxWaitMs && !allReplicasUp) {
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
@@ -1979,7 +1982,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
-        if (replica.getState() != Replica.State.ACTIVE) {
+        if (!zkShardTerms.canBecomeLeader(replica.getName()) ||
+            replica.getState() != Replica.State.ACTIVE) {
           log.info("Replica {} is currently {}", replica.getName(), replica.getState());
           allReplicasUp = false;
         }
@@ -1996,6 +2000,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     } // end while
 
+    zkShardTerms.close();
     if (!allReplicasUp)
       fail("Didn't see all replicas for shard "+shardId+" in "+testCollectionName+
           " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());

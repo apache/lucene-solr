@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -69,7 +70,10 @@ public class Policy implements MapWriter {
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
-  public static final Preference DEFAULT_PREFERENCE = new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}"));
+  public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
+      Arrays.asList(
+          new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
+          new Preference((Map<String, Object>) Utils.fromJSONString("{maximize : freedisk}"))));
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
@@ -90,16 +94,13 @@ public class Policy implements MapWriter {
       preference.next = initialClusterPreferences.get(i + 1);
     }
     if (initialClusterPreferences.isEmpty()) {
-      initialClusterPreferences.add(DEFAULT_PREFERENCE);
+      initialClusterPreferences.addAll(DEFAULT_PREFERENCES);
     }
     this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
     final SortedSet<String> paramsOfInterest = new TreeSet<>();
-    for (Preference preference : clusterPreferences) {
-      if (paramsOfInterest.contains(preference.name.name())) {
-        throw new RuntimeException(preference.name + " is repeated");
-      }
-      paramsOfInterest.add(preference.name.toString());
-    }
+    paramsOfInterest.add(ImplicitSnitch.DISK);//always get freedisk anyway.
+    paramsOfInterest.add(ImplicitSnitch.CORES);//always get cores anyway.
+    clusterPreferences.forEach(preference -> paramsOfInterest.add(preference.name.toString()));
     List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
@@ -124,8 +125,7 @@ public class Policy implements MapWriter {
   private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences) {
     this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
     this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
-    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) :
-        Collections.singletonList(DEFAULT_PREFERENCE);
+    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
     this.params = Collections.unmodifiableList(buildParams(this.clusterPreferences, this.clusterPolicy, this.policies));
     perReplicaAttributes = readPerReplicaAttrs();
   }
@@ -203,7 +203,7 @@ public class Policy implements MapWriter {
     if (!getPolicies().equals(policy.getPolicies())) return false;
     if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
     if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
-    return params.equals(policy.params);
+    return true;
   }
 
   /*This stores the logical state of the system, given a policy and

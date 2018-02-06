@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -399,4 +400,67 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     this.enabled = enabled;
   }
 
+
+
+  /**
+   * Concatenates content from multiple fields
+   */
+  protected String concatFields(SolrInputDocument doc) {
+    StringBuilder sb = new StringBuilder(getExpectedSize(doc, inputFields));
+    for (String fieldName : inputFields) {
+      log.debug("Appending field " + fieldName);
+      if (doc.containsKey(fieldName)) {
+        Collection<Object> fieldValues = doc.getFieldValues(fieldName);
+        if (fieldValues != null) {
+          for (Object content : fieldValues) {
+            if (content instanceof String) {
+              String stringContent = (String) content;
+              if (stringContent.length() > maxFieldValueChars) {
+                sb.append(stringContent.substring(0, maxFieldValueChars));
+              } else {
+                sb.append(stringContent);
+              }
+              sb.append(" ");
+              if (sb.length() > maxTotalChars) {
+                sb.setLength(maxTotalChars);
+                break;
+              }
+            } else {
+              log.warn("Field " + fieldName + " not a String value, not including in detection");
+            }
+          }
+        }
+      }
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Calculate expected string size.
+   *
+   * @param doc           solr input document
+   * @param fields        fields to select
+   * @return expected size of string value
+   */
+  private int getExpectedSize(SolrInputDocument doc, String[] fields) {
+    int docSize = 0;
+    for (String field : fields) {
+      if (doc.containsKey(field)) {
+        Collection<Object> contents = doc.getFieldValues(field);
+        if (contents != null) {
+          for (Object content : contents) {
+            if (content instanceof String) {
+              docSize += Math.min(((String) content).length(), maxFieldValueChars);
+            }
+          }
+
+          if (docSize > maxTotalChars) {
+            docSize = maxTotalChars;
+            break;
+          }
+        }
+      }
+    }
+    return docSize;
+  }
 }
