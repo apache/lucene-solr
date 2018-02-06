@@ -36,11 +36,10 @@ public class TestNeuralNetworkModel extends TestRerankBase {
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
-    final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader,
+    return LTRScoringModel.getInstance(solrResourceLoader,
         NeuralNetworkModel.class.getCanonicalName(),
         name,
         features, norms, featureStoreName, allFeatures, params);
-    return model;
   }
 
   @BeforeClass
@@ -55,54 +54,86 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
   @Test
   public void testLinearAlgebra() {
-    final ArrayList<double[][]> rawMatrices = new ArrayList<double[][]>();
+
     final double layer1Node1Weight1 = 1.0;
     final double layer1Node1Weight2 = 2.0;
     final double layer1Node1Weight3 = 3.0;
     final double layer1Node1Weight4 = 4.0;
-    final double layer1Node1Bias    = 5.0;
-    final double layer1Node2Weight1 = 6.0;
-    final double layer1Node2Weight2 = 7.0;
-    final double layer1Node2Weight3 = 8.0;
-    final double layer1Node2Weight4 = 9.0;
-    final double layer1Node2Bias    = 10.0;
-    final double layer1Node3Weight1 = 11.0;
-    final double layer1Node3Weight2 = 12.0;
-    final double layer1Node3Weight3 = 13.0;
-    final double layer1Node3Weight4 = 14.0;
-    final double layer1Node3Bias    = 15.0;
-    double[][] matrixOne = { { layer1Node1Weight1, layer1Node1Weight2, layer1Node1Weight3, layer1Node1Weight4, layer1Node1Bias },
-                             { layer1Node2Weight1, layer1Node2Weight2, layer1Node2Weight3, layer1Node2Weight4, layer1Node2Bias },
-                             { layer1Node3Weight1, layer1Node3Weight2, layer1Node3Weight3, layer1Node3Weight4, layer1Node3Bias } };
-    final double outputNodeWeight1 = 1.0;
-    final double outputNodeWeight2 = 2.0;
-    final double outputNodeWeight3 = 3.0;
-    final double outputNodeBias = 4.0;
-    double[][] matrixTwo = { { outputNodeWeight1, outputNodeWeight2, outputNodeWeight3, outputNodeBias } };
-    rawMatrices.add(matrixOne);
-    rawMatrices.add(matrixTwo);
-    
-    final ArrayList<ArrayList<ArrayList<Double>>> weights = new ArrayList<ArrayList<ArrayList<Double>>>();
-    for (int matrixNum = 0; matrixNum < rawMatrices.size(); matrixNum++) {
-      double[][] matrix = rawMatrices.get(matrixNum);
-      weights.add(new ArrayList<ArrayList<Double>>());
-      for (int row = 0; row < matrix.length; row++) {
-        weights.get(matrixNum).add(new ArrayList<Double>());
-        for (int col = 0; col < matrix[row].length; col++) {
-          weights.get(matrixNum).get(row).add(matrix[row][col]);
-        }
+    final double layer1Node2Weight1 = 5.0;
+    final double layer1Node2Weight2 = 6.0;
+    final double layer1Node2Weight3 = 7.0;
+    final double layer1Node2Weight4 = 8.0;
+    final double layer1Node3Weight1 = 9.0;
+    final double layer1Node3Weight2 = 10.0;
+    final double layer1Node3Weight3 = 11.0;
+    final double layer1Node3Weight4 = 12.0;
+
+    double[][] matrixOne = { { layer1Node1Weight1, layer1Node1Weight2, layer1Node1Weight3, layer1Node1Weight4 },
+                             { layer1Node2Weight1, layer1Node2Weight2, layer1Node2Weight3, layer1Node2Weight4 },
+                             { layer1Node3Weight1, layer1Node3Weight2, layer1Node3Weight3, layer1Node3Weight4 } };
+
+    final ArrayList<ArrayList<Double>> matrixOneList = new ArrayList<ArrayList<Double>>();
+    for (int row = 0; row < matrixOne.length; row++) {
+      matrixOneList.add(new ArrayList<Double>());
+      for (int col = 0; col < matrixOne[row].length; col++) {
+        matrixOneList.get(row).add(matrixOne[row][col]);
       }
     }
 
+    final double layer1Node1Bias = 13.0;
+    final double layer1Node2Bias = 14.0;
+    final double layer1Node3Bias = 15.0;
+
+    double[] biasOne = { layer1Node1Bias, layer1Node2Bias, layer1Node3Bias };
+
+    final ArrayList<Double> biasOneList = new ArrayList<Double>();
+    for (int i = 0; i < biasOne.length; i++) {
+      biasOneList.add(biasOne[i]);
+    }
+
+    final double outputNodeWeight1 = 16.0;
+    final double outputNodeWeight2 = 17.0;
+    final double outputNodeWeight3 = 18.0;
+
+    double[][] matrixTwo = { { outputNodeWeight1, outputNodeWeight2, outputNodeWeight3 } };
+
+    final ArrayList<ArrayList<Double>> matrixTwoList = new ArrayList<ArrayList<Double>>();
+    for (int row = 0; row < matrixTwo.length; row++) {
+      matrixTwoList.add(new ArrayList<Double>());
+      for (int col = 0; col < matrixTwo[row].length; col++) {
+        matrixTwoList.get(row).add(matrixTwo[row][col]);
+      }
+    }
+
+    final double outputNodeBias = 19.0;
+
+    double[] biasTwo = { outputNodeBias };
+
+    final ArrayList<Double> biasTwoList = new ArrayList<Double>();
+    for (int i = 0; i < biasTwo.length; i++) {
+      biasTwoList.add(biasTwo[i]);
+    }
+
     Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    String nonlinearity = "relu";
-    params.put("nonlinearity", nonlinearity);
+    ArrayList<Map<String,Object>> layers = new ArrayList<Map<String,Object>>();
+
+    HashMap layerOne = new HashMap<String,Object>();
+    layerOne.put("matrix", matrixOne);
+    layerOne.put("bias", biasOne);
+    layerOne.put("activation", "relu");
+    layers.add(layerOne);
+
+    HashMap layerTwo = new HashMap<String,Object>();
+    layerTwo.put("matrix", matrixTwo);
+    layerTwo.put("bias", biasTwo);
+    layerTwo.put("activation", "relu");
+    layers.add(layerTwo);
+
+    params.put("layers", layers);
 
     final List<Feature> allFeaturesInStore
-       = getFeatures(new String[] {"constantOne", "constantTwo",
-          "constantThree", "constantFour", "constantFive"});
-    
+       = getFeatures(new String[] {"constantOne", "constantTwo", "constantThree", "constantFour", "constantFive"});
+
     final List<Feature> featuresInModel = new ArrayList<>(allFeaturesInStore);
     Collections.shuffle(featuresInModel, random()); // store and model order of features can vary
     featuresInModel.remove(0); // models need not use all the store's features
@@ -116,7 +147,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     {
       // pretend all features scored zero
-      float[] testVec = {0.0f, 0.0f, 0.0f, 0.0f};
+      float[] testVec = { 0.0f, 0.0f, 0.0f, 0.0f };
       // with all zero inputs the layer1 node outputs are layer1 node biases only
       final double layer1Node1Output = layer1Node1Bias;
       final double layer1Node2Output = layer1Node2Bias;
@@ -127,7 +158,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
           (layer1Node2Output*outputNodeWeight2) +
           (layer1Node3Output*outputNodeWeight3) +
           outputNodeBias;
-      assertEquals(74.0, outputNodeOutput, 0.001);
+      assertEquals(735.0, outputNodeOutput, 0.001);
       // and the expected score is that of the output node
       final double expectedScore = outputNodeOutput;
       float score = ltrScoringModel.score(testVec);
@@ -136,7 +167,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     {
       // pretend all features scored one
-      float[] testVec = {1.0f, 1.0f, 1.0f, 1.0f};
+      float[] testVec = { 1.0f, 1.0f, 1.0f, 1.0f };
       // with all one inputs the layer1 node outputs are simply sum of weights and biases
       final double layer1Node1Output = layer1Node1Weight1 + layer1Node1Weight2 + layer1Node1Weight3 + layer1Node1Weight4 + layer1Node1Bias;
       final double layer1Node2Output = layer1Node2Weight1 + layer1Node2Weight2 + layer1Node2Weight3 + layer1Node2Weight4 + layer1Node2Bias;
@@ -147,7 +178,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
           (layer1Node2Output*outputNodeWeight2) +
           (layer1Node3Output*outputNodeWeight3) +
           outputNodeBias;
-      assertEquals(294.0, outputNodeOutput, 0.001);
+      assertEquals(2093.0, outputNodeOutput, 0.001);
       // and the expected score is that of the output node
       final double expectedScore = outputNodeOutput;
       float score = ltrScoringModel.score(testVec);
@@ -171,8 +202,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
           (layer1Node2Output*outputNodeWeight2) +
           (layer1Node3Output*outputNodeWeight3) +
           outputNodeBias;
-      assertTrue("outputNodeOutput="+outputNodeOutput, 74.0 <= outputNodeOutput); // inputs between zero and one produced output greater than 74
-      assertTrue("outputNodeOutput="+outputNodeOutput, outputNodeOutput <= 294.0); // inputs between zero and one produced output less than 294
+      assertTrue("outputNodeOutput="+outputNodeOutput, 735.0 <= outputNodeOutput); // inputs between zero and one produced output greater than 74
+      assertTrue("outputNodeOutput="+outputNodeOutput, outputNodeOutput <= 2093.0); // inputs between zero and one produced output less than 294
       // and the expected score is that of the output node
       final double expectedScore = outputNodeOutput;
       float score = ltrScoringModel.score(testVec);
@@ -181,14 +212,29 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void badNonlinearityTest() throws Exception {
+  public void badActivationTest() throws Exception {
     final ModelException expectedException =
-        new ModelException("Invalid nonlinearity for model neuralnetworkmodel_bad_nonlinearity. " +
-                           "\"sig\" is not \"relu\" or \"sigmoid\".");
+            new ModelException("Invalid activation function in model \"neuralnetworkmodel_bad_activation\". " +
+                               "\"sig\" is not \"relu\", \"sigmoid\", or \"none\".");
     try {
-        createModelFromFiles("neuralnetworkmodel_bad_nonlinearity.json",
-              "neuralnetworkmodel_features.json");
-        fail("badNonlinearityTest failed to throw exception: "+expectedException);
+      createModelFromFiles("neuralnetworkmodel_bad_activation.json",
+             "neuralnetworkmodel_features.json");
+      fail("badActivationTest failed to throw exception: "+expectedException);
+    } catch (Exception actualException) {
+      Throwable rootError = getRootCause(actualException);
+      assertEquals(expectedException.toString(), rootError.toString());
+    }
+  }
+
+  @Test
+  public void biasDimensionMismatchTest() throws Exception {
+    final ModelException expectedException =
+            new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_bias\". " +
+                               "Layer 0 has 2 bias weights but 3 weight matrix rows.");
+    try {
+      createModelFromFiles("neuralnetworkmodel_mismatch_bias.json",
+             "neuralnetworkmodel_features.json");
+      fail("biasDimensionMismatchTest failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -198,11 +244,11 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void inputDimensionMismatchTest() throws Exception {
     final ModelException expectedException =
-        new ModelException("Dimension mismatch. Input for model neuralnetworkmodel_mismatch_input has " + 
-                           "4 features, but matrix #0 has 3 non-bias columns.");
+        new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_input\". The input has " +
+                           "4 features, but the weight matrix for layer 0 has 3 columns.");
     try {
         createModelFromFiles("neuralnetworkmodel_mismatch_input.json",
-              "neuralnetworkmodel_features.json");
+               "neuralnetworkmodel_features.json");
         fail("inputDimensionMismatchTest failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -213,11 +259,11 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void layerDimensionMismatchTest() throws Exception {
     final ModelException expectedException =
-        new ModelException("Dimension mismatch. Matrix #0 for model neuralnetworkmodel_mismatch_layers has " + 
-                           "2 rows, but matrix #1 has 3 non-bias columns.");
+        new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_layers\". The weight matrix " +
+                           "for layer 0 has 2 rows, but the weight matrix for layer 1 has 3 columns.");
     try {
         createModelFromFiles("neuralnetworkmodel_mismatch_layers.json",
-              "neuralnetworkmodel_features.json");
+               "neuralnetworkmodel_features.json");
         fail("layerDimensionMismatchTest failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -228,11 +274,11 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void tooManyRowsTest() throws Exception {
     final ModelException expectedException =
-        new ModelException("Final matrix for model neuralnetworkmodel_too_many_rows has 2 rows, " +
-                           "but should have 1 row.");
+        new ModelException("The output matrix for model \"neuralnetworkmodel_too_many_rows\" has 2 rows, " +
+                           "but should only have one.");
     try {
         createModelFromFiles("neuralnetworkmodel_too_many_rows.json",
-              "neuralnetworkmodel_features.json");
+               "neuralnetworkmodel_features.json");
         fail("layerDimensionMismatchTest failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);

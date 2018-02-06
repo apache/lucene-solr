@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * A scoring model that computes document scores using a neural network.
@@ -39,12 +40,27 @@ import org.apache.solr.ltr.norm.Normalizer;
         { "name" : "originalScore" }
     ],
     "params" : {
-        "weights" : [
-            [ [ 1.0, 2.0, 3.0, 4.0 ], [ 5.0, 6.0, 7.0, 8.0 ], [ 9.0, 10.0, 11.0, 12.0 ], [ 13.0, 14.0, 15.0, 16.0 ] ],
-            [ [ 13.0, 14.0, 15.0, 16.0, 17.0 ], [ 18.0, 19.0, 20.0, 21.0, 22.0 ] ],
-            [ [ 23.0, 24.0, 25.0 ] ]
-        ],
-        "nonlinearity": "relu"
+        "layers" : [
+            {
+                "matrix" : [ [ 1.0, 2.0, 3.0 ],
+                             [ 4.0, 5.0, 6.0 ],
+                             [ 7.0, 8.0, 9.0 ],
+                             [ 10.0, 11.0, 12.0 ] ],
+                "bias" : [ 13.0, 14.0, 15.0, 16.0 ],
+                "activation" : "relu"
+            },
+            {
+                "matrix" : [ [ 17.0, 18.0, 19.0, 20.0 ],
+                             [ 21.0, 22.0, 23.0, 24.0 ] ],
+                "bias" : [ 25.0, 26.0 ],
+                "activation" : "relu"
+            },
+            {
+                "matrix" : [ [ 27.0, 28.0 ] ],
+                "bias" : [ 29.0 ],
+                "activation" : "none"
+            }
+        ]
     }
 }</pre>
  * <p>
@@ -62,56 +78,126 @@ import org.apache.solr.ltr.norm.Normalizer;
  */
 public class NeuralNetworkModel extends LTRScoringModel {
 
-  protected ArrayList<float[][]> weightMatrices;
-  protected String nonlinearity;
+  private List<Layer> layers;
 
-  public void setWeights(Object weights) {
-    final List<List<List<Double>>> matrixList = (List<List<List<Double>>>) weights;
+  protected interface Activation {
+    // similar to UnaryOperator<Float>
+    float apply(float in);
+  }
 
-    weightMatrices = new ArrayList<float[][]>();
+  public class Layer {
+    private int layerID;
+    private float[][] weightMatrix;
+    private int matrixRows;
+    private int matrixCols;
+    private float[] biasVector;
+    private int numUnits;
+    private String activationStr;
+    private Activation activation;
 
-    for (List<List<Double>> matrix : matrixList) {
-      int numRows = matrix.size();
-      int numCols = matrix.get(0).size();;
+    public Layer() {
+      layerID = layers.size();
+    }
 
-      float[][] weightMatrix = new float[numRows][numCols];
+    public void setMatrix(Object matrixObj) {
+      final List<List<Double>> matrix = (List<List<Double>>) matrixObj;
+      this.matrixRows = matrix.size();
+      this.matrixCols = matrix.get(0).size();
+      this.weightMatrix = new float[this.matrixRows][this.matrixCols];
 
-      for (int i = 0; i < numRows; i++) {
-        for (int j = 0; j < numCols; j++) {
-          weightMatrix[i][j] = matrix.get(i).get(j).floatValue();
+      for (int i = 0; i < this.matrixRows; i++) {
+        for (int j = 0; j < this.matrixCols; j++) {
+          this.weightMatrix[i][j] = matrix.get(i).get(j).floatValue();
         }
       }
-
-      weightMatrices.add(weightMatrix);
     }
-  }
 
-  public void setNonlinearity(Object nonlinearityStr) {
-    nonlinearity = (String) nonlinearityStr;
-  }
+    public void setBias(Object biasObj) {
+      final List<Double> vector = (List<Double>) biasObj;
+      this.numUnits = vector.size();
+      this.biasVector = new float[numUnits];
 
-  private float[] dot(float[][] matrix, float[] inputVec) {
-
-    int matrixRows = matrix.length;
-    int matrixCols = matrix[0].length;
-    float[] outputVec = new float[matrixRows];
-
-    for (int i = 0; i < matrixRows; i++) {
-      float outputVal = matrix[i][matrixCols - 1]; // Bias.
-      for (int j = 0; j < matrixCols - 1; j++) {
-        outputVal += matrix[i][j] * inputVec[j];
+      for (int i = 0; i < this.numUnits; i++) {
+        this.biasVector[i] = vector.get(i).floatValue();
       }
-      outputVec[i] = outputVal;
     }
 
-    return outputVec;
+    public void setActivation(Object activationStr) {
+      this.activationStr = (String) activationStr;
+      switch (this.activationStr) {
+        case "relu":
+
+          this.activation = new Activation() {
+            @Override
+            public float apply(float in) {
+              return in < 0 ? 0 : in;
+            }
+          };
+
+          break;
+        case "sigmoid":
+
+          this.activation = new Activation() {
+            @Override
+            public float apply(float in) {
+              return (float) (1 / (1 + Math.exp(-in)));
+            }
+          };
+
+          break;
+        default:
+
+          this.activation = new Activation() {
+            @Override
+            public float apply(float in) {
+              return in;
+            }
+          };
+          break;
+      }
+    }
+
+    private float[] calculateOutput(float[] inputVec) {
+
+      float[] outputVec = new float[this.matrixRows];
+
+      for (int i = 0; i < this.matrixRows; i++) {
+        float outputVal = this.biasVector[i];
+        for (int j = 0; j < this.matrixCols; j++) {
+          outputVal += this.weightMatrix[i][j] * inputVec[j];
+        }
+        outputVec[i] = this.activation.apply(outputVal);
+      }
+
+      return outputVec;
+    }
+
+    public void validate() throws ModelException {
+      if (this.numUnits != this.matrixRows) {
+        throw new ModelException("Dimension mismatch in model \""  + name +  "\". Layer " +
+                                 Integer.toString(this.layerID) + " has " + Integer.toString(this.numUnits) +
+                                 " bias weights but " + Integer.toString(this.matrixRows) + " weight matrix rows.");
+      }
+      if (!this.activationStr.matches("relu|sigmoid|none")) {
+        throw new ModelException("Invalid activation function in model \"" + name + "\". " +
+                                 "\"" + activationStr + "\" is not \"relu\", \"sigmoid\", or \"none\".");
+      }
+    }
   }
 
-  private float doNonlinearity(float x) {
-    if (nonlinearity.equals("relu")) {
-      return x < 0 ? 0 : x;
-    } else {
-      return (float) (1 / (1 + Math.exp(-x)));
+  private Layer createLayer(Map<String,Object> map) {
+    final Layer layer = new Layer();
+    if (map != null) {
+      SolrPluginUtils.invokeSetters(layer, map.entrySet());
+    }
+    return layer;
+  }
+
+  public void setLayers(Object layers) {
+    this.layers = new ArrayList<Layer>();
+    for (final Object o : (List<Object>) layers) {
+      final Layer layer = createLayer((Map<String,Object>) o);
+      this.layers.add(layer);
     }
   }
 
@@ -126,37 +212,30 @@ public class NeuralNetworkModel extends LTRScoringModel {
   protected void validate() throws ModelException {
     super.validate();
 
-    if (!nonlinearity.matches("relu|sigmoid")) {
-      throw new ModelException("Invalid nonlinearity for model " + name + ". " +
-                               "\"" + nonlinearity + "\" is not \"relu\" or \"sigmoid\".");
-    }
-
     int inputDim = features.size();
 
-    for (int i = 0; i < weightMatrices.size(); i++) {
-      float[][] weightMatrix = weightMatrices.get(i);
+    for (int i = 0; i < layers.size(); i++) {
 
-      int numRows = weightMatrix.length;
-      int numCols = weightMatrix[0].length;
-
-      if (inputDim != numCols - 1) {
+      Layer layer = layers.get(i);
+      if (inputDim != layer.matrixCols) {
         if (i == 0) {
-          throw new ModelException("Dimension mismatch. Input for model " + name + " has " + Integer.toString(inputDim)
-                                   + " features, but matrix #0 has " + Integer.toString(numCols - 1) +
-                                   " non-bias columns.");
+          throw new ModelException("Dimension mismatch in model \"" + name + "\". The input has " +
+                                   Integer.toString(inputDim) + " features, but the weight matrix for layer 0 has " +
+                                   Integer.toString(layer.matrixCols) + " columns.");
         } else {
-          throw new ModelException("Dimension mismatch. Matrix #" + Integer.toString(i - 1) + " for model " + name +
-                                   " has " + Integer.toString(inputDim) + " rows, but matrix #" + Integer.toString(i) +
-                                   " has " + Integer.toString(numCols - 1) + " non-bias columns.");
+          throw new ModelException("Dimension mismatch in model \"" + name + "\". The weight matrix for layer " +
+                                   Integer.toString(i - 1) + " has " + Integer.toString(inputDim) + " rows, but the " +
+                                   "weight matrix for layer " + Integer.toString(i) + " has " +
+                                   Integer.toString(layer.matrixCols) + " columns.");
         }
       }
       
-      if (i == weightMatrices.size() - 1 & numRows != 1) {
-        throw new ModelException("Final matrix for model " + name + " has " + Integer.toString(numRows) +
-                                 " rows, but should have 1 row.");
+      if (i == layers.size() - 1 & layer.matrixRows != 1) {
+        throw new ModelException("The output matrix for model \"" + name + "\" has " + Integer.toString(layer.matrixRows) +
+                                 " rows, but should only have one.");
       }
       
-      inputDim = numRows;
+      inputDim = layer.matrixRows;
     }
   }
 
@@ -164,19 +243,9 @@ public class NeuralNetworkModel extends LTRScoringModel {
   public float score(float[] inputFeatures) {
 
     float[] outputVec = inputFeatures;
-    float[][] weightMatrix;
-    int layers = weightMatrices.size();
 
-    for (int layer = 0; layer < layers; layer++) {
-
-      weightMatrix = weightMatrices.get(layer);
-      outputVec = dot(weightMatrix, outputVec);
-
-      if (layer < layers - 1) {
-        for (int i = 0; i < outputVec.length; i++) {
-          outputVec[i] = doNonlinearity(outputVec[i]);
-        }
-      }
+    for (Layer layer : layers) {
+      outputVec = layer.calculateOutput(outputVec);
     }
 
     return outputVec[0];
@@ -186,22 +255,31 @@ public class NeuralNetworkModel extends LTRScoringModel {
   public Explanation explain(LeafReaderContext context, int doc,
                              float finalScore, List<Explanation> featureExplanations) {
 
-    String modelDescription = "";
+    final StringBuilder modelDescription = new StringBuilder();
 
-    for (int layer = 0; layer < weightMatrices.size(); layer++) {
+    modelDescription.append("(name=").append(getName());
+    modelDescription.append(",featureValues=[");
 
-      float[][] weightMatrix = weightMatrices.get(layer);
-      int numCols = weightMatrix[0].length;
-
-      if (layer == 0) {
-        modelDescription += "Input has " + Integer.toString(numCols - 1) + " features.";
-      } else {
-        modelDescription += System.lineSeparator();
-        modelDescription += "Hidden layer #" + Integer.toString(layer) + " has " + Integer.toString(numCols - 1);
-        modelDescription += " fully connected units.";
+    for (int i = 0; i < featureExplanations.size(); i++) {
+      Explanation featureExplain = featureExplanations.get(i);
+      if (i > 0) {
+        modelDescription.append(",");
       }
+      final String key = features.get(i).getName();
+      modelDescription.append(key).append("=").append(featureExplain.getValue());
     }
-    return Explanation.match(finalScore, modelDescription);
+
+    modelDescription.append("])");
+
+    for (int i = 0; i < layers.size(); i++) {
+      Layer layer = layers.get(i);
+      modelDescription.append(System.lineSeparator());
+      modelDescription.append("Hidden layer ").append(Integer.toString(i)).append(" has a ");
+      modelDescription.append(Integer.toString(layer.matrixRows)).append("x").append(Integer.toString(layer.matrixCols));
+      modelDescription.append(" weight matrix, ").append(Integer.toString(layer.numUnits)).append(" bias weights, ");
+      modelDescription.append(" and a \"").append(layer.activationStr).append("\" activation function.");
+    }
+    return Explanation.match(finalScore, modelDescription.toString());
   }
 
 }
