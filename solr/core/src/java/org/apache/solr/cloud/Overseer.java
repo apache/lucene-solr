@@ -303,7 +303,7 @@ public class Overseer implements SolrCloseable {
       String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
-        data = zkClient.getData(path, null, stat, true);
+        data = zkClient.getData(path, null, stat, false);
       } catch (Exception e) {
         log.error("could not read the data" ,e);
         return;
@@ -314,7 +314,7 @@ public class Overseer implements SolrCloseable {
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.warn("I'm exiting, but I'm still the leader");
-            zkClient.delete(path,stat.getVersion(),true);
+            zkClient.delete(path,stat.getVersion(),false);
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
