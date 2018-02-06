@@ -277,7 +277,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   }
 
-  private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) {
+  private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
+    zkStateReader.aliasesHolder.update(); // ensure our view is up to date
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata(aliasName);
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
