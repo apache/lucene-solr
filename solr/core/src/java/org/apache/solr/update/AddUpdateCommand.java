@@ -78,7 +78,6 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
-     prevVersion = -1;
    }
 
    public SolrInputDocument getSolrInputDocument() {
