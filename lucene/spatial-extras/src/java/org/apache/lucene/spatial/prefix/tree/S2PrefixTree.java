@@ -88,7 +88,7 @@ public class S2PrefixTree extends SpatialPrefixTree {
         }
         this.s2ShapeFactory = (S2ShapeFactory) ctx.getShapeFactory();
         if (arity <1 || arity > 3) {
-            throw new IllegalArgumentException("Invalid value for S2 tree arit. Posible valuea are 1, 2 or 3. Provided value is " + arity  + ".");
+            throw new IllegalArgumentException("Invalid value for S2 tree arity. Possible values are 1, 2 or 3. Provided value is " + arity  + ".");
         }
         this.arity = arity;
     }
