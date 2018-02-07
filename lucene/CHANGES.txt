@@ -88,6 +88,9 @@ Other
 * LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
   (Pulak Ghosh via Adrien Grand)
 
+* LUCENE-8156: Require users to not have ASM on the Ant classpath during build.
+  This is required by LUCENE-7966. (Adrien Grand, Uwe Schindler)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes
