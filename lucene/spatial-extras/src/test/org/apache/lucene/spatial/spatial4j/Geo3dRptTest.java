@@ -25,6 +25,8 @@ import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.S2PrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
@@ -32,6 +34,7 @@ import org.apache.lucene.spatial3d.geom.GeoAreaShape;
 import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
@@ -50,8 +53,20 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   private RecursivePrefixTreeStrategy rptStrategy;
 
   private void setupGeohashGrid() {
-    this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
-    this.rptStrategy = newRPT();
+    int type = random().nextInt(4);
+    if (type == 0) {
+      this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
+      this.rptStrategy = newRPT();
+    } else if (type == 1) {
+      this.grid = new QuadPrefixTree(ctx, 5);//A fairly shallow grid
+      this.rptStrategy = newRPT();
+    }
+    else {
+      int arity = random().nextInt(3) + 1;
+      this.grid = new S2PrefixTree(ctx, 5 -arity, arity);//A fairly shallow grid
+      this.rptStrategy = newRPT();
+      this.rptStrategy.setPruneLeafyBranches(false);
+    }
   }
 
   protected RecursivePrefixTreeStrategy newRPT() {
@@ -110,7 +125,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = 30)
   public void testOperations() throws IOException {
     setupStrategy();
 
@@ -121,6 +136,9 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   protected Shape randomIndexedShape() {
     int type = shapeGenerator.randomShapeType();
     GeoAreaShape areaShape = shapeGenerator.randomGeoAreaShape(type, planetModel);
+    if (areaShape instanceof GeoPointShape) {
+      return new Geo3dPointShape((GeoPointShape) areaShape, ctx);
+    }
     return new Geo3dShape<>(areaShape, ctx);
   }
 
