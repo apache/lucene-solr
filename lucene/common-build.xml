@@ -65,6 +65,12 @@
       <not><matches pattern="^\Q${version.base}\E(|\-.*)$" casesensitive="true" string="${version}"/></not>
     </condition>
   </fail>
+  
+  <fail message="Your ~/.ant/lib folder or the main classpath of Ant contains some version of ASM. Please remove it, otherwise this build can't run correctly.">
+    <condition>
+      <available classname="org.objectweb.asm.ClassReader"/>
+    </condition>
+  </fail>
 
   <property name="year" value="2000-${current.year}"/>
   
