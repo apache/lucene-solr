@@ -52,7 +52,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   private SpatialPrefixTree grid;
   private RecursivePrefixTreeStrategy rptStrategy;
 
-  private void setupGeohashGrid() {
+  private void setupGrid() {
     int type = random().nextInt(4);
     if (type == 0) {
       this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
@@ -83,7 +83,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     factory.planetModel = planetModel;
     ctx = factory.newSpatialContext();
 
-    setupGeohashGrid();
+    setupGrid();
 
     SerializedDVStrategy serializedDVStrategy = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
     this.strategy = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
