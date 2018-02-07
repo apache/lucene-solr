@@ -60,8 +60,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     } else if (type == 1) {
       this.grid = new QuadPrefixTree(ctx, 5);//A fairly shallow grid
       this.rptStrategy = newRPT();
-    }
-    else {
+    } else {
       int arity = random().nextInt(3) + 1;
       this.grid = new S2PrefixTree(ctx, 5 -arity, arity);//A fairly shallow grid
       this.rptStrategy = newRPT();

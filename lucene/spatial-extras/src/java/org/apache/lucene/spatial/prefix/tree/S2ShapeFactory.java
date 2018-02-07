@@ -28,7 +28,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory;
  *
  * @lucene.experimental
  */
-public interface S2ShapeFactory extends ShapeFactory{
+public interface S2ShapeFactory extends ShapeFactory {
 
   /**
    * Factory method for S2 cell shapes.
