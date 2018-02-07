@@ -85,7 +85,13 @@ public class NeuralNetworkModel extends LTRScoringModel {
     float apply(float in);
   }
 
-  public class Layer {
+  public interface Layer {
+    public float[] calculateOutput(float[] inputVec);
+    public int validate(int inputDim) throws ModelException;
+    public String describe();
+  }
+
+  public class DefaultLayer implements Layer {
     private int layerID;
     private float[][] weightMatrix;
     private int matrixRows;
@@ -95,7 +101,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     private String activationStr;
     private Activation activation;
 
-    public Layer() {
+    public DefaultLayer() {
       layerID = layers.size();
     }
 
@@ -157,7 +163,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
       }
     }
 
-    private float[] calculateOutput(float[] inputVec) {
+    public float[] calculateOutput(float[] inputVec) {
 
       float[] outputVec = new float[this.matrixRows];
 
@@ -172,7 +178,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
       return outputVec;
     }
 
-    public void validate() throws ModelException {
+    public int validate(int inputDim) throws ModelException {
       if (this.numUnits != this.matrixRows) {
         throw new ModelException("Dimension mismatch in model \""  + name +  "\". Layer " +
                                  Integer.toString(this.layerID) + " has " + Integer.toString(this.numUnits) +
@@ -182,13 +188,35 @@ public class NeuralNetworkModel extends LTRScoringModel {
         throw new ModelException("Invalid activation function in model \"" + name + "\". " +
                                  "\"" + activationStr + "\" is not \"relu\", \"sigmoid\", or \"none\".");
       }
+      if (inputDim != this.matrixCols) {
+        if (this.layerID == 0) {
+          throw new ModelException("Dimension mismatch in model \"" + name + "\". The input has " +
+                                   Integer.toString(inputDim) + " features, but the weight matrix for layer 0 has " +
+                                   Integer.toString(this.matrixCols) + " columns.");
+        } else {
+          throw new ModelException("Dimension mismatch in model \"" + name + "\". The weight matrix for layer " +
+                                   Integer.toString(this.layerID - 1) + " has " + Integer.toString(inputDim) + " rows, but the " +
+                                   "weight matrix for layer " + Integer.toString(this.layerID) + " has " +
+                                   Integer.toString(this.matrixCols) + " columns.");
+        }
+      }
+      return this.matrixRows;
+    }
+
+    public String describe() {
+      final StringBuilder sb = new StringBuilder();
+      sb.append("Hidden layer ").append(Integer.toString(this.layerID)).append(" has a ");
+      sb.append(Integer.toString(this.matrixRows)).append("x").append(Integer.toString(this.matrixCols));
+      sb.append(" weight matrix, ").append(Integer.toString(this.numUnits)).append(" bias weights, ");
+      sb.append(" and a \"").append(this.activationStr).append("\" activation function.");
+      return sb.toString();
     }
   }
 
-  private Layer createLayer(Map<String,Object> map) {
-    final Layer layer = new Layer();
-    if (map != null) {
-      SolrPluginUtils.invokeSetters(layer, map.entrySet());
+  protected Layer createLayer(Object o) {
+    final DefaultLayer layer = new DefaultLayer();
+    if (o != null) {
+      SolrPluginUtils.invokeSetters(layer, ((Map<String,Object>) o).entrySet());
     }
     return layer;
   }
@@ -196,7 +224,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
   public void setLayers(Object layers) {
     this.layers = new ArrayList<Layer>();
     for (final Object o : (List<Object>) layers) {
-      final Layer layer = createLayer((Map<String,Object>) o);
+      final Layer layer = createLayer(o);
       this.layers.add(layer);
     }
   }
@@ -214,28 +242,13 @@ public class NeuralNetworkModel extends LTRScoringModel {
 
     int inputDim = features.size();
 
-    for (int i = 0; i < layers.size(); i++) {
+    for (Layer layer : layers) {
+      inputDim = layer.validate(inputDim);
+    }
 
-      Layer layer = layers.get(i);
-      if (inputDim != layer.matrixCols) {
-        if (i == 0) {
-          throw new ModelException("Dimension mismatch in model \"" + name + "\". The input has " +
-                                   Integer.toString(inputDim) + " features, but the weight matrix for layer 0 has " +
-                                   Integer.toString(layer.matrixCols) + " columns.");
-        } else {
-          throw new ModelException("Dimension mismatch in model \"" + name + "\". The weight matrix for layer " +
-                                   Integer.toString(i - 1) + " has " + Integer.toString(inputDim) + " rows, but the " +
-                                   "weight matrix for layer " + Integer.toString(i) + " has " +
-                                   Integer.toString(layer.matrixCols) + " columns.");
-        }
-      }
-      
-      if (i == layers.size() - 1 & layer.matrixRows != 1) {
-        throw new ModelException("The output matrix for model \"" + name + "\" has " + Integer.toString(layer.matrixRows) +
-                                 " rows, but should only have one.");
-      }
-      
-      inputDim = layer.matrixRows;
+    if (inputDim != 1) {
+      throw new ModelException("The output matrix for model \"" + name + "\" has " + Integer.toString(inputDim) +
+                               " rows, but should only have one.");
     }
   }
 
@@ -271,13 +284,9 @@ public class NeuralNetworkModel extends LTRScoringModel {
 
     modelDescription.append("])");
 
-    for (int i = 0; i < layers.size(); i++) {
-      Layer layer = layers.get(i);
+    for (Layer layer : layers) {
       modelDescription.append(System.lineSeparator());
-      modelDescription.append("Hidden layer ").append(Integer.toString(i)).append(" has a ");
-      modelDescription.append(Integer.toString(layer.matrixRows)).append("x").append(Integer.toString(layer.matrixCols));
-      modelDescription.append(" weight matrix, ").append(Integer.toString(layer.numUnits)).append(" bias weights, ");
-      modelDescription.append(" and a \"").append(layer.activationStr).append("\" activation function.");
+      modelDescription.append(layer.describe());
     }
     return Explanation.match(finalScore, modelDescription.toString());
   }
