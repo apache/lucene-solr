@@ -97,6 +97,11 @@ Other
 * LUCENE-8156: Require users to not have ASM on the Ant classpath during build.
   This is required by LUCENE-7966. (Adrien Grand, Uwe Schindler)
 
+* LUCENE-8161: spatial-extras: the Spatial4j dependency has been updated from 0.6 to 0.7,
+  which is drop-in compatible (Lucene doesn't expressly use any of the few API differences).
+  Spatial4j 0.7 is compatible with JTS 1.15.0 and not any prior version.  JTS 1.15.0 is
+  dual-licensed to include BSD; prior versions were LGPL.  (David Smiley)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes

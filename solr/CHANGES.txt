@@ -55,6 +55,9 @@ Upgrade Notes
   Solr will support rolling upgrades from old 7.x versions of Solr to the new one until
   the last release of the 7.x major version.
 
+* LUCENE-8161: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.  This new version
+  of JTS is now dual-licensed to include a BSD style license.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
