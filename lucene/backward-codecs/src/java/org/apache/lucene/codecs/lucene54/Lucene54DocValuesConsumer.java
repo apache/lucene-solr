@@ -46,7 +46,6 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
@@ -433,7 +432,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
           previousValue.copyBytes(v);
         } else if (termPosition == INTERVAL_COUNT - 1) {
           // last term in block, accumulate shared prefix against first term
-          prefixSum += StringHelper.bytesDifference(previousValue.get(), v);
+          prefixSum += LegacyStringHelper.bytesDifference(previousValue.get(), v);
         }
       }
       numValues++;
@@ -479,7 +478,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
         } else {
           // prefix-code: we only share at most 255 characters, to encode the length as a single
           // byte and have random access. Larger terms just get less compression.
-          int sharedPrefix = Math.min(255, StringHelper.bytesDifference(lastTerm.get(), v));
+          int sharedPrefix = Math.min(255, LegacyStringHelper.bytesDifference(lastTerm.get(), v));
           bytesBuffer.writeByte((byte) sharedPrefix);
           bytesBuffer.writeBytes(v.bytes, v.offset + sharedPrefix, v.length - sharedPrefix);
           // we can encode one smaller, because terms are unique.
@@ -557,7 +556,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     for (BytesRef b : values) {
       int termPosition = (int) (count & REVERSE_INTERVAL_MASK);
       if (termPosition == 0) {
-        int len = StringHelper.sortKeyLength(priorTerm.get(), b);
+        int len = LegacyStringHelper.sortKeyLength(priorTerm.get(), b);
         indexTerm.bytes = b.bytes;
         indexTerm.offset = b.offset;
         indexTerm.length = len;
