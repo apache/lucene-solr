@@ -25,12 +25,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
 
 public class TestFieldInfos extends LuceneTestCase {
 
-  @Test
-  public void testFieldInfosSparse() throws Exception{
+  public void testFieldInfos() throws Exception{
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.INSTANCE));
@@ -47,14 +45,21 @@ public class TestFieldInfos extends LuceneTestCase {
     d2.add(new StringField("f15", "v15", Field.Store.YES));
     d2.add(new StringField("f16", "v16", Field.Store.YES));
     writer.addDocument(d2);
+    writer.commit();
+
+    Document d3 = new Document();
+    writer.addDocument(d3);
     writer.close();
 
     SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
-    assertEquals(2, sis.size());
+    assertEquals(3, sis.size());
 
     FieldInfos fis1 = IndexWriter.readFieldInfos(sis.info(0));
     FieldInfos fis2 = IndexWriter.readFieldInfos(sis.info(1));
+    FieldInfos fis3 = IndexWriter.readFieldInfos(sis.info(2));
 
+
+    // testing dense FieldInfos
     Iterator<FieldInfo>  it = fis1.iterator();
     int i = 0;
     while(it.hasNext()) {
@@ -64,10 +69,17 @@ public class TestFieldInfos extends LuceneTestCase {
       i++;
     }
 
+    // testing sparse FieldInfos
     assertEquals("f0", fis2.fieldInfo(0).name);
     assertNull(fis2.fieldInfo(1));
     assertEquals("f15", fis2.fieldInfo(15).name);
     assertEquals("f16", fis2.fieldInfo(16).name);
+
+    // testing empty FieldInfos
+    assertNull(fis3.fieldInfo(0));
+    assertEquals(0, fis3.size());
+    Iterator<FieldInfo> it3 = fis3.iterator();
+    assertFalse(it3.hasNext());
     dir.close();
   }
 

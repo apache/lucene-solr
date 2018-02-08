@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.ArrayUtil;
+
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
@@ -70,8 +72,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
       size = info.number >= size ? info.number+1 : size;
       if (info.number >= capacity){ //grow array
-        capacity = info.number + 1;
-        byNumberTemp = Arrays.copyOf(byNumberTemp, capacity);
+        byNumberTemp = ArrayUtil.grow(byNumberTemp, info.number + 1);
+        capacity = byNumberTemp.length;
       }
       FieldInfo previous = byNumberTemp[info.number];
       if (previous != null) {
@@ -104,17 +106,14 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasPointValues = hasPointValues;
 
     List<FieldInfo> valuesTemp = new ArrayList<>();
-    if (size > 0){
-      byNumber = new FieldInfo[size];
-      for(int i=0; i<size; i++){
-        byNumber[i] = byNumberTemp[i];
-        if (byNumberTemp[i] != null)
-          valuesTemp.add(byNumberTemp[i]);
+    byNumber = new FieldInfo[size];
+    for(int i=0; i<size; i++){
+      byNumber[i] = byNumberTemp[i];
+      if (byNumberTemp[i] != null) {
+        valuesTemp.add(byNumberTemp[i]);
       }
-    } else {
-      byNumber = null;
     }
-    values = Collections.unmodifiableCollection(valuesTemp);
+    values = Collections.unmodifiableCollection(Arrays.asList(valuesTemp.toArray(new FieldInfo[0])));
   }
   
   /** Returns true if any fields have freqs */
