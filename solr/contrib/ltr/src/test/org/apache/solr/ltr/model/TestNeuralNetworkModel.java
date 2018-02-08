@@ -118,14 +118,14 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     ArrayList<Map<String,Object>> layers = new ArrayList<Map<String,Object>>();
 
     HashMap layerOne = new HashMap<String,Object>();
-    layerOne.put("matrix", matrixOne);
-    layerOne.put("bias", biasOne);
+    layerOne.put("matrix", matrixOneList);
+    layerOne.put("bias", biasOneList);
     layerOne.put("activation", "relu");
     layers.add(layerOne);
 
     HashMap layerTwo = new HashMap<String,Object>();
-    layerTwo.put("matrix", matrixTwo);
-    layerTwo.put("bias", biasTwo);
+    layerTwo.put("matrix", matrixTwoList);
+    layerTwo.put("bias", biasTwoList);
     layerTwo.put("activation", "relu");
     layers.add(layerTwo);
 
@@ -274,8 +274,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void tooManyRowsTest() throws Exception {
     final ModelException expectedException =
-        new ModelException("The output matrix for model \"neuralnetworkmodel_too_many_rows\" has 2 rows, " +
-                           "but should only have one.");
+        new ModelException("Dimension mismatch in model \"neuralnetworkmodel_too_many_rows\". " +
+                           "Layer 1 has 1 bias weights but 2 weight matrix rows.");
     try {
         createModelFromFiles("neuralnetworkmodel_too_many_rows.json",
                "neuralnetworkmodel_features.json");
