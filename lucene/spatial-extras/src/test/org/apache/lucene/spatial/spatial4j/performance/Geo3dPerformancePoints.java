@@ -67,6 +67,6 @@ public class Geo3dPerformancePoints extends Geo3dPerformanceRptTest{
 
   @Override
   protected double distErrPct() {
-    return 0.05;
+    return 0.0;
   }
 }
