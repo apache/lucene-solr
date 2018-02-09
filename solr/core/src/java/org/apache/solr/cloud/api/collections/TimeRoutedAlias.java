@@ -51,7 +51,7 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  * Holds configuration for a routed alias, and some common code and constants.
  *
  * @see CreateAliasCmd
- * @see RoutedAliasCreateCollectionCmd
+ * @see MaintainRoutedAliasCmd
  * @see org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor
  */
 public class TimeRoutedAlias {

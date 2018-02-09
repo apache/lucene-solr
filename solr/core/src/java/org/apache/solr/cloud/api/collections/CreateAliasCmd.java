@@ -121,7 +121,7 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
     // Create the collection
-    RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, aliasName, aliasMetadata, initialCollectionName, ocmh);
+    MaintainRoutedAliasCmd.createCollectionAndWait(state, aliasName, aliasMetadata, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
 
     // Create/update the alias

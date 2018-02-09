@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
+import org.apache.solr.cloud.api.collections.MaintainRoutedAliasCmd;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -275,7 +275,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     final Semaphore semaphore = aliasToSemaphoreMap.computeIfAbsent(getAliasName(), n -> new Semaphore(1));
     if (semaphore.tryAcquire()) {
       try {
-        RoutedAliasCreateCollectionCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
+        MaintainRoutedAliasCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
         // we don't care about the response.  It's possible no collection was created because
         //  of a race and that's okay... we'll ultimately retry any way.
 

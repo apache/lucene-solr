@@ -64,26 +64,25 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @since 7.3
  * @lucene.internal
  */
-// TODO rename class to MaintainRoutedAliasCmd
-public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
+public class MaintainRoutedAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String IF_MOST_RECENT_COLL_NAME = "ifMostRecentCollName"; //TODO rename to createAfter
 
   private final OverseerCollectionMessageHandler ocmh;
 
-  public RoutedAliasCreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
+  public MaintainRoutedAliasCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
   }
 
   /** Invokes this command from the client.  If there's a problem it will throw an exception. */
   public static NamedList remoteInvoke(CollectionsHandler collHandler, String aliasName, String mostRecentCollName)
       throws Exception {
-    final String operation = CollectionParams.CollectionAction.ROUTEDALIAS_CREATECOLL.toLower();
+    final String operation = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS.toLower();
     Map<String, Object> msg = new HashMap<>();
     msg.put(Overseer.QUEUE_OPERATION, operation);
     msg.put(CollectionParams.NAME, aliasName);
-    msg.put(RoutedAliasCreateCollectionCmd.IF_MOST_RECENT_COLL_NAME, mostRecentCollName);
+    msg.put(MaintainRoutedAliasCmd.IF_MOST_RECENT_COLL_NAME, mostRecentCollName);
     final SolrResponse rsp = collHandler.sendToOCPQueue(new ZkNodeProps(msg));
     if (rsp.getException() != null) {
       throw rsp.getException();
