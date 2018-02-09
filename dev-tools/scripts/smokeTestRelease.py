@@ -732,9 +732,9 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
         java.run_java9('ant jar', '%s/compile.log' % unpackPath)
         testDemo(java.run_java9, isSrc, version, '9')
 
-        print('    generate javadocs w/ Java 9...')
-        java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/build/docs' % unpackPath)
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
@@ -755,9 +755,9 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
         print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
         java.run_java9('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
 
-        print('    generate javadocs w/ Java 9...')
-        java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
         print('    test solr example w/ Java 9...')
         java.run_java9('ant clean example', '%s/antexample.log' % unpackPath)
