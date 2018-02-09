@@ -75,6 +75,9 @@ Upgrade Notes
   Solr will support rolling upgrades from old 7.x versions of Solr to the new one until
   the last release of the 7.x major version.
 
+* LUCENE-8161: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.  This new version
+  of JTS is now dual-licensed to include a BSD style license.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -155,6 +158,9 @@ New Features
 
 * SOLR-11778: Add per-stage RequestHandler metrics. (ab)
 
+* SOLR-11925: Time Routed Aliases can have their oldest collections automatically deleted via the "router.autoDeleteAge"
+  setting. (David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -185,6 +191,9 @@ Bug Fixes
 
 * SOLR-11661: New HDFS collection reuses unremoved data from a deleted HDFS collection with same name causes
   inconsistent view of documents (Cao Manh Dat, shalin)
+
+* SOLR-11459: In-place update of nonexistent doc following existing doc update fails to create the doc.
+  (Andrey Kudryavtsev via Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -256,6 +265,8 @@ Other Changes
 * SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas via Cassandra Targett)
 
 * SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
+
+* SOLR-11933: Make DIH UI page safer by not default checking the clean checkbox (Eric Pugh via Tomás Fernández Löbbe)
 
 ==================  7.2.1 ==================
 

@@ -429,7 +429,7 @@ public class ZkStateReader implements Closeable {
     refreshLegacyClusterState(new LegacyClusterStateWatcher());
     refreshStateFormat2Collections();
     refreshCollectionList(new CollectionsChildWatcher());
-    refreshAliases(aliasesHolder);
+    refreshAliases(aliasesManager);
 
     if (securityNodeListener != null) {
       addSecuritynodeWatcher(pair -> {
@@ -1414,7 +1414,7 @@ public class ZkStateReader implements Closeable {
   //
 
   /** Access to the {@link Aliases}. */
-  public final AliasesManager aliasesHolder = new AliasesManager();
+  public final AliasesManager aliasesManager = new AliasesManager();
 
   /**
    * Get an immutable copy of the present state of the aliases. References to this object should not be retained
@@ -1423,7 +1423,7 @@ public class ZkStateReader implements Closeable {
    * @return The current aliases, Aliases.EMPTY if not solr cloud, or no aliases have existed yet. Never returns null.
    */
   public Aliases getAliases() {
-    return aliasesHolder.getAliases();
+    return aliasesManager.getAliases();
   }
 
   // called by createClusterStateWatchersAndUpdate()
@@ -1432,7 +1432,7 @@ public class ZkStateReader implements Closeable {
       constructState(Collections.emptySet());
       zkClient.exists(ALIASES, watcher, true);
     }
-    aliasesHolder.update();
+    aliasesManager.update();
   }
 
   /**

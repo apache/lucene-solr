@@ -18,11 +18,18 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
@@ -32,10 +39,13 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,23 +55,39 @@ import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTED_ALIAS
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
- * For "routed aliases", creates another collection and adds it to the alias. In some cases it will not
- * add a new collection.
- * If a collection is created, then collection creation info is returned.
+ * (Internal) For "time routed aliases", both deletes old collections and creates new collections
+ * associated with routed aliases.
  *
  * Note: this logic is within an Overseer because we want to leverage the mutual exclusion
  * property afforded by the lock it obtains on the alias name.
+ *
  * @since 7.3
+ * @lucene.internal
  */
-public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
+public class MaintainRoutedAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String IF_MOST_RECENT_COLL_NAME = "ifMostRecentCollName";
+  public static final String IF_MOST_RECENT_COLL_NAME = "ifMostRecentCollName"; //TODO rename to createAfter
 
   private final OverseerCollectionMessageHandler ocmh;
 
-  public RoutedAliasCreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
+  public MaintainRoutedAliasCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+  }
+
+  /** Invokes this command from the client.  If there's a problem it will throw an exception. */
+  public static NamedList remoteInvoke(CollectionsHandler collHandler, String aliasName, String mostRecentCollName)
+      throws Exception {
+    final String operation = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS.toLower();
+    Map<String, Object> msg = new HashMap<>();
+    msg.put(Overseer.QUEUE_OPERATION, operation);
+    msg.put(CollectionParams.NAME, aliasName);
+    msg.put(MaintainRoutedAliasCmd.IF_MOST_RECENT_COLL_NAME, mostRecentCollName);
+    final SolrResponse rsp = collHandler.sendToOCPQueue(new ZkNodeProps(msg));
+    if (rsp.getException() != null) {
+      throw rsp.getException();
+    }
+    return rsp.getResponse();
   }
 
   @Override
@@ -75,13 +101,12 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
     // TODO collection param (or intervalDateMath override?), useful for data capped collections
 
     //---- PARSE ALIAS INFO FROM ZK
-    final ZkStateReader.AliasesManager aliasesHolder = ocmh.zkStateReader.aliasesHolder;
-    final Aliases aliases = aliasesHolder.getAliases();
+    final ZkStateReader.AliasesManager aliasesManager = ocmh.zkStateReader.aliasesManager;
+    final Aliases aliases = aliasesManager.getAliases();
     final Map<String, String> aliasMetadata = aliases.getCollectionAliasMetadata(aliasName);
     if (aliasMetadata == null) {
       throw newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
     }
-
     final TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata);
 
     final List<Map.Entry<Instant, String>> parsedCollections =
@@ -113,13 +138,21 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
     final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(mostRecentCollTimestamp);
     final String createCollName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, nextCollTimestamp);
 
+    //---- DELETE OLDEST COLLECTIONS AND REMOVE FROM ALIAS (if configured)
+    NamedList deleteResults = deleteOldestCollectionsAndUpdateAlias(timeRoutedAlias, aliasesManager, nextCollTimestamp);
+    if (deleteResults != null) {
+      results.add("delete", deleteResults);
+    }
+
     //---- CREATE THE COLLECTION
-    createCollectionAndWait(clusterState, results, aliasName, aliasMetadata, createCollName, ocmh);
+    NamedList createResults = createCollectionAndWait(clusterState, aliasName, aliasMetadata,
+        createCollName, ocmh);
+    if (createResults != null) {
+      results.add("create", createResults);
+    }
 
-    //TODO delete some of the oldest collection(s) ?
-
-    //---- UPDATE THE ALIAS
-    aliasesHolder.applyModificationAndExportToZk(curAliases -> {
+    //---- UPDATE THE ALIAS WITH NEW COLLECTION
+    aliasesManager.applyModificationAndExportToZk(curAliases -> {
       final List<String> curTargetCollections = curAliases.getCollectionAliasListMap().get(aliasName);
       if (curTargetCollections.contains(createCollName)) {
         return curAliases;
@@ -135,11 +168,91 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
   }
 
   /**
+   * Deletes some of the oldest collection(s) based on {@link TimeRoutedAlias#getAutoDeleteAgeMath()}. If not present
+   * then does nothing.  Returns non-null results if something was deleted (or if we tried to).
+   * {@code now} is the date from which the math is relative to.
+   */
+  NamedList deleteOldestCollectionsAndUpdateAlias(TimeRoutedAlias timeRoutedAlias,
+                                                  ZkStateReader.AliasesManager aliasesManager,
+                                                  Instant now) throws Exception {
+    final String autoDeleteAgeMathStr = timeRoutedAlias.getAutoDeleteAgeMath();
+    if (autoDeleteAgeMathStr == null) {
+      return null;
+    }
+    final Instant delBefore;
+    try {
+      delBefore = new DateMathParser(Date.from(now), timeRoutedAlias.getTimeZone()).parseMath(autoDeleteAgeMathStr).toInstant();
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e); // note: should not happen by this point
+    }
+
+    String aliasName = timeRoutedAlias.getAliasName();
+
+    Collection<String> collectionsToDelete = new LinkedHashSet<>();
+
+    // First update the alias    (there may be no change to make!)
+    aliasesManager.applyModificationAndExportToZk(curAliases -> {
+      // note: we could re-parse the TimeRoutedAlias object from curAliases but I don't think there's a point to it.
+
+      final List<Map.Entry<Instant, String>> parsedCollections =
+          timeRoutedAlias.parseCollections(curAliases, () -> newAliasMustExistException(aliasName));
+
+      //iterating from newest to oldest, find the first collection that has a time <= "before".  We keep this collection
+      // (and all newer to left) but we delete older collections, which are the ones that follow.
+      // This logic will always keep the first collection, which we can't delete.
+      int numToKeep = 0;
+      for (Map.Entry<Instant, String> parsedCollection : parsedCollections) {
+        numToKeep++;
+        final Instant colInstant = parsedCollection.getKey();
+        if (colInstant.isBefore(delBefore) || colInstant.equals(delBefore)) {
+          break;
+        }
+      }
+      if (numToKeep == parsedCollections.size()) {
+        log.debug("No old time routed collections to delete.");
+        return curAliases;
+      }
+
+      final List<String> targetList = curAliases.getCollectionAliasListMap().get(aliasName);
+      // remember to delete these... (oldest to newest)
+      for (int i = targetList.size() - 1; i >= numToKeep; i--) {
+        collectionsToDelete.add(targetList.get(i));
+      }
+      // new alias list has only "numToKeep" first items
+      final List<String> collectionsToKeep = targetList.subList(0, numToKeep);
+      final String collectionsToKeepStr = StrUtils.join(collectionsToKeep, ',');
+      return curAliases.cloneWithCollectionAlias(aliasName, collectionsToKeepStr);
+    });
+
+    if (collectionsToDelete.isEmpty()) {
+      return null;
+    }
+
+    log.info("Removing old time routed collections: {}", collectionsToDelete);
+    // Should this be done asynchronously?  If we got "ASYNC" then probably.
+    //   It would shorten the time the Overseer holds a lock on the alias name
+    //   (deleting the collections will be done later and not use that lock).
+    //   Don't bother about parallel; it's unusual to have more than 1.
+    // Note we don't throw an exception here under most cases; instead the response will have information about
+    //   how each delete request went, possibly including a failure message.
+    final CollectionsHandler collHandler = ocmh.overseer.getCoreContainer().getCollectionsHandler();
+    NamedList results = new NamedList();
+    for (String collection : collectionsToDelete) {
+      final SolrParams reqParams = CollectionAdminRequest.deleteCollection(collection).getParams();
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      collHandler.handleRequestBody(new LocalSolrQueryRequest(null, reqParams), rsp);
+      results.add(collection, rsp.getValues());
+    }
+    return results;
+  }
+
+  /**
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.
    * IMPORTANT: Only call this from an {@link OverseerCollectionMessageHandler.Cmd}.
    */
-  static void createCollectionAndWait(ClusterState clusterState, NamedList results, String aliasName, Map<String, String> aliasMetadata, String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
+  static NamedList createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
+                                           String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
     for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
@@ -161,6 +274,7 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
         ocmh.overseer.getCoreContainer().getCollectionsHandler());
     createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
 
+    NamedList results = new NamedList();
     try {
       // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't. We currently should
@@ -173,7 +287,9 @@ public class RoutedAliasCreateCollectionCmd implements OverseerCollectionMessage
       }
     }
 
-    CollectionsHandler.waitForActiveCollection(createCollName, null, ocmh.overseer.getCoreContainer(), new OverseerSolrResponse(results));
+    CollectionsHandler.waitForActiveCollection(createCollName, ocmh.overseer.getCoreContainer(),
+        new OverseerSolrResponse(results));
+    return results;
   }
 
   private SolrException newAliasMustExistException(String aliasName) {

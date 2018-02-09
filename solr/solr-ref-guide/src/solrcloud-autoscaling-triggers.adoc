@@ -35,6 +35,7 @@ Currently the following event types (and corresponding trigger implementations) 
 * `nodeAdded` - generated when a new node joins the cluster
 * `nodeLost` - generated when a node leaves the cluster
 * `metric` - generated when the configured metric crosses a configured lower or upper threshold value
+* `searchRate` - generated when the 1 min average search rate exceeds configured upper threshold
 
 Events are not necessarily generated immediately after the corresponding state change occurred - the
 maximum rate of events is controlled by the `waitFor` configuration parameter (see below).
@@ -84,6 +85,56 @@ This trigger supports the following configuration:
     "below": 107374182400,
     "collection": "mycollection"
   }
+}
+----
+
+== Search Rate trigger
+
+The search rate trigger can be used for monitoring 1-min average search rates in a selected
+collection, and request that either replicas be moved to different nodes or new replicas be added
+to reduce the per-replica search rate for a collection / shard with search rate hot spots.
+(Note: future versions of Solr will also be able to automatically remove some replicas
+when search rate falls below the configured lower threshold).
+
+This trigger support the following configuration:
+
+* `collection` - (string, optional) collection name to monitor, or any collection if empty
+* `shard` - (string, optional) shard name within the collection (requires `collection` to be set), or any shard if empty
+* `node` - (string, optional) node name to monitor, or any if empty
+* `handler` - (string, optional) handler name whose request rate represents the search rate
+(default is `/select`). This name is used for creating the full metric key, in
+this case `solr.core.<coreName>:QUERY./select.requestTimes:1minRate`
+* `rate` - (double, required) the upper bound for the request rate metric value.
+
+If a rate is exceeded for a node (but not for individual replicas placed on this node) then
+the action requested by this event is to move one replica (with the highest rate) to another
+node. If a rate is exceeded for a collection / shard then the action requested is to add some
+replicas - currently at least 1 and at most 3, depending on how much the rate is exceeded, proportional to
+the threshold rate and the current request rate.
+
+.Example: a trigger configuration that monitors collection "test" and adds new replicas if 1-min average request rate of "/select" handler exceeds 100 reqs/sec:
+[source,json]
+----
+{
+ "set-trigger": {
+  "name" : "search_rate_trigger",
+  "event" : "searchRate",
+  "collection" : "test",
+  "handler" : "/select",
+  "rate" : 100.0,
+  "waitFor" : "1m",
+  "enabled" : true,
+  "actions" : [
+   {
+    "name" : "compute_plan",
+    "class": "solr.ComputePlanAction"
+   },
+   {
+    "name" : "execute_plan",
+    "class": "solr.ExecutePlanAction"
+   }
+  ]
+ }
 }
 ----
 

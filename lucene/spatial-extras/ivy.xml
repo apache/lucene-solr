@@ -29,6 +29,8 @@
       <artifact name="spatial4j" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
 
+    <dependency org="org.locationtech.jts" name="jts-core" rev="${/org.locationtech.jts/jts-core}" conf="test" />
+
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>

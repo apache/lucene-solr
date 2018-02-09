@@ -104,9 +104,9 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals(1, aliases.size());
     assertEquals("meta1", aliases.get(0));
     UnaryOperator<Aliases> op6 = a -> a.cloneWithCollectionAlias("meta1", "collection1meta,collection2meta");
-    final ZkStateReader.AliasesManager aliasesHolder = zkStateReader.aliasesHolder;
+    final ZkStateReader.AliasesManager aliasesManager = zkStateReader.aliasesManager;
 
-    aliasesHolder.applyModificationAndExportToZk(op6);
+    aliasesManager.applyModificationAndExportToZk(op6);
     aliases = zkStateReader.getAliases().resolveAliases("meta1");
     assertEquals(2, aliases.size());
     assertEquals("collection1meta", aliases.get(0));
@@ -118,7 +118,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // set metadata
     UnaryOperator<Aliases> op5 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", "bar");
-    aliasesHolder.applyModificationAndExportToZk(op5);
+    aliasesManager.applyModificationAndExportToZk(op5);
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
@@ -126,7 +126,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // set more metadata
     UnaryOperator<Aliases> op4 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foobar", "bazbam");
-    aliasesHolder.applyModificationAndExportToZk(op4);
+    aliasesManager.applyModificationAndExportToZk(op4);
     meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
     assertNotNull(meta);
 
@@ -140,7 +140,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // remove metadata
     UnaryOperator<Aliases> op3 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
-    aliasesHolder.applyModificationAndExportToZk(op3);
+    aliasesManager.applyModificationAndExportToZk(op3);
     meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
     assertNotNull(meta);
 
@@ -153,17 +153,17 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // removal of non existent key should succeed.
     UnaryOperator<Aliases> op2 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
-    aliasesHolder.applyModificationAndExportToZk(op2);
+    aliasesManager.applyModificationAndExportToZk(op2);
 
     // chained invocations
     UnaryOperator<Aliases> op1 = a ->
         a.cloneWithCollectionAliasMetadata("meta1", "foo2", "bazbam")
         .cloneWithCollectionAliasMetadata("meta1", "foo3", "bazbam2");
-    aliasesHolder.applyModificationAndExportToZk(op1);
+    aliasesManager.applyModificationAndExportToZk(op1);
 
     // some other independent update (not overwritten)
     UnaryOperator<Aliases> op = a -> a.cloneWithCollectionAlias("meta3", "collection1meta,collection2meta");
-    aliasesHolder.applyModificationAndExportToZk(op);
+    aliasesManager.applyModificationAndExportToZk(op);
 
     // competing went through
     assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
@@ -278,7 +278,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
-    zkStateReader.aliasesHolder.update(); // ensure our view is up to date
+    zkStateReader.aliasesManager.update(); // ensure our view is up to date
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata(aliasName);
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
@@ -298,9 +298,9 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals(1, aliases.size());
     assertEquals(aliasName, aliases.get(0));
     UnaryOperator<Aliases> op6 = a -> a.cloneWithCollectionAlias(aliasName, "collection1meta,collection2meta");
-    final ZkStateReader.AliasesManager aliasesHolder = zkStateReader.aliasesHolder;
+    final ZkStateReader.AliasesManager aliasesManager = zkStateReader.aliasesManager;
 
-    aliasesHolder.applyModificationAndExportToZk(op6);
+    aliasesManager.applyModificationAndExportToZk(op6);
     aliases = zkStateReader.getAliases().resolveAliases(aliasName);
     assertEquals(2, aliases.size());
     assertEquals("collection1meta", aliases.get(0));
