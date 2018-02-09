@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +30,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.RoutedAliasCreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
@@ -40,8 +38,6 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -80,7 +76,10 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // used to limit unnecessary concurrent collection creation requests
+  // To avoid needless/redundant concurrent communication with the Overseer from this JVM, we
+  //   maintain a Semaphore from an alias name keyed ConcurrentHashMap.
+  //   Alternatively a Lock or CountDownLatch could have been used but they didn't seem
+  //   to make it any easier.
   private static ConcurrentHashMap<String, Semaphore> aliasToSemaphoreMap = new ConcurrentHashMap<>(4);
 
   private final String thisCollection;
@@ -163,7 +162,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
     updateParsedCollectionAliases();
     String targetCollection;
-    do {
+    do { // typically we don't loop; it's only when we need to create a collection
       targetCollection = findTargetCollectionGivenTimestamp(routeTimestamp);
 
       if (targetCollection == null) {
@@ -271,39 +270,23 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     // Invoke ROUTEDALIAS_CREATECOLL (in the Overseer, locked by alias name).  It will create the collection
     //   and update the alias contingent on the most recent collection name being the same as
     //   what we think so here, otherwise it will return (without error).
-    // To avoid needless concurrent communication with the Overseer from this JVM, we
-    //   maintain a Semaphore from an alias name keyed ConcurrentHashMap.
-    //   Alternatively a Lock or CountDownLatch could have been used but they didn't seem
-    //   to make it any easier.
 
+    // (see docs on aliasToSemaphoreMap)
     final Semaphore semaphore = aliasToSemaphoreMap.computeIfAbsent(getAliasName(), n -> new Semaphore(1));
     if (semaphore.tryAcquire()) {
       try {
-        final String operation = CollectionParams.CollectionAction.ROUTEDALIAS_CREATECOLL.toLower();
-        Map<String, Object> msg = new HashMap<>();
-        msg.put(Overseer.QUEUE_OPERATION, operation);
-        msg.put(CollectionParams.NAME, getAliasName());
-        msg.put(RoutedAliasCreateCollectionCmd.IF_MOST_RECENT_COLL_NAME, mostRecentCollName);
-        SolrQueryResponse rsp = new SolrQueryResponse();
-        try {
-          this.collHandler.handleResponse(
-              operation,
-              new ZkNodeProps(msg),
-              rsp);
-          if (rsp.getException() != null) {
-            throw rsp.getException();
-          } // otherwise don't care about the response.  It's possible no collection was created because
-          //  of a race and that's okay... we'll ultimately retry any way.
+        RoutedAliasCreateCollectionCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
+        // we don't care about the response.  It's possible no collection was created because
+        //  of a race and that's okay... we'll ultimately retry any way.
 
-          // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
-          //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
-          //  we failed.
-          zkController.getZkStateReader().aliasesHolder.update();
-        } catch (RuntimeException e) {
-          throw e;
-        } catch (Exception e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
+        // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
+        //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
+        //  we failed.
+        zkController.getZkStateReader().aliasesManager.update();
+      } catch (RuntimeException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
         semaphore.release(); // to signal we're done to anyone waiting on it
       }

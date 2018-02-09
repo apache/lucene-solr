@@ -85,8 +85,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     // delete aliases first since they refer to the collections
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     //TODO create an API to delete collections attached to the routed alias when the alias is removed
-    zkStateReader.aliasesHolder.update();// ensure we're seeing the latest
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> {
+    zkStateReader.aliasesManager.update();// ensure we're seeing the latest
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> {
       Aliases a = zkStateReader.getAliases();
       for (String alias : a.getCollectionAliasMap().keySet()) {
         a = a.cloneWithCollectionAlias(alias,null); // remove

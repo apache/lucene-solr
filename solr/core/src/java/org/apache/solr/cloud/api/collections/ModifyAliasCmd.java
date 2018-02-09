@@ -60,7 +60,7 @@ public class ModifyAliasCmd implements Cmd {
     @SuppressWarnings("unchecked")
     Map<String, String> metadata = (Map<String, String>) message.get(META_DATA);
 
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases1 -> {
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases1 -> {
       for (Map.Entry<String, String> entry : metadata.entrySet()) {
         String key = entry.getKey();
         if ("".equals(key.trim())) {

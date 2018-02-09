@@ -186,6 +186,10 @@
               "type": "integer",
               "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + max-future-ms will be rejected to avoid provisioning too much resources."
             }
+            "autoDeleteAge": {
+              "type": "string",
+              "description": "A date math expressions yielding a time in the past. Collections covering a period of time entirely before this age will be automatically deleted."
+            }
           }
         },
         "TZ": {

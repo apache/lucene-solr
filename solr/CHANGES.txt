@@ -158,6 +158,9 @@ New Features
 
 * SOLR-11778: Add per-stage RequestHandler metrics. (ab)
 
+* SOLR-11925: Time Routed Aliases can have their oldest collections automatically deleted via the "router.autoDeleteAge"
+  setting. (David Smiley)
+
 Bug Fixes
 ----------------------
 

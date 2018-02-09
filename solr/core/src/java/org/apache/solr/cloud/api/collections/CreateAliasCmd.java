@@ -84,7 +84,7 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
     final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
     validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
-    zkStateReader.aliasesHolder
+    zkStateReader.aliasesManager
         .applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
   }
 
@@ -121,12 +121,11 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
     // Create the collection
-    NamedList createResults = new NamedList();
-    RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, createResults, aliasName, aliasMetadata, initialCollectionName, ocmh);
+    RoutedAliasCreateCollectionCmd.createCollectionAndWait(state, aliasName, aliasMetadata, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
 
     // Create/update the alias
-    zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
         .cloneWithCollectionAlias(aliasName, initialCollectionName)
         .cloneWithCollectionAliasMetadata(aliasName, aliasMetadata));
   }
