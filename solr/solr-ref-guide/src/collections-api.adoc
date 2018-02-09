@@ -532,7 +532,7 @@ automatically on the fly as new data arrives based on the parameters supplied in
 the future.
 [source,text]
 ----
-localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.max-future-ms=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
 If run on Jan 15, 2018 The above will create an alias named timedata, that contains collections with names such as
@@ -540,7 +540,7 @@ If run on Jan 15, 2018 The above will create an alias named timedata, that conta
 in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60 minutes of 2018-01-15. After
 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted. As soon as the system receives a
 document for an allowable time window for which there is no collection it will automatically create the next required
-collection (and potentially any intervening collections if router.interval is smaller than router.max-future-ms). Both
+collection (and potentially any intervening collections if router.interval is smaller than router.maxFutureMs). Both
 the initial collection and any subsequent collections will be created using the specified configset. All Collection
 creation parameters other than `name` are allowed, prefixed by `create-collection.`
 
@@ -585,7 +585,7 @@ A date math expression that will be appended to a timestamp to determine the nex
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
 work here. This param is required.
 
-`router.max-future-ms`::
+`router.maxFutureMs`::
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
 without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
 The default is 10 minutes worth.
@@ -625,7 +625,7 @@ partiton is to be rejected and collections are created using a config set named 
 
 [source,text]
 ----
-localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.max-future-ms=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
 *Output*
@@ -656,7 +656,7 @@ POST /api/c
       "field": "evt_dt",
       "start":"NOW/MINUTE",
       "interval":"+2HOUR",
-      "max-future-ms":"14400000"
+      "maxFutureMs":"14400000"
     },
     "create-collection" : {
       "config":"_default",

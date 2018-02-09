@@ -1421,7 +1421,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_FIELD = "router.field";
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
-    public static final String ROUTER_MAX_FUTURE = "router.max-future-ms";
+    public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
 
     private final String aliasName;
     private final String routerField;

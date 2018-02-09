@@ -62,7 +62,7 @@ public class TimeRoutedAlias {
   public static final String ROUTER_FIELD = ROUTER_PREFIX + "field";
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
-  public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "max-future-ms";
+  public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
   public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
   // plus TZ and NAME
