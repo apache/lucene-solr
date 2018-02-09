@@ -34,7 +34,7 @@ public class TestMinMaxNormalizer {
       float expectedMin, float expectedMax) {
     final Normalizer n = Normalizer.getInstance(
         solrResourceLoader,
-        MinMaxNormalizer.class.getCanonicalName(),
+        MinMaxNormalizer.class.getName(),
         params);
     assertTrue(n instanceof MinMaxNormalizer);
     final MinMaxNormalizer mmn = (MinMaxNormalizer)n;

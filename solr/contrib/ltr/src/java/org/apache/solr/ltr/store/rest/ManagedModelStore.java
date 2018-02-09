@@ -268,7 +268,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     final LinkedHashMap<String,Object> modelMap = new LinkedHashMap<>(5, 1.0f);
 
     modelMap.put(NAME_KEY, model.getName());
-    modelMap.put(CLASS_KEY, model.getClass().getCanonicalName());
+    modelMap.put(CLASS_KEY, model.getClass().getName());
     modelMap.put(STORE_KEY, model.getFeatureStoreName());
 
     final List<Map<String,Object>> features = new ArrayList<>();
@@ -321,7 +321,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
   private static LinkedHashMap<String,Object> toNormalizerMap(Normalizer norm) {
     final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
 
-    normalizer.put(CLASS_KEY, norm.getClass().getCanonicalName());
+    normalizer.put(CLASS_KEY, norm.getClass().getName());
 
     final LinkedHashMap<String,Object> params = norm.paramsToMap();
     if (params != null) {
