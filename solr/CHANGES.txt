@@ -272,6 +272,8 @@ Other Changes
 
 * SOLR-11349: Rename ResponseBuilder's getQueryCommand to createQueryCommand. (Christine Poerschke)
 
+* SOLR-11902: Clarify in bin/solr help text whether commands can be run remotely (Jason Gerlowski)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
