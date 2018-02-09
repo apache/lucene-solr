@@ -52,6 +52,29 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     aftertest();
   }
 
+  protected static Map<String,Object> createLayerParams(double[][] matrix, double[] bias, String activation) {
+
+    final ArrayList<ArrayList<Double>> matrixList = new ArrayList<ArrayList<Double>>();
+    for (int row = 0; row < matrix.length; row++) {
+      matrixList.add(new ArrayList<Double>());
+      for (int col = 0; col < matrix[row].length; col++) {
+        matrixList.get(row).add(matrix[row][col]);
+      }
+    }
+
+    final ArrayList<Double> biasList = new ArrayList<Double>();
+    for (int i = 0; i < bias.length; i++) {
+      biasList.add(bias[i]);
+    }
+
+    final Map<String,Object> layer = new HashMap<String,Object>();
+    layer.put("matrix", matrixList);
+    layer.put("bias", biasList);
+    layer.put("activation", activation);
+
+    return layer;
+  }
+
   @Test
   public void testLinearAlgebra() {
 
@@ -72,24 +95,11 @@ public class TestNeuralNetworkModel extends TestRerankBase {
                              { layer1Node2Weight1, layer1Node2Weight2, layer1Node2Weight3, layer1Node2Weight4 },
                              { layer1Node3Weight1, layer1Node3Weight2, layer1Node3Weight3, layer1Node3Weight4 } };
 
-    final ArrayList<ArrayList<Double>> matrixOneList = new ArrayList<ArrayList<Double>>();
-    for (int row = 0; row < matrixOne.length; row++) {
-      matrixOneList.add(new ArrayList<Double>());
-      for (int col = 0; col < matrixOne[row].length; col++) {
-        matrixOneList.get(row).add(matrixOne[row][col]);
-      }
-    }
-
     final double layer1Node1Bias = 13.0;
     final double layer1Node2Bias = 14.0;
     final double layer1Node3Bias = 15.0;
 
     double[] biasOne = { layer1Node1Bias, layer1Node2Bias, layer1Node3Bias };
-
-    final ArrayList<Double> biasOneList = new ArrayList<Double>();
-    for (int i = 0; i < biasOne.length; i++) {
-      biasOneList.add(biasOne[i]);
-    }
 
     final double outputNodeWeight1 = 16.0;
     final double outputNodeWeight2 = 17.0;
@@ -97,37 +107,15 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     double[][] matrixTwo = { { outputNodeWeight1, outputNodeWeight2, outputNodeWeight3 } };
 
-    final ArrayList<ArrayList<Double>> matrixTwoList = new ArrayList<ArrayList<Double>>();
-    for (int row = 0; row < matrixTwo.length; row++) {
-      matrixTwoList.add(new ArrayList<Double>());
-      for (int col = 0; col < matrixTwo[row].length; col++) {
-        matrixTwoList.get(row).add(matrixTwo[row][col]);
-      }
-    }
-
     final double outputNodeBias = 19.0;
 
     double[] biasTwo = { outputNodeBias };
 
-    final ArrayList<Double> biasTwoList = new ArrayList<Double>();
-    for (int i = 0; i < biasTwo.length; i++) {
-      biasTwoList.add(biasTwo[i]);
-    }
-
     Map<String,Object> params = new HashMap<String,Object>();
     ArrayList<Map<String,Object>> layers = new ArrayList<Map<String,Object>>();
 
-    HashMap layerOne = new HashMap<String,Object>();
-    layerOne.put("matrix", matrixOneList);
-    layerOne.put("bias", biasOneList);
-    layerOne.put("activation", "relu");
-    layers.add(layerOne);
-
-    HashMap layerTwo = new HashMap<String,Object>();
-    layerTwo.put("matrix", matrixTwoList);
-    layerTwo.put("bias", biasTwoList);
-    layerTwo.put("activation", "relu");
-    layers.add(layerTwo);
+    layers.add(createLayerParams(matrixOne, biasOne, "relu"));
+    layers.add(createLayerParams(matrixTwo, biasTwo, "relu"));
 
     params.put("layers", layers);
 
