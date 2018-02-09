@@ -37,7 +37,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
     return LTRScoringModel.getInstance(solrResourceLoader,
-        NeuralNetworkModel.class.getCanonicalName(),
+        NeuralNetworkModel.class.getName(),
         name,
         features, norms, featureStoreName, allFeatures, params);
   }
