@@ -67,7 +67,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -81,7 +81,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);

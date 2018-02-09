@@ -49,18 +49,18 @@ public class TestModelManagerPersistence extends TestRerankBase {
   @Test
   public void testFeaturePersistence() throws Exception {
 
-    loadFeature("feature", ValueFeature.class.getCanonicalName(), "test",
+    loadFeature("feature", ValueFeature.class.getName(), "test",
         "{\"value\":2}");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
     restTestHarness.reload();
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
-    loadFeature("feature1", ValueFeature.class.getCanonicalName(), "test1",
+    loadFeature("feature1", ValueFeature.class.getName(), "test1",
         "{\"value\":2}");
-    loadFeature("feature2", ValueFeature.class.getCanonicalName(), "test",
+    loadFeature("feature2", ValueFeature.class.getName(), "test",
         "{\"value\":2}");
-    loadFeature("feature3", ValueFeature.class.getCanonicalName(), "test2",
+    loadFeature("feature3", ValueFeature.class.getName(), "test2",
         "{\"value\":2}");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
@@ -79,9 +79,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/[0]/name=='feature1'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/[0]/name=='feature3'");
-    loadModel("test-model", LinearModel.class.getCanonicalName(),
+    loadModel("test-model", LinearModel.class.getName(),
         new String[] {"feature"}, "test", "{\"weights\":{\"feature\":1.0}}");
-    loadModel("test-model2", LinearModel.class.getCanonicalName(),
+    loadModel("test-model2", LinearModel.class.getName(),
         new String[] {"feature1"}, "test1", "{\"weights\":{\"feature1\":1.0}}");
     final String fstorecontent = FileUtils
         .readFileToString(fstorefile, "UTF-8");
@@ -204,7 +204,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "!/models/[1]/name=='"+modelName+"'",
         // but the wrapper model should be registered
         "/models/[0]/name=='"+modelName+"'",
-        "/models/[0]/class=='" + DefaultWrapperModel.class.getCanonicalName() + "'",
+        "/models/[0]/class=='" + DefaultWrapperModel.class.getName() + "'",
         "/models/[0]/store=='" + featureStoreName + "'",
         // the wrapper model shouldn't contain the definitions of the wrapped model
         "/models/[0]/features/==[]",
@@ -224,11 +224,11 @@ public class TestModelManagerPersistence extends TestRerankBase {
              "/features/==[]");
 
     // setup features
-    loadFeature("popularity", FieldValueFeature.class.getCanonicalName(), FS_NAME, "{\"field\":\"popularity\"}");
-    loadFeature("const", ValueFeature.class.getCanonicalName(), FS_NAME, "{\"value\":5}");
+    loadFeature("popularity", FieldValueFeature.class.getName(), FS_NAME, "{\"field\":\"popularity\"}");
+    loadFeature("const", ValueFeature.class.getName(), FS_NAME, "{\"value\":5}");
 
     // setup base model
-    String baseModelJson = getModelInJson(modelName, LinearModel.class.getCanonicalName(),
+    String baseModelJson = getModelInJson(modelName, LinearModel.class.getName(),
                                           new String[] {"popularity", "const"}, FS_NAME,
                                           "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
     File baseModelFile = new File(tmpConfDir, "baseModelForPersistence.json");
@@ -239,7 +239,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
     baseModelFile.deleteOnExit();
 
     // setup wrapper model
-    String wrapperModelJson = getModelInJson(modelName, DefaultWrapperModel.class.getCanonicalName(),
+    String wrapperModelJson = getModelInJson(modelName, DefaultWrapperModel.class.getName(),
                                              new String[0], FS_NAME,
                                              "{\"resource\":\"" + baseModelFile.getName() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
