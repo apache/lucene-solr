@@ -77,7 +77,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("field", field);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getCanonicalName(),
+          FieldValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
