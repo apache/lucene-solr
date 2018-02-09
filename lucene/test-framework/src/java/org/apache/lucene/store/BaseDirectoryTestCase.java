@@ -1186,10 +1186,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       int count = atLeast(20);
       Set<String> names = new HashSet<>();
       while(names.size() < count) {
-        String name = TestUtil.randomSimpleString(random());
-        if (name.length() == 0) {
-          continue;
-        }
+        // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
+        String name = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
         if (random().nextInt(5) == 1) {
           IndexOutput out = dir.createTempOutput(name, "foo", IOContext.DEFAULT);
           names.add(out.getName());
