@@ -22,14 +22,17 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.DefaultWrapperModel;
 import org.apache.solr.ltr.model.LinearModel;
+import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -261,4 +264,67 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     // NOTE: we don't test the persistence of the deletion here because it's tested in testFilePersistence
   }
+
+  public static class DummyCustomFeature extends ValueFeature {
+    public DummyCustomFeature(String name, Map<String,Object> params) {
+      super(name, params);
+    }
+  }
+
+  public static class DummyCustomModel extends LinearModel {
+    public DummyCustomModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,
+        List<Feature> allFeatures, Map<String,Object> params) {
+      super(name, features, norms, featureStoreName, allFeatures, params);
+    }
+  }
+
+  @Test
+  public void testInnerCustomClassesPersistence() throws Exception {
+
+    final String featureStoreName = "test42";
+
+    final String featureName = "feature42";
+    final String featureClassName;
+    if (random().nextBoolean()) {
+      featureClassName = ValueFeature.class.getName();
+    } else {
+      featureClassName = DummyCustomFeature.class.getName();
+    }
+
+    loadFeature(featureName, featureClassName, "test42",
+        "{\"value\":"+random().nextInt(100)+"}");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+featureStoreName,
+        "/features/[0]/name=='"+featureName+"'");
+
+    final String modelName = "model42";
+    final String modelClassName;
+    if (random().nextBoolean()) {
+      modelClassName = LinearModel.class.getName();
+    } else {
+      modelClassName = DummyCustomModel.class.getName();
+    }
+
+    loadModel(modelName, modelClassName,
+        new String[] { featureName }, featureStoreName,
+        "{\"weights\":{\""+featureName+"\":1.0}}");
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/[0]/name=='"+modelName+"'");
+
+    restTestHarness.reload();
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+featureStoreName,
+        "/features/[0]/name=='"+featureName+"'");
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/[0]/name=='"+modelName+"'");
+
+    assertJDelete(ManagedModelStore.REST_END_POINT + "/"+modelName,
+        "/responseHeader/status==0");
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
+
+    assertJDelete(ManagedFeatureStore.REST_END_POINT + "/"+featureStoreName,
+        "/responseHeader/status==0");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+featureStoreName,
+        "/features/==[]");
+  }
+
 }
