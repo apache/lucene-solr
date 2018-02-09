@@ -421,11 +421,6 @@ public class ResponseBuilder
     }
   }
 
-  @Deprecated
-  public QueryCommand getQueryCommand() {
-    return createQueryCommand();
-  }
-
   /**
    * Creates a SolrIndexSearcher.QueryCommand from this
    * ResponseBuilder.  TimeAllowed is left unset.
