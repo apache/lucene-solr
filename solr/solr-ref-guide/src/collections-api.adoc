@@ -581,7 +581,7 @@ This field is required on all incoming documents.
 The type of routing to use. Presently only `time` is valid.  This param is required.
 
 `router.interval`::
-A fragment of a date math expression that will be appended to a timestamp to determine the next collection in the series.
+A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
 work here. This param is required.
 
@@ -589,6 +589,14 @@ work here. This param is required.
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
 without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
 The default is 10 minutes worth.
+
+`router.autoDeleteAge`::
+A date math expression that results in the oldest collections getting deleted automatically.
+The date math is relative to the timestamp of a newly created collection (typically close to the current time),
+and thus this must produce an earlier time via rounding and/or subtracting.
+Collections to be deleted must have a time range that is entirely before the computed age.
+Collections are considered for deletion immediately prior to new collections getting created.
+Example: `/DAY-90DAYS`.  The default is not to delete.
 
 `create-collection.*`::
 The * can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields

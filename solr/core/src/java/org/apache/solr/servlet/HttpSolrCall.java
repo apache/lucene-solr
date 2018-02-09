@@ -444,7 +444,7 @@ public class HttpSolrCall {
       if (!retry) {
         // we couldn't find a core to work with, try reloading aliases
         // TODO: it would be nice if admin ui elements skipped this...
-        cores.getZkController().getZkStateReader().aliasesHolder.update();
+        cores.getZkController().getZkStateReader().aliasesManager.update();
         action = RETRY;
       }
     }

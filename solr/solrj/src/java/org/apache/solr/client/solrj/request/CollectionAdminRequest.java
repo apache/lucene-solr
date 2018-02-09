@@ -1341,8 +1341,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
     }
 
-    public void addMetadata(String key, String value) {
+    public ModifyAlias addMetadata(String key, String value) {
       metadata.put(key,value);
+      return this;
     }
 
     @Override

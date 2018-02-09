@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -160,7 +161,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         .process(solrClient);
 
     // index 3 documents in a random fashion
-    addDocsAndCommit(
+    addDocsAndCommit(false, // send these to alias & collections
         newDoc(Instant.parse("2017-10-23T00:00:00Z")),
         newDoc(Instant.parse("2017-10-24T01:00:00Z")),
         newDoc(Instant.parse("2017-10-24T02:00:00Z"))
@@ -184,19 +185,35 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // delete the Oct23rd (save memory)...
     //   make sure we track that we are effectively deleting docs there
     numDocsDeletedOrFailed += solrClient.query(col23rd, params("q", "*:*", "rows", "0")).getResults().getNumFound();
-    //   remove from alias
+    //   remove from the alias
     CollectionAdminRequest.createAlias(alias, col24th).process(solrClient);
     //   delete the collection
     CollectionAdminRequest.deleteCollection(col23rd).process(solrClient);
 
     // now we're going to add documents that will trigger more collections to be created
     //   for 25th & 26th
-    addDocsAndCommit(
+    addDocsAndCommit(false, // send these to alias & collections
         newDoc(Instant.parse("2017-10-24T03:00:00Z")),
         newDoc(Instant.parse("2017-10-25T04:00:00Z")),
-        newDoc(Instant.parse("2017-10-26T05:00:00Z"))
+        newDoc(Instant.parse("2017-10-26T05:00:00Z")),
+        newDoc(Instant.parse("2017-10-26T06:00:00Z"))
     );
     assertInvariants(alias + "_2017-10-26", alias + "_2017-10-25", col24th);
+
+
+    // update metadata to auto-delete oldest collections
+    CollectionAdminRequest.modifyAlias(alias)
+        .addMetadata(TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE, "-1DAY")  // thus usually keep 2 collections of a day size
+        .process(solrClient);
+
+    // add more docs, creating one new collection, but trigger ones prior to
+    int numDocsToBeAutoDeleted = queryNumDocs(timeField+":[* TO \"2017-10-26T00:00:00Z\"}");
+    addDocsAndCommit(true, // send these to alias only
+        newDoc(Instant.parse("2017-10-26T07:00:00Z")), // existing
+        newDoc(Instant.parse("2017-10-27T08:00:00Z")) // new
+    );
+    numDocsDeletedOrFailed += numDocsToBeAutoDeleted;
+    assertInvariants(alias + "_2017-10-27", alias + "_2017-10-26");
   }
 
   private void testFailedDocument(Instant timestamp, String errorMsg) throws SolrServerException, IOException {
@@ -218,7 +235,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   /** Adds these documents and commits, returning when they are committed.
    * We randomly go about this in different ways. */
-  private void addDocsAndCommit(SolrInputDocument... solrInputDocuments) throws Exception {
+  private void addDocsAndCommit(boolean aliasOnly, SolrInputDocument... solrInputDocuments) throws Exception {
     // we assume all docs will be added (none too old/new to cause exception)
     Collections.shuffle(Arrays.asList(solrInputDocuments), random());
 
@@ -226,10 +243,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     //   (it doesn't matter where we send docs since the alias is honored at the URP level)
     List<String> collections = new ArrayList<>();
     collections.add(alias);
-    collections.addAll(new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias));
+    if (!aliasOnly) {
+      collections.addAll(new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias));
+    }
 
     int commitWithin = random().nextBoolean() ? -1 : 500; // if -1, we commit explicitly instead
-    int numDocsBefore = queryNumDocs();
+
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
@@ -258,21 +277,25 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       solrClient.commit(col);
     } else {
       // check that it all got committed eventually
-      int numDocs = queryNumDocs();
-      if (numDocs == numDocsBefore + solrInputDocuments.length) {
+      String docsQ =
+          "{!terms f=id}"
+          + Arrays.stream(solrInputDocuments).map(d -> d.getFieldValue("id").toString())
+              .collect(Collectors.joining(","));
+      int numDocs = queryNumDocs(docsQ);
+      if (numDocs == solrInputDocuments.length) {
         System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
         return;
       }
       // wait until it's committed
       Thread.sleep(commitWithin);
       for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
-        numDocs = queryNumDocs();
-        if (numDocsBefore + solrInputDocuments.length == numDocs) break;
+        numDocs = queryNumDocs(docsQ);
+        if (numDocs == solrInputDocuments.length) break;
         Thread.sleep(100);
       }
 
       assertEquals("not committed.  Bug or a slow test?",
-          numDocsBefore + solrInputDocuments.length, numDocs);
+          solrInputDocuments.length, numDocs);
     }
   }
 
@@ -282,8 +305,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     assertTrue("Expected no errors: " + errors,errors == null || errors.isEmpty());
   }
 
-  private int queryNumDocs() throws SolrServerException, IOException {
-    return (int) solrClient.query(alias, params("q", "*:*", "rows", "0")).getResults().getNumFound();
+  private int queryNumDocs(String q) throws SolrServerException, IOException {
+    return (int) solrClient.query(alias, params("q", q, "rows", "0")).getResults().getNumFound();
   }
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {

@@ -241,26 +241,39 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(BAD_REQUEST,
           "Invalid request. collections can be accessed only in SolrCloud mode");
     }
-    SolrResponse response = null;
     Map<String, Object> props = operation.execute(req, rsp, this);
+    if (props == null) {
+      return;
+    }
+
     String asyncId = req.getParams().get(ASYNC);
-    if (props != null) {
-      if (asyncId != null) {
-        props.put(ASYNC, asyncId);
-      }
-      props.put(QUEUE_OPERATION, operation.action.toLower());
+    if (asyncId != null) {
+      props.put(ASYNC, asyncId);
+    }
+
+    props.put(QUEUE_OPERATION, operation.action.toLower());
+
+    if (operation.sendToOCPQueue) {
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      if (operation.sendToOCPQueue) {
-        response = handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+      SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
+      rsp.getValues().addAll(overseerResponse.getResponse());
+      Exception exp = overseerResponse.getException();
+      if (exp != null) {
+        rsp.setException(exp);
       }
-      else Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
-      final String collectionName = zkProps.getStr(NAME);
+
+      //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
       if (action.equals(CollectionAction.CREATE) && asyncId == null) {
         if (rsp.getException() == null) {
-          waitForActiveCollection(collectionName, zkProps, cores, response);
+          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
         }
       }
+
+    } else {
+      // submits and doesn't wait for anything (no response)
+      Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
     }
+
   }
 
 
@@ -268,16 +281,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
-  //TODO rename to submitToOverseerRPC
-  public void handleResponse(String operation, ZkNodeProps m,
-                              SolrQueryResponse rsp) throws KeeperException, InterruptedException {
-    handleResponse(operation, m, rsp, DEFAULT_COLLECTION_OP_TIMEOUT);
+  public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
+    return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  //TODO rename to submitToOverseerRPC
-  public SolrResponse handleResponse(String operation, ZkNodeProps m,
-      SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
-    if (!m.containsKey(QUEUE_OPERATION)) {
+  public SolrResponse sendToOCPQueue(ZkNodeProps m, long timeout) throws KeeperException, InterruptedException {
+    String operation = m.getStr(QUEUE_OPERATION);
+    if (operation == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
     }
     if (m.get(ASYNC) != null) {
@@ -301,26 +311,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
              .offer(Utils.toJSON(m));
        }
        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
-       SolrResponse response = new OverseerSolrResponse(r);
 
-       rsp.getValues().addAll(response.getResponse());
-
-       return response;
-     }
+      return new OverseerSolrResponse(r);
+    }
 
     long time = System.nanoTime();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      SolrResponse response = SolrResponse.deserialize(event.getBytes());
-      rsp.getValues().addAll(response.getResponse());
-      SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
-      if (exp != null) {
-        Integer code = (Integer) exp.get("rspCode");
-        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
-      }
-      return response;
+      return SolrResponse.deserialize(event.getBytes());
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -1156,16 +1156,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
+  public static void waitForActiveCollection(String collectionName, CoreContainer cc, SolrResponse createCollResponse)
       throws KeeperException, InterruptedException {
 
-    if (response.getResponse().get("exception") != null) {
+    if (createCollResponse.getResponse().get("exception") != null) {
       // the main called failed, don't wait
-      log.info("Not waiting for active collection due to exception: " + response.getResponse().get("exception"));
+      log.info("Not waiting for active collection due to exception: " + createCollResponse.getResponse().get("exception"));
       return;
     }
     
-    if (response.getResponse().get("failure") != null) {
+    if (createCollResponse.getResponse().get("failure") != null) {
       // TODO: we should not wait for Replicas we know failed
     }
     
