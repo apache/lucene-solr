@@ -66,7 +66,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * <p>
  * Training libraries:
  * <ul>
- * <li> <a href="https://github.com/airalcorn2/RankNet">Keras Implementation of RankNet</a>
+ * <li> <a href="https://keras.io">Keras</a> is a high-level neural networks API, written in Python.
+ * A Keras and Solr implementation of RankNet can be found at <a href="https://github.com/airalcorn2/RankNet">https://github.com/airalcorn2/RankNet</a>.
  * </ul>
  * <p>
  * Background reading:
