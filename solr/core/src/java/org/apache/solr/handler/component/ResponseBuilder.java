@@ -421,11 +421,16 @@ public class ResponseBuilder
     }
   }
 
+  @Deprecated
+  public QueryCommand getQueryCommand() {
+    return createQueryCommand();
+  }
+
   /**
    * Creates a SolrIndexSearcher.QueryCommand from this
    * ResponseBuilder.  TimeAllowed is left unset.
    */
-  public QueryCommand getQueryCommand() {
+  public QueryCommand createQueryCommand() {
     QueryCommand cmd = new QueryCommand();
     cmd.setQuery(wrap(getQuery()))
             .setFilterList(getFilters())
