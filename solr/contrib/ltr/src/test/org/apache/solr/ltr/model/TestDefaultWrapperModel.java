@@ -52,13 +52,13 @@ public class TestDefaultWrapperModel extends TestRerankBase {
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
     assertU(commit());
 
-    loadFeature("popularity", FieldValueFeature.class.getCanonicalName(), "test", "{\"field\":\"popularity\"}");
-    loadFeature("const", ValueFeature.class.getCanonicalName(), "test", "{\"value\":5}");
+    loadFeature("popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
+    loadFeature("const", ValueFeature.class.getName(), "test", "{\"value\":5}");
     features = new ArrayList<>();
     features.add(getManagedFeatureStore().getFeatureStore("test").get("popularity"));
     features.add(getManagedFeatureStore().getFeatureStore("test").get("const"));
 
-    baseModelJson = getModelInJson("linear", LinearModel.class.getCanonicalName(),
+    baseModelJson = getModelInJson("linear", LinearModel.class.getName(),
         new String[] {"popularity", "const"},
         featureStoreName,
         "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
@@ -72,7 +72,7 @@ public class TestDefaultWrapperModel extends TestRerankBase {
   }
 
   private static String getDefaultWrapperModelInJson(String wrapperModelName, String[] features, String params) {
-    return getModelInJson(wrapperModelName, DefaultWrapperModel.class.getCanonicalName(),
+    return getModelInJson(wrapperModelName, DefaultWrapperModel.class.getName(),
         features, featureStoreName, params);
   }
 

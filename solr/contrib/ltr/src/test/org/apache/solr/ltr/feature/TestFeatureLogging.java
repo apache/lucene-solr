@@ -39,20 +39,20 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @Test
   public void testGeneratedFeatures() throws Exception {
-    loadFeature("c1", ValueFeature.class.getCanonicalName(), "test1",
+    loadFeature("c1", ValueFeature.class.getName(), "test1",
         "{\"value\":1.0}");
-    loadFeature("c2", ValueFeature.class.getCanonicalName(), "test1",
+    loadFeature("c2", ValueFeature.class.getName(), "test1",
         "{\"value\":2.0}");
-    loadFeature("c3", ValueFeature.class.getCanonicalName(), "test1",
+    loadFeature("c3", ValueFeature.class.getName(), "test1",
         "{\"value\":3.0}");
-    loadFeature("pop", FieldValueFeature.class.getCanonicalName(), "test1",
+    loadFeature("pop", FieldValueFeature.class.getName(), "test1",
         "{\"field\":\"popularity\"}");
-    loadFeature("nomatch", SolrFeature.class.getCanonicalName(), "test1",
+    loadFeature("nomatch", SolrFeature.class.getName(), "test1",
         "{\"q\":\"{!terms f=title}foobarbat\"}");
-    loadFeature("yesmatch", SolrFeature.class.getCanonicalName(), "test1",
+    loadFeature("yesmatch", SolrFeature.class.getName(), "test1",
         "{\"q\":\"{!terms f=popularity}2\"}");
 
-    loadModel("sum1", LinearModel.class.getCanonicalName(), new String[] {
+    loadModel("sum1", LinearModel.class.getName(), new String[] {
         "c1", "c2", "c3"}, "test1",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
@@ -96,16 +96,16 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @Test
   public void testDefaultStoreFeatureExtraction() throws Exception {
-    loadFeature("defaultf1", ValueFeature.class.getCanonicalName(),
+    loadFeature("defaultf1", ValueFeature.class.getName(),
         FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "{\"value\":1.0}");
-    loadFeature("store8f1", ValueFeature.class.getCanonicalName(),
+    loadFeature("store8f1", ValueFeature.class.getName(),
         "store8",
         "{\"value\":2.0}");
-    loadFeature("store9f1", ValueFeature.class.getCanonicalName(),
+    loadFeature("store9f1", ValueFeature.class.getName(),
         "store9",
         "{\"value\":3.0}");
-    loadModel("store9m1", LinearModel.class.getCanonicalName(),
+    loadModel("store9m1", LinearModel.class.getName(),
       new String[] {"store9f1"},
       "store9",
       "{\"weights\":{\"store9f1\":1.0}}");
@@ -140,16 +140,16 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @Test
   public void testGeneratedGroup() throws Exception {
-    loadFeature("c1", ValueFeature.class.getCanonicalName(), "testgroup",
+    loadFeature("c1", ValueFeature.class.getName(), "testgroup",
         "{\"value\":1.0}");
-    loadFeature("c2", ValueFeature.class.getCanonicalName(), "testgroup",
+    loadFeature("c2", ValueFeature.class.getName(), "testgroup",
         "{\"value\":2.0}");
-    loadFeature("c3", ValueFeature.class.getCanonicalName(), "testgroup",
+    loadFeature("c3", ValueFeature.class.getName(), "testgroup",
         "{\"value\":3.0}");
-    loadFeature("pop", FieldValueFeature.class.getCanonicalName(), "testgroup",
+    loadFeature("pop", FieldValueFeature.class.getName(), "testgroup",
         "{\"field\":\"popularity\"}");
 
-    loadModel("sumgroup", LinearModel.class.getCanonicalName(), new String[] {
+    loadModel("sumgroup", LinearModel.class.getName(), new String[] {
         "c1", "c2", "c3"}, "testgroup",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
@@ -180,12 +180,12 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @Test
   public void testSparseDenseFeatures() throws Exception {
-    loadFeature("match", SolrFeature.class.getCanonicalName(), "test4",
+    loadFeature("match", SolrFeature.class.getName(), "test4",
         "{\"q\":\"{!terms f=title}different\"}");
-    loadFeature("c4", ValueFeature.class.getCanonicalName(), "test4",
+    loadFeature("c4", ValueFeature.class.getName(), "test4",
         "{\"value\":1.0}");
 
-    loadModel("sum4", LinearModel.class.getCanonicalName(), new String[] {
+    loadModel("sum4", LinearModel.class.getName(), new String[] {
         "match"}, "test4",
         "{\"weights\":{\"match\":1.0}}");
 
