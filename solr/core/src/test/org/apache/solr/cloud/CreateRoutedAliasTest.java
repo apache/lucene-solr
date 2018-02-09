@@ -116,7 +116,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "      \"field\": \"evt_dt\",\n" +
         "      \"start\":\"NOW/DAY\",\n" + // small window for test failure once a day.
         "      \"interval\":\"+2HOUR\",\n" +
-        "      \"max-future-ms\":\"14400000\"\n" +
+        "      \"maxFutureMs\":\"14400000\"\n" +
         "    },\n" +
         //TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way since intended for distrib
         "    \"create-collection\" : {\n" +
@@ -298,7 +298,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.name=time" +
         "&router.start=2018-01-15T00:00:00Z" +
         "&router.interval=%2B30MINUTEx" + // bad; trailing 'x'
-        "&router.max-future-ms=60000" +
+        "&router.maxFutureMs=60000" +
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
     assertFailure(get, "Unit not recognized");
@@ -314,7 +314,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.name=time" +
         "&router.start=2018-01-15T00:00:00Z" +
         "&router.interval=%2B30MINUTE" +
-        "&router.max-future-ms=-60000" + // bad: negative
+        "&router.maxFutureMs=-60000" + // bad: negative
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
     assertFailure(get, "must be >= 0");
@@ -330,7 +330,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.name=time" +
         "&router.start=2018-01-15T00:00:00Z" +
         "&router.interval=%2B30MINUTE" +
-        "&router.max-future-ms=SixtyThousandMilliseconds" + // bad
+        "&router.maxFutureMs=SixtyThousandMilliseconds" + // bad
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
     assertFailure(get, "SixtyThousandMilliseconds"); //TODO improve SolrParams.getLong

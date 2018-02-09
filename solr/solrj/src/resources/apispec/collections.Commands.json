@@ -182,9 +182,9 @@
               "type": "string",
               "description": "A specification of the width of the interval for each partition collection. For time based routing this should be a date math expression fragment starting with the + character."
             },
-            "max-future-ms": {
+            "maxFutureMs": {
               "type": "integer",
-              "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + max-future-ms will be rejected to avoid provisioning too much resources."
+              "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + maxFutureMs will be rejected to avoid provisioning too much resources."
             }
             "autoDeleteAge": {
               "type": "string",
