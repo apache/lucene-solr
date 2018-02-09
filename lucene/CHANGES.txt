@@ -186,6 +186,9 @@ Other
   Spatial4j 0.7 is compatible with JTS 1.15.0 and not any prior version.  JTS 1.15.0 is
   dual-licensed to include BSD; prior versions were LGPL.  (David Smiley)
 
+* LUCENE-8155: Add back support in smoke tester to run against later Java versions.
+  (Uwe Schindler)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes
