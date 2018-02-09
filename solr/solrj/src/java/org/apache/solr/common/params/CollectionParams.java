@@ -80,7 +80,7 @@ public interface CollectionParams {
     DELETEALIAS(true, LockLevel.COLLECTION),
     MODIFYALIAS(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
-    ROUTEDALIAS_CREATECOLL(true, LockLevel.COLLECTION),
+    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
