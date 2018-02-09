@@ -29,10 +29,11 @@
       <artifact name="spatial4j" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
 
-    <dependency org="io.sgr" name="s2-geometry-library-java" rev="1.0.0" conf="test"/>
-
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+
+    <dependency org="io.sgr" name="s2-geometry-library-java" rev="1.0.0" conf="test"/>
+
   </dependencies>
 </ivy-module>
