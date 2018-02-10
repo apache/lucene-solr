@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/** Task script that is called by Ant's common-build.xml file:
+ * Patches Java 8 class files to replace method signatures by
+ * native Java 9 optimized ones (to be placed in MR-JAR).
+ */
+
 import org.apache.tools.ant.Project;
 
 import org.objectweb.asm.ClassReader;
