@@ -274,6 +274,9 @@ Other Changes
 
 * SOLR-11902: Clarify in bin/solr help text whether commands can be run remotely (Jason Gerlowski)
 
+* SOLR-3089: RequestBuilder now exposes isDistrib() method. Using this, plugins can know whether a request is
+  distributed. (Rok Rejc, Frank Wesemann, Abhishek Kumar Singh, Mikhail Khludnev via Ishan Chattopadhyaya)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

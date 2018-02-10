@@ -139,6 +139,13 @@ public class ResponseBuilder
   public List<ShardRequest> finished;  // requests that have received responses from all shards
   public String shortCircuitedURL;
 
+  /**
+   * This function will return true if this was a distributed search request.
+   */
+  public boolean isDistributed() {
+    return this.isDistrib;
+  }
+
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
       if (shards[i] == shard || shards[i].equals(shard)) return i;
