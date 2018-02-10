@@ -666,6 +666,21 @@ public class Plane extends Vector {
     }
     return findCrossings(planetModel, q, bounds, NO_BOUNDS);
   }
+
+  /**
+   * Checks if three points are coplanar in any of the three planes they can describe.
+   * The planes are all assumed to go through the origin.
+   *
+   * @param A The first point.
+   * @param B The second point.
+   * @param C The third point
+   * @return true if provided points are coplanar in any of the three planes they can describe.
+   */
+  public static boolean arePointsCoplanar(final GeoPoint A, final GeoPoint B, final GeoPoint C) {
+    return Vector.crossProductEvaluateIsZero(A, B, C) ||
+      Vector.crossProductEvaluateIsZero(A, C, B) ||
+      Vector.crossProductEvaluateIsZero(B, C, A);
+  }
   
   /**
    * Find the intersection points between two planes, given a set of bounds.
