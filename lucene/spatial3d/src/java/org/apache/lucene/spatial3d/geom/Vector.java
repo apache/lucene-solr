@@ -181,6 +181,79 @@ public class Vector {
   }
 
   /**
+    * Evaluate the cross product of two vectors against a point.
+    * If the dot product of the resultant vector resolves to "zero", then
+    * return true.
+    * @param A is the first vector to use for the cross product.
+    * @param B is the second vector to use for the cross product.
+    * @param point is the point to evaluate.
+    * @return true if we get a zero dot product.
+    */
+  public static boolean crossProductEvaluateIsZero(final Vector A, final Vector B, final Vector point) {
+    // Include Gram-Schmidt in-line so we avoid creating objects unnecessarily
+    // Compute the naive perpendicular
+    final double thisX = A.y * B.z - A.z * B.y;
+    final double thisY = A.z * B.x - A.x * B.z;
+    final double thisZ = A.x * B.y - A.y * B.x;
+    
+    final double magnitude = magnitude(thisX, thisY, thisZ);
+    if (magnitude < MINIMUM_RESOLUTION) {
+      return true;
+    }
+    
+    final double inverseMagnitude = 1.0/magnitude;
+    
+    double normalizeX = thisX * inverseMagnitude;
+    double normalizeY = thisY * inverseMagnitude;
+    double normalizeZ = thisZ * inverseMagnitude;
+    // For a plane to work, the dot product between the normal vector
+    // and the points needs to be less than the minimum resolution.
+    // This is sometimes not true for points that are very close. Therefore
+    // we need to adjust
+    int i = 0;
+    while (true) {
+      final double currentDotProdA = A.x * normalizeX + A.y * normalizeY + A.z * normalizeZ;
+      final double currentDotProdB = B.x * normalizeX + B.y * normalizeY + B.z * normalizeZ;
+      if (Math.abs(currentDotProdA) < MINIMUM_RESOLUTION && Math.abs(currentDotProdB) < MINIMUM_RESOLUTION) {
+        break;
+      }
+      // Converge on the one that has largest dot product
+      final double currentVectorX;
+      final double currentVectorY;
+      final double currentVectorZ;
+      final double currentDotProd;
+      if (Math.abs(currentDotProdA) > Math.abs(currentDotProdB)) {
+        currentVectorX = A.x;
+        currentVectorY = A.y;
+        currentVectorZ = A.z;
+        currentDotProd = currentDotProdA;
+      } else {
+        currentVectorX = B.x;
+        currentVectorY = B.y;
+        currentVectorZ = B.z;
+        currentDotProd = currentDotProdB;
+      }
+
+      // Adjust
+      normalizeX = normalizeX - currentDotProd * currentVectorX;
+      normalizeY = normalizeY - currentDotProd * currentVectorY;
+      normalizeZ = normalizeZ - currentDotProd * currentVectorZ;
+      // Normalize
+      final double correctedMagnitude = magnitude(normalizeX, normalizeY, normalizeZ);
+      final double inverseCorrectedMagnitude = 1.0 / correctedMagnitude;
+      normalizeX = normalizeX * inverseCorrectedMagnitude;
+      normalizeY = normalizeY * inverseCorrectedMagnitude;
+      normalizeZ = normalizeZ * inverseCorrectedMagnitude;
+      //This is  probably not needed as the method seems to converge
+      //quite quickly. But it is safer to have a way out.
+      if (i++ > 10) {
+        throw new IllegalArgumentException("Plane could not be constructed! Could not find a normal vector.");
+      }
+    }
+    return Math.abs(normalizeX * point.x + normalizeY * point.y + normalizeZ * point.z) < MINIMUM_RESOLUTION;
+  }
+
+  /**
    * Do a dot product.
    *
    * @param v is the vector to multiply.
