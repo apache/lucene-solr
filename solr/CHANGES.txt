@@ -197,6 +197,9 @@ Bug Fixes
 
 * SOLR-11931: Fix contrib/ltr custom inner class feature/normaliser/model persistence. (Christine Poerschke)
 
+* SOLR-10261: In case of in-place updates, failure in leader to follower replica update request now throws the
+  follower replica in leader-initiated-recovery (Ishan Chattopadhyaya, Steve Rowe)
+
 Optimizations
 ----------------------
 
