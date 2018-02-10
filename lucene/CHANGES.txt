@@ -189,6 +189,11 @@ Other
 * LUCENE-8155: Add back support in smoke tester to run against later Java versions.
   (Uwe Schindler)
 
+Build
+
+* LUCENE-8168: Moved Groovy scripts in build files to separate files.
+  Update Groovy to 2.4.13.  (Uwe Schindler)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes
