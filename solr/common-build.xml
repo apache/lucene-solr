@@ -177,7 +177,7 @@
   </target>
   
   <target name="lucene-jars-to-solr" 
-          depends="resolve-groovy,-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
+          depends="-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
   
   <target name="-lucene-jars-to-solr-not-for-package" unless="called.from.create-package">
     <sequential>
