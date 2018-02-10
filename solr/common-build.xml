@@ -162,7 +162,7 @@
   <target name="validate" depends="compile-tools">
   </target>
 
-  <target name="init-dist" >
+  <target name="init-dist" depends="resolve-groovy">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${package.dir}"/>
     <mkdir dir="${dist}"/>
