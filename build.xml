@@ -524,14 +524,21 @@ File | Project Structure | Platform Settings | SDKs):
     <fileset dir="." id="clover.test.result.files">
       <include name="*/build/**/test/TEST-*.xml"/>
     </fileset>
+    <fileset dir="." id="clover.test.src.files">
+      <include name="**/src/test/**/*.java"/>
+      <!-- test framework source files are all test code: -->
+      <include name="*/test-framework/src/**/*.java"/>
+    </fileset>
     <clover-report projectName="Apache Lucene/Solr">
       <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
         <format type="html" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
+        <testsources refid="clover.test.src.files"/>
       </current>
       <current outfile="${clover.report.dir}/clover.xml" title="Apache Lucene/Solr ${version}">
         <format type="xml" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
+        <testsources refid="clover.test.src.files"/>
       </current>
     </clover-report>
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>

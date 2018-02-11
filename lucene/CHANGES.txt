@@ -192,6 +192,9 @@ Other
 * LUCENE-8169: Migrated build to use OpenClover 4.2.1 for checking code coverage.
   (Uwe Schindler)
 
+* LUCENE-8170: Improve OpenClover reports (separate test from production code);
+  enable coverage reports inside test-frameworks.  (Uwe Schindler)
+
 Build
 
 * LUCENE-8168: Moved Groovy scripts in build files to separate files.
