@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.geometry.S2;
 import com.google.common.geometry.S2CellId;
 import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.shape.Shape;

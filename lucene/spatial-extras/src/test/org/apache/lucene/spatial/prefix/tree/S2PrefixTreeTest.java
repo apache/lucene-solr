@@ -21,8 +21,6 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Projections;
 import org.apache.lucene.spatial.spatial4j.Geo3dSpatialContextFactory;
-import org.apache.lucene.spatial3d.geom.GeoPointShape;
-import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;

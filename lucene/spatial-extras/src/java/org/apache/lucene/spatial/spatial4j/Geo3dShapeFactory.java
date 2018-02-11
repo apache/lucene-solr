@@ -46,7 +46,6 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeCollection;
-import org.locationtech.spatial4j.shape.ShapeFactory;
 
 /**
  * Geo3d implementation of {@link S2ShapeFactory}

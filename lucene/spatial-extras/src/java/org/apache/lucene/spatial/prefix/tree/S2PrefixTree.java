@@ -42,6 +42,9 @@ import org.locationtech.spatial4j.shape.Shape;
 public class S2PrefixTree extends SpatialPrefixTree {
 
 
+    /**
+     * Factory for creating {@link S2PrefixTree} instances with useful defaults
+     */
     protected static class Factory extends SpatialPrefixTreeFactory {
 
         @Override
