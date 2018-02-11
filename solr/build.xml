@@ -488,8 +488,6 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${src.export.dir}/lucene/tools/javadoc/java8"/>
-    <!-- Exclude clover license files incompatible with the ASL -->
-    <delete dir="${src.export.dir}/lucene/tools/clover"/>
 
     <build-changes changes.src.file="${src.export.dir}/solr/CHANGES.txt"
                    changes.target.dir="${src.export.dir}/solr/docs/changes"

@@ -32,6 +32,11 @@ def mappings = [
   'org/apache/lucene/util/FutureArrays': 'java/util/Arrays',
 ];
 
+if (properties['run.clover'] != null) {
+  task.log("Disabled class file remapping for Java 9, because Clover code coverage is enabled.", Project.MSG_INFO);
+  return;
+}
+
 File inputDir = new File(properties['build.dir'], 'classes/java');
 File outputDir = new File(properties['build.dir'], 'classes/java9');
 

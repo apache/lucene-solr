@@ -108,6 +108,9 @@ Other
 * LUCENE-8155: Add back support in smoke tester to run against later Java versions.
   (Uwe Schindler)
 
+* LUCENE-8169: Migrated build to use OpenClover 4.2.1 for checking code coverage.
+  (Uwe Schindler)
+
 Build
 
 * LUCENE-8168: Moved Groovy scripts in build files to separate files.
