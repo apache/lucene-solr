@@ -40,6 +40,9 @@
   <target name="-check-forbidden-tests"/>
   <target name="-check-forbidden-sysout"/>
 
+  <!-- disable clover -->
+  <target name="-clover.setup" if="run.clover"/>
+
   <!--  
       Specialize compile-core to not depend on clover, to exclude a 
       classpath reference when compiling, and to not attempt to copy
