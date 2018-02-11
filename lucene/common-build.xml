@@ -143,7 +143,7 @@
     <isset property="run.clover"/>
   </condition>
   
-  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=192m -XX:MaxPermSize=256m -Dclover.pertest.coverage=off" else="">
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=192m -Dclover.pertest.coverage=off" else="">
     <isset property="run.clover"/>
   </condition>
 
@@ -1629,12 +1629,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="-clover.setup" if="run.clover">
     <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
-      <fileset dir="${src.dir}" erroronmissingdir="no">
-        <include name="org/apache/**/*.java" />
-      </fileset>
+      <fileset dir="${src.dir}" erroronmissingdir="no"/>
       <testsources dir="${tests.src.dir}" erroronmissingdir="no">
-        <include name="org/apache/**/*.java" />
-        <exclude name="**/TestOpenNLP*Factory.java"/><!-- https://jira.atlassian.com/browse/CLOV-1984 -->
+        <exclude name="**/TestOpenNLP*Factory.java"/><!-- https://bitbucket.org/openclover/clover/issues/59 -->
       </testsources>
     </clover-setup>
   </target>
