@@ -45,7 +45,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasPointValues;
   
   // used only by fieldInfo(int)
-  private final FieldInfo[] byNumber; // contiguous
+  private final FieldInfo[] byNumber;
   
   private final HashMap<String,FieldInfo> byName = new HashMap<>();
   private final Collection<FieldInfo> values; // for an unmodifiable iterator
@@ -63,17 +63,15 @@ public class FieldInfos implements Iterable<FieldInfo> {
     boolean hasDocValues = false;
     boolean hasPointValues = false;
 
-    int size = 0; // number of elements in byNumberTemp
-    int capacity = 10; // byNumberTemp's capacity
-    FieldInfo[] byNumberTemp = new FieldInfo[capacity];
+    int size = 0; // number of elements in byNumberTemp, number of used array slots
+    FieldInfo[] byNumberTemp = new FieldInfo[10]; // initial array capacity of 10
     for (FieldInfo info : infos) {
       if (info.number < 0) {
         throw new IllegalArgumentException("illegal field number: " + info.number + " for field " + info.name);
       }
       size = info.number >= size ? info.number+1 : size;
-      if (info.number >= capacity){ //grow array
+      if (info.number >= byNumberTemp.length){ //grow array
         byNumberTemp = ArrayUtil.grow(byNumberTemp, info.number + 1);
-        capacity = byNumberTemp.length;
       }
       FieldInfo previous = byNumberTemp[info.number];
       if (previous != null) {

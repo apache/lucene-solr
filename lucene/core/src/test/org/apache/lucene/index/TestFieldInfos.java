@@ -58,7 +58,6 @@ public class TestFieldInfos extends LuceneTestCase {
     FieldInfos fis2 = IndexWriter.readFieldInfos(sis.info(1));
     FieldInfos fis3 = IndexWriter.readFieldInfos(sis.info(2));
 
-
     // testing dense FieldInfos
     Iterator<FieldInfo>  it = fis1.iterator();
     int i = 0;
@@ -66,17 +65,24 @@ public class TestFieldInfos extends LuceneTestCase {
       FieldInfo fi = it.next();
       assertEquals(i, fi.number);
       assertEquals("f" + i , fi.name);
+      assertEquals("f" + i, fis1.fieldInfo(i).name); //lookup by number
+      assertEquals("f" + i, fis1.fieldInfo("f" + i).name); //lookup by name
       i++;
     }
 
     // testing sparse FieldInfos
-    assertEquals("f0", fis2.fieldInfo(0).name);
+    assertEquals("f0", fis2.fieldInfo(0).name); //lookup by number
+    assertEquals("f0", fis2.fieldInfo("f0").name); //lookup by name
     assertNull(fis2.fieldInfo(1));
+    assertNull(fis2.fieldInfo("f1"));
     assertEquals("f15", fis2.fieldInfo(15).name);
+    assertEquals("f15", fis2.fieldInfo("f15").name);
     assertEquals("f16", fis2.fieldInfo(16).name);
+    assertEquals("f16", fis2.fieldInfo("f16").name);
 
     // testing empty FieldInfos
-    assertNull(fis3.fieldInfo(0));
+    assertNull(fis3.fieldInfo(0)); //lookup by number
+    assertNull(fis3.fieldInfo("f0")); //lookup by name
     assertEquals(0, fis3.size());
     Iterator<FieldInfo> it3 = fis3.iterator();
     assertFalse(it3.hasNext());
