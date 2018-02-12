@@ -54,15 +54,16 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
 
   private void setupGrid() {
     int type = random().nextInt(4);
+    //we use a fairly shallow grid
     if (type == 0) {
-      this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
+      this.grid = new GeohashPrefixTree(ctx, 2);
       this.rptStrategy = newRPT();
     } else if (type == 1) {
-      this.grid = new QuadPrefixTree(ctx, 5);//A fairly shallow grid
+      this.grid = new QuadPrefixTree(ctx, 5);
       this.rptStrategy = newRPT();
     } else {
       int arity = random().nextInt(3) + 1;
-      this.grid = new S2PrefixTree(ctx, 5 -arity, arity);//A fairly shallow grid
+      this.grid = new S2PrefixTree(ctx, 5 -arity, arity);
       this.rptStrategy = newRPT();
       this.rptStrategy.setPruneLeafyBranches(false);
     }
