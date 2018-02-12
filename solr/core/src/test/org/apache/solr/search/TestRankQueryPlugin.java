@@ -687,12 +687,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
         public void setScorer(Scorer scorer) throws IOException {}
         
         public void collect(int doc) throws IOException {
-          int valuesDocID = values.docID();
-          if (valuesDocID < doc) {
-            valuesDocID = values.advance(doc);
-          }
           long value;
-          if (valuesDocID == doc) {
+          if (values.advanceExact(doc)) {
             value = values.longValue();
           } else {
             value = 0;

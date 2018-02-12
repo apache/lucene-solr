@@ -1467,11 +1467,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > terms.docID()) {
-              terms.advance(doc);
-            }
             final BytesRef joinValue;
-            if (doc == terms.docID()) {
+            if (terms.advanceExact(doc)) {
               joinValue = terms.binaryValue();
             } else {
               // missing;
@@ -1536,11 +1533,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > terms.docID()) {
-              terms.advance(doc);
-            }
             final BytesRef joinValue;
-            if (doc == terms.docID()) {
+            if (terms.advanceExact(doc)) {
               joinValue = terms.binaryValue();
             } else {
               // missing;

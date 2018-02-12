@@ -554,20 +554,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int ord = -1;
       if(this.ordinalMap != null) {
         //Handle ordinalMapping case
-        if (contextDoc > segmentValues.docID()) {
-          segmentValues.advance(contextDoc);
-        }
-        if (contextDoc == segmentValues.docID()) {
+        if (segmentValues.advanceExact(contextDoc)) {
           ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
         } else {
           ord = -1;
         }
       } else {
         //Handle top Level FieldCache or Single Segment Case
-        if (globalDoc > segmentValues.docID()) {
-          segmentValues.advance(globalDoc);
-        }
-        if (globalDoc == segmentValues.docID()) {
+        if (segmentValues.advanceExact(globalDoc)) {
           ord = segmentValues.ordValue();
         } else {
           ord = -1;
@@ -780,14 +774,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void collect(int contextDoc) throws IOException {
-
-      int collapseDocID = collapseValues.docID();
-      if (collapseDocID < contextDoc) {
-        collapseDocID = collapseValues.advance(contextDoc);
-      }
-
       int collapseValue;
-      if (collapseDocID == contextDoc) {
+      if (collapseValues.advanceExact(contextDoc)) {
         collapseValue = (int) collapseValues.longValue();
       } else {
         collapseValue = 0;
@@ -1016,10 +1004,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
         }
       } else {
-        if (globalDoc > segmentValues.docID()) {
-          segmentValues.advance(globalDoc);
-        }
-        if (globalDoc == segmentValues.docID()) {
+        if (segmentValues.advanceExact(globalDoc)) {
           ord = segmentValues.ordValue();
         }
       }
@@ -1191,13 +1176,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int contextDoc) throws IOException {
-      int collapseDocID = collapseValues.docID();
-      if (collapseDocID < contextDoc) {
-        collapseDocID = collapseValues.advance(contextDoc);
-      }
-
       int collapseKey;
-      if (collapseDocID == contextDoc) {
+      if (collapseValues.advanceExact(contextDoc)) {
         collapseKey = (int) collapseValues.longValue();
       } else {
         collapseKey = 0;
