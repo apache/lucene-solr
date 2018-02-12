@@ -717,11 +717,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTokenizer() {
-
+    clearIndex();
     assertU(adoc("id",  "4055",
             "patterntok", "Hello,There"));
     assertU(adoc("id",  "4056",
             "patterntok", "Goodbye,Now"));
+    assertU(adoc("id",  "4057",
+            "lowerascii", "Hello"));
     assertU(commit());
 
     assertQ("make sure it split ok",
@@ -731,6 +733,11 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("make sure it split ok",
             req("patterntok:Goodbye")
             ,"*[count(//doc)=1]"
+    );
+    assertQ("confirm TokenizerChain's normalize is " +
+            "not a problem for search",
+        req("lowerascii:hell*")
+        ,"*[count(//doc)=1]"
     );
   }
 

@@ -113,7 +113,7 @@ public final class TokenizerChain extends SolrAnalyzer {
     for (TokenFilterFactory filter : filters) {
       if (filter instanceof MultiTermAwareComponent) {
         filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(in);
+        result = filter.create(result);
       }
     }
     return result;
