@@ -71,10 +71,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void collect(int doc, int slotNum) throws IOException {
-    if (doc > subDv.docID()) {
-      subDv.advance(doc);
-    }
-    if (doc == subDv.docID()) {
+    if (subDv.advanceExact(doc)) {
 
       int segOrd = (int) subDv.nextOrd();
       assert segOrd >= 0;

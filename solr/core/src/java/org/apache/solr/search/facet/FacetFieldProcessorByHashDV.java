@@ -387,10 +387,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
           @Override
           public void collect(int segDoc) throws IOException {
-            if (segDoc > values.docID()) {
-              values.advance(segDoc);
-            }
-            if (segDoc == values.docID()) {
+            if (values.advanceExact(segDoc)) {
               long l = values.nextValue(); // This document must have at least one value
               collectValFirstPhase(segDoc, l);
               for (int i = 1; i < values.docValueCount(); i++) {
@@ -418,10 +415,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
           @Override
           public void collect(int segDoc) throws IOException {
-            if (segDoc > values.docID()) {
-              values.advance(segDoc);
-            }
-            if (segDoc == values.docID()) {
+            if (values.advanceExact(segDoc)) {
               collectValFirstPhase(segDoc, values.longValue());
             }
           }

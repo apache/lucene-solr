@@ -182,11 +182,7 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
+          if (values.advanceExact(approximation.docID())) {
             final long segmentOrd = values.ordValue();
             final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (foundOrds.get(globalOrd)) {
@@ -220,14 +216,8 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
-            if (foundOrds.get(values.ordValue())) {
-              return true;
-            }
+          if (values.advanceExact(approximation.docID()) && foundOrds.get(values.ordValue())) {
+            return true;
           }
           return false;
         }
