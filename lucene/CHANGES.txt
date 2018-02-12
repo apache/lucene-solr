@@ -60,6 +60,9 @@ Improvements
   classes to use the optimized variants through the MR-JAR mechanism.
   (Uwe Schindler, Robert Muir, Adrien Grand, Mike McCandless)
 
+* LUCENE-8127: Speed up rewriteNoScoring when there are no MUST clauses.
+  (Michael Braun via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
