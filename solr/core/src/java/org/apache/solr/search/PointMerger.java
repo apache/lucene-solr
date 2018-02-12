@@ -79,6 +79,8 @@ public class PointMerger {
           case DOUBLE:
             seg = new DoubleSeg(pv, capacity);
             break;
+          case DATE:
+            break;
         }
         int count = seg.setNextValue();
         if (count >= 0) {
