@@ -44,7 +44,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   final private static int MAX_POINT_ITERATIONS = 1000;
 
   /* Supported shapes */
-  final public static int CONVEX_POLYGON = 0;
+  final protected static int CONVEX_POLYGON = 0;
   final protected static int CONVEX_POLYGON_WITH_HOLES = 1;
   final protected static int CONCAVE_POLYGON = 2;
   final protected static int CONCAVE_POLYGON_WITH_HOLES = 3;
