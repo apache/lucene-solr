@@ -111,6 +111,11 @@ New Features
   (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
   Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
 
+* LUCENE-8126: Add new spatial prefix tree (SPT) based on google S2 geometry.
+  It can only be used currently with Geo3D spatial context and it provides
+  improvements on indexing time for non-points shapes and on query performance.
+  (Ignacio Vera, David Smiley).
+
 Improvements
 
 * LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
