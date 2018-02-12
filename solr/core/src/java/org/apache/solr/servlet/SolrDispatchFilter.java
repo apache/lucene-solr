@@ -388,6 +388,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           case FORWARD:
             request.getRequestDispatcher(call.getPath()).forward(request, response);
             break;
+          case ADMIN:
+          case PROCESS:
+          case REMOTEQUERY:
+          case RETURN:
+            break;
         }
       } finally {
         call.destroy();

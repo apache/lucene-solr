@@ -732,6 +732,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           return Float.toString(Float.intBitsToFloat((int)val));
         case DOUBLE:
           return Double.toString(Double.longBitsToDouble(val));
+        case DATE:
+          break;
       }
     }
     throw new IllegalArgumentException("FieldType must be INT,LONG,FLOAT,DOUBLE found " + fieldType);
