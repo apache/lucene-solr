@@ -206,10 +206,9 @@ public class NeuralNetworkModel extends LTRScoringModel {
 
     public String describe() {
       final StringBuilder sb = new StringBuilder();
-      sb.append("Hidden layer ").append(Integer.toString(this.layerID)).append(" has a ");
-      sb.append(Integer.toString(this.matrixRows)).append("x").append(Integer.toString(this.matrixCols));
-      sb.append(" weight matrix, ").append(Integer.toString(this.numUnits)).append(" bias weights, ");
-      sb.append(" and a \"").append(this.activationStr).append("\" activation function.");
+      sb
+      .append("(matrix=").append(Integer.toString(this.matrixCols)).append('x').append(Integer.toString(this.matrixRows))
+      .append(",activation=").append(this.activationStr).append(")");
       return sb.toString();
     }
   }
@@ -277,18 +276,20 @@ public class NeuralNetworkModel extends LTRScoringModel {
     for (int i = 0; i < featureExplanations.size(); i++) {
       Explanation featureExplain = featureExplanations.get(i);
       if (i > 0) {
-        modelDescription.append(",");
+        modelDescription.append(',');
       }
       final String key = features.get(i).getName();
-      modelDescription.append(key).append("=").append(featureExplain.getValue());
+      modelDescription.append(key).append('=').append(featureExplain.getValue());
     }
 
+    modelDescription.append("],layers=[");
+
+    for (int i = 0; i < layers.size(); i++) {
+      if (i > 0) modelDescription.append(',');
+      modelDescription.append(layers.get(i).describe());
+    }
     modelDescription.append("])");
 
-    for (Layer layer : layers) {
-      modelDescription.append(System.lineSeparator());
-      modelDescription.append(layer.describe());
-    }
     return Explanation.match(finalScore, modelDescription.toString());
   }
 

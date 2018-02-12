@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
@@ -273,4 +274,28 @@ public class TestNeuralNetworkModel extends TestRerankBase {
       assertEquals(expectedException.toString(), rootError.toString());
     }
   }
+
+  @Test
+  public void testExplain() throws Exception {
+
+    final LTRScoringModel model = createModelFromFiles("neuralnetworkmodel_explainable.json",
+        "neuralnetworkmodel_features.json");
+
+    final float[] featureValues = { 1.2f, 3.4f, 5.6f, 7.8f };
+
+    final List<Explanation> explanations = new ArrayList<Explanation>();
+    for (int ii=0; ii<featureValues.length; ++ii)
+    {
+      explanations.add(Explanation.match(featureValues[ii], ""));
+    }
+
+    final float finalScore = model.score(featureValues);
+    final Explanation explanation = model.explain(null, 0, finalScore, explanations);
+    assertEquals(finalScore+" = (name=neuralnetworkmodel_explainable"+
+        ",featureValues=[constantOne=1.2,constantTwo=3.4,constantThree=5.6,constantFour=7.8]"+
+        ",layers=[(matrix=4x2,activation=relu),(matrix=2x1,activation=none)]"+
+        ")\n",
+        explanation.toString());
+  }
+
 }
