@@ -57,14 +57,14 @@ public class TestRankingFeature extends TestRerankBase {
   @Test
   public void testRankingSolrFeature() throws Exception {
     // before();
-    loadFeature("powpularityS", SolrFeature.class.getCanonicalName(),
+    loadFeature("powpularityS", SolrFeature.class.getName(),
         "{\"q\":\"{!func}pow(popularity,2)\"}");
-    loadFeature("unpopularityS", SolrFeature.class.getCanonicalName(),
+    loadFeature("unpopularityS", SolrFeature.class.getName(),
         "{\"q\":\"{!func}div(1,popularity)\"}");
 
-    loadModel("powpularityS-model", LinearModel.class.getCanonicalName(),
+    loadModel("powpularityS-model", LinearModel.class.getName(),
         new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
-    loadModel("unpopularityS-model", LinearModel.class.getCanonicalName(),
+    loadModel("unpopularityS-model", LinearModel.class.getName(),
         new String[] {"unpopularityS"}, "{\"weights\":{\"unpopularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -104,16 +104,16 @@ public class TestRankingFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='8'");
 
     //bad solr ranking feature
-    loadFeature("powdesS", SolrFeature.class.getCanonicalName(),
+    loadFeature("powdesS", SolrFeature.class.getName(),
         "{\"q\":\"{!func}pow(description,2)\"}");
-    loadModel("powdesS-model", LinearModel.class.getCanonicalName(),
+    loadModel("powdesS-model", LinearModel.class.getName(),
         new String[] {"powdesS"}, "{\"weights\":{\"powdesS\":1.0}}");
 
     query.remove("rq");
     query.add("rq", "{!ltr model=powdesS-model reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(),
-        "/error/msg/=='"+FeatureException.class.getCanonicalName()+": " +
+        "/error/msg/=='"+FeatureException.class.getName()+": " +
         "java.lang.UnsupportedOperationException: " +
         "Unable to extract feature for powdesS'");
     // aftertest();

@@ -494,8 +494,7 @@ public class GeoPolygonFactory {
           //all coplanar
           return null;
         }
-        Plane nextPlane = new Plane(startPoint, nextPoint);
-        if (Math.abs(nextPlane.evaluate(endPoint)) > Vector.MINIMUM_RESOLUTION + leniencyValue) {
+        if (!Plane.arePointsCoplanar(startPoint, endPoint, nextPoint)) {
           //no coplanar.
           break;
         }
@@ -520,7 +519,6 @@ public class GeoPolygonFactory {
     }
     return safePath;
   }
-
 
   /** Pick a random pole that has a good chance of being inside the polygon described by the points.
    * @param generator is the random number generator to use.
@@ -1079,12 +1077,19 @@ public class GeoPolygonFactory {
         break;
       }
       final Edge newLastEdge = edgeBuffer.getNext(lastEdge);
+      if (Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newLastEdge.endPoint)) {
+        break;
+      }
       if (isWithin(newLastEdge.endPoint, includedEdges)) {
         //System.out.println(" maybe can extend to next edge");
         // Found a candidate for extension.  But do some other checks first.  Basically, we need to know if we construct a polygon
         // here will overlap with other remaining points?
         final SidedPlane returnBoundary;
         if (firstEdge.startPoint != newLastEdge.endPoint) {
+          if (Plane.arePointsCoplanar(firstEdge.endPoint, firstEdge.startPoint, newLastEdge.endPoint) ||
+            Plane.arePointsCoplanar(firstEdge.startPoint, newLastEdge.endPoint, newLastEdge.startPoint)) {
+            break;
+          }
           returnBoundary = new SidedPlane(firstEdge.endPoint, firstEdge.startPoint, newLastEdge.endPoint);
         } else {
           returnBoundary = null;
@@ -1135,12 +1140,19 @@ public class GeoPolygonFactory {
         break;
       }
       final Edge newFirstEdge = edgeBuffer.getPrevious(firstEdge);
+      if (Plane.arePointsCoplanar(newFirstEdge.startPoint, newFirstEdge.endPoint, firstEdge.endPoint)) {
+        break;
+      }
       if (isWithin(newFirstEdge.startPoint, includedEdges)) {
         //System.out.println(" maybe can extend to previous edge");
         // Found a candidate for extension.  But do some other checks first.  Basically, we need to know if we construct a polygon
         // here will overlap with other remaining points?
         final SidedPlane returnBoundary;
         if (newFirstEdge.startPoint != lastEdge.endPoint) {
+          if(Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newFirstEdge.startPoint) ||
+            Plane.arePointsCoplanar(lastEdge.endPoint, newFirstEdge.startPoint, newFirstEdge.endPoint)) {
+            break;
+          }
           returnBoundary = new SidedPlane(lastEdge.startPoint, lastEdge.endPoint, newFirstEdge.startPoint);
         } else {
           returnBoundary = null;
@@ -1225,27 +1237,6 @@ public class GeoPolygonFactory {
         edge = edgeBuffer.getNext(edge);
       }
       returnIsInternal = lastEdge.isInternal;
-      
-      // Look for coplanarity; abort if so
-      for (int i = 0; i < points.size(); i++) {
-        final GeoPoint start = points.get(i);
-        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
-        // We have to find the next point that is not on the plane between start and end.
-        // If there is no such point, it's an error.
-        final Plane planeToFind = new Plane(start, end);
-        int endPointIndex = -1;
-        for (int j = 0; j < points.size(); j++) {
-          final int index = getLegalIndex(j + i + 2, points.size());
-          if (!planeToFind.evaluateIsZero(points.get(index))) {
-            endPointIndex = index;
-            break;
-          }
-        }
-        if (endPointIndex == -1) {
-          return false;
-        }
-      }
-
       edgeBuffer.clear();
     } else {
       // Build the return edge (internal, of course)
@@ -1270,27 +1261,6 @@ public class GeoPolygonFactory {
         }
         edge = edgeBuffer.getNext(edge);
       }
-      
-      // Look for coplanarity; abort if so
-      for (int i = 0; i < points.size(); i++) {
-        final GeoPoint start = points.get(i);
-        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
-        // We have to find the next point that is not on the plane between start and end.
-        // If there is no such point, it's an error.
-        final Plane planeToFind = new Plane(start, end);
-        int endPointIndex = -1;
-        for (int j = 0; j < points.size(); j++) {
-          final int index = getLegalIndex(j + i + 2, points.size());
-          if (!planeToFind.evaluateIsZero(points.get(index))) {
-            endPointIndex = index;
-            break;
-          }
-        }
-        if (endPointIndex == -1) {
-          return false;
-        }
-      }
-
       // Modify the edge buffer
       edgeBuffer.replace(edges, returnEdge);
     }

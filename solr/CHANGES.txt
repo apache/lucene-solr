@@ -195,6 +195,11 @@ Bug Fixes
 * SOLR-11459: In-place update of nonexistent doc following existing doc update fails to create the doc.
   (Andrey Kudryavtsev via Mikhail Khludnev)
 
+* SOLR-11931: Fix contrib/ltr custom inner class feature/normaliser/model persistence. (Christine Poerschke)
+
+* SOLR-10261: In case of in-place updates, failure in leader to follower replica update request now throws the
+  follower replica in leader-initiated-recovery (Ishan Chattopadhyaya, Steve Rowe)
+
 Optimizations
 ----------------------
 
@@ -267,6 +272,13 @@ Other Changes
 * SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
 
 * SOLR-11933: Make DIH UI page safer by not default checking the clean checkbox (Eric Pugh via Tomás Fernández Löbbe)
+
+* SOLR-11349: Rename ResponseBuilder's getQueryCommand to createQueryCommand. (Christine Poerschke)
+
+* SOLR-11902: Clarify in bin/solr help text whether commands can be run remotely (Jason Gerlowski)
+
+* SOLR-3089: RequestBuilder now exposes isDistrib() method. Using this, plugins can know whether a request is
+  distributed. (Rok Rejc, Frank Wesemann, Abhishek Kumar Singh, Mikhail Khludnev via Ishan Chattopadhyaya)
 
 ==================  7.2.1 ==================
 

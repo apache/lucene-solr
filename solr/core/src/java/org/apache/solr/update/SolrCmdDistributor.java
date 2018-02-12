@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient; // jdoc
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -279,7 +278,24 @@ public class SolrCmdDistributor implements Closeable {
       try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
         client.request(req.uReq);
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
+        try {
+          // if false, then the node is probably not "live" anymore
+          // and we do not need to send a recovery message
+          Throwable rootCause = SolrException.getRootCause(e);
+          log.error("Setting up to try to start recovery on replica {}", req.node.getUrl(), rootCause);
+          req.cmd.getReq().getCore().getCoreContainer().getZkController().ensureReplicaInLeaderInitiatedRecovery(
+              req.cmd.getReq().getCore().getCoreContainer(),
+              req.node.getCollection(),
+              req.node.getShardId(),
+              req.node.getNodeProps(),
+              req.cmd.getReq().getCore().getCoreDescriptor(),
+              false /* forcePublishState */
+          );
+        } catch (Exception exc) {
+          Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
+          log.error("Leader failed to set replica " +
+              req.node.getUrl() + " state to DOWN due to: " + setLirZnodeFailedCause, setLirZnodeFailedCause);
+        }
       }
       
       return;

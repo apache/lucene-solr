@@ -726,6 +726,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+        java.run_java9('ant jar', '%s/compile.log' % unpackPath)
+        testDemo(java.run_java9, isSrc, version, '9')
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/build/docs' % unpackPath)
+
     else:
       os.chdir('solr')
 
@@ -741,6 +751,18 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant clean server', '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, java.java8_home, True)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+
+        print('    test solr example w/ Java 9...')
+        java.run_java9('ant clean example', '%s/antexample.log' % unpackPath)
+        testSolrExample(unpackPath, java.java9_home, True)
+
       os.chdir('..')
       print('    check NOTICE')
       testNotice(unpackPath)
@@ -751,6 +773,8 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
     if project == 'lucene':
       testDemo(java.run_java8, isSrc, version, '1.8')
+      if java.run_java9:
+        testDemo(java.run_java9, isSrc, version, '9')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
@@ -764,6 +788,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       os.chdir(java8UnpackPath)
       print('    test solr example w/ Java 8...')
       testSolrExample(java8UnpackPath, java.java8_home, False)
+
+      if java.run_java9:
+        print('    copying unpacked distribution for Java 9 ...')
+        java9UnpackPath = '%s-java9' % unpackPath
+        if os.path.exists(java9UnpackPath):
+          shutil.rmtree(java9UnpackPath)
+        shutil.copytree(unpackPath, java9UnpackPath)
+        os.chdir(java9UnpackPath)
+        print('    test solr example w/ Java 9...')
+        testSolrExample(java9UnpackPath, java.java9_home, False)
 
       os.chdir(unpackPath)
 
@@ -1218,7 +1252,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
-def make_java_config(parser, java8_home):
+def make_java_config(parser, java9_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
@@ -1227,7 +1261,7 @@ def make_java_config(parser, java8_home):
                  (java_home, java_home, java_home)
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
                                 shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-    if s.find(' version "%s.' % version) == -1:
+    if s.find(' version "%s' % version) == -1:
       parser.error('got wrong version for java %s:\n%s' % (version, s)) 
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
@@ -1236,9 +1270,12 @@ def make_java_config(parser, java8_home):
   if java8_home is None:
     parser.error('JAVA_HOME must be set')
   run_java8 = _make_runner(java8_home, '1.8')
+  run_java9 = None
+  if java9_home is not None:
+    run_java9 = _make_runner(java9_home, '9')
 
-  jc = namedtuple('JavaConfig', 'run_java8 java8_home')
-  return jc(run_java8, java8_home)
+  jc = namedtuple('JavaConfig', 'run_java8 java8_home run_java9 java9_home')
+  return jc(run_java8, java8_home, run_java9, java9_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev([a-f\d]+)')
@@ -1258,8 +1295,8 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java8', metavar='JAVA8_HOME',
-                      help='Path to Java8 home directory, to run tests with if specified')
+  parser.add_argument('--test-java9', metavar='JAVA9_HOME',
+                      help='Path to Java9 home directory, to run tests with if specified')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
@@ -1281,7 +1318,7 @@ def parse_config():
     c.revision = revision_match.group(1)
     print('Revision: %s' % c.revision)
 
-  c.java = make_java_config(parser, c.test_java8)
+  c.java = make_java_config(parser, c.test_java9)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)

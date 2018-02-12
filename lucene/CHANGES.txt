@@ -186,6 +186,20 @@ Other
   Spatial4j 0.7 is compatible with JTS 1.15.0 and not any prior version.  JTS 1.15.0 is
   dual-licensed to include BSD; prior versions were LGPL.  (David Smiley)
 
+* LUCENE-8155: Add back support in smoke tester to run against later Java versions.
+  (Uwe Schindler)
+
+* LUCENE-8169: Migrated build to use OpenClover 4.2.1 for checking code coverage.
+  (Uwe Schindler)
+
+* LUCENE-8170: Improve OpenClover reports (separate test from production code);
+  enable coverage reports inside test-frameworks.  (Uwe Schindler)
+
+Build
+
+* LUCENE-8168: Moved Groovy scripts in build files to separate files.
+  Update Groovy to 2.4.13.  (Uwe Schindler)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes

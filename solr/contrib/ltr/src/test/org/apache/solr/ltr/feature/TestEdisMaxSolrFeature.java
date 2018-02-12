@@ -57,10 +57,10 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
   public void testEdisMaxSolrFeature() throws Exception {
     loadFeature(
         "SomeEdisMax",
-        SolrFeature.class.getCanonicalName(),
+        SolrFeature.class.getName(),
         "{\"q\":\"{!edismax qf='title description' pf='description' mm=100% boost='pow(popularity, 0.1)' v='w1' tie=0.1}\"}");
 
-    loadModel("EdisMax-model", LinearModel.class.getCanonicalName(),
+    loadModel("EdisMax-model", LinearModel.class.getName(),
         new String[] {"SomeEdisMax"}, "{\"weights\":{\"SomeEdisMax\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
