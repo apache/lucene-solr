@@ -289,6 +289,30 @@
       </analyzer>
     </fieldType>
 
+    
+    <!-- SortableTextField generaly functions exactly like TextField,
+         except that it supports, and by default uses, docValues for sorting (or faceting)
+         on the first 1024 characters of the original field values (which is configurable).
+         
+         This makes it a bit more useful then TextField in many situations, but the trade-off
+         is that it takes up more space on disk; which is why it's not used in place of TextField
+         for every fieldType in this _default schema.
+	  -->
+    <dynamicField name="*_txt_sort" type="text_gen_sort" indexed="true" stored="true"/>
+    <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
     <!-- A text field with defaults appropriate for English: it tokenizes with StandardTokenizer,
          removes English stop words (lang/stopwords_en.txt), down cases, protects words from protwords.txt, and
          finally applies Porter's stemming.  The query time analyzer also applies synonyms from synonyms.txt. -->
