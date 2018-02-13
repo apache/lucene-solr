@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
-import org.junit.Ignore;
 
 /**
  * Random test for planes.
