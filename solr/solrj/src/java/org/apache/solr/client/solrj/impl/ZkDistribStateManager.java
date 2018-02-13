@@ -187,4 +187,8 @@ public class ZkDistribStateManager implements DistribStateManager {
   public void close() throws IOException {
 
   }
+
+  public SolrZkClient getZkClient() {
+    return zkClient;
+  }
 }
