@@ -106,10 +106,9 @@ public class Vector {
     final double thisZ = AX * BY - AY * BX;
     
     final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (magnitude < MINIMUM_RESOLUTION) {
+    if (magnitude == 0.0) {
       throw new IllegalArgumentException("Degenerate/parallel vector constructed");
     }
-    
     final double inverseMagnitude = 1.0/magnitude;
     
     double normalizeX = thisX * inverseMagnitude;
@@ -215,7 +214,7 @@ public class Vector {
     final double thisZ = A.x * B.y - A.y * B.x;
     
     final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (magnitude < MINIMUM_RESOLUTION) {
+    if (magnitude == 0.0) {
       return true;
     }
     
