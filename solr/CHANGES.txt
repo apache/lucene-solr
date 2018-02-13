@@ -200,6 +200,9 @@ Bug Fixes
 * SOLR-10261: In case of in-place updates, failure in leader to follower replica update request now throws the
   follower replica in leader-initiated-recovery (Ishan Chattopadhyaya, Steve Rowe)
 
+* SOLR-11898: ConcurrentModificationException when calling org.apache.solr.core.SolrInfoBean.getMetricsSnapshot
+  (Jeff Miller via Erick Erickson)
+
 Optimizations
 ----------------------
 
