@@ -83,6 +83,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusNoCollection();
     clusterStatusWithCollection();
     clusterStatusWithCollectionAndShard();
+    clusterStatusWithCollectionAndMultipleShards();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
     clusterStatusRolesTest();
@@ -119,6 +120,29 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD1);
       assertNotNull(selectedShardStatus);
 
+    }
+  }
+
+  private void clusterStatusWithCollectionAndMultipleShards() throws IOException, SolrServerException {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      final CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
+      request.setCollectionName(COLLECTION_NAME);
+      request.setShardName(SHARD1 + "," + SHARD2);
+
+      NamedList<Object> rsp = request.process(client).getResponse();
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull(collections.get(COLLECTION_NAME));
+      assertEquals(1, collections.size());
+      Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
+      assertEquals(2, shardStatus.size());
+      Map<String, Object> firstSelectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD1);
+      assertNotNull(firstSelectedShardStatus);
+      Map<String, Object> secondSelectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD2);
+      assertNotNull(secondSelectedShardStatus);
     }
   }
 
