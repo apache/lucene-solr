@@ -293,7 +293,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final Explanation explanation = model.explain(null, 0, finalScore, explanations);
     assertEquals(finalScore+" = (name=neuralnetworkmodel_explainable"+
         ",featureValues=[constantOne=1.2,constantTwo=3.4,constantThree=5.6,constantFour=7.8]"+
-        ",layers=[(matrix=4x2,activation=relu),(matrix=2x1,activation=identity)]"+
+        ",layers=[(matrix=2x4,activation=relu),(matrix=1x2,activation=identity)]"+
         ")\n",
         explanation.toString());
   }
@@ -357,7 +357,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final Explanation explanation = model.explain(null, 0, actualScore, explanations);
     assertEquals(actualScore+" = (name=neuralnetworkmodel_custom"+
         ",featureValues=[constantFour=4.0,constantTwo=2.0]"+
-        ",layers=[(matrix=2x1,activation=answer)]"+
+        ",layers=[(matrix=1x2,activation=answer)]"+
         ")\n",
         explanation.toString());
   }

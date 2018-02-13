@@ -208,7 +208,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     public String describe() {
       final StringBuilder sb = new StringBuilder();
       sb
-      .append("(matrix=").append(Integer.toString(this.matrixCols)).append('x').append(Integer.toString(this.matrixRows))
+      .append("(matrix=").append(Integer.toString(this.matrixRows)).append('x').append(Integer.toString(this.matrixCols))
       .append(",activation=").append(this.activationStr).append(")");
       return sb.toString();
     }
