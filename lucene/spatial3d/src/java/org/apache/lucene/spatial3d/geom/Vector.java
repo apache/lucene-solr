@@ -49,6 +49,12 @@ public class Vector {
   public final double z;
 
   /**
+    * Gram-Schmidt convergence envelope is a bit smaller than we really need because we don't want the math to fail afterwards in
+    * other places.
+    */
+  private static final double MINIMUM_GRAM_SCHMIDT_ENVELOPE = MINIMUM_RESOLUTION * 0.5;
+  
+  /**
    * Construct from (U.S.) x,y,z coordinates.
    *@param x is the x value.
    *@param y is the y value.
@@ -122,7 +128,7 @@ public class Vector {
     while (true) {
       final double currentDotProdA = AX * normalizeX + AY * normalizeY + AZ * normalizeZ;
       final double currentDotProdB = BX * normalizeX + BY * normalizeY + BZ * normalizeZ;
-      if (Math.abs(currentDotProdA) < MINIMUM_RESOLUTION && Math.abs(currentDotProdB) < MINIMUM_RESOLUTION) {
+      if (Math.abs(currentDotProdA) < MINIMUM_GRAM_SCHMIDT_ENVELOPE && Math.abs(currentDotProdB) < MINIMUM_GRAM_SCHMIDT_ENVELOPE) {
         break;
       }
       // Converge on the one that has largest dot product
@@ -231,7 +237,7 @@ public class Vector {
     while (true) {
       final double currentDotProdA = A.x * normalizeX + A.y * normalizeY + A.z * normalizeZ;
       final double currentDotProdB = B.x * normalizeX + B.y * normalizeY + B.z * normalizeZ;
-      if (Math.abs(currentDotProdA) < MINIMUM_RESOLUTION && Math.abs(currentDotProdB) < MINIMUM_RESOLUTION) {
+      if (Math.abs(currentDotProdA) < MINIMUM_GRAM_SCHMIDT_ENVELOPE && Math.abs(currentDotProdB) < MINIMUM_GRAM_SCHMIDT_ENVELOPE) {
         break;
       }
       // Converge on the one that has largest dot product
