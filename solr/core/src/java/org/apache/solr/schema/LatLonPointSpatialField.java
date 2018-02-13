@@ -17,6 +17,9 @@
 
 package org.apache.solr.schema;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitudeCeil;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitudeCeil;
+
 import java.io.IOException;
 import java.util.Objects;
 
@@ -70,6 +73,10 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   protected SpatialStrategy newSpatialStrategy(String fieldName) {
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
+  }
+  
+  public String geoValueToStringValue(long value) {
+    return new String(decodeLatitudeCeil(value) + "," + decodeLongitudeCeil(value));
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox

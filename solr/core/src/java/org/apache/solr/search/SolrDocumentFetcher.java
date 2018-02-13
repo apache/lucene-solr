@@ -56,6 +56,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -485,6 +486,10 @@ public class SolrDocumentFetcher {
       case SORTED_NUMERIC:
         final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
         if (numericDv != null && numericDv.advance(localId) == localId) {
+          if (schemaField.getType() instanceof LatLonPointSpatialField) {
+            long number = numericDv.nextValue();
+            return ((LatLonPointSpatialField) schemaField.getType()).geoValueToStringValue(number);
+          }
           final List<Object> outValues = new ArrayList<>(numericDv.docValueCount());
           for (int i = 0; i < numericDv.docValueCount(); i++) {
             long number = numericDv.nextValue();
