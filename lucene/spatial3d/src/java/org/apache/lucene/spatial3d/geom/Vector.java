@@ -73,6 +73,24 @@ public class Vector {
    */
   public Vector(final Vector A, final double BX, final double BY, final double BZ) {
     // We're really looking at two vectors and computing a perpendicular one from that.
+    this(A.x, A.y, A.z, BX, BY, BZ);
+  }
+  
+  /**
+   * Construct a vector that is perpendicular to
+   * two other (non-zero) vectors.  If the vectors are parallel,
+   * IllegalArgumentException will be thrown.
+   * Produces a normalized final vector.
+   *
+   * @param AX is the X value of the first 
+   * @param AY is the Y value of the first
+   * @param AZ is the Z value of the first
+   * @param BX is the X value of the second 
+   * @param BY is the Y value of the second
+   * @param BZ is the Z value of the second
+   */
+  public Vector(final double AX, final double AY, final double AZ, final double BX, final double BY, final double BZ) {
+    // We're really looking at two vectors and computing a perpendicular one from that.
     // We can think of this as having three points -- the origin, and two points that aren't the origin.
     // Normally, we can compute the perpendicular vector this way:
     // x = u2v3 - u3v2
@@ -83,9 +101,9 @@ public class Vector {
     // Gram-Schmidt process: https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
     
     // Compute the naive perpendicular
-    final double thisX = A.y * BZ - A.z * BY;
-    final double thisY = A.z * BX - A.x * BZ;
-    final double thisZ = A.x * BY - A.y * BX;
+    final double thisX = AY * BZ - AZ * BY;
+    final double thisY = AZ * BX - AX * BZ;
+    final double thisZ = AX * BY - AY * BX;
     
     final double magnitude = magnitude(thisX, thisY, thisZ);
     if (magnitude < MINIMUM_RESOLUTION) {
@@ -103,7 +121,7 @@ public class Vector {
     // we need to adjust
     int i = 0;
     while (true) {
-      final double currentDotProdA = A.x * normalizeX + A.y * normalizeY + A.z * normalizeZ;
+      final double currentDotProdA = AX * normalizeX + AY * normalizeY + AZ * normalizeZ;
       final double currentDotProdB = BX * normalizeX + BY * normalizeY + BZ * normalizeZ;
       if (Math.abs(currentDotProdA) < MINIMUM_RESOLUTION && Math.abs(currentDotProdB) < MINIMUM_RESOLUTION) {
         break;
@@ -114,9 +132,9 @@ public class Vector {
       final double currentVectorZ;
       final double currentDotProd;
       if (Math.abs(currentDotProdA) > Math.abs(currentDotProdB)) {
-        currentVectorX = A.x;
-        currentVectorY = A.y;
-        currentVectorZ = A.z;
+        currentVectorX = AX;
+        currentVectorY = AY;
+        currentVectorZ = AZ;
         currentDotProd = currentDotProdA;
       } else {
         currentVectorX = BX;
