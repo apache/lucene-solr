@@ -16,18 +16,20 @@
  */
 package org.apache.lucene.geo;
 
-import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.SloppyMath;
-
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.function.Function;
+
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SloppyMath;
 
 /**
  * reusable geopoint encoding methods
@@ -119,6 +121,15 @@ public final class GeoEncodingUtils {
   }
 
   /**
+   * Turns quantized value from {@link #encodeLatitude} back into a double (rounding up: in the direction of +90).
+   * @param encoded encoded value: 32-bit quantized value.
+   * @return decoded latitude value.
+   */
+  public static double decodeLatitudeCeil(long encoded) {
+    return BigDecimal.valueOf(decodeLatitude((int) (encoded >> 32))).setScale(6, RoundingMode.HALF_UP).doubleValue();
+  }
+
+  /**
    * Turns quantized value from byte array back into a double.
    * @param src byte array containing 4 bytes to decode at {@code offset}
    * @param offset offset into {@code src} to decode from.
@@ -137,6 +148,16 @@ public final class GeoEncodingUtils {
     double result = encoded * LON_DECODE;
     assert result >= MIN_LON_INCL && result < MAX_LON_INCL;
     return result;
+  }
+
+  /**
+   * Turns quantized value from {@link #encodeLongitude} back into a double (rounding up: in the direction of +90).
+   * @param encoded encoded value: 32-bit quantized value.
+   * @return decoded longitude value.
+   */
+  public static double decodeLongitudeCeil(long encoded) {
+    return BigDecimal.valueOf(decodeLongitude((int) (encoded & 0xFFFFFFFFL))).setScale(6, RoundingMode.HALF_UP)
+        .doubleValue();
   }
 
   /**

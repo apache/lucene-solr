@@ -17,6 +17,9 @@
 
 package org.apache.solr.search;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitudeCeil;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitudeCeil;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -55,8 +58,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.AbstractEnumField;
+import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -515,6 +519,10 @@ public class SolrDocumentFetcher {
   }
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
+    if (schemaField.getType() instanceof LatLonPointSpatialField) {
+      return new String(decodeLatitudeCeil(value) + "," + decodeLongitudeCeil(value));
+    } 
+    
     if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);
