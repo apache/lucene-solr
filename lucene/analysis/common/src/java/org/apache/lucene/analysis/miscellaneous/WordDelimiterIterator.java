@@ -71,6 +71,12 @@ public final class WordDelimiterIterator {
    */
   final boolean stemEnglishPossessive;
 
+  /** If true word splitting will try to suport camel case better.
+   * <p/>
+   * "HTTPRequest" =&gt; "HTTP", "Request"
+   */
+  final boolean camelCase;
+
   private final byte[] charTypeTable;
   
   /** if true, need to skip over a possessive found in the last call to next() */
@@ -106,12 +112,14 @@ public final class WordDelimiterIterator {
    * @param splitOnCaseChange if true, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regardless)
    * @param splitOnNumerics if true, causes "j2se" to be three tokens; "j" "2" "se"
    * @param stemEnglishPossessive if true, causes trailing "'s" to be removed for each subword: "O'Neil's" =&gt; "O", "Neil"
+   * @param camelCase word splitting will try to suport camel case better: "HTTPRequest" =&gt; "HTTP", "Request"
    */
-  WordDelimiterIterator(byte[] charTypeTable, boolean splitOnCaseChange, boolean splitOnNumerics, boolean stemEnglishPossessive) {
+  WordDelimiterIterator(byte[] charTypeTable, boolean splitOnCaseChange, boolean splitOnNumerics, boolean stemEnglishPossessive, boolean camelCase) {
     this.charTypeTable = charTypeTable;
     this.splitOnCaseChange = splitOnCaseChange;
     this.splitOnNumerics = splitOnNumerics;
     this.stemEnglishPossessive = stemEnglishPossessive;
+    this.camelCase = camelCase;
   }
   
   /**
@@ -139,13 +147,15 @@ public final class WordDelimiterIterator {
     if (current >= endBounds) {
       return end = DONE;
     }
-    
+
+    int type = (current + 1) < endBounds ? charType(text[current + 1]) : 0;
     for (end = current + 1; end < endBounds; end++) {
-      int type = charType(text[end]);
-      if (isBreak(lastType, type)) {
+      int nextType = (end+1) < endBounds ? charType(text[end + 1]) : 0;
+      if (isBreak(lastType, type, nextType)) {
         break;
       }
       lastType = type;
+      type = nextType;
     }
     
     if (end < endBounds - 1 && endsWithPossessive(end + 2)) {
@@ -199,19 +209,23 @@ public final class WordDelimiterIterator {
    *
    * @param lastType Last subword type
    * @param type Current subword type
+   * @param nextType Following subword type
    * @return {@code true} if the transition indicates a break, {@code false} otherwise
    */
-  private boolean isBreak(int lastType, int type) {
-    if ((type & lastType) != 0) {
+  private boolean isBreak(int lastType, int type, int nextType) {
+    if ((!camelCase || !isUpper(type)) && (type & lastType) != 0) {
       return false;
     }
     
-    if (!splitOnCaseChange && isAlpha(lastType) && isAlpha(type)) {
+    if (!(splitOnCaseChange || camelCase) && isAlpha(lastType) && isAlpha(type)) {
       // ALPHA->ALPHA: always ignore if case isn't considered.
       return false;
     } else if (isUpper(lastType) && isAlpha(type)) {
-      // UPPER->letter: Don't split
-      return false;
+      // UPPER->letter: Don't split unless camelCase is on and it's the case UPPER->UPPER ( -> LOWER )
+      return !camelCase ? false : (isUpper(type) && isLower(nextType));
+    } else if(camelCase && isLower(lastType) && isDigit(type)) {
+      // when camelCase is on, split on LOWER -> DIGIT
+	    return true;
     } else if (!splitOnNumerics && ((isAlpha(lastType) && isDigit(type)) || (isDigit(lastType) && isAlpha(type)))) {
       // ALPHA->NUMERIC, NUMERIC->ALPHA :Don't split
       return false;
@@ -370,4 +384,13 @@ public final class WordDelimiterIterator {
     return (type & UPPER) != 0;
   }
 
+  /**
+   * Checks if the given word type includes {@link #LOWER}
+   *
+   * @param type Word type to check
+   * @return {@code true} if the type contains LOWER, {@code false} otherwise
+   */
+  static boolean isLower(int type) {
+    return (type & LOWER) != 0;
+  }
 }
