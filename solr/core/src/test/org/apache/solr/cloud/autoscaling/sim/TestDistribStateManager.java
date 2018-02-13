@@ -82,6 +82,22 @@ public class TestDistribStateManager extends SolrTestCaseJ4 {
     LOG.info("Using " + stateManager.getClass().getName());
   }
 
+  private DistribStateManager createDistribStateManager() {
+    if (simulated) {
+      return new SimDistribStateManager(root);
+    } else {
+      SolrZkClient cli = new SolrZkClient(zkTestServer.getZkHost(), 30000);
+      return new ZkDistribStateManager(cli);
+    }
+  }
+
+  private void destroyDistribStateManager(DistribStateManager mgr) throws Exception {
+    mgr.close();
+    if (mgr instanceof ZkDistribStateManager) {
+      ((ZkDistribStateManager)mgr).getZkClient().close();
+    }
+  }
+
   @After
   public void teardown() throws Exception {
     if (solrZkClient != null) {
@@ -248,10 +264,13 @@ public class TestDistribStateManager extends SolrTestCaseJ4 {
     // watch should not fire now because it needs to be reset
     stateManager.setData("/getData/persistentData", secondData, -1);
 
+    // create ephemeral node using another ZK connection
+    DistribStateManager ephemeralMgr = createDistribStateManager();
+    ephemeralMgr.createData("/getData/ephemeralData", firstData, CreateMode.EPHEMERAL);
+
     nodeWatcher = new OnceWatcher();
-    stateManager.createData("/getData/ephemeralData", firstData, CreateMode.EPHEMERAL);
     vd = stateManager.getData("/getData/ephemeralData", nodeWatcher);
-    reInit();
+    destroyDistribStateManager(ephemeralMgr);
     if (!nodeWatcher.triggered.await(5, TimeUnit.SECONDS)) {
       fail("Node watch should have fired!");
     }
