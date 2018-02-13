@@ -19,7 +19,7 @@
             {
                 "matrix": [ [ 16.0, 17.0, 18.0 ] ],
                 "bias" : [ 19.0 ],
-                "activation": "none"
+                "activation": "identity"
             }
         ]
     }
