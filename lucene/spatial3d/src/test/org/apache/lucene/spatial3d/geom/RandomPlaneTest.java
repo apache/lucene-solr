@@ -69,10 +69,11 @@ public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
       if (plane == null) {
         fail(msg);
       }
-      assertTrue(plane.evaluate(check) + " " + msg, plane.isWithin(check));
-      assertTrue(plane.evaluate(point1) + " " +msg, plane.isWithin(point3));
+      // This is not expected
+      //assertTrue(plane.evaluate(check) + " " + msg, plane.isWithin(check));
+      assertTrue(plane.evaluate(point1) + " " +msg, plane.isWithin(point1));
       assertTrue(plane.evaluate(point2) + " " +msg, plane.isWithin(point2));
-      assertTrue(plane.evaluate(point3) + " " +msg, plane.isWithin(point1));
+      assertTrue(plane.evaluate(point3) + " " +msg, plane.isWithin(point3));
     }
   }
 
