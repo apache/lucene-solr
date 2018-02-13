@@ -161,6 +161,9 @@ New Features
 * SOLR-11925: Time Routed Aliases can have their oldest collections automatically deleted via the "router.autoDeleteAge"
   setting. (David Smiley)
 
+* SOLR-11941: Add abstract contrib/ltr AdapterModel to facilitate the development of scoring models that delegate
+  scoring to an opaque pre-trained model. (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
