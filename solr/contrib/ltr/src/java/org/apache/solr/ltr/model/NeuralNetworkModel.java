@@ -30,6 +30,10 @@ import org.apache.solr.util.SolrPluginUtils;
 /**
  * A scoring model that computes document scores using a neural network.
  * <p>
+ * Supported <a href="https://en.wikipedia.org/wiki/Activation_function">activation functions</a> are:
+ * <code>identity</code>, <code>relu</code>, <code>sigmoid</code> and
+ * contributions to support additional activation functions are welcome.
+ * <p>
  * Example configuration:
 <pre>{
     "class" : "org.apache.solr.ltr.model.NeuralNetworkModel",
@@ -47,7 +51,7 @@ import org.apache.solr.util.SolrPluginUtils;
                              [ 7.0, 8.0, 9.0 ],
                              [ 10.0, 11.0, 12.0 ] ],
                 "bias" : [ 13.0, 14.0, 15.0, 16.0 ],
-                "activation" : "relu"
+                "activation" : "sigmoid"
             },
             {
                 "matrix" : [ [ 17.0, 18.0, 19.0, 20.0 ],
@@ -58,7 +62,7 @@ import org.apache.solr.util.SolrPluginUtils;
             {
                 "matrix" : [ [ 27.0, 28.0 ] ],
                 "bias" : [ 29.0 ],
-                "activation" : "none"
+                "activation" : "identity"
             }
         ]
     }
@@ -99,8 +103,8 @@ public class NeuralNetworkModel extends LTRScoringModel {
     private int matrixCols;
     private float[] biasVector;
     private int numUnits;
-    private String activationStr;
-    private Activation activation;
+    protected String activationStr;
+    protected Activation activation;
 
     public DefaultLayer() {
       layerID = layers.size();
@@ -133,33 +137,31 @@ public class NeuralNetworkModel extends LTRScoringModel {
       this.activationStr = (String) activationStr;
       switch (this.activationStr) {
         case "relu":
-
           this.activation = new Activation() {
             @Override
             public float apply(float in) {
               return in < 0 ? 0 : in;
             }
           };
-
           break;
         case "sigmoid":
-
           this.activation = new Activation() {
             @Override
             public float apply(float in) {
               return (float) (1 / (1 + Math.exp(-in)));
             }
           };
-
           break;
-        default:
-
+        case "identity":
           this.activation = new Activation() {
             @Override
             public float apply(float in) {
               return in;
             }
           };
+          break;
+        default:
+          this.activation = null;
           break;
       }
     }
@@ -185,9 +187,8 @@ public class NeuralNetworkModel extends LTRScoringModel {
                                  Integer.toString(this.layerID) + " has " + Integer.toString(this.numUnits) +
                                  " bias weights but " + Integer.toString(this.matrixRows) + " weight matrix rows.");
       }
-      if (!this.activationStr.matches("relu|sigmoid|none")) {
-        throw new ModelException("Invalid activation function in model \"" + name + "\". " +
-                                 "\"" + activationStr + "\" is not \"relu\", \"sigmoid\", or \"none\".");
+      if (this.activation == null) {
+        throw new ModelException("Invalid activation function (\""+this.activationStr+"\") in layer "+Integer.toString(this.layerID)+" of model \"" + name + "\".");
       }
       if (inputDim != this.matrixCols) {
         if (this.layerID == 0) {

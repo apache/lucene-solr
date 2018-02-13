@@ -27,6 +27,7 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.apache.solr.util.SolrPluginUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -203,8 +204,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   @Test
   public void badActivationTest() throws Exception {
     final ModelException expectedException =
-            new ModelException("Invalid activation function in model \"neuralnetworkmodel_bad_activation\". " +
-                               "\"sig\" is not \"relu\", \"sigmoid\", or \"none\".");
+            new ModelException("Invalid activation function (\"sig\") in layer 0 of model \"neuralnetworkmodel_bad_activation\".");
     try {
       createModelFromFiles("neuralnetworkmodel_bad_activation.json",
              "neuralnetworkmodel_features.json");
@@ -293,7 +293,71 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final Explanation explanation = model.explain(null, 0, finalScore, explanations);
     assertEquals(finalScore+" = (name=neuralnetworkmodel_explainable"+
         ",featureValues=[constantOne=1.2,constantTwo=3.4,constantThree=5.6,constantFour=7.8]"+
-        ",layers=[(matrix=4x2,activation=relu),(matrix=2x1,activation=none)]"+
+        ",layers=[(matrix=4x2,activation=relu),(matrix=2x1,activation=identity)]"+
+        ")\n",
+        explanation.toString());
+  }
+
+  public static class CustomNeuralNetworkModel extends NeuralNetworkModel {
+
+    public CustomNeuralNetworkModel(String name, List<Feature> features, List<Normalizer> norms,
+        String featureStoreName, List<Feature> allFeatures, Map<String,Object> params) {
+      super(name, features, norms, featureStoreName, allFeatures, params);
+    }
+
+    public class DefaultLayer extends org.apache.solr.ltr.model.NeuralNetworkModel.DefaultLayer {
+      @Override
+      public void setActivation(Object o) {
+        super.setActivation(o);
+        switch (this.activationStr) {
+          case "answer":
+            this.activation = new Activation() {
+              @Override
+              public float apply(float in) {
+                return in * 42f;
+              }
+            };
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    @Override
+    protected Layer createLayer(Object o) {
+      final DefaultLayer layer = new DefaultLayer();
+      if (o != null) {
+        SolrPluginUtils.invokeSetters(layer, ((Map<String,Object>) o).entrySet());
+      }
+      return layer;
+    }
+
+  }
+
+  @Test
+  public void testCustom() throws Exception {
+
+    final LTRScoringModel model = createModelFromFiles("neuralnetworkmodel_custom.json",
+        "neuralnetworkmodel_features.json");
+
+    final float featureValue1 = 4f;
+    final float featureValue2 = 2f;
+    final float[] featureValues = { featureValue1, featureValue2 };
+
+    final double expectedScore = (featureValue1+featureValue2) * 42f;
+    float actualScore = model.score(featureValues);
+    assertEquals(expectedScore, actualScore, 0.001);
+
+    final List<Explanation> explanations = new ArrayList<Explanation>();
+    for (int ii=0; ii<featureValues.length; ++ii)
+    {
+      explanations.add(Explanation.match(featureValues[ii], ""));
+    }
+    final Explanation explanation = model.explain(null, 0, actualScore, explanations);
+    assertEquals(actualScore+" = (name=neuralnetworkmodel_custom"+
+        ",featureValues=[constantFour=4.0,constantTwo=2.0]"+
+        ",layers=[(matrix=2x1,activation=answer)]"+
         ")\n",
         explanation.toString());
   }
