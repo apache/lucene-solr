@@ -668,18 +668,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int ord = -1;
         if(this.ordinalMap != null) {
           //Handle ordinalMapping case
-          if (contextDoc > segmentValues.docID()) {
-            segmentValues.advance(contextDoc);
-          }
-          if (contextDoc == segmentValues.docID()) {
+          if (segmentValues.advanceExact(contextDoc)) {
             ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
           }
         } else {
           //Handle top Level FieldCache or Single Segment Case
-          if (docId > segmentValues.docID()) {
-            segmentValues.advance(docId);
-          }
-          if (docId == segmentValues.docID()) {
+          if (segmentValues.advanceExact(docId)) {
             ord = segmentValues.ordValue();
           }
         }
@@ -871,12 +865,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
 
         int contextDoc = globalDoc-currentDocBase;
-        int valuesDocID = collapseValues.docID();
-        if (valuesDocID < contextDoc) {
-          valuesDocID = collapseValues.advance(contextDoc);
-        }
         int collapseValue;
-        if (valuesDocID == contextDoc) {
+        if (collapseValues.advanceExact(contextDoc)) {
           collapseValue = (int) collapseValues.longValue();
         } else {
           collapseValue = 0;
@@ -997,10 +987,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int globalDoc = contextDoc+this.docBase;
       int ord = -1;
       if(this.ordinalMap != null) {
-        if (contextDoc > segmentValues.docID()) {
-          segmentValues.advance(contextDoc);
-        }
-        if (contextDoc == segmentValues.docID()) {
+        if (segmentValues.advanceExact(contextDoc)) {
           ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
         }
       } else {
@@ -1064,18 +1051,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           int ord = -1;
           if(this.ordinalMap != null) {
             //Handle ordinalMapping case
-            if (contextDoc > segmentValues.docID()) {
-              segmentValues.advance(contextDoc);
-            }
-            if (contextDoc == segmentValues.docID()) {
+            if (segmentValues.advanceExact(contextDoc)) {
               ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
             }
           } else {
             //Handle top Level FieldCache or Single Segment Case
-            if (globalDoc > segmentValues.docID()) {
-              segmentValues.advance(globalDoc);
-            }
-            if (globalDoc == segmentValues.docID()) {
+            if (segmentValues.advanceExact(globalDoc)) {
               ord = segmentValues.ordValue();
             }
           }
@@ -1223,13 +1204,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int contextDoc = globalDoc-currentDocBase;
 
         if(this.needsScores){
-          int collapseDocID = collapseValues.docID();
-          if (collapseDocID < contextDoc) {
-            collapseDocID = collapseValues.advance(contextDoc);
-          }
-
           int collapseValue;
-          if (collapseDocID == contextDoc) {
+          if (collapseValues.advanceExact(contextDoc)) {
             collapseValue = (int) collapseValues.longValue();
           } else {
             collapseValue = 0;
@@ -1611,13 +1587,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      int valuesDocID = minMaxValues.docID();
-      if (valuesDocID < contextDoc) {
-        valuesDocID = minMaxValues.advance(contextDoc);
-      }
-
       int currentVal;
-      if (valuesDocID == contextDoc) {
+      if (minMaxValues.advanceExact(contextDoc)) {
         currentVal = (int) minMaxValues.longValue();
       } else {
         currentVal = 0;
@@ -1703,13 +1674,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      int valuesDocID = minMaxValues.docID();
-      if (valuesDocID < contextDoc) {
-        valuesDocID = minMaxValues.advance(contextDoc);
-      }
-
       int currentMinMax;
-      if (valuesDocID == contextDoc) {
+      if (minMaxValues.advanceExact(contextDoc)) {
         currentMinMax = (int) minMaxValues.longValue();
       } else {
         currentMinMax = 0;
@@ -1796,13 +1762,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      int valuesDocID = minMaxVals.docID();
-      if (valuesDocID < contextDoc) {
-        valuesDocID = minMaxVals.advance(contextDoc);
-      }
-
       long currentVal;
-      if (valuesDocID == contextDoc) {
+      if (minMaxVals.advanceExact(contextDoc)) {
         currentVal = minMaxVals.longValue();
       } else {
         currentVal = 0;
@@ -2203,13 +2164,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      int valuesDocID = minMaxVals.docID();
-      if (valuesDocID < contextDoc) {
-        valuesDocID = minMaxVals.advance(contextDoc);
-      }
-
       int currentVal;
-      if (valuesDocID == contextDoc) {
+      if (minMaxVals.advanceExact(contextDoc)) {
         currentVal = (int) minMaxVals.longValue();
       } else {
         currentVal = 0;
@@ -2315,13 +2271,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      int valuesDocID = minMaxVals.docID();
-      if (valuesDocID < contextDoc) {
-        valuesDocID = minMaxVals.advance(contextDoc);
-      }
-
       int minMaxVal;
-      if (valuesDocID == contextDoc) {
+      if (minMaxVals.advanceExact(contextDoc)) {
         minMaxVal = (int) minMaxVals.longValue();
       } else {
         minMaxVal = 0;
