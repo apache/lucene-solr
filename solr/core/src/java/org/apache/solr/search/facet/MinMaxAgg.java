@@ -335,10 +335,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void collect(int doc, int slotNum) throws IOException {
-      if (doc > subDv.docID()) {
-        subDv.advance(doc);
-      }
-      if (doc == subDv.docID()) {
+      if (subDv.advanceExact(doc)) {
         int segOrd = subDv.ordValue();
         int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
         if ((ord - slotOrd[slotNum]) * minmax < 0 || slotOrd[slotNum]==MISSING) {

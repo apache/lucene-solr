@@ -309,6 +309,14 @@ public class UninvertingReader extends FilterLeafReader {
         case LEGACY_FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_FLOAT_PARSER);
         case LEGACY_LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_LONG_PARSER);
         case LEGACY_DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_DOUBLE_PARSER);
+        case BINARY:
+        case SORTED:
+        case SORTED_SET_BINARY:
+        case SORTED_SET_DOUBLE:
+        case SORTED_SET_FLOAT:
+        case SORTED_SET_INTEGER:
+        case SORTED_SET_LONG:
+          break;
       }
     }
     return null;
@@ -359,6 +367,17 @@ public class UninvertingReader extends FilterLeafReader {
           return FieldCache.DEFAULT.getDocTermOrds(in, field, FieldCache.INT64_TERM_PREFIX);
         case SORTED_SET_BINARY:
           return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
+        case BINARY:
+        case LEGACY_DOUBLE:
+        case LEGACY_FLOAT:
+        case LEGACY_INTEGER:
+        case LEGACY_LONG:
+        case DOUBLE_POINT:
+        case FLOAT_POINT:
+        case INTEGER_POINT:
+        case LONG_POINT:
+        case SORTED:
+          break;
       }
     }
     return null;

@@ -249,7 +249,9 @@ public abstract class FilteredTermsEnum extends TermsEnum {
         case END:
           // we are supposed to end the enum
           return null;
-        // NO: we just fall through and iterate again
+        case NO:
+          // we just iterate again
+          break;
       }
     }
   }

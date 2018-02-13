@@ -80,10 +80,10 @@ public class SortableTextField extends TextField {
       }
     }
 
-    // by the time our init() is called, super.setArgs has already removed & procesesd any explicit
+    // by the time our init() is called, super.setArgs has already removed & processed any explicit
     // "docValues=foo" or useDocValuesAsStored=bar args...
     //  - If the user explicitly said docValues=false, we want to respect that and not change it.
-    //    - if the user didn't explicit specify anything, then we want to implicitly *default* docValues=true
+    //    - if the user didn't explicitly specify anything, then we want to implicitly *default* docValues=true
     //  - The inverse is true for useDocValuesAsStored=true:
     //    - if explict, then respect it; else implicitly default to useDocValuesAsStored=false
     // ...lucky for us, setArgs preserved info about explicitly set true|false properties...

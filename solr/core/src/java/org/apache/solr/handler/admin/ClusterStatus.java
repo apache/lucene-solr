@@ -115,7 +115,10 @@ public class ClusterStatus {
         }
       }
       if (shard != null) {
-        requestedShards.add(shard);
+        String[] paramShards = shard.split(",");
+        for(String paramShard : paramShards){
+            requestedShards.add(paramShard);
+        }
       }
 
       if (clusterStateCollection.getStateFormat() > 1) {

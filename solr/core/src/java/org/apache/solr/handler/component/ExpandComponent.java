@@ -591,10 +591,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               ord = -1;
             }
           } else {
-            if (globalDoc > docValues.docID()) {
-              docValues.advance(globalDoc);
-            }
-            if (globalDoc == docValues.docID()) {
+            if (docValues.advanceExact(globalDoc)) {
               ord = docValues.ordValue();
             } else {
               ord = -1;
@@ -664,12 +661,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
         @Override
         public void collect(int docId) throws IOException {
-          int valuesDocID = docValues.docID();
-          if (valuesDocID < docId) {
-            valuesDocID = docValues.advance(docId);
-          }
           long value;
-          if (valuesDocID == docId) {
+          if (docValues.advanceExact(docId)) {
             value = docValues.longValue();
           } else {
             value = 0;
@@ -739,6 +732,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           return Float.toString(Float.intBitsToFloat((int)val));
         case DOUBLE:
           return Double.toString(Double.longBitsToDouble(val));
+        case DATE:
+          break;
       }
     }
     throw new IllegalArgumentException("FieldType must be INT,LONG,FLOAT,DOUBLE found " + fieldType);
