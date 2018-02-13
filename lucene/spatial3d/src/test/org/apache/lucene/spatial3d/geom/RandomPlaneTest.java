@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
+import org.junit.Ignore;
 
 /**
  * Random test for planes.
@@ -50,6 +51,33 @@ public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
       }
     }
   }
+  
+  @Ignore
+  @Test
+  @Repeat(iterations = 10)
+  public void testPlaneThreePointsAccuracy() {
+    PlanetModel planetModel = randomPlanetModel();
+    for (int i= 0; i < 1000; i++) {
+      GeoPoint point1 = randomGeoPoint(planetModel);
+      double dist = random().nextDouble() * Math.PI - Vector.MINIMUM_ANGULAR_RESOLUTION;
+      double bearing = random().nextDouble() * 2 * Math.PI;
+      GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, bearing );
+      dist = random().nextDouble() * Vector.MINIMUM_ANGULAR_RESOLUTION + Vector.MINIMUM_ANGULAR_RESOLUTION;
+      bearing = random().nextDouble() * 2 * Math.PI;
+      GeoPoint point3 = planetModel.surfacePointOnBearing(point1, dist, bearing );
+      GeoPoint check = randomGeoPoint(planetModel);
+      SidedPlane plane  = SidedPlane.constructNormalizedThreePointSidedPlane(check, point1, point2, point3);
+      String msg = planetModel + " point 1: " + point1 + ", point 2: " + point2 + ", point 3: " + point3 + " , check: " + check;
+      if (plane == null) {
+        fail(msg);
+      }
+      assertTrue(plane.evaluate(check) + " " + msg, plane.isWithin(check));
+      assertTrue(plane.evaluate(point1) + " " +msg, plane.isWithin(point3));
+      assertTrue(plane.evaluate(point2) + " " +msg, plane.isWithin(point2));
+      assertTrue(plane.evaluate(point3) + " " +msg, plane.isWithin(point1));
+    }
+  }
+
 
 
   @Test
