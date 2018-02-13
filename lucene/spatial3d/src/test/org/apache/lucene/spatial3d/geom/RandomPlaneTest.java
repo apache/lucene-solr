@@ -52,7 +52,6 @@ public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
     }
   }
   
-  @Ignore
   @Test
   @Repeat(iterations = 10)
   public void testPlaneThreePointsAccuracy() {
