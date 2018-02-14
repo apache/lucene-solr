@@ -13,38 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import re
 import subprocess
 import sys
+import traceback
 import urllib.error
 import urllib.request
 from textwrap import dedent
 
-# Number of iterations per test suite
-testIters = 5
-
-usage = dedent('''\
-               Usage:\n
-                 python3 -u %s URL\n
-               Must be run from a Lucene/Solr git workspace. Downloads the Jenkins
-               log pointed to by the given URL, parses it for Git revision and failed
-               Lucene/Solr tests, checks out the Git revision in the local workspace,
-               groups the failed tests by module, then runs
-               'ant test -Dtest.dups=%d -Dtests.class="*.test1[|*.test2[...]]" ...'
-               in each module of interest, failing at the end if any of the runs fails.
-               To control the maximum number of concurrent JVMs used for each module's
-               test run, set 'tests.jvms', e.g. in ~/lucene.build.properties
-               ''' % (sys.argv[0], testIters))
-
-reHelpArg = re.compile(r'-{1,2}(?:\?|h(?:elp)?)')
-
 # Example: Checking out Revision e441a99009a557f82ea17ee9f9c3e9b89c75cee6 (refs/remotes/origin/master)
-reGitRev = re.compile(r'Checking out Revision (\S+)')
+reGitRev = re.compile(r'Checking out Revision (\S+)\s+\(refs/remotes/origin/([^)]+)')
 
 # Method example: NOTE: reproduce with: ant test  -Dtestcase=ZkSolrClientTest -Dtests.method=testMultipleWatchesAsync -Dtests.seed=6EF5AB70F0032849 -Dtests.slow=true -Dtests.locale=he-IL -Dtests.timezone=NST -Dtests.asserts=true -Dtests.file.encoding=UTF-8
 # Suite example:  NOTE: reproduce with: ant test  -Dtestcase=CloudSolrClientTest -Dtests.seed=DB2DF2D8228BAF27 -Dtests.multiplier=3 -Dtests.slow=true -Dtests.locale=es-AR -Dtests.timezone=America/Argentina/Cordoba -Dtests.asserts=true -Dtests.file.encoding=US-ASCII
 reReproLine = re.compile(r'NOTE:\s+reproduce\s+with:(\s+ant\s+test\s+-Dtestcase=(\S+)\s+(?:-Dtests.method=\S+\s+)?(.*))')
+reTestsSeed = re.compile(r'-Dtests.seed=\S+\s*')
 
 # Example: https://jenkins.thetaphi.de/job/Lucene-Solr-master-Linux/21108/
 reJenkinsURLWithoutConsoleText = re.compile(r'https?://.*/\d+/?\Z', re.IGNORECASE)
@@ -57,11 +42,31 @@ reErrorFailure = re.compile(r'(?:errors|failures)="[^0]')
 # consoleText from Policeman Jenkins's Windows jobs fails to decode as UTF-8
 encoding = 'iso-8859-1'
 
-tests = {}
-modules = {}
-
 lastFailureCode = 0
 gitCheckoutSucceeded = False
+
+description = dedent('''\
+                     Must be run from a Lucene/Solr git workspace. Downloads the Jenkins
+                     log pointed to by the given URL, parses it for Git revision and failed
+                     Lucene/Solr tests, checks out the Git revision in the local workspace,
+                     groups the failed tests by module, then runs
+                     'ant test -Dtest.dups=%d -Dtests.class="*.test1[|*.test2[...]]" ...'
+                     in each module of interest, failing at the end if any of the runs fails.
+                     To control the maximum number of concurrent JVMs used for each module's
+                     test run, set 'tests.jvms', e.g. in ~/lucene.build.properties
+                     ''')
+defaultIters = 5
+
+def readConfig():
+  parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                   description=description)
+  parser.add_argument('url', metavar='URL',
+                      help='Points to the Jenkins log to parse')
+  parser.add_argument('--no-fetch', dest='fetch', action='store_false', default=True,
+                      help='Do not run "git fetch" prior to "git checkout"')
+  parser.add_argument('--iters', dest='testIters', type=int, default=defaultIters, metavar='N',
+                      help='Number of iterations per test suite (default: %d)' % defaultIters)
+  return parser.parse_args()
 
 def runOutput(cmd):
   print('[repro] %s' % cmd)
@@ -82,8 +87,10 @@ def run(cmd, rememberFailure=True):
   return code
 
 def fetchAndParseJenkinsLog(url):
-  global revision
-  revision = None
+  global revisionFromLog
+  global branchFromLog
+  revisionFromLog = None
+  tests = {}
   print('[repro] Jenkins log URL: %s\n' % url)
   try:
     with urllib.request.urlopen(url) as consoleText:
@@ -91,8 +98,9 @@ def fetchAndParseJenkinsLog(url):
         line = rawLine.decode(encoding)
         match = reGitRev.match(line)
         if match is not None:
-          revision = match.group(1)
-          print('[repro] Revision: %s\n' % revision)
+          revisionFromLog = match.group(1)
+          branchFromLog = match.group(2)
+          print('[repro] Revision: %s\n' % revisionFromLog)
         else:
           match = reReproLine.search(line)
           if match is not None:
@@ -103,7 +111,7 @@ def fetchAndParseJenkinsLog(url):
   except urllib.error.URLError as e:
     raise RuntimeError('ERROR: fetching %s : %s' % (url, e))
   
-  if revision == None:
+  if revisionFromLog == None:
     if reJenkinsURLWithoutConsoleText.match(url):
       print('[repro] Not a Jenkins log. Appending "/consoleText" and retrying ...\n')
       fetchAndParseJenkinsLog(url + '/consoleText')                                                        
@@ -112,18 +120,29 @@ def fetchAndParseJenkinsLog(url):
   if 0 == len(tests):
     print('[repro] No "reproduce with" lines found; exiting.')
     sys.exit(0)
+  return tests
 
-def prepareWorkspace():
+def prepareWorkspace(fetch, gitRef):
   global gitCheckoutSucceeded
-  code = run('git checkout %s' % revision)
+  if fetch:
+    code = run('git fetch')
+    if 0 != code:
+      raise RuntimeError('ERROR: "git fetch" failed.  See above.')
+  checkoutCmd = 'git checkout %s' % gitRef
+  code = run(checkoutCmd)
   if 0 != code:
-    raise RuntimeError('ERROR: "git checkout %s" failed.  See above.  Maybe try "git pull"?' % revision)
+    raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutCmd)
+  if fetch:
+    code = run('git pull')
+    if 0 != code:
+      raise RuntimeError('ERROR: "git pull" failed.  See above.')
   gitCheckoutSucceeded = True
   code = run('ant clean')
   if 0 != code:
     raise RuntimeError('ERROR: "ant clean" failed.  See above.')
 
-def groupTestsByModule():
+def groupTestsByModule(tests):
+  modules = {}
   for (dir, _, files) in os.walk('.'):
     for file in files:
       match = reJavaFile.search(file)
@@ -140,9 +159,9 @@ def groupTestsByModule():
     print('[repro]    %s' % module)
     for test in modules[module]:
       print('[repro]       %s' % test)
+  return modules
 
-def runTests():
-  global lastFailureCode
+def runTests(testIters, modules, tests):
   cwd = os.getcwd()
   testCmdline = 'ant test-nocompile -Dtests.dups=%d -Dtests.maxfailures=%d -Dtests.class="%s" -Dtests.showOutput=onerror %s'
   for module in modules:
@@ -153,13 +172,13 @@ def runTests():
     os.chdir(module)
     code = run('ant compile-test')
     try:
-      if (0 != code):
+      if 0 != code:
         raise RuntimeError("ERROR: Compile failed in %s/ with code %d.  See above." % (module, code))
       run(testCmdline % (testIters, testIters * numTests, testList, params))
     finally:
       os.chdir(cwd)
       
-def printReport():
+def printReport(testIters, location):
   failures = {}
   for start in ('lucene/build', 'solr/build'):
     for (dir, _, files) in os.walk(start):
@@ -175,35 +194,62 @@ def printReport():
               if errorFailureMatch is not None:
                 failures[testcase] += 1
                 break
-  print("[repro] Failures:")
-  for testcase in sorted(failures):
+  print("[repro] Failures%s:" % location)
+  for testcase in sorted(failures, key=lambda t: (failures[t],t)): # sort by failure count, then by testcase 
     print("[repro]   %d/%d failed: %s" % (failures[testcase], testIters, testcase))
+  return failures
 
-def rememberGitBranch():
-  global origGitBranch
+def getLocalGitBranch():
   origGitBranch = runOutput('git rev-parse --abbrev-ref HEAD')
-  if (origGitBranch == 'HEAD'):                     # In detached HEAD state
+  if origGitBranch == 'HEAD':                       # In detached HEAD state
     origGitBranch = runOutput('git rev-parse HEAD') # Use the SHA when not on a branch
   print('[repro] Initial local git branch/revision: %s' % origGitBranch)
+  return origGitBranch
 
 def main():
-  if 2 != len(sys.argv) or reHelpArg.match(sys.argv[1]):
-    print(usage)
-    sys.exit(0)
-  fetchAndParseJenkinsLog(sys.argv[1])
-  rememberGitBranch()
+  config = readConfig()
+  tests = fetchAndParseJenkinsLog(config.url)
+  localGitBranch = getLocalGitBranch()
 
   try:
-    prepareWorkspace()
-    groupTestsByModule()
-    runTests()
-    printReport()
+    prepareWorkspace(config.fetch, revisionFromLog)
+    modules = groupTestsByModule(tests)
+    runTests(config.testIters, modules, tests)
+    failures = printReport(config.testIters, '')
+    
+    # Retest 100% failures at the tip of the branch
+    oldTests = tests
+    tests = {}
+    for fullClass in failures:
+      testcase = fullClass[(fullClass.rindex('.') + 1):]
+      if failures[fullClass] == config.testIters:
+        tests[testcase] = oldTests[testcase]
+    if len(tests) > 0:
+      print('\n[repro] Re-testing 100%% failures at the tip of %s' % branchFromLog)
+      prepareWorkspace(False, branchFromLog)
+      modules = groupTestsByModule(tests)
+      runTests(config.testIters, modules, tests)
+      failures = printReport(config.testIters, ' at the tip of %s' % branchFromLog)
+      
+      # Retest 100% tip-of-branch failures without a seed
+      oldTests = tests
+      tests = {}
+      for fullClass in failures:
+        testcase = fullClass[(fullClass.rindex('.') + 1):]
+        if failures[fullClass] == config.testIters:
+          tests[testcase] = re.sub(reTestsSeed, '', oldTests[testcase])
+      if len(tests) > 0:
+        print('\n[repro] Re-testing 100%% failures at the tip of %s without a seed' % branchFromLog)
+        prepareWorkspace(False, branchFromLog)
+        modules = groupTestsByModule(tests)
+        runTests(config.testIters, modules, tests)
+        printReport(config.testIters, ' at the tip of %s without a seed' % branchFromLog)
   except Exception as e:
-    print('[repro] %s' % e)
+    print('[repro] %s' % traceback.format_exc())
     sys.exit(1)
   finally:
     if gitCheckoutSucceeded:
-      run('git checkout %s' % origGitBranch, rememberFailure=False) # Restore original git branch/sha
+      run('git checkout %s' % localGitBranch, rememberFailure=False) # Restore original git branch/sha
 
   print('[repro] Exiting with code %d' % lastFailureCode)
   sys.exit(lastFailureCode)
