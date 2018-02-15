@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -29,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ZkDistribStateManager;
 import org.apache.solr.cloud.ZkTestServer;
@@ -120,6 +122,7 @@ public class TestDistribStateManager extends SolrTestCaseJ4 {
     assertFalse(stateManager.hasData("/hasData/bar"));
     try {
       stateManager.createData("/hasData/foo", new byte[0], CreateMode.PERSISTENT);
+      fail("should have failed (parent /hasData doesn't exist)");
     } catch (NoSuchElementException e) {
       // expected
     }
@@ -128,6 +131,43 @@ public class TestDistribStateManager extends SolrTestCaseJ4 {
     stateManager.createData("/hasData/bar", new byte[0], CreateMode.PERSISTENT);
     assertTrue(stateManager.hasData("/hasData/foo"));
     assertTrue(stateManager.hasData("/hasData/bar"));
+  }
+
+  @Test
+  public void testRemoveData() throws Exception {
+    assertFalse(stateManager.hasData("/removeData/foo"));
+    assertFalse(stateManager.hasData("/removeData/foo/bar"));
+    assertFalse(stateManager.hasData("/removeData/baz"));
+    assertFalse(stateManager.hasData("/removeData/baz/1/2/3"));
+    stateManager.makePath("/removeData/foo/bar");
+    stateManager.makePath("/removeData/baz/1/2/3");
+    assertTrue(stateManager.hasData("/removeData/foo"));
+    assertTrue(stateManager.hasData("/removeData/foo/bar"));
+    assertTrue(stateManager.hasData("/removeData/baz/1/2/3"));
+    try {
+      stateManager.removeData("/removeData/foo", -1);
+      fail("should have failed (node has children)");
+    } catch (NotEmptyException e) {
+      // expected
+    }
+    stateManager.removeData("/removeData/foo/bar", -1);
+    stateManager.removeData("/removeData/foo", -1);
+    // test recursive listing and removal
+    stateManager.removeRecursively("/removeData/baz/1", false, false);
+    assertFalse(stateManager.hasData("/removeData/baz/1/2"));
+    assertTrue(stateManager.hasData("/removeData/baz/1"));
+    // should silently ignore
+    stateManager.removeRecursively("/removeData/baz/1/2", true, true);
+    stateManager.removeRecursively("/removeData/baz/1", false, true);
+    assertFalse(stateManager.hasData("/removeData/baz/1"));
+    try {
+      stateManager.removeRecursively("/removeData/baz/1", false, true);
+      fail("should throw exception - missing path");
+    } catch (NoSuchElementException e) {
+      // expected
+    }
+    stateManager.removeRecursively("/removeData", true, true);
+    assertFalse(stateManager.hasData("/removeData"));
   }
 
   @Test

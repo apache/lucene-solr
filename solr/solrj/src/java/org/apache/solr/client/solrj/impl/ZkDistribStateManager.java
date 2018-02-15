@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -125,11 +126,13 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, IOException, KeeperException, InterruptedException {
+  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, NotEmptyException, IOException, KeeperException, InterruptedException {
     try {
       zkClient.delete(path, version, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
+    } catch (KeeperException.NotEmptyException e) {
+      throw new NotEmptyException(path);
     } catch (KeeperException.BadVersionException e) {
       throw new BadVersionException(version, path);
     } catch (InterruptedException e) {

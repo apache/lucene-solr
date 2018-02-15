@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -124,9 +125,29 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
+    int overseerLeaderIndex = 0;
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
+      if (jetty.getNodeName().equals(overseerLeader)) {
+        overseerLeaderIndex = i;
+        break;
+      }
+    }
+    Overseer overseer = cluster.getJettySolrRunner(overseerLeaderIndex).getCoreContainer().getZkController().getOverseer();
+    ScheduledTriggers scheduledTriggers = ((OverseerTriggerThread)overseer.getTriggerThread().getThread()).getScheduledTriggers();
+    // aggressively remove all active scheduled triggers
+    scheduledTriggers.removeAll();
+
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+
+    // restart Overseer. Even though we reset the autoscaling config some already running
+    // trigger threads may still continue to execute and produce spurious events
+    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    Thread.sleep(5000);
 
     throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
     waitForSeconds = 1 + random().nextInt(3);
@@ -145,26 +166,17 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       // lets start a node
       cluster.startJettySolrRunner();
     }
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
-    List<String> paths = zkClient().getChildren(path, null, true);
-    paths.forEach(n -> {
-      try {
-        ZKUtil.deleteRecursive(zkClient().getSolrZooKeeper(), path + "/" + n);
-      } catch (KeeperException.NoNodeException e) {
-        // ignore
-      } catch (KeeperException | InterruptedException e) {
-        log.warn("Error deleting old data", e);
-      }
-    });
+    cloudManager.getDistribStateManager().removeRecursively(path, true, false);
   }
 
   @Test

@@ -102,6 +102,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     log.debug("OverseerTriggerThread has been closed explicitly");
   }
 
+  /**
+   * For tests.
+   * @lucene.internal
+   * @return current {@link ScheduledTriggers} instance
+   */
+  public ScheduledTriggers getScheduledTriggers() {
+    return scheduledTriggers;
+  }
+
   @Override
   public boolean isClosed() {
     return isClosed;

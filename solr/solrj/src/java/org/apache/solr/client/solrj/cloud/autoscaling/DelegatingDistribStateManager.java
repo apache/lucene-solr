@@ -75,7 +75,7 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, IOException, BadVersionException, KeeperException, InterruptedException {
+  public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, IOException, BadVersionException, KeeperException, InterruptedException {
     delegate.removeData(path, version);
   }
 
