@@ -55,7 +55,19 @@ For indexing geodetic points (latitude and longitude), supply it in "lat,lon" or
 
 For indexing non-geodetic points, it depends. Use `x y` (a space) if RPT. For PointType however, use `x,y` (a comma).
 
-If you'd rather use a standard industry format, Solr supports WKT and GeoJSON. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
+If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON]. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
+
+=== Indexing GeoJSON and WKT
+
+Using the `bin/post` tool:
+
+[source,text]
+bin/post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
+
+The key parameter to pass in with your request is:
+
+`format`::
+The format of the file to pass in.  Accepted values: `WKT` or `geojson`.
 
 == Searching with Query Parsers
 
