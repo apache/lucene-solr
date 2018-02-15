@@ -188,6 +188,8 @@ Bug Fixes
 
 * SOLR-11950: Allow CLUSTERSTATUS "shard" parameter to accept comma (,) delimited list (Chris Ulicny via Jason Gerlowski)
 
+* SOLR-11739: Fix race condition that made Solr accept duplicate async IDs in collection API operations (Tomás Fernánadez Löbbe)
+
 Optimizations
 ----------------------
 

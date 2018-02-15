@@ -810,7 +810,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    */
   List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
                      NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap, Set<String> okayExceptions) {
-    log.info("Executing Collection Cmd : " + params);
+    log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
