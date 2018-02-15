@@ -279,6 +279,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
+  /*
+   * In SOLR-11739 we change the way the async IDs are checked to decide if one has
+   * already been used or not. For backward compatibility, we continue to check in the
+   * old way (meaning, in all the queues) for now. This extra check should be removed
+   * in Solr 9 
+   */
+  private static final boolean CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS = true;
+
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
@@ -294,21 +302,40 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
        String asyncId = m.getStr(ASYNC);
 
-       if(asyncId.equals("-1")) {
+       if (asyncId.equals("-1")) {
          throw new SolrException(ErrorCode.BAD_REQUEST, "requestid can not be -1. It is reserved for cleanup purposes.");
        }
 
        NamedList<String> r = new NamedList<>();
-
-       if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
+       
+       if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
+           coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
-           overseerCollectionQueueContains(asyncId)) {
+           overseerCollectionQueueContains(asyncId))) {
+         // for back compatibility, check in the old places. This can be removed in Solr 9
          r.add("error", "Task with the same requestid already exists.");
-
        } else {
-         coreContainer.getZkController().getOverseerCollectionQueue()
+         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+           boolean success = false;
+           try {
+             coreContainer.getZkController().getOverseerCollectionQueue()
              .offer(Utils.toJSON(m));
+             success = true;
+           } finally {
+             if (!success) {
+               try {
+                 coreContainer.getZkController().clearAsyncId(asyncId);
+               } catch (Exception e) {
+                 // let the original exception bubble up
+                 log.error("Unable to release async ID={}", asyncId, e);
+                 SolrZkClient.checkInterrupted(e);
+               }
+             }
+           }
+         } else {
+           r.add("error", "Task with the same requestid already exists.");
+         }
        }
        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
 
@@ -708,18 +735,29 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         if (flush) {
-          zkController.getOverseerCompletedMap().clear();
-          zkController.getOverseerFailureMap().clear();
+          Collection<String> completed = zkController.getOverseerCompletedMap().keys();
+          Collection<String> failed = zkController.getOverseerFailureMap().keys();
+          for (String asyncId:completed) {
+            zkController.getOverseerCompletedMap().remove(asyncId);
+            zkController.clearAsyncId(asyncId);
+          }
+          for (String asyncId:failed) {
+            zkController.getOverseerFailureMap().remove(asyncId);
+            zkController.clearAsyncId(asyncId);
+          }
           rsp.getValues().add("status", "successfully cleared stored collection api responses");
           return null;
         } else {
           // Request to cleanup
           if (zkController.getOverseerCompletedMap().remove(requestId)) {
+            zkController.clearAsyncId(requestId);
             rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
           } else if (zkController.getOverseerFailureMap().remove(requestId)) {
+            zkController.clearAsyncId(requestId);
             rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
           } else {
             rsp.getValues().add("status", "[" + requestId + "] not found in stored responses");
+            // Don't call zkController.clearAsyncId for this, since it could be a running/pending task
           }
         }
         return null;

@@ -679,13 +679,19 @@ public class Overseer implements SolrCloseable {
   /* Size-limited map for successfully completed tasks*/
   static DistributedMap getCompletedMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", NUM_RESPONSES_TO_STORE);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
   }
 
   /* Map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getFailureMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
+  }
+  
+  /* Map of async IDs currently in use*/
+  static DistributedMap getAsyncIdsMap(final SolrZkClient zkClient) {
+    createOverseerNode(zkClient);
+    return new DistributedMap(zkClient, "/overseer/async_ids");
   }
 
   /**
@@ -770,6 +776,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(zkClient);
     return getCollectionQueue(zkClient, zkStats);
   }
+  
 
   private static void createOverseerNode(final SolrZkClient zkClient) {
     try {

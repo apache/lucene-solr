@@ -149,6 +149,7 @@ public class ZkController {
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
   private final DistributedMap overseerFailureMap;
+  private final DistributedMap asyncIdsMap;
 
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
@@ -436,6 +437,8 @@ public class ZkController {
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
+    this.asyncIdsMap = Overseer.getAsyncIdsMap(zkClient);
+
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
@@ -1928,6 +1931,45 @@ public class ZkController {
 
   public DistributedMap getOverseerFailureMap() {
     return overseerFailureMap;
+  }
+
+  /**
+   * When an operation needs to be performed in an asynchronous mode, the asyncId needs
+   * to be claimed by calling this method to make sure it's not duplicate (hasn't been
+   * claimed by other request). If this method returns true, the asyncId in the parameter
+   * has been reserved for the operation, meaning that no other thread/operation can claim
+   * it. If for whatever reason, the operation is not scheduled, the asuncId needs to be
+   * cleared using {@link #clearAsyncId(String)}.
+   * If this method returns false, no reservation has been made, and this asyncId can't 
+   * be used, since it's being used by another operation (currently or in the past)
+   * @param asyncId A string representing the asyncId of an operation. Can't be null.
+   * @return True if the reservation succeeds.
+   *         False if this ID is already in use.
+   */
+  public boolean claimAsyncId(String asyncId) throws KeeperException {
+    try {
+      return asyncIdsMap.putIfAbsent(asyncId, new byte[0]);
+    } catch (InterruptedException e) {
+      log.error("Could not claim asyncId=" + asyncId, e);
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+  
+  /**
+   * Clears an asyncId previously claimed by calling {@link #claimAsyncId(String)}
+   * @param asyncId A string representing the asyncId of an operation. Can't be null.
+   * @return True if the asyncId existed and was cleared.
+   *         False if the asyncId didn't exist before.
+   */
+  public boolean clearAsyncId(String asyncId) throws KeeperException {
+    try {
+      return asyncIdsMap.remove(asyncId);
+    } catch (InterruptedException e) {
+      log.error("Could not release asyncId=" + asyncId, e);
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   public int getClientTimeout() {
