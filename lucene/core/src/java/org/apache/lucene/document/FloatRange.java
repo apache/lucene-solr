@@ -244,9 +244,9 @@ public class FloatRange extends Field {
     sb.append(':');
     byte[] b = ((BytesRef)fieldsData).bytes;
     toString(b, 0);
-    for (int d=1; d<type.pointDimensionCount(); ++d) {
+    for (int d = 0; d < type.pointDimensionCount() / 2; ++d) {
       sb.append(' ');
-      toString(b, d);
+      sb.append(toString(b, d));
     }
     sb.append('>');
 
