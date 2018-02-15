@@ -290,6 +290,8 @@ Other Changes
 
 * SOLR-8090: Make text elements in the UI darker for better contrast and readability (Cassandra Targett)
 
+* SOLR-6057: Change highlight color in UI Analysis screen (Cassandra Targett)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
