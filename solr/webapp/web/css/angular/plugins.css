@@ -34,7 +34,7 @@ limitations under the License.
 #content #plugins #navigation .PLUGINCHANGES a { background-image: url( ../../img/ico/eye.png ); }
 #content #plugins #navigation .RELOAD a { background-image: url( ../../img/ico/arrow-circle.png ); }
 #content #plugins #navigation .NOTE { margin-top: 20px; }
-#content #plugins #navigation .NOTE p { color: #c0c0c0; font-style: italic; }
+#content #plugins #navigation .NOTE p { color: #4D4D4D; font-style: italic; }
 
 
 #content #plugins #navigation a
