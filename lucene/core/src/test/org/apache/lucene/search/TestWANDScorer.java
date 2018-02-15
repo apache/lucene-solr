@@ -30,6 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestWANDScorer extends LuceneTestCase {
 
@@ -51,6 +52,14 @@ public class TestWANDScorer extends LuceneTestCase {
     float scaled = Math.scalb(f, scalingFactor);
     assertTrue(""+scaled, scaled > 1 << 15);
     assertTrue(""+scaled, scaled <= 1 << 16);
+  }
+
+  private Query maybeWrap(Query query) {
+    if (random().nextBoolean()) {
+      query = new BlockScoreQueryWrapper(query, TestUtil.nextInt(random(), 2, 8));
+      query = new AssertingQuery(random(), query);
+    }
+    return query;
   }
 
   public void testBasics() throws Exception {
@@ -127,7 +136,7 @@ public class TestWANDScorer extends LuceneTestCase {
 
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
 
-    // Now test a filtered disjunction
+    //  test a filtered disjunction
     query = new BooleanQuery.Builder()
         .add(
             new BooleanQuery.Builder()
@@ -216,19 +225,14 @@ public class TestWANDScorer extends LuceneTestCase {
 
     for (int iter = 0; iter < 100; ++iter) {
       int start = random().nextInt(10);
-      int numClauses = random().nextInt(1 << random().nextInt(5));
+      int numClauses = 2;//random().nextInt(1 << random().nextInt(5));
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (int i = 0; i < numClauses; ++i) {
-        builder.add(new TermQuery(new Term("foo", Integer.toString(start + i))), Occur.SHOULD);
+        builder.add(maybeWrap(new TermQuery(new Term("foo", Integer.toString(start + i)))), Occur.SHOULD);
       }
       Query query = builder.build();
 
-      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
-      
-      searcher.search(query, collector1);
-      searcher.search(query, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkTopScores(random(), query, searcher);
 
       int filterTerm = random().nextInt(30);
       Query filteredQuery = new BooleanQuery.Builder()
@@ -236,11 +240,7 @@ public class TestWANDScorer extends LuceneTestCase {
           .add(new TermQuery(new Term("foo", Integer.toString(filterTerm))), Occur.FILTER)
           .build();
 
-      collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
-      searcher.search(filteredQuery, collector1);
-      searcher.search(filteredQuery, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkTopScores(random(), filteredQuery, searcher);
     }
     reader.close();
     dir.close();
@@ -276,11 +276,7 @@ public class TestWANDScorer extends LuceneTestCase {
       }
       Query query = builder.build();
 
-      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
-      searcher.search(query, collector1);
-      searcher.search(query, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkTopScores(random(), query, searcher);
 
       int filterTerm = random().nextInt(30);
       Query filteredQuery = new BooleanQuery.Builder()
@@ -288,11 +284,7 @@ public class TestWANDScorer extends LuceneTestCase {
           .add(new TermQuery(new Term("foo", Integer.toString(filterTerm))), Occur.FILTER)
           .build();
 
-      collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
-      searcher.search(filteredQuery, collector1);
-      searcher.search(filteredQuery, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkTopScores(random(), filteredQuery, searcher);
     }
     reader.close();
     dir.close();
@@ -305,7 +297,7 @@ public class TestWANDScorer extends LuceneTestCase {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return Float.POSITIVE_INFINITY;
     }
 
@@ -377,17 +369,6 @@ public class TestWANDScorer extends LuceneTestCase {
           }
         }
       };
-    }
-
-  }
-
-  private static void assertTopDocsEquals(TopDocs td1, TopDocs td2) {
-    assertEquals(td1.scoreDocs.length, td2.scoreDocs.length);
-    for (int i = 0; i < td1.scoreDocs.length; ++i) {
-      ScoreDoc sd1 = td1.scoreDocs[i];
-      ScoreDoc sd2 = td2.scoreDocs[i];
-      assertEquals(sd1.doc, sd2.doc);
-      assertEquals(sd1.score, sd2.score, 0f);
     }
   }
 

@@ -251,8 +251,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     }
 
                     @Override
-                    public float maxScore() {
-                      return scorer.maxScore();
+                    public float getMaxScore(int upTo) throws IOException {
+                      return scorer.getMaxScore(upTo);
                     }
 
                     @Override

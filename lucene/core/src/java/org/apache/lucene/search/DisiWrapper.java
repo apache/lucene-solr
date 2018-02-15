@@ -38,7 +38,7 @@ public class DisiWrapper {
   // two-phase iteration
   public final TwoPhaseIterator twoPhaseView;
 
-  // For MaxScoreScorer
+  // For WANDScorer
   long maxScore;
 
   // FOR SPANS

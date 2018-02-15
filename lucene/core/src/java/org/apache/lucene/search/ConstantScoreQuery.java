@@ -95,7 +95,7 @@ public final class ConstantScoreQuery extends Query {
               return theScore;
             }
             @Override
-            public float maxScore() {
+            public float getMaxScore(int upTo) throws IOException {
               return theScore;
             }
           });
@@ -141,7 +141,7 @@ public final class ConstantScoreQuery extends Query {
                   return score;
                 }
                 @Override
-                public float maxScore() {
+                public float getMaxScore(int upTo) throws IOException {
                   return score;
                 }
                 @Override

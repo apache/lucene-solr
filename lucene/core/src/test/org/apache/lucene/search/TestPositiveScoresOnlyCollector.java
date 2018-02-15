@@ -17,6 +17,8 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -38,7 +40,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return Float.POSITIVE_INFINITY;
     }
 

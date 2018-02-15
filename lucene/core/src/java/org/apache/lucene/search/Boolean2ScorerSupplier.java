@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -135,7 +136,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
             return 0f;
           }
           @Override
-          public float maxScore() {
+          public float getMaxScore(int upTo) throws IOException {
             return 0f;
           }
         };
@@ -150,9 +151,16 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       }
       for (ScorerSupplier s : requiredScoring) {
         Scorer scorer = s.get(leadCost);
-        requiredScorers.add(scorer);
         scoringScorers.add(scorer);
       }
+      if (scoreMode == ScoreMode.TOP_SCORES && scoringScorers.size() > 1) {
+        Scorer blockMaxScorer = new BlockMaxConjunctionScorer(weight, scoringScorers);
+        if (requiredScorers.isEmpty()) {
+          return blockMaxScorer;
+        }
+        scoringScorers = Collections.singletonList(blockMaxScorer);
+      }
+      requiredScorers.addAll(scoringScorers);
       return new ConjunctionScorer(weight, requiredScorers, scoringScorers);
     }
   }

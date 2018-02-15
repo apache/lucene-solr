@@ -109,8 +109,13 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
-      return scorer.maxScore();
+    public int advanceShallow(int target) throws IOException {
+      return scorer.advanceShallow(target);
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return scorer.getMaxScore(upTo);
     }
 
     @Override

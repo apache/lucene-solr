@@ -543,7 +543,7 @@ public class TestJoinUtil extends LuceneTestCase {
                   return (float) price.longValue();
                 }
                 @Override
-                public float maxScore() {
+                public float getMaxScore(int upTo) throws IOException {
                   return Float.POSITIVE_INFINITY;
                 }
               };

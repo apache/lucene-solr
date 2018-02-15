@@ -157,7 +157,25 @@ public abstract class Scorer {
     // no-op by default
   }
 
-  /** Return the maximum score that this scorer may produce. If scores are not
-   *  bounded, {@link Float#POSITIVE_INFINITY} must be returned. */
-  public abstract float maxScore();
+  /**
+   * Advance to the block of documents that contains {@code target} in order to
+   * get scoring information about this block. This method is implicitly called
+   * by {@link DocIdSetIterator#advance(int)} and
+   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
+   * current {@link DocIdSetIterator#docID()}.
+   * It returns a number that is greater than or equal to all documents
+   * contained in the current block, but less than any doc IDS of the next block.
+   * {@code target} must be &gt;= {@link #docID()} as well as all targets that
+   * have been passed to {@link #advanceShallow(int)} so far.
+   */
+  public int advanceShallow(int target) throws IOException {
+    return DocIdSetIterator.NO_MORE_DOCS;
+  }
+
+  /**
+   * Return the maximum score that documents between the last {@code target}
+   * that this iterator was {@link #advanceShallow(int) shallow-advanced} to
+   * included and {@code upTo} included.
+   */
+  public abstract float getMaxScore(int upTo) throws IOException;
 }

@@ -287,11 +287,11 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       switch(scoreMode) {
         case Max:
         case Min:
-          return childScorer.maxScore();
+          return childScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
         default:
           return Float.POSITIVE_INFINITY;
       }

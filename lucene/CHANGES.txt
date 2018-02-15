@@ -71,6 +71,9 @@ Improvements
 * LUCENE-4198: Codecs now have the ability to index score impacts.
   (Adrien Grand)
 
+* LUCENE-8135: Boolean queries now implement the block-max WAND algorithm in
+  order to speed up selection of top scored documents. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms

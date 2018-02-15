@@ -307,7 +307,7 @@ public class GraphQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return score;
     }
 

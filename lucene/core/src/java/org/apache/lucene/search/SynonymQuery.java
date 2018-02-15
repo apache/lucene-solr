@@ -254,7 +254,7 @@ public final class SynonymQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return similarity.maxScore();
     }
 
