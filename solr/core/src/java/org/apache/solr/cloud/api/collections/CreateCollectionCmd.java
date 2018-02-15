@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
@@ -396,17 +397,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     // clean up old terms node
     String termsPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms";
     try {
-      if (stateManager.hasData(termsPath)) {
-        List<String> paths = stateManager.listData(termsPath);
-        for (String path : paths) {
-          stateManager.removeData(termsPath + "/" + path, -1);
-        }
-        stateManager.removeData(termsPath, -1);
-      }
+      stateManager.removeRecursively(termsPath, true, true);
     } catch (InterruptedException e) {
       Thread.interrupted();
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error deleting old term nodes for collection from Zookeeper", e);
-    } catch (KeeperException | IOException | BadVersionException e) {
+    } catch (KeeperException | IOException | NotEmptyException | BadVersionException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error deleting old term nodes for collection from Zookeeper", e);
     }
     try {

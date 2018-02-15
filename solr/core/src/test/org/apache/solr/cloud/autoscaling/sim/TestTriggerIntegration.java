@@ -1079,9 +1079,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(1000);
+    cluster.getTimeSource().sleep(5000);
 
     List<CapturedEvent> capturedEvents = listenerEvents.get("bar");
+    assertNotNull("no events for 'bar'!", capturedEvents);
     // we may get a few IGNORED events if other tests caused events within cooldown period
     assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
     long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;

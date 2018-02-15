@@ -468,6 +468,10 @@ public class Overseer implements SolrCloseable {
       this.isClosed = true;
     }
 
+    public Closeable getThread() {
+      return thread;
+    }
+
     public boolean isClosed() {
       return this.isClosed;
     }
@@ -565,6 +569,15 @@ public class Overseer implements SolrCloseable {
    */
   public synchronized OverseerThread getUpdaterThread() {
     return updaterThread;
+  }
+
+  /**
+   * For tests.
+   * @lucene.internal
+   * @return trigger thread
+   */
+  public synchronized OverseerThread getTriggerThread() {
+    return triggerThread;
   }
   
   public synchronized void close() {

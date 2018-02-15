@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -59,7 +58,6 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.zookeeper.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -350,8 +348,9 @@ public class ScheduledTriggers implements Closeable {
 
   /**
    * Pauses all scheduled trigger invocations without interrupting any that are in progress
+   * @lucene.internal
    */
-  private synchronized void pauseTriggers()  {
+  public synchronized void pauseTriggers()  {
     if (log.isDebugEnabled()) {
       log.debug("Pausing all triggers: {}", scheduledTriggers.keySet());
     }
@@ -361,8 +360,9 @@ public class ScheduledTriggers implements Closeable {
   /**
    * Resumes all previously cancelled triggers to be scheduled after the given initial delay
    * @param afterDelayMillis the initial delay in milliseconds after which triggers should be resumed
+   * @lucene.internal
    */
-  private synchronized void resumeTriggers(long afterDelayMillis) {
+  public synchronized void resumeTriggers(long afterDelayMillis) {
     scheduledTriggers.forEach((s, scheduledTrigger) ->  {
       if (scheduledTrigger.scheduledFuture.isCancelled()) {
         log.debug("Resuming trigger: {} after {}ms", s, afterDelayMillis);
@@ -432,6 +432,17 @@ public class ScheduledTriggers implements Closeable {
   }
 
   /**
+   * Remove and stop all triggers. Also cleans up any leftover
+   * state / events in ZK.
+   */
+  public synchronized void removeAll() {
+    getScheduledTriggerNames().forEach(t -> {
+      log.info("-- removing trigger: " + t);
+      remove(t);
+    });
+  }
+
+  /**
    * Removes and stops the trigger with the given name. Also cleans up any leftover
    * state / events in ZK.
    *
@@ -447,26 +458,12 @@ public class ScheduledTriggers implements Closeable {
     String statePath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName;
     String eventsPath = ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH + "/" + triggerName;
     try {
-      if (stateManager.hasData(statePath)) {
-        stateManager.removeData(statePath, -1);
-      }
-    } catch (NoSuchElementException e) {
-      // already removed by someone else
+      stateManager.removeRecursively(statePath, true, true);
     } catch (Exception e) {
       log.warn("Failed to remove state for removed trigger " + statePath, e);
     }
     try {
-      if (stateManager.hasData(eventsPath)) {
-        List<String> events = stateManager.listData(eventsPath);
-        List<Op> ops = new ArrayList<>(events.size() + 1);
-        events.forEach(ev -> {
-          ops.add(Op.delete(eventsPath + "/" + ev, -1));
-        });
-        ops.add(Op.delete(eventsPath, -1));
-        stateManager.multi(ops);
-      }
-    } catch (NoSuchElementException e) {
-      // already removed by someone else
+      stateManager.removeRecursively(eventsPath, true, true);
     } catch (Exception e) {
       log.warn("Failed to remove events for removed trigger " + eventsPath, e);
     }

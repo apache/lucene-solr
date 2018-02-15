@@ -17,6 +17,10 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -62,7 +66,7 @@ public interface DistribStateManager extends SolrCloseable {
    */
   String createData(String path, byte[] data, CreateMode mode) throws AlreadyExistsException, IOException, KeeperException, InterruptedException;
 
-  void removeData(String path, int version) throws NoSuchElementException, IOException, KeeperException, InterruptedException, BadVersionException;
+  void removeData(String path, int version) throws NoSuchElementException, IOException, NotEmptyException, KeeperException, InterruptedException, BadVersionException;
 
   void setData(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException;
 
@@ -72,5 +76,68 @@ public interface DistribStateManager extends SolrCloseable {
 
   default AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
     return getAutoScalingConfig(null);
+  }
+
+  /**
+   * List a subtree including the root path, using breadth-first traversal.
+   * @param root root path
+   * @return list of full paths, with the root path being the first element
+   */
+  default List<String> listTree(String root) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+    Deque<String> queue = new LinkedList<String>();
+    List<String> tree = new ArrayList<String>();
+    if (!root.startsWith("/")) {
+      root = "/" + root;
+    }
+    queue.add(root);
+    tree.add(root);
+    while (true) {
+      String node = queue.pollFirst();
+      if (node == null) {
+        break;
+      }
+      List<String> children = listData(node);
+      for (final String child : children) {
+        final String childPath = node + "/" + child;
+        queue.add(childPath);
+        tree.add(childPath);
+      }
+    }
+    return tree;
+  }
+
+  /**
+   * Remove data recursively.
+   * @param root root path
+   * @param ignoreMissing ignore errors if root or any children path is missing
+   * @param includeRoot when true delete also the root path
+   */
+  default void removeRecursively(String root, boolean ignoreMissing, boolean includeRoot) throws NoSuchElementException, IOException, NotEmptyException, KeeperException, InterruptedException, BadVersionException {
+    List<String> tree;
+    try {
+      tree = listTree(root);
+    } catch (NoSuchElementException e) {
+      if (ignoreMissing) {
+        return;
+      } else {
+        throw e;
+      }
+    }
+    Collections.reverse(tree);
+    for (String p : tree) {
+      if (p.equals("/")) {
+        continue;
+      }
+      if (p.equals(root) && !includeRoot) {
+        continue;
+      }
+      try {
+        removeData(p, -1);
+      } catch (NoSuchElementException e) {
+        if (!ignoreMissing) {
+          throw e;
+        }
+      }
+    }
   }
 }

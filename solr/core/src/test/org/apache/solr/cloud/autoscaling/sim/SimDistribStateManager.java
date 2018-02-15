@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -469,7 +470,7 @@ public class SimDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, IOException {
+  public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, BadVersionException, IOException {
     multiLock.lock();
     try {
       Node n = traverse(path, false, CreateMode.PERSISTENT);
@@ -479,6 +480,9 @@ public class SimDistribStateManager implements DistribStateManager {
       Node parent = n.parent;
       if (parent == null) {
         throw new IOException("Cannot remove root node");
+      }
+      if (!n.children.isEmpty()) {
+        throw new NotEmptyException(path);
       }
       parent.removeChild(n.name, version);
     } finally {
