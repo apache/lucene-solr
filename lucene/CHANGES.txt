@@ -55,6 +55,9 @@ Changes in Runtime Behavior
 * LUCENE-8116: Similarities now score fields that omit norms as if the norm was
   1. This might change score values on fields that omit norms. (Adrien Grand)
 
+* LUCENE-8134: Index options are no longer automatically downgraded.
+  (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.

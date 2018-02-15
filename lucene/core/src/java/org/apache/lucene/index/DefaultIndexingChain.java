@@ -608,11 +608,7 @@ final class DefaultIndexingChain extends DocConsumer {
       // First time we are seeing this field in this segment
 
       FieldInfo fi = fieldInfos.getOrAdd(name);
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fi.setIndexOptions(fieldType.indexOptions());
-      
+      initIndexOptions(fi, fieldType.indexOptions());
       fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
@@ -630,14 +626,22 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
     } else if (invert && fp.invertState == null) {
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fp.fieldInfo.setIndexOptions(fieldType.indexOptions());
+      initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
       fp.setInvertState();
     }
 
     return fp;
+  }
+
+  private void initIndexOptions(FieldInfo info, IndexOptions indexOptions) {
+    // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
+    // IndexOptions to decide what arrays it must create).
+    assert info.getIndexOptions() == IndexOptions.NONE;
+    info.setIndexOptions(indexOptions);
+    // This is the first time we are seeing this field indexed, so we now
+    // record the index options so that any future attempt to (illegally)
+    // change the index options of this field, will throw an IllegalArgExc:
+    fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */

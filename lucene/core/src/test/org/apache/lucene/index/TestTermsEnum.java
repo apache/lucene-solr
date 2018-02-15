@@ -737,7 +737,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newStringField("field", "bbb", Field.Store.NO));
+    doc.add(newTextField("field", "bbb", Field.Store.NO));
     w.addDocument(doc);
 
     doc = new Document();
