@@ -174,6 +174,9 @@ Bug Fixes
 * LUCENE-8163: BaseDirectoryTestCase could produce random filenames that fail
   on Windows (Alan Woodward)
 
+* LUCENE-8174: Fixed {Float,Double,Int,Long}Range.toString(). (Oliver Kaleske
+  via Adrien Grand)
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
