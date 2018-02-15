@@ -71,7 +71,7 @@ limitations under the License.
 #core-selector #has-no-cores span,
 #collection-selector #has-no-collections span
 {
-  color: #c0c0c0;
+  color: #8D8D8D;
   display: block;
 }
 
@@ -220,7 +220,6 @@ limitations under the License.
 {
   background-position: 7px 50%;
   border-bottom: 1px solid #f0f0f0;
-  color: #bbb;
   margin-left: 15px;
   padding-left: 26px;
 }
@@ -243,7 +242,7 @@ limitations under the License.
 {
   background-color: #d0d0d0;
   border-color: #d0d0d0;
-  color: #333;
+  color: #FFF;
 }
 
 #menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
@@ -267,7 +266,7 @@ limitations under the License.
 
 .sub-menu .ping.error a
 {
-  
+
   background-color: #ffcccc;
   background-image: url( ../../img/ico/system-monitor--exclamation.png );
   border-color: #ffcccc;

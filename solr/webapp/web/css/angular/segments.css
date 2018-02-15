@@ -32,7 +32,7 @@ limitations under the License.
   position: absolute;
   right: 10px;
   top: 10px;
-  width: 30px; 
+  width: 30px;
 }
 
 #content #segments .reload.loader
@@ -46,7 +46,7 @@ limitations under the License.
 }
 
 #content #segments #result
-{   
+{
   width: 77%;
 }
 
@@ -66,7 +66,7 @@ limitations under the License.
 
 #content #segments .segments-holder li .tooltip {
   display: none;
-    background: #C8C8C8;
+    background: #f0f0f0;
     position: absolute;
     z-index: 1000;
     width:220px;
@@ -80,15 +80,15 @@ limitations under the License.
 
 #content #segments .segments-holder li .tooltip .label {
   float: left;
-  width: 20%;  
+  width: 20%;
   opacity: 1;
 }
 
 #content #segments .segments-holder li:hover .tooltip {
-  display:block;  
+  display:block;
 }
 
-#content #segments .segments-holder li dl, 
+#content #segments .segments-holder li dl,
 #content #segments .segments-holder li dt {
     padding-bottom: 1px;
     padding-top: 1px;
@@ -97,7 +97,7 @@ limitations under the License.
     min-width: 1px;
 }
 #content #segments .segments-holder li dt {
-    color: #a0a0a0;
+    color: #4D4D4D;
     left: -45px;
     overflow: hidden;
     position: absolute;
@@ -117,13 +117,13 @@ limitations under the License.
 }
 
 #content #segments .segments-holder li dd div.deleted {
-    background-color: #808080;    
-    padding-left: 5px;    
+    background-color: #808080;
+    padding-left: 5px;
 }
 
 #content #segments .segments-holder li dd div.live {
   background-color: #DDDDDD;
-  float: left;  
+  float: left;
 }
 
 #content #segments .segments-holder li dd div.start {
@@ -157,7 +157,7 @@ limitations under the License.
 #content #segments #auto-refresh a {
   background-image: url( ../../img/ico/ui-check-box-uncheck.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   display: block;
   padding-left: 21px;
 }
@@ -170,4 +170,3 @@ limitations under the License.
 #content #segments #auto-refresh a.on {
   background-image: url( ../../img/ico/ui-check-box.png );
 }
-
