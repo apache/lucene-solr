@@ -68,7 +68,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
         priorityQueue.insertWithOverflow(stat.getMzxid());
       }
 
-      long topElementMzxId = (Long) priorityQueue.top();
+      long topElementMzxId = priorityQueue.top();
 
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
