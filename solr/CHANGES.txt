@@ -279,9 +279,11 @@ Other Changes
 
 * SOLR-11067: REPLACENODE should identify appropriate nodes if targetNode is not provided (noble)
 
-* SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas via Cassandra Targett)
+* SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas
+  via Cassandra Targett)
 
-* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
+* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via 
+  Cassandra Targett)
 
 * SOLR-11933: Make DIH UI page safer by not default checking the clean checkbox (Eric Pugh via Tomás Fernández Löbbe)
 
@@ -295,6 +297,9 @@ Other Changes
 * SOLR-8090: Make text elements in the UI darker for better contrast and readability (Cassandra Targett)
 
 * SOLR-6057: Change highlight color in UI Analysis screen (Cassandra Targett)
+
+* SOLR-11897: Add toggle to disable auto-refresh of Logging page in the UI (Tommy Marshment-Howell via
+  Cassandra Targett)
 
 ==================  7.2.1 ==================
 
