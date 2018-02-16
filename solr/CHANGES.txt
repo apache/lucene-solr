@@ -210,6 +210,8 @@ Bug Fixes
 
 * SOLR-11739: Fix race condition that made Solr accept duplicate async IDs in collection API operations (Tomás Fernánadez Löbbe)
 
+* SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
+
 Optimizations
 ----------------------
 
