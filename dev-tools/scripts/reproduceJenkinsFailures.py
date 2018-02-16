@@ -38,6 +38,7 @@ reJavaFile = re.compile(r'(.*)\.java\Z')
 reModule = re.compile(r'\./(.*)/src/')
 reTestOutputFile = re.compile(r'TEST-(.*\.([^-.]+))(?:-\d+)?\.xml\Z')
 reErrorFailure = re.compile(r'(?:errors|failures)="[^0]')
+reGitMainBranch = re.compile(r'^(?:master|branch_[x_\d]+)$')
 
 # consoleText from Policeman Jenkins's Windows jobs fails to decode as UTF-8
 encoding = 'iso-8859-1'
@@ -132,11 +133,8 @@ def prepareWorkspace(fetch, gitRef):
   code = run(checkoutCmd)
   if 0 != code:
     raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutCmd)
-  if fetch:
-    code = run('git pull')
-    if 0 != code:
-      raise RuntimeError('ERROR: "git pull" failed.  See above.')
   gitCheckoutSucceeded = True
+  run('git merge --ff-only', rememberFailure=False) # Ignore failure on non-branch ref
   code = run('ant clean')
   if 0 != code:
     raise RuntimeError('ERROR: "ant clean" failed.  See above.')
