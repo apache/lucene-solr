@@ -19,32 +19,38 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class AbsoluteValueEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+public class NormEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public AbsoluteValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public NormEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
+
     if(1 != containedEvaluators.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value){
+  public Object doWork(Object value) throws IOException{
     if(null == value){
-      return null;
+      throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is null", constructingFactory.getFunctionName(getClass())));
     }
     else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+      List<Number> c = (List<Number>) value;
+      double[] data = new double[c.size()];
+      for(int i=0; i< c.size(); i++) {
+        data[i] = c.get(i).doubleValue();
+      }
+
+      return new ArrayRealVector(data).getNorm();
     }
     else{
-      return Math.abs(((Number)value).doubleValue());
+      throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is not a collection, instead a %s was found", constructingFactory.getFunctionName(getClass()), value.getClass().getSimpleName()));
     }
   }
 }
