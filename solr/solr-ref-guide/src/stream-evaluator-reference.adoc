@@ -962,7 +962,7 @@ A probability distribution function
 == getAttribute
 
 The `getAttribute` function returns an attribute from a `matrix` by its key. Any function that returns a `matrix` can
-also set attributes on the `matrix` with additional information. The `<<setAttribute>>` function can also be used
+also set attributes on the `matrix` with additional information. The `setAttribute` function can also be used
 to set attributes on a `matrix`. The key to an attribute is always a string. The value of attribute can be any object
 including numerics, arrays, maps, matrixes etc...
 
