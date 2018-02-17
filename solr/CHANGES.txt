@@ -164,6 +164,8 @@ New Features
 * SOLR-11941: Add abstract contrib/ltr AdapterModel to facilitate the development of scoring models that delegate
   scoring to an opaque pre-trained model. (Christine Poerschke)
 
+* SOLR-11689: Add l1norm, l2norm and linfnorm Stream Evaluators (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
