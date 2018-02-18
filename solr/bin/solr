@@ -295,7 +295,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -895,6 +895,11 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   exit $?
 fi
 
+if [[ "$SCRIPT_CMD" == "config" ]]; then
+  run_tool config $*
+  exit $?
+fi
+
 # create a core or collection
 if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
 
@@ -1015,11 +1020,8 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
-    echo "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is"
-    echo "         NOT RECOMMENDED for production use."
-    echo
-    echo "         To turn it off:"
-    echo "            curl http://$SOLR_TOOL_HOST:$CREATE_PORT/solr/$CREATE_NAME/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'"
+    echo "WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use."
+    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -property update.autoCreateFields -value false"
   fi
 
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
