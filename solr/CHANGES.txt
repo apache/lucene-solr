@@ -194,6 +194,9 @@ Bug Fixes
 
 * SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
 
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+  (麦 香浓郁, Uwe Schindler)
+
 Optimizations
 ----------------------
 
