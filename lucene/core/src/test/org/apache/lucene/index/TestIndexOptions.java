@@ -33,21 +33,29 @@ public class TestIndexOptions extends LuceneTestCase {
     for (IndexOptions from : IndexOptions.values()) {
       for (IndexOptions to : IndexOptions.values()) {
         for (boolean preExisting : new boolean[] { false, true }) {
-          doTestChangeIndexOptionsViaAddDocument(preExisting, from, to);
+          for (boolean onNewSegment : new boolean[] { false, true }) {
+            doTestChangeIndexOptionsViaAddDocument(preExisting, onNewSegment, from, to);
+          }
         }
       }
     }
   }
 
-  private void doTestChangeIndexOptionsViaAddDocument(boolean preExistingField, IndexOptions from, IndexOptions to) throws IOException {
+  private void doTestChangeIndexOptionsViaAddDocument(boolean preExistingField, boolean onNewSegment, IndexOptions from, IndexOptions to) throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     if (preExistingField) {
       w.addDocument(Collections.singleton(new IntPoint("foo", 1)));
+      if (onNewSegment) {
+        DirectoryReader.open(w).close();
+      }
     }
     FieldType ft1 = new FieldType(TextField.TYPE_STORED);
     ft1.setIndexOptions(from);
     w.addDocument(Collections.singleton(new Field("foo", "bar", ft1)));
+    if (onNewSegment) {
+      DirectoryReader.open(w).close();
+    }
     FieldType ft2 = new FieldType(TextField.TYPE_STORED);
     ft2.setIndexOptions(to);
     if (from == IndexOptions.NONE || to == IndexOptions.NONE || from == to) {
