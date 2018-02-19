@@ -246,6 +246,21 @@ The `bin/solr` script simply passes options starting with `-D` on to the JVM dur
 SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=10000"
 ----
 
+=== File Handles and Processes (ulimit settings)
+
+Two common settings that result in errors on *nix systems are file handles and user processes. It is common for the default limits for number of processes and file handles to default to values that are too low for a large Solr installation. The required number of each of these will increase based on a combination of the number of replicas hosted per node and the number of segments in the index for each replica. The usual recommendation is to make processes and file handles at least 65,000 each, unlimited if possible. On most *nix systems, this command:
+
+[source,bash]
+----
+ulimit -a
+----
+will show the currently-defined limits. It is strongly recommended that file handle and process limits be permanently raised as above. The exact form of the command will vary per operating system, and some systems require editing configuration files and restarting your server. Consult your system administrators for guidance in your particular environment.
+
+[TIP]
+====
+If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as to "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures. Since exceeding these limits can result in such varied symptoms it is _strongly_ recommended that these limits be permanently raised as recommended above.
+====
+
 == Running Multiple Solr Nodes Per Host
 
 The `bin/solr` script is capable of running multiple instances on one machine, but for a *typical* installation, this is not a recommended setup. Extra CPU and memory resources are required for each additional instance. A single instance is easily capable of handling multiple indexes.
