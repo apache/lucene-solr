@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
  * SolrExporter
  */
 public class SolrExporter {
-  private static final Logger logger = LoggerFactory.getLogger(SolrExporter.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String[] ARG_PORT_FLAGS = { "-p", "--port" };
   private static final String ARG_PORT_METAVAR = "PORT";
