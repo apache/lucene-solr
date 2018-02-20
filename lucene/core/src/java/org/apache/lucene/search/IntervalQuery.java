@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -111,7 +112,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
+      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
         return Explanation.match(scorer.score(), "Intervals match");    // nocommit improve this
       }
@@ -119,21 +120,17 @@ public final class IntervalQuery extends Query {
     }
 
     @Override
-    public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
       List<IntervalIterator> subIntervals = new ArrayList<>();
+      List<DocIdSetIterator> disis = new ArrayList<>();
       for (Weight w : subWeights) {
-        subIntervals.add(w.intervals(context, field));
+        Scorer scorer = w.scorer(context, PostingsEnum.POSITIONS);
+        disis.add(scorer.iterator());
+        subIntervals.add(scorer.intervals(field));
       }
-      return IntervalQuery.this.iteratorFunction.apply(subIntervals);
-    }
-
-    @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      IntervalIterator intervals = intervals(context, field);
-      if (intervals == IntervalIterator.EMPTY)
-        return null;
+      IntervalIterator intervals = IntervalQuery.this.iteratorFunction.apply(subIntervals);
       LeafSimScorer leafScorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);  // nocommit
-      return new IntervalScorer(this, intervals, leafScorer);
+      return new IntervalScorer(this, field, ConjunctionDISI.intersectIterators(disis), intervals, leafScorer);
     }
 
     @Override

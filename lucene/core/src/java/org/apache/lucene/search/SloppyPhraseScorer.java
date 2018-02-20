@@ -564,6 +564,11 @@ final class SloppyPhraseScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit.  this will be fun
+  }
+
+  @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return new TwoPhaseIterator(conjunction) {
       @Override

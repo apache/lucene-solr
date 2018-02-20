@@ -22,14 +22,16 @@ import java.io.IOException;
 class IntervalScorer extends Scorer {
 
   private final IntervalIterator intervals;
+  private final String field;
   private final DocIdSetIterator approximation;
   private final LeafSimScorer simScorer;
 
-  protected IntervalScorer(Weight weight, IntervalIterator intervals, LeafSimScorer simScorer) {
+  protected IntervalScorer(Weight weight, String field, DocIdSetIterator approximation, IntervalIterator intervals, LeafSimScorer simScorer) {
     super(weight);
     this.intervals = intervals;
-    this.approximation = intervals.approximation();
+    this.approximation = approximation;
     this.simScorer = simScorer;
+    this.field = field;
   }
 
   @Override
@@ -47,6 +49,13 @@ class IntervalScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    if (this.field.equals(field))
+      return intervals;
+    return null;
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }
@@ -56,7 +65,7 @@ class IntervalScorer extends Scorer {
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        intervals.advanceTo(docID());
+        intervals.reset();
         return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
       }
 

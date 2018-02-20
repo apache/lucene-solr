@@ -185,6 +185,17 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    IntervalIterator reqIntervals = reqScorer.intervals(field);
+    IntervalIterator optIntervals = optScorer.intervals(field);
+    if (optIntervals == null)
+      return reqIntervals;
+    if (reqIntervals == null)
+      return optIntervals;
+    return Intervals.or(Arrays.asList(reqIntervals, optIntervals));
+  }
+
+  @Override
   public int docID() {
     return reqScorer.docID();
   }

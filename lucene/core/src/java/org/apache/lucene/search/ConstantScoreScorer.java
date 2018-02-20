@@ -64,6 +64,11 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return null;
+  }
+
+  @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return twoPhaseIterator;
   }

@@ -224,7 +224,7 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
@@ -314,8 +314,8 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context);
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
         if (scorerSupplier == null) {
           return null;
         }

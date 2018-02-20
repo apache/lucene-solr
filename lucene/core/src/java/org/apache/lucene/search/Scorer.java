@@ -125,6 +125,8 @@ public abstract class Scorer {
    */
   public abstract DocIdSetIterator iterator();
 
+  public abstract IntervalIterator intervals(String field);
+
   /**
    * Optional method: Return a {@link TwoPhaseIterator} view of this
    * {@link Scorer}. A return value of {@code null} indicates that

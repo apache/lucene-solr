@@ -55,12 +55,7 @@ public abstract class IntervalFilter implements IntervalIterator {
   }
 
   @Override
-  public DocIdSetIterator approximation() {
-    return in.approximation();
-  }
-
-  @Override
-  public void advanceTo(int doc) throws IOException {
-    in.advanceTo(doc);
+  public void reset() throws IOException {
+    in.reset();
   }
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IntervalIterator;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -55,6 +56,11 @@ public class SpanScorer extends Scorer {
   @Override
   public int docID() {
     return spans.docID();
+  }
+
+  @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
   }
 
   @Override

@@ -180,6 +180,11 @@ abstract class DisjunctionScorer extends Scorer {
     return score(getSubMatches());
   }
 
+  @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
+  }
+
   /** Compute the score for the given linked list of scorers. */
   protected abstract float score(DisiWrapper topList) throws IOException;
 

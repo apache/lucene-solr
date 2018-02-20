@@ -40,7 +40,7 @@ public class TestIntervalQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newTextField(field, docFields[i], Field.Store.YES));
@@ -74,19 +74,19 @@ public class TestIntervalQuery extends LuceneTestCase {
   public void testOrderedNearQueryWidth0() throws IOException {
     checkHits(IntervalQuery.orderedNearQuery(field, 0, new TermQuery(new Term(field, "w1")),
         new TermQuery(new Term(field, "w2"))),
-        new int[]{ 0 });
+        new int[]{0});
   }
 
   public void testOrderedNearQueryWidth1() throws IOException {
     checkHits(IntervalQuery.orderedNearQuery(field, 1, new TermQuery(new Term(field, "w1")),
-                                                              new TermQuery(new Term(field, "w2"))),
-        new int[]{ 0, 1, 2, 5 });
+        new TermQuery(new Term(field, "w2"))),
+        new int[]{0, 1, 2, 5});
   }
 
   public void testOrderedNearQueryWidth2() throws IOException {
     checkHits(IntervalQuery.orderedNearQuery(field, 2, new TermQuery(new Term(field, "w1")),
         new TermQuery(new Term(field, "w2"))),
-        new int[]{ 0, 1, 2, 3, 5 });
+        new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNestedOrderedNearQuery() throws IOException {
@@ -98,7 +98,7 @@ public class TestIntervalQuery extends LuceneTestCase {
             new TermQuery(new Term(field, "w3")))
     );
 
-    checkHits(q, new int[]{ 0, 1, 2 });
+    checkHits(q, new int[]{0, 1, 2});
   }
 
 }

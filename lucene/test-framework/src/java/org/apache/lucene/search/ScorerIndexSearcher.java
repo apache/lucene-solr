@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -48,7 +49,7 @@ public class ScorerIndexSearcher extends IndexSearcher {
       // we force the use of Scorer (not BulkScorer) to make sure
       // that the scorer passed to LeafCollector.setScorer supports
       // Scorer.getChildren
-      Scorer scorer = weight.scorer(ctx);
+      Scorer scorer = weight.scorer(ctx, collector.scoreMode().needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE);
       if (scorer != null) {
         final DocIdSetIterator iterator = scorer.iterator();
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);

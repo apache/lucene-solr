@@ -236,7 +236,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short pf) throws IOException {
       assert termArrays.length != 0;
       final LeafReader reader = context.reader();
 
@@ -265,7 +265,7 @@ public class MultiPhraseQuery extends Query {
           TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
-            postings.add(termsEnum.postings(null, PostingsEnum.POSITIONS));
+            postings.add(termsEnum.postings(null, PostingsEnum.highest(pf, PostingsEnum.POSITIONS)));
             totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
         }
@@ -307,7 +307,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
+      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {

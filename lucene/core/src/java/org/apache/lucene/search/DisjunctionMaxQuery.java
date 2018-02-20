@@ -120,11 +120,11 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
       List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context);
+        Scorer subScorer = w.scorer(context, postings);
         if (subScorer != null) {
           scorers.add(subScorer);
         }

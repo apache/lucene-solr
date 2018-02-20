@@ -65,6 +65,11 @@ public abstract class CachingCollector extends FilterCollector {
     }
 
     @Override
+    public IntervalIterator intervals(String field) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public final float score() { return score; }
 
     @Override

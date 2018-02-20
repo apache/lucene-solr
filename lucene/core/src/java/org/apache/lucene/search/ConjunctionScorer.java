@@ -101,14 +101,9 @@ class ConjunctionScorer extends Scorer {
     return children;
   }
 
-  static final class DocsAndFreqs {
-    final long cost;
-    final DocIdSetIterator iterator;
-    int doc = -1;
-
-    DocsAndFreqs(DocIdSetIterator iterator) {
-      this.iterator = iterator;
-      this.cost = iterator.cost();
-    }
+  @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
   }
+
 }

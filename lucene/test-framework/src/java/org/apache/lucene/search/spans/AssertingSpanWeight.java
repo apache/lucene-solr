@@ -68,8 +68,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public SpanScorer scorer(LeafReaderContext context) throws IOException {
-    return in.scorer(context);
+  public SpanScorer scorer(LeafReaderContext context, short postings) throws IOException {
+    return in.scorer(context, postings);
   }
 
   @Override
