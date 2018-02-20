@@ -123,7 +123,7 @@ final class CompositeBreakIterator {
   
   private BreakIteratorWrapper getBreakIterator(int scriptCode) {
     if (wordBreakers[scriptCode] == null)
-      wordBreakers[scriptCode] = new BreakIteratorWrapper(config.getBreakIterator(scriptCode));
+      wordBreakers[scriptCode] = BreakIteratorWrapper.wrap(config.getBreakIterator(scriptCode));
     return wordBreakers[scriptCode];
   }
 }

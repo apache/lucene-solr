@@ -49,8 +49,6 @@ Improvements
   position sensitive (e.g. part of a phrase) by having an accurate freq.
   (David Smiley)
 
-* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
-
 * LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
   (Ere Maijala)
 

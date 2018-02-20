@@ -116,9 +116,9 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
       config = new DefaultICUTokenizerConfig(cjkAsWords, myanmarAsWords) {
         
         @Override
-        public RuleBasedBreakIterator getBreakIterator(int script) {
+        public BreakIterator getBreakIterator(int script) {
           if (breakers[script] != null) {
-            return (RuleBasedBreakIterator) breakers[script].clone();
+            return (BreakIterator) breakers[script].clone();
           } else {
             return super.getBreakIterator(script);
           }
