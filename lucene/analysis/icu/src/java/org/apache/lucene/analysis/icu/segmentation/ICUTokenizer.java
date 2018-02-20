@@ -200,18 +200,18 @@ public final class ICUTokenizer extends Tokenizer {
    */
   private boolean incrementTokenBuffer() {
     int start = breaker.current();
-    assert start != BreakIterator.DONE;
+    if (start == BreakIterator.DONE)
+      return false; // BreakIterator exhausted
 
     // find the next set of boundaries, skipping over non-tokens (rule status 0)
     int end = breaker.next();
-    while (end != BreakIterator.DONE && breaker.getRuleStatus() == 0) {
+    while (start != BreakIterator.DONE && breaker.getRuleStatus() == 0) {
       start = end;
       end = breaker.next();
     }
 
-    if (end == BreakIterator.DONE) {
+    if (start == BreakIterator.DONE)
       return false; // BreakIterator exhausted
-    }
 
     termAtt.copyBuffer(buffer, start, end - start);
     offsetAtt.setOffset(correctOffset(offset + start), correctOffset(offset + end));
