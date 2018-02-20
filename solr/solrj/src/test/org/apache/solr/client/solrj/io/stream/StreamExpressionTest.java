@@ -6997,6 +6997,84 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 6);
   }
 
+
+
+  @Test
+  public void testMatrixMult() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,2,3)," +
+        "               b=matrix(array(4), array(5), array(6))," +
+        "               c=matrixMult(a, b)," +
+        "               d=matrix(array(3, 4), array(10,11), array(30, 40))," +
+        "               e=matrixMult(a, d)," +
+        "               f=array(4,8,10)," +
+        "               g=matrix(a, f)," +
+        "               h=matrixMult(d, g)," +
+        "               i=matrixMult(b, a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(matrix.size(), 1);
+    List<Number> row = matrix.get(0);
+    assertEquals(row.size(), 1);
+    assertEquals(row.get(0).doubleValue(), 32.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("e");
+    assertEquals(matrix.size(), 1);
+    row = matrix.get(0);
+    assertEquals(row.size(), 2);
+    assertEquals(row.get(0).doubleValue(), 113.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 146.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 19.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 38.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 49.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 54.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 108.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 140.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 190.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 380.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 490.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("i");
+
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 4.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 8.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 12.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 5.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 10.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 15.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 12.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 18.0, 0.0);
+  }
+
   @Test
   public void testKmeans() throws Exception {
     String cexpr = "let(echo=true," +
