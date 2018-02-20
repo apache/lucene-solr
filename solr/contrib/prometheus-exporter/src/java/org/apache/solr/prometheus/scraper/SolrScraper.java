@@ -46,7 +46,7 @@ import java.util.concurrent.Callable;
  * SolrScraper
  */
 public class SolrScraper implements Callable<Map<String, Collector.MetricFamilySamples>> {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger logger = LoggerFactory.getLogger(SolrScraper.class);
 
   private SolrClient solrClient;
   private SolrScraperConfig scraperConfig;
