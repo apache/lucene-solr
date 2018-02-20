@@ -514,16 +514,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  static class TermData {
-    public long docsStart;
-    public int docFreq;
-
-    public TermData(long docsStart, int docFreq) {
-      this.docsStart = docsStart;
-      this.docFreq = docFreq;
-    }
-  }
-
   private static final long TERMS_BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(SimpleTextTerms.class)
           + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
