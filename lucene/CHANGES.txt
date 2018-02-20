@@ -99,8 +99,6 @@ Other
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
   (Kai Chan via Adrien Grand)
 
-* LUCENE-8122: Upgrade analysis/icu to ICU 60.2. (Robert Muir)
-
 * LUCENE-8106: Add script (reproduceJenkinsFailures.py) to attempt to reproduce
   failing tests from a Jenkins log. (Steve Rowe)
 
