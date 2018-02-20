@@ -140,6 +140,8 @@ Bug Fixes
 
 * SOLR-2834: Fix SolrJ Field and Document analyzes for types that include CharacterFilter (Alexandre Rafalovitch)
 
+* SOLR-12007: When a SolrCore is closed, cleanupOldIndexDirectories is called in a background thread that will
+  race with DirectoryFactory close. (Mark Miller, Gabor Kaszab)
 
 Optimizations
 ----------------------

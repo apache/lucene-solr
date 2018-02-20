@@ -3093,16 +3093,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected 
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
-      Thread cleanupThread = new Thread(() -> {
-        log.debug("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
-        try {
-          myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir, reload);
-        } catch (Exception exc) {
-          log.error("Failed to cleanup old index directories for core {}", coreName, exc);
-        }
-      }, "OldIndexDirectoryCleanupThreadForCore-"+coreName);
-      cleanupThread.setDaemon(true);
-      cleanupThread.start();
+      log.debug("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
+      try {
+        myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir, reload);
+      } catch (Exception exc) {
+        log.error("Failed to cleanup old index directories for core "+coreName, exc);
+      }
     }
   }
 
