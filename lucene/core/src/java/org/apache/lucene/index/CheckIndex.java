@@ -2843,6 +2843,7 @@ public final class CheckIndex implements Closeable {
    * @return An Options struct
    * @throws IllegalArgumentException if any of the CLI args are invalid
    */
+  @SuppressForbidden(reason = "System.err required: command line tool")
   public static Options parseOptions(String[] args) {
     Options opts = new Options();
 
@@ -2853,8 +2854,8 @@ public final class CheckIndex implements Closeable {
         opts.doChecksumsOnly = true;
       } else if ("-exorcise".equals(arg)) {
         opts.doExorcise = true;
-      } else if ("-doSlowChecks".equals(arg)) {
-        System.err.println("-doSlowChecks is deprecated, use -slow instead");
+      } else if ("-crossCheckTermVectors".equals(arg)) {
+        System.err.println("-crossCheckTermVectors is deprecated, use -slow instead");
         opts.doSlowChecks = true;
       } else if ("-slow".equals(arg)) {
         opts.doSlowChecks = true;
@@ -2883,7 +2884,7 @@ public final class CheckIndex implements Closeable {
 
     if (opts.indexPath == null) {
       throw new IllegalArgumentException("\nERROR: index path not specified" +
-                         "\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-doSlowChecks] [-segment X] [-segment Y] [-dir-impl X]\n" +
+                         "\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-slow] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -fast: just verify file checksums, omitting logical integrity checks\n" + 
