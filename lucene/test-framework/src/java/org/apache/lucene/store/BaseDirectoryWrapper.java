@@ -30,7 +30,7 @@ import org.apache.lucene.util.TestUtil;
 public abstract class BaseDirectoryWrapper extends FilterDirectory {
   
   private boolean checkIndexOnClose = true;
-  private boolean crossCheckTermVectorsOnClose = true;
+  private boolean doSlowChecksOnClose = true;
   protected volatile boolean isOpen = true;
 
   protected BaseDirectoryWrapper(Directory delegate) {
@@ -42,7 +42,7 @@ public abstract class BaseDirectoryWrapper extends FilterDirectory {
     if (isOpen) {
       isOpen = false;
       if (checkIndexOnClose && DirectoryReader.indexExists(this)) {
-        TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
+        TestUtil.checkIndex(this, doSlowChecksOnClose);
       }
     }
     super.close();
@@ -65,10 +65,10 @@ public abstract class BaseDirectoryWrapper extends FilterDirectory {
   }
 
   public void setCrossCheckTermVectorsOnClose(boolean value) {
-    this.crossCheckTermVectorsOnClose = value;
+    this.doSlowChecksOnClose = value;
   }
 
   public boolean getCrossCheckTermVectorsOnClose() {
-    return crossCheckTermVectorsOnClose;
+    return doSlowChecksOnClose;
   }
 }
