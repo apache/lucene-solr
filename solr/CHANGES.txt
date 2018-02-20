@@ -148,8 +148,6 @@ New Features
 
 * SOLR-11588: Add matrixMult Stream Evaluator to support matrix multiplication (Joel Bernstein)
 
-* SOLR-11795: Add Solr metrics exporter for Prometheus (Minoru Osuka via koji)
-
 Bug Fixes
 ----------------------
 
