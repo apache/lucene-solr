@@ -146,6 +146,8 @@ New Features
 
 * SOLR-11689: Add l1norm, l2norm and linfnorm Stream Evaluators (Joel Bernstein)
 
+* SOLR-11588: Add matrixMult Stream Evaluator to support matrix multiplication (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
