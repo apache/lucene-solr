@@ -115,4 +115,9 @@ public class BulkScorerWrapperScorer extends Scorer {
     };
   }
 
+  @Override
+  public IntervalIterator intervals(String field) {
+    return null;
+  }
+
 }

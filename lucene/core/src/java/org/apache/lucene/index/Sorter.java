@@ -445,30 +445,5 @@ final class Sorter {
   public String toString() {
     return getID();
   }
-
-  static final Scorer FAKESCORER = new Scorer(null) {
-
-    float score;
-    int doc = -1;
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-  };
   
 }

@@ -71,21 +71,6 @@ public final class ConjunctionDISI extends DocIdSetIterator {
     return createConjunction(allIterators, twoPhaseIterators);
   }
 
-  public static DocIdSetIterator intersectIntervals(List<IntervalIterator> iterators) {
-    if (iterators.size() < 2) {
-      throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
-    }
-    final List<DocIdSetIterator> allIterators = new ArrayList<>();
-    final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
-    for (IntervalIterator iterator : iterators) {
-      if (iterator == null)
-        return DocIdSetIterator.empty();
-      addIterator(iterator.approximation(), allIterators, twoPhaseIterators);
-    }
-
-    return createConjunction(allIterators, twoPhaseIterators);
-  }
-
   /** Create a conjunction over the provided {@link Spans}. Note that the
    * returned {@link DocIdSetIterator} might leverage two-phase iteration in
    * which case it is possible to retrieve the {@link TwoPhaseIterator} using

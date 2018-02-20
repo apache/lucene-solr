@@ -290,7 +290,7 @@ abstract class RangeFieldQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
         LeafReader reader = context.reader();
         PointValues values = reader.getPointValues(field);
         if (values == null) {
@@ -350,8 +350,8 @@ abstract class RangeFieldQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context);
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
         if (scorerSupplier == null) {
           return null;
         }

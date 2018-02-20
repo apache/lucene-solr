@@ -54,7 +54,7 @@ public class MatchNoDocsQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
         return null;
       }
 

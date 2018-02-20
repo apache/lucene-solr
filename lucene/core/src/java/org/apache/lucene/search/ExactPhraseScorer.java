@@ -125,6 +125,11 @@ final class ExactPhraseScorer extends Scorer {
     return docScorer.maxScore();
   }
 
+  @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
+  }
+
   /** Advance the given pos enum to the first doc on or after {@code target}.
    *  Return {@code false} if the enum was exhausted before reaching
    *  {@code target} and {@code true} otherwise. */

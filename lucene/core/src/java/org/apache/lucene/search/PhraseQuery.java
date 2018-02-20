@@ -396,7 +396,7 @@ public class PhraseQuery extends Query {
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
       assert terms.length > 0;
       final LeafReader reader = context.reader();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
@@ -422,7 +422,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.POSITIONS);
+        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.highest(postings, PostingsEnum.POSITIONS));
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
         totalMatchCost += termPositionsCost(te);
       }
@@ -455,7 +455,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
+      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {

@@ -309,12 +309,12 @@ public class TermInSetQuery extends Query implements Accountable {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
         final WeightOrDocIdSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet == null) {
           return null;
         } else if (weightOrBitSet.weight != null) {
-          return weightOrBitSet.weight.scorer(context);
+          return weightOrBitSet.weight.scorer(context, postings);
         } else {
           return scorer(weightOrBitSet.set);
         }

@@ -113,6 +113,11 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return in.intervals(field);
+  }
+
+  @Override
   public int docID() {
     return in.docID();
   }

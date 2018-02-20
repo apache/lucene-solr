@@ -715,36 +715,31 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
-      return in.intervals(context, field);
-    }
-
-    @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
 
       if (in.isCacheable(context) == false) {
         // this segment is not suitable for caching
-        return in.scorerSupplier(context);
+        return in.scorerSupplier(context, postings);
       }
 
       // Short-circuit: Check whether this segment is eligible for caching
       // before we take a lock because of #get
       if (shouldCache(context) == false) {
-        return in.scorerSupplier(context);
+        return in.scorerSupplier(context, postings);
       }
 
       // If the lock is already busy, prefer using the uncached version than waiting
       if (lock.tryLock() == false) {
-        return in.scorerSupplier(context);
+        return in.scorerSupplier(context, postings);
       }
 
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cache helper
-        return in.scorerSupplier(context);
+        return in.scorerSupplier(context, postings);
       }
       DocIdSet docIdSet;
       try {
@@ -754,7 +749,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
 
       if (docIdSet == null) {
-        ScorerSupplier inSupplier = in.scorerSupplier(context);
+        ScorerSupplier inSupplier = in.scorerSupplier(context, postings);
         if (inSupplier == null) {
           putIfAbsent(in.getQuery(), context, DocIdSet.EMPTY, cacheHelper);
           return null;
@@ -814,8 +809,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      ScorerSupplier scorerSupplier = scorerSupplier(context);
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+      ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
       if (scorerSupplier == null) {
         return null;
       }

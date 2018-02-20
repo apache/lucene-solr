@@ -441,6 +441,11 @@ final class WANDScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
+  }
+
+  @Override
   public float score() throws IOException {
     // we need to know about all matches
     advanceAllTail();

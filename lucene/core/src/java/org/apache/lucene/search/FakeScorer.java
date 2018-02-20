@@ -46,6 +46,11 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     throw new UnsupportedOperationException();
   }

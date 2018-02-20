@@ -30,6 +30,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -82,60 +83,20 @@ public class TestIntervals extends LuceneTestCase {
     IOUtils.close(searcher.getIndexReader(), directory);
   }
 
-  public void testTermQueryIntervals() throws IOException {
-    int[][] expected = new int[][]{
-        {},
-        { 1, 4, 7 },
-        { 1, 4, 7 },
-        {},
-        { 1, 4, 7 },
-        { 0 }
-    };
-
-    Weight weight = searcher.createNormalizedWeight(new TermQuery(new Term("field1", "porridge")), ScoreMode.COMPLETE);
+  private void checkIntervals(Query query, String field, int[][] expected) throws IOException {
+    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
     for (LeafReaderContext ctx : searcher.leafContexts) {
-      assertNull(weight.intervals(ctx, "field2"));
+      Scorer scorer = weight.scorer(ctx, PostingsEnum.POSITIONS);
+      assertNull(scorer.intervals(field + "1"));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
-      IntervalIterator intervals = weight.intervals(ctx, "field1");
-      for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
+      IntervalIterator intervals = scorer.intervals("field1");
+      DocIdSetIterator it = scorer.iterator();
+      int matchedDocs = 0;
+      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+        matchedDocs++;
         ids.advance(doc);
         int id = (int) ids.longValue();
-        intervals.advanceTo(doc);
-        int i = 0, pos;
-        while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
-          assertEquals(expected[id][i], pos);
-          assertEquals(expected[id][i], intervals.start());
-          assertEquals(expected[id][i], intervals.end());
-          i++;
-        }
-        assertEquals(expected[id].length, i);
-      }
-    }
-
-  }
-
-  public void testOrderedNearIntervals() throws IOException {
-
-    int[][] expected = new int[][]{
-        {},
-        { 0, 2, 6, 17 },
-        { 3, 5, 6, 21 },
-        {},
-        { 0, 2, 6, 17 },
-        { }
-    };
-
-    Weight peaseWeight = searcher.createNormalizedWeight(new TermQuery(new Term("field1", "pease")), ScoreMode.COMPLETE);
-    Weight hotWeight = searcher.createNormalizedWeight(new TermQuery(new Term("field1", "hot")), ScoreMode.COMPLETE);
-    for (LeafReaderContext ctx : searcher.leafContexts) {
-      NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
-      IntervalIterator intervals = Intervals.orderedIntervalIterator(
-          Arrays.asList(peaseWeight.intervals(ctx, "field1"), hotWeight.intervals(ctx, "field1"))
-      );
-      for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
-        ids.advance(doc);
-        int id = (int) ids.longValue();
-        intervals.advanceTo(doc);
+        intervals.reset();
         int i = 0, pos;
         while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
           assertEquals(expected[id][i], pos);
@@ -145,8 +106,45 @@ public class TestIntervals extends LuceneTestCase {
         }
         assertEquals(expected[id].length, i);
       }
+      assertEquals(expected.length, matchedDocs);
     }
-
   }
 
+  public void testTermQueryIntervals() throws IOException {
+    checkIntervals(new TermQuery(new Term("field1", "porridge")), "field1", new int[][]{
+        {},
+        { 1, 1, 4, 4, 7, 7 },
+        { 1, 1, 4, 4, 7, 7 },
+        {},
+        { 1, 1, 4, 4, 7, 7 },
+        { 0 }
+    });
+  }
+
+  public void testOrderedNearIntervals() throws IOException {
+    checkIntervals(IntervalQuery.orderedNearQuery("field1", 100,
+        new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
+        "field1", new int[][]{
+        {},
+        { 0, 2, 6, 17 },
+        { 3, 5, 6, 21 },
+        {},
+        { 0, 2, 6, 17 },
+        { }
+    });
+  }
+
+  public void testIntervalDisjunction() throws IOException {
+    checkIntervals(new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
+        .build(), "field1", new int[][]{
+        {},
+        { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
+        { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},
+        { 3, 3 },
+        { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
+        {}
+    });
+  }
 }

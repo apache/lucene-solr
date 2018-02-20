@@ -87,21 +87,7 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
-      if (term.field().equals(field) == false) {
-        return null;
-      }
-      assert termStates == null || termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);;
-      final TermsEnum termsEnum = getTermsEnum(context);
-      if (termsEnum == null) {
-        return null;
-      }
-      PostingsEnum pe = termsEnum.postings(null, PostingsEnum.POSITIONS);
-      return Intervals.termIterator(pe);
-    }
-
-    @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
       assert termStates == null || termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);;
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
@@ -113,7 +99,7 @@ public class TermQuery extends Query {
           .getIndexOptions();
       float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
       LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
-      return new TermScorer(this, termsEnum, scoreMode, scorer);
+      return new TermScorer(this, getTerm().field(), termsEnum, scoreMode, postings, scorer);
     }
 
     private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
@@ -159,7 +145,7 @@ public class TermQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      TermScorer scorer = (TermScorer) scorer(context);
+      TermScorer scorer = (TermScorer) scorer(context, PostingsEnum.FREQS);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {

@@ -114,7 +114,7 @@ public abstract class PointInSetQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);

@@ -23,15 +23,13 @@ import org.apache.lucene.index.PostingsEnum;
 
 public interface IntervalIterator {
 
-  DocIdSetIterator approximation();
-
   int start();
 
   int end();
 
   int innerWidth();
 
-  void advanceTo(int doc) throws IOException;
+  void reset() throws IOException;
 
   int nextInterval() throws IOException;
 
@@ -40,10 +38,6 @@ public interface IntervalIterator {
   }
 
   IntervalIterator EMPTY = new IntervalIterator() {
-    @Override
-    public DocIdSetIterator approximation() {
-      return DocIdSetIterator.empty();
-    }
 
     @Override
     public int start() {
@@ -61,7 +55,7 @@ public interface IntervalIterator {
     }
 
     @Override
-    public void advanceTo(int doc) throws IOException {
+    public void reset() {
 
     }
 

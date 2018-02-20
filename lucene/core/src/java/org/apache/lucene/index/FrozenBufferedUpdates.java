@@ -686,7 +686,7 @@ class FrozenBufferedUpdates {
         final IndexSearcher searcher = new IndexSearcher(readerContext.reader());
         searcher.setQueryCache(null);
         final Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
-        final Scorer scorer = weight.scorer(readerContext);
+        final Scorer scorer = weight.scorer(readerContext, PostingsEnum.NONE);
         if (scorer != null) {
           final DocIdSetIterator it = scorer.iterator();
 

@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
@@ -161,7 +162,7 @@ public final class SynonymQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
+      Scorer scorer = scorer(context, PostingsEnum.FREQS);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
@@ -187,7 +188,7 @@ public final class SynonymQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
       IndexOptions indexOptions = IndexOptions.NONE;
       if (terms.length > 0) {
         FieldInfo info = context.reader()
@@ -208,7 +209,7 @@ public final class SynonymQuery extends Query {
           long termMaxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
           totalMaxFreq += termMaxFreq;
           LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), true, termMaxFreq);
-          subScorers.add(new TermScorer(this, termsEnum, ScoreMode.COMPLETE, simScorer));
+          subScorers.add(new TermScorer(this, terms[i].field(), termsEnum, ScoreMode.COMPLETE, postings, simScorer));
         }
       }
       if (subScorers.isEmpty()) {

@@ -61,11 +61,6 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
-  public IntervalIterator intervals(LeafReaderContext context, String field) throws IOException {
-    return in.intervals(context, field);
-  }
-
-  @Override
   public void extractTerms(Set<Term> terms) {
     in.extractTerms(terms);
   }
@@ -76,8 +71,8 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context) throws IOException {
-    return in.scorer(context);
+  public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+    return in.scorer(context, postings);
   }
 
 }

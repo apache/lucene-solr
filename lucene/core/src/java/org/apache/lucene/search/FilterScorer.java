@@ -68,6 +68,11 @@ public abstract class FilterScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return in.intervals(field);
+  }
+
+  @Override
   public final DocIdSetIterator iterator() {
     return in.iterator();
   }

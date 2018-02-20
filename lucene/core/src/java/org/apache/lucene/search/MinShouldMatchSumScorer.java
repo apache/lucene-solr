@@ -127,6 +127,11 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
+  public IntervalIterator intervals(String field) {
+    return null;  // nocommit
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }

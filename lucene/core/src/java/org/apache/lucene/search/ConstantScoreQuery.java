@@ -125,8 +125,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-          ScorerSupplier innerScorerSupplier = innerWeight.scorerSupplier(context);
+        public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
+          ScorerSupplier innerScorerSupplier = innerWeight.scorerSupplier(context, postings);
           if (innerScorerSupplier == null) {
             return null;
           }
@@ -159,8 +159,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
-          ScorerSupplier scorerSupplier = scorerSupplier(context);
+        public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+          ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
           if (scorerSupplier == null) {
             return null;
           }

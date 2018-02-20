@@ -133,9 +133,9 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-        final ScorerSupplier indexScorerSupplier = indexWeight.scorerSupplier(context);
-        final ScorerSupplier dvScorerSupplier = dvWeight.scorerSupplier(context);
+      public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
+        final ScorerSupplier indexScorerSupplier = indexWeight.scorerSupplier(context, postings);
+        final ScorerSupplier dvScorerSupplier = dvWeight.scorerSupplier(context, postings);
         if (indexScorerSupplier == null || dvScorerSupplier == null) {
           return null;
         }
@@ -162,8 +162,8 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context);
+      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
         if (scorerSupplier == null) {
           return null;
         }

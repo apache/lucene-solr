@@ -26,6 +26,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PostingsEnum;
 
 /**
  * Base class for producing {@link DoubleValues}
@@ -577,7 +578,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-      Scorer scorer = weight.scorer(ctx);
+      Scorer scorer = weight.scorer(ctx, PostingsEnum.NONE);
       if (scorer == null)
         return DoubleValues.EMPTY;
       DocIdSetIterator it = scorer.iterator();
