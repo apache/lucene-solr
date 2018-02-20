@@ -1,5 +1,5 @@
 = Monitoring Solr
-:page-children: metrics-reporting, mbean-request-handler, configuring-logging, using-jmx-with-solr, performance-statistics-reference
+:page-children: metrics-reporting, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -29,6 +29,8 @@ Common administrative tasks include:
 <<configuring-logging.adoc#configuring-logging,Configuring Logging>>: Describes how to configure logging for Solr.
 
 <<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>>: Describes how to use Java Management Extensions with Solr.
+
+<<monitoring-solr-with-prometheus-and-grafana.adoc#monitoring-solr-with-prometheus-and-grafana,Monitoring Solr with Prometheus and Grafana>>: Describes how to monitor Solr with Prometheus and Grafana.
 
 <<performance-statistics-reference.adoc#performance-statistics-reference,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
 
