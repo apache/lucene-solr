@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * SolrCollector
  */
 public class SolrCollector extends Collector implements Collector.Describable {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger logger = LoggerFactory.getLogger(SolrCollector.class);
 
   private SolrClient solrClient;
   private SolrCollectorConfig config = new SolrCollectorConfig();
