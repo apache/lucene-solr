@@ -90,8 +90,8 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   // ...this is done to be more consistent with things like SpanFirstQuery
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return maskedQuery.createWeight(searcher, scoreMode, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    return maskedQuery.createWeight(searcher, scoreMode, minRequiredPostings, boost);
   }
 
   @Override

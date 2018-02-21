@@ -37,16 +37,16 @@ import org.apache.lucene.util.Bits;
  * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext,short)})
+ * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, ScoreMode, float)}).
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, ScoreMode, org.apache.lucene.search.Query.Postings, float)}).
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(org.apache.lucene.index.LeafReaderContext,short)}.
+ * {@link #scorer(org.apache.lucene.index.LeafReaderContext)}.
  * </ol>
  * 
  * @since 2.9
@@ -101,7 +101,7 @@ public abstract class Weight implements SegmentCacheable {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(LeafReaderContext context, short postings) throws IOException;
+  public abstract Scorer scorer(LeafReaderContext context) throws IOException;
 
   /**
    * Optional method.
@@ -110,8 +110,8 @@ public abstract class Weight implements SegmentCacheable {
    * builds a {@link ScorerSupplier} wrapper around it.
    * @see #scorer
    */
-  public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
-    final Scorer scorer = scorer(context, postings);
+  public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+    final Scorer scorer = scorer(context);
     if (scorer == null) {
       return null;
     }
@@ -145,7 +145,7 @@ public abstract class Weight implements SegmentCacheable {
    */
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
 
-    Scorer scorer = scorer(context, PostingsEnum.NONE);
+    Scorer scorer = scorer(context);
     if (scorer == null) {
       // No docs match
       return null;

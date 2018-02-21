@@ -110,9 +110,9 @@ public final class IndexOrDocValuesQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Weight indexWeight = indexQuery.createWeight(searcher, scoreMode, boost);
-    final Weight dvWeight = dvQuery.createWeight(searcher, scoreMode, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    final Weight indexWeight = indexQuery.createWeight(searcher, scoreMode, minRequiredPostings, boost);
+    final Weight dvWeight = dvQuery.createWeight(searcher, scoreMode, minRequiredPostings, boost);
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -133,9 +133,9 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
-        final ScorerSupplier indexScorerSupplier = indexWeight.scorerSupplier(context, postings);
-        final ScorerSupplier dvScorerSupplier = dvWeight.scorerSupplier(context, postings);
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        final ScorerSupplier indexScorerSupplier = indexWeight.scorerSupplier(context);
+        final ScorerSupplier dvScorerSupplier = dvWeight.scorerSupplier(context);
         if (indexScorerSupplier == null || dvScorerSupplier == null) {
           return null;
         }
@@ -162,8 +162,8 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
         if (scorerSupplier == null) {
           return null;
         }

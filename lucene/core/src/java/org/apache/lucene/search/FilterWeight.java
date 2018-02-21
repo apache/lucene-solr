@@ -47,7 +47,7 @@ public abstract class FilterWeight extends Weight {
   /**
    * Alternative constructor.
    * Use this variant only if the <code>weight</code> was not obtained
-   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, float)}
+   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, Query.Postings, float)}
    * method of the <code>query</code> object.
    */
   protected FilterWeight(Query query, Weight weight) {
@@ -71,8 +71,8 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
-    return in.scorer(context, postings);
+  public Scorer scorer(LeafReaderContext context) throws IOException {
+    return in.scorer(context);
   }
 
 }

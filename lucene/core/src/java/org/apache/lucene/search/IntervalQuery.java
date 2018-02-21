@@ -57,10 +57,10 @@ public final class IntervalQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     List<Weight> subWeights = new ArrayList<>();
     for (Query q : subQueries) {
-      subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE_NO_SCORES, boost));
+      subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE, minRequiredPostings.atLeast(Postings.POSITIONS), boost));
     }
     return new IntervalWeight(this, subWeights, buildSimScorer(searcher, subWeights), scoreMode);
   }
@@ -112,7 +112,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
+      Scorer scorer = scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
         return Explanation.match(scorer.score(), "Intervals match");    // nocommit improve this
       }
@@ -120,13 +120,18 @@ public final class IntervalQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       List<IntervalIterator> subIntervals = new ArrayList<>();
       List<DocIdSetIterator> disis = new ArrayList<>();
       for (Weight w : subWeights) {
-        Scorer scorer = w.scorer(context, PostingsEnum.POSITIONS);
+        Scorer scorer = w.scorer(context);
+        if (scorer == null)
+          return null;
         disis.add(scorer.iterator());
-        subIntervals.add(scorer.intervals(field));
+        IntervalIterator it = scorer.intervals(field);
+        if (it == null)
+          return null;
+        subIntervals.add(it);
       }
       IntervalIterator intervals = IntervalQuery.this.iteratorFunction.apply(subIntervals);
       LeafSimScorer leafScorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);  // nocommit

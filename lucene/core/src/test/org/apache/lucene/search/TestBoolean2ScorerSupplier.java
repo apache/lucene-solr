@@ -60,6 +60,11 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     }
 
     @Override
+    public IntervalIterator intervals(String field) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString() {
       return "FakeScorer(cost=" + it.cost() + ")";
     }

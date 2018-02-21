@@ -193,11 +193,13 @@ public class MultiPhraseQuery extends Query {
     private final Similarity.SimScorer stats;
     private final Map<Term,TermStates> termStates = new HashMap<>();
     private final ScoreMode scoreMode;
+    private final Postings minRequiredPostings;
 
-    public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+    public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
       this.scoreMode = scoreMode;
+      this.minRequiredPostings = minRequiredPostings;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
 
@@ -236,7 +238,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, short pf) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       assert termArrays.length != 0;
       final LeafReader reader = context.reader();
 
@@ -265,7 +267,7 @@ public class MultiPhraseQuery extends Query {
           TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
-            postings.add(termsEnum.postings(null, PostingsEnum.highest(pf, PostingsEnum.POSITIONS)));
+            postings.add(termsEnum.postings(null, minRequiredPostings.atLeast(Postings.POSITIONS).getRequiredPostings()));
             totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
         }
@@ -307,7 +309,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
+      Scorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
@@ -343,8 +345,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new MultiPhraseWeight(searcher, scoreMode, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    return new MultiPhraseWeight(searcher, scoreMode, minRequiredPostings, boost);
   }
 
   /** Prints a user-readable version of this query. */

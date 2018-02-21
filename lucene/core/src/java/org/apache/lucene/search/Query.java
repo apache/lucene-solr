@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.search.spans.SpanWeight;
 
 /** The abstract base class for queries.
     <p>Instantiable subclasses are:
@@ -43,6 +45,51 @@ import org.apache.lucene.index.IndexReader;
 */
 public abstract class Query {
 
+  /**
+   * Enumeration defining what postings information should be retrieved from the
+   * index for a given Spans
+   */
+  public enum Postings {
+    NONE {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.NONE;
+      }
+    },
+    FREQS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.FREQS;
+      }
+    },
+    POSITIONS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.POSITIONS;
+      }
+    },
+    PAYLOADS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS;
+      }
+    },
+    OFFSETS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS | PostingsEnum.OFFSETS;
+      }
+    };
+
+    public abstract int getRequiredPostings();
+
+    public Postings atLeast(Postings postings) {
+      if (postings.compareTo(this) > 0)
+        return postings;
+      return this;
+    }
+  }
+
   /** Prints a query to a string, with <code>field</code> assumed to be the 
    * default field and omitted.
    */
@@ -62,7 +109,7 @@ public abstract class Query {
    * @param scoreMode     How the produced scorers will be consumed.
    * @param boost         The boost that is propagated by the parent queries.
    */
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 

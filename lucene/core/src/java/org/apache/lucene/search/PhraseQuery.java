@@ -353,9 +353,10 @@ public class PhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
+    private final Postings minRequiredPostings;
     private transient TermStates states[];
 
-    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -365,6 +366,7 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.scoreMode = scoreMode;
+      this.minRequiredPostings = minRequiredPostings;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermStates[terms.length];
@@ -396,7 +398,7 @@ public class PhraseQuery extends Query {
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       assert terms.length > 0;
       final LeafReader reader = context.reader();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
@@ -422,7 +424,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.highest(postings, PostingsEnum.POSITIONS));
+        PostingsEnum postingsEnum = te.postings(null, minRequiredPostings.atLeast(Postings.POSITIONS).getRequiredPostings());
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
         totalMatchCost += termPositionsCost(te);
       }
@@ -455,7 +457,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, PostingsEnum.POSITIONS);
+      Scorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
@@ -510,8 +512,8 @@ public class PhraseQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new PhraseWeight(searcher, scoreMode, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    return new PhraseWeight(searcher, scoreMode, minRequiredPostings, boost);
   }
 
   /** Prints a user-readable version of this query. */

@@ -182,7 +182,20 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;  // nocommit
+    List<IntervalIterator> subIntervals = new ArrayList<>();
+    for (DisiWrapper dw : subScorers) {
+      IntervalIterator subIt = dw.scorer.intervals(field);
+      if (subIt != null)
+        subIntervals.add(subIt);
+    }
+    if (subIntervals.size() == 0)
+      return null;
+    return new DisjunctionIntervalIterator(subIntervals) {
+      @Override
+      protected void positionSubIntervals() throws IOException {
+        getSubMatches();
+      }
+    };
   }
 
   /** Compute the score for the given linked list of scorers. */

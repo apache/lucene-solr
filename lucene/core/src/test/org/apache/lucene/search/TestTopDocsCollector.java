@@ -245,6 +245,11 @@ public class TestTopDocsCollector extends LuceneTestCase {
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public IntervalIterator intervals(String field) {
+      return null;
+    }
   }
 
   public void testSetMinCompetitiveScore() throws Exception {

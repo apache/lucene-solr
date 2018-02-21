@@ -29,7 +29,7 @@ public interface IntervalIterator {
 
   int innerWidth();
 
-  void reset() throws IOException;
+  boolean reset(int doc) throws IOException;
 
   int nextInterval() throws IOException;
 
@@ -55,12 +55,12 @@ public interface IntervalIterator {
     }
 
     @Override
-    public void reset() {
-
+    public boolean reset(int doc) {
+      return false;
     }
 
     @Override
-    public int nextInterval() throws IOException {
+    public int nextInterval() {
       return Intervals.NO_MORE_INTERVALS;
     }
   };

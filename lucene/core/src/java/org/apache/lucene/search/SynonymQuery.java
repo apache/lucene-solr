@@ -112,16 +112,16 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     if (scoreMode.needsScores()) {
-      return new SynonymWeight(this, searcher, boost);
+      return new SynonymWeight(this, searcher, minRequiredPostings, boost);
     } else {
       // if scores are not needed, let BooleanWeight deal with optimizing that case.
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       for (Term term : terms) {
         bq.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       }
-      return searcher.rewrite(bq.build()).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+      return searcher.rewrite(bq.build()).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, minRequiredPostings, boost);
     }
   }
   
@@ -129,8 +129,9 @@ public final class SynonymQuery extends Query {
     private final TermStates termStates[];
     private final Similarity similarity;
     private final Similarity.SimScorer simWeight;
+    private final Postings minRequiredPostings;
 
-    SynonymWeight(Query query, IndexSearcher searcher, float boost) throws IOException {
+    SynonymWeight(Query query, IndexSearcher searcher, Postings minRequiredPostings, float boost) throws IOException {
       super(query);
       CollectionStatistics collectionStats = searcher.collectionStatistics(terms[0].field());
       long docFreq = 0;
@@ -151,6 +152,7 @@ public final class SynonymQuery extends Query {
       } else {
         this.simWeight = null; // no terms exist at all, we won't use similarity
       }
+      this.minRequiredPostings = minRequiredPostings;
     }
 
     @Override
@@ -162,7 +164,7 @@ public final class SynonymQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, PostingsEnum.FREQS);
+      Scorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
@@ -188,7 +190,7 @@ public final class SynonymQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       IndexOptions indexOptions = IndexOptions.NONE;
       if (terms.length > 0) {
         FieldInfo info = context.reader()
@@ -209,7 +211,7 @@ public final class SynonymQuery extends Query {
           long termMaxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
           totalMaxFreq += termMaxFreq;
           LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), true, termMaxFreq);
-          subScorers.add(new TermScorer(this, terms[i].field(), termsEnum, ScoreMode.COMPLETE, postings, simScorer));
+          subScorers.add(new TermScorer(this, terms[i].field(), termsEnum, ScoreMode.COMPLETE, minRequiredPostings, simScorer));
         }
       }
       if (subScorers.isEmpty()) {

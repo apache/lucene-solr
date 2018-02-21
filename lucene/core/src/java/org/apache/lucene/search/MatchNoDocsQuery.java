@@ -42,7 +42,7 @@ public class MatchNoDocsQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -54,7 +54,7 @@ public class MatchNoDocsQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         return null;
       }
 

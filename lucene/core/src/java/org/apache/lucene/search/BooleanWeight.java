@@ -45,14 +45,14 @@ final class BooleanWeight extends Weight {
   final ArrayList<Weight> weights;
   final ScoreMode scoreMode;
 
-  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, Query.Postings minRequiredPostings, float boost) throws IOException {
     super(query);
     this.query = query;
     this.scoreMode = scoreMode;
     this.similarity = searcher.getSimilarity();
     weights = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
+      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, minRequiredPostings, boost);
       weights.add(w);
     }
   }
@@ -113,7 +113,7 @@ final class BooleanWeight extends Weight {
       // contributions to the score to floats), so in order to make sure that
       // explanations have the same value as the score, we pull a scorer and
       // use it to compute the score.
-      Scorer scorer = scorer(context, PostingsEnum.NONE);
+      Scorer scorer = scorer(context);
       int advanced = scorer.iterator().advance(doc);
       assert advanced == doc;
       return Explanation.match(scorer.score(), "sum of:", subs);
@@ -211,7 +211,7 @@ final class BooleanWeight extends Weight {
 
   /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
    *  cannot be used. */
-  BulkScorer booleanScorer(LeafReaderContext context, short postings) throws IOException {
+  BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
     final int numOptionalClauses = query.getClauses(Occur.SHOULD).size();
     final int numRequiredClauses = query.getClauses(Occur.MUST).size() + query.getClauses(Occur.FILTER).size();
     
@@ -263,7 +263,7 @@ final class BooleanWeight extends Weight {
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
       if (c.isProhibited()) {
-        Scorer scorer = w.scorer(context, postings);
+        Scorer scorer = w.scorer(context);
         if (scorer != null) {
           prohibited.add(scorer);
         }
@@ -291,7 +291,7 @@ final class BooleanWeight extends Weight {
       // so that we can dynamically prune non-competitive hits.
       return super.bulkScorer(context);
     }
-    final BulkScorer bulkScorer = booleanScorer(context, PostingsEnum.NONE);
+    final BulkScorer bulkScorer = booleanScorer(context);
     if (bulkScorer != null) {
       // bulk scoring is applicable, use it
       return bulkScorer;
@@ -302,8 +302,8 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
-    ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
+  public Scorer scorer(LeafReaderContext context) throws IOException {
+    ScorerSupplier scorerSupplier = scorerSupplier(context);
     if (scorerSupplier == null) {
       return null;
     }
@@ -326,7 +326,7 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
-  public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
+  public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
     int minShouldMatch = query.getMinimumNumberShouldMatch();
 
     final Map<Occur, Collection<ScorerSupplier>> scorers = new EnumMap<>(Occur.class);
@@ -337,7 +337,7 @@ final class BooleanWeight extends Weight {
     Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
-      ScorerSupplier subScorer = w.scorerSupplier(context, postings);
+      ScorerSupplier subScorer = w.scorerSupplier(context);
       if (subScorer == null) {
         if (c.isRequired()) {
           return null;

@@ -65,7 +65,7 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     final TermStates context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
     if (termStates == null || termStates.wasBuiltFor(topContext) == false) {

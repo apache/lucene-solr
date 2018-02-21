@@ -103,10 +103,10 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     private final ScoreMode scoreMode;
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
-    public DisjunctionMaxWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public DisjunctionMaxWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
       super(DisjunctionMaxQuery.this);
       for (Query disjunctQuery : disjuncts) {
-        weights.add(searcher.createWeight(disjunctQuery, scoreMode, boost));
+        weights.add(searcher.createWeight(disjunctQuery, scoreMode, minRequiredPostings, boost));
       }
       this.scoreMode = scoreMode;
     }
@@ -120,11 +120,11 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context, postings);
+        Scorer subScorer = w.scorer(context);
         if (subScorer != null) {
           scorers.add(subScorer);
         }
@@ -189,8 +189,8 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
   /** Create the Weight used to score us */
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new DisjunctionMaxWeight(searcher, scoreMode, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    return new DisjunctionMaxWeight(searcher, scoreMode, minRequiredPostings, boost);
   }
 
   /** Optimize our representation and our subqueries representations

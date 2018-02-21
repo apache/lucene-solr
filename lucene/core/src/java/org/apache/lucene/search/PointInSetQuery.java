@@ -106,7 +106,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -114,7 +114,7 @@ public abstract class PointInSetQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
