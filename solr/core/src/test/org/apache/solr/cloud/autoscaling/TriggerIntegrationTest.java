@@ -142,6 +142,9 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
 
+    cluster.deleteAllCollections();
+    cluster.getSolrClient().setDefaultCollection(null);
+
     // restart Overseer. Even though we reset the autoscaling config some already running
     // trigger threads may still continue to execute and produce spurious events
     cluster.stopJettySolrRunner(overseerLeaderIndex);
