@@ -40,6 +40,10 @@ public final class IntervalQuery extends Query {
     return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(0, width));
   }
 
+  public static IntervalQuery unorderedNearQuery(String field, int width, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(0, width));
+  }
+
   protected IntervalQuery(String field, List<Query> subQueries, IntervalFunction iteratorFunction) {
     this.field = field;
     this.subQueries = subQueries;

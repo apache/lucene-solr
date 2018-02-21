@@ -40,14 +40,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@Seed("98A904E565FC8F70:BF2EBE6100A16015")
 public class TestIntervals extends LuceneTestCase {
 
   private static String field1_docs[] = {
       "Nothing of interest to anyone here",
       "Pease porridge hot, pease porridge cold, pease porridge in the pot nine days old.  Some like it hot, some like it cold, some like it in the pot nine days old",
       "Pease porridge cold, pease porridge hot, pease porridge in the pot nine days old.  Some like it cold, some like it hot, some like it in the pot nine days old",
-      "Nor here, nowt hot going on in this one",
+      "Nor here, nowt hot going on in pease this one",
       "Pease porridge hot, pease porridge cold, pease porridge in the pot nine days old.  Some like it hot, some like it cold",
       "Porridge is great"
   };
@@ -100,7 +99,6 @@ public class TestIntervals extends LuceneTestCase {
         matchedDocs++;
         ids.advance(doc);
         int id = (int) ids.longValue();
-        System.out.println(id);
         if (intervals.reset(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
@@ -143,6 +141,19 @@ public class TestIntervals extends LuceneTestCase {
     });
   }
 
+  public void testUnorderedNearIntervals() throws IOException {
+    checkIntervals(IntervalQuery.unorderedNearQuery("field1", 100,
+        new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
+        "field1", 3, new int[][]{
+            {},
+            { 0, 2, 2, 3, 6, 17 },
+            { 3, 5, 5, 6, 6, 21 },
+            { 3, 7 },
+            { 0, 2, 2, 3, 6, 17 },
+            {}
+        });
+  }
+
   public void testIntervalDisjunction() throws IOException {
     checkIntervals(new BooleanQuery.Builder()
         .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
@@ -151,7 +162,7 @@ public class TestIntervals extends LuceneTestCase {
         {},
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},
-        { 3, 3 },
+        { 3, 3, 7, 7 },
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         {}
     });

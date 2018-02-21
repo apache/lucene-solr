@@ -67,4 +67,40 @@ public abstract class IntervalFunction implements Function<List<IntervalIterator
     }
   }
 
+  public static class UnorderedNearFunction extends IntervalFunction {
+
+    final int minWidth;
+    final int maxWidth;
+
+    public UnorderedNearFunction(int minWidth, int maxWidth) {
+      this.minWidth = minWidth;
+      this.maxWidth = maxWidth;
+    }
+
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
+      return Intervals.innerWidthFilter(Intervals.unorderedIntervalIterator(intervalIterators), minWidth, maxWidth);
+    }
+
+    @Override
+    public String toString() {
+      return "ONEAR[" + minWidth + "/" + maxWidth + "]";
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      UnorderedNearFunction that = (UnorderedNearFunction) o;
+      return minWidth == that.minWidth &&
+          maxWidth == that.maxWidth;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(minWidth, maxWidth);
+    }
+  }
+
 }

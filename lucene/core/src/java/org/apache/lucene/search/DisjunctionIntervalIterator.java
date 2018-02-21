@@ -64,10 +64,10 @@ abstract class DisjunctionIntervalIterator implements IntervalIterator {
   public boolean reset(int doc) throws IOException {
     positionSubIntervals();
     queue.clear();
-    for (int i = 0; i < subIterators.length; i++) {
-      if (subIterators[i].reset(doc)) {
-        subIterators[i].nextInterval();
-        queue.add(subIterators[i]);
+    for (IntervalIterator subIterator : subIterators) {
+      if (subIterator.reset(doc)) {
+        subIterator.nextInterval();
+        queue.add(subIterator);
       }
     }
     current = null;
