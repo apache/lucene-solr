@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.util.PriorityQueue;
 
 public final class Intervals {
 
@@ -176,6 +177,100 @@ public final class Intervals {
           return start;
       }
     }
+  }
+
+  public static IntervalIterator unorderedIntervalIterator(List<IntervalIterator> subIntervals) {
+    for (IntervalIterator it : subIntervals) {
+      if (it == IntervalIterator.EMPTY)
+        return IntervalIterator.EMPTY;
+    }
+    return new UnorderedIntervalIterator(subIntervals);
+  }
+
+  private static class UnorderedIntervalIterator implements IntervalIterator {
+
+    private final PriorityQueue<IntervalIterator> queue;
+    private final IntervalIterator[] subIterators;
+
+    int start, end, innerStart, innerEnd, queueEnd;
+
+    UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
+      this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
+        @Override
+        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
+          return a.start() < b.start() || (a.start() == b.start() && a.end() >= b.end());
+        }
+      };
+      this.subIterators = new IntervalIterator[subIterators.size()];
+
+      for (int i = 0; i < subIterators.size(); i++) {
+        this.subIterators[i] = subIterators.get(i);
+      }
+    }
+
+    @Override
+    public int start() {
+      return start;
+    }
+
+    @Override
+    public int end() {
+      return end;
+    }
+
+    @Override
+    public int innerWidth() {
+      return innerEnd - innerStart + 1;
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      this.queue.clear();
+      this.queueEnd = start = end = innerEnd = innerStart = -1;
+      boolean positioned = true;
+      for (IntervalIterator subIterator : subIterators) {
+        positioned &= subIterator.reset(doc);
+        subIterator.nextInterval();
+        queue.add(subIterator);
+        queueEnd = Math.max(queueEnd, subIterator.end());
+      }
+      return positioned;
+    }
+
+    void updateRightExtreme(IntervalIterator it) {
+      int itEnd = it.end();
+      if (itEnd > queueEnd) {
+        queueEnd = itEnd;
+        innerEnd = it.start();
+      }
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      while (this.queue.size() == subIterators.length && queue.top().start() == start) {
+        IntervalIterator it = queue.pop();
+        if (it != null && it.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+          queue.add(it);
+          updateRightExtreme(it);
+        }
+      }
+      if (this.queue.size() < subIterators.length)
+        return NO_MORE_INTERVALS;
+      do {
+        start = queue.top().start();
+        innerStart = queue.top().end();
+        end = queueEnd;
+        if (queue.top().end() == end)
+          return start;
+        IntervalIterator it = queue.pop();
+        if (it != null && it.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+          queue.add(it);
+          updateRightExtreme(it);
+        }
+      } while (this.queue.size() == subIterators.length && end == queueEnd);
+      return start;
+    }
+
   }
 
 }
