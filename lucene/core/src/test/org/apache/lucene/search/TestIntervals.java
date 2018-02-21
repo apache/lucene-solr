@@ -167,4 +167,21 @@ public class TestIntervals extends LuceneTestCase {
         {}
     });
   }
+
+  public void testNesting() throws IOException {
+    checkIntervals(IntervalQuery.unorderedNearQuery("field1", 100,
+        new TermQuery(new Term("field1", "pease")),
+            new TermQuery(new Term("field1", "porridge")),
+                new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("field1", "cold")), BooleanClause.Occur.SHOULD)
+            .build()), "field1", 3, new int[][]{
+        {},
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        {},
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        {}
+    });
+  }
 }
