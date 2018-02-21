@@ -18,8 +18,14 @@ package org.apache.lucene.queries;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,12 +34,15 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BooleanSimilarity;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BoostingQueryTest extends LuceneTestCase {
   // TODO: this suite desperately needs more tests!
-  // ... like ones that actually run the query
-  
+
   public void testBoostingQueryEquals() {
     TermQuery q1 = new TermQuery(new Term("subject:", "java"));
     TermQuery q2 = new TermQuery(new Term("subject:", "java"));
@@ -51,6 +60,44 @@ public class BoostingQueryTest extends LuceneTestCase {
     Query expectedRewritten = new BoostingQuery(new MatchNoDocsQuery(), new MatchAllDocsQuery(), 3);
     assertEquals(expectedRewritten, rewritten);
     assertSame(rewritten, rewritten.rewrite(reader));
+  }
+
+  public void testQueryScore() throws IOException {
+    Directory dir = newDirectory();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
+    String[] docs = new String[] {
+        "foo bar",
+        "foo",
+        "foobar",
+        "foo baz"
+    };
+    FieldType ft = new FieldType();
+    ft.setStored(false);
+    ft.setIndexOptions(IndexOptions.DOCS);
+    ft.setOmitNorms(true);
+    for (int i = 0; i < docs.length; i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", "" + i, Field.Store.YES));
+      doc.add(new Field("field", docs[i], ft));
+      w.addDocument(doc);
+    }
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+    s.setSimilarity(new BooleanSimilarity());
+    BoostingQuery query = new BoostingQuery(
+        new TermQuery(new Term("field", "foo")),
+        new TermQuery(new Term("field", "bar")),
+        0.1f
+    );
+    TopDocs search = s.search(query, 10);
+    assertEquals(3L, search.totalHits);
+    assertEquals(3, search.scoreDocs.length);
+    assertEquals(1.0f, search.scoreDocs[0].score, 0.0);
+    assertEquals(1.0f, search.scoreDocs[1].score, 0.0);
+    assertEquals(0.1f, search.scoreDocs[2].score, 0.0);
+    QueryUtils.check(random(), query, s);
+    IOUtils.close(r, w, dir, analyzer);
   }
 
 }
