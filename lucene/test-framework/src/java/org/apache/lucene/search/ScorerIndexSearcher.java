@@ -49,7 +49,7 @@ public class ScorerIndexSearcher extends IndexSearcher {
       // we force the use of Scorer (not BulkScorer) to make sure
       // that the scorer passed to LeafCollector.setScorer supports
       // Scorer.getChildren
-      Scorer scorer = weight.scorer(ctx, collector.scoreMode().needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE);
+      Scorer scorer = weight.scorer(ctx);
       if (scorer != null) {
         final DocIdSetIterator iterator = scorer.iterator();
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);

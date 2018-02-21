@@ -45,12 +45,12 @@ final class TermScorer extends Scorer {
    * @param docScorer
    *          A {@link LeafSimScorer} for the appropriate field.
    */
-  TermScorer(Weight weight, String field, TermsEnum te, ScoreMode scoreMode, short postings, LeafSimScorer docScorer) throws IOException {
+  TermScorer(Weight weight, String field, TermsEnum te, ScoreMode scoreMode, Query.Postings minRequiredPostings, LeafSimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.field = field;
     if (scoreMode == ScoreMode.TOP_SCORES) {
-      impactsEnum = te.impacts(docScorer.getSimScorer(), PostingsEnum.highest(postings, PostingsEnum.FREQS));
+      impactsEnum = te.impacts(docScorer.getSimScorer(), minRequiredPostings.atLeast(Query.Postings.FREQS).getRequiredPostings());
       postingsEnum = impactsEnum;
       iterator = new DocIdSetIterator() {
 
@@ -107,7 +107,7 @@ final class TermScorer extends Scorer {
         }
       };
     } else {
-      short pf = PostingsEnum.highest(scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE, postings);
+      int pf = minRequiredPostings.atLeast(scoreMode.needsScores() ? Query.Postings.FREQS : Query.Postings.NONE).getRequiredPostings();
       postingsEnum = te.postings(null, pf);
       impactsEnum = new SlowImpactsEnum(postingsEnum, docScorer.getSimScorer().score(Float.MAX_VALUE, 1));
       iterator = postingsEnum;

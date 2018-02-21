@@ -55,7 +55,7 @@ public abstract class IntervalFilter implements IntervalIterator {
   }
 
   @Override
-  public void reset() throws IOException {
-    in.reset();
+  public boolean reset(int doc) throws IOException {
+    return in.reset(doc);
   }
 }

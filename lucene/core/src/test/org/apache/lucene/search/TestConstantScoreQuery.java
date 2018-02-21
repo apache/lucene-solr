@@ -135,8 +135,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-      return in.createWeight(searcher, scoreMode, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+      return in.createWeight(searcher, scoreMode, minRequiredPostings, boost);
     }
 
     @Override

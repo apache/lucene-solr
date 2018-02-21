@@ -402,5 +402,10 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
         }
       };
     }
+
+    @Override
+    public IntervalIterator intervals(String field) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

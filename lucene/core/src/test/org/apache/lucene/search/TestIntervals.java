@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,6 +40,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@Seed("98A904E565FC8F70:BF2EBE6100A16015")
 public class TestIntervals extends LuceneTestCase {
 
   private static String field1_docs[] = {
@@ -83,48 +85,55 @@ public class TestIntervals extends LuceneTestCase {
     IOUtils.close(searcher.getIndexReader(), directory);
   }
 
-  private void checkIntervals(Query query, String field, int[][] expected) throws IOException {
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+  private void checkIntervals(Query query, String field, int expectedMatchCount, int[][] expected) throws IOException {
+    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE, Query.Postings.POSITIONS, 1f);
+    int matchedDocs = 0;
     for (LeafReaderContext ctx : searcher.leafContexts) {
-      Scorer scorer = weight.scorer(ctx, PostingsEnum.POSITIONS);
+      Scorer scorer = weight.scorer(ctx);
+      if (scorer == null)
+        continue;
       assertNull(scorer.intervals(field + "1"));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
-      IntervalIterator intervals = scorer.intervals("field1");
+      IntervalIterator intervals = scorer.intervals(field);
       DocIdSetIterator it = scorer.iterator();
-      int matchedDocs = 0;
       for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
         matchedDocs++;
         ids.advance(doc);
         int id = (int) ids.longValue();
-        intervals.reset();
-        int i = 0, pos;
-        while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
-          assertEquals(expected[id][i], pos);
-          assertEquals(expected[id][i], intervals.start());
-          assertEquals(expected[id][i + 1], intervals.end());
-          i += 2;
+        System.out.println(id);
+        if (intervals.reset(doc)) {
+          int i = 0, pos;
+          while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
+            assertEquals(expected[id][i], pos);
+            assertEquals(expected[id][i], intervals.start());
+            assertEquals(expected[id][i + 1], intervals.end());
+            i += 2;
+          }
+          assertEquals(expected[id].length, i);
         }
-        assertEquals(expected[id].length, i);
+        else {
+          assertEquals(0, expected[id].length);
+        }
       }
-      assertEquals(expected.length, matchedDocs);
     }
+    assertEquals(expectedMatchCount, matchedDocs);
   }
 
   public void testTermQueryIntervals() throws IOException {
-    checkIntervals(new TermQuery(new Term("field1", "porridge")), "field1", new int[][]{
+    checkIntervals(new TermQuery(new Term("field1", "porridge")), "field1", 4, new int[][]{
         {},
         { 1, 1, 4, 4, 7, 7 },
         { 1, 1, 4, 4, 7, 7 },
         {},
         { 1, 1, 4, 4, 7, 7 },
-        { 0 }
+        { 0, 0 }
     });
   }
 
   public void testOrderedNearIntervals() throws IOException {
     checkIntervals(IntervalQuery.orderedNearQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
-        "field1", new int[][]{
+        "field1", 3, new int[][]{
         {},
         { 0, 2, 6, 17 },
         { 3, 5, 6, 21 },
@@ -138,7 +147,7 @@ public class TestIntervals extends LuceneTestCase {
     checkIntervals(new BooleanQuery.Builder()
         .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
         .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
-        .build(), "field1", new int[][]{
+        .build(), "field1", 4, new int[][]{
         {},
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},

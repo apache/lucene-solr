@@ -51,7 +51,40 @@ class IntervalScorer extends Scorer {
   @Override
   public IntervalIterator intervals(String field) {
     if (this.field.equals(field))
-      return intervals;
+      return new IntervalIterator() {
+        boolean started = false;
+
+        @Override
+        public int start() {
+          return intervals.start();
+        }
+
+        @Override
+        public int end() {
+          return intervals.end();
+        }
+
+        @Override
+        public int innerWidth() {
+          return intervals.innerWidth();
+        }
+
+        @Override
+        public boolean reset(int doc) throws IOException {
+          // inner iterator already reset() in TwoPhaseIterator.matches()
+          started = false;
+          return true;
+        }
+
+        @Override
+        public int nextInterval() throws IOException {
+          if (started == false) {
+            started = true;
+            return start();
+          }
+          return intervals.nextInterval();
+        }
+      };
     return null;
   }
 
@@ -65,8 +98,7 @@ class IntervalScorer extends Scorer {
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        intervals.reset();
-        return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
+        return intervals.reset(approximation.docID()) && intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
       }
 
       @Override

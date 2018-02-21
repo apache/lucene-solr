@@ -686,7 +686,7 @@ public class IndexSearcher {
    */
   public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
     query = rewrite(query);
-    return createWeight(query, scoreMode, 1f);
+    return createWeight(query, scoreMode, Query.Postings.NONE, 1f);
   }
 
   /**
@@ -694,9 +694,9 @@ public class IndexSearcher {
    * if possible and configured.
    * @lucene.experimental
    */
-  public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(Query query, ScoreMode scoreMode, Query.Postings minRequiredPostings, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
-    Weight weight = query.createWeight(this, scoreMode, boost);
+    Weight weight = query.createWeight(this, scoreMode, minRequiredPostings, boost);
     if (scoreMode.needsScores() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }

@@ -29,14 +29,14 @@ import org.apache.lucene.util.Bits;
 public final class MatchAllDocsQuery extends Query {
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";
       }
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }
 

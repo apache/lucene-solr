@@ -62,8 +62,8 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Weight weight = query.createWeight(searcher, scoreMode, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    final Weight weight = query.createWeight(searcher, scoreMode, minRequiredPostings, boost);
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
 
@@ -106,6 +106,11 @@ public class RandomApproximationQuery extends Query {
     @Override
     public float score() throws IOException {
       return scorer.score();
+    }
+
+    @Override
+    public IntervalIterator intervals(String field) {
+      return scorer.intervals(field);
     }
 
     @Override

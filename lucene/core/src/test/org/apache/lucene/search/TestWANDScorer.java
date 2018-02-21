@@ -336,8 +336,8 @@ public class TestWANDScorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-      return new FilterWeight(query.createWeight(searcher, scoreMode, boost)) {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+      return new FilterWeight(query.createWeight(searcher, scoreMode, minRequiredPostings, boost)) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           Scorer scorer = super.scorer(context);

@@ -54,7 +54,7 @@ public abstract class ConstantScoreWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    final Scorer s = scorer(context, PostingsEnum.NONE);
+    final Scorer s = scorer(context);
     final boolean exists;
     if (s == null) {
       exists = false;

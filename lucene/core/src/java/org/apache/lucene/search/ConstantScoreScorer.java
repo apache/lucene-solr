@@ -65,7 +65,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override

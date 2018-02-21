@@ -99,7 +99,7 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -224,7 +224,7 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
@@ -314,8 +314,8 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
         if (scorerSupplier == null) {
           return null;
         }

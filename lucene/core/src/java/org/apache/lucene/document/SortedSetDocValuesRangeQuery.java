@@ -104,10 +104,10 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
   abstract SortedSetDocValues getValues(LeafReader reader, String field) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         SortedSetDocValues values = getValues(context.reader(), field);
         if (values == null) {
           return null;

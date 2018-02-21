@@ -110,8 +110,8 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Weight innerWeight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1f);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    final Weight innerWeight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, minRequiredPostings, 1f);
     if (scoreMode.needsScores()) {
       return new ConstantScoreWeight(this, boost) {
 
@@ -125,8 +125,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public ScorerSupplier scorerSupplier(LeafReaderContext context, short postings) throws IOException {
-          ScorerSupplier innerScorerSupplier = innerWeight.scorerSupplier(context, postings);
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+          ScorerSupplier innerScorerSupplier = innerWeight.scorerSupplier(context);
           if (innerScorerSupplier == null) {
             return null;
           }
@@ -159,8 +159,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, short postings) throws IOException {
-          ScorerSupplier scorerSupplier = scorerSupplier(context, postings);
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          ScorerSupplier scorerSupplier = scorerSupplier(context);
           if (scorerSupplier == null) {
             return null;
           }
