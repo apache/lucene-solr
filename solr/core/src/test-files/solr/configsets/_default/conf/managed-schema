@@ -131,6 +131,7 @@
     <dynamicField name="*_ss" type="strings"  indexed="true"  stored="true"/>
     <dynamicField name="*_l"  type="plong"   indexed="true"  stored="true"/>
     <dynamicField name="*_ls" type="plongs"   indexed="true"  stored="true"/>
+    <dynamicField name="*_t" type="text_general" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
     <dynamicField name="*_b"  type="boolean" indexed="true" stored="true"/>
     <dynamicField name="*_bs" type="booleans" indexed="true" stored="true"/>
@@ -298,6 +299,7 @@
          is that it takes up more space on disk; which is why it's not used in place of TextField
          for every fieldType in this _default schema.
 	  -->
+    <dynamicField name="*_t_sort" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="*_txt_sort" type="text_gen_sort" indexed="true" stored="true"/>
     <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
       <analyzer type="index">
