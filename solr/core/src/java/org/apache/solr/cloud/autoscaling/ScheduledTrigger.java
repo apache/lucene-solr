@@ -1,0 +1,198 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.cloud.autoscaling;
+
+import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.TimeZoneUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
+
+/**
+ * A trigger which creates {@link TriggerEventType#SCHEDULED} events as per the configured schedule
+ */
+public class ScheduledTrigger extends TriggerBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final String DEFAULT_GRACE_DURATION = "+15MINUTES";
+  static final String ACTUAL_EVENT_TIME = "actualEventTime";
+
+  private final String everyStr;
+
+  private final String graceDurationStr;
+
+  private final String preferredOp;
+
+  private final TimeZone timeZone;
+
+  private Instant lastRunAt;
+
+  public ScheduledTrigger(String name, Map<String, Object> properties,
+                          SolrResourceLoader loader, SolrCloudManager cloudManager) {
+    super(TriggerEventType.SCHEDULED, name, properties, loader, cloudManager);
+
+    String timeZoneStr = (String) properties.get("timeZone");
+    this.timeZone = TimeZoneUtils.parseTimezone(timeZoneStr); // defaults to UTC
+
+    String startTimeStr = (String) properties.get("startTime");
+    this.everyStr = (String) properties.get("every");
+    this.graceDurationStr = (String) properties.getOrDefault("graceDuration", DEFAULT_GRACE_DURATION);
+
+    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+
+    // attempt parsing to validate date math strings
+    Instant startTime = parseStartTime(startTimeStr, timeZoneStr);
+    DateMathParser.parseMath(null, startTime + everyStr, timeZone);
+    DateMathParser.parseMath(null, startTime + graceDurationStr, timeZone);
+
+    this.lastRunAt = startTime;
+  }
+
+  private Instant parseStartTime(String startTimeStr, String timeZoneStr) {
+    if (startTimeStr == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'startTime' cannot be null");
+    }
+    try {
+      // try parsing startTime as an ISO-8601 date time string
+      return DateMathParser.parseMath(null, startTimeStr).toInstant();
+    } catch (SolrException e) {
+      if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code)  throw e;
+    }
+    if (timeZoneStr == null)  {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Either 'startTime' should be an ISO-8601 date time string or 'timeZone' must be not be null");
+    }
+    DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ISO_LOCAL_DATE).appendPattern("['T'[HH[:mm[:ss]]]]")
+        .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+        .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+        .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+        .toFormatter(Locale.ROOT).withZone(ZoneId.of(timeZoneStr));
+    return Instant.from(dateTimeFormatter.parse(startTimeStr));
+  }
+
+  @Override
+  protected Map<String, Object> getState() {
+    return Collections.singletonMap("lastRunAt", lastRunAt.toEpochMilli());
+  }
+
+  @Override
+  protected void setState(Map<String, Object> state) {
+    if (state.containsKey("lastRunAt")) {
+      this.lastRunAt = Instant.ofEpochMilli((Long) state.get("lastRunAt"));
+    }
+  }
+
+  @Override
+  public void restoreState(AutoScaling.Trigger old) {
+    assert old.isClosed();
+    if (old instanceof ScheduledTrigger) {
+      ScheduledTrigger scheduledTrigger = (ScheduledTrigger) old;
+      this.lastRunAt = scheduledTrigger.lastRunAt;
+    } else  {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+          "Unable to restore state from an unknown type of trigger");
+    }
+  }
+
+  @Override
+  public void run() {
+    synchronized (this) {
+      if (isClosed) {
+        log.warn("ScheduledTrigger ran but was already closed");
+        throw new RuntimeException("Trigger has been closed");
+      }
+    }
+
+    DateMathParser dateMathParser = new DateMathParser(timeZone);
+    dateMathParser.setNow(new Date(lastRunAt.toEpochMilli()));
+    Instant nextRunTime, nextPlusGrace;
+    try {
+      Date next = dateMathParser.parseMath(everyStr);
+      dateMathParser.setNow(next);
+      nextPlusGrace = dateMathParser.parseMath(graceDurationStr).toInstant();
+      nextRunTime = next.toInstant();
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unable to calculate next run time. lastRan: " + lastRunAt.toString() + " and date math string: " + everyStr, e);
+    }
+
+    Instant now = Instant.now(); // todo how to play well with simulation framework?
+    AutoScaling.TriggerEventProcessor processor = processorRef.get();
+
+    if (now.isBefore(nextRunTime)) {
+      return; // it's not time yet
+    }
+    if (now.isAfter(nextPlusGrace)) {
+      // we are past time and we could not run per schedule so skip this event
+      if (log.isWarnEnabled())  {
+        log.warn("ScheduledTrigger was not able to run event at scheduled time: {}. Now: {}",
+            nextRunTime, now);
+      }
+      if (processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
+          preferredOp, now.toEpochMilli(), true)))  {
+        lastRunAt = nextRunTime;
+        return;
+      }
+    }
+
+    if (processor != null)  {
+      if (log.isDebugEnabled()) {
+        log.debug("ScheduledTrigger {} firing registered processor for scheduled time {}, now={}", name,
+            nextRunTime, now);
+      }
+      if (processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
+          preferredOp, now.toEpochMilli()))) {
+        lastRunAt = nextRunTime; // set to nextRunTime instead of now to avoid drift
+      }
+    } else  {
+      lastRunAt = nextRunTime; // set to nextRunTime instead of now to avoid drift
+    }
+  }
+
+  public static class ScheduledEvent extends TriggerEvent {
+    public ScheduledEvent(TriggerEventType eventType, String source, long eventTime, String preferredOp, long actualEventTime) {
+      this(eventType, source, eventTime, preferredOp, actualEventTime, false);
+    }
+
+    public ScheduledEvent(TriggerEventType eventType, String source, long eventTime, String preferredOp, long actualEventTime, boolean ignored) {
+      super(eventType, source, eventTime, null, ignored);
+      properties.put(PREFERRED_OP, preferredOp);
+      properties.put(ACTUAL_EVENT_TIME, actualEventTime);
+    }
+  }
+}

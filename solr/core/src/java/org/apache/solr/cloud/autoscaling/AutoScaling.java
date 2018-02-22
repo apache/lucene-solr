@@ -157,6 +157,8 @@ public class AutoScaling {
           return new SearchRateTrigger(name, props, loader, cloudManager);
         case METRIC:
           return new MetricTrigger(name, props, loader, cloudManager);
+        case SCHEDULED:
+          return new ScheduledTrigger(name, props, loader, cloudManager);
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }
