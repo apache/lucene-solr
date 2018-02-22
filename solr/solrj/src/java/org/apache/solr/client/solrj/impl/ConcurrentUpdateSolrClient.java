@@ -803,7 +803,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
     
     /**
-     * The number of documents to batch together before sending to Solr. If not set, this defaults to 10.
+     * The maximum number of requests buffered by the SolrClient's internal queue before being processed by background threads.
+     *
+     * This value should be carefully paired with the number of queue-consumer threads.  A queue with a maximum size
+     * set too high may require more memory.  A queue with a maximum size set too low may suffer decreased throughput
+     * as {@link ConcurrentUpdateSolrClient#request(SolrRequest)} calls block waiting to add requests to the queue.
+     *
+     * If not set, this defaults to 10.
+     *
+     * @see #withThreadCount(int)
      */
     public Builder withQueueSize(int queueSize) {
       if (queueSize <= 0) {
@@ -814,7 +822,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
     
     /**
-     * The number of threads used to empty {@link ConcurrentUpdateSolrClient}s queue.
+     * The maximum number of threads used to empty {@link ConcurrentUpdateSolrClient}s queue.
+     *
+     * This value should be carefully paired with the maximum queue capacity.  A client with too few threads may suffer
+     * decreased throughput as the queue fills up and {@link ConcurrentUpdateSolrClient#request(SolrRequest)} calls
+     * block waiting to add requests to the queue.
      */
     public Builder withThreadCount(int threadCount) {
       if (threadCount <= 0) {
