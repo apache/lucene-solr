@@ -109,9 +109,14 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   protected abstract LockFactory createLockFactory(String rawLockType) throws IOException;
   
   /**
-   * Returns true if a Directory exists for a given path.
+   * Returns true if a Directory exists for a given path in the underlying (stable) storage <em>and</em> 
+   * contains at least one file.  
+   * Note that the existence of a {@link Directory} <em>Object</em> as returned by a previous call to the 
+   * {@link #get} method (on the specified <code>path</code>) is not enough to cause this method to return 
+   * true.  Some prior user of that Directory must have written &amp; synced at least one file to that 
+   * Directory (and at least one file must still exist)
+   *
    * @throws IOException If there is a low-level I/O error.
-   * 
    */
   public abstract boolean exists(String path) throws IOException;
   

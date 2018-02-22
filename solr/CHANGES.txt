@@ -164,6 +164,8 @@ New Features
 * SOLR-11941: Add abstract contrib/ltr AdapterModel to facilitate the development of scoring models that delegate
   scoring to an opaque pre-trained model. (Christine Poerschke)
 
+* SOLR-11689: Add l1norm, l2norm and linfnorm Stream Evaluators (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -209,6 +211,11 @@ Bug Fixes
 * SOLR-11950: Allow CLUSTERSTATUS "shard" parameter to accept comma (,) delimited list (Chris Ulicny via Jason Gerlowski)
 
 * SOLR-11739: Fix race condition that made Solr accept duplicate async IDs in collection API operations (Tomás Fernánadez Löbbe)
+
+* SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
+
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+  (麦 香浓郁, Uwe Schindler)
 
 Optimizations
 ----------------------
@@ -277,9 +284,11 @@ Other Changes
 
 * SOLR-11067: REPLACENODE should identify appropriate nodes if targetNode is not provided (noble)
 
-* SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas via Cassandra Targett)
+* SOLR-11848: Update Ref Guide to include info on grouping operations and using curl for large files. (Dariusz Wojtas
+  via Cassandra Targett)
 
-* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via Cassandra Targett)
+* SOLR-11613: Make message for missing dataimport config in UI more explicit. (Shawn Heisey, Amrit Sarkar via 
+  Cassandra Targett)
 
 * SOLR-11933: Make DIH UI page safer by not default checking the clean checkbox (Eric Pugh via Tomás Fernández Löbbe)
 
@@ -293,6 +302,9 @@ Other Changes
 * SOLR-8090: Make text elements in the UI darker for better contrast and readability (Cassandra Targett)
 
 * SOLR-6057: Change highlight color in UI Analysis screen (Cassandra Targett)
+
+* SOLR-11897: Add toggle to disable auto-refresh of Logging page in the UI (Tommy Marshment-Howell via
+  Cassandra Targett)
 
 ==================  7.2.1 ==================
 

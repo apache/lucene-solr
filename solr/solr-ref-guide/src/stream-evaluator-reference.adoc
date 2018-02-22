@@ -92,6 +92,8 @@ add(fieldA,div(fieldA,fieldB)) // value of fieldA + (value of fieldA / value of 
 add(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA + fieldA, else fieldA + fieldB
 ----
 
+== akima (TODO)
+
 == analyze
 
 The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens
@@ -273,6 +275,7 @@ cbrt(fieldA) // returns the square root for fieldA.
 if(gt(fieldA,fieldB),cbrt(fieldA),cbrt(fieldB)) // if fieldA > fieldB then return the cbrt of fieldA, else return the cbrt of fieldB
 ----
 
+
 == ceil
 The `ceil` function rounds a decimal value to the next highest whole number.
 
@@ -291,6 +294,9 @@ ceil(fieldA) // returns the next highest whole number for fieldA.
 if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
 ----
 
+
+== chiSquareDataSet (TODO)
+
 == col
 
 The `col` function returns a numeric array from a list of Tuples. The `col`
@@ -307,6 +313,41 @@ function is used to create numeric arrays from stream sources.
 
 [source,text]
 col(tupleList, fieldName)
+
+== colAt
+
+The `colAt` function returns the column of a matrix at a specific index as a numeric array.
+
+=== colAt Parameters
+
+* `matrix`: the matrix to operate on
+* `integer`: the index of the column to return
+
+=== colAt Syntax
+
+[source,text]
+colAt(matrix, 10)
+
+=== colAt Returns
+
+numeric array : the column of the matrix
+
+== columnCount
+
+The `columnCount` function returns the number of columns in a `matrix`.
+
+=== columnCount Parameters
+
+* `matrix`: the matrix to operate on
+
+=== columnCount Syntax
+
+[source,text]
+columnCount(matrix)
+
+=== columnCount Returns
+
+integer : number columns in the matrix.
 
 == constantDistribution
 
@@ -483,6 +524,10 @@ A double: the cumulative probability.
 [source,text]
 cumulativeProbability(normalDistribution(500, 25), 502) // Returns the cumulative probability of the random sample 502 in a normal distribution with a mean of 500 and standard deviation of 25.
 
+
+== density (TODO)
+
+
 == derivative
 
 The `derivative` function returns the https://en.wikipedia.org/wiki/Derivative[derivative] of a function. The derivative function
@@ -491,7 +536,7 @@ take the derivative of a derivative.
 
 === derivative Parameters
 
-* `spline` | `loess` | `derivative`: The functions to compute the derivative for.
+* `spline` | `loess` | `akima` | `lerp` | `derivative`: The functions to compute the derivative for.
 
 === derivative Syntax
 
@@ -815,6 +860,9 @@ A double.
 factorial(100) //Computes the factorial of 100
 ----
 
+== featureSelect (TODO)
+
+
 == finddelay
 
 The `finddelay` function performs a cross-correlation between two numeric arrays and returns the delay.
@@ -870,23 +918,7 @@ A list of tuples containing the frequency information for each discrete value.
 freqTable(integerArray)
 ----
 
-== geometricDistribution
-
-The `geometricDistribution` function returns a https://en.wikipedia.org/wiki/Geometric_distribution[geometric probability distribution] based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the <<sample>>, <<probability>> and <<cumulativeProbability>> functions.
-
-=== geometricDistribution Parameters
-
-* `double`: probability
-
-=== geometricDistribution Syntax
-
-[source,text]
-geometricDistribution(.5) // Creates a geometric distribution with probability of .5
-
-=== geometricDistribution Returns
-
-A probability distribution function
+== fuzzyKmeans (TODO)
 
 == gammaDistribution
 
@@ -906,6 +938,105 @@ A probability distribution function,
 
 [source,text]
 gammaDistribution(1, 10)
+
+
+
+== geometricDistribution
+
+The `geometricDistribution` function returns a https://en.wikipedia.org/wiki/Geometric_distribution[geometric probability distribution] based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the <<sample>>, <<probability>> and <<cumulativeProbability>> functions.
+
+=== geometricDistribution Parameters
+
+* `double`: probability
+
+=== geometricDistribution Syntax
+
+[source,text]
+geometricDistribution(.5) // Creates a geometric distribution with probability of .5
+
+=== geometricDistribution Returns
+
+A probability distribution function
+
+== getAttribute
+
+The `getAttribute` function returns an attribute from a `matrix` by its key. Any function that returns a `matrix` can
+also set attributes on the `matrix` with additional information. The `setAttribute` function can also be used
+to set attributes on a `matrix`. The key to an attribute is always a string. The value of attribute can be any object
+including numerics, arrays, maps, matrixes etc...
+
+=== getAttribute Parameters
+
+* `matrix` : The matrix to set the attribute on
+* `string` : The key for the attribute
+
+=== getAttribute Syntax
+
+[source,text]
+getAttribute(matrix, key)
+
+=== getAttribute Returns
+
+object : any object
+
+== getAttributes
+
+The `getAttributes` function returns the attribute map from matrix. See the `getAttribute` function for more details
+on attributes.
+
+=== getAttributes Parameters
+
+* `matrix` : The matrix to retrieve the attribute map from.
+
+=== getAttributes Syntax:
+
+[source,text]
+getAttributes(matrix)
+
+=== getAttributes Returns
+
+map : The map of attributes.
+
+== getCentroids (TODO)
+
+== getClusters (TODO)
+
+== getColumnLabels
+
+The `getColumnLabels` function returns the columns labels of a matrix. The column labels can be optionally
+set by any function that returns a matrix. The column labels can also be set via the `setColumnLabels` function.
+
+=== getColumnLabels Parameters
+
+* `matrix`: The matrix to return the column labels of.
+
+=== getColumnLabels Syntax
+
+getColumnLabels(matrix)
+
+=== getColumnLabels Returns
+
+string array : The labels for each column in the matrix
+
+== getMembershipMatrix (TODO)
+
+== getRowLabels
+
+The `getRowLabels` function returns the row labels of a matrix. The row labels can be optionally
+set by any function that returns a matrix. The row labels can also be set via the `setRowLabels` function.
+
+=== getRowLabels Parameters
+
+* `matrix`: The matrix to return the row labels from.
+
+=== getRowLabels Syntax
+
+getRowLabels(matrix)
+
+=== getRowLabels Returns
+
+string array : The labels for each row in the matrix
 
 == grandSum
 
@@ -1020,6 +1151,43 @@ if(gt(fieldA,5), fieldA, 5) // if fieldA > 5 then fieldA else 5
 if(eq(fieldB,null), null, div(fieldA,fieldB)) // if fieldB is null then null else fieldA / fieldB
 ----
 
+== indexOf
+
+The `indexOf` function returns the index of a string in an array of strings.
+
+=== indexOf Parameters
+
+* `string array` : The array to operate on.
+* `string` : The string to search for in the array.
+
+=== indexOf Syntax
+
+[source,text]
+indexOf(stringArray, string)
+
+=== indexOf Returns
+
+integer : The index of the string in the array or -1 if the string is not found.
+
+== integrate
+
+The `integrate` function computes the integral of an interpolation function for a specific range of the curve.
+
+=== integrate Parameters
+
+* `spline` | `akima` | `lerp` | `loess` : The interpolation function to compute the integral for.
+* `numeric` : start of integral range
+* `numeric` : end of integral range
+
+=== integrate Syntax
+
+[source,text]
+integrate(function, start, end)
+
+=== integrate Returns
+
+numeric : The integral
+
 == length
 
 The `length` function returns the length of a numeric array.
@@ -1033,6 +1201,8 @@ The `length` function returns the length of a numeric array.
 
 [source,text]
 length(numericArray)
+
+== lerp (TOD0)
 
 == loess
 
@@ -1100,6 +1270,10 @@ A probability distribution function.
 [source,text]
 logNormalDistribution(.3, .0)
 
+== kmeans (TODO)
+
+== knn (TODO)
+
 == kolmogorovSmirnov
 
 The `kolmogorovSmirnov` function performs a https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test[Kolmogorov Smirnov test],
@@ -1162,6 +1336,9 @@ lteq(1,fieldA) // 1 <= fieldA
 lteq(fieldA,val(foo)) fieldA <= "foo"
 lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 ----
+
+
+== mannWhitney (TODO)
 
 == markovChain
 
@@ -1357,6 +1534,11 @@ mult(fieldA,div(fieldA,fieldB)) // value of fieldA * (value of fieldA / value of
 mult(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA * fieldA, else fieldA * fieldB
 ----
 
+
+== multiKmeans (TODO)
+
+== multiVariateNormalDistribution (TODO)
+
 == normalDistribution
 
 The `normalDistribution` function returns a https://en.wikipedia.org/wiki/Normal_distribution[normal probability distribution]
@@ -1462,6 +1644,8 @@ or(fieldA,fieldB) // fieldA || fieldB
 or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
 or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 ----
+
+== pairedTtest (TODO)
 
 == poissonDistribution
 
@@ -1691,6 +1875,41 @@ round(fieldA)
 if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the round of fieldA, else return the round of fieldB
 ----
 
+== rowAt
+
+The `rowAt` function returns the row of a matrix at a specific index as a numeric array.
+
+=== rowAt Parameters
+
+* `matrix`: the matrix to operate on
+* `integer`: the index of the row to return
+
+=== rowAt Syntax
+
+[source,text]
+rowAt(matrix, 10)
+
+=== rowAt Returns
+
+numeric array : the row of the matrix
+
+== rowCount
+
+The `rowCount` function returns the number of rows in a `matrix`.
+
+=== rowCount Parameters
+
+* `matrix`: the matrix to operate on
+
+=== rowCount Syntax
+
+[source,text]
+rowCount(matrix)
+
+=== rowCount Returns
+
+integer : number rows in the matrix.
+
 == sample
 
 The `sample` function can be used to draw random samples from a probability distribution or Markov Chain.
@@ -1826,7 +2045,60 @@ The `sequence` function returns an array of numbers based on its parameters.
 [source,text]
 sequence(100, 0, 1) // Returns a sequence of length 100, starting from 0 with a stride of 1.
 
+== setAttributes
+
+The `setAttributes` function sets an attributes map of a `matrix`.
+
+=== setAttributes Parameters
+
+* `matrix` : The matrix to set the attributes map to.
+* `map` : The map of attributes to set on the matrix.
+
+=== setAttributes Syntax
+
+[source,text]
+setAttributes(matrix, map)
+
+=== setAttributes Returns
+
+matrix : The matrix with the attributes set.
+
+== setColumnLabels
+
+The `setColumnLabels` function sets the columns labels of a matrix.
+
+=== setColumnLabels Parameters
+
+* `matrix`: The matrix to set the column labels to.
+* `string array` : The column labels to set the matrix
+
+=== setColumnLabels Syntax
+
+setColumnLabels(matrix, labels)
+
+=== setColumnLabels Returns
+
+matrix : The matrix with the labels set.
+
+== setRowLabels
+
+The `setRowLabels` function sets the row labels of a matrix.
+
+=== setRowLabels Parameters
+
+* `matrix`: The matrix to set the row labels to.
+* `string array` : The row labels to set to the matrix
+
+=== setRowLabels Syntax
+
+setRowLabels(matrix, labels)
+
+=== setRowLabels Returns
+
+matrix : The matrix with the labels set.
+
 == sin
+
 The `sin` function returns the trigonometric sine of a number.
 
 === sin Parameters
@@ -1979,6 +2251,27 @@ sumRows(matrix)
 
 numeric array: sum of the rows.
 
+== sumSq
+
+The `sumSq` function returns the sum-of-squares of the values in a numeric array.
+
+=== sumSq Parameters
+
+* `numeric array` : The numeric array to compute the sumSq of.
+
+=== sumSq Syntac
+
+[source,text]
+sumSq(numericArray)
+
+=== sumSq Returns
+
+numeric : result of the sumSq calculation
+
+== termVectors (TODO)
+
+== topFeatures (TODO)
+
 == transpose
 
 The `transpose` function https://en.wikipedia.org/wiki/Transpose[transposes] a matrix .
@@ -2016,6 +2309,8 @@ triangularDistribution(10, 15, 20) // A triangular distribution with a low value
 === triangularDistribution Returns
 
 Probability distribution function
+
+== ttest (TODO)
 
 == uniformDistribution
 

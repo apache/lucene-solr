@@ -8793,6 +8793,41 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testNorms() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "               a=array(1,2,3,4,5,6), " +
+        "               b=l1norm(a), " +
+        "               c=l2norm(a), " +
+        "               d=linfnorm(a), " +
+        "               e=sqrt(add(pow(a, 2)))," +
+        "               f=add(abs(a)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number l1norm = (Number)tuples.get(0).get("b");
+    assertEquals(l1norm.doubleValue(), 21.0D, 0.0D);
+
+    Number norm = (Number)tuples.get(0).get("c");
+    assertEquals(norm.doubleValue(), 9.5393920141695, 0.0001D);
+
+    Number inorm = (Number)tuples.get(0).get("d");
+    assertEquals(inorm.doubleValue(), 6.0, 0.0);
+
+    Number norm2 = (Number)tuples.get(0).get("e");
+    assertEquals(norm.doubleValue(), norm2.doubleValue(), 0.0);
+
+    Number l1norm2 = (Number)tuples.get(0).get("f");
+    assertEquals(l1norm.doubleValue(), l1norm2.doubleValue(), 0.0);
+  }
+
+
+  @Test
   public void testScale() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 

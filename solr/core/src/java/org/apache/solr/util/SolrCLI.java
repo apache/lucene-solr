@@ -238,7 +238,8 @@ public class SolrCLI {
         .hasArg()
         .isRequired(false)
         .withDescription("Name of collection; no default")
-        .create("collection"),
+        .withLongOpt("collection")
+        .create("c"),
     OptionBuilder
         .isRequired(false)
         .withDescription("Enable more verbose command output.")
@@ -2525,13 +2526,39 @@ public class SolrCLI {
               .hasArg()
               .isRequired(false)
               .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
-              .create("solrUrl")
+              .create("solrUrl"),
+          OptionBuilder
+              .withArgName("PORT")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("The port of the Solr node to use when applying configuration change")
+              .withLongOpt("port")
+              .create('p'),
+          OptionBuilder
+              .withArgName("SCHEME")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("The scheme for accessing Solr.  Accepted values: http or https.  Default: http")
+              .withLongOpt("scheme")
+              .create('s')
       };
       return joinOptions(configOptions, cloudOptions);
     }
 
     protected void runImpl(CommandLine cli) throws Exception {
-      String solrUrl = resolveSolrUrl(cli);
+      String solrUrl;
+      try {
+        solrUrl = resolveSolrUrl(cli);
+      } catch (IllegalStateException e) {
+        // Fallback to using the provided scheme and port
+        final String scheme = cli.getOptionValue("scheme", "http");
+        if (cli.hasOption("port")) {
+          solrUrl = scheme + "://localhost:" + cli.getOptionValue("port", "8983") + "/solr";
+        } else {
+          throw e;
+        }
+      }
+
       String action = cli.getOptionValue("action", "set-property");
       String collection = cli.getOptionValue("collection", "gettingstarted");
       String property = cli.getOptionValue("property");

@@ -296,7 +296,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
       IndexOptions currentIndexOptions = this.indexOptions.get(name);
       if (indexOptions != IndexOptions.NONE && currentIndexOptions != null && currentIndexOptions != IndexOptions.NONE && indexOptions != currentIndexOptions) {
-        throw new IllegalArgumentException("cannot change index options from " + currentIndexOptions + " to " + indexOptions + " for field \"" + name + "\"");
+        throw new IllegalArgumentException("cannot change field \"" + name + "\" from index options=" + currentIndexOptions + " to inconsistent index options=" + indexOptions);
       }
     }
 

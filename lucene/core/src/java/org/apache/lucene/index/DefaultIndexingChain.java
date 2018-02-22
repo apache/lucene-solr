@@ -637,11 +637,11 @@ final class DefaultIndexingChain extends DocConsumer {
     // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
     // IndexOptions to decide what arrays it must create).
     assert info.getIndexOptions() == IndexOptions.NONE;
-    info.setIndexOptions(indexOptions);
     // This is the first time we are seeing this field indexed, so we now
     // record the index options so that any future attempt to (illegally)
     // change the index options of this field, will throw an IllegalArgExc:
     fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
+    info.setIndexOptions(indexOptions);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */
