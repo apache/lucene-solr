@@ -148,7 +148,7 @@ public final class IntervalQuery extends Query {
       }
       IntervalIterator intervals = IntervalQuery.this.iteratorFunction.apply(subIntervals);
       LeafSimScorer leafScorer = simScorer == null ? null
-          : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);
+          : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
       return new IntervalScorer(this, field, ConjunctionDISI.intersectIterators(disis), intervals, leafScorer);
     }
 
