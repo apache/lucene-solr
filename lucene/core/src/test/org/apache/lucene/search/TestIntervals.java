@@ -85,7 +85,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   private void checkIntervals(Query query, String field, int expectedMatchCount, int[][] expected) throws IOException {
-    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE, Query.Postings.POSITIONS, 1f);
+    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_POSITIONS, 1f);
     int matchedDocs = 0;
     for (LeafReaderContext ctx : searcher.leafContexts) {
       Scorer scorer = weight.scorer(ctx);

@@ -93,7 +93,7 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
   abstract SortedNumericDocValues getValues(LeafReader reader, String field) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override

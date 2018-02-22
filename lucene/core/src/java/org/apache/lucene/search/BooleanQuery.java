@@ -199,12 +199,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     BooleanQuery query = this;
     if (scoreMode.needsScores() == false) {
       query = rewriteNoScoring();
     }
-    return new BooleanWeight(query, searcher, scoreMode, minRequiredPostings, boost);
+    return new BooleanWeight(query, searcher, scoreMode, boost);
   }
 
   @Override

@@ -100,8 +100,8 @@ public class TestNeedsScores extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-      final Weight w = in.createWeight(searcher, scoreMode, minRequiredPostings, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      final Weight w = in.createWeight(searcher, scoreMode, boost);
       return new FilterWeight(w) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {

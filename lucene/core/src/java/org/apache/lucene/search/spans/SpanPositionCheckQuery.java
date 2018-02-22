@@ -68,8 +68,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, scoreMode, minRequiredPostings, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, scoreMode, boost);
     return new SpanPositionCheckWeight(matchWeight, searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, boost);
   }
 

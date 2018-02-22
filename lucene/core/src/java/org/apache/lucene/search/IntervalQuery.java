@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.similarities.Similarity;
 
 public final class IntervalQuery extends Query {
@@ -61,22 +63,29 @@ public final class IntervalQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<Weight> subWeights = new ArrayList<>();
     for (Query q : subQueries) {
-      subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE, minRequiredPostings.atLeast(Postings.POSITIONS), boost));
+      subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE_POSITIONS, boost));
     }
-    return new IntervalWeight(this, subWeights, buildSimScorer(searcher, subWeights), scoreMode);
+    return new IntervalWeight(this, subWeights, scoreMode.needsScores() ? buildSimScorer(searcher, subWeights, boost) : null, scoreMode);
   }
 
-  private Similarity.SimScorer buildSimScorer(IndexSearcher searcher, List<Weight> subWeights) {
-    // nocommit
-    return new Similarity.SimScorer(field) {
-      @Override
-      public float score(float freq, long norm) {
-        return 1;
+  private Similarity.SimScorer buildSimScorer(IndexSearcher searcher, List<Weight> subWeights, float boost) throws IOException {
+    Set<Term> terms = new HashSet<>();
+    for (Weight w : subWeights) {
+      w.extractTerms(terms);    // nocommit can we do this without building TermStates twice?
+    }
+    TermStatistics[] termStats = new TermStatistics[terms.size()];
+    int termUpTo = 0;
+    for (Term term : terms) {
+      TermStatistics termStatistics = searcher.termStatistics(term, TermStates.build(searcher.readerContext, term, true));
+      if (termStatistics != null) {
+        termStats[termUpTo++] = termStatistics;
       }
-    };
+    }
+    CollectionStatistics collectionStats = searcher.collectionStatistics(field);
+    return searcher.getSimilarity().scorer(boost, collectionStats, termStats);
   }
 
   @Override
@@ -138,7 +147,8 @@ public final class IntervalQuery extends Query {
         subIntervals.add(it);
       }
       IntervalIterator intervals = IntervalQuery.this.iteratorFunction.apply(subIntervals);
-      LeafSimScorer leafScorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);  // nocommit
+      LeafSimScorer leafScorer = simScorer == null ? null
+          : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.POSITIVE_INFINITY);
       return new IntervalScorer(this, field, ConjunctionDISI.intersectIterators(disis), intervals, leafScorer);
     }
 

@@ -102,7 +102,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     IndexReader ir = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(ir);
-    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, Query.Postings.NONE, 1f);
+    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, 1f);
     Scorer s = new SimpleScorer(fake);
     TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(scores.length);
     Collector c = new PositiveScoresOnlyCollector(tdc);

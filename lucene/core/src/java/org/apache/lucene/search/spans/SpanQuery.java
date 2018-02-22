@@ -37,7 +37,7 @@ public abstract class SpanQuery extends Query {
   public abstract String getField();
 
   @Override
-  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException;
+  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException;
 
   /**
    * Build a map of terms to {@link TermStates}, for use in constructing SpanWeights

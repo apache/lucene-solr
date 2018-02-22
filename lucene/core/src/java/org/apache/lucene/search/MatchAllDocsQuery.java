@@ -29,7 +29,7 @@ import org.apache.lucene.util.Bits;
 public final class MatchAllDocsQuery extends Query {
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public String toString() {

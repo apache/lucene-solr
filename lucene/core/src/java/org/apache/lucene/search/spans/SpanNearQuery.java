@@ -178,10 +178,10 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, scoreMode, minRequiredPostings, boost));
+      subWeights.add(q.createWeight(searcher, scoreMode, boost));
     }
     return new SpanNearWeight(subWeights, searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, boost);
   }
@@ -307,7 +307,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new SpanGapWeight(searcher, boost);
     }
 
