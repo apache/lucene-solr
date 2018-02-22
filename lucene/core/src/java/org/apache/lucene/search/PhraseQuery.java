@@ -353,10 +353,10 @@ public class PhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
-    private final Postings minRequiredPostings;
+    private final int postingsFlags;
     private transient TermStates states[];
 
-    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost)
+    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -366,7 +366,7 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.scoreMode = scoreMode;
-      this.minRequiredPostings = minRequiredPostings;
+      this.postingsFlags = Math.max(scoreMode.minRequiredPostings(), PostingsEnum.POSITIONS);
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermStates[terms.length];
@@ -424,7 +424,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(null, minRequiredPostings.atLeast(Postings.POSITIONS).getRequiredPostings());
+        PostingsEnum postingsEnum = te.postings(null, postingsFlags);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
         totalMatchCost += termPositionsCost(te);
       }
@@ -512,8 +512,8 @@ public class PhraseQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    return new PhraseWeight(searcher, scoreMode, minRequiredPostings, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new PhraseWeight(searcher, scoreMode, boost);
   }
 
   /** Prints a user-readable version of this query. */

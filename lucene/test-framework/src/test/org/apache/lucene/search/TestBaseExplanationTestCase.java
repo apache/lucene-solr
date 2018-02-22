@@ -72,8 +72,8 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
       this.breakExplainScores = breakExplainScores;
     }
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-      return new BrokenExplainWeight(this, super.createWeight(searcher,scoreMode, minRequiredPostings, boost));
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return new BrokenExplainWeight(this, super.createWeight(searcher,scoreMode, boost));
     }
   }
   

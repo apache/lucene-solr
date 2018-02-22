@@ -43,8 +43,8 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    SpanWeight weight = in.createWeight(searcher, scoreMode, minRequiredPostings, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight weight = in.createWeight(searcher, scoreMode, boost);
     return new AssertingSpanWeight(searcher, weight);
   }
 

@@ -73,8 +73,8 @@ public final class BlockScoreQueryWrapper extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    final Weight inWeight = query.createWeight(searcher, scoreMode, minRequiredPostings, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight inWeight = query.createWeight(searcher, scoreMode, boost);
     if (scoreMode.needsScores() == false) {
       return inWeight;
     }

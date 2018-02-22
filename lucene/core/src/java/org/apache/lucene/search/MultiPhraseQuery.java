@@ -193,13 +193,13 @@ public class MultiPhraseQuery extends Query {
     private final Similarity.SimScorer stats;
     private final Map<Term,TermStates> termStates = new HashMap<>();
     private final ScoreMode scoreMode;
-    private final Postings minRequiredPostings;
+    private final int postingsFlags;
 
-    public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost)
+    public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
       this.scoreMode = scoreMode;
-      this.minRequiredPostings = minRequiredPostings;
+      this.postingsFlags = Math.max(scoreMode.minRequiredPostings(), PostingsEnum.POSITIONS);
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
 
@@ -267,7 +267,7 @@ public class MultiPhraseQuery extends Query {
           TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
-            postings.add(termsEnum.postings(null, minRequiredPostings.atLeast(Postings.POSITIONS).getRequiredPostings()));
+            postings.add(termsEnum.postings(null, this.postingsFlags));
             totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
         }
@@ -345,8 +345,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    return new MultiPhraseWeight(searcher, scoreMode, minRequiredPostings, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new MultiPhraseWeight(searcher, scoreMode, boost);
   }
 
   /** Prints a user-readable version of this query. */

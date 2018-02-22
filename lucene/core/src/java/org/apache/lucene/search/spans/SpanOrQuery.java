@@ -116,10 +116,10 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, scoreMode, minRequiredPostings, boost));
+      subWeights.add(q.createWeight(searcher, scoreMode, boost));
     }
     return new SpanOrWeight(searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, subWeights, boost);
   }

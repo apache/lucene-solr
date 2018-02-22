@@ -45,14 +45,14 @@ final class BooleanWeight extends Weight {
   final ArrayList<Weight> weights;
   final ScoreMode scoreMode;
 
-  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, Query.Postings minRequiredPostings, float boost) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     super(query);
     this.query = query;
     this.scoreMode = scoreMode;
     this.similarity = searcher.getSimilarity();
     weights = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, minRequiredPostings, boost);
+      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
       weights.add(w);
     }
   }

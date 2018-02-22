@@ -109,8 +109,8 @@ public final class SpanBoostQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
-    return query.createWeight(searcher, scoreMode, minRequiredPostings, SpanBoostQuery.this.boost * boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return query.createWeight(searcher, scoreMode, SpanBoostQuery.this.boost * boost);
   }
 
 }

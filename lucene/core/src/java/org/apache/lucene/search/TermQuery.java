@@ -47,16 +47,14 @@ public class TermQuery extends Query {
     private final Similarity.SimScorer simScorer;
     private final TermStates termStates;
     private final ScoreMode scoreMode;
-    private final Postings minRequiredPostings;
 
-    public TermWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings,
+    public TermWeight(IndexSearcher searcher, ScoreMode scoreMode,
                       float boost, TermStates termStates) throws IOException {
       super(TermQuery.this);
       if (scoreMode.needsScores() && termStates == null) {
         throw new IllegalStateException("termStates are required when scores are needed");
       }
       this.scoreMode = scoreMode;
-      this.minRequiredPostings = minRequiredPostings;
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
 
@@ -101,7 +99,7 @@ public class TermQuery extends Query {
           .getIndexOptions();
       float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
       LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
-      return new TermScorer(this, getTerm().field(), termsEnum, scoreMode, minRequiredPostings, scorer);
+      return new TermScorer(this, getTerm().field(), termsEnum, scoreMode, scorer);
     }
 
     private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
@@ -188,7 +186,7 @@ public class TermQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, Postings minRequiredPostings, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermStates termState;
     if (perReaderTermState == null
@@ -199,7 +197,7 @@ public class TermQuery extends Query {
       termState = this.perReaderTermState;
     }
 
-    return new TermWeight(searcher, scoreMode, minRequiredPostings, boost, termState);
+    return new TermWeight(searcher, scoreMode, boost, termState);
   }
 
   /** Prints a user-readable version of this query. */
