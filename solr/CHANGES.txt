@@ -173,6 +173,8 @@ New Features
 * SOLR-11066: Implement a scheduled autoscaling trigger that runs on a fixed interval beginning with a
   given start time. (David Smiley, Gus Heck, ab, shalin)
 
+* SOLR-11795: Add Solr metrics exporter for Prometheus (Minoru Osuka via koji)
+
 Bug Fixes
 ----------------------
 

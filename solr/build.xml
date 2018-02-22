@@ -571,19 +571,19 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            bin/** server/** example/** contrib/**/lib/** contrib/**/README.txt 
+                            bin/** server/** example/** contrib/**/lib/** contrib/**/conf/** contrib/**/README.txt
                             licenses/**"
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template server/etc/test/" />
+                            **/*pom.xml.template server/etc/test/ contrib/**/src/" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/"
+                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/ contrib/**/bin/**"
                   excludes="server/etc/test/**" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
