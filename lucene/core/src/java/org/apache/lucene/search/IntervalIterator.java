@@ -34,7 +34,7 @@ public interface IntervalIterator {
   int nextInterval() throws IOException;
 
   default float score() {
-    return (float) (1.0 / (1.0 + (end() - start())));
+    return (float) (1.0 / (end() - start()));
   }
 
   IntervalIterator EMPTY = new IntervalIterator() {
