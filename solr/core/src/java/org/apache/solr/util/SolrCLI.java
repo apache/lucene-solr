@@ -96,13 +96,16 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -3440,6 +3443,18 @@ public class SolrCLI {
               .withArgName("directory")
               .create("X"),
           OptionBuilder
+              .withDescription("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+              .withLongOpt("cloud")
+              .hasArg(true)
+              .withArgName("url")
+              .create("c"),
+          OptionBuilder
+              .withDescription("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+              .withLongOpt("not-cloud")
+              .hasArg(true)
+              .withArgName("url")
+              .create("C"),
+          OptionBuilder
               .withDescription("Exception message to be used in place of the default error message")
               .withLongOpt("message")
               .hasArg(true)
@@ -3491,7 +3506,7 @@ public class SolrCLI {
      */
     protected int runAssert(CommandLine cli) throws Exception {
       if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-        new HelpFormatter().printHelp("bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-u <dir>] [-x <dir>] [-X <dir>]", getToolOptions(this));
+        new HelpFormatter().printHelp("bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]", getToolOptions(this));
         return 1;
       }
       if (cli.hasOption("m")) {
@@ -3525,6 +3540,12 @@ public class SolrCLI {
       }
       if (cli.hasOption("S")) {
         ret += assertSolrNotRunning(cli.getOptionValue("S"));
+      }
+      if (cli.hasOption("c")) {
+        ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
+      }
+      if (cli.hasOption("C")) {
+        ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
       }
       return ret;
     }
@@ -3570,6 +3591,28 @@ public class SolrCLI {
         }
       }
       return exitOrException("Solr is still running at " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+    }
+
+    public static int assertSolrRunningInCloudMode(String url) throws Exception {
+      if (! isSolrRunningOn(url)) {
+        return exitOrException("Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+      }
+
+      if (! runningSolrIsCloud(url)) {
+        return exitOrException("Solr is not running in cloud mode on " + url);
+      }
+      return 0;
+    }
+
+    public static int assertSolrNotRunningInCloudMode(String url) throws Exception {
+      if (! isSolrRunningOn(url)) {
+        return exitOrException("Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+      }
+
+      if (runningSolrIsCloud(url)) {
+        return exitOrException("Solr is not running in standalone mode on " + url);
+      }
+      return 0;
     }
 
     public static int sameUser(String directory) throws Exception {
@@ -3625,14 +3668,46 @@ public class SolrCLI {
       }
     }
 
-    private static int exitOrException(String msg) throws Exception {
+    private static int exitOrException(String msg) throws AssertionFailureException {
       if (useExitCode) {
         return 1;
       } else {
-        throw new Exception(message != null ? message : msg);
+        throw new AssertionFailureException(message != null ? message : msg);
+      }
+    }
+
+    private static boolean isSolrRunningOn(String url) throws Exception {
+      StatusTool status = new StatusTool();
+      try {
+        status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+        return true;
+      } catch (Exception se) {
+        if (exceptionIsAuthRelated(se)) {
+          throw se;
+        }
+        return false;
+      }
+    }
+
+    private static boolean runningSolrIsCloud(String url) throws Exception {
+      try (final HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
+        final SolrRequest<CollectionAdminResponse> request = new CollectionAdminRequest.ClusterStatus();
+        final CollectionAdminResponse response = request.process(client);
+        return response != null;
+      } catch (Exception e) {
+        if (exceptionIsAuthRelated(e)) {
+          throw e;
+        }
+        return false;
       }
     }
   } // end AssertTool class
+
+  public static class AssertionFailureException extends Exception {
+    public AssertionFailureException(String message) {
+      super(message);
+    }
+  }
 
   // Authentication tool
   public static class AuthTool extends ToolBase {
