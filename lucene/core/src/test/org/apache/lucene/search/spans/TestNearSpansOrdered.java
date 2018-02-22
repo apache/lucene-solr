@@ -28,7 +28,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;

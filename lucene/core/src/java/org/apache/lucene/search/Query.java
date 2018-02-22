@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.search.spans.SpanWeight;
 
 /** The abstract base class for queries.
     <p>Instantiable subclasses are:

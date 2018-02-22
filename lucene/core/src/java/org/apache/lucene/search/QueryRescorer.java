@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.

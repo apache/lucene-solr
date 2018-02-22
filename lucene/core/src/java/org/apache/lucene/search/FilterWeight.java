@@ -47,7 +47,7 @@ public abstract class FilterWeight extends Weight {
   /**
    * Alternative constructor.
    * Use this variant only if the <code>weight</code> was not obtained
-   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, Query.Postings, float)}
+   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, float)}
    * method of the <code>query</code> object.
    */
   protected FilterWeight(Query query, Weight weight) {

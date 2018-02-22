@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 
 /**

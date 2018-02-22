@@ -63,10 +63,6 @@ public abstract class PostingsEnum extends DocIdSetIterator {
     return (flags & feature) == feature;
   }
 
-  public static short highest(short a, short b) {
-    return (short) Math.max(a, b);
-  }
-
   private AttributeSource atts = null;
 
   /** Sole constructor. (For invocation by subclass 
