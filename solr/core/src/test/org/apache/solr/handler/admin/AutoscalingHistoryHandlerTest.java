@@ -75,7 +75,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
+    configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     solrClient = cluster.getSolrClient();
@@ -90,6 +90,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     otherNodes.remove(systemCollNode);
     CollectionAdminRequest.createCollection(COLL_NAME, null, 1, 3)
         .setCreateNodeSet(String.join(",", otherNodes))
+        .setMaxShardsPerNode(3)
         .process(solrClient);
   }
 
