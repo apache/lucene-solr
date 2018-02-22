@@ -32,7 +32,6 @@ import org.apache.solr.util.IdUtils;
  * Trigger event.
  */
 public class TriggerEvent implements MapWriter {
-  public static final String IGNORED = "ignored";
   public static final String COOLDOWN = "cooldown";
   public static final String REPLAYING = "replaying";
   public static final String NODE_NAMES = "nodeNames";
@@ -78,25 +77,14 @@ public class TriggerEvent implements MapWriter {
   protected final long eventTime;
   protected final TriggerEventType eventType;
   protected final Map<String, Object> properties = new HashMap<>();
-  protected final boolean ignored;
 
   public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
-    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties, false);
-  }
-
-  public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
-                      Map<String, Object> properties, boolean ignored) {
-    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties, ignored);
+    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties);
   }
 
   public TriggerEvent(String id, TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
-    this(id, eventType, source, eventTime, properties, false);
-  }
-
-  public TriggerEvent(String id, TriggerEventType eventType, String source, long eventTime,
-                      Map<String, Object> properties, boolean ignored) {
     this.id = id;
     this.eventType = eventType;
     this.source = source;
@@ -104,7 +92,6 @@ public class TriggerEvent implements MapWriter {
     if (properties != null) {
       this.properties.putAll(properties);
     }
-    this.ignored = ignored;
   }
 
   /**
@@ -163,10 +150,6 @@ public class TriggerEvent implements MapWriter {
     return eventType;
   }
 
-  public boolean isIgnored() {
-    return ignored;
-  }
-
   /**
    * Set event properties.
    *
@@ -186,9 +169,6 @@ public class TriggerEvent implements MapWriter {
     ew.put("eventTime", eventTime);
     ew.put("eventType", eventType.toString());
     ew.put("properties", properties);
-    if (ignored)  {
-      ew.put("ignored", true);
-    }
   }
 
   @Override
@@ -202,7 +182,6 @@ public class TriggerEvent implements MapWriter {
     if (!id.equals(that.id)) return false;
     if (!source.equals(that.source)) return false;
     if (eventType != that.eventType) return false;
-    if (ignored != that.ignored)  return false;
     return properties.equals(that.properties);
   }
 
@@ -213,7 +192,6 @@ public class TriggerEvent implements MapWriter {
     result = 31 * result + (int) (eventTime ^ (eventTime >>> 32));
     result = 31 * result + eventType.hashCode();
     result = 31 * result + properties.hashCode();
-    result = 31 * result + Boolean.hashCode(ignored);
     return result;
   }
 
