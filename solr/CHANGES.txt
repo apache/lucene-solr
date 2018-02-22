@@ -150,6 +150,8 @@ New Features
 
 * SOLR-12006: Add a '*_t' and '*_t_sort' dynamic field for single valued text fields (Varun Thacker)
 
+* SOLR-11795: Add Solr metrics exporter for Prometheus (Minoru Osuka via koji)
+
 Bug Fixes
 ----------------------
 
