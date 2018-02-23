@@ -33,30 +33,6 @@ import org.apache.lucene.search.similarities.Similarity;
 
 public final class IntervalQuery extends Query {
 
-  public static IntervalQuery ordered(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(0, width));
-  }
-
-  public static IntervalQuery ordered(String field, int minWidth, int maxWidth, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(minWidth, maxWidth));
-  }
-
-  public static IntervalQuery ordered(String field, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.ORDERED);
-  }
-
-  public static IntervalQuery unordered(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(0, width));
-  }
-
-  public static IntervalQuery unordered(String field, int minWidth, int maxWidth, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(minWidth, maxWidth));
-  }
-
-  public static IntervalQuery unordered(String field, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.UNORDERED);
-  }
-
   private final String field;
   private final List<Query> subQueries;
   private final IntervalFunction iteratorFunction;

@@ -73,7 +73,7 @@ public class TestIntervalQuery extends LuceneTestCase {
 
   public void testScoring() throws IOException {
     PhraseQuery pq = new PhraseQuery.Builder().add(new Term(field, "w2")).add(new Term(field, "w3")).build();
-    Query equiv = IntervalQuery.ordered(field, 0, new TermQuery(new Term(field, "w2")), new TermQuery(new Term(field, "w3")));
+    Query equiv = Intervals.orderedQuery(field, 0, new TermQuery(new Term(field, "w2")), new TermQuery(new Term(field, "w3")));
 
     TopDocs td1 = searcher.search(pq, 10);
     TopDocs td2 = searcher.search(equiv, 10);
@@ -85,28 +85,28 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testOrderedNearQueryWidth0() throws IOException {
-    checkHits(IntervalQuery.ordered(field, 0, new TermQuery(new Term(field, "w1")),
+    checkHits(Intervals.orderedQuery(field, 0, new TermQuery(new Term(field, "w1")),
         new TermQuery(new Term(field, "w2"))),
         new int[]{0});
   }
 
   public void testOrderedNearQueryWidth1() throws IOException {
-    checkHits(IntervalQuery.ordered(field, 1, new TermQuery(new Term(field, "w1")),
+    checkHits(Intervals.orderedQuery(field, 1, new TermQuery(new Term(field, "w1")),
         new TermQuery(new Term(field, "w2"))),
         new int[]{0, 1, 2, 5});
   }
 
   public void testOrderedNearQueryWidth2() throws IOException {
-    checkHits(IntervalQuery.ordered(field, 2, new TermQuery(new Term(field, "w1")),
+    checkHits(Intervals.orderedQuery(field, 2, new TermQuery(new Term(field, "w1")),
         new TermQuery(new Term(field, "w2"))),
         new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNestedOrderedNearQuery() throws IOException {
     // onear/1(w1, onear/2(w2, w3))
-    Query q = IntervalQuery.ordered(field, 1,
+    Query q = Intervals.orderedQuery(field, 1,
         new TermQuery(new Term(field, "w1")),
-        IntervalQuery.ordered(field, 2,
+        Intervals.orderedQuery(field, 2,
             new TermQuery(new Term(field, "w2")),
             new TermQuery(new Term(field, "w3")))
     );
@@ -115,20 +115,20 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testUnorderedQuery() throws IOException {
-    Query q = IntervalQuery.unordered(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3")));
+    Query q = Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3")));
     checkHits(q, new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNotContainingQuery() throws IOException {
-    Query q = ContainingIntervalQuery.nonOverlapping(field,
-        IntervalQuery.unordered(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
+    Query q = Intervals.nonOverlappingQuery(field,
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
         new TermQuery(new Term(field, "w3")));
 
     checkHits(q, new int[]{0, 2, 4, 5});
   }
 
   public void testNotWithinQuery() throws IOException {
-    Query q = ContainingIntervalQuery.notWithin(field, new TermQuery(new Term(field, "w1")), 1,
+    Query q = Intervals.notWithinQuery(field, new TermQuery(new Term(field, "w1")), 1,
         new TermQuery(new Term(field, "w2")));
     checkHits(q, new int[]{ 1, 2, 3 });
   }

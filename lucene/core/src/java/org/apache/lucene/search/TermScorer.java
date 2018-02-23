@@ -24,6 +24,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermsEnum;
 
+import static org.apache.lucene.search.Intervals.NO_MORE_INTERVALS;
+
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
@@ -130,7 +132,7 @@ final class TermScorer extends Scorer {
   @Override
   public IntervalIterator intervals(String field) {
     if (this.field.equals(field)) {
-      return Intervals.termIterator(postingsEnum);
+      return new TermIntervalIterator(postingsEnum);
     }
     return null;
   }
@@ -159,4 +161,56 @@ final class TermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")[" + super.toString() + "]"; }
+
+  private static class TermIntervalIterator implements IntervalIterator {
+
+    public TermIntervalIterator(PostingsEnum pe) {
+      this.pe = pe;
+    }
+
+    private final PostingsEnum pe;
+
+    int upTo = -1;
+    int pos = -1;
+
+    @Override
+    public int start() {
+      return pos;
+    }
+
+    @Override
+    public int end() {
+      return pos;
+    }
+
+    @Override
+    public int innerWidth() {
+      return 0;
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      if (pe.docID() == doc) {
+        upTo = pe.freq();
+        pos = -1;
+        return true;
+      }
+      upTo = -1;
+      return false;
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (upTo <= 0) {
+        return pos = NO_MORE_INTERVALS;
+      }
+      upTo--;
+      return pos = pe.nextPosition();
+    }
+
+    @Override
+    public String toString() {
+      return pe.docID() + "[" + pos + "]";
+    }
+  }
 }

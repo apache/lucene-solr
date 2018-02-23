@@ -21,6 +21,26 @@ import java.io.IOException;
 
 public abstract class IntervalFilter implements IntervalIterator {
 
+  public static IntervalIterator widthFilter(IntervalIterator in, int minWidth, int maxWidth) {
+    return new IntervalFilter(in) {
+      @Override
+      protected boolean accept() {
+        int width = end() - start();
+        return width >= minWidth && width <= maxWidth;
+      }
+    };
+  }
+
+  public static IntervalIterator innerWidthFilter(IntervalIterator in, int minWidth, int maxWidth) {
+    return new IntervalFilter(in) {
+      @Override
+      protected boolean accept() {
+        int width = innerWidth();
+        return width >= minWidth && width <= maxWidth;
+      }
+    };
+  }
+
   private final IntervalIterator in;
 
   public IntervalFilter(IntervalIterator in) {

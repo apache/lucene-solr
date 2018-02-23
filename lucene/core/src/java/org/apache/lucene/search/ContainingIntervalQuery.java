@@ -29,14 +29,6 @@ import org.apache.lucene.search.similarities.Similarity;
 
 public class ContainingIntervalQuery extends Query {
 
-  public static ContainingIntervalQuery nonOverlapping(String field, Query minuend, Query subtrahend) {
-    return new ContainingIntervalQuery(field, minuend, subtrahend, IntervalDifferenceFunction.NON_OVERLAPPING);
-  }
-
-  public static ContainingIntervalQuery notWithin(String field, Query minuend, int positions, Query subtrahend) {
-    return new ContainingIntervalQuery(field, minuend, subtrahend, new IntervalDifferenceFunction.NotWithinFunction(positions));
-  }
-
   private final Query minuend;
   private final Query subtrahend;
   private final IntervalDifferenceFunction function;

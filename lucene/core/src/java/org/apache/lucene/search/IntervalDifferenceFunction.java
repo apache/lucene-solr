@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
+import static org.apache.lucene.search.Intervals.NO_MORE_INTERVALS;
+
 public abstract class IntervalDifferenceFunction {
 
   @Override
@@ -36,9 +38,65 @@ public abstract class IntervalDifferenceFunction {
   public static final IntervalDifferenceFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      return Intervals.nonOverlapping(minuend, subtrahend);
+      return nonOverlapping(minuend, subtrahend);
     }
   };
+
+  public static IntervalIterator nonOverlapping(IntervalIterator minuend, IntervalIterator subtrahend) {
+    return new NonOverlappingIterator(minuend, subtrahend);
+  }
+
+  private static class NonOverlappingIterator implements IntervalIterator {
+
+    final IntervalIterator minuend;
+    final IntervalIterator subtrahend;
+    boolean subPositioned;
+
+    private NonOverlappingIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
+      this.minuend = minuend;
+      this.subtrahend = subtrahend;
+    }
+
+    @Override
+    public int start() {
+      return minuend.start();
+    }
+
+    @Override
+    public int end() {
+      return minuend.end();
+    }
+
+    @Override
+    public int innerWidth() {
+      return minuend.innerWidth();
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      subPositioned = subtrahend.reset(doc);
+      if (subPositioned)
+        subPositioned = subtrahend.nextInterval() != NO_MORE_INTERVALS;
+      return minuend.reset(doc);
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (subPositioned == false)
+        return minuend.nextInterval();
+      while (minuend.nextInterval() != NO_MORE_INTERVALS) {
+        while (subtrahend.end() < minuend.start()) {
+          if (subtrahend.nextInterval() == NO_MORE_INTERVALS) {
+            subPositioned = false;
+            return minuend.start();
+          }
+        }
+        if (subtrahend.start() > minuend.end())
+          return minuend.start();
+      }
+      return NO_MORE_INTERVALS;
+    }
+  }
 
   public static class NotWithinFunction extends IntervalDifferenceFunction {
 
