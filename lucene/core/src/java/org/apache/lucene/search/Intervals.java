@@ -232,7 +232,10 @@ public final class Intervals {
         positioned &= subIterator.reset(doc);
         subIterator.nextInterval();
         queue.add(subIterator);
-        queueEnd = Math.max(queueEnd, subIterator.end());
+        if (subIterator.end() > queueEnd) {
+          queueEnd = subIterator.end();
+          innerEnd = subIterator.start();
+        }
       }
       return positioned;
     }
@@ -271,6 +274,62 @@ public final class Intervals {
       return start;
     }
 
+  }
+
+  public static IntervalIterator difference(IntervalIterator minuend, IntervalIterator subtrahend) {
+    return new DifferenceIterator(minuend, subtrahend);
+  }
+
+  private static class DifferenceIterator implements IntervalIterator {
+
+    final IntervalIterator minuend;
+    final IntervalIterator subtrahend;
+    boolean subPositioned;
+
+    private DifferenceIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
+      this.minuend = minuend;
+      this.subtrahend = subtrahend;
+    }
+
+    @Override
+    public int start() {
+      return minuend.start();
+    }
+
+    @Override
+    public int end() {
+      return minuend.end();
+    }
+
+    @Override
+    public int innerWidth() {
+      return minuend.innerWidth();
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      subPositioned = subtrahend.reset(doc);
+      if (subPositioned)
+        subPositioned = subtrahend.nextInterval() != NO_MORE_INTERVALS;
+      return minuend.reset(doc);
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (subPositioned == false)
+        return minuend.nextInterval();
+      while (minuend.nextInterval() != NO_MORE_INTERVALS) {
+        while (subtrahend.end() < minuend.start()) {
+          if (subtrahend.nextInterval() == NO_MORE_INTERVALS) {
+            subPositioned = false;
+            return minuend.start();
+          }
+        }
+        if (subtrahend.start() > minuend.end())
+          return minuend.start();
+      }
+      return NO_MORE_INTERVALS;
+    }
   }
 
 }

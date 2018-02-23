@@ -17,11 +17,12 @@
 
 package org.apache.lucene.search;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
-public abstract class IntervalFunction implements Function<List<IntervalIterator>, IntervalIterator> {
+public abstract class IntervalFunction {
 
   @Override
   public abstract int hashCode();
@@ -31,6 +32,15 @@ public abstract class IntervalFunction implements Function<List<IntervalIterator
 
   @Override
   public abstract String toString();
+
+  public abstract IntervalIterator apply(List<IntervalIterator> iterators);
+
+  public static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
+      return Intervals.orderedIntervalIterator(intervalIterators);
+    }
+  };
 
   public static class OrderedNearFunction extends IntervalFunction {
 
@@ -67,6 +77,13 @@ public abstract class IntervalFunction implements Function<List<IntervalIterator
     }
   }
 
+  public static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
+      return Intervals.unorderedIntervalIterator(intervalIterators);
+    }
+  };
+
   public static class UnorderedNearFunction extends IntervalFunction {
 
     final int minWidth;
@@ -101,6 +118,31 @@ public abstract class IntervalFunction implements Function<List<IntervalIterator
     public int hashCode() {
       return Objects.hash(minWidth, maxWidth);
     }
+  }
+
+  private static abstract class SingletonFunction extends IntervalFunction {
+
+    private final String name;
+
+    protected SingletonFunction(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj == this;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+
   }
 
 }
