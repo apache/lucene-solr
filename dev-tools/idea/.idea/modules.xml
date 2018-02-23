@@ -57,6 +57,7 @@
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/ltr.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/prometheus-exporter/prometheus-exporter.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
     </modules>
