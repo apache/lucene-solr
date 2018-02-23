@@ -120,7 +120,7 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testNotContainingQuery() throws IOException {
-    Query q = IntervalDifferenceQuery.notContaining(field,
+    Query q = ContainingIntervalQuery.nonOverlapping(field,
         IntervalQuery.unordered(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
         new TermQuery(new Term(field, "w3")));
 
@@ -128,7 +128,7 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testNotWithinQuery() throws IOException {
-    Query q = IntervalDifferenceQuery.notWithin(field, new TermQuery(new Term(field, "w1")), 1,
+    Query q = ContainingIntervalQuery.notWithin(field, new TermQuery(new Term(field, "w1")), 1,
         new TermQuery(new Term(field, "w2")));
     checkHits(q, new int[]{ 1, 2, 3 });
   }

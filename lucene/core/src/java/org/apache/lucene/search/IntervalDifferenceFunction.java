@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 public abstract class IntervalDifferenceFunction {
@@ -34,10 +33,10 @@ public abstract class IntervalDifferenceFunction {
 
   public abstract IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend);
 
-  public static final IntervalDifferenceFunction NOT_CONTAINING = new SingletonFunction("NOT_CONTAINING") {
+  public static final IntervalDifferenceFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      return Intervals.difference(minuend, subtrahend);
+      return Intervals.nonOverlapping(minuend, subtrahend);
     }
   };
 
@@ -100,7 +99,7 @@ public abstract class IntervalDifferenceFunction {
           return subtrahend.nextInterval();
         }
       };
-      return NOT_CONTAINING.apply(minuend, notWithin);
+      return NON_OVERLAPPING.apply(minuend, notWithin);
     }
   }
 

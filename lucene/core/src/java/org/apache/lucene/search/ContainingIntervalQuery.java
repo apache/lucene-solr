@@ -27,14 +27,14 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 
-public class IntervalDifferenceQuery extends Query {
+public class ContainingIntervalQuery extends Query {
 
-  public static IntervalDifferenceQuery notContaining(String field, Query minuend, Query subtrahend) {
-    return new IntervalDifferenceQuery(field, minuend, subtrahend, IntervalDifferenceFunction.NOT_CONTAINING);
+  public static ContainingIntervalQuery nonOverlapping(String field, Query minuend, Query subtrahend) {
+    return new ContainingIntervalQuery(field, minuend, subtrahend, IntervalDifferenceFunction.NON_OVERLAPPING);
   }
 
-  public static IntervalDifferenceQuery notWithin(String field, Query minuend, int positions, Query subtrahend) {
-    return new IntervalDifferenceQuery(field, minuend, subtrahend, new IntervalDifferenceFunction.NotWithinFunction(positions));
+  public static ContainingIntervalQuery notWithin(String field, Query minuend, int positions, Query subtrahend) {
+    return new ContainingIntervalQuery(field, minuend, subtrahend, new IntervalDifferenceFunction.NotWithinFunction(positions));
   }
 
   private final Query minuend;
@@ -42,7 +42,7 @@ public class IntervalDifferenceQuery extends Query {
   private final IntervalDifferenceFunction function;
   private final String field;
 
-  protected IntervalDifferenceQuery(String field, Query minuend, Query subtrahend, IntervalDifferenceFunction function) {
+  protected ContainingIntervalQuery(String field, Query minuend, Query subtrahend, IntervalDifferenceFunction function) {
     this.minuend = minuend;
     this.subtrahend = subtrahend;
     this.function = function;
@@ -67,7 +67,7 @@ public class IntervalDifferenceQuery extends Query {
     Query rewrittenMinuend = minuend.rewrite(reader);
     Query rewrittenSubtrahend = subtrahend.rewrite(reader);
     if (rewrittenMinuend != minuend || rewrittenSubtrahend != subtrahend) {
-      return new IntervalDifferenceQuery(field, rewrittenMinuend, rewrittenSubtrahend, function);
+      return new ContainingIntervalQuery(field, rewrittenMinuend, rewrittenSubtrahend, function);
     }
     return this;
   }
@@ -76,7 +76,7 @@ public class IntervalDifferenceQuery extends Query {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    IntervalDifferenceQuery that = (IntervalDifferenceQuery) o;
+    ContainingIntervalQuery that = (ContainingIntervalQuery) o;
     return Objects.equals(minuend, that.minuend) &&
         Objects.equals(subtrahend, that.subtrahend) &&
         Objects.equals(function, that.function);
@@ -97,7 +97,7 @@ public class IntervalDifferenceQuery extends Query {
 
     private IntervalDifferenceWeight(Weight minuendWeight, Weight subtrahendWeight, ScoreMode scoreMode,
                                      Similarity similarity, Similarity.SimScorer simScorer) {
-      super(IntervalDifferenceQuery.this);
+      super(ContainingIntervalQuery.this);
       this.minuendWeight = minuendWeight;
       this.subtrahendWeight = subtrahendWeight;
       this.scoreMode = scoreMode;
