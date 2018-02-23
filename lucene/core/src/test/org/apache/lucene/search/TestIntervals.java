@@ -126,7 +126,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testOrderedNearIntervals() throws IOException {
-    checkIntervals(IntervalQuery.ordered("field1", 100,
+    checkIntervals(Intervals.orderedQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
         "field1", 3, new int[][]{
         {},
@@ -139,7 +139,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testUnorderedNearIntervals() throws IOException {
-    checkIntervals(IntervalQuery.unordered("field1", 100,
+    checkIntervals(Intervals.unorderedQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
         "field1", 4, new int[][]{
             {},
@@ -166,7 +166,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testNesting() throws IOException {
-    checkIntervals(IntervalQuery.unordered("field1", 100,
+    checkIntervals(Intervals.unorderedQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")),
             new TermQuery(new Term("field1", "porridge")),
                 new BooleanQuery.Builder()
