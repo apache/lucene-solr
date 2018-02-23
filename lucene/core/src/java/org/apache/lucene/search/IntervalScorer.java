@@ -21,12 +21,16 @@ import java.io.IOException;
 
 class IntervalScorer extends Scorer {
 
-  private final IntervalIterator intervals;
+  protected final IntervalIterator intervals;
   private final String field;
-  private final DocIdSetIterator approximation;
+  protected final DocIdSetIterator approximation;
   private final LeafSimScorer simScorer;
 
-  protected IntervalScorer(Weight weight, String field, DocIdSetIterator approximation, IntervalIterator intervals, LeafSimScorer simScorer) {
+  private float freq = -1;
+  private int lastScoredDoc = -1;
+
+  protected IntervalScorer(Weight weight, String field, DocIdSetIterator approximation,
+                           IntervalIterator intervals, LeafSimScorer simScorer) {
     super(weight);
     this.intervals = intervals;
     this.approximation = approximation;
@@ -41,11 +45,33 @@ class IntervalScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    float freq = 0;
-    do {
-      freq += intervals.score();
-    } while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS);
+    ensureFreq();
     return simScorer.score(docID(), freq);
+  }
+
+  public Explanation explain(String topLevel) throws IOException {
+    ensureFreq();
+    Explanation freqExplanation = Explanation.match(freq, "intervalFreq=" + freq);
+    Explanation scoreExplanation = simScorer.explain(docID(), freqExplanation);
+    return Explanation.match(scoreExplanation.getValue(),
+        topLevel + ", result of:",
+        scoreExplanation);
+  }
+
+  public float freq() throws IOException {
+    ensureFreq();
+    return freq;
+  }
+
+  private void ensureFreq() throws IOException {
+    if (lastScoredDoc != docID()) {
+      lastScoredDoc = docID();
+      freq = 0;
+      do {
+        freq += intervals.score();
+      }
+      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS);
+    }
   }
 
   @Override

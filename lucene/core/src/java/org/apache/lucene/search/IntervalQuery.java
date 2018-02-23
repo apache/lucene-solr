@@ -27,26 +27,45 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.similarities.Similarity;
 
 public final class IntervalQuery extends Query {
 
+  public static IntervalQuery ordered(String field, int width, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(0, width));
+  }
+
+  public static IntervalQuery ordered(String field, int minWidth, int maxWidth, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(minWidth, maxWidth));
+  }
+
+  public static IntervalQuery ordered(String field, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.ORDERED);
+  }
+
+  public static IntervalQuery unordered(String field, int width, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(0, width));
+  }
+
+  public static IntervalQuery unordered(String field, int minWidth, int maxWidth, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(minWidth, maxWidth));
+  }
+
+  public static IntervalQuery unordered(String field, Query... subQueries) {
+    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.UNORDERED);
+  }
+
   private final String field;
   private final List<Query> subQueries;
   private final IntervalFunction iteratorFunction;
 
-  public static IntervalQuery orderedNearQuery(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(0, width));
-  }
-
-  public static IntervalQuery unorderedNearQuery(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(0, width));
-  }
-
   protected IntervalQuery(String field, List<Query> subQueries, IntervalFunction iteratorFunction) {
+    this(field, subQueries, null, iteratorFunction);
+  }
+
+  protected IntervalQuery(String field, List<Query> subQueries, Query subtrahend, IntervalFunction iteratorFunction) {
     this.field = field;
     this.subQueries = subQueries;
     this.iteratorFunction = iteratorFunction;
@@ -68,13 +87,14 @@ public final class IntervalQuery extends Query {
     for (Query q : subQueries) {
       subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE_POSITIONS, boost));
     }
-    return new IntervalWeight(this, subWeights, scoreMode.needsScores() ? buildSimScorer(searcher, subWeights, boost) : null, scoreMode);
+    return new IntervalWeight(this, subWeights, scoreMode.needsScores() ? buildSimScorer(field, searcher, subWeights, boost) : null,
+        searcher.getSimilarity(), scoreMode);
   }
 
-  private Similarity.SimScorer buildSimScorer(IndexSearcher searcher, List<Weight> subWeights, float boost) throws IOException {
+  static Similarity.SimScorer buildSimScorer(String field, IndexSearcher searcher, List<Weight> subWeights, float boost) throws IOException {
     Set<Term> terms = new HashSet<>();
     for (Weight w : subWeights) {
-      w.extractTerms(terms);    // nocommit can we do this without building TermStates twice?
+      w.extractTerms(terms);
     }
     TermStatistics[] termStats = new TermStatistics[terms.size()];
     int termUpTo = 0;
@@ -107,12 +127,14 @@ public final class IntervalQuery extends Query {
 
     final List<Weight> subWeights;
     final Similarity.SimScorer simScorer;
+    final Similarity similarity;
     final ScoreMode scoreMode;
 
-    public IntervalWeight(Query query, List<Weight> subWeights, Similarity.SimScorer simScorer, ScoreMode scoreMode) {
+    public IntervalWeight(Query query, List<Weight> subWeights, Similarity.SimScorer simScorer, Similarity similarity, ScoreMode scoreMode) {
       super(query);
       this.subWeights = subWeights;
       this.simScorer = simScorer;
+      this.similarity = similarity;
       this.scoreMode = scoreMode;
     }
 
@@ -125,11 +147,14 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
-      if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return Explanation.match(scorer.score(), "Intervals match");    // nocommit improve this
+      IntervalScorer scorer = (IntervalScorer) scorer(context);
+      if (scorer != null) {
+        int newDoc = scorer.iterator().advance(doc);
+        if (newDoc == doc) {
+          return scorer.explain("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "]");
+        }
       }
-      return Explanation.noMatch("No matching intervals");
+      return Explanation.noMatch("no matching intervals");
     }
 
     @Override

@@ -18,9 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,7 +29,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -129,7 +126,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testOrderedNearIntervals() throws IOException {
-    checkIntervals(IntervalQuery.orderedNearQuery("field1", 100,
+    checkIntervals(IntervalQuery.ordered("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
         "field1", 3, new int[][]{
         {},
@@ -142,9 +139,9 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testUnorderedNearIntervals() throws IOException {
-    checkIntervals(IntervalQuery.unorderedNearQuery("field1", 100,
+    checkIntervals(IntervalQuery.unordered("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
-        "field1", 3, new int[][]{
+        "field1", 4, new int[][]{
             {},
             { 0, 2, 2, 3, 6, 17 },
             { 3, 5, 5, 6, 6, 21 },
@@ -169,7 +166,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testNesting() throws IOException {
-    checkIntervals(IntervalQuery.unorderedNearQuery("field1", 100,
+    checkIntervals(IntervalQuery.unordered("field1", 100,
         new TermQuery(new Term("field1", "pease")),
             new TermQuery(new Term("field1", "porridge")),
                 new BooleanQuery.Builder()
