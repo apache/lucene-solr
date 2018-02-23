@@ -1402,6 +1402,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  //Commented out 24-Jan-2018
   //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     // start a few more jetty-s

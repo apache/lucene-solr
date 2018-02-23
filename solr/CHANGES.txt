@@ -314,6 +314,8 @@ Other Changes
 * SOLR-11897: Add toggle to disable auto-refresh of Logging page in the UI (Tommy Marshment-Howell via
   Cassandra Targett)
 
+* SOLR-12017: Remove BadApple and AwaitsFix annotations that link to closed JIRAs (Erick Erickson)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
