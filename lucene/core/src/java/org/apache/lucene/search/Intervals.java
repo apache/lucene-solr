@@ -276,17 +276,17 @@ public final class Intervals {
 
   }
 
-  public static IntervalIterator difference(IntervalIterator minuend, IntervalIterator subtrahend) {
-    return new DifferenceIterator(minuend, subtrahend);
+  public static IntervalIterator nonOverlapping(IntervalIterator minuend, IntervalIterator subtrahend) {
+    return new NonOverlappingIterator(minuend, subtrahend);
   }
 
-  private static class DifferenceIterator implements IntervalIterator {
+  private static class NonOverlappingIterator implements IntervalIterator {
 
     final IntervalIterator minuend;
     final IntervalIterator subtrahend;
     boolean subPositioned;
 
-    private DifferenceIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
+    private NonOverlappingIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
       this.minuend = minuend;
       this.subtrahend = subtrahend;
     }
