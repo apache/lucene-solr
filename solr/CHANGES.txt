@@ -203,6 +203,8 @@ Bug Fixes
 * SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
   (麦 香浓郁, Uwe Schindler)
 
+* SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)
+
 Optimizations
 ----------------------
 
