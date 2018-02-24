@@ -58,6 +58,9 @@ Changes in Runtime Behavior
 * LUCENE-8134: Index options are no longer automatically downgraded.
   (Adrien Grand)
 
+* LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
+  (Robert Muir, Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.

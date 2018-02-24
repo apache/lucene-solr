@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -113,7 +114,14 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final long computeNorm(FieldInvertState state) {
-    final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
+    final int numTerms;
+    if (state.getIndexOptions() == IndexOptions.DOCS && state.getIndexCreatedVersionMajor() >= 8) {
+      numTerms = state.getUniqueTermCount();
+    } else if (discountOverlaps) {
+      numTerms = state.getLength() - state.getNumOverlap();
+    } else {
+      numTerms = state.getLength();
+    }
     return SmallFloat.intToByte4(numTerms);
   }
 

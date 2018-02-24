@@ -598,6 +598,7 @@ public class MemoryIndex {
           info.sliceArray.start[ord] = postingsWriter.startNewSlice();
         }
         info.sliceArray.freq[ord]++;
+        info.maxTermFrequency = Math.max(info.maxTermFrequency, info.sliceArray.freq[ord]);
         info.sumTotalTermFreq++;
         postingsWriter.writeInt(pos);
         if (storeOffsets) {
@@ -807,6 +808,8 @@ public class MemoryIndex {
     private int numOverlapTokens;
 
     private long sumTotalTermFreq;
+    
+    private int maxTermFrequency;
 
     /** the last position encountered in this field for multi field support*/
     private int lastPosition;
@@ -901,8 +904,8 @@ public class MemoryIndex {
 
     NumericDocValues getNormDocValues() {
       if (norm == null) {
-        FieldInvertState invertState = new FieldInvertState(Version.LATEST.major, fieldInfo.name, fieldInfo.number,
-            numTokens, numOverlapTokens, 0);
+        FieldInvertState invertState = new FieldInvertState(Version.LATEST.major, fieldInfo.name, fieldInfo.getIndexOptions(), lastPosition,
+            numTokens, numOverlapTokens, 0, maxTermFrequency, terms.size());
         final long value = normSimilarity.computeNorm(invertState);
         if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
 

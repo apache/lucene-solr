@@ -684,7 +684,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     void setInvertState() {
-      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name);
+      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name, fieldInfo.getIndexOptions());
       termsHashPerField = termsHash.addField(invertState, fieldInfo);
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
