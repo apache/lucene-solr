@@ -61,10 +61,10 @@ public class TestIntervalQuery extends LuceneTestCase {
   private String[] docFields = {
       "w1 w2 w3 w4 w5",
       "w1 w3 w2 w3",
-      "w1 xx w2 yy w3",
+      "w1 xx w2 w4 yy w3",
       "w1 w3 xx w2 yy w3",
       "w2 w1",
-      "w2 w1 w3 w2"
+      "w2 w1 w3 w2 w4"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -119,12 +119,12 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{0, 1, 2, 3, 5});
   }
 
-  public void testNotContainingQuery() throws IOException {
+  public void testNonOverlappingQuery() throws IOException {
     Query q = Intervals.nonOverlappingQuery(field,
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
-        new TermQuery(new Term(field, "w3")));
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3"))),
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w2")), new TermQuery(new Term(field, "w4"))));
 
-    checkHits(q, new int[]{0, 2, 4, 5});
+    checkHits(q, new int[]{1, 3, 5});
   }
 
   public void testNotWithinQuery() throws IOException {
@@ -132,5 +132,39 @@ public class TestIntervalQuery extends LuceneTestCase {
         new TermQuery(new Term(field, "w2")));
     checkHits(q, new int[]{ 1, 2, 3 });
   }
+
+  public void testNotContainingQuery() throws IOException {
+    Query q = Intervals.notContainingQuery(field,
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
+        new TermQuery(new Term(field, "w3")));
+
+    checkHits(q, new int[]{ 0, 2, 4, 5 });
+  }
+
+  public void testContainingQuery() throws IOException {
+    Query q = Intervals.containingQuery(field,
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
+        new TermQuery(new Term(field, "w3")));
+
+    checkHits(q, new int[]{ 1, 3, 5 });
+  }
+
+  public void testContainedByQuery() throws IOException {
+    Query q = Intervals.containedByQuery(field,
+        new TermQuery(new Term(field, "w3")),
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))));
+    checkHits(q, new int[]{ 1, 3, 5 });
+  }
+
+  public void testNotContainedByQuery() throws IOException {
+    Query q = Intervals.notContainedByQuery(field,
+        new TermQuery(new Term(field, "w2")),
+        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w4"))));
+    checkHits(q, new int[]{ 1, 3, 4, 5 });
+  }
+  // contained-by
+  // not-contained-by
+
+  // TODO: Overlapping
 
 }

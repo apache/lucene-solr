@@ -17,12 +17,7 @@
 
 package org.apache.lucene.search;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
-
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.util.PriorityQueue;
 
 public final class Intervals {
 
@@ -53,12 +48,27 @@ public final class Intervals {
   }
 
   public static Query nonOverlappingQuery(String field, Query minuend, Query subtrahend) {
-    return new ContainingIntervalQuery(field, minuend, subtrahend, IntervalDifferenceFunction.NON_OVERLAPPING);
+    return new DifferenceIntervalQuery(field, minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
   }
 
   public static Query notWithinQuery(String field, Query minuend, int positions, Query subtrahend) {
-    return new ContainingIntervalQuery(field, minuend, subtrahend, new IntervalDifferenceFunction.NotWithinFunction(positions));
+    return new DifferenceIntervalQuery(field, minuend, subtrahend, new DifferenceIntervalFunction.NotWithinFunction(positions));
   }
 
+  public static Query notContainingQuery(String field, Query minuend, Query subtrahend) {
+    return new DifferenceIntervalQuery(field, minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
+  }
+
+  public static Query containingQuery(String field, Query big, Query small) {
+    return new IntervalQuery(field, Arrays.asList(big, small), IntervalFunction.CONTAINING);
+  }
+
+  public static Query notContainedByQuery(String field, Query small, Query big) {
+    return new DifferenceIntervalQuery(field, small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
+  }
+
+  public static Query containedByQuery(String field, Query small, Query big) {
+    return new IntervalQuery(field, Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
+  }
 
 }

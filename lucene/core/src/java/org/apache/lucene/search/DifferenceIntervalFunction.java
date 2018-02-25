@@ -22,7 +22,7 @@ import java.util.Objects;
 
 import static org.apache.lucene.search.Intervals.NO_MORE_INTERVALS;
 
-public abstract class IntervalDifferenceFunction {
+public abstract class DifferenceIntervalFunction {
 
   @Override
   public abstract int hashCode();
@@ -35,70 +35,89 @@ public abstract class IntervalDifferenceFunction {
 
   public abstract IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend);
 
-  public static final IntervalDifferenceFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
+  public static final DifferenceIntervalFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      return nonOverlapping(minuend, subtrahend);
+      return new NonOverlappingIterator(minuend, subtrahend);
     }
   };
 
-  public static IntervalIterator nonOverlapping(IntervalIterator minuend, IntervalIterator subtrahend) {
-    return new NonOverlappingIterator(minuend, subtrahend);
-  }
+  public static final DifferenceIntervalFunction NOT_CONTAINING = new SingletonFunction("NOT_CONTAINING") {
+    @Override
+    public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
+      return new NotContainingIterator(minuend, subtrahend);
+    }
+  };
 
-  private static class NonOverlappingIterator implements IntervalIterator {
+  public static final DifferenceIntervalFunction NOT_CONTAINED_BY = new SingletonFunction("NOT_CONTAINED_BY") {
+    @Override
+    public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
+      return new NotContainedByIterator(minuend, subtrahend);
+    }
+  };
 
-    final IntervalIterator minuend;
-    final IntervalIterator subtrahend;
-    boolean subPositioned;
+  private static abstract class RelativeIterator implements IntervalIterator {
 
-    private NonOverlappingIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
-      this.minuend = minuend;
-      this.subtrahend = subtrahend;
+    final IntervalIterator a;
+    final IntervalIterator b;
+
+    boolean bpos;
+
+    RelativeIterator(IntervalIterator a, IntervalIterator b) {
+      this.a = a;
+      this.b = b;
     }
 
     @Override
     public int start() {
-      return minuend.start();
+      return a.start();
     }
 
     @Override
     public int end() {
-      return minuend.end();
+      return a.end();
     }
 
     @Override
     public int innerWidth() {
-      return minuend.innerWidth();
+      return a.innerWidth();
     }
 
     @Override
     public boolean reset(int doc) throws IOException {
-      subPositioned = subtrahend.reset(doc);
-      if (subPositioned)
-        subPositioned = subtrahend.nextInterval() != NO_MORE_INTERVALS;
-      return minuend.reset(doc);
+      bpos = b.reset(doc);
+      if (bpos)
+        bpos = b.nextInterval() != NO_MORE_INTERVALS;
+      return a.reset(doc);
+    }
+
+  }
+
+  private static class NonOverlappingIterator extends RelativeIterator {
+
+    private NonOverlappingIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
+      super(minuend, subtrahend);
     }
 
     @Override
     public int nextInterval() throws IOException {
-      if (subPositioned == false)
-        return minuend.nextInterval();
-      while (minuend.nextInterval() != NO_MORE_INTERVALS) {
-        while (subtrahend.end() < minuend.start()) {
-          if (subtrahend.nextInterval() == NO_MORE_INTERVALS) {
-            subPositioned = false;
-            return minuend.start();
+      if (bpos == false)
+        return a.nextInterval();
+      while (a.nextInterval() != NO_MORE_INTERVALS) {
+        while (b.end() < a.start()) {
+          if (b.nextInterval() == NO_MORE_INTERVALS) {
+            bpos = false;
+            return a.start();
           }
         }
-        if (subtrahend.start() > minuend.end())
-          return minuend.start();
+        if (b.start() > a.end())
+          return a.start();
       }
       return NO_MORE_INTERVALS;
     }
   }
 
-  public static class NotWithinFunction extends IntervalDifferenceFunction {
+  public static class NotWithinFunction extends DifferenceIntervalFunction {
 
     private final int positions;
 
@@ -161,11 +180,58 @@ public abstract class IntervalDifferenceFunction {
     }
   }
 
-  private static abstract class SingletonFunction extends IntervalDifferenceFunction {
+  private static class NotContainingIterator extends RelativeIterator {
+
+    private NotContainingIterator(IntervalIterator minuend, IntervalIterator subtrahend) {
+      super(minuend, subtrahend);
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (bpos == false)
+        return a.nextInterval();
+      while (a.nextInterval() != NO_MORE_INTERVALS) {
+        while (b.start() < a.start() && b.end() < a.end()) {
+          if (b.nextInterval() == NO_MORE_INTERVALS) {
+            bpos = false;
+            return a.start();
+          }
+        }
+        if (b.start() > a.end())
+          return a.start();
+      }
+      return NO_MORE_INTERVALS;
+    }
+
+  }
+
+  private static class NotContainedByIterator extends RelativeIterator {
+
+    NotContainedByIterator(IntervalIterator a, IntervalIterator b) {
+      super(a, b);
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (bpos == false)
+        return a.nextInterval();
+      while (a.nextInterval() != NO_MORE_INTERVALS) {
+        while (b.end() < a.end()) {
+          if (b.nextInterval() == NO_MORE_INTERVALS)
+            return a.start();
+        }
+        if (a.start() < b.start())
+          return a.start();
+      }
+      return NO_MORE_INTERVALS;
+    }
+  }
+
+  private static abstract class SingletonFunction extends DifferenceIntervalFunction {
 
     private final String name;
 
-    protected SingletonFunction(String name) {
+    SingletonFunction(String name) {
       this.name = name;
     }
 

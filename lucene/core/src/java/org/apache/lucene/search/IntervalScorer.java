@@ -99,7 +99,7 @@ class IntervalScorer extends Scorer {
         public boolean reset(int doc) throws IOException {
           // inner iterator already reset() in TwoPhaseIterator.matches()
           started = false;
-          return true;
+          return doc == docID();
         }
 
         @Override
