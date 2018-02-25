@@ -296,6 +296,8 @@ Other Changes
 
 * SOLR-12017: Remove BadApple and AwaitsFix annotations that link to closed JIRAs (Erick Erickson)
 
+* SOLR-12027: Increase thread lingering timeout to 80s. (Mikhail Khludnev)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
