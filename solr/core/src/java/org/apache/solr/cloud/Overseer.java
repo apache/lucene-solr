@@ -70,7 +70,7 @@ public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
 
   // System properties are used in tests to make them run fast
-  public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE = Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
   public static final int STATE_UPDATE_MAX_QUEUE = 20000;
 

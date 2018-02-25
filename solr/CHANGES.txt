@@ -234,6 +234,8 @@ Optimizations
 
 * SOLR-11879: avoid EOFException for empty input streams (noble)
 
+* SOLR-8327: Cluster state caching to avoid live fetch from ZK of cluster state for forwarding requests on nodes
+  that do not host any replica of the collection (Jessica Cheng Mallet, John Gallagher, Noble Paul, Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------
