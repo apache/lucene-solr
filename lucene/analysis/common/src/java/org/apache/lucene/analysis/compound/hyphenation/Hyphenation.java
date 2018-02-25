@@ -23,12 +23,12 @@ package org.apache.lucene.analysis.compound.hyphenation;
  */
 public class Hyphenation {
 
-  private int[] hyphenPoints;
+  private final int[] hyphenPoints;
 
   /**
    * rawWord as made of alternating strings and {@link Hyphen Hyphen} instances
    */
-  Hyphenation(int[] points) {
+  public Hyphenation(int[] points) {
     hyphenPoints = points;
   }
 

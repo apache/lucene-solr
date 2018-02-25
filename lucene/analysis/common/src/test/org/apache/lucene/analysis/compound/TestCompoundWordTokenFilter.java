@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -31,6 +33,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
+import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -92,7 +95,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
         .getHyphenationTree(is);
-    
+
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
 
         whitespaceMockTokenizer("basketballkurv"),
@@ -130,6 +133,23 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
                        "sketbal", "sketball", "ball", "ballkurv", "lkurv", "kurv" }
     );
     
+  }
+
+  public void testHyphenationAndDictionaryHonoursMinWordLength() throws Exception {
+    String input = "Wirtschaftswissenschaft";
+    Hyphenation hyphenation = new Hyphenation(new int[]{ 0, 4, 11, 14, 17, 23});
+    HyphenationTree hyphenator = new MockHyphenator(Collections.singletonMap(input, hyphenation));
+    CharArraySet dictionary = makeDictionary("Schaf", "Schaft", "Wir", "Wirt", "Wirtschaft", "Wissen", "Wissenschaft");
+
+    HyphenationCompoundWordTokenFilter tf6 = new HyphenationCompoundWordTokenFilter(whitespaceMockTokenizer(input),
+        hyphenator, dictionary, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        6, 12,false);
+    assertTokenStreamContents(tf6, new String[] { "Wirtschaftswissenschaft", "Wirtschaft", "schaft", "wissen", "wissenschaft", "schaft"});
+
+    HyphenationCompoundWordTokenFilter tf7 = new HyphenationCompoundWordTokenFilter(whitespaceMockTokenizer(input),
+        hyphenator, dictionary, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        7, 12,false);
+    assertTokenStreamContents(tf7, new String[] { "Wirtschaftswissenschaft", "Wirtschaft", "wissenschaft"});
   }
 
   public void testDumbCompoundWordsSE() throws Exception {
@@ -331,7 +351,22 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     }
   }
-  
+
+  // Hyphenator that has prior knowledge of hyphenation points for terms
+  private static class MockHyphenator extends HyphenationTree {
+
+    private final Map<String, Hyphenation> hyphenations;
+
+    MockHyphenator(Map<String, Hyphenation> hyphenations) {
+      this.hyphenations = hyphenations;
+    }
+
+    @Override
+    public Hyphenation hyphenate(char[] w, int offset, int len, int remainCharCount, int pushCharCount) {
+      return hyphenations.get(new String(w, offset, len));
+    }
+  }
+
   // SOLR-2891
   // *CompoundWordTokenFilter blindly adds term length to offset, but this can take things out of bounds
   // wrt original text if a previous filter increases the length of the word (in this case ü -> ue)
