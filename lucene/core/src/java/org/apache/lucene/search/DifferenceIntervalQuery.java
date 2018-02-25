@@ -27,14 +27,14 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 
-public class ContainingIntervalQuery extends Query {
+public class DifferenceIntervalQuery extends Query {
 
   private final Query minuend;
   private final Query subtrahend;
-  private final IntervalDifferenceFunction function;
+  private final DifferenceIntervalFunction function;
   private final String field;
 
-  protected ContainingIntervalQuery(String field, Query minuend, Query subtrahend, IntervalDifferenceFunction function) {
+  protected DifferenceIntervalQuery(String field, Query minuend, Query subtrahend, DifferenceIntervalFunction function) {
     this.minuend = minuend;
     this.subtrahend = subtrahend;
     this.function = function;
@@ -59,7 +59,7 @@ public class ContainingIntervalQuery extends Query {
     Query rewrittenMinuend = minuend.rewrite(reader);
     Query rewrittenSubtrahend = subtrahend.rewrite(reader);
     if (rewrittenMinuend != minuend || rewrittenSubtrahend != subtrahend) {
-      return new ContainingIntervalQuery(field, rewrittenMinuend, rewrittenSubtrahend, function);
+      return new DifferenceIntervalQuery(field, rewrittenMinuend, rewrittenSubtrahend, function);
     }
     return this;
   }
@@ -68,7 +68,7 @@ public class ContainingIntervalQuery extends Query {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    ContainingIntervalQuery that = (ContainingIntervalQuery) o;
+    DifferenceIntervalQuery that = (DifferenceIntervalQuery) o;
     return Objects.equals(minuend, that.minuend) &&
         Objects.equals(subtrahend, that.subtrahend) &&
         Objects.equals(function, that.function);
@@ -89,7 +89,7 @@ public class ContainingIntervalQuery extends Query {
 
     private IntervalDifferenceWeight(Weight minuendWeight, Weight subtrahendWeight, ScoreMode scoreMode,
                                      Similarity similarity, Similarity.SimScorer simScorer) {
-      super(ContainingIntervalQuery.this);
+      super(DifferenceIntervalQuery.this);
       this.minuendWeight = minuendWeight;
       this.subtrahendWeight = subtrahendWeight;
       this.scoreMode = scoreMode;

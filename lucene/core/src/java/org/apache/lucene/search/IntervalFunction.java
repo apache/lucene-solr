@@ -298,6 +298,106 @@ public abstract class IntervalFunction {
 
   }
 
+  public static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> iterators) {
+      if (iterators.size() != 2)
+        throw new IllegalStateException("CONTAINING function requires two iterators");
+      IntervalIterator a = iterators.get(0);
+      IntervalIterator b = iterators.get(1);
+      return new IntervalIterator() {
+
+        boolean bpos;
+
+        @Override
+        public int start() {
+          return a.start();
+        }
+
+        @Override
+        public int end() {
+          return a.end();
+        }
+
+        @Override
+        public int innerWidth() {
+          return a.innerWidth();
+        }
+
+        @Override
+        public boolean reset(int doc) throws IOException {
+          bpos = b.reset(doc);
+          return a.reset(doc);
+        }
+
+        @Override
+        public int nextInterval() throws IOException {
+          if (bpos == false)
+            return NO_MORE_INTERVALS;
+          while (a.nextInterval() != NO_MORE_INTERVALS) {
+            while (b.start() < a.start() && b.end() < a.end()) {
+              if (b.nextInterval() == NO_MORE_INTERVALS)
+                return NO_MORE_INTERVALS;
+            }
+            if (a.start() <= b.start() && a.end() >= b.end())
+              return a.start();
+          }
+          return NO_MORE_INTERVALS;
+        }
+      };
+    }
+  };
+
+  public static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> iterators) {
+      if (iterators.size() != 2)
+        throw new IllegalStateException("CONTAINED_BY function requires two iterators");
+      IntervalIterator a = iterators.get(0);
+      IntervalIterator b = iterators.get(1);
+      return new IntervalIterator() {
+
+        boolean bpos;
+
+        @Override
+        public int start() {
+          return a.start();
+        }
+
+        @Override
+        public int end() {
+          return a.end();
+        }
+
+        @Override
+        public int innerWidth() {
+          return a.innerWidth();
+        }
+
+        @Override
+        public boolean reset(int doc) throws IOException {
+          bpos = b.reset(doc);
+          return a.reset(doc);
+        }
+
+        @Override
+        public int nextInterval() throws IOException {
+          if (bpos == false)
+            return NO_MORE_INTERVALS;
+          while (a.nextInterval() != NO_MORE_INTERVALS) {
+            while (b.end() < a.end()) {
+              if (b.nextInterval() == NO_MORE_INTERVALS)
+                return NO_MORE_INTERVALS;
+            }
+            if (b.start() <= a.start())
+              return a.start();
+          }
+          return NO_MORE_INTERVALS;
+        }
+      };
+    }
+  };
+
   private static abstract class SingletonFunction extends IntervalFunction {
 
     private final String name;
