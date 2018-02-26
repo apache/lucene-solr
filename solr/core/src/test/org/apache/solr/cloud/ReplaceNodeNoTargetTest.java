@@ -71,28 +71,48 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
+    log.info("Creating collection...");
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0);
-
     cloudClient.request(create);
+
+    log.info("Current core status list for node we plan to decommision: {} => {}",
+             node2bdecommissioned,
+             getCoreStatusForNamedNode(cloudClient, node2bdecommissioned).getCoreStatus());
+    
+    log.info("Decommisioning node: " + node2bdecommissioned);
     createReplaceNodeRequest(node2bdecommissioned, null, null).processAsync("001", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("001");
     boolean success = false;
+    CollectionAdminRequest.RequestStatusResponse rsp = null;
     for (int i = 0; i < 300; i++) {
-      CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
+      rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertFalse("async replace node request aparently failed: " + rsp.toString(),
+                  
+                  rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(50);
     }
-    assertTrue(success);
-    try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(node2bdecommissioned))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
-      assertTrue(status.getCoreStatus().size() == 0);
-    }
-
+    assertTrue("async replace node request should have finished successfully by now, last status: " + rsp,
+               success);
+    CoreAdminResponse status = getCoreStatusForNamedNode(cloudClient, node2bdecommissioned);
+    assertEquals("Expected no cores for decommisioned node: "
+                 + status.getCoreStatus().toString(),
+                 0, status.getCoreStatus().size());
   }
 
+  /**
+   * Given a cloud client and a nodename, build an HTTP client for that node, and ask it for it's core status
+   */
+  private CoreAdminResponse getCoreStatusForNamedNode(final CloudSolrClient cloudClient,
+                                                      final String nodeName) throws Exception {
+    
+    try (HttpSolrClient coreclient = getHttpSolrClient
+         (cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+      return CoreAdminRequest.getStatus(null, coreclient);
+    }
+  }
 
 }
