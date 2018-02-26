@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilterFactory;
 import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilterFactory;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
@@ -40,7 +41,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.PayloadScoreQParserPlugin;
 
@@ -50,11 +50,10 @@ public class PayloadUtils {
     // TODO: support custom payload encoding fields too somehow - maybe someone has a custom component that encodes payloads as floats
     String encoder = null;
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof CustomAnalyzer) {
       // examine the indexing analysis chain for DelimitedPayloadTokenFilterFactory or NumericPayloadTokenFilterFactory
-      TokenizerChain tc = (TokenizerChain)a;
-      TokenFilterFactory[] factories = tc.getTokenFilterFactories();
-      for (TokenFilterFactory factory : factories) {
+      CustomAnalyzer ca = (CustomAnalyzer)a;
+      for (TokenFilterFactory factory : ca.getTokenFilterFactories()) {
         if (factory instanceof DelimitedPayloadTokenFilterFactory) {
           encoder = factory.getOriginalArgs().get(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR);
           break;

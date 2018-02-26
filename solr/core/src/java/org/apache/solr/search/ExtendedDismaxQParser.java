@@ -31,6 +31,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -47,7 +49,6 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -1371,16 +1372,16 @@ public class ExtendedDismaxQParser extends QParser {
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
-      if (!(qa instanceof TokenizerChain)) {
+      if (!(qa instanceof CustomAnalyzer)) {
         return qa;
       }
       
-      TokenizerChain tcq = (TokenizerChain) qa;
+      CustomAnalyzer tcq = (CustomAnalyzer) qa;
       Analyzer ia = ft.getIndexAnalyzer();
-      if (ia == qa || !(ia instanceof TokenizerChain)) {
+      if (ia == qa || !(ia instanceof CustomAnalyzer)) {
         return qa;
       }
-      TokenizerChain tci = (TokenizerChain) ia;
+      CustomAnalyzer tci = (CustomAnalyzer) ia;
       
       // make sure that there isn't a stop filter in the indexer
       for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {
@@ -1391,10 +1392,10 @@ public class ExtendedDismaxQParser extends QParser {
       
       // now if there is a stop filter in the query analyzer, remove it
       int stopIdx = -1;
-      TokenFilterFactory[] facs = tcq.getTokenFilterFactories();
+      List<TokenFilterFactory> facs = tcq.getTokenFilterFactories();
       
-      for (int i = 0; i < facs.length; i++) {
-        TokenFilterFactory tf = facs[i];
+      for (int i = 0; i < facs.size(); i++) {
+        TokenFilterFactory tf = facs.get(i);
         if (tf instanceof StopFilterFactory) {
           stopIdx = i;
           break;
@@ -1405,16 +1406,19 @@ public class ExtendedDismaxQParser extends QParser {
         // no stop filter exists
         return qa;
       }
-      
-      TokenFilterFactory[] newtf = new TokenFilterFactory[facs.length - 1];
-      for (int i = 0, j = 0; i < facs.length; i++) {
-        if (i == stopIdx) continue;
-        newtf[j++] = facs[i];
+      CustomAnalyzer.Builder builder = CustomAnalyzer.builder();
+      //this fixes an unrecognized bug in edismax...wasn't copying charfilterfactories!
+      for (CharFilterFactory charFilterFactory : tcq.getCharFilterFactories()) {
+        builder.addCharFilter(charFilterFactory);
       }
-      
-      TokenizerChain newa = new TokenizerChain(tcq.getTokenizerFactory(), newtf);
-      newa.setPositionIncrementGap(tcq.getPositionIncrementGap(fieldName));
-      return newa;
+      builder.withTokenizer(tcq.getTokenizerFactory());
+      TokenFilterFactory[] newtf = new TokenFilterFactory[facs.size() - 1];
+      for (int i = 0, j = 0; i < facs.size(); i++) {
+        if (i == stopIdx) continue;
+        builder.addTokenFilter(facs.get(i));
+      }
+      builder.withPositionIncrementGap(tcq.getPositionIncrementGap(fieldName));
+      return builder.build();
     }
   }
   

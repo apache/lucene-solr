@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.carrot2.core.LanguageCode;
@@ -88,10 +88,8 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
 
         IndexSchema schema = core.getLatestSchema();
         final Analyzer fieldAnalyzer = schema.getFieldType(fieldName).getIndexAnalyzer();
-        if (fieldAnalyzer instanceof TokenizerChain) {
-          final TokenFilterFactory[] filterFactories = 
-              ((TokenizerChain) fieldAnalyzer).getTokenFilterFactories();
-          for (TokenFilterFactory factory : filterFactories) {
+        if (fieldAnalyzer instanceof CustomAnalyzer) {
+          for (TokenFilterFactory factory : ((CustomAnalyzer) fieldAnalyzer).getTokenFilterFactories()) {
             if (factory instanceof StopFilterFactory) {
               // StopFilterFactory holds the stop words in a CharArraySet
               CharArraySet stopWords = ((StopFilterFactory) factory).getStopWords();

@@ -27,13 +27,13 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttributeImpl;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
@@ -468,22 +468,23 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("hi, 3456-12 a Test");
     request.setShowMatch(false);
     FieldType fieldType = new TextField();
-    Analyzer analyzer = new TokenizerChain(
+    Analyzer analyzer = CustomAnalyzer.builder()
+      .withTokenizer(
         new TokenizerFactory(Collections.emptyMap()) {
           @Override
           public Tokenizer create(AttributeFactory factory) {
             return new CustomTokenizer(factory);
           }
-        },
-        new TokenFilterFactory[] {
+        })
+        .addTokenFilter(
             new TokenFilterFactory(Collections.emptyMap()) {
               @Override
               public TokenStream create(TokenStream input) {
                 return new CustomTokenFilter(input);
               }
             }
-        }
-    );
+        ).build();
+
     fieldType.setIndexAnalyzer(analyzer);
 
     NamedList<NamedList> result = handler.analyzeValues(request, fieldType, "fieldNameUnused");

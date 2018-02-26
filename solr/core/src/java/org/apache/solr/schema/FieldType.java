@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -61,7 +62,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
@@ -186,13 +186,17 @@ public abstract class FieldType extends FieldProperties {
     String positionInc = initArgs.get(POSITION_INCREMENT_GAP);
     if (positionInc != null) {
       Analyzer analyzer = getIndexAnalyzer();
-      if (analyzer instanceof SolrAnalyzer) {
+      if (analyzer instanceof CustomAnalyzer) {
+        setIndexAnalyzer(updateCustomWithIncrementGap((CustomAnalyzer)analyzer, Integer.parseInt(positionInc)));
+      } else if (analyzer instanceof SolrAnalyzer) {
         ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
       } else {
         throw new RuntimeException("Can't set " + POSITION_INCREMENT_GAP + " on custom analyzer " + analyzer.getClass());
       }
       analyzer = getQueryAnalyzer();
-      if (analyzer instanceof SolrAnalyzer) {
+      if (analyzer instanceof CustomAnalyzer) {
+        setQueryAnalyzer(updateCustomWithIncrementGap((CustomAnalyzer)analyzer, Integer.parseInt(positionInc)));
+      } else if (analyzer instanceof SolrAnalyzer) {
         ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
       } else {
         throw new RuntimeException("Can't set " + POSITION_INCREMENT_GAP + " on custom analyzer " + analyzer.getClass());
@@ -208,6 +212,19 @@ public abstract class FieldType extends FieldProperties {
               + "("+ this.getClass().getName() + ")"
               + " invalid arguments:" + initArgs);
     }
+  }
+
+  private Analyzer updateCustomWithIncrementGap(CustomAnalyzer customAnalyzer, int positionInc) {
+    CustomAnalyzer.Builder builder = CustomAnalyzer.builder();
+    for (CharFilterFactory charFilterFactory : customAnalyzer.getCharFilterFactories()) {
+      builder.addCharFilter(charFilterFactory);
+    }
+    builder.withTokenizer(customAnalyzer.getTokenizerFactory());
+    for (TokenFilterFactory tokenFilterFactory : customAnalyzer.getTokenFilterFactories()) {
+      builder.addTokenFilter(tokenFilterFactory);
+    }
+    builder.withPositionIncrementGap(positionInc);
+    return builder.build();
   }
 
   /** :TODO: document this method */
@@ -1076,17 +1093,17 @@ public abstract class FieldType extends FieldProperties {
 
   /** 
    * Returns a description of the given analyzer, by either reporting the Analyzer class
-   * name (and optionally luceneMatchVersion) if it's not a TokenizerChain, or if it is,
+   * name (and optionally luceneMatchVersion) if it's not a CustomAnalyzer, or if it is,
    * querying each analysis factory for its name and args.
    */
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
 
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof CustomAnalyzer) {
       Map<String,String> factoryArgs;
-      TokenizerChain tokenizerChain = (TokenizerChain)analyzer;
-      CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
-      if (0 < charFilterFactories.length) {
+      CustomAnalyzer customAnalyzer = (CustomAnalyzer)analyzer;
+      List<CharFilterFactory> charFilterFactories = customAnalyzer.getCharFilterFactories();
+      if (0 < charFilterFactories.size()) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
@@ -1111,7 +1128,7 @@ public abstract class FieldType extends FieldProperties {
       }
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>();
-      TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
+      TokenizerFactory tokenizerFactory = customAnalyzer.getTokenizerFactory();
       tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       factoryArgs = tokenizerFactory.getOriginalArgs();
       if (null != factoryArgs) {
@@ -1129,8 +1146,8 @@ public abstract class FieldType extends FieldProperties {
       }
       analyzerProps.add(TOKENIZER, tokenizerProps);
 
-      TokenFilterFactory[] filterFactories = tokenizerChain.getTokenFilterFactories();
-      if (0 < filterFactories.length) {
+      List<TokenFilterFactory> filterFactories = customAnalyzer.getTokenFilterFactories();
+      if (0 < filterFactories.size()) {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
@@ -1153,7 +1170,7 @@ public abstract class FieldType extends FieldProperties {
         }
         analyzerProps.add(FILTERS, filterProps);
       }
-    } else { // analyzer is not instanceof TokenizerChain
+    } else { // analyzer is not instanceof CustomAnalyzer
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
       if (analyzer.getVersion() != Version.LATEST) {
         analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());

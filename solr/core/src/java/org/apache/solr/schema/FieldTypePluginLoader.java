@@ -24,19 +24,17 @@ import javax.xml.xpath.XPathFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
@@ -182,62 +180,10 @@ public final class FieldTypePluginLoader
   private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer) {
     if (queryAnalyzer == null) return null;
 
-    if (!(queryAnalyzer instanceof TokenizerChain)) {
+    if (!(queryAnalyzer instanceof CustomAnalyzer)) {
       return new KeywordAnalyzer();
     }
-
-    TokenizerChain tc = (TokenizerChain) queryAnalyzer;
-    MultiTermChainBuilder builder = new MultiTermChainBuilder();
-
-    CharFilterFactory[] charFactories = tc.getCharFilterFactories();
-    for (CharFilterFactory fact : charFactories) {
-      builder.add(fact);
-    }
-
-    builder.add(tc.getTokenizerFactory());
-
-    for (TokenFilterFactory fact : tc.getTokenFilterFactories()) {
-      builder.add(fact);
-    }
-
-    return builder.build();
-  }
-
-  private static class MultiTermChainBuilder {
-    static final KeywordTokenizerFactory keyFactory = new KeywordTokenizerFactory(new HashMap<String,String>());
-
-    ArrayList<CharFilterFactory> charFilters = null;
-    ArrayList<TokenFilterFactory> filters = new ArrayList<>(2);
-    TokenizerFactory tokenizer = keyFactory;
-
-    public void add(Object current) {
-      if (!(current instanceof MultiTermAwareComponent)) return;
-      AbstractAnalysisFactory newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
-      if (newComponent instanceof TokenFilterFactory) {
-        if (filters == null) {
-          filters = new ArrayList<>(2);
-        }
-        filters.add((TokenFilterFactory)newComponent);
-      } else if (newComponent instanceof TokenizerFactory) {
-        tokenizer = (TokenizerFactory)newComponent;
-      } else if (newComponent instanceof CharFilterFactory) {
-        if (charFilters == null) {
-          charFilters = new ArrayList<>(1);
-        }
-        charFilters.add( (CharFilterFactory)newComponent);
-
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown analysis component from MultiTermAwareComponent: " + newComponent);
-      }
-    }
-
-    public TokenizerChain build() {
-      CharFilterFactory[] charFilterArr =  charFilters == null ? null : charFilters.toArray(new CharFilterFactory[charFilters.size()]);
-      TokenFilterFactory[] filterArr = filters == null ? new TokenFilterFactory[0] : filters.toArray(new TokenFilterFactory[filters.size()]);
-      return new TokenizerChain(charFilterArr, tokenizer, filterArr);
-    }
-
-
+    return queryAnalyzer;
   }
 
 
@@ -305,7 +251,7 @@ public final class FieldTypePluginLoader
     }
 
     // Load the CharFilters
-
+    CustomAnalyzer.Builder analyzerBuilder = CustomAnalyzer.builder();
     final ArrayList<CharFilterFactory> charFilters 
       = new ArrayList<>();
     AbstractPluginLoader<CharFilterFactory> charFilterLoader =
@@ -325,7 +271,7 @@ public final class FieldTypePluginLoader
       @Override
       protected void init(CharFilterFactory plugin, Node node) throws Exception {
         if( plugin != null ) {
-          charFilters.add( plugin );
+          analyzerBuilder.addCharFilter(plugin);
         }
       }
 
@@ -342,12 +288,12 @@ public final class FieldTypePluginLoader
     // Although an analyzer only allows a single Tokenizer, we load a list to make sure
     // the configuration is ok
 
-    final ArrayList<TokenizerFactory> tokenizers 
+    final ArrayList<TokenizerFactory> tokenizers
       = new ArrayList<>(1);
     AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
       new AbstractPluginLoader<TokenizerFactory>
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
-      
+
       @Override
       protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
         final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
@@ -379,11 +325,9 @@ public final class FieldTypePluginLoader
     if( tokenizers.isEmpty() ) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer");
     }
-
+    analyzerBuilder.withTokenizer(tokenizers.get(0));
     // Load the Filters
 
-    final ArrayList<TokenFilterFactory> filters 
-      = new ArrayList<>();
 
     AbstractPluginLoader<TokenFilterFactory> filterLoader = 
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
@@ -402,7 +346,7 @@ public final class FieldTypePluginLoader
       @Override
       protected void init(TokenFilterFactory plugin, Node node) throws Exception {
         if( plugin != null ) {
-          filters.add( plugin );
+          analyzerBuilder.addTokenFilter(plugin);
         }
       }
 
@@ -413,8 +357,7 @@ public final class FieldTypePluginLoader
     };
     filterLoader.load( loader, tokenFilterNodes );
     
-    return new TokenizerChain(charFilters.toArray(new CharFilterFactory[charFilters.size()]),
-                              tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
+    return analyzerBuilder.build();
   }
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {

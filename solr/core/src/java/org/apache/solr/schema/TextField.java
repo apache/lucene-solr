@@ -167,22 +167,10 @@ public class TextField extends FieldType {
 
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
-
-    try (TokenStream source = analyzerIn.tokenStream(field, part)){
-      source.reset();
-
-      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-
-      if (!source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
-      BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
-      if (source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
-
-      source.end();
-      return bytes;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"error analyzing range part: " + part, e);
+    try {
+      return analyzerIn.normalize(field, part);
+    } catch (IllegalArgumentException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error analyzing part: " + part, e);
     }
   }
 

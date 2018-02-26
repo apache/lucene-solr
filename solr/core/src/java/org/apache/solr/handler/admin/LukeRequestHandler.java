@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -59,7 +60,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
@@ -490,12 +490,12 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
     SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<>();
     aninfo.add("className", analyzer.getClass().getName());
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof CustomAnalyzer) {
 
-      TokenizerChain tchain = (TokenizerChain)analyzer;
+      CustomAnalyzer tchain = (CustomAnalyzer)analyzer;
 
-      CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
-      if (0 < cfiltfacs.length) {
+      List<CharFilterFactory> cfiltfacs = tchain.getCharFilterFactories();
+      if (0 < cfiltfacs.size()) {
         SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
         for (CharFilterFactory cfiltfac : cfiltfacs) {
           Map<String, Object> tok = new HashMap<>();
@@ -513,8 +513,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       tokenizer.add("args", tfac.getOriginalArgs());
       aninfo.add("tokenizer", tokenizer);
 
-      TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
-      if (0 < filtfacs.length) {
+      List<TokenFilterFactory> filtfacs = tchain.getTokenFilterFactories();
+      if (0 < filtfacs.size()) {
         SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
         for (TokenFilterFactory filtfac : filtfacs) {
           Map<String, Object> tok = new HashMap<>();

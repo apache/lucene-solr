@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
@@ -39,7 +40,6 @@ import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
@@ -115,7 +115,9 @@ public class SolrSuggester implements Accountable {
       LOG.info("No " + LOOKUP_IMPL + " parameter was provided falling back to " + lookupImpl);
     }
 
-    contextFilterQueryAnalyzer = new TokenizerChain(new StandardTokenizerFactory(Collections.EMPTY_MAP), null);
+    contextFilterQueryAnalyzer = CustomAnalyzer.builder().
+        withTokenizer(new StandardTokenizerFactory(Collections.EMPTY_MAP))
+        .build();
 
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);

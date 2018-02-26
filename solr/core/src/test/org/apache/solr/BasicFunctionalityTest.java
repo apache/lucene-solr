@@ -732,6 +732,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             req("patterntok:Goodbye")
             ,"*[count(//doc)=1]"
     );
+    assertQ("confirm multiterm normalization works",
+        req("lowerascii:Hell*")
+        ,"*[count(//doc)=1]"
+    );
   }
 
   @Test

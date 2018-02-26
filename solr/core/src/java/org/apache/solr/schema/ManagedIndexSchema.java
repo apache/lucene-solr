@@ -40,11 +40,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -1164,8 +1164,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       return;
 
     Analyzer indexAnalyzer = fieldType.getIndexAnalyzer();
-    if (indexAnalyzer != null && indexAnalyzer instanceof TokenizerChain)
-      informResourceLoaderAwareObjectsInChain((TokenizerChain)indexAnalyzer);
+    if (indexAnalyzer != null && indexAnalyzer instanceof CustomAnalyzer)
+      informResourceLoaderAwareObjectsInChain((CustomAnalyzer)indexAnalyzer);
 
     Analyzer queryAnalyzer = fieldType.getQueryAnalyzer();
     // ref comparison is correct here (vs. equals) as they may be the same
@@ -1173,16 +1173,16 @@ public final class ManagedIndexSchema extends IndexSchema {
     // actually safe to call inform multiple times on an object anyway
     if (queryAnalyzer != null &&
         queryAnalyzer != indexAnalyzer &&
-        queryAnalyzer instanceof TokenizerChain)
-      informResourceLoaderAwareObjectsInChain((TokenizerChain)queryAnalyzer);
+        queryAnalyzer instanceof CustomAnalyzer)
+      informResourceLoaderAwareObjectsInChain((CustomAnalyzer)queryAnalyzer);
 
     // if fieldType is a TextField, it might have a multi-term analyzer
     if (fieldType instanceof TextField) {
       TextField textFieldType = (TextField)fieldType;
       Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
       if (multiTermAnalyzer != null && multiTermAnalyzer != indexAnalyzer &&
-          multiTermAnalyzer != queryAnalyzer && multiTermAnalyzer instanceof TokenizerChain)
-        informResourceLoaderAwareObjectsInChain((TokenizerChain)multiTermAnalyzer);
+          multiTermAnalyzer != queryAnalyzer && multiTermAnalyzer instanceof CustomAnalyzer)
+        informResourceLoaderAwareObjectsInChain((CustomAnalyzer)multiTermAnalyzer);
     }
   }
   
@@ -1287,9 +1287,8 @@ public final class ManagedIndexSchema extends IndexSchema {
    * the ResourceLoaderAware interface, which need to be informed after they
    * are loaded (as they depend on this callback to complete initialization work)
    */
-  protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
-    CharFilterFactory[] charFilters = chain.getCharFilterFactories();
-    for (CharFilterFactory next : charFilters) {
+  protected void informResourceLoaderAwareObjectsInChain(CustomAnalyzer chain) {
+    for (CharFilterFactory next : chain.getCharFilterFactories()) {
       if (next instanceof ResourceLoaderAware) {
         try {
           ((ResourceLoaderAware) next).inform(loader);
@@ -1308,8 +1307,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
     }
 
-    TokenFilterFactory[] filters = chain.getTokenFilterFactories();
-    for (TokenFilterFactory next : filters) {
+    for (TokenFilterFactory next : chain.getTokenFilterFactories()) {
       if (next instanceof ResourceLoaderAware) {
         try {
           ((ResourceLoaderAware) next).inform(loader);
