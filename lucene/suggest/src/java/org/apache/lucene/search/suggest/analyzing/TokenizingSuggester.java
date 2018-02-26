@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,8 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -689,6 +690,13 @@ public class TokenizingSuggester extends Lookup implements Closeable {
     } finally {
       mgr.release(searcher);
     }
+
+    results.sort(new Comparator<LookupResult>() {
+      @Override
+      public int compare(LookupResult o1, LookupResult o2) {
+        return (int) (o2.value - o1.value);
+      }
+    });
 
     //System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
     //System.out.println(results);
