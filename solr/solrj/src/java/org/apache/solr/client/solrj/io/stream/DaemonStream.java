@@ -223,7 +223,9 @@ public class DaemonStream extends TupleStream implements Expressible {
     if(closed) {
       return;
     }
-    streamRunner.setShutdown(true);
+    if (streamRunner != null) {
+      streamRunner.setShutdown(true);
+    }
     this.closed = true;
   }
 

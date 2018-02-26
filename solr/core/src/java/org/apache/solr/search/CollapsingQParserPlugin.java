@@ -1274,7 +1274,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
           Map<String, UninvertingReader.Type> mapping = new HashMap();
           mapping.put(collapseField, UninvertingReader.Type.SORTED);
-          UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField), mapping);
+          @SuppressWarnings("resource") final UninvertingReader uninvertingReader =
+              new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField), mapping);
+
           docValuesProducer = new EmptyDocValuesProducer() {
               @Override
               public SortedDocValues getSorted(FieldInfo ignored) throws IOException {

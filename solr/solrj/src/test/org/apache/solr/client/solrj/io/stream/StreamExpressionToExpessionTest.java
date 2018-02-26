@@ -70,161 +70,152 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
   @Test
   public void testCloudSolrStream() throws Exception {
 
-    CloudSolrStream stream;
     String expressionString;
     
     // Basic test
-    stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", fq=\"a_s:one\", fq=\"a_s:two\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    System.out.println("ExpressionString: " + expressionString.toString());
-    assertTrue(expressionString.contains("search(collection1,"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
-    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
-    assertTrue(expressionString.contains("fq=\"a_s:one\""));
-    assertTrue(expressionString.contains("fq=\"a_s:two\""));
-    
+    try (CloudSolrStream stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", fq=\"a_s:one\", fq=\"a_s:two\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      System.out.println("ExpressionString: " + expressionString.toString());
+      assertTrue(expressionString.contains("search(collection1,"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+      assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+      assertTrue(expressionString.contains("fq=\"a_s:one\""));
+      assertTrue(expressionString.contains("fq=\"a_s:two\""));
+    }
     // Basic w/aliases
-    stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"id=izzy,a_s=kayden\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("id=izzy"));
-    assertTrue(expressionString.contains("a_s=kayden"));
-
+    try (CloudSolrStream stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"id=izzy,a_s=kayden\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("id=izzy"));
+      assertTrue(expressionString.contains("a_s=kayden"));
+    }
   }
   
   @Test
   public void testSelectStream() throws Exception {
-
-    SelectStream stream;
     String expressionString;
     
     // Basic test
-    stream = new SelectStream(StreamExpressionParser.parse("select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("select(search(collection1,"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
-    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
-    assertTrue(expressionString.contains("a_s as fieldA"));
-    
+    try (SelectStream stream = new SelectStream(StreamExpressionParser.parse("select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("select(search(collection1,"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+      assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+      assertTrue(expressionString.contains("a_s as fieldA"));
+    }
   }
 
   @Test
   public void testDaemonStream() throws Exception {
-
-    DaemonStream stream;
     String expressionString;
 
     // Basic test
-    stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("daemon(search(collection1,"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
-    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
-    assertTrue(expressionString.contains("id=blah"));
-    assertTrue(expressionString.contains("queueSize=100"));
-    assertTrue(expressionString.contains("runInterval=1000"));
+    try (DaemonStream stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("daemon(search(collection1,"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+      assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+      assertTrue(expressionString.contains("id=blah"));
+      assertTrue(expressionString.contains("queueSize=100"));
+      assertTrue(expressionString.contains("runInterval=1000"));
+    }
   }
 
   @Test
   public void testTopicStream() throws Exception {
 
-    TopicStream stream;
     String expressionString;
 
     // Basic test
-    stream = new TopicStream(StreamExpressionParser.parse("topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("topic(collection2,collection1"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
-    assertTrue(expressionString.contains("id=blah"));
-    assertTrue(expressionString.contains("checkpointEvery=1000"));
+    try (TopicStream stream = new TopicStream(StreamExpressionParser.parse("topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("topic(collection2,collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+      assertTrue(expressionString.contains("id=blah"));
+      assertTrue(expressionString.contains("checkpointEvery=1000"));
+    }
   }
 
   @Test
   public void testStatsStream() throws Exception {
-
-    StatsStream stream;
     String expressionString;
     
     // Basic test
-    stream = new StatsStream(StreamExpressionParser.parse("stats(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", sum(a_i), avg(a_i), count(*), min(a_i), max(a_i))"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("stats(collection1,"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
-    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
-    assertTrue(expressionString.contains("min(a_i)"));
-    assertTrue(expressionString.contains("max(a_i)"));
-    assertTrue(expressionString.contains("avg(a_i,false)"));
-    assertTrue(expressionString.contains("count(*)"));
-    assertTrue(expressionString.contains("sum(a_i)"));
-    
+    try (StatsStream stream = new StatsStream(StreamExpressionParser.parse("stats(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", sum(a_i), avg(a_i), count(*), min(a_i), max(a_i))"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("stats(collection1,"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+      assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+    }
   }
 
   @Test
   public void testUniqueStream() throws Exception {
-
-    UniqueStream stream;
     String expressionString;
     
     // Basic test
-    stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("unique(search(collection1"));
-    assertTrue(expressionString.contains("over=a_f"));
+    try (UniqueStream stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("unique(search(collection1"));
+      assertTrue(expressionString.contains("over=a_f"));
+    }
   }
   
   @Test
   public void testMergeStream() throws Exception {
-
-    MergeStream stream;
     String expressionString;
     
     // Basic test
-    stream = new MergeStream(StreamExpressionParser.parse("merge("
+    try (MergeStream stream = new MergeStream(StreamExpressionParser.parse("merge("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f asc, a_s asc\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
-    assertTrue(expressionString.contains("q=\"id:(1 2)\""));
-    assertTrue(expressionString.contains("on=\"a_f asc,a_s asc\""));
+                              + "on=\"a_f asc, a_s asc\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
+      assertTrue(expressionString.contains("q=\"id:(1 2)\""));
+      assertTrue(expressionString.contains("on=\"a_f asc,a_s asc\""));
+    }
   }
   
   @Test
   public void testRankStream() throws Exception {
 
-    RankStream stream;
     String expressionString;
     
     // Basic test
-    stream = new RankStream(StreamExpressionParser.parse("top("
+    try (RankStream stream = new RankStream(StreamExpressionParser.parse("top("
                                               + "n=3,"
                                               + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc,a_i asc\"),"
-                                              + "sort=\"a_f asc, a_i asc\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("top(n=3,search(collection1"));
-    assertTrue(expressionString.contains("sort=\"a_f asc,a_i asc\""));
-    // find 2nd instance of sort
-    assertTrue(expressionString.substring(expressionString.indexOf("sort=\"a_f asc,a_i asc\"") + 1).contains("sort=\"a_f asc,a_i asc\""));
+                                              + "sort=\"a_f asc, a_i asc\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("top(n=3,search(collection1"));
+      assertTrue(expressionString.contains("sort=\"a_f asc,a_i asc\""));
+      // find 2nd instance of sort
+      assertTrue(expressionString.substring(expressionString.indexOf("sort=\"a_f asc,a_i asc\"") + 1).contains("sort=\"a_f asc,a_i asc\""));
+    }
   }
 
   @Test
   public void testReducerStream() throws Exception {
-
-    ReducerStream stream;
     String expressionString;
     
     // Basic test
-    stream = new ReducerStream(StreamExpressionParser.parse("reduce("
+    try (ReducerStream stream = new ReducerStream(StreamExpressionParser.parse("reduce("
                                                   + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc, a_f asc\"),"
-                                                  + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("reduce(search(collection1"));
-    assertTrue(expressionString.contains("by=a_s"));
+                                                  + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("reduce(search(collection1"));
+      assertTrue(expressionString.contains("by=a_s"));
+    }
   }
   
   @Test
@@ -238,22 +229,22 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                                                                  + "fl=\"id,a_s,a_i,a_f\", "
                                                                  + "sort=\"a_f asc, a_i asc\"))");
     
-    UpdateStream updateStream = new UpdateStream(expression, factory);
-    String expressionString = updateStream.toExpression(factory).toString();
-    
-    assertTrue(expressionString.contains("update(collection2"));
-    assertTrue(expressionString.contains("batchSize=5"));
-    assertTrue(expressionString.contains("search(collection1"));
+    try (UpdateStream updateStream = new UpdateStream(expression, factory)) {
+      String expressionString = updateStream.toExpression(factory).toString();
+
+      assertTrue(expressionString.contains("update(collection2"));
+      assertTrue(expressionString.contains("batchSize=5"));
+      assertTrue(expressionString.contains("search(collection1"));
+    }
   }
   
   @Test
   public void testFacetStream() throws Exception {
 
-    FacetStream stream;
     String expressionString;
     
     // Basic test
-    stream = new FacetStream(StreamExpressionParser.parse("facet("
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
                                                         +   "collection1, "
                                                         +   "q=\"*:*\", "
                                                         +   "buckets=\"a_s\", "
@@ -264,68 +255,68 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                                                         +   "max(a_i), max(a_f), "
                                                         +   "avg(a_i), avg(a_f), "
                                                         +   "count(*)"
-                                                        + ")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("facet(collection1"));
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("buckets=a_s"));
-    assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
-    assertTrue(expressionString.contains("bucketSizeLimit=100"));
-    assertTrue(expressionString.contains("sum(a_i)"));
-    assertTrue(expressionString.contains("sum(a_f)"));
-    assertTrue(expressionString.contains("min(a_i)"));
-    assertTrue(expressionString.contains("min(a_f)"));
-    assertTrue(expressionString.contains("max(a_i)"));
-    assertTrue(expressionString.contains("max(a_f)"));
-    assertTrue(expressionString.contains("avg(a_i,false)"));
-    assertTrue(expressionString.contains("avg(a_f,false)"));
-    assertTrue(expressionString.contains("count(*)"));
+                                                        + ")"), factory)){
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("facet(collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("buckets=a_s"));
+      assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+      assertTrue(expressionString.contains("bucketSizeLimit=100"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+      assertTrue(expressionString.contains("sum(a_f)"));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("min(a_f)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("max(a_f)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("avg(a_f,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+    }
   }
   
   @Test
   public void testJDBCStream() throws Exception {
-
-    JDBCStream stream;
     String expressionString;
     
     // Basic test
-    stream = new JDBCStream(StreamExpressionParser.parse("jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("jdbc(connection=\"jdbc:hsqldb:mem:.\","));
-    assertTrue(expressionString.contains("sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\""));
-    assertTrue(expressionString.contains("sort=\"ID asc\""));
+    try (JDBCStream stream = new JDBCStream(StreamExpressionParser.parse("jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("jdbc(connection=\"jdbc:hsqldb:mem:.\","));
+      assertTrue(expressionString.contains("sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\""));
+      assertTrue(expressionString.contains("sort=\"ID asc\""));
+    }
   }
 
   @Test 
   public void testIntersectStream() throws Exception {
-    IntersectStream stream;
     String expressionString;
     
     // Basic test
-    stream = new IntersectStream(StreamExpressionParser.parse("intersect("
+    try (IntersectStream stream = new IntersectStream(StreamExpressionParser.parse("intersect("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f, a_s\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
-    assertTrue(expressionString.contains("q=\"id:(1 2)\""));
-    assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+                              + "on=\"a_f, a_s\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
+      assertTrue(expressionString.contains("q=\"id:(1 2)\""));
+      assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+    }
   }
 
   @Test 
   public void testComplementStream() throws Exception {
-    ComplementStream stream;
     String expressionString;
     
     // Basic test
-    stream = new ComplementStream(StreamExpressionParser.parse("complement("
+    try (ComplementStream stream = new ComplementStream(StreamExpressionParser.parse("complement("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f, a_s\")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
-    assertTrue(expressionString.contains("q=\"id:(1 2)\""));
-    assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+                              + "on=\"a_f, a_s\")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
+      assertTrue(expressionString.contains("q=\"id:(1 2)\""));
+      assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+    }
   }
   
   @Test
@@ -337,27 +328,30 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     
     // Basic test
     String originalExpressionString = "search(collection1,fl=\"id,first\",sort=\"first asc\",q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\")";
-    CloudSolrStream firstStream = new CloudSolrStream(StreamExpressionParser.parse(originalExpressionString), factory);
-    String firstExpressionString = firstStream.toExpression(factory).toString();
-    
-    CloudSolrStream secondStream = new CloudSolrStream(StreamExpressionParser.parse(firstExpressionString), factory);
-    String secondExpressionString = secondStream.toExpression(factory).toString();
-    
-    assertTrue(firstExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
-    assertTrue(secondExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+    try (CloudSolrStream firstStream = new CloudSolrStream(StreamExpressionParser.parse(originalExpressionString), factory)) {
+      String firstExpressionString = firstStream.toExpression(factory).toString();
+
+      try (CloudSolrStream secondStream = new CloudSolrStream(StreamExpressionParser.parse(firstExpressionString), factory)) {
+        String secondExpressionString = secondStream.toExpression(factory).toString();
+
+        assertTrue(firstExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+        assertTrue(secondExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+      }
+    }
   }
 
   @Test
   public void testFeaturesSelectionStream() throws Exception {
     String expr = "featuresSelection(collection1, q=\"*:*\", featureSet=\"first\", field=\"tv_text\", outcome=\"out_i\", numTerms=4, positiveLabel=2)";
-    FeaturesSelectionStream stream = new FeaturesSelectionStream(StreamExpressionParser.parse(expr), factory);
-    String expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("featureSet=first"));
-    assertTrue(expressionString.contains("field=tv_text"));
-    assertTrue(expressionString.contains("outcome=out_i"));
-    assertTrue(expressionString.contains("numTerms=4"));
-    assertTrue(expressionString.contains("positiveLabel=2"));
+    try (FeaturesSelectionStream stream = new FeaturesSelectionStream(StreamExpressionParser.parse(expr), factory)) {
+      String expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("featureSet=first"));
+      assertTrue(expressionString.contains("field=tv_text"));
+      assertTrue(expressionString.contains("outcome=out_i"));
+      assertTrue(expressionString.contains("numTerms=4"));
+      assertTrue(expressionString.contains("positiveLabel=2"));
+    }
   }
 
   @Test
@@ -370,15 +364,16 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
         "field=\"tv_text\", " +
         "outcome=\"out_i\", " +
         "maxIterations=100)";
-    TextLogitStream logitStream = new TextLogitStream(StreamExpressionParser.parse(expr), factory);
-    String expressionString = logitStream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("q=\"*:*\""));
-    assertTrue(expressionString.contains("name=model"));
-    assertFalse(expressionString.contains("terms="));
-    assertTrue(expressionString.contains("featuresSelection("));
-    assertTrue(expressionString.contains("field=tv_text"));
-    assertTrue(expressionString.contains("outcome=out_i"));
-    assertTrue(expressionString.contains("maxIterations=100"));
+    try (TextLogitStream logitStream = new TextLogitStream(StreamExpressionParser.parse(expr), factory)) {
+      String expressionString = logitStream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("name=model"));
+      assertFalse(expressionString.contains("terms="));
+      assertTrue(expressionString.contains("featuresSelection("));
+      assertTrue(expressionString.contains("field=tv_text"));
+      assertTrue(expressionString.contains("outcome=out_i"));
+      assertTrue(expressionString.contains("maxIterations=100"));
+    }
   }
   
   @Test

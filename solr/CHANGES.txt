@@ -320,6 +320,8 @@ Other Changes
 
 * SOLR-12027: Increase thread lingering timeout to 80s. (Mikhail Khludnev)
 
+* SOLR-10809: Get precommit lint warnings out of Solr core (Erick Erickson)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

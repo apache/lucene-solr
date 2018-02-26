@@ -178,8 +178,10 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       } finally {
         if (request != null) request.close();
       }
-      EmbeddedSolrServer server1 = new EmbeddedSolrServer(h.getCoreContainer(), "split1");
-      EmbeddedSolrServer server2 = new EmbeddedSolrServer(h.getCoreContainer(), "split2");
+      @SuppressWarnings("resource")
+      final EmbeddedSolrServer server1 = new EmbeddedSolrServer(h.getCoreContainer(), "split1");
+      @SuppressWarnings("resource")
+      final EmbeddedSolrServer server2 = new EmbeddedSolrServer(h.getCoreContainer(), "split2");
       server1.commit(true, true);
       server2.commit(true, true);
       assertEquals("id:dorothy should be present in split index1", 1, server1.query(new SolrQuery("id:dorothy")).getResults().getNumFound());

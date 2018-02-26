@@ -189,6 +189,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
+  @SuppressWarnings("resource")
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     assert params != null : "init must be called before create";
     LOG.info("creating directory factory for path {}", path);
@@ -203,6 +204,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     boolean blockCacheReadEnabled = getConfig(BLOCKCACHE_READ_ENABLED, true);
     
     final HdfsDirectory hdfsDir;
+
     final Directory dir;
     if (blockCacheEnabled && dirContext != DirContext.META_DATA) {
       int numberOfBlocksPerBank = getConfig(NUMBEROFBLOCKSPERBANK, 16384);

@@ -164,7 +164,9 @@ public class BlobRepository {
       if (statusCode != 200) {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
       }
-      b = SimplePostTool.inputStreamToByteArray(entity.getEntity().getContent());
+      try (InputStream is = entity.getEntity().getContent()) {
+        b = SimplePostTool.inputStreamToByteArray(is);
+      }
     } catch (Exception e) {
       if (e instanceof SolrException) {
         throw (SolrException) e;

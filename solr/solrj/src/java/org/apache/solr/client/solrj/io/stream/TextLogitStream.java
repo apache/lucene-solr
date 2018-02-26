@@ -391,11 +391,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (isCloseCache && cache != null) {
       cache.close();
     }
 
-    executorService.shutdown();
+    if (executorService != null) {
+      executorService.shutdown();
+    }
     termsStream.close();
   }
 

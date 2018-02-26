@@ -355,7 +355,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         }
       }
 
-      if (streamContext.getSolrClientCache() == null) {
+      if (streamContext != null && streamContext.getSolrClientCache() == null) {
         cloudSolrClient.close();
       }
     }
@@ -455,6 +455,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private void persistCheckpoints() throws IOException{
 
+    if (cloudSolrClient == null) {
+      return;
+    }
     UpdateRequest request = new UpdateRequest();
     request.setParam("collection", checkpointCollection);
     SolrInputDocument doc = new SolrInputDocument();
