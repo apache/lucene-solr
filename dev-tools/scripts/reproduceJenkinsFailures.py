@@ -46,7 +46,7 @@ reTestsSeed = re.compile(r'-Dtests.seed=\S+\s*')
 reJenkinsURLWithoutConsoleText = re.compile(r'https?://.*/\d+/?\Z', re.IGNORECASE)
 
 reJavaFile = re.compile(r'(.*)\.java\Z')
-reModule = re.compile(r'\./(.*)/src/')
+reModule = re.compile(r'\.[\\/](.*)[\\/]src[\\/]')
 reTestOutputFile = re.compile(r'TEST-(.*\.([^-.]+))(?:-\d+)?\.xml\Z')
 reErrorFailure = re.compile(r'(?:errors|failures)="[^0]')
 reGitMainBranch = re.compile(r'^(?:master|branch_[x_\d]+)$')
