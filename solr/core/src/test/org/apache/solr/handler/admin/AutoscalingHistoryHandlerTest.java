@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -262,15 +263,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
       AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_added_trigger");
-    QueryResponse rsp = solrClient.query(query);
-    docs = rsp.getResults();
-    if (docs.size() != 8) {
-      log.info("Cluster state: " + solrClient.getZkStateReader().getClusterState());
-      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
-      log.info("Wrong response: ", rsp);
-      log.info("Full response: " + solrClient.query(query));
-    }
-    assertEquals(8, docs.size());
+    docs = queryAndAssertDocs(query, solrClient, 8);
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.STAGE_PARAM, "STARTED");
@@ -280,8 +273,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.NODE_PARAM, nodeAddedName);
-    docs = solrClient.query(query).getResults();
-    assertEquals(8, docs.size());
+    docs = queryAndAssertDocs(query, solrClient, 8);
     for (SolrDocument doc : docs) {
       assertTrue(doc.getFieldValues("event.property.nodeNames_ss").contains(nodeAddedName));
     }
@@ -302,15 +294,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.COLLECTION_PARAM, COLL_NAME);
-    rsp = solrClient.query(query);
-    docs = rsp.getResults();
-    if (docs.size() != 5) {
-      log.info("Cluster state: " + solrClient.getZkStateReader().getClusterState());
-      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
-      log.info("Wrong response: ", rsp);
-      log.info("Full response: " + solrClient.query(query));
-    }
-    assertEquals(5, docs.size());
+    docs = queryAndAssertDocs(query, solrClient, 5);
     assertEquals("AFTER_ACTION", docs.get(0).getFieldValue("stage_s"));
     assertEquals("compute_plan", docs.get(0).getFieldValue("action_s"));
 
@@ -359,16 +343,20 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_lost_trigger",
         AutoscalingHistoryHandler.COLLECTION_PARAM, COLL_NAME);
-    rsp = solrClient.query(query);
-    docs = rsp.getResults();
-    if (docs.size() != 5) {
-      log.info("Cluster state: " + solrClient.getZkStateReader().getClusterState());
-      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
-      log.info("Wrong response: ", rsp);
-      log.info("Full response: " + solrClient.query(query));
-    }
+    docs = queryAndAssertDocs(query, solrClient, 5);
+  }
 
-    assertEquals(5, docs.size());
+  private SolrDocumentList queryAndAssertDocs(ModifiableSolrParams query, SolrClient client, int expected) throws Exception {
+    QueryResponse rsp = client.query(query);
+    SolrDocumentList docs = rsp.getResults();
+    if (docs.size() != expected) {
+      log.info("History query: " + query);
+      log.info("Wrong response: " + rsp);
+      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
+      log.info("Full response: " + client.query(query));
+    }
+    assertEquals("Wrong number of documents", expected, docs.size());
+    return docs;
   }
 
   private void waitForRecovery(String collection) throws Exception {
