@@ -496,6 +496,26 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
+    String collectionName = "testSearchRate";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 2, 10);
+    create.process(solrClient);
+
+    log.info("Ready after " + waitForState(collectionName, 300, TimeUnit.SECONDS, clusterShape(2, 10)) + " ms");
+
+    // collect the node names for shard1
+    Set<String> nodes = new HashSet<>();
+    cluster.getSimClusterStateProvider().getClusterState().getCollection(collectionName)
+        .getSlice("shard1")
+        .getReplicas()
+        .forEach(r -> nodes.add(r.getNodeName()));
+
+    String metricName = "QUERY./select.requestTimes:1minRate";
+    // simulate search traffic
+    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
+
+    // now define the trigger. doing it earlier may cause partial events to be generated (where only some
+    // nodes / replicas exceeded the threshold).
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'search_rate_trigger'," +
@@ -525,25 +545,8 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    String collectionName = "testSearchRate";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 10);
-    create.process(solrClient);
 
-    log.info("Ready after " + waitForState(collectionName, 300, TimeUnit.SECONDS, clusterShape(2, 10)) + " ms");
-
-    // collect the node names for shard1
-    Set<String> nodes = new HashSet<>();
-    cluster.getSimClusterStateProvider().getClusterState().getCollection(collectionName)
-        .getSlice("shard1")
-        .getReplicas()
-        .forEach(r -> nodes.add(r.getNodeName()));
-
-    String metricName = "QUERY./select.requestTimes:1minRate";
-    // simulate search traffic
-    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
-
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(40000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(2000);

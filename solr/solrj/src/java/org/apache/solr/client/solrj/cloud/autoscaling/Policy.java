@@ -343,7 +343,12 @@ public class Policy implements MapWriter {
       //this is to set the approximate value according to the precision
       ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
       for (Preference p : clusterPreferences) {
-        Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+        try {
+          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+        } catch (Exception e) {
+          LOG.error("Exception! prefs = {}, matrix = {}", clusterPreferences, matrix);
+          throw e;
+        }
         p.setApproxVal(tmpMatrix);
       }
       //approximate values are set now. Let's do recursive sorting
