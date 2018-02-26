@@ -152,12 +152,13 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) throws Exception {
-    AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction();
-    TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));
-    ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
-    action.process(lostNode, context);
-    List<SolrRequest> operations = (List) context.getProperty("operations");
-    return operations;
+    try (AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction()) {
+      TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));
+      ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
+      action.process(lostNode, context);
+      List<SolrRequest> operations = (List) context.getProperty("operations");
+      return operations;
+    }
   }
 
   private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName,

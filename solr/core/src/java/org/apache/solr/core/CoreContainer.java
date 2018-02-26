@@ -1018,6 +1018,7 @@ public class CoreContainer {
    *
    * @return the newly created core
    */
+  @SuppressWarnings("resource")
   private SolrCore createFromDescriptor(CoreDescriptor dcore, boolean publishState, boolean newCollection) {
 
     if (isShutDown) {

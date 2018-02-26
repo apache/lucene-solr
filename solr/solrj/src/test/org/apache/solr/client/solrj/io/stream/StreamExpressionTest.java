@@ -231,7 +231,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrParams.add("qt", "/stream");
       solrParams.add("expr", "search(myCollection, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       solrParams.add("myCollection.shards", buf.toString());
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 

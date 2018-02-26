@@ -297,34 +297,34 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
 
-      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+        zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
 
-      final int numShards=6;
+        final int numShards = 6;
 
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
-          "name", COLLECTION,
-          ZkStateReader.REPLICATION_FACTOR, "1",
-          ZkStateReader.NUM_SHARDS_PROP, "3",
-          "createNodeSet", "");
-      ZkDistributedQueue q = Overseer.getStateUpdateQueue(zkClient);
-      q.offer(Utils.toJSON(m));
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+            "name", COLLECTION,
+            ZkStateReader.REPLICATION_FACTOR, "1",
+            ZkStateReader.NUM_SHARDS_PROP, "3",
+            "createNodeSet", "");
+        ZkDistributedQueue q = Overseer.getStateUpdateQueue(zkClient);
+        q.offer(Utils.toJSON(m));
 
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i+1), "node" + (i+1), "shard"+((i%3)+1), Replica.State.ACTIVE, 3));
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i + 1), "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+        final Map<String, Replica> rmap = reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap();
+        assertEquals(rmap.toString(), 2, rmap.size());
+        assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+        assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
       }
-      final Map<String,Replica> rmap = reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap();
-      assertEquals(rmap.toString(), 2, rmap.size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
-
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
-
     } finally {
       close(zkClient);
       if (zkController != null) {
@@ -355,47 +355,48 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
-      
-      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
 
-      final int numShards=3;
-      zkController.createCollection(COLLECTION, 3);
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i+1),
-            "node" + (i+1), "shard"+((i%3)+1) , Replica.State.ACTIVE, 3));
+        zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+
+        final int numShards = 3;
+        zkController.createCollection(COLLECTION, 3);
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i + 1),
+              "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
+
+        // publish a bad queue item
+        String emptyCollectionName = "";
+        zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", Replica.State.ACTIVE, 1);
+        zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", null, 1);
+
+        zkController.createCollection("collection2", 3);
+        // make sure the Overseer is still processing items
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState("collection2",
+              "core" + (i + 1), "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard1").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard2").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl("collection2", "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl("collection2", "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       }
-
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
-      
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
-      
-      // publish a bad queue item
-      String emptyCollectionName = "";
-      zkController.publishState(emptyCollectionName, "core0", "node0", "shard1",  Replica.State.ACTIVE, 1);
-      zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", null, 1);
-
-      zkController.createCollection("collection2", 3);
-      // make sure the Overseer is still processing items
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState("collection2",
-            "core" + (i + 1), "node" + (i + 1),"shard"+((i%3)+1), Replica.State.ACTIVE, 3));
-      }
-
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard3").getReplicasMap().size());
-      
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl("collection2", "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl("collection2", "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       
     } finally {
       close(zkClient);

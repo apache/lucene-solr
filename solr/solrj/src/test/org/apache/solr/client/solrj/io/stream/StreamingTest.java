@@ -157,6 +157,7 @@ public void testSpacesInParams() throws Exception {
   //a value in the field list.
 
   CloudSolrStream stream = new CloudSolrStream("", "collection1", sParams);
+  stream.close();
 }
 
 @Test

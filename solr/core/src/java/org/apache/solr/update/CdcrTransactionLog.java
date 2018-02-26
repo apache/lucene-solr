@@ -97,9 +97,9 @@ public class CdcrTransactionLog extends TransactionLog {
         // and 4 bytes for the number of records
         long pos = size - 4 - END_MESSAGE.length() - 1 - 4;
         if (pos < 0) return 0;
-
-        ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
-        return is.readInt();
+        try (ChannelFastInputStream is = new ChannelFastInputStream(channel, pos)) {
+          return is.readInt();
+        }
       }
     } catch (IOException e) {
       log.error("Error while reading number of records in tlog " + this, e);
