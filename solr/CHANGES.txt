@@ -203,6 +203,8 @@ Bug Fixes
 
 * SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)
 
+* SOLR-10720: Aggressive removal of a collection breaks cluster status API. (Alexey Serba, shalin)
+
 Optimizations
 ----------------------
 

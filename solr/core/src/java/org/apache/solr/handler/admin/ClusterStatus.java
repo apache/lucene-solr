@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ public class ClusterStatus {
   }
 
   @SuppressWarnings("unchecked")
-  public  void getClusterStatus(NamedList results)
+  public void getClusterStatus(NamedList results)
       throws KeeperException, InterruptedException {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
@@ -116,9 +117,7 @@ public class ClusterStatus {
       }
       if (shard != null) {
         String[] paramShards = shard.split(",");
-        for(String paramShard : paramShards){
-            requestedShards.add(paramShard);
-        }
+        requestedShards.addAll(Arrays.asList(paramShards));
       }
 
       if (clusterStateCollection.getStateFormat() > 1) {
@@ -133,9 +132,16 @@ public class ClusterStatus {
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
-      String configName = zkStateReader.readConfigName(name);
-      collectionStatus.put("configName", configName);
-      collectionProps.add(name, collectionStatus);
+      try {
+        String configName = zkStateReader.readConfigName(name);
+        collectionStatus.put("configName", configName);
+        collectionProps.add(name, collectionStatus);
+      } catch (SolrException e) {
+        if (e.getCause() instanceof KeeperException.NoNodeException)  {
+          // skip this collection because the collection's znode has been deleted
+          // which can happen during aggressive collection removal, see SOLR-10720
+        } else throw e;
+      }
     }
 
     List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
