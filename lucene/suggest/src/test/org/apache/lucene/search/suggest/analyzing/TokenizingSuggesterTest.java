@@ -84,9 +84,9 @@ public class TokenizingSuggesterTest extends LuceneTestCase {
 
     results = suggester.lookup(TestUtil.stringToCharSequence("penny ea", random()), 10, false, true);
     assertEquals(3, results.size());
-    assertEquals("earned", results.get(0).key);
-    assertEquals("ear", results.get(1).key);
-    assertEquals("penny", results.get(2).key);
+    assertEquals("penny", results.get(0).key);
+    assertEquals("earned", results.get(1).key);
+    assertEquals("ear", results.get(2).key);
 
     suggester.close();
     a.close();

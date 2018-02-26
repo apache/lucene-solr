@@ -683,6 +683,7 @@ public class TokenizingSuggester extends Lookup implements Closeable {
     try {
       //System.out.println("got searcher=" + searcher);
       GroupingSearch groupingSearch = new GroupingSearch(EXACT_TEXT_FIELD_NAME);
+      groupingSearch = groupingSearch.setGroupSort(SORT);
       TopGroups<Object> topGroups = groupingSearch.search(searcher, finalQuery, 0, num);
       results = createResults(searcher, topGroups, num, key, doHighlight, matchedTokens, prefixToken);
     } finally {
