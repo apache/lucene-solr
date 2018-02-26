@@ -34,9 +34,6 @@ reGitRev = re.compile(r'Checking out Revision (\S+)\s+\(refs/remotes/origin/([^)
 reAntInvocation = re.compile(r'\bant(?:\.bat)?\s+.*(?:jenkins-(?:hourly|nightly)|nightly-smoke)')
 reAntSysprops = re.compile(r'"-D[^"]+"|-D[^=]+="[^"]*"|-D\S+')
 
-#            sarowe Jenkins example: + export 'ANT_OPTS=-Xmx1150m -XX:+CMSClassUnloadingEnabled -Djava.awt.headless=true -Dargs="-Xmx1g"'
-reAntOptions = re.compile(r"export\s+'?\s*ANT_OPTS=([^'\n\r]+)")
-
 # Method example: NOTE: reproduce with: ant test  -Dtestcase=ZkSolrClientTest -Dtests.method=testMultipleWatchesAsync -Dtests.seed=6EF5AB70F0032849 -Dtests.slow=true -Dtests.locale=he-IL -Dtests.timezone=NST -Dtests.asserts=true -Dtests.file.encoding=UTF-8
 # Suite example:  NOTE: reproduce with: ant test  -Dtestcase=CloudSolrClientTest -Dtests.seed=DB2DF2D8228BAF27 -Dtests.multiplier=3 -Dtests.slow=true -Dtests.locale=es-AR -Dtests.timezone=America/Argentina/Cordoba -Dtests.asserts=true -Dtests.file.encoding=US-ASCII
 reReproLine = re.compile(r'NOTE:\s+reproduce\s+with:(\s+ant\s+test\s+-Dtestcase=(\S+)\s+(?:-Dtests.method=\S+\s+)?(.*))')
@@ -46,7 +43,7 @@ reTestsSeed = re.compile(r'-Dtests.seed=\S+\s*')
 reJenkinsURLWithoutConsoleText = re.compile(r'https?://.*/\d+/?\Z', re.IGNORECASE)
 
 reJavaFile = re.compile(r'(.*)\.java\Z')
-reModule = re.compile(r'\./(.*)/src/')
+reModule = re.compile(r'\.[\\/](.*)[\\/]src[\\/]')
 reTestOutputFile = re.compile(r'TEST-(.*\.([^-.]+))(?:-\d+)?\.xml\Z')
 reErrorFailure = re.compile(r'(?:errors|failures)="[^0]')
 reGitMainBranch = re.compile(r'^(?:master|branch_[x_\d]+)$')
@@ -126,12 +123,8 @@ def fetchAndParseJenkinsLog(url):
             match = reAntInvocation.search(line)
             if match is not None:
               antOptions = ' '.join(reAntSysprops.findall(line))
-            else:
-              match = reAntOptions.search(line)
-              if match is not None:
-                antOptions = ' '.join(reAntSysprops.findall(line))
-    if len(antOptions) > 0:
-      print('[repro] Ant options: %s' % antOptions)
+              if len(antOptions) > 0:
+                print('[repro] Ant options: %s' % antOptions)
   except urllib.error.URLError as e:
     raise RuntimeError('ERROR: fetching %s : %s' % (url, e))
   
