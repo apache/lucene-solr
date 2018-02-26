@@ -30,6 +30,7 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${grouping.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
@@ -38,6 +39,7 @@
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>
+        <link href="../grouping"/>
       </links>
     </invoke-module-javadoc>
   </target>
