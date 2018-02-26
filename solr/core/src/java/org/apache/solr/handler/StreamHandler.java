@@ -317,6 +317,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("l1norm", L1NormEvaluator.class)
         .withFunctionName("linfnorm", LInfNormEvaluator.class)
         .withFunctionName("matrixMult", MatrixMultiplyEvaluator.class)
+        .withFunctionName("bicubicSpline", BicubicSplineEvaluator.class)
 
         // Boolean Stream Evaluators
 
