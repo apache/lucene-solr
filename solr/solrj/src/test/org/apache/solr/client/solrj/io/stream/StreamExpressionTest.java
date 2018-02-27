@@ -6576,7 +6576,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(prob.doubleValue(),  0.09184805266259899, 0.0);
   }
 
-      @Test
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDistributions() throws Exception {
     String cexpr = "let(a=normalDistribution(10, 2), " +
                        "b=sample(a, 250), " +

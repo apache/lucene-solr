@@ -1401,6 +1401,7 @@ ant beast -Dtests.dups=N -Dtests.iters=M -Dbeast.iters=P \
 ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
 ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
 ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
+ant -Dtests.badapples=[true]  - flakey tests (@BadApple)
 ant -Dtests.slow=[true]       - slow tests (@Slow)
 
 # An alternative way to select just one (or more) groups of tests

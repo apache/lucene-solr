@@ -1467,6 +1467,9 @@ def main():
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
+
+  # disable flakey tests for smoke-tester runs:
+  testArgs = '-Dtests.badapples=false %s' % testArgs
   
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):

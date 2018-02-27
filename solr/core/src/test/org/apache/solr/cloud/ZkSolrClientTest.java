@@ -30,6 +30,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
@@ -221,6 +222,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMultipleWatchesAsync() throws Exception {
     try (ZkConnection conn = new ZkConnection ()) {
       final SolrZkClient zkClient = conn.getClient();

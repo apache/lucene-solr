@@ -477,6 +477,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   @Nightly
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testRandomBig() throws Exception {
     doTestRandom(200000);
   }
