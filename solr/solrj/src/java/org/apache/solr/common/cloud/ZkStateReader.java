@@ -435,7 +435,7 @@ public class ZkStateReader implements Closeable {
     refreshAliases(aliasesManager);
 
     if (securityNodeListener != null) {
-      addSecuritynodeWatcher(pair -> {
+      addSecurityNodeWatcher(pair -> {
         ConfigData cd = new ConfigData();
         cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
         cd.version = pair.second() == null ? -1 : pair.second().getVersion();
@@ -446,7 +446,7 @@ public class ZkStateReader implements Closeable {
     }
   }
 
-  private void addSecuritynodeWatcher(final Callable<Pair<byte[], Stat>> callback)
+  private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)
       throws KeeperException, InterruptedException {
     zkClient.exists(SOLR_SECURITY_CONF_PATH,
         new Watcher() {
