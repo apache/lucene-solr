@@ -39,7 +39,7 @@ function fetch_solr_page($page_number, $rows_per_page) {
 
 === How Basic Pagination is Affected by Index Updates
 
-The `start` param specified in a request to Solr indicates an *absolute* "offset" in the complete sorted list of matches that the client wants Solr to use as the beginning of the current "page".
+The `start` parameter specified in a request to Solr indicates an *absolute* "offset" in the complete sorted list of matches that the client wants Solr to use as the beginning of the current "page".
 
 If an index modification (such as adding or removing documents) which affects the sequence of ordered documents matching a query occurs in between two requests from a client for subsequent pages of results, then it is possible that these modifications can result in the same document being returned on multiple pages, or documents being "skipped" as the result set shrinks or grows.
 

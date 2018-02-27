@@ -22,7 +22,7 @@ Solr supports three implementations of this feature:
 
 * Tika's language detection feature: http://tika.apache.org/0.10/detection.html
 * LangDetect language detection: https://github.com/shuyo/language-detection
-* OpenNLP language detection: http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect 
+* OpenNLP language detection: http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect
 
 You can see a comparison between the Tika and LangDetect implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html. In general, the LangDetect implementation supports more languages with higher performance.
 
@@ -77,12 +77,12 @@ Here is an example of a minimal OpenNLP `langid` configuration in `solrconfig.xm
 </processor>
 ----
 
-==== OpenNLP-specific parameters 
+==== OpenNLP-specific Parameters
 
 `langid.model`::
-An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required. 
+An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.
 
-==== OpenNLP language codes
+==== OpenNLP Language Codes
 
 `OpenNLPLangDetectUpdateProcessor` automatically converts the 3-letter ISO 639-3 codes detected by the OpenNLP model into 2-letter ISO 639-1 codes.
 

@@ -32,30 +32,32 @@ The following parameters are configurable:
 A comma-separated list of collection names. If this list is not empty then
 the computed operations will only calculate collection operations that affect
 listed collections and ignore any other collection operations for collections
-not listed here (please note that non-collection operations are not affected by this).
+not listed here. Note that non-collection operations are not affected by this.
 
 Example configuration:
 
 [source,json]
+----
 {
- 'set-trigger' : {
-  'name' : 'node_added_trigger',
-  'event' : 'nodeAdded',
-  'waitFor' : '1s',
-  'enabled' : true,
-  'actions' : [
+ "set-trigger" : {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s",
+  "enabled" : true,
+  "actions" : [
    {
-    'name' : 'compute_plan',
-    'class' : 'solr.ComputePlanAction',
-    'collections' : 'test1,test2',
+    "name" : "compute_plan",
+    "class" : "solr.ComputePlanAction",
+    "collections" : "test1,test2",
    },
    {
-    'name' : 'execute_plan',
-    'class' : 'solr.ExecutePlanAction',
+    "name" : "execute_plan",
+    "class" : "solr.ExecutePlanAction",
    }
   ]
  }
 }
+----
 
 In this example only collections `test1` and `test2` will be potentially
 replicated / moved to an added node, other collections will be ignored even

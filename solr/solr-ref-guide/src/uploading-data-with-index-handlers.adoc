@@ -89,7 +89,7 @@ Commits may be issued explicitly with a `<commit/>` message, and can also be tri
 
 The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
 
-WARNING: You should only consider using optimize on static indexes, i.e. indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
+WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 

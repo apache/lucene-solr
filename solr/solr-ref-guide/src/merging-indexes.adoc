@@ -38,7 +38,7 @@ java -cp $SOLR/server/solr-webapp/webapp/WEB-INF/lib/lucene-core-VERSION.jar:$SO
 ----
 +
 This will create a new index at `/path/to/newindex` that contains both index1 and index2.
-. Copy this new directory to the location of your application's solr index (move the old one aside first, of course) and start Solr.
+. Copy this new directory to the location of your application's Solr index (move the old one aside first, of course) and start Solr.
 
 == Using CoreAdmin
 

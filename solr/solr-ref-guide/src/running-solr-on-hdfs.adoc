@@ -218,7 +218,7 @@ curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"a
 ====
 --
 
-Re-enable automatic addition of replicas (for those collections created with `autoAddReplica=true`) by unsetting the `autoAddReplicas` cluster property. When no `val` param is provided, the cluster property is unset:
+Re-enable automatic addition of replicas (for those collections created with `autoAddReplica=true`) by unsetting the `autoAddReplicas` cluster property. When no `val` parameter is provided, the cluster property is unset:
 
 [.dynamic-tabs]
 --
