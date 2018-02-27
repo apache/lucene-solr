@@ -200,7 +200,7 @@ Go to the checkout directory where you have built the Guide and push the documen
 [source,bash]
 svn -m "Add Ref Guide for Solr 6.5" import <checkoutroot>/solr/build/solr-ref-guide/html-site https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/6_5
 
-Confirm you can browse to these URLs manually, and especially that solr javadocs link back to lucene's correctly. Example:
+Confirm you can browse to these URLs manually, and especially that Solr javadocs link back to lucene's correctly. Example:
 https://lucene.apache.org/solr/guide/6_5
 
 ==== Step 3: Push Staging extpaths.txt to Production

@@ -267,7 +267,7 @@ Solr has very powerful search options, and this tutorial won't be able to cover 
 
 ==== Search for a Single Term
 
-To search for a term, enter it as the `q` param value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
+To search for a term, enter it as the `q` parameter value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
 
 Enter "foundation" and hit btn:[Execute Query] again.
 
