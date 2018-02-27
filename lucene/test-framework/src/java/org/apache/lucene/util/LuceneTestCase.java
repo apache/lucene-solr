@@ -428,16 +428,22 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", DEFAULT_LINE_DOCS_FILE);
 
   /** Whether or not {@link Nightly} tests should run. */
-  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, false);
+  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, Nightly.class.getAnnotation(TestGroup.class).enabled());
 
   /** Whether or not {@link Weekly} tests should run. */
-  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, false);
+  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, Weekly.class.getAnnotation(TestGroup.class).enabled());
   
+  /** Whether or not {@link Monster} tests should run. */
+  public static final boolean TEST_MONSTER = systemPropertyAsBoolean(SYSPROP_MONSTER, Monster.class.getAnnotation(TestGroup.class).enabled());
+
   /** Whether or not {@link AwaitsFix} tests should run. */
-  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, false);
+  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, AwaitsFix.class.getAnnotation(TestGroup.class).enabled());
+
+  /** Whether or not {@link BadApple} tests should run. */
+  public static final boolean TEST_BADAPPLES = systemPropertyAsBoolean(SYSPROP_BADAPPLES, BadApple.class.getAnnotation(TestGroup.class).enabled());
 
   /** Whether or not {@link Slow} tests should run. */
-  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, false);
+  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, Slow.class.getAnnotation(TestGroup.class).enabled());
 
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
