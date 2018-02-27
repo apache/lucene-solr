@@ -439,7 +439,7 @@ public class PhraseQuery extends Query {
                                       new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop,
+        return new SloppyPhraseScorer(this, field, postingsFreqs, slop,
                                         new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
                                         scoreMode.needsScores(), totalMatchCost);
       }

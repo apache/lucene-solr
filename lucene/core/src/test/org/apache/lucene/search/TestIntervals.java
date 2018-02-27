@@ -99,6 +99,7 @@ public class TestIntervals extends LuceneTestCase {
         if (intervals.reset(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
+            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());
@@ -136,6 +137,22 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 1, 3, 4, 6, 7 },
         {}
     });
+  }
+
+  public void testSloppyPhraseQueryIntervals() throws IOException {
+    checkIntervals(new PhraseQuery.Builder()
+        .add(new Term("field1", "pease"))
+        .add(new Term("field1", "porridge"))
+        .add(new Term("field1", "hot"))
+        .setSlop(3).build(), "field1", 3, new int[][]{
+        {},
+        { 0, 2, 1, 3, 2, 4 },
+        { 0, 5, 3, 5, 3, 7, 5, 7 },
+        {},
+        { 0, 2, 1, 3, 2, 4 },
+        {}
+        }
+    );
   }
 
   public void testOrderedNearIntervals() throws IOException {
