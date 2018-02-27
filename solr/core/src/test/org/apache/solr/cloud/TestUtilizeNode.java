@@ -63,6 +63,7 @@ public class TestUtilizeNode extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     cluster.waitForAllNodes(5000);
     int REPLICATION = 2;

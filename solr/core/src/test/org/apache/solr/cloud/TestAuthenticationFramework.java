@@ -70,6 +70,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   }
   
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testBasics() throws Exception {
     collectionCreateSearchDeleteTwice();
 

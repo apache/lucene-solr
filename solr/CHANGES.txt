@@ -302,6 +302,8 @@ Other Changes
 
 * SOLR-10809: Get precommit lint warnings out of Solr core (Erick Erickson)
 
+* SOLR-12028: BadApple and AwaitsFix annotations usage (Erick Erickson, Uwe Schindler)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -162,7 +162,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028, https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
     final Directory dir = newDirectory();

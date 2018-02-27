@@ -493,7 +493,8 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  // JIRA closed 24-Feb-2018. Still apparently a problem.
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
