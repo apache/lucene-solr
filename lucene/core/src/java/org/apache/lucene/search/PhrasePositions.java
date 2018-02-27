@@ -24,7 +24,8 @@ import org.apache.lucene.index.*;
  * Position of a term in a document that takes into account the term offset within the phrase. 
  */
 final class PhrasePositions {
-  int position;         // position in doc
+  int realPosition;     // position in doc
+  int position;         // position in phrase
   int count;            // remaining pos in this doc
   int offset;           // position in phrase
   final int ord;                                  // unique across all PhrasePositions instances
@@ -54,7 +55,8 @@ final class PhrasePositions {
    */
   final boolean nextPosition() throws IOException {
     if (count-- > 0) {  // read subsequent pos's
-      position = postings.nextPosition() - offset;
+      realPosition = postings.nextPosition();
+      position = realPosition - offset;
       return true;
     } else
       return false;

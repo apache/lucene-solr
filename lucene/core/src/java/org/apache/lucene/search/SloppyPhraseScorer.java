@@ -32,6 +32,8 @@ final class SloppyPhraseScorer extends Scorer {
 
   private final DocIdSetIterator conjunction;
   private final PhrasePositions[] phrasePositions;
+  private final IntervalIterator intervals;
+  private final String field;
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
@@ -40,6 +42,8 @@ final class SloppyPhraseScorer extends Scorer {
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
+
+  private int start, currentEnd, nextEnd;
   
   private int end; // current largest phrase position  
 
@@ -53,13 +57,15 @@ final class SloppyPhraseScorer extends Scorer {
   final boolean needsScores;
   private final float matchCost;
   
-  SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
+  SloppyPhraseScorer(Weight weight, String field, PhraseQuery.PostingsAndFreq[] postings,
       int slop, LeafSimScorer docScorer, boolean needsScores,
       float matchCost) {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = needsScores;
     this.slop = slop;
+    this.field = field;
+    this.intervals = new SloppyIntervalIterator();
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
     DocIdSetIterator[] iterators = new DocIdSetIterator[postings.length];
@@ -71,6 +77,74 @@ final class SloppyPhraseScorer extends Scorer {
     conjunction = ConjunctionDISI.intersectIterators(Arrays.asList(iterators));
     assert TwoPhaseIterator.unwrap(conjunction) == null;
     this.matchCost = matchCost;
+  }
+
+  private class SloppyIntervalIterator implements IntervalIterator {
+
+    @Override
+    public int start() {
+      return start;
+    }
+
+    @Override
+    public int end() {
+      return currentEnd;
+    }
+
+    @Override
+    public int innerWidth() {
+      return currentEnd - start;
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      start = currentEnd = nextEnd = -1;
+      return initPhrasePositions();
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (pq.size() < phrasePositions.length)
+        return Intervals.NO_MORE_INTERVALS;
+      currentEnd = nextEnd;
+      PhrasePositions pp = pq.pop();
+      start = pp.realPosition;
+      int matchLength = end - pp.position;
+      int next = pq.top().position;
+      int nextStart = pq.top().realPosition;
+      while (advancePP(pp)) {
+        if (hasRpts && !advanceRpts(pp)) {
+          break; // pps exhausted
+        }
+        if (pp.position > next) { // done minimizing current match-length
+          if (matchLength <= slop) {
+            pq.add(pp);
+            if (pp.realPosition > nextEnd)
+              nextEnd = pp.realPosition;
+            return start;
+          }
+          pq.add(pp);
+          pp = pq.pop();
+          next = pq.top().position;
+          matchLength = end - pp.position;
+        } else {
+          int matchLength2 = end - pp.position;
+          if (matchLength2 < matchLength) {
+            matchLength = matchLength2;
+          }
+          if (pp.realPosition > nextStart) {
+            start = nextStart;
+          }
+          else {
+            start = pp.realPosition;
+          }
+        }
+      }
+      if (matchLength <= slop) {
+        return start;
+      }
+      return Intervals.NO_MORE_INTERVALS;
+    }
   }
 
   /**
@@ -242,6 +316,9 @@ final class SloppyPhraseScorer extends Scorer {
       if (pp.position > end) {
         end = pp.position;
       }
+      if (pp.realPosition > nextEnd) {
+        nextEnd = pp.realPosition;
+      }
       pq.add(pp);
     }
   }
@@ -270,6 +347,9 @@ final class SloppyPhraseScorer extends Scorer {
     for (PhrasePositions pp : phrasePositions) {  // iterate cyclic list: done once handled max
       if (pp.position > end) {
         end = pp.position;
+      }
+      if (pp.realPosition > nextEnd) {
+        nextEnd = pp.realPosition;
       }
       pq.add(pp);
     }
@@ -515,11 +595,13 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  int freq() {
+  int freq() throws IOException {
+    ensureFreq();
     return numMatches;
   }
 
-  float sloppyFreq() {
+  float sloppyFreq() throws IOException {
+    ensureFreq();
     return sloppyFreq;
   }
   
@@ -544,7 +626,17 @@ final class SloppyPhraseScorer extends Scorer {
 //    }
 //  }
   
-  
+  private void ensureFreq() throws IOException {
+    if (sloppyFreq == -1) {
+      numMatches = 1;
+      sloppyFreq = intervals.score();
+      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+        sloppyFreq += intervals.score();
+        numMatches++;
+      }
+    }
+  }
+
   @Override
   public int docID() {
     return conjunction.docID(); 
@@ -552,6 +644,7 @@ final class SloppyPhraseScorer extends Scorer {
   
   @Override
   public float score() throws IOException {
+    ensureFreq();
     return docScorer.score(docID(), sloppyFreq);
   }
 
@@ -565,7 +658,9 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;  // nocommit.  this will be fun
+    if (this.field.equals(field))
+      return new CachedIntervalIterator(intervals, this);
+    return null;
   }
 
   @Override
@@ -573,8 +668,9 @@ final class SloppyPhraseScorer extends Scorer {
     return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
-        sloppyFreq = phraseFreq(); // check for phrase
-        return sloppyFreq != 0F;
+        sloppyFreq = -1;
+        intervals.reset(docID());
+        return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
       }
 
       @Override
