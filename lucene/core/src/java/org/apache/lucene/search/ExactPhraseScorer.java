@@ -38,6 +38,7 @@ final class ExactPhraseScorer extends Scorer {
 
   private final DocIdSetIterator conjunction;
   private final PostingsAndPosition[] postings;
+  private final String field;
 
   private int freq;
 
@@ -46,13 +47,17 @@ final class ExactPhraseScorer extends Scorer {
   private float matchCost;
   private float minCompetitiveScore;
 
-  ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
+  private final IntervalIterator intervals;
+
+  ExactPhraseScorer(Weight weight, String field, PhraseQuery.PostingsAndFreq[] postings,
                     LeafSimScorer docScorer, ScoreMode scoreMode,
                     float matchCost) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = scoreMode.needsScores();
     this.needsTotalHitCount = scoreMode != ScoreMode.TOP_SCORES;
+    this.field = field;
+    this.intervals = new ExactPhraseIntervals();
 
     List<DocIdSetIterator> iterators = new ArrayList<>();
     List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
@@ -86,7 +91,9 @@ final class ExactPhraseScorer extends Scorer {
             return false;
           }
         }
-        return phraseFreq() > 0;
+        freq = -1;
+        intervals.reset(docID());
+        return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
       }
 
       @Override
@@ -106,7 +113,8 @@ final class ExactPhraseScorer extends Scorer {
     return "ExactPhraseScorer(" + weight + ")";
   }
 
-  final int freq() {
+  final int freq() throws IOException {
+    ensureFreq();
     return freq;
   }
 
@@ -117,6 +125,7 @@ final class ExactPhraseScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
+    ensureFreq();
     return docScorer.score(docID(), freq);
   }
 
@@ -127,7 +136,18 @@ final class ExactPhraseScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;  // nocommit
+    if (this.field.equals(field) == false)
+      return null;
+    return new CachedIntervalIterator(intervals, this);
+  }
+
+  private void ensureFreq() throws IOException {
+    if (freq == -1) {
+      freq = 1;
+      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+        freq++;
+      }
+    }
   }
 
   /** Advance the given pos enum to the first doc on or after {@code target}.
@@ -143,6 +163,69 @@ final class ExactPhraseScorer extends Scorer {
       }
     }
     return true;
+  }
+
+  private class ExactPhraseIntervals implements IntervalIterator {
+
+    @Override
+    public int start() {
+      return postings[0].pos;
+    }
+
+    @Override
+    public int end() {
+      return postings[postings.length - 1].pos;
+    }
+
+    @Override
+    public int innerWidth() {
+      return 0;
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      if (conjunction.docID() != doc)
+        return false;
+      for (PostingsAndPosition posting : postings) {
+        posting.freq = posting.postings.freq();
+        posting.pos = -1;
+        posting.upTo = 0;
+      }
+      return true;
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      final PostingsAndPosition lead = postings[0];
+      if (lead.upTo == lead.freq)
+        return Intervals.NO_MORE_INTERVALS;
+
+      lead.pos = lead.postings.nextPosition();
+      lead.upTo += 1;
+
+      advanceHead:
+      while (true) {
+        final int phrasePos = lead.pos - lead.offset;
+        for (int j = 1; j < postings.length; ++j) {
+          final PostingsAndPosition posting = postings[j];
+          final int expectedPos = phrasePos + posting.offset;
+
+          // advance up to the same position as the lead
+          if (advancePosition(posting, expectedPos) == false) {
+            return Intervals.NO_MORE_INTERVALS;
+          }
+
+          if (posting.pos != expectedPos) { // we advanced too far
+            if (advancePosition(lead, posting.pos - posting.offset + lead.offset)) {
+              continue advanceHead;
+            } else {
+              return Intervals.NO_MORE_INTERVALS;
+            }
+          }
+        }
+        return lead.pos;
+      }
+    }
   }
 
   private int phraseFreq() throws IOException {

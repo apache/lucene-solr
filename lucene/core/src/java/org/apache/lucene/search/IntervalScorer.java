@@ -77,40 +77,7 @@ class IntervalScorer extends Scorer {
   @Override
   public IntervalIterator intervals(String field) {
     if (this.field.equals(field))
-      return new IntervalIterator() {
-        boolean started = false;
-
-        @Override
-        public int start() {
-          return intervals.start();
-        }
-
-        @Override
-        public int end() {
-          return intervals.end();
-        }
-
-        @Override
-        public int innerWidth() {
-          return intervals.innerWidth();
-        }
-
-        @Override
-        public boolean reset(int doc) throws IOException {
-          // inner iterator already reset() in TwoPhaseIterator.matches()
-          started = false;
-          return doc == docID();
-        }
-
-        @Override
-        public int nextInterval() throws IOException {
-          if (started == false) {
-            started = true;
-            return start();
-          }
-          return intervals.nextInterval();
-        }
-      };
+      return new CachedIntervalIterator(intervals, this);
     return null;
   }
 
