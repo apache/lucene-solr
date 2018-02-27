@@ -618,7 +618,7 @@ Test args: [${args}]</echo>
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
-      <param name="badapples" value="false"/>
+      <param name="tests.badapples" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -627,7 +627,7 @@ Test args: [${args}]</echo>
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
-      <param name="badapples" value="true"/>
+      <param name="tests.badapples" value="true"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -637,7 +637,7 @@ Test args: [${args}]</echo>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
       <param name="tests.nightly" value="true"/>
-      <param name="badapples" value="false"/>
+      <param name="tests.badapples" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
