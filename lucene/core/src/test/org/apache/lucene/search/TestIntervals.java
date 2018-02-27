@@ -125,6 +125,19 @@ public class TestIntervals extends LuceneTestCase {
     });
   }
 
+  public void testExactPhraseQueryIntervals() throws IOException {
+    checkIntervals(new PhraseQuery.Builder()
+        .add(new Term("field1", "pease"))
+        .add(new Term("field1", "porridge")).build(), "field1", 3, new int[][]{
+        {},
+        { 0, 1, 3, 4, 6, 7 },
+        { 0, 1, 3, 4, 6, 7 },
+        {},
+        { 0, 1, 3, 4, 6, 7 },
+        {}
+    });
+  }
+
   public void testOrderedNearIntervals() throws IOException {
     checkIntervals(Intervals.orderedQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),

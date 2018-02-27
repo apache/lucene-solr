@@ -114,6 +114,13 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{0, 1, 2});
   }
 
+  public void testNearPhraseQuery() throws IOException {
+    Query q = Intervals.unorderedQuery(field,
+        new PhraseQuery.Builder().add(new Term(field, "w3")).add(new Term(field, "w2")).build(),
+        new TermQuery(new Term(field, "w4")));
+    checkHits(q, new int[]{ 5 });
+  }
+
   public void testUnorderedQuery() throws IOException {
     Query q = Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3")));
     checkHits(q, new int[]{0, 1, 2, 3, 5});
