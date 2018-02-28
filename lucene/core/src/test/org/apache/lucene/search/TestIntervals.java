@@ -42,7 +42,7 @@ public class TestIntervals extends LuceneTestCase {
   private static String field1_docs[] = {
       "Nothing of interest to anyone here",
       "Pease porridge hot, pease porridge cold, pease porridge in the pot nine days old.  Some like it hot, some like it cold, some like it in the pot nine days old",
-      "Pease porridge cold, pease porridge hot, pease porridge in the pot twelve days old.  Some like it cold, some like it hot, some like it in the pot",
+      "Pease porridge cold, pease porridge hot, pease porridge in the pot twelve days old.  Some like it cold, some like it hot, some like it in the fraggle",
       "Nor here, nowt hot going on in pease this one",
       "Pease porridge hot, pease porridge cold, pease porridge in the pot nine years old.  Some like it hot, some like it twelve",
       "Porridge is great"
@@ -253,6 +253,25 @@ public class TestIntervals extends LuceneTestCase {
         { 6, 11 },
         {},
         {},
+        {}
+    });
+  }
+
+  public void testMinimumShouldMatch() throws IOException {
+    checkIntervals(new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
+        .add(new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("field1", "porridge")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("field1", "days")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("field1", "fraggle")), BooleanClause.Occur.SHOULD)
+            .setMinimumNumberShouldMatch(2)
+            .build(), BooleanClause.Occur.SHOULD)
+        .build(), "field1", 4, new int[][]{
+        {},
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 12, 12, 29, 29 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 12, 12, 27, 27 },
+        { 7, 7 },
+        { 0, 0, 3, 3, 6, 6 },
         {}
     });
   }

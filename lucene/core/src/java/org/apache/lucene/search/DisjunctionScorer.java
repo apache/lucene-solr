@@ -130,18 +130,13 @@ abstract class DisjunctionScorer extends Scorer {
           // implicitly verified, move it to verifiedMatches
           w.next = verifiedMatches;
           verifiedMatches = w;
-          
-          if (needsScores == false) {
-            // we can stop here
-            return true;
-          }
         } else {
           unverifiedMatches.add(w);
         }
         w = next;
       }
       
-      if (verifiedMatches != null) {
+      if (verifiedMatches != null || needsScores == false) {
         return true;
       }
       

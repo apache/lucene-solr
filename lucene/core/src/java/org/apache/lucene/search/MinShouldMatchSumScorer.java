@@ -20,7 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
@@ -124,11 +126,6 @@ final class MinShouldMatchSumScorer extends Scorer {
       matchingChildren.add(new ChildScorer(s.scorer, "SHOULD"));
     }
     return matchingChildren;
-  }
-
-  @Override
-  public IntervalIterator intervals(String field) {
-    return null;  // nocommit
   }
 
   @Override
@@ -328,6 +325,32 @@ final class MinShouldMatchSumScorer extends Scorer {
       score += s.scorer.score();
     }
     return (float) score;
+  }
+
+  @Override
+  public IntervalIterator intervals(String field) {
+    Map<DisiWrapper, IntervalIterator> its = new IdentityHashMap<>();
+    for (DisiWrapper s = lead; s != null; s = s.next) {
+      IntervalIterator it = s.scorer.intervals(field);
+      if (it != null) {
+        its.put(s, it);
+      }
+    }
+    if (its.size() == 0)
+      return null;
+    return new DisjunctionIntervalIterator(its.size()) {
+      @Override
+      protected void fillQueue(int doc) throws IOException {
+        updateFreq();
+        for (DisiWrapper s = lead; s != null; s = s.next) {
+          IntervalIterator it = its.get(s);
+          if (it.reset(doc)) {
+            it.nextInterval();
+            queue.add(it);
+          }
+        }
+      }
+    };
   }
 
   @Override
