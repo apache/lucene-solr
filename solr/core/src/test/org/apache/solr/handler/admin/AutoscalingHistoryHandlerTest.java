@@ -118,6 +118,16 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     actionFiredLatch = new CountDownLatch(1);
     listenerFiredLatch = new CountDownLatch(1);
 
+    // change rules to create violations
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    solrClient.request(req);
+
+
     // first trigger
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -131,7 +141,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TesterAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
