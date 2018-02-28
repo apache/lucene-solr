@@ -697,7 +697,7 @@ public class IndexSearcher {
   public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
     Weight weight = query.createWeight(this, scoreMode, boost);
-    if (scoreMode.useQueryCache() && queryCache != null) {
+    if (scoreMode.needsPositions() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;

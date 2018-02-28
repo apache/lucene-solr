@@ -61,8 +61,8 @@ public enum ScoreMode {
     }
 
     @Override
-    public boolean useQueryCache() {
-      return false;
+    public boolean needsPositions() {
+      return true;
     }
 
     @Override
@@ -94,8 +94,8 @@ public enum ScoreMode {
 
   public abstract int minRequiredPostings();
 
-  public boolean useQueryCache() {
-    return !needsScores();
+  public boolean needsPositions() {
+    return needsScores();
   }
 
 }
