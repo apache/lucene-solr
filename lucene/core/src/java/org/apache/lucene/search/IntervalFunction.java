@@ -251,12 +251,16 @@ public abstract class IntervalFunction {
       this.queueEnd = start = end = innerEnd = innerStart = -1;
       boolean positioned = true;
       for (IntervalIterator subIterator : subIterators) {
-        positioned &= subIterator.reset(doc);
-        subIterator.nextInterval();
-        queue.add(subIterator);
-        if (subIterator.end() > queueEnd) {
-          queueEnd = subIterator.end();
-          innerEnd = subIterator.start();
+        if (subIterator.reset(doc)) {
+          subIterator.nextInterval();
+          queue.add(subIterator);
+          if (subIterator.end() > queueEnd) {
+            queueEnd = subIterator.end();
+            innerEnd = subIterator.start();
+          }
+        }
+        else {
+          positioned = false;
         }
       }
       return positioned;
