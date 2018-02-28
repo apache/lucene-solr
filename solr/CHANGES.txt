@@ -239,6 +239,9 @@ Optimizations
 * SOLR-8327: Cluster state caching to avoid live fetch from ZK of cluster state for forwarding requests on nodes
   that do not host any replica of the collection (Jessica Cheng Mallet, John Gallagher, Noble Paul, Ishan Chattopadhyaya)
 
+* SOLR-11769: Optimize when useFilterForSortedQuery=true and there are no filter queries by avoiding
+  needless match-all-docs bitset construction. (Betim Deva, David Smiley)
+
 Other Changes
 ----------------------
 
