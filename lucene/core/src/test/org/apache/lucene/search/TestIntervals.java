@@ -42,9 +42,9 @@ public class TestIntervals extends LuceneTestCase {
   private static String field1_docs[] = {
       "Nothing of interest to anyone here",
       "Pease porridge hot, pease porridge cold, pease porridge in the pot nine days old.  Some like it hot, some like it cold, some like it in the pot nine days old",
-      "Pease porridge cold, pease porridge hot, pease porridge in the pot nine days old.  Some like it cold, some like it hot, some like it in the pot nine days old",
+      "Pease porridge cold, pease porridge hot, pease porridge in the pot twelve days old.  Some like it cold, some like it hot, some like it in the pot",
       "Nor here, nowt hot going on in pease this one",
-      "Pease porridge hot, pease porridge cold, pease porridge in the pot nine days old.  Some like it hot, some like it cold",
+      "Pease porridge hot, pease porridge cold, pease porridge in the pot nine years old.  Some like it hot, some like it twelve",
       "Porridge is great"
   };
 
@@ -99,7 +99,7 @@ public class TestIntervals extends LuceneTestCase {
         if (intervals.reset(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != Intervals.NO_MORE_INTERVALS) {
-            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
+            System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());
@@ -198,8 +198,8 @@ public class TestIntervals extends LuceneTestCase {
   public void testNesting() throws IOException {
     checkIntervals(Intervals.unorderedQuery("field1", 100,
         new TermQuery(new Term("field1", "pease")),
-            new TermQuery(new Term("field1", "porridge")),
-                new BooleanQuery.Builder()
+        new TermQuery(new Term("field1", "porridge")),
+        new BooleanQuery.Builder()
             .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
             .add(new TermQuery(new Term("field1", "cold")), BooleanClause.Occur.SHOULD)
             .build()), "field1", 3, new int[][]{
@@ -208,6 +208,29 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {},
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        {}
+    });
+  }
+
+  // x near ((a not b) or (c not d))
+  public void testBooleans() throws IOException {
+    checkIntervals(Intervals.unorderedQuery("field1",
+        new TermQuery(new Term("field1", "pease")),
+        new BooleanQuery.Builder()
+            .add(new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("field1", "nine")), BooleanClause.Occur.MUST)
+                .add(new TermQuery(new Term("field1", "years")), BooleanClause.Occur.MUST_NOT)
+                .build(), BooleanClause.Occur.SHOULD)
+            .add(new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("field1", "twelve")), BooleanClause.Occur.MUST)
+                .add(new TermQuery(new Term("field1", "days")), BooleanClause.Occur.MUST_NOT)
+                .build(), BooleanClause.Occur.SHOULD)
+            .build()), "field1", 2, new int[][]{
+        {},
+        { 6, 11 },
+        {},
+        {},
+        { 6, 21 },
         {}
     });
   }

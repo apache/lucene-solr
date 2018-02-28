@@ -24,23 +24,17 @@ import org.apache.lucene.util.PriorityQueue;
 
 abstract class DisjunctionIntervalIterator implements IntervalIterator {
 
-  private final PriorityQueue<IntervalIterator> queue;
-  private final IntervalIterator[] subIterators;
+  protected final PriorityQueue<IntervalIterator> queue;
 
   IntervalIterator current;
 
-  DisjunctionIntervalIterator(List<IntervalIterator> subIterators) {
-    this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
+  DisjunctionIntervalIterator(int iteratorCount) {
+    this.queue = new PriorityQueue<IntervalIterator>(iteratorCount) {
       @Override
       protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
         return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
       }
     };
-    this.subIterators = new IntervalIterator[subIterators.size()];
-
-    for (int i = 0; i < subIterators.size(); i++) {
-      this.subIterators[i] = subIterators.get(i);
-    }
   }
 
   @Override
@@ -58,18 +52,12 @@ abstract class DisjunctionIntervalIterator implements IntervalIterator {
     return current.innerWidth();
   }
 
-  protected abstract void positionSubIntervals() throws IOException;
+  protected abstract void fillQueue(int doc) throws IOException;
 
   @Override
   public boolean reset(int doc) throws IOException {
-    positionSubIntervals();
     queue.clear();
-    for (IntervalIterator subIterator : subIterators) {
-      if (subIterator.reset(doc)) {
-        subIterator.nextInterval();
-        queue.add(subIterator);
-      }
-    }
+    fillQueue(doc);
     current = null;
     return queue.size() > 0;
   }
