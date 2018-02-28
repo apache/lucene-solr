@@ -125,6 +125,7 @@ There are several default search components that work with all SearchHandlers wi
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
 |debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+|analytics |`solr.AnalyticsComponent` |Described in the section <<analytics.adoc#analytics,Analytics>>.
 |===
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.

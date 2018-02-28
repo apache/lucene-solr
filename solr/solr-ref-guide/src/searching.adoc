@@ -49,6 +49,7 @@ This section describes how Solr works with search requests. It covers the follow
 * <<the-terms-component.adoc#the-terms-component,The Terms Component>>: Detailed information about accessing indexed terms and the documents that include them.
 * <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>: How to get term information about specific documents.
 * <<the-stats-component.adoc#the-stats-component,The Stats Component>>: How to return information from numeric fields within a document set.
+* <<analytics.adoc#analytics,The Analytics Component>>: A framework to compute complex analytics over a result set.
 * <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>: How to force documents to the top of the results for certain queries.
 * <<response-writers.adoc#response-writers,Response Writers>>: Detailed information about configuring and using Solr's response writers.
 * <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>: How to include documents in search results nearly immediately after they are indexed.
@@ -56,4 +57,3 @@ This section describes how Solr works with search requests. It covers the follow
 * <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
 * <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
 * <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>: An interface for sending SQL statements to Solr, and using advanced parallel query processing and relational algebra for complex data analysis.
-* <<analytics.adoc#analytics,The Analytics Component>>: A framework to compute complex analytics over a result set.

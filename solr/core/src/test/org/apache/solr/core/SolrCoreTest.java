@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.handler.AnalyticsHandler;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
@@ -113,6 +114,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/analysis/field"), "solr.FieldAnalysisRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
+      ++ihCount; assertEquals(pathToClassMap.get("/analytics"), "solr.AnalyticsHandler");
     }
     assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
   }

@@ -137,6 +137,10 @@
         "distrib": false
       }
     },
+    "/analytics": {
+      "class": "solr.AnalyticsHandler",
+      "useParams":"_ANALYTICS"
+    },
     "/terms": {
       "class": "solr.SearchHandler",
       "useParams":"_TERMS",
