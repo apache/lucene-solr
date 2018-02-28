@@ -20,7 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.util.PriorityQueue;
 
@@ -182,18 +185,24 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    List<IntervalIterator> subIntervals = new ArrayList<>();
+    Map<DisiWrapper, IntervalIterator> subIntervals = new IdentityHashMap<>();
     for (DisiWrapper dw : subScorers) {
       IntervalIterator subIt = dw.scorer.intervals(field);
       if (subIt != null)
-        subIntervals.add(subIt);
+        subIntervals.put(dw, subIt);
     }
     if (subIntervals.size() == 0)
       return null;
-    return new DisjunctionIntervalIterator(subIntervals) {
+    return new DisjunctionIntervalIterator(subIntervals.size()) {
       @Override
-      protected void positionSubIntervals() throws IOException {
-        getSubMatches();
+      protected void fillQueue(int doc) throws IOException {
+        for (DisiWrapper dw = getSubMatches(); dw != null; dw = dw.next) {
+          IntervalIterator it = subIntervals.get(dw);
+          if (it.reset(doc)) {
+            it.nextInterval();
+            queue.add(it);
+          }
+        }
       }
     };
   }

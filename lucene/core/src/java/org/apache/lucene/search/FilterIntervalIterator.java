@@ -19,30 +19,41 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-class CachedIntervalIterator extends FilterIntervalIterator {
+public abstract class FilterIntervalIterator implements IntervalIterator {
 
-  final Scorer scorer;
+  protected final IntervalIterator in;
 
-  private boolean started = false;
+  protected FilterIntervalIterator(IntervalIterator in) {
+    this.in = in;
+  }
 
-  CachedIntervalIterator(IntervalIterator in, Scorer scorer) {
-    super(in);
-    this.scorer = scorer;
+  @Override
+  public int start() {
+    return in.start();
+  }
+
+  @Override
+  public int end() {
+    return in.end();
+  }
+
+  @Override
+  public int innerWidth() {
+    return in.innerWidth();
   }
 
   @Override
   public boolean reset(int doc) throws IOException {
-    // inner iterator already reset() in TwoPhaseIterator.matches()
-    started = false;
-    return doc == scorer.docID();
+    return in.reset(doc);
   }
 
   @Override
   public int nextInterval() throws IOException {
-    if (started == false) {
-      started = true;
-      return start();
-    }
     return in.nextInterval();
+  }
+
+  @Override
+  public float score() {
+    return in.score();
   }
 }

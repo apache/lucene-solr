@@ -192,10 +192,14 @@ class ReqOptSumScorer extends Scorer {
       return reqIntervals;
     if (reqIntervals == null)
       return optIntervals;
-    return new DisjunctionIntervalIterator(Arrays.asList(reqIntervals, optIntervals)) {
+    return new DisjunctionIntervalIterator(2) {
       @Override
-      protected void positionSubIntervals() throws IOException {
+      protected void fillQueue(int doc) throws IOException {
+        reqIntervals.reset(doc);
+        queue.add(reqIntervals);
         positionOptionalScorers();
+        if (optIntervals.reset(doc))
+          queue.add(optIntervals);
       }
     };
   }
