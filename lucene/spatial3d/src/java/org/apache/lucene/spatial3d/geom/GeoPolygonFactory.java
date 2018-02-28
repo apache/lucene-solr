@@ -1640,5 +1640,5 @@ public class GeoPolygonFactory {
   static class MutableBoolean {
     public boolean value = false;
   }
-  
+
 }
