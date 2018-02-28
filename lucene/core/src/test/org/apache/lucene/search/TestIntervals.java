@@ -213,7 +213,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   // x near ((a not b) or (c not d))
-  public void testBooleans() throws IOException {
+  public void testExclusionBooleans() throws IOException {
     checkIntervals(Intervals.unorderedQuery("field1",
         new TermQuery(new Term("field1", "pease")),
         new BooleanQuery.Builder()
@@ -231,6 +231,28 @@ public class TestIntervals extends LuceneTestCase {
         {},
         {},
         { 6, 21 },
+        {}
+    });
+  }
+
+  public void testConjunctionBooleans() throws IOException {
+    checkIntervals(Intervals.unorderedQuery("field1",
+        new TermQuery(new Term("field1", "pease")),
+        new BooleanQuery.Builder()
+            .add(new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("field1", "nine")), BooleanClause.Occur.MUST)
+                .add(new TermQuery(new Term("field2", "caverns")), BooleanClause.Occur.MUST)
+                .build(), BooleanClause.Occur.SHOULD)
+            .add(new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("field1", "twelve")), BooleanClause.Occur.MUST)
+                .add(new TermQuery(new Term("field2", "sunless")), BooleanClause.Occur.MUST)
+                .build(), BooleanClause.Occur.SHOULD)
+            .build()), "field1", 2, new int[][]{
+        {},
+        { 6, 11 },
+        { 6, 11 },
+        {},
+        {},
         {}
     });
   }
