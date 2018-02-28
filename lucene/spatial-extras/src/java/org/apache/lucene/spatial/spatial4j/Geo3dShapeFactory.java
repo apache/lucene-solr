@@ -36,6 +36,7 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
 import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoS2ShapeFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
@@ -247,7 +248,7 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
     GeoPoint point2 = getGeoPoint(cell.getVertexRaw(1));
     GeoPoint point3 = getGeoPoint(cell.getVertexRaw(2));
     GeoPoint point4 = getGeoPoint(cell.getVertexRaw(3));
-    return new Geo3dShape<>(GeoPolygonFactory.makeGeoS2Shape(planetModel, point1, point2, point3, point4), context);
+    return new Geo3dShape<>(GeoS2ShapeFactory.makeGeoS2Shape(planetModel, point1, point2, point3, point4), context);
   }
 
   private GeoPoint getGeoPoint(S2Point point) {
