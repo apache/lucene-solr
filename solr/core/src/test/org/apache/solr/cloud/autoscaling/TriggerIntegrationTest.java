@@ -854,6 +854,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeMarkersRegistration() throws Exception {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -1403,6 +1404,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSearchRate() throws Exception {
     // start a few more jetty-s
     for (int i = 0; i < 3; i++) {
