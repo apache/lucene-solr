@@ -184,6 +184,10 @@ Bug Fixes
 * LUCENE-8174: Fixed {Float,Double,Int,Long}Range.toString(). (Oliver Kaleske
   via Adrien Grand)
 
+* LUCENE-8188: Fixed bugs in OpenNLPOpsFactory that were causing InputStreams fetched from the
+  ResourceLoader to be leaked (hossman)
+
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
