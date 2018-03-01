@@ -31,6 +31,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -99,7 +102,7 @@ public class TestIntervals extends LuceneTestCase {
         if (intervals.reset(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
-            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
+            System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());
@@ -274,5 +277,19 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 0, 3, 3, 6, 6 },
         {}
     });
+  }
+
+  public void testSpanNearQueryEquivalence() throws IOException {
+    checkIntervals(new SpanNearQuery(new SpanQuery[]{
+            new SpanTermQuery(new Term("field1", "pease")),
+            new SpanTermQuery(new Term("field1", "hot"))}, 100, true),
+        "field1", 3, new int[][]{
+            {},
+            {0, 2, 3, 17, 6, 17},
+            {0, 5, 3, 5, 6, 21},
+            {},
+            { 0, 2, 3, 17, 6, 17 },
+            { }
+        });
   }
 }

@@ -32,6 +32,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
  */
 public class SpanScorer extends Scorer {
 
+  protected final String field;
   protected final Spans spans;
   protected final LeafSimScorer docScorer;
 
@@ -42,10 +43,11 @@ public class SpanScorer extends Scorer {
   private int lastScoredDoc = -1; // last doc we called setFreqCurrentDoc() for
 
   /** Sole constructor. */
-  public SpanScorer(SpanWeight weight, Spans spans, LeafSimScorer docScorer) {
+  public SpanScorer(SpanWeight weight, String field, Spans spans, LeafSimScorer docScorer) {
     super(weight);
     this.spans = Objects.requireNonNull(spans);
     this.docScorer = docScorer;
+    this.field = field;
   }
 
   /** return the Spans for this Scorer **/
@@ -60,7 +62,9 @@ public class SpanScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;  // nocommit
+    if (this.field.equals(field))
+      return new SpanIntervalIterator();
+    return null;
   }
 
   @Override
@@ -150,6 +154,34 @@ public class SpanScorer extends Scorer {
   final float sloppyFreq() throws IOException {
     ensureFreq();
     return freq;
+  }
+
+  private class SpanIntervalIterator implements IntervalIterator {
+
+    @Override
+    public int start() {
+      return spans.startPosition();
+    }
+
+    @Override
+    public int end() {
+      return spans.endPosition() - 1;
+    }
+
+    @Override
+    public int innerWidth() {
+      return spans.width();
+    }
+
+    @Override
+    public boolean reset(int doc) throws IOException {
+      return spans.docID() == doc;
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      return spans.nextStartPosition();
+    }
   }
 
 }
