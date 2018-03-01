@@ -635,9 +635,6 @@ Other
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
 
-======================= Lucene 6.6.3 =======================
-(No Changes)
-
 ======================= Lucene 6.6.2 =======================
 
 Changes in Runtime Behavior
