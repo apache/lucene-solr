@@ -70,7 +70,7 @@ class IntervalScorer extends Scorer {
       do {
         freq += intervals.score();
       }
-      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS);
+      while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS);
     }
   }
 
@@ -91,7 +91,7 @@ class IntervalScorer extends Scorer {
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        return intervals.reset(approximation.docID()) && intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
+        return intervals.reset(approximation.docID()) && intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
       }
 
       @Override

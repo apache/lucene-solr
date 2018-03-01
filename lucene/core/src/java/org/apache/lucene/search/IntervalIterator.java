@@ -19,24 +19,59 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.PostingsEnum;
-
+/**
+ * Defines methods to iterate over the intervals that a {@link Scorer} matches
+ * on a document
+ */
 public interface IntervalIterator {
 
+  /**
+   * When returned from {@link #nextInterval()}, indicates that there are no more
+   * matching intervals on the current document
+   */
+  int NO_MORE_INTERVALS = Integer.MAX_VALUE;
+
+  /**
+   * The start of the current interval
+   */
   int start();
 
+  /**
+   * The end of the current interval
+   */
   int end();
 
+  /**
+   * The width of the current interval
+   */
   int innerWidth();
 
+  /**
+   * Called to reset the iterator on a new document
+   *
+   * @return true if the iterator's parent Scorer is positioned on the given doc id
+   */
   boolean reset(int doc) throws IOException;
 
+  /**
+   * Advance the iterator to the next interval
+   *
+   * @return the starting interval of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
+   *         there are no more intervals on the current document
+   */
   int nextInterval() throws IOException;
 
+  /**
+   * The score of the current interval
+   */
   default float score() {
     return (float) (1.0 / (1 + innerWidth()));
   }
 
+  /**
+   * An empty iterator that always returns {@code false} from {@link #reset(int)} and
+   * {@link IntervalIterator#NO_MORE_INTERVALS} from {@link #nextInterval()}
+   */
   IntervalIterator EMPTY = new IntervalIterator() {
 
     @Override
@@ -61,7 +96,7 @@ public interface IntervalIterator {
 
     @Override
     public int nextInterval() {
-      return Intervals.NO_MORE_INTERVALS;
+      return NO_MORE_INTERVALS;
     }
   };
 

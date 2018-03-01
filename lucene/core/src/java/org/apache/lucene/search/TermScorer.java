@@ -24,8 +24,6 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermsEnum;
 
-import static org.apache.lucene.search.Intervals.NO_MORE_INTERVALS;
-
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {

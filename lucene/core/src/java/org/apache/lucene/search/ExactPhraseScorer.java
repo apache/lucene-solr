@@ -93,7 +93,7 @@ final class ExactPhraseScorer extends Scorer {
         }
         freq = -1;
         intervals.reset(docID());
-        return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
+        return intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
       }
 
       @Override
@@ -144,7 +144,7 @@ final class ExactPhraseScorer extends Scorer {
   private void ensureFreq() throws IOException {
     if (freq == -1) {
       freq = 1;
-      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+      while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
         freq++;
       }
     }
@@ -198,7 +198,7 @@ final class ExactPhraseScorer extends Scorer {
     public int nextInterval() throws IOException {
       final PostingsAndPosition lead = postings[0];
       if (lead.upTo == lead.freq)
-        return Intervals.NO_MORE_INTERVALS;
+        return IntervalIterator.NO_MORE_INTERVALS;
 
       lead.pos = lead.postings.nextPosition();
       lead.upTo += 1;
@@ -212,14 +212,14 @@ final class ExactPhraseScorer extends Scorer {
 
           // advance up to the same position as the lead
           if (advancePosition(posting, expectedPos) == false) {
-            return Intervals.NO_MORE_INTERVALS;
+            return IntervalIterator.NO_MORE_INTERVALS;
           }
 
           if (posting.pos != expectedPos) { // we advanced too far
             if (advancePosition(lead, posting.pos - posting.offset + lead.offset)) {
               continue advanceHead;
             } else {
-              return Intervals.NO_MORE_INTERVALS;
+              return IntervalIterator.NO_MORE_INTERVALS;
             }
           }
         }

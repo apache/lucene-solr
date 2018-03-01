@@ -18,14 +18,14 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.util.PriorityQueue;
 
-import static org.apache.lucene.search.Intervals.NO_MORE_INTERVALS;
-
+/**
+ * Combine a list of {@link IntervalIterator}s into another
+ */
 public abstract class IntervalFunction {
 
   @Override
@@ -37,8 +37,14 @@ public abstract class IntervalFunction {
   @Override
   public abstract String toString();
 
+  /**
+   * Combine the iterators into another iterator
+   */
   public abstract IntervalIterator apply(List<IntervalIterator> iterators);
 
+  /**
+   * Return an iterator over intervals where the subiterators appear in a given order
+   */
   public static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
@@ -46,8 +52,17 @@ public abstract class IntervalFunction {
     }
   };
 
+  /**
+   * Return an iterator over intervals where the subiterators appear in a given order,
+   * filtered by width
+   */
   public static class OrderedNearFunction extends IntervalFunction {
 
+    /**
+     * Create a new OrderedNearFunction
+     * @param minWidth  the minimum width of returned intervals
+     * @param maxWidth  the maximum width of returned intervals
+     */
     public OrderedNearFunction(int minWidth, int maxWidth) {
       this.minWidth = minWidth;
       this.maxWidth = maxWidth;
@@ -81,7 +96,7 @@ public abstract class IntervalFunction {
     }
   }
 
-  public static IntervalIterator orderedIntervalIterator(List<IntervalIterator> subIterators) {
+  private static IntervalIterator orderedIntervalIterator(List<IntervalIterator> subIterators) {
     for (IntervalIterator it : subIterators) {
       if (it == IntervalIterator.EMPTY)
         return IntervalIterator.EMPTY;
@@ -157,7 +172,9 @@ public abstract class IntervalFunction {
     }
   }
 
-
+  /**
+   * Return an iterator over intervals where the subiterators appear in any order
+   */
   public static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
@@ -165,11 +182,19 @@ public abstract class IntervalFunction {
     }
   };
 
+  /**
+   * An iterator over intervals where the subiterators appear in any order, within a given width range
+   */
   public static class UnorderedNearFunction extends IntervalFunction {
 
     final int minWidth;
     final int maxWidth;
 
+    /**
+     * Create a new UnorderedNearFunction
+     * @param minWidth the minimum width of the returned intervals
+     * @param maxWidth the maximum width of the returned intervals
+     */
     public UnorderedNearFunction(int minWidth, int maxWidth) {
       this.minWidth = minWidth;
       this.maxWidth = maxWidth;
@@ -201,7 +226,7 @@ public abstract class IntervalFunction {
     }
   }
 
-  public static IntervalIterator unorderedIntervalIterator(List<IntervalIterator> subIntervals) {
+  private static IntervalIterator unorderedIntervalIterator(List<IntervalIterator> subIntervals) {
     for (IntervalIterator it : subIntervals) {
       if (it == IntervalIterator.EMPTY)
         return IntervalIterator.EMPTY;
@@ -302,6 +327,9 @@ public abstract class IntervalFunction {
 
   }
 
+  /**
+   * Returns an interval over iterators where the first iterator contains intervals from the second
+   */
   public static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
@@ -352,6 +380,9 @@ public abstract class IntervalFunction {
     }
   };
 
+  /**
+   * Return an iterator over intervals where the first iterator is contained by intervals from the second
+   */
   public static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
