@@ -184,6 +184,9 @@ Bug Fixes
 * LUCENE-8174: Fixed {Float,Double,Int,Long}Range.toString(). (Oliver Kaleske
   via Adrien Grand)
 
+* LUCENE-8182: Fixed BoostingQuery to apply the context boost instead of the parent query
+  boost (Jim Ferenczi)
+
 * LUCENE-8188: Fixed bugs in OpenNLPOpsFactory that were causing InputStreams fetched from the
   ResourceLoader to be leaked (hossman)
 
