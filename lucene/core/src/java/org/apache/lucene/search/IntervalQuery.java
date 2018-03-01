@@ -31,17 +31,23 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.similarities.Similarity;
 
+/**
+ * A query that retrieves documents containing intervals returned from an
+ * {@link IntervalFunction} over a set of subqueries
+ */
 public final class IntervalQuery extends Query {
 
   private final String field;
   private final List<Query> subQueries;
   private final IntervalFunction iteratorFunction;
 
-  protected IntervalQuery(String field, List<Query> subQueries, IntervalFunction iteratorFunction) {
-    this(field, subQueries, null, iteratorFunction);
-  }
-
-  protected IntervalQuery(String field, List<Query> subQueries, Query subtrahend, IntervalFunction iteratorFunction) {
+  /**
+   * Create a new IntervalQuery
+   * @param field             the field to query
+   * @param subQueries        the subqueries to generate intervals from
+   * @param iteratorFunction  an {@link IntervalFunction} to combine the intervals from the subqueries
+   */
+  public IntervalQuery(String field, List<Query> subQueries, IntervalFunction iteratorFunction) {
     this.field = field;
     this.subQueries = subQueries;
     this.iteratorFunction = iteratorFunction;

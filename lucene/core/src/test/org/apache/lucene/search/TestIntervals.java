@@ -99,7 +99,7 @@ public class TestIntervals extends LuceneTestCase {
         if (intervals.reset(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
-            System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
+            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());

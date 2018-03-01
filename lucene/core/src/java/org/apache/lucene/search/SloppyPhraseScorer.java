@@ -147,63 +147,6 @@ final class SloppyPhraseScorer extends Scorer {
     }
   }
 
-  /**
-   * Score a candidate doc for all slop-valid position-combinations (matches) 
-   * encountered while traversing/hopping the PhrasePositions.
-   * <br> The score contribution of a match depends on the distance: 
-   * <br> - highest score for distance=0 (exact match).
-   * <br> - score gets lower as distance gets higher.
-   * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice: 
-   * once for "a b" (distance=0), and once for "b a" (distance=2).
-   * <br>Possibly not all valid combinations are encountered, because for efficiency  
-   * we always propagate the least PhrasePosition. This allows to base on 
-   * PriorityQueue and move forward faster. 
-   * As result, for example, document "a b c b a"
-   * would score differently for queries "a b c"~4 and "c b a"~4, although 
-   * they really are equivalent. 
-   * Similarly, for doc "a b c b a f g", query "c b"~2 
-   * would get same score as "g f"~2, although "c b"~2 could be matched twice.
-   * We may want to fix this in the future (currently not, for performance reasons).
-   */
-  private float phraseFreq() throws IOException {
-    if (!initPhrasePositions()) {
-      return 0.0f;
-    }
-    float freq = 0.0f;
-    numMatches = 0;
-    PhrasePositions pp = pq.pop();
-    int matchLength = end - pp.position;
-    int next = pq.top().position; 
-    while (advancePP(pp)) {
-      if (hasRpts && !advanceRpts(pp)) {
-        break; // pps exhausted
-      }
-      if (pp.position > next) { // done minimizing current match-length 
-        if (matchLength <= slop) {
-          freq += (1.0 / (1.0 + matchLength)); // score match
-          numMatches++;
-          if (!needsScores) {
-            return freq;
-          }
-        }      
-        pq.add(pp);
-        pp = pq.pop();
-        next = pq.top().position;
-        matchLength = end - pp.position;
-      } else {
-        int matchLength2 = end - pp.position;
-        if (matchLength2 < matchLength) {
-          matchLength = matchLength2;
-        }
-      }
-    }
-    if (matchLength <= slop) {
-      freq += (1.0 / (1.0 + matchLength)); // score match
-      numMatches++;
-    }    
-    return freq;
-  }
-
   /** advance a PhrasePosition and update 'end', return false if exhausted */
   private boolean advancePP(PhrasePositions pp) throws IOException {
     if (!pp.nextPosition()) {
@@ -625,7 +568,25 @@ final class SloppyPhraseScorer extends Scorer {
 //      }
 //    }
 //  }
-  
+
+  /**
+   * Score a candidate doc for all slop-valid position-combinations (matches)
+   * encountered while traversing/hopping the PhrasePositions.
+   * <br> The score contribution of a match depends on the distance:
+   * <br> - highest score for distance=0 (exact match).
+   * <br> - score gets lower as distance gets higher.
+   * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice:
+   * once for "a b" (distance=0), and once for "b a" (distance=2).
+   * <br>Possibly not all valid combinations are encountered, because for efficiency
+   * we always propagate the least PhrasePosition. This allows to base on
+   * PriorityQueue and move forward faster.
+   * As result, for example, document "a b c b a"
+   * would score differently for queries "a b c"~4 and "c b a"~4, although
+   * they really are equivalent.
+   * Similarly, for doc "a b c b a f g", query "c b"~2
+   * would get same score as "g f"~2, although "c b"~2 could be matched twice.
+   * We may want to fix this in the future (currently not, for performance reasons).
+   */
   private void ensureFreq() throws IOException {
     if (sloppyFreq == -1) {
       numMatches = 1;

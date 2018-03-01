@@ -19,8 +19,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+/**
+ * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
+ */
 public abstract class IntervalFilter implements IntervalIterator {
 
+  /**
+   * Filter an {@link IntervalIterator} by its outer width, ie the distance between the
+   * start and end of the iterator
+   */
   public static IntervalIterator widthFilter(IntervalIterator in, int minWidth, int maxWidth) {
     return new IntervalFilter(in) {
       @Override
@@ -31,6 +38,10 @@ public abstract class IntervalFilter implements IntervalIterator {
     };
   }
 
+  /**
+   * Filter an {@link IntervalIterator} by its inner width, ie the distance between the
+   * end of its first subiterator and the beginning of its last
+   */
   public static IntervalIterator innerWidthFilter(IntervalIterator in, int minWidth, int maxWidth) {
     return new IntervalFilter(in) {
       @Override
@@ -43,10 +54,16 @@ public abstract class IntervalFilter implements IntervalIterator {
 
   private final IntervalIterator in;
 
+  /**
+   * Create a new filter
+   */
   public IntervalFilter(IntervalIterator in) {
     this.in = in;
   }
 
+  /**
+   * @return {@code true} if the wrapped iterator's interval should be passed on
+   */
   protected abstract boolean accept();
 
   @Override

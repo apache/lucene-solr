@@ -442,7 +442,7 @@ final class WANDScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(String field) {
-    return null;  // nocommit
+    throw new UnsupportedOperationException();
   }
 
   @Override

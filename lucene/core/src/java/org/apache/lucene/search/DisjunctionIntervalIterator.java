@@ -21,6 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.util.PriorityQueue;
 
+/**
+ * Implements the minimum-interval OR algorithm
+ */
 abstract class DisjunctionIntervalIterator implements IntervalIterator {
 
   protected final PriorityQueue<IntervalIterator> queue;
@@ -51,6 +54,9 @@ abstract class DisjunctionIntervalIterator implements IntervalIterator {
     return current.innerWidth();
   }
 
+  /**
+   * Called to repopulate the interval priority queue when moving to a new document
+   */
   protected abstract void fillQueue(int doc) throws IOException;
 
   @Override
