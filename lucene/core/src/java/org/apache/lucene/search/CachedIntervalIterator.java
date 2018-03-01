@@ -19,6 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+/**
+ * An interval iterator which caches its first invocation.
+ *
+ * Useful for two-phase queries that confirm matches by checking that at least one
+ * interval exists in a given document
+ */
 class CachedIntervalIterator extends FilterIntervalIterator {
 
   final Scorer scorer;

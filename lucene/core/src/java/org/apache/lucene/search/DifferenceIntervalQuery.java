@@ -27,6 +27,10 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 
+/**
+ * A query that retrieves documents containing intervals returned from a
+ * {@link DifferenceIntervalFunction} over a minuend query and a subtrahend query
+ */
 public class DifferenceIntervalQuery extends Query {
 
   private final Query minuend;
@@ -34,7 +38,14 @@ public class DifferenceIntervalQuery extends Query {
   private final DifferenceIntervalFunction function;
   private final String field;
 
-  protected DifferenceIntervalQuery(String field, Query minuend, Query subtrahend, DifferenceIntervalFunction function) {
+  /**
+   * Create a new DifferenceIntervalQuery
+   * @param field       the field to query
+   * @param minuend     the subquery to filter
+   * @param subtrahend  the subquery to filter by
+   * @param function    a {@link DifferenceIntervalFunction} to combine the minuend and subtrahend
+   */
+  public DifferenceIntervalQuery(String field, Query minuend, Query subtrahend, DifferenceIntervalFunction function) {
     this.minuend = minuend;
     this.subtrahend = subtrahend;
     this.function = function;

@@ -54,15 +54,13 @@ public enum ScoreMode {
     }
   },
 
+  /**
+   * Produced scorers will allow visiting all matches, and expose positions
+   */
   COMPLETE_POSITIONS {
     @Override
     public boolean needsScores() {
       return false;
-    }
-
-    @Override
-    public boolean needsPositions() {
-      return true;
     }
 
     @Override
@@ -92,10 +90,10 @@ public enum ScoreMode {
    */
   public abstract boolean needsScores();
 
+  /**
+   * The minimum flags to be passed to {@link org.apache.lucene.index.TermsEnum#postings(PostingsEnum, int)}
+   */
   public abstract int minRequiredPostings();
 
-  public boolean needsPositions() {
-    return needsScores();
-  }
 
 }

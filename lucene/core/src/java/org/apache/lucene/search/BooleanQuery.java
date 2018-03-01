@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 
 /** A Query that matches documents matching boolean combinations of other
@@ -201,7 +202,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     BooleanQuery query = this;
-    if (scoreMode.needsScores() == false && scoreMode.needsPositions() == false) {
+    if (scoreMode.minRequiredPostings() == PostingsEnum.NONE) {
       query = rewriteNoScoring();
     }
     return new BooleanWeight(query, searcher, scoreMode, boost);

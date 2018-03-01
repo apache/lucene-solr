@@ -21,6 +21,11 @@ import java.util.Arrays;
 
 /**
  * Constructor functions for interval-based queries
+ *
+ * These queries use {@link IntervalFunction} or {@link DifferenceIntervalFunction}
+ * classes, implementing minimum-interval algorithms taken from the paper
+ * <a href="http://vigna.di.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics.pdf">
+ * Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
  */
 public final class Intervals {
 
