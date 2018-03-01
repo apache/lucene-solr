@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.util.PriorityQueue;
 
@@ -71,13 +70,13 @@ abstract class DisjunctionIntervalIterator implements IntervalIterator {
     int start = current.start(), end = current.end();
     while (queue.size() > 0 && contains(queue.top(), start, end)) {
       IntervalIterator it = queue.pop();
-      if (it != null && it.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+      if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
         queue.add(it);
       }
     }
     if (queue.size() == 0) {
       current = IntervalIterator.EMPTY;
-      return Intervals.NO_MORE_INTERVALS;
+      return IntervalIterator.NO_MORE_INTERVALS;
     }
     current = queue.top();
     return current.start();

@@ -105,7 +105,7 @@ final class SloppyPhraseScorer extends Scorer {
     @Override
     public int nextInterval() throws IOException {
       if (pq.size() < phrasePositions.length)
-        return Intervals.NO_MORE_INTERVALS;
+        return IntervalIterator.NO_MORE_INTERVALS;
       currentEnd = nextEnd;
       PhrasePositions pp = pq.pop();
       start = pp.realPosition;
@@ -143,7 +143,7 @@ final class SloppyPhraseScorer extends Scorer {
       if (matchLength <= slop) {
         return start;
       }
-      return Intervals.NO_MORE_INTERVALS;
+      return IntervalIterator.NO_MORE_INTERVALS;
     }
   }
 
@@ -630,7 +630,7 @@ final class SloppyPhraseScorer extends Scorer {
     if (sloppyFreq == -1) {
       numMatches = 1;
       sloppyFreq = intervals.score();
-      while (intervals.nextInterval() != Intervals.NO_MORE_INTERVALS) {
+      while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
         sloppyFreq += intervals.score();
         numMatches++;
       }
@@ -670,7 +670,7 @@ final class SloppyPhraseScorer extends Scorer {
       public boolean matches() throws IOException {
         sloppyFreq = -1;
         intervals.reset(docID());
-        return intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
+        return intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
       }
 
       @Override

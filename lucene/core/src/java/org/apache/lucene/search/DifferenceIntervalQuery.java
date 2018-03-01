@@ -138,7 +138,7 @@ public class DifferenceIntervalQuery extends Query {
               if (subtrahendScorer.docID() < approximation.docID()) {
                 subtrahendScorer.iterator().advance(approximation.docID());
               }
-              return intervals.reset(approximation.docID()) && intervals.nextInterval() != Intervals.NO_MORE_INTERVALS;
+              return intervals.reset(approximation.docID()) && intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
             }
 
             @Override

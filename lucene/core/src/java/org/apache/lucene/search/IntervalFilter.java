@@ -55,7 +55,7 @@ public abstract class IntervalFilter implements IntervalIterator {
     do {
       next = in.nextInterval();
     }
-    while (accept() == false && next != Intervals.NO_MORE_INTERVALS);
+    while (accept() == false && next != IntervalIterator.NO_MORE_INTERVALS);
     return next;
   }
 

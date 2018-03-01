@@ -125,6 +125,18 @@ public abstract class Scorer {
    */
   public abstract DocIdSetIterator iterator();
 
+  /**
+   * Return a {@link IntervalIterator} over matching intervals for a given field
+   *
+   * Consumers should call {@link IntervalIterator#reset(int)} when the parent
+   * Scorer's {@link DocIdSetIterator} has moved to a new document, and then
+   * iterate over the intervals by repeatedly calling {@link IntervalIterator#nextInterval()}
+   * until {@link IntervalIterator#NO_MORE_INTERVALS} is returned.
+   *
+   * @param field The field to retrieve intervals for
+   * @return an {@link IntervalIterator}, or {@code null} if no intervals are available
+   *         for the given field
+   */
   public abstract IntervalIterator intervals(String field);
 
   /**
