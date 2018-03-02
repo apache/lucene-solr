@@ -882,6 +882,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
                 shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
+            // some replicas did not receive the updates, exception must be notified to clients
+            errorsForClient.add(error);
           } else {
             log.warn("Core " + cloudDesc.getCoreNodeName() + " is no longer the leader for " + collection + " "
                 + shardId + " or we tried to put ourself into LIR, no request recovery command will be sent!");
