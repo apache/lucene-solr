@@ -248,6 +248,12 @@ public class ScheduledTriggers implements Closeable {
         // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
         return false;
       }
+      if (event.isIgnored())  {
+        log.debug("-------- Ignoring event: " + event);
+        event.getProperties().put(TriggerEvent.IGNORED, true);
+        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Event was ignored.");
+        return true; // always return true for ignored events
+      }
       // even though we pause all triggers during action execution there is a possibility that a trigger was already
       // running at the time and would have already created an event so we reject such events during cooldown period
       if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTime()) {

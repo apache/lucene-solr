@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.AtomicDouble;
@@ -1632,5 +1634,67 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
     docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     assertEquals(5, docCollection.getReplicas().size());
+  }
+
+  public void testScheduledTrigger() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    // this collection will place 2 cores on 1st node and 1 core on 2nd node
+    String collectionName = "testScheduledTrigger";
+    CollectionAdminRequest.createCollection(collectionName, 1, 3)
+        .setMaxShardsPerNode(5).process(solrClient);
+    waitForState("", collectionName, clusterShape(1, 3));
+
+    // create a policy which allows only 1 core per node thereby creating a violation for the above collection
+    String setClusterPolicy = "{\n" +
+        "  \"set-cluster-policy\" : [\n" +
+        "    {\"cores\" : \"<2\", \"node\" : \"#EACH\"}\n" +
+        "  ]\n" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicy);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // start a new node which can be used to balance the cluster as per policy
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(10);
+
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'sched_trigger_integration1'," +
+        "'event' : 'scheduled'," +
+        "'startTime' : '" + new Date().toInstant().toString() + "'" +
+        "'every' : '+3SECONDS'" +
+        "'actions' : [" +
+          "{'name' : 'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+          "{'name' : 'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
+          "{'name' : 'recorder', 'class': '" + ContextPropertiesRecorderAction.class.getName() + "'}" +
+        "]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    assertTrue("ScheduledTrigger did not fire within 20 seconds", triggerFiredLatch.await(20, TimeUnit.SECONDS));
+    assertEquals(1, events.size());
+    Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
+    assertNotNull(actionContextProps);
+    TriggerEvent event = events.iterator().next();
+    List<SolrRequest> operations = (List<SolrRequest>) actionContextProps.get("operations");
+    assertNotNull(operations);
+    assertEquals(1, operations.size());
+    for (SolrRequest operation : operations) {
+      SolrParams params = operation.getParams();
+      assertEquals(newNode.getNodeName(), params.get("targetNode"));
+    }
+  }
+
+  private static AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
+
+  public static class ContextPropertiesRecorderAction extends TestEventMarkerAction {
+    @Override
+    public void process(TriggerEvent event, ActionContext actionContext) {
+      actionContextPropertiesRef.set(actionContext.getProperties());
+      super.process(event, actionContext);
+    }
   }
 }

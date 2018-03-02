@@ -291,6 +291,13 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  /**
+   * Wait for all Solr nodes to be live
+   *
+   * @param timeout number of seconds to wait before throwing an IllegalStateException
+   * @throws IOException if there was an error communicating with ZooKeeper
+   * @throws InterruptedException if the calling thread is interrupted during the wait operation
+   */
   public void waitForAllNodes(int timeout) throws IOException, InterruptedException {
     waitForAllNodes(jettys.size(), timeout);
   }
