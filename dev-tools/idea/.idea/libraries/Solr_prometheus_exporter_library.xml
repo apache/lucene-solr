@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr prometheus exporter library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/prometheus-exporter/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/prometheus-exporter/lib" recursive="false" />
+  </library>
+</component>
