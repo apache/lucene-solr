@@ -1,0 +1,288 @@
+= Monitoring Solr with Prometheus and Grafana
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+You can monitor Solr using solr-exporter that exposes Solr's metrics to https://prometheus.io[Prometheus], and visualize metrics using https://grafana.com[Grafana].
+
+It allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#metrics-api,Metrics API>> but also facet counts which come from <<searching.adoc#searching,Searching>>.
+
+.solr-exporter Diagram
+image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
+
+This feature is experimental status.
+
+== Running solr-exporter
+
+You can start solr-exporter by running `./bin/solr-exporter` from the solr-exporter directory.
+
+[source,plain]
+----
+$ cd ./contrib/prometheus-exporter
+$ ./bin/solr-exporter -p 9983 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
+----
+
+If you are on Windows platform, you can start solr-exporter by running `.\bin\solr-exporter.cmd` instead.
+
+[source,plain]
+----
+> cd .\contrib\prometheus
+> .\bin\solr-exporter.cmd -p 9983 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
+----
+
+You can also connect to Solr in SolrCloud mode like this.
+
+[source,plain]
+----
+$ cd ./contrib/prometheus
+$ ./bin/solr-exporter -p 9983 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
+----
+
+See command help:
+
+[source,plain]
+----
+$ ./bin/solr-exporter -h
+usage: SolrCollector [-h] [-v] [-p PORT] [-b BASE_URL] [-z ZK_HOST] [-f CONFIG]
+                     [-n NUM_THREADS]
+
+Prometheus exporter for Apache Solr.
+
+optional arguments:
+  -h, --help             show this help message and exit
+  -p PORT, --port PORT   solr-exporter listen port
+  -b BASE_URL, --baseurl BASE_URL
+                         specify Solr base URL when connecting  to Solr in standalone mode (for
+                         example 'http://localhost:8983/solr')
+  -z ZK_HOST, --zkhost ZK_HOST
+                         specify  ZooKeeper  connection  string  when  connecting  to  Solr  in
+                         SolrCloud mode (for example 'localhost:2181/solr')
+  -f CONFIG, --config-file CONFIG
+                         specify configuration file
+  -n NUM_THREADS, --num-thread NUM_THREADS
+                         specify number of threads
+----
+
+The Solr's metrics exposed by solr-exporter can see at the following URL.
+
+http://localhost:9983/metrics[http://localhost:9983/metrics]
+
+
+== solr-exporter Configuration
+
+The configuration is in `./config/solr-exporter-config.xml`. An example with all possible options:
+
+[source,xml]
+----
+<config>
+
+  <rules>
+
+    <ping>
+      <lst name="request">
+        <lst name="query">
+          <str name="path">/admin/ping</str>
+        </lst>
+        <arr name="jsonQueries">
+          <str>
+            . as $object | $object |
+            (if $object.status == "OK" then 1.0 else 0.0 end) as $value |
+            {
+              name         : "solr_ping",
+              type         : "GAUGE",
+              help         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+              label_names  : [],
+              label_values : [],
+              value        : $value
+            }
+          </str>
+        </arr>
+      </lst>
+    </ping>
+
+    <metrics>
+      <lst name="request">
+        <lst name="query">
+          <str name="path">/admin/metrics</str>
+          <lst name="params">
+            <str name="group">all</str>
+            <str name="type">all</str>
+            <str name="prefix"></str>
+            <str name="property"></str>
+          </lst>
+        </lst>
+        <arr name="jsonQueries">
+          <!--
+            jetty metrics
+          -->
+          <str>
+            .metrics["solr.jetty"] | to_entries | .[] | select(.key | startswith("org.eclipse.jetty.server.handler.DefaultHandler")) | select(.key | endswith("xx-responses")) as $object |
+            $object.key | split(".") | last | split("-") | first as $status |
+            $object.value.count as $value |
+            {
+            name         : "solr_metrics_jetty_response_total",
+            type         : "COUNTER",
+            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            label_names  : ["status"],
+            label_values : [$status],
+            value        : $value
+            }
+          </str>
+
+...
+
+        </arr>
+      </lst>
+    </metrics>
+
+    <collections>
+      <lst name="request">
+        <lst name="query">
+          <str name="path">/admin/collections</str>
+          <lst name="params">
+            <str name="action">CLUSTERSTATUS</str>
+          </lst>
+        </lst>
+        <arr name="jsonQueries">
+          <str>
+            .cluster.live_nodes | length as $value|
+            {
+              name         : "solr_collections_live_nodes",
+              type         : "GAUGE",
+              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              label_names  : [],
+              label_values : [],
+              value        : $value
+            }
+          </str>
+
+...
+
+        </arr>
+      </lst>
+    </collections>
+
+    <search>
+      <lst name="request">
+        <lst name="query">
+          <str name="collection">collection1</str>
+          <str name="path">/select</str>
+          <lst name="params">
+            <str name="q">*:*</str>
+            <str name="start">0</str>
+            <str name="rows">0</str>
+            <str name="json.facet">
+              {
+                category: {
+                  type: terms,
+                  field: cat
+                }
+              }
+            </str>
+          </lst>
+        </lst>
+        <arr name="jsonQueries">
+          <str>
+            .facets.category.buckets[] as $object |
+            $object.val as $term |
+            $object.count as $value |
+            {
+              name         : "solr_facets_category",
+              type         : "GAUGE",
+              help         : "Category facets",
+              label_names  : ["term"],
+              label_values : [$term],
+              value        : $value
+            }
+          </str>
+        </arr>
+      </lst>
+    </search>
+
+  </rules>
+
+</config>
+----
+
+|===
+|Name|Description
+
+|ping|Scrape <<ping.adoc#ping,Ping>> response.
+|metrics|Scrape <<metrics-reporting.adoc#metrics-api,Metrics API>> response.
+|collections|Scrape <<collections-api.adoc#collections-api,Collections API>> response.
+|search|Scrape <<searching.adoc#searching,Search API>> response.
+|*.query|Query parameter for each features. You can specify `collection`, `core`, `path`, and `params`.
+|*.jsonQueries|JSON Query that is jq syntax. For more details, see https://stedolan.github.io/jq/manual/[https://stedolan.github.io/jq/manual/].
+|===
+
+jq query has to output JSON in the following format.
+
+[source,json]
+----
+{
+  name         : "solr_ping",
+  type         : "GAUGE",
+  help         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+  label_names  : ["base_url","core"],
+  label_values : ["http://localhost:8983/solr","collection1"],
+  value        : 1.0
+}
+----
+
+It will be converted to the following exposition format.
+
+[source,plain]
+----
+# TYPE solr_ping gauge
+# HELP solr_ping See following URL: https://lucene.apache.org/solr/guide/ping.html
+solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
+----
+
+|===
+|Name|Description
+
+|name|The metric name to set. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+|type|The type of the metric, can be `COUNTER`, `GAUGE`, `SUMMARY`, `HISTOGRAM` or `UNTYPED`. For more detauils, see https://prometheus.io/docs/concepts/metric_types/[https://prometheus.io/docs/concepts/metric_types/].
+|help|Help text for the metric.
+|label_names|Label names for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+|label_values|Label values for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+|value|Value for the metric. Value must be set to Double type.
+|===
+
+
+== Prometheus Configuration
+
+You need to specify the solr-exporter listen address into `scrape_configs` in `prometheus.yml`. See following example:
+
+[source,plain]
+----
+scrape_configs:
+  - job_name: 'solr'
+    static_configs:
+      - targets: ['localhost:9983']
+----
+
+When you apply the above settings to prometheus, it will start to pull Solr's metrics from solr-exporter.
+
+
+== Grafana Dashboard
+
+A Grafana sample dashboard is provided at the following JSON file.
+
+`./contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`
+
+.Grafana Dashboard
+image::images/monitoring-solr-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
