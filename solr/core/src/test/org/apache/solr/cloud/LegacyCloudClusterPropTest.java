@@ -58,7 +58,6 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
       "numShards",
       "collection.configName",
       "name",
-      "replicaType",
       "shard",
       "collection",
       "coreNodeName"
