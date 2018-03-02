@@ -324,6 +324,14 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
+    <configuration default="false" name="Solr prometheus-exporter contrib" type="JUnit" factoryName="JUnit">
+      <module name="prometheus-exporter" />
+      <option name="TEST_OBJECT" value="pattern" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/prometheus-exporter" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
+    </configuration>
     <configuration default="false" name="Solr uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -382,8 +390,9 @@
       <item index="37" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
       <item index="38" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
       <item index="39" class="java.lang.String" itemvalue="JUnit.Solr ltr contrib" />
-      <item index="40" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
-      <item index="41" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
+      <item index="40" class="java.lang.String" itemvalue="JUnit.Solr prometheus-exporter contrib" />
+      <item index="41" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
+      <item index="42" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
     </list>
   </component>
 </project>
