@@ -140,8 +140,7 @@ solrAdminApp.controller('CollectionsController',
                 maxShardsPerNode: coll.maxShardsPerNode
             };
             if (coll.shards) params.shards = coll.shards;
-            if (coll.routerField) params.routerField = coll.routerField;
-            if (coll.routerName) params.routerName = coll.routerName;
+            if (coll.routerField) params["router.field"] = coll.routerField;
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
