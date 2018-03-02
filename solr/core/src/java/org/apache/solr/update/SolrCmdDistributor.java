@@ -278,24 +278,14 @@ public class SolrCmdDistributor implements Closeable {
       try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
         client.request(req.uReq);
       } catch (Exception e) {
-        try {
-          // if false, then the node is probably not "live" anymore
-          // and we do not need to send a recovery message
-          Throwable rootCause = SolrException.getRootCause(e);
-          log.error("Setting up to try to start recovery on replica {}", req.node.getUrl(), rootCause);
-          req.cmd.getReq().getCore().getCoreContainer().getZkController().ensureReplicaInLeaderInitiatedRecovery(
-              req.cmd.getReq().getCore().getCoreContainer(),
-              req.node.getCollection(),
-              req.node.getShardId(),
-              req.node.getNodeProps(),
-              req.cmd.getReq().getCore().getCoreDescriptor(),
-              false /* forcePublishState */
-          );
-        } catch (Exception exc) {
-          Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
-          log.error("Leader failed to set replica " +
-              req.node.getUrl() + " state to DOWN due to: " + setLirZnodeFailedCause, setLirZnodeFailedCause);
+        SolrException.log(log, e);
+        Error error = new Error();
+        error.e = e;
+        error.req = req;
+        if (e instanceof SolrException) {
+          error.statusCode = ((SolrException) e).code();
         }
+        errors.add(error);
       }
       
       return;
