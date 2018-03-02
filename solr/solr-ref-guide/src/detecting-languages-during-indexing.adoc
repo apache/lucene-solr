@@ -20,7 +20,7 @@ Solr can identify languages and map text to language-specific fields during inde
 
 Solr supports three implementations of this feature:
 
-* Tika's language detection feature: http://tika.apache.org/0.10/detection.html
+* Tika's language detection feature: https://tika.apache.org/1.17/detection.html
 * LangDetect language detection: https://github.com/shuyo/language-detection
 * OpenNLP language detection: http://opennlp.apache.org/docs/1.8.4/manual/opennlp.html#tools.langdetect
 
