@@ -208,6 +208,11 @@ public class ComputePlanAction extends TriggerActionBase {
           event.getProperties().put(START, start);
         }
         break;
+      case SCHEDULED:
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP);
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        suggester = session.getSuggester(action);
+        break;
       default:
         throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate and metric. Received: " + event.getEventType());
     }
