@@ -23,27 +23,31 @@ import java.util.HashMap;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
+/**Each instance represents an attribute that is being tracked by the framework such as , freedisk, cores etc
+ *
+ */
 public class Cell implements MapWriter {
   final int index;
+  final Suggestion.ConditionType type;
   final String name;
   Object val, approxVal;
+  Row row;
 
-  public Cell(int index, String name, Object val) {
-    this.index = index;
-    this.name = name;
-    this.val = val;
-  }
-
-  public Cell(int index, String name, Object val, Object approxVal) {
+  public Cell(int index, String name, Object val, Object approxVal, Suggestion.ConditionType type, Row row) {
     this.index = index;
     this.name = name;
     this.val = val;
     this.approxVal = approxVal;
+    this.type = type;
+    this.row = row;
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(name, val);
+  }
+  public Row getRow(){
+    return row;
   }
 
   @Override
@@ -52,7 +56,7 @@ public class Cell implements MapWriter {
   }
 
   public Cell copy() {
-    return new Cell(index, name, val, approxVal);
+    return new Cell(index, name, val, approxVal, this.type, row);
   }
 
   public String getName() {

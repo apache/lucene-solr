@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
@@ -63,12 +64,16 @@ public abstract class Suggester implements MapWriter {
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
     if (hint.multiValued) {
-      Collection<?> values = value instanceof Collection ? (Collection)value : Collections.singletonList(value);
+      Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
       ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
     } else {
       hints.put(hint, value == null ? null : String.valueOf(value));
     }
     return this;
+  }
+
+  public CollectionParams.CollectionAction getAction() {
+    return null;
   }
 
   /**
@@ -80,7 +85,7 @@ public abstract class Suggester implements MapWriter {
     return this;
   }
 
-  protected boolean isNodeSuitable(Row row) {
+  protected boolean isNodeSuitableForReplicaAddition(Row row) {
     if (!row.isLive) return false;
     if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
     if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
@@ -115,7 +120,7 @@ public abstract class Suggester implements MapWriter {
       if (srcNodes != null && !srcNodes.isEmpty()) {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
-          if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
+          if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
             session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
         }
       }
@@ -185,7 +190,7 @@ public abstract class Suggester implements MapWriter {
   boolean containsNewErrors(List<Violation> violations) {
     for (Violation v : violations) {
       int idx = originalViolations.indexOf(v);
-      if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
+      if (idx < 0 /*|| originalViolations.get(idx).isLessSerious(v)*/) return true;
     }
     return false;
   }
@@ -210,14 +215,14 @@ public abstract class Suggester implements MapWriter {
       if (!isAllowed(e.getKey(), Hint.COLL)) continue;
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
-        if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
+        if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
         replicaList.add(new Pair<>(shard.getValue().get(0), r));
       }
     }
   }
 
   List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences,rows);
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, rows);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
@@ -230,11 +235,6 @@ public abstract class Suggester implements MapWriter {
     return errors;
   }
 
-  ArrayList<Row> getModifiedMatrix(List<Row> matrix, Row tmpRow, int i) {
-    ArrayList<Row> copy = new ArrayList<>(matrix);
-    copy.set(i, tmpRow);
-    return copy;
-  }
 
   protected boolean isAllowed(Object v, Hint hint) {
     Object hintVal = hints.get(hint);
@@ -263,7 +263,16 @@ public abstract class Suggester implements MapWriter {
         }
       }
 
-    }),
+    }) {
+      @Override
+      public Object parse(Object v) {
+        if (v instanceof Map) {
+          Map map = (Map) v;
+          return Pair.parse(map);
+        }
+        return super.parse(v);
+      }
+    },
     SRC_NODE(true),
     TARGET_NODE(true),
     REPLICATYPE(false, o -> {
@@ -277,7 +286,7 @@ public abstract class Suggester implements MapWriter {
     }, hintValVsActual -> {
       Double hintFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.first(), false);
       Double actualFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.second(), false);
-      if(actualFreediskInGb == null) return false;
+      if (actualFreediskInGb == null) return false;
       return actualFreediskInGb > hintFreediskInGb;
     });
 
@@ -304,6 +313,17 @@ public abstract class Suggester implements MapWriter {
       this.valueValidator = testval;
     }
 
+    public static Hint get(String s) {
+      for (Hint hint : values()) {
+        if (hint.name().equals(s)) return hint;
+      }
+      return null;
+    }
+
+    public Object parse(Object v) {
+      return v;
+    }
+
 
   }
 
@@ -316,6 +336,7 @@ public abstract class Suggester implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("action", String.valueOf(getAction()));
     ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
   }
 }

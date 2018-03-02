@@ -32,7 +32,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
 
 public class ReplicaInfo implements MapWriter {
-//  private final Replica replica;
   private final String name;
   private String core, collection, shard;
   private Replica.Type type;
