@@ -25,6 +25,8 @@
   <dependencies>
     <dependency org="org.locationtech.spatial4j" name="spatial4j" rev="${/org.locationtech.spatial4j/spatial4j}" conf="compile"/>
 
+    <dependency org="io.sgr" name="s2-geometry-library-java" rev="${/io.sgr/s2-geometry-library-java}" conf="compile"/>
+
     <dependency org="org.locationtech.spatial4j" name="spatial4j" rev="${/org.locationtech.spatial4j/spatial4j}" conf="test">
       <artifact name="spatial4j" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
