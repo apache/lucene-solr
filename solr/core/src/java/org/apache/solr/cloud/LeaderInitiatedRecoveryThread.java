@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -217,7 +218,8 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               (rootCause instanceof ConnectException ||
                   rootCause instanceof ConnectTimeoutException ||
                   rootCause instanceof NoHttpResponseException ||
-                  rootCause instanceof SocketException);
+                  rootCause instanceof SocketException ||
+                  rootCause instanceof UnknownHostException);
 
           SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover", t);
           

@@ -37,6 +37,8 @@ Bug Fixes
 
 * SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
 
+* SOLR-11993: LeaderInitiatedRecoveryThread does not retry on UnknownHostException (shalin, Cao Manh Dat, Steve Rowe)
+
 ==================  6.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
