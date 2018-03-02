@@ -147,7 +147,7 @@ Suggestions are operations recommended by the system according to the policies a
 
 Suggestions are made only if there are `violations` to active policies. The `operation` section of the response uses the defined preferences to identify the target node.
 
-The API is available at `/admin/autocaling/suggestion`. Here is an example output from a suggestion request:
+The API is available at `/admin/autoscaling/suggestion`. Here is an example output from a suggestion request:
 
 [source,json]
 ----
