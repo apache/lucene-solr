@@ -205,6 +205,9 @@ Bug Fixes
 
 * SOLR-10720: Aggressive removal of a collection breaks cluster status API. (Alexey Serba, shalin)
 
+* SOLR-12050: UTILIZENODE does not enforce policy rules (hossman, noble)
+
+
 Optimizations
 ----------------------
 
@@ -306,6 +309,8 @@ Other Changes
 * SOLR-10809: Get precommit lint warnings out of Solr core (Erick Erickson)
 
 * SOLR-12028: BadApple and AwaitsFix annotations usage (Erick Erickson, Uwe Schindler)
+
+* SOLR-12031: Refactor Policy framework to make simulated changes affect more than a single node (noble)
 
 ==================  7.2.1 ==================
 

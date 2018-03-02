@@ -151,19 +151,20 @@ public class Clause implements MapWriter, Comparable<Clause> {
   class Condition {
     final String name;
     final Object val;
+    final Suggestion.ConditionType varType;
     final Operand op;
 
     Condition(String name, Object val, Operand op) {
       this.name = name;
       this.val = val;
       this.op = op;
+      varType = Suggestion.getTagType(name);
     }
 
 
     boolean isPass(Object inputVal) {
       if (inputVal instanceof ReplicaCount) inputVal = ((ReplicaCount) inputVal).getVal(type);
-      Suggestion.ConditionType validator = Suggestion.getTagType(name);
-      if (validator == Suggestion.ConditionType.LAZY) { // we don't know the type
+      if (varType == Suggestion.ConditionType.LAZY) { // we don't know the type
         return op.match(parseString(val), parseString(inputVal)) == PASS;
       } else {
         return op.match(val, validate(name, inputVal, false)) == PASS;

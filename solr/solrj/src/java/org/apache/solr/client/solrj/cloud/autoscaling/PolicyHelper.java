@@ -223,6 +223,27 @@ public class PolicyHelper {
     return suggestionCtx.getSuggestions();
   }
 
+
+  /**Use this to dump the state of a system and to generate a testcase
+   */
+  public static void logState(SolrCloudManager cloudManager, Suggester suggester) {
+    if(log.isTraceEnabled()) {
+      log.trace("LOGSTATE: {}",
+          Utils.toJSONString((MapWriter) ew -> {
+            ew.put("liveNodes", cloudManager.getClusterStateProvider().getLiveNodes());
+            ew.put("suggester", suggester);
+            if (suggester.session.nodeStateProvider instanceof MapWriter) {
+              MapWriter nodeStateProvider = (MapWriter) suggester.session.nodeStateProvider;
+              nodeStateProvider.writeMap(ew);
+            }
+            try {
+              ew.put("autoscalingJson", cloudManager.getDistribStateManager().getAutoScalingConfig());
+            } catch (InterruptedException e) {
+            }
+          }));
+    }
+  }
+
   public enum Status {
     NULL,
     //it is just created and not yet used or all operations on it has been competed fully
