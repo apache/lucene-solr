@@ -109,7 +109,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     //TODO fix Solr test infra so that this /____v2/ becomes /api/
     HttpPost post = new HttpPost(baseUrl + "/____v2/c");
     post.setEntity(new StringEntity("{\n" +
-        "  \"create-routed-alias\" : {\n" +
+        "  \"create-alias\" : {\n" +
         "    \"name\": \"" + aliasName + "\",\n" +
         "    \"router\" : {\n" +
         "      \"name\": \"time\",\n" +
@@ -184,7 +184,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=xml" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -243,7 +243,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testAliasNameMustBeValid() throws Exception {
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=735741!45" +  // ! not allowed
         "&router.field=evt_dt" +
@@ -259,7 +259,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testRandomRouterNameFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -275,7 +275,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testTimeStampWithMsFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -291,7 +291,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testBadDateMathIntervalFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -307,7 +307,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testNegativeFutureFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -323,7 +323,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testUnParseableFutureFails() throws Exception {
     final String aliasName = "testAlias";
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +

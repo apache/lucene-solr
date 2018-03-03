@@ -476,95 +476,82 @@ http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anoth
 [[createalias]]
 == CREATEALIAS: Create or Modify an Alias for a Collection
 
-The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command.
+The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name
+already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command. Aliases
+come in 2 flavors: routed and non-routed.
+
+Non-routed aliases are simpler and can serve to rename a collection or to distribute queries across several collections.
+While it is possible to send updates to an alias spanning multiple collections, non-routed alias have no logic for
+distributing documents among the referenced collections so all updates will go to the first collection in the list.
 
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
 
-=== CREATEALIAS Parameters
+Routed aliases are more complex to configure, but include logic for automatically inspecting a field on the document
+and using the value in that field to select a destination collection. Additionally the routed alias automates the
+partitioning of data across a series of collections by creating new collections periodically. This feature allows for
+indefinite indexing of data without degradation of performance otherwise experienced due to the continuous growth of
+an index. As new data arrives, a field on the document is inspected and the document is then potentially re-routed to
+another collection. The underlying collections can can be queried independently but usually the alias will be used.
+These collections are created automatically on the fly as new data arrives based on the parameters supplied in this
+command. Also for very high volume use cases or for use cases requiring only a limited span of data to be retained,
+collections older than a given age can be deleted. This delete of old collections only occurs if new documents are
+sent to the alias.
 
-`name`::
-The alias name to be created. This parameter is required.
-
-`collections`::
-A comma-separated list of collections to be aliased. The collections must already exist in the cluster. This parameter is required.
-
-`async`::
-Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
-
-=== CREATEALIAS Response
-
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file.
-
-=== Examples using CREATEALIAS
-
-*Input*
-
-Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
+*NOTE:* Presently this is only supported for temporal fields stored as a
+<<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
+well ordered field types may be added in future versions.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
+localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
-----
-
-[[createroutedalias]]
-== CREATEROUTEDALIAS: Create an alias that partitions data
-
-CREATEROUTEDALIAS will create a special type of alias that automates the partitioning of data across a series of
-collections. This feature allows for indefinite indexing of data without degradation of performance otherwise
-experienced due to the continuous growth of an index. As new data arrives, a field on the document is inspected and
-the document is then potentially re-routed to another collection. The underlying collections can
-can be queried independently but more likely the alias created by this command will be used. These collections are created
-automatically on the fly as new data arrives based on the parameters supplied in this command.
-
-*NOTE* Presently only partitioning of time based data is available, though other schemes may become available in
-the future.
-[source,text]
-----
-localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
-----
-
-If run on Jan 15, 2018 The above will create an alias named timedata, that contains collections with names such as
-`timedata` and an initial collection named `timedata_2018_01_15`. Updates sent to this alias with a (required) value
-in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60 minutes of 2018-01-15. After
-2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted. As soon as the system receives a
-document for an allowable time window for which there is no collection it will automatically create the next required
-collection (and potentially any intervening collections if router.interval is smaller than router.maxFutureMs). Both
-the initial collection and any subsequent collections will be created using the specified configset. All Collection
-creation parameters other than `name` are allowed, prefixed by `create-collection.`
+If run on Jan 15, 2018 The above will create an alias named timedata, that contains collections with names prefixed with
+`timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
+alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
+minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
+As soon as the system receives a document for an allowable time window for which there is no collection it will
+automatically create the next required collection (and potentially any intervening collections if router.interval is
+smaller than router.maxFutureMs). Both the initial collection and any subsequent collections will be created using
+the specified configset. All Collection creation parameters other than `name` are allowed, prefixed
+by `create-collection.`
 
 This means that one could (for example) partition their collections by day, and within each daily collection route
 the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule based replica
 placement strategies may also be used. The values supplied in this command for collection creation will be retained
 in alias metadata, and can be verified by inspecting aliases.json in zookeeper.
 
-=== CREATEROUTEDALIAS Parameters
+*NOTE:* Presently only updates are routed and queries are distributed to all collections in the alias, but future
+features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
+a filter on the routed field.
+
+=== CREATEALIAS Parameters
 
 `name`::
-The alias name to be created. This parameter is required, and also functions as a prefix for the names of the
-dependent collections that will be created. It must therefore adhere to normal requirements for alias and collection
-naming.
+The alias name to be created. This parameter is required. If the alias is to be routed it also functions
+as a prefix for the names of the dependent collections that will be created. It must therefore adhere to normal
+requirements for collection naming.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+==== Non-Routed Alias Parameters
+
+`collections`::
+A comma-separated list of collections to be aliased. The collections must already exist in the cluster.
+This parameter signals the creation of a simple (non-routed) alias. If it is present all routing parameters are
+prohibited. If routing parameters are present this parameter is prohibited.
+
+==== Routed Alias Parameters
 
 `router.start`::
 The start date/time of data for this time routed alias in Solr's standard date/time format (ISO-8601 or "NOW"
 optionally with "date math").
 The first collection created for the alias will be internally named after this value.
 If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then
-it will yield an error since it can't be routed.
-This date/time MUST NOT have a milliseconds component other than 0.
-Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work just fine.
-This param is required.
+it will yield an error since it can't be routed. This date/time MUST NOT have a milliseconds component other than 0.
+Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work
+just fine. This param is required.
 
 `TZ`::
 The timezone to be used when evaluating any date math in router.start or router.interval.  This is equivalent to the
@@ -604,17 +591,34 @@ are identical in requirements and naming except that we insist that the configse
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
 
-`async`::
-Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+=== CREATEALIAS Response
 
-=== CREATEROUTEDALIAS Response
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the
+`aliases.json` file. The initial collection for routed aliases should also be visible in various parts of the admin UI.
 
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the
-creation of the alias and the values of the associated metadata, you can look in the Solr Admin UI, under the Cloud
-section and find the `aliases.json` file. The initial collection should also be visible in various parts
-of the admin UI.
+=== Examples using CREATEALIAS
 
-=== Examples using CREATEROUTEDALIAS
+*Input*
+
+Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">122</int>
+  </lst>
+</response>
+----
 
 Create an alias named "myTimeData" for data begining on `2018-01-15` in the UTC time zone and partitioning daily
 based on the `evt_dt` field in the incomming documents. Data more than an hour beyond the latest (most recent)
@@ -625,7 +629,7 @@ partiton is to be rejected and collections are created using a config set named 
 
 [source,text]
 ----
-localhost:8983/solr/admin/collections?action=CREATEROUTEDALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
 *Output*
