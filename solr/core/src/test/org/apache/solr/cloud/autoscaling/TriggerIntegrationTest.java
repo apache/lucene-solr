@@ -1636,6 +1636,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(5, docCollection.getReplicas().size());
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11066")
   public void testScheduledTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
