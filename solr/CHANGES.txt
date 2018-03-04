@@ -58,6 +58,9 @@ Upgrade Notes
 * LUCENE-8161: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.  This new version
   of JTS is now dual-licensed to include a BSD style license.
 
+* SOLR-12011: Replicas which are not up-to-date are not allowed to become leader. Use FORCELEADER API to
+  allow these replicas become leader.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -215,6 +218,8 @@ Bug Fixes
 * SOLR-11843: Admin UI collection creation was not properly handling the router.field and router.name parameters.
   Also changed the display label in the Admin UI from routerField to router.field to match the actual API.
   (Shawn Heisey via Cassandra Targett)
+
+* SOLR-12011: Consistence problem when in-sync replicas are DOWN. (Cao Manh Dat)
 
 Optimizations
 ----------------------

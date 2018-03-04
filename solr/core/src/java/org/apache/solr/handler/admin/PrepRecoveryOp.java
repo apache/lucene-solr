@@ -127,7 +127,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
               ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
               // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName) && !shardTerms.canBecomeLeader(coreNodeName)) {
+              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName) && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
+                // The replica changed it term, then published itself as RECOVERING.
+                // This core already see replica as RECOVERING
+                // so it is guarantees that a live-fetch will be enough for this core to see max term published
                 shardTerms.refreshTerms();
               }
 
