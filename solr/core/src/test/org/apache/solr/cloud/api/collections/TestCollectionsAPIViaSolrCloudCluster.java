@@ -94,6 +94,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCollectionCreateSearchDelete() throws Exception {
     final CloudSolrClient client = cluster.getSolrClient();
     final String collectionName = "testcollection";

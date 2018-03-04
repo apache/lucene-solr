@@ -842,7 +842,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     Reader reader;
     String toString;
   }
-  
+
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testRandomChains() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();

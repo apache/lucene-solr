@@ -58,6 +58,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   @ShardsFixed(num = 4)
   public void test() throws Exception {
     testParallelCollectionAPICalls();

@@ -93,6 +93,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMetadata() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
@@ -251,6 +252,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     checkFooAndBarMeta(aliasName, zkStateReader);
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testModifyMetadataCAR() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
