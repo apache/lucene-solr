@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.noggit.JSONUtil;
 import org.restlet.ext.servlet.ServerServlet;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
   private static File tmpSolrHome;

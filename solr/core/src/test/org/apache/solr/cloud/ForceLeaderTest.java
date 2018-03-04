@@ -76,6 +76,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
    */
   @Test
   @Slow
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReplicasInLowerTerms() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);

@@ -89,6 +89,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderRecovery() throws Exception {
     System.setProperty("CoreInitFailedAction", "fromleader");
 

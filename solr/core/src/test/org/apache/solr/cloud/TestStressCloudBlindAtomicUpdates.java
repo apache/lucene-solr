@@ -185,6 +185,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(map("name", field,
