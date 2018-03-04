@@ -1149,7 +1149,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         if (optionalMaxTerm.isPresent()) {
           liveReplicas.stream()
               .filter(rep -> zkShardTerms.getTerm(rep.getName()) == optionalMaxTerm.getAsLong())
-              .forEach(rep -> zkShardTerms.setEqualsToMax(rep.getName()));
+              .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
         }
       }
 

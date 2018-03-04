@@ -20,8 +20,10 @@ package org.apache.solr.handler.admin;
 import java.net.URI;
 import java.util.Optional;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -61,11 +63,22 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     URI locationUri = repository.createURI(location);
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+      CloudDescriptor cd = core.getCoreDescriptor().getCloudDescriptor();
+      // this core must be the only replica in its shard otherwise
+      // we cannot guarantee consistency between replicas because when we add data (or restore index) to this replica
+      Slice slice = zkController.getClusterState().getCollection(cd.getCollectionName()).getSlice(cd.getShardId());
+      if (slice.getReplicas().size() != 1) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to restore core=" + core.getName() + ", the core must be the only replica in its shard");
+      }
       RestoreCore restoreCore = new RestoreCore(repository, core, locationUri, name);
       boolean success = restoreCore.doRestore();
       if (!success) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
       }
+      // other replicas to-be-created will know that they are out of date by
+      // looking at their term : 0 compare to term of this core : 1
+      zkController.getShardTerms(cd.getCollectionName(), cd.getShardId()).ensureHighestTermsAreNotZero();
     }
   }
 }

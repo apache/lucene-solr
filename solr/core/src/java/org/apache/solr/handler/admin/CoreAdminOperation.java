@@ -28,7 +28,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -233,16 +232,6 @@ enum CoreAdminOperation implements CoreAdminOp {
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
-    }
-    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-
-      // Setting the last published state for this core to be ACTIVE
-      if (core != null) {
-        core.getCoreDescriptor().getCloudDescriptor().setLastPublished(Replica.State.ACTIVE);
-        log().info("Setting the last published state for this core, {}, to {}", core.getName(), Replica.State.ACTIVE);
-      } else {
-        SolrException.log(log(), "Could not find core: " + cname);
-      }
     }
   }),
 

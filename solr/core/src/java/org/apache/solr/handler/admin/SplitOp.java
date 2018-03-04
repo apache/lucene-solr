@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -111,6 +113,16 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
           if (newcore != null) {
             newCores.add(newcore);
+            if (it.handler.coreContainer.isZooKeeperAware()) {
+              // this core must be the only replica in its shard otherwise
+              // we cannot guarantee consistency between replicas because when we add data to this replica
+              CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
+              ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
+              if (clusterState.getCollection(cd.getCollectionName()).getSlice(cd.getShardId()).getReplicas().size() != 1) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                    "Core with core name " + newCoreName + " must be the only replica in shard " + cd.getShardId());
+              }
+            }
           } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core with core name " + newCoreName + " expected but doesn't exist.");
           }
@@ -122,6 +134,15 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
       SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName, splitKey);
       core.getUpdateHandler().split(cmd);
+
+      if (it.handler.coreContainer.isZooKeeperAware()) {
+        for (SolrCore newcore : newCores) {
+          // the index of the core changed from empty to have some data, its term must be not zero
+          CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
+          ZkShardTerms zkShardTerms = it.handler.coreContainer.getZkController().getShardTerms(cd.getCollectionName(), cd.getShardId());
+          zkShardTerms.ensureHighestTermsAreNotZero();
+        }
+      }
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
 
