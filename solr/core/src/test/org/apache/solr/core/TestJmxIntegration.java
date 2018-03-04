@@ -159,7 +159,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
         numDocs > oldNumDocs);
   }
 
-  @Test @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
+  @Test @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
   public void testJmxOnCoreReload() throws Exception {
 
     String coreName = h.getCore().getName();

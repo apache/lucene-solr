@@ -93,6 +93,8 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         .setCreateNodeSet(String.join(",", otherNodes))
         .setMaxShardsPerNode(3)
         .process(solrClient);
+    waitForRecovery(CollectionAdminParams.SYSTEM_COLL);
+    waitForRecovery(COLL_NAME);
   }
 
   public static class TesterListener extends TriggerListenerBase {
@@ -116,6 +118,16 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     actionFiredLatch = new CountDownLatch(1);
     listenerFiredLatch = new CountDownLatch(1);
 
+    // change rules to create violations
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    solrClient.request(req);
+
+
     // first trigger
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -129,7 +141,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TesterAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -230,6 +242,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testHistory() throws Exception {
     waitForState("Timed out wait for collection be active", COLL_NAME,
         clusterShape(1, 3));
@@ -352,14 +365,14 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     if (docs.size() != expected) {
       log.info("History query: " + query);
       log.info("Wrong response: " + rsp);
-      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
-      log.info("Full response: " + client.query(query));
+      ModifiableSolrParams fullQuery = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
+      log.info("Full response: " + client.query(fullQuery));
     }
     assertEquals("Wrong number of documents", expected, docs.size());
     return docs;
   }
 
-  private void waitForRecovery(String collection) throws Exception {
+  private static void waitForRecovery(String collection) throws Exception {
     log.info("Waiting for recovery of " + collection);
     boolean recovered = false;
     boolean allActive = true;

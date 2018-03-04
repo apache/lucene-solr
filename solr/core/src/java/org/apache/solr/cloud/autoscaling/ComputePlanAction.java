@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class is responsible for using the configured policy and preferences
  * with the hints provided by the trigger event to compute the required cluster operations.
- *
+ * <p>
  * The cluster operations computed here are put into the {@link ActionContext}'s properties
  * with the key name "operations". The value is a List of SolrRequest objects.
  */
@@ -81,7 +81,8 @@ public class ComputePlanAction extends TriggerActionBase {
         log.trace("-- state: {}", clusterState);
       }
       try {
-        Suggester suggester = getSuggester(session, event, cloudManager);
+        Suggester intialSuggester = getSuggester(session, event, cloudManager);
+        Suggester suggester = intialSuggester;
         int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
         int requestedOperations = getRequestedNumOps(event);
         if (requestedOperations > maxOperations) {
@@ -104,8 +105,15 @@ public class ComputePlanAction extends TriggerActionBase {
 
           // break on first null op
           // unless a specific number of ops was requested
+          // uncomment the following to log too many operations
+          /*if (opCount > 10) {
+            PolicyHelper.logState(cloudManager, intialSuggester);
+          }*/
+
           if (operation == null) {
             if (requestedOperations < 0) {
+              //uncomment the following to log zero operations
+//              PolicyHelper.logState(cloudManager, intialSuggester);
               break;
             } else {
               log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
@@ -150,7 +158,7 @@ public class ComputePlanAction extends TriggerActionBase {
     AtomicInteger totalRF = new AtomicInteger();
     clusterState.forEachCollection(coll -> totalRF.addAndGet(coll.getReplicationFactor() * coll.getSlices().size()));
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
-    int maxOp = (Integer)autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
+    int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
     try {
       return Integer.parseInt(String.valueOf(o));
@@ -161,7 +169,7 @@ public class ComputePlanAction extends TriggerActionBase {
   }
 
   protected int getRequestedNumOps(TriggerEvent event) {
-    Collection<TriggerEvent.Op> ops = (Collection<TriggerEvent.Op>)event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
+    Collection<TriggerEvent.Op> ops = (Collection<TriggerEvent.Op>) event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
     if (ops.isEmpty()) {
       return -1;
     } else {
@@ -199,6 +207,11 @@ public class ComputePlanAction extends TriggerActionBase {
         } else {
           event.getProperties().put(START, start);
         }
+        break;
+      case SCHEDULED:
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP);
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        suggester = session.getSuggester(action);
         break;
       default:
         throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate and metric. Received: " + event.getEventType());

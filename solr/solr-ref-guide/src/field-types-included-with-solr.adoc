@@ -69,7 +69,7 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
 
-|SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis -- the number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
+|SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
 
 |TextField |Text, usually multiple words or tokens.
 

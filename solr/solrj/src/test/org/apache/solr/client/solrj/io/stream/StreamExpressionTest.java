@@ -6576,7 +6576,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(prob.doubleValue(),  0.09184805266259899, 0.0);
   }
 
-      @Test
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDistributions() throws Exception {
     String cexpr = "let(a=normalDistribution(10, 2), " +
                        "b=sample(a, 250), " +
@@ -8173,6 +8174,45 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(out1.get(5).doubleValue(), -63.87117828924769, 0.0001);
     assertEquals(out1.get(6).doubleValue(), -63.17966334592923, 0.0001);
     assertEquals(out1.get(7).doubleValue(), 43.58983167296462, 0.0001);
+  }
+
+
+  @Test
+  public void testBicubicSpline() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(300, 400, 500, 600, 700), " +
+        "               b=array(340, 410, 495, 590, 640)," +
+        "               c=array(600, 395, 550, 510, 705),"+
+        "               d=array(500, 420, 510, 601, 690),"+
+        "               e=array(420, 411, 511, 611, 711),"+
+        "               f=matrix(a, b, c, d, e),"+
+        "               x=array(1,2,3,4,5),"+
+        "               y=array(100, 200, 300, 400, 500),"+
+        "               bspline=bicubicSpline(x, y, f), " +
+        "               p1=predict(bspline, 1.5, 250)," +
+        "               p2=predict(bspline, 3.5, 350)," +
+        "               p3=predict(bspline, 4.5, 450)," +
+        "               p4=predict(bspline,matrix(array(1.5, 250), array(3.5, 350), array(4.5, 450))))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number p1 = (Number)tuples.get(0).get("p1");
+    assertEquals(p1.doubleValue(), 449.7837701612903, 0.0);
+    Number p2 = (Number)tuples.get(0).get("p2");
+    assertEquals(p2.doubleValue(), 536.8916383774491, 0.0);
+    Number p3 = (Number)tuples.get(0).get("p3");
+    assertEquals(p3.doubleValue(), 659.921875, 0.0);
+    List<Number> p4 = (List<Number>)tuples.get(0).get("p4");
+    assertEquals(p4.get(0).doubleValue(), 449.7837701612903, 0.0);
+    assertEquals(p4.get(1).doubleValue(), 536.8916383774491, 0.0);
+    assertEquals(p4.get(2).doubleValue(), 659.921875, 0.0);
   }
 
 

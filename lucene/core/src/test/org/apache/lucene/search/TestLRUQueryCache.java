@@ -62,6 +62,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -1467,6 +1468,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDocValuesUpdatesDontBreakCache() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +172,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private boolean forwardToLeader = false;
   private boolean isSubShardLeader = false;
   private List<Node> nodes;
+  private Set<String> skippedCoreNodeNames;
+  private boolean isIndexChanged = false;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
     
@@ -334,9 +335,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // that means I want to forward onto my replicas...
         // so get the replicas...
         forwardToLeader = false;
-        List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-            .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN);
-        if (replicaProps == null) {
+        ClusterState clusterState = zkController.getZkStateReader().getClusterState();
+        String leaderCoreNodeName = leaderReplica.getName();
+        List<Replica> replicas = clusterState.getCollection(collection)
+            .getSlice(shardId)
+            .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+        replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
+        if (replicas.isEmpty()) {
           return null;
         }
 
@@ -349,16 +354,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           log.info("test.distrib.skip.servers was found and contains:" + skipListSet);
         }
 
-        List<Node> nodes = new ArrayList<>(replicaProps.size());
+        List<Node> nodes = new ArrayList<>(replicas.size());
+        skippedCoreNodeNames = new HashSet<>();
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
-        for (ZkCoreNodeProps props : replicaProps) {
-          String coreNodeName = ((Replica) props.getNodeProps()).getName();
-          if (skipList != null && skipListSet.contains(props.getCoreUrl())) {
-            log.info("check url:" + props.getCoreUrl() + " against:" + skipListSet + " result:true");
-          } else if(!isOldLIRMode && zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
-            log.info("skip url:{} cause its term is less than leader", props.getCoreUrl());
+        for (Replica replica: replicas) {
+          String coreNodeName = replica.getName();
+          if (skipList != null && skipListSet.contains(replica.getCoreUrl())) {
+            log.info("check url:" + replica.getCoreUrl() + " against:" + skipListSet + " result:true");
+          } else if(!isOldLIRMode && zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
+            log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
+            skippedCoreNodeNames.add(replica.getName());
+          } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
+            skippedCoreNodeNames.add(replica.getName());
           } else {
-            nodes.add(new StdNode(props, collection, shardId));
+            nodes.add(new StdNode(new ZkCoreNodeProps(replica), collection, shardId));
           }
         }
         return nodes;
@@ -750,6 +759,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
+    boolean shouldUpdateTerms = isLeader && !isOldLIRMode && isIndexChanged;
+    if (shouldUpdateTerms) {
+      ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
+      if (skippedCoreNodeNames != null) {
+        zkShardTerms.ensureTermsIsHigher(cloudDesc.getCoreNodeName(), skippedCoreNodeNames);
+      }
+      zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
+    }
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
@@ -758,7 +775,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO - we may need to tell about more than one error...
 
     List<Error> errorsForClient = new ArrayList<>(errors.size());
-    Map<ShardInfo, Set<String>> failedReplicas = new HashMap<>();
+    Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
       
       if (error.req.node instanceof RetryNode) {
@@ -856,9 +873,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Throwable rootCause = SolrException.getRootCause(error.e);
             if (!isOldLIRMode && zkController.getShardTerms(collection, shardId).registered(coreNodeName)) {
               log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
-              ShardInfo shardInfo = new ShardInfo(collection, shardId, leaderCoreNodeName);
-              failedReplicas.putIfAbsent(shardInfo, new HashSet<>());
-              failedReplicas.get(shardInfo).add(coreNodeName);
+              replicasShouldBeInLowerTerms.add(coreNodeName);
             } else {
               // The replica did not registered its term, so it must run with old LIR implementation
               log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
@@ -882,6 +897,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
                 shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
+            // some replicas did not receive the updates, exception must be notified to clients
+            errorsForClient.add(error);
           } else {
             log.warn("Core " + cloudDesc.getCoreNodeName() + " is no longer the leader for " + collection + " "
                 + shardId + " or we tried to put ourself into LIR, no request recovery command will be sent!");
@@ -889,11 +906,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    if (!isOldLIRMode) {
-      for (Map.Entry<ShardInfo, Set<String>> entry : failedReplicas.entrySet()) {
-        ShardInfo shardInfo = entry.getKey();
-        zkController.getShardTerms(shardInfo.collection, shardInfo.shard).ensureTermsIsHigher(shardInfo.leader, entry.getValue());
-      }
+    if (!isOldLIRMode && !replicasShouldBeInLowerTerms.isEmpty()) {
+      zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId())
+          .ensureTermsIsHigher(cloudDesc.getCoreNodeName(), replicasShouldBeInLowerTerms);
     }
     // in either case, we need to attach the achieved and min rf to the response.
     if (leaderReplicationTracker != null || rollupReplicationTracker != null) {
@@ -926,48 +941,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       throw new DistributedUpdatesAsyncException(errorsForClient);
     }
   }
-
-  private class ShardInfo {
-    private String collection;
-    private String shard;
-    private String leader;
-
-    public ShardInfo(String collection, String shard, String leader) {
-      this.collection = collection;
-      this.shard = shard;
-      this.leader = leader;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-
-      ShardInfo shardInfo = (ShardInfo) o;
-
-      if (!collection.equals(shardInfo.collection)) return false;
-      if (!shard.equals(shardInfo.shard)) return false;
-      return leader.equals(shardInfo.leader);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = collection.hashCode();
-      result = 31 * result + shard.hashCode();
-      result = 31 * result + leader.hashCode();
-      return result;
-    }
-  }
-
  
   // must be synchronized by bucket
   private void doLocalAdd(AddUpdateCommand cmd) throws IOException {
     super.processAdd(cmd);
+    isIndexChanged = true;
   }
 
   // must be synchronized by bucket
   private void doLocalDelete(DeleteUpdateCommand cmd) throws IOException {
     super.processDelete(cmd);
+    isIndexChanged = true;
   }
 
   /**

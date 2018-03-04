@@ -1045,7 +1045,7 @@ public class ZkController {
 
       // This flag is used for testing rolling updates and should be removed in SOLR-11812
       boolean isRunningInNewLIR = "new".equals(desc.getCoreProperty("lirVersion", "new"));
-      if (isRunningInNewLIR) {
+      if (isRunningInNewLIR && cloudDesc.getReplicaType() != Type.PULL) {
         shardTerms.registerTerm(coreZkNodeName);
       }
       String shardId = cloudDesc.getShardId();
@@ -1455,13 +1455,20 @@ public class ZkController {
 
       // This flag is used for testing rolling updates and should be removed in SOLR-11812
       boolean isRunningInNewLIR = "new".equals(cd.getCoreProperty("lirVersion", "new"));
-      if (state == Replica.State.RECOVERING && isRunningInNewLIR) {
-        getShardTerms(collection, shardId).setEqualsToMax(coreNodeName);
+      // pull replicas are excluded because their terms are not considered
+      if (state == Replica.State.RECOVERING && isRunningInNewLIR && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+        // state is used by client, state of replica can change from RECOVERING to DOWN without needed to finish recovery
+        // by calling this we will know that a replica actually finished recovery or not
+        getShardTerms(collection, shardId).startRecovering(coreNodeName);
       }
+      if (state == Replica.State.ACTIVE && isRunningInNewLIR && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+        getShardTerms(collection, shardId).doneRecovering(coreNodeName);
+      }
+
       ZkNodeProps m = new ZkNodeProps(props);
       
       if (updateLastState) {
-        cd.getCloudDescriptor().lastPublished = state;
+        cd.getCloudDescriptor().setLastPublished(state);
       }
       overseerJobQueue.offer(Utils.toJSON(m));
     } finally {

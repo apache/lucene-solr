@@ -1397,8 +1397,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // slower than simply re-executing the query.
       if (out.docSet == null) {
         out.docSet = getDocSet(cmd.getQuery(), cmd.getFilter());
-        DocSet bigFilt = getDocSet(cmd.getFilterList());
-        if (bigFilt != null) out.docSet = out.docSet.intersection(bigFilt);
+        List<Query> filterList = cmd.getFilterList();
+        if (filterList != null && !filterList.isEmpty()) {
+          out.docSet = out.docSet.intersection(getDocSet(cmd.getFilterList()));
+        }
       }
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...

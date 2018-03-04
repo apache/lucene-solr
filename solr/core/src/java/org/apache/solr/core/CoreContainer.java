@@ -1132,6 +1132,8 @@ public class CoreContainer {
             if (leader != null && leader.getState() == State.ACTIVE) {
               log.info("Found active leader, will attempt to create fresh core and recover.");
               resetIndexDirectory(dcore, coreConfig);
+              // the index of this core is emptied, its term should be set to 0
+              getZkController().getShardTerms(desc.getCollectionName(), desc.getShardId()).setTermToZero(desc.getCoreNodeName());
               return new SolrCore(this, dcore, coreConfig);
             }
           } catch (SolrException se) {

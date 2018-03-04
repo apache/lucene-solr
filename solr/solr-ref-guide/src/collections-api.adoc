@@ -516,10 +516,12 @@ smaller than router.maxFutureMs). Both the initial collection and any subsequent
 the specified configset. All Collection creation parameters other than `name` are allowed, prefixed
 by `create-collection.`
 
-This means that one could (for example) partition their collections by day, and within each daily collection route
+This means that one could, for example, partition their collections by day, and within each daily collection route
 the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule based replica
-placement strategies may also be used. The values supplied in this command for collection creation will be retained
-in alias metadata, and can be verified by inspecting aliases.json in zookeeper.
+placement strategies may also be used.
+
+The values supplied in this command for collection creation will be retained
+in alias metadata, and can be verified by inspecting `aliases.json` in ZooKeeper.
 
 *NOTE:* Presently only updates are routed and queries are distributed to all collections in the alias, but future
 features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
@@ -545,48 +547,58 @@ prohibited. If routing parameters are present this parameter is prohibited.
 ==== Routed Alias Parameters
 
 `router.start`::
-The start date/time of data for this time routed alias in Solr's standard date/time format (ISO-8601 or "NOW"
-optionally with "date math").
+The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"
+optionally with <<working-with-dates.adoc#date-math,date math>>).
++
 The first collection created for the alias will be internally named after this value.
 If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then
 it will yield an error since it can't be routed. This date/time MUST NOT have a milliseconds component other than 0.
 Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work
-just fine. This param is required.
+just fine. This parameter is required.
 
 `TZ`::
-The timezone to be used when evaluating any date math in router.start or router.interval.  This is equivalent to the
+The timezone to be used when evaluating any date math in router.start or router.interval. This is equivalent to the
 same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
 as alias metadata.
++
 If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the
-myAlias_2018-01-15_01 collection (assumming an interval of +1HOUR). The default timezone is UTC.
+myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
++
+The default timezone is UTC.
 
 `router.field`::
 The date field to inspect to determine which underlying collection an incoming document should be routed to.
 This field is required on all incoming documents.
 
 `router.name`::
-The type of routing to use. Presently only `time` is valid.  This param is required.
+The type of routing to use. Presently only `time` is valid.  This parameter is required.
 
 `router.interval`::
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
-work here. This param is required.
+work here.
++
+This parameter is required.
 
 `router.maxFutureMs`::
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
 without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
-The default is 10 minutes worth.
++
+The default is 10 minutes.
 
 `router.autoDeleteAge`::
 A date math expression that results in the oldest collections getting deleted automatically.
++
 The date math is relative to the timestamp of a newly created collection (typically close to the current time),
 and thus this must produce an earlier time via rounding and/or subtracting.
 Collections to be deleted must have a time range that is entirely before the computed age.
 Collections are considered for deletion immediately prior to new collections getting created.
-Example: `/DAY-90DAYS`.  The default is not to delete.
+Example: `/DAY-90DAYS`.
++
+The default is not to delete.
 
 `create-collection.*`::
-The * can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
 are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
@@ -629,7 +641,7 @@ partiton is to be rejected and collections are created using a config set named 
 
 [source,text]
 ----
-localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
 *Output*
@@ -645,7 +657,7 @@ localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.
 ----
 
 A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
-Notice that the collection creation fields follow the v2 api naming convention, not the v1 naming conventions.
+Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 *Input*
 
@@ -959,7 +971,7 @@ If `shard` is not specified, then `\_route_` must be.
 `\_route_`::
 If the exact shard name is not known, users may pass the `\_route_` value and the system would identify the name of the shard.
 +
-Ignored if the `shard` param is also specified.
+Ignored if the `shard` parameter is also specified.
 
 `node`::
 The name of the node where the replica should be created.
@@ -1993,7 +2005,7 @@ WARNING: This is an expert level command, and should be invoked only when regula
 [[migratestateformat]]
 == MIGRATESTATEFORMAT: Migrate Cluster State
 
-A expert level utility API to move a collection from shared `clusterstate.json` zookeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
+A expert level utility API to move a collection from shared `clusterstate.json` ZooKeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
 
 `/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>`
 
@@ -2108,7 +2120,7 @@ For source replicas that are also shard leaders the operation will wait for the 
 The source node from which the replicas need to be copied from. This parameter is required.
 
 `targetNode`::
-The target node where replicas will be copied. If this parameter is not provided, Solr would identify nodes automatically based on policies or no:of cores in each node
+The target node where replicas will be copied. If this parameter is not provided, Solr will identify nodes automatically based on policies or number of cores in each node.
 
 `parallel`::
 If this flag is set to `true`, all replicas are created in separate threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices. The default is `false`.

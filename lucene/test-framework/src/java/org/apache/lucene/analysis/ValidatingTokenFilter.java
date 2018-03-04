@@ -49,17 +49,15 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private final PositionLengthAttribute posLenAtt = getAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = getAttribute(OffsetAttribute.class);
   private final CharTermAttribute termAtt = getAttribute(CharTermAttribute.class);
-  private final boolean offsetsAreCorrect;
 
   private final String name;
 
   /** The name arg is used to identify this stage when
    *  throwing exceptions (useful if you have more than one
    *  instance in your chain). */
-  public ValidatingTokenFilter(TokenStream in, String name, boolean offsetsAreCorrect) {
+  public ValidatingTokenFilter(TokenStream in, String name) {
     super(in);
     this.name = name;
-    this.offsetsAreCorrect = offsetsAreCorrect;
   }
 
   @Override
@@ -85,7 +83,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
       startOffset = offsetAtt.startOffset();
       endOffset = offsetAtt.endOffset();
 
-      if (offsetsAreCorrect && offsetAtt.startOffset() < lastStartOffset) {
+      if (offsetAtt.startOffset() < lastStartOffset) {
         throw new IllegalStateException(name + ": offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset);
       }
       lastStartOffset = offsetAtt.startOffset();
@@ -93,7 +91,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
     
     posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
     
-    if (offsetAtt != null && posIncAtt != null && offsetsAreCorrect) {
+    if (offsetAtt != null && posIncAtt != null) {
 
       if (!posToStartOffset.containsKey(pos)) {
         // First time we've seen a token leaving from this position:

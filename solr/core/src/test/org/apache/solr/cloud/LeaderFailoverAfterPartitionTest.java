@@ -49,6 +49,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     waitForThingsToLevelOut(30000);
 

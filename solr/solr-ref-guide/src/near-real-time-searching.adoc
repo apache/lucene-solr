@@ -51,7 +51,7 @@ true|false, whether to make documents visible for search. For NRT applications t
 
 Transaction logs are a "rolling window" of updates since the last hard commit. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
 
-When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9` etc) any documents written to the tlog but not yet committed with a hard commit when Solr was stopped are replayed on startup. Therefore the data is not lost.
+When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9`, etc.) any documents written to the tlog but not yet committed with a hard commit when Solr was stopped are replayed on startup. Therefore the data is not lost.
 
 When Solr is shut down gracefully (using the `bin/solr stop` command) Solr will close the tlog file and index segments so no replay will be necessary on startup.
 
@@ -85,4 +85,4 @@ TIP: For extremely high bulk indexing, especially for the initial load if there 
 
 == Advanced Commit Options
 
-All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<uploading-data-with-index-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl etc and the equivalents are available from a SolrJ client.
+All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<uploading-data-with-index-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl, etc., and the equivalents are available from a SolrJ client.

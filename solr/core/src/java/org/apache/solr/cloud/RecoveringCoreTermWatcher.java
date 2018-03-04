@@ -48,7 +48,7 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
     if (solrCore.getCoreDescriptor() == null || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
 
     String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-    if (terms.canBecomeLeader(coreNodeName)) return true;
+    if (terms.haveHighestTermValue(coreNodeName)) return true;
     if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
       log.info("Start recovery on {} because core's term is less than leader's term", coreNodeName);
       lastTermDoRecovery.set(terms.getTerm(coreNodeName));

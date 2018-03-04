@@ -17,25 +17,34 @@
 
 package org.apache.solr.cloud;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.impl.SolrClientDataProvider=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper=TRACE")
 public class TestUtilizeNode extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
+    configureCluster(3)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
@@ -68,49 +77,105 @@ public class TestUtilizeNode extends SolrCloudTestCase {
     int REPLICATION = 2;
     String coll = "utilizenodecoll";
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
+    
+    log.info("Creating Collection...");
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION)
+        .setMaxShardsPerNode(2);
     cloudClient.request(create);
 
-    JettySolrRunner runner = cluster.startJettySolrRunner();
+    log.info("Spinning up additional jettyX...");
+    JettySolrRunner jettyX = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
 
+    assertNoReplicas("jettyX should not yet be utilized: ", coll, jettyX);
 
-    cloudClient.request(new CollectionAdminRequest.UtilizeNode(runner.getNodeName()));
+    log.info("Sending UTILIZE command for jettyX ({})", jettyX.getNodeName());
+    cloudClient.request(new CollectionAdminRequest.UtilizeNode(jettyX.getNodeName()));
 
+    // TODO: aparently we can't assert this? ...
+    //
+    // assertSomeReplicas("jettyX should now be utilized: ", coll, jettyX);
+    //
+    // ... it appears from the docs that unless there are policy violations,
+    // this can be ignored unless jettyX has less "load" then other jetty instances?
+    //
+    // if the above is true, that means that this test is incredibly weak...
+    // unless we know jettyX has at least one replica, then all the subsequent testing of the
+    // port blacklist & additional UTILIZE command for jettyY are a waste of time.
+    //
+    // should we skip spinning up a *new* jettyX, and instead just pick an existing jetty?
 
-    assertTrue(getReplicaCount(cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(coll), runner.getNodeName()) > 0);
-
+    log.info("jettyX replicas prior to being blacklisted: {}", getReplicaList(coll, jettyX));
+    
     String setClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': [" +
-        "      {'port':" + runner.getLocalPort() +
-        ", 'replica':0}" +
-        "    ]" +
-        "}";
-
+      " 'set-cluster-policy': [" +
+      "    {'port':" + jettyX.getLocalPort() +
+      "     , 'replica':0}" +
+      "  ]" +
+      "}";
+    log.info("Setting new policy to blacklist jettyX ({}) port={}",
+             jettyX.getNodeName(), jettyX.getLocalPort());
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
-    cloudClient.request(req);
     NamedList<Object> response = cloudClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertEquals(req + " => " + response,
+                 "success", response.get("result").toString());
 
-    JettySolrRunner runner2 = cluster.startJettySolrRunner();
+    log.info("Spinning up additional jettyY...");
+    JettySolrRunner jettyY = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
+    
+    assertNoReplicas("jettyY should not yet be utilized: ", coll, jettyY);
 
-    cloudClient.request(new CollectionAdminRequest.UtilizeNode(runner2.getNodeName()));
-    assertTrue("no replica should be present in  "+runner.getNodeName(),getReplicaCount(cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(coll), runner.getNodeName()) == 0);
+    log.info("jettyX replicas prior to utilizing jettyY: {}", getReplicaList(coll, jettyX));
+    log.info("Sending UTILIZE command for jettyY ({})", jettyY.getNodeName());
+    cloudClient.request(new CollectionAdminRequest.UtilizeNode(jettyY.getNodeName()));
 
-    assertTrue(getReplicaCount(cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(coll), runner2.getNodeName()) > 0);
+    assertSomeReplicas("jettyY should now be utilized: ", coll, jettyY);
+    
+    assertNoReplicas("jettyX should no longer be utilized: ", coll, jettyX); 
+    
 
   }
 
-  private int getReplicaCount(DocCollection collection, String node) {
-    AtomicInteger count = new AtomicInteger();
-
+  /**
+   * Gets the list of replicas for the specified collection hosted on the specified node
+   * and then asserts that it has no replicas
+   */
+  private void assertNoReplicas(String prefix, String collectionName, JettySolrRunner jettyNode) throws IOException {
+                                
+    final List<Replica> replicas = getReplicaList(collectionName, jettyNode);
+    assertEquals(prefix + " " + jettyNode.getNodeName() + " => " + replicas,
+                 0, replicas.size());
+  }
+  
+  /**
+   * Gets the list of replicas for the specified collection hosted on the specified node
+   * and then asserts that it there is at least one
+   */
+  private void assertSomeReplicas(String prefix, String collectionName, JettySolrRunner jettyNode) throws IOException {
+                                
+    final List<Replica> replicas = getReplicaList(collectionName, jettyNode);
+    assertTrue(prefix + " " + jettyNode.getNodeName() + " => " + replicas,
+               0 < replicas.size());
+  }
+  
+  /**
+   * Returns a list of all Replicas for the specified collection hosted on the specified node using
+   * an <em>uncached</em> ClusterState call (so it should be authoritative from ZK).
+   */
+  private List<Replica> getReplicaList(String collectionName, JettySolrRunner jettyNode) throws IOException {
+    DocCollection collection = cluster.getSolrClient().getClusterStateProvider()
+      // we do *NOT* want to trust the cache, because anytime we call this method we have just
+      // done a lot of mucking with the cluster
+      .getClusterState().getCollectionOrNull(collectionName, false);
+    
+    List<Replica> results = new ArrayList<>(3);
     collection.forEachReplica((s, replica) -> {
-      if (replica.getNodeName().equals(node)) {
-        count.incrementAndGet();
+        if (replica.getNodeName().equals(jettyNode.getNodeName())) {
+        results.add(replica);
       }
     });
-    return count.get();
+    return results;
   }
 
 }

@@ -556,6 +556,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReadApi() throws Exception  {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // first trigger

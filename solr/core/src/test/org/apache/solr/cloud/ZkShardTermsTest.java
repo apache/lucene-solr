@@ -51,6 +51,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
@@ -92,7 +94,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     assertEquals(1L, rep1Terms.getTerm("rep1"));
 
     waitFor(1L, () -> rep2Terms.getTerm("rep1"));
-    rep2Terms.setEqualsToMax("rep2");
+    rep2Terms.setTermEqualsToLeader("rep2");
     assertEquals(1L, rep2Terms.getTerm("rep2"));
     rep2Terms.registerTerm("rep2");
     assertEquals(1L, rep2Terms.getTerm("rep2"));
@@ -136,7 +138,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
           while (!stop.get()) {
             try {
               Thread.sleep(random().nextInt(200));
-              zkShardTerms.setEqualsToMax(replica);
+              zkShardTerms.setTermEqualsToLeader(replica);
             } catch (InterruptedException e) {
               e.printStackTrace();
             }
@@ -176,7 +178,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     waitFor(1, count::get);
     leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     waitFor(2, count::get);
-    replicaTerms.setEqualsToMax("replica");
+    replicaTerms.setTermEqualsToLeader("replica");
     waitFor(3, count::get);
     assertEquals(0, replicaTerms.getNumListeners());
 
@@ -190,6 +192,41 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     ZkShardTerms.Terms terms = new ZkShardTerms.Terms(map, 0);
     terms = terms.increaseTerms("leader", Collections.singleton("replica"));
     assertEquals(1L, terms.getTerm("leader").longValue());
+  }
+
+  public void testSetTermToZero() {
+    String collection = "setTermToZero";
+    ZkShardTerms terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    terms.registerTerm("leader");
+    terms.registerTerm("replica");
+    terms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
+    assertEquals(1L, terms.getTerm("leader"));
+    terms.setTermToZero("leader");
+    assertEquals(0L, terms.getTerm("leader"));
+    terms.close();
+  }
+
+  public void testReplicaCanBecomeLeader() throws InterruptedException {
+    String collection = "replicaCanBecomeLeader";
+    ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    ZkShardTerms replicaTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    leaderTerms.registerTerm("leader");
+    replicaTerms.registerTerm("replica");
+
+    leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
+    waitFor(false, () -> replicaTerms.canBecomeLeader("replica"));
+    waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica"));
+
+    replicaTerms.startRecovering("replica");
+    waitFor(false, () -> replicaTerms.canBecomeLeader("replica"));
+    waitFor(false, () -> leaderTerms.skipSendingUpdatesTo("replica"));
+
+    replicaTerms.doneRecovering("replica");
+    waitFor(true, () -> replicaTerms.canBecomeLeader("replica"));
+    waitFor(false, () -> leaderTerms.skipSendingUpdatesTo("replica"));
+
+    leaderTerms.close();
+    replicaTerms.close();
   }
 
   private <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {

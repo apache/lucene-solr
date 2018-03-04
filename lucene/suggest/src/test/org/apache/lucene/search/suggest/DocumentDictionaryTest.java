@@ -47,6 +47,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class DocumentDictionaryTest extends LuceneTestCase {
   
   static final String FIELD_NAME = "f1";

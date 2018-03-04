@@ -41,6 +41,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -77,7 +78,7 @@ public class Policy implements MapWriter {
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
-  final List<String> params;
+  final List<Pair<String, Suggestion.ConditionType>> params;
   final List<String> perReplicaAttributes;
 
   public Policy() {
@@ -111,13 +112,16 @@ public class Policy implements MapWriter {
         .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
     this.policies = Collections.unmodifiableMap(
-        policiesFromMap((Map<String, List<Map<String, Object>>>)jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
-    this.params = Collections.unmodifiableList(newParams);
+        policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
+    this.params = Collections.unmodifiableList(newParams.stream()
+        .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+        .collect(toList()));
     perReplicaAttributes = readPerReplicaAttrs();
   }
+
   private List<String> readPerReplicaAttrs() {
     return this.params.stream()
-        .map(Suggestion.tagVsPerReplicaVal::get)
+        .map(s -> Suggestion.tagVsPerReplicaVal.get(s.first()))
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
   }
@@ -126,7 +130,11 @@ public class Policy implements MapWriter {
     this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
     this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
     this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
-    this.params = Collections.unmodifiableList(buildParams(this.clusterPreferences, this.clusterPolicy, this.policies));
+    this.params = Collections.unmodifiableList(
+        buildParams(this.clusterPreferences, this.clusterPolicy, this.policies).stream()
+            .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+            .collect(toList())
+    );
     perReplicaAttributes = readPerReplicaAttrs();
   }
 
@@ -207,9 +215,9 @@ public class Policy implements MapWriter {
   }
 
   /*This stores the logical state of the system, given a policy and
-     * a cluster state.
-     *
-     */
+   * a cluster state.
+   *
+   */
   public class Session implements MapWriter {
     final List<String> nodes;
     final SolrCloudManager cloudManager;
@@ -228,6 +236,7 @@ public class Policy implements MapWriter {
       this.expandedClauses = expandedClauses;
       this.znodeVersion = znodeVersion;
       this.nodeStateProvider = nodeStateProvider;
+      for (Row row : matrix) row.session = this;
     }
 
 
@@ -259,7 +268,7 @@ public class Policy implements MapWriter {
       Collections.sort(expandedClauses);
 
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes,this));
+      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes, this));
       applyRules();
     }
 
@@ -269,7 +278,6 @@ public class Policy implements MapWriter {
         List<Clause> perCollPolicy = policies.get(p);
         if (perCollPolicy == null) {
           return;
-//          throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
         }
       }
       expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
@@ -279,9 +287,14 @@ public class Policy implements MapWriter {
       return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider);
     }
 
+    public Row getNode(String node) {
+      for (Row row : matrix) if (row.node.equals(node)) return row;
+      return null;
+    }
+
     List<Row> getMatrixCopy() {
       return matrix.stream()
-          .map(Row::copy)
+          .map(row -> row.copy(this))
           .collect(Collectors.toList());
     }
 
@@ -301,7 +314,6 @@ public class Policy implements MapWriter {
         violations.addAll(errs);
       }
     }
-
 
 
     public List<Violation> getViolations() {
@@ -336,6 +348,11 @@ public class Policy implements MapWriter {
     public NodeStateProvider getNodeStateProvider() {
       return nodeStateProvider;
     }
+
+    public int indexOf(String node) {
+      for (int i = 0; i < matrix.size(); i++) if (matrix.get(i).node.equals(node)) return i;
+      throw new RuntimeException("NO such node found " + node);
+    }
   }
 
   static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
@@ -367,7 +384,7 @@ public class Policy implements MapWriter {
   public enum SortParam {
     freedisk(0, Integer.MAX_VALUE), cores(0, Integer.MAX_VALUE), heapUsage(0, Integer.MAX_VALUE), sysLoadAvg(0, 100);
 
-    public final int min,max;
+    public final int min, max;
 
     SortParam(int min, int max) {
       this.min = min;
@@ -416,8 +433,8 @@ public class Policy implements MapWriter {
   }
 
   public static List<Clause> mergePolicies(String coll,
-                                    List<Clause> collPolicy,
-                                    List<Clause> globalPolicy) {
+                                           List<Clause> collPolicy,
+                                           List<Clause> globalPolicy) {
 
     List<Clause> merged = insertColl(coll, collPolicy);
     List<Clause> global = insertColl(coll, globalPolicy);
@@ -455,7 +472,7 @@ public class Policy implements MapWriter {
   }
 
   public List<String> getParams() {
-    return params;
+    return params.stream().map(Pair::first).collect(toList());
   }
 
   /**

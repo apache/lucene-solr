@@ -20,6 +20,10 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.geometry.S2Cell;
+import com.google.common.geometry.S2CellId;
+import com.google.common.geometry.S2Point;
+import org.apache.lucene.spatial.prefix.tree.S2ShapeFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircle;
@@ -32,6 +36,7 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
 import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoS2ShapeFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
@@ -42,14 +47,13 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeCollection;
-import org.locationtech.spatial4j.shape.ShapeFactory;
 
 /**
- * Geo3d implementation of {@link ShapeFactory}
+ * Geo3d implementation of {@link S2ShapeFactory}
  *
  * @lucene.experimental
  */
-public class Geo3dShapeFactory implements ShapeFactory {
+public class Geo3dShapeFactory implements S2ShapeFactory {
 
   private final boolean normWrapLongitude;
   private SpatialContext context;
@@ -235,6 +239,20 @@ public class Geo3dShapeFactory implements ShapeFactory {
   @Override
   public MultiPolygonBuilder multiPolygon() {
     return new Geo3dMultiPolygonBuilder();
+  }
+
+  @Override
+  public Shape getS2CellShape(S2CellId cellId) {
+    S2Cell cell = new S2Cell(cellId);
+    GeoPoint point1 = getGeoPoint(cell.getVertexRaw(0));
+    GeoPoint point2 = getGeoPoint(cell.getVertexRaw(1));
+    GeoPoint point3 = getGeoPoint(cell.getVertexRaw(2));
+    GeoPoint point4 = getGeoPoint(cell.getVertexRaw(3));
+    return new Geo3dShape<>(GeoS2ShapeFactory.makeGeoS2Shape(planetModel, point1, point2, point3, point4), context);
+  }
+
+  private GeoPoint getGeoPoint(S2Point point) {
+    return planetModel.createSurfacePoint(point.get(0), point.get(1), point.get(2));
   }
 
   /**

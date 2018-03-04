@@ -42,7 +42,7 @@ public class CloudDescriptor {
   // set to true once a core has registered in zk
   // set to false on detecting a session expiration
   private volatile boolean hasRegistered = false;
-  volatile Replica.State lastPublished = Replica.State.ACTIVE;
+  private volatile Replica.State lastPublished = Replica.State.ACTIVE;
 
   public static final String NUM_SHARDS = "numShards";
   

@@ -396,8 +396,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, n -> new ArrayList<>());
       // mark replica as active
       replicaInfo.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-      // add a property expected in tests
-      replicaInfo.getVariables().put(Suggestion.coreidxsize, SimCloudManager.DEFAULT_IDX_SIZE_BYTES);
+      // add a property expected in Policy calculations and in tests
+      // NOTE: this confusingly reuses INDEX.sizeInBytes name but
+      // the actual value is expressed in GB units!!!
+      replicaInfo.getVariables().put(Suggestion.coreidxsize, 1);
 
       replicas.add(replicaInfo);
       // at this point nuke our cached DocCollection state

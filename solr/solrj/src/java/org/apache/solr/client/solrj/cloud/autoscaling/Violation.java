@@ -91,8 +91,7 @@ public class Violation implements MapWriter {
   }
   //if the delta is lower , this violation is less serious
   public boolean isLessSerious(Violation that) {
-    return that.replicaCountDelta != null && replicaCountDelta != null &&
-        Math.abs(replicaCountDelta) < Math.abs(that.replicaCountDelta);
+    return this.getClause().tag.varType.compareViolation(this,that) <0 ;
   }
 
   @Override
@@ -102,7 +101,7 @@ public class Violation implements MapWriter {
       return Objects.equals(this.shard, v.shard) &&
           Objects.equals(this.coll, v.coll) &&
           Objects.equals(this.node, v.node) &&
-          Objects.equals(this.tagKey, v.tagKey)
+          Objects.equals(this.clause, v.clause)
           ;
     }
     return false;

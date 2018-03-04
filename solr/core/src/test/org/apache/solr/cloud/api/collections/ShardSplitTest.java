@@ -90,6 +90,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
 
     waitForThingsToLevelOut(15);
@@ -257,6 +258,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * See SOLR-9439
    */
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -303,6 +305,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitWithChaosMonkey() throws Exception {
     waitForThingsToLevelOut(15);
 

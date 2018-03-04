@@ -135,7 +135,7 @@ The `bf` parameter specifies functions (with optional boosts) that will be used 
 recip(rord(myfield),1,2,3)^1.5
 ----
 
-Specifying functions with the bf parameter is essentially just shorthand for using the `bq` param combined with the `{!func}` parser.
+Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter combined with the `{!func}` parser.
 
 For example, if you want to show the most recent documents first, you could use either of the following:
 

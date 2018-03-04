@@ -2104,7 +2104,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       containers.put(runner.getNodeName(), runner.getCoreContainer());
     }
     for(Slice s:collection.getSlices()) {
-      Replica leader = s.getLeader();
+      Replica leader = zkStateReader.getLeaderRetry(collectionName, s.getName(), (int)timeout.timeLeft(TimeUnit.MILLISECONDS));
       long leaderIndexVersion = -1;
       while (!timeout.hasTimedOut()) {
         leaderIndexVersion = getIndexVersion(leader);

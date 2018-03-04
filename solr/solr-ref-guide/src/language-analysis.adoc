@@ -511,7 +511,7 @@ This filter replaces the text of each token with its lemma. Both a dictionary-ba
 
 Either `dictionary` or `lemmatizerModel` must be provided, and both may be provided - see the examples below:
 
-`dictionary`:: (optional) The path of a lemmatization dictionary file. This path may be an absolute path, or path relative to the Solr config directory. The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g. `wrote[tab]write[tab]VBD`.
+`dictionary`:: (optional) The path of a lemmatization dictionary file. This path may be an absolute path, or path relative to the Solr config directory. The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g., `wrote[tab]write[tab]VBD`.
 
 `lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file. This path may be an absolute path, or path relative to the Solr config directory.
 
@@ -1772,4 +1772,4 @@ Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzer
 </analyzer>
 ----
 
-The Morfologik `dictionary` param value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
+The Morfologik `dictionary` parameter value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.

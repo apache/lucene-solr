@@ -137,6 +137,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     try {
       // to keep uncommitted docs during failover

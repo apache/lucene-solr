@@ -20,9 +20,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -359,10 +360,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
         
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
-        
+        String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
         // should I be leader?
-        if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
+        if (zkController.getShardTerms(collection, shardId).registered(coreNodeName)
+            && !zkController.getShardTerms(collection, shardId).canBecomeLeader(coreNodeName)) {
+          log.info("Can't become leader, term of replica {} less than leader", coreNodeName);
           rejoinLeaderElection(core);
+          return;
+        }
+
+        if (isClosed) {
           return;
         }
         
@@ -516,8 +523,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkStateReader.forceUpdateCollection(collection);
         ClusterState clusterState = zkStateReader.getClusterState();
         Replica rep = getReplica(clusterState, collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
-        if (rep != null && rep.getState() != Replica.State.ACTIVE
-            && rep.getState() != Replica.State.RECOVERING) {
+        if (rep != null && rep.getState() != Replica.State.ACTIVE) {
           log.debug("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
           zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
         }
@@ -593,40 +599,43 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
 
       if (replicas != null && replicas.size() > 0) {
+        // set of replicas which is running in new LIR but lirState=DOWN
+        Set<String> replicasMustBeInLowerTerm = new HashSet<>();
         for (String replicaCoreNodeName : replicas) {
 
           if (coreNodeName.equals(replicaCoreNodeName))
             continue; // added safe-guard so we don't mark this core as down
 
-          if (zkController.getShardTerms(collection, shardId).registered(replicaCoreNodeName)) {
-            // the replica registered its term so it is running with the new LIR implementation
-            // we can put this replica into recovery by increase our terms
-            zkController.getShardTerms(collection, shardId).ensureTermsIsHigher(coreNodeName, Collections.singleton(replicaCoreNodeName));
-            continue;
-          }
-
           final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(coll, shardId, replicaCoreNodeName);
           if (lirState == Replica.State.DOWN || lirState == Replica.State.RECOVERY_FAILED) {
             log.info("After core={} coreNodeName={} was elected leader, a replica coreNodeName={} was found in state: "
                 + lirState.toString() + " and needing recovery.", coreName, coreNodeName, replicaCoreNodeName);
-            List<ZkCoreNodeProps> replicaProps =
-                zkController.getZkStateReader().getReplicaProps(collection, shardId, coreNodeName);
+            List<Replica> replicasProps =
+                zkController.getZkStateReader().getClusterState().getCollection(collection)
+                    .getSlice(shardId).getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
 
-            if (replicaProps != null && replicaProps.size() > 0) {
+            if (replicasProps != null && replicasProps.size() > 0) {
               ZkCoreNodeProps coreNodeProps = null;
-              for (ZkCoreNodeProps p : replicaProps) {
-                if (((Replica)p.getNodeProps()).getName().equals(replicaCoreNodeName)) {
-                  coreNodeProps = p;
+              for (Replica p : replicasProps) {
+                if (p.getName().equals(replicaCoreNodeName)) {
+                  coreNodeProps = new ZkCoreNodeProps(p);
                   break;
                 }
               }
 
-              zkController.ensureReplicaInLeaderInitiatedRecovery(cc,
-                  collection, shardId, coreNodeProps, core.getCoreDescriptor(),
-                  false /* forcePublishState */);
+              if (zkController.getShardTerms(collection, shardId).registered(replicaCoreNodeName)) {
+                replicasMustBeInLowerTerm.add(replicaCoreNodeName);
+              } else {
+                zkController.ensureReplicaInLeaderInitiatedRecovery(cc,
+                    collection, shardId, coreNodeProps, core.getCoreDescriptor(),
+                    false /* forcePublishState */);
+              }
             }
           }
         }
+        // these replicas registered their terms so it is running with the new LIR implementation
+        // we can put this replica into recovery by increase our terms
+        zkController.getShardTerms(collection, shardId).ensureTermsIsHigher(coreNodeName, replicasMustBeInLowerTerm);
       }
     } // core gets closed automagically
   }
@@ -741,39 +750,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     leaderElector.joinElection(this, true);
   }
 
-  private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core, boolean weAreReplacement) {
-    log.debug("Checking if I should try and be the leader.");
-    
-    if (isClosed) {
-      log.debug("Bailing on leader process because we have been closed");
-      return false;
-    }
-    
-    if (!weAreReplacement) {
-      // we are the first node starting in the shard - there is a configurable wait
-      // to make sure others participate in sync and leader election, we can be leader
-      return true;
-    }
-
-    String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-    if (zkController.getShardTerms(collection, shardId).registered(coreNodeName)
-        && !zkController.getShardTerms(collection, shardId).canBecomeLeader(coreNodeName)) {
-      log.info("Can't become leader, term of replica {} less than leader", coreNodeName);
-      return false;
-    }
-
-    if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished() == Replica.State.ACTIVE) {
-      log.debug("My last published State was Active, it's okay to be the leader.");
-      return true;
-    }
-    log.debug("My last published State was "
-        + core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
-        + ", I won't be the leader.");
-    // TODO: and if no one is a good candidate?
-    
-    return false;
-  }
-  
 }
 
 final class OverseerElectionContext extends ElectionContext {

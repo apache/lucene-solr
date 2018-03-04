@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.AtomicDouble;
@@ -677,6 +679,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   public static long eventQueueActionWait = 5000;
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -853,6 +856,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeMarkersRegistration() throws Exception {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -1402,8 +1406,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  //Commented out 24-Jan-2018
-  //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSearchRate() throws Exception {
     // start a few more jetty-s
     for (int i = 0; i < 3; i++) {
@@ -1509,20 +1512,16 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testMetricTrigger() throws Exception {
-    // at least 3 nodes
-    for (int i = cluster.getJettySolrRunners().size(); i < 3; i++) {
-      cluster.startJettySolrRunner();
-    }
     cluster.waitForAllNodes(5);
 
     String collectionName = "testMetricTrigger";
     CloudSolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 1);
+        "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
     solrClient.setDefaultCollection(collectionName);
 
-    waitForState("Timed out waiting for collection:" + collectionName + " to become active", collectionName, clusterShape(2, 1));
+    waitForState("Timed out waiting for collection:" + collectionName + " to become active", collectionName, clusterShape(2, 2));
 
     DocCollection docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     String shardId = "shard1";
@@ -1567,9 +1566,17 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    for (int i = 0; i < 500; i++) {
-      solrClient.add(new SolrInputDocument("id", String.valueOf(i), "x_s", "x" + i));
+    // start more nodes so that we have at least 4
+    for (int i = cluster.getJettySolrRunners().size(); i < 4; i++) {
+      cluster.startJettySolrRunner();
     }
+    cluster.waitForAllNodes(10);
+
+    List<SolrInputDocument> docs = new ArrayList<>(500);
+    for (int i = 0; i < 500; i++) {
+      docs.add(new SolrInputDocument("id", String.valueOf(i), "x_s", "x" + i));
+    }
+    solrClient.add(docs);
     solrClient.commit();
 
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
@@ -1583,17 +1590,16 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
 
-    String oldReplicaName = replica.getName();
-    docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
-    assertEquals(2, docCollection.getReplicas().size());
-    assertNull(docCollection.getReplica(oldReplicaName));
-
     // find a new replica and create its metric name
+    docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     replica = docCollection.getSlice(shardId).getReplicas().iterator().next();
     coreName = replica.getCoreName();
     replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
     registry = SolrCoreMetricManager.createRegistryName(true, collectionName, shardId, replicaName, null);
     tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+
+    triggerFiredLatch = new CountDownLatch(1);
+    listenerEvents.clear();
 
     setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -1616,8 +1622,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    triggerFiredLatch = new CountDownLatch(1);
-    listenerEvents.clear();
     await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
@@ -1629,6 +1633,69 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
     docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
-    assertEquals(3, docCollection.getReplicas().size());
+    assertEquals(5, docCollection.getReplicas().size());
+  }
+
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11066")
+  public void testScheduledTrigger() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    // this collection will place 2 cores on 1st node and 1 core on 2nd node
+    String collectionName = "testScheduledTrigger";
+    CollectionAdminRequest.createCollection(collectionName, 1, 3)
+        .setMaxShardsPerNode(5).process(solrClient);
+    waitForState("", collectionName, clusterShape(1, 3));
+
+    // create a policy which allows only 1 core per node thereby creating a violation for the above collection
+    String setClusterPolicy = "{\n" +
+        "  \"set-cluster-policy\" : [\n" +
+        "    {\"cores\" : \"<2\", \"node\" : \"#EACH\"}\n" +
+        "  ]\n" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicy);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // start a new node which can be used to balance the cluster as per policy
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(10);
+
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'sched_trigger_integration1'," +
+        "'event' : 'scheduled'," +
+        "'startTime' : '" + new Date().toInstant().toString() + "'" +
+        "'every' : '+3SECONDS'" +
+        "'actions' : [" +
+          "{'name' : 'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+          "{'name' : 'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
+          "{'name' : 'recorder', 'class': '" + ContextPropertiesRecorderAction.class.getName() + "'}" +
+        "]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    assertTrue("ScheduledTrigger did not fire within 20 seconds", triggerFiredLatch.await(20, TimeUnit.SECONDS));
+    assertEquals(1, events.size());
+    Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
+    assertNotNull(actionContextProps);
+    TriggerEvent event = events.iterator().next();
+    List<SolrRequest> operations = (List<SolrRequest>) actionContextProps.get("operations");
+    assertNotNull(operations);
+    assertEquals(1, operations.size());
+    for (SolrRequest operation : operations) {
+      SolrParams params = operation.getParams();
+      assertEquals(newNode.getNodeName(), params.get("targetNode"));
+    }
+  }
+
+  private static AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
+
+  public static class ContextPropertiesRecorderAction extends TestEventMarkerAction {
+    @Override
+    public void process(TriggerEvent event, ActionContext actionContext) {
+      actionContextPropertiesRef.set(actionContext.getProperties());
+      super.process(event, actionContext);
+    }
   }
 }

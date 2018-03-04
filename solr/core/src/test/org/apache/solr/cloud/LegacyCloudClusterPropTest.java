@@ -65,6 +65,7 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
   };
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCreateCollectionSwitchLegacyCloud() throws Exception {
     createAndTest("legacyTrue", true);
     createAndTest("legacyFalse", false);

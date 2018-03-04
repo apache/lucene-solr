@@ -478,7 +478,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   @Nightly
   public void testRandomBig() throws Exception {
-    doTestRandom(200000);
+    doTestRandom(50000);
   }
 
   private void doTestRandom(int count) throws Exception {
