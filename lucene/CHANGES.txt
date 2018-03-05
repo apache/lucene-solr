@@ -72,6 +72,10 @@ Improvements
 * LUCENE-8033: FieldInfos now always use a dense encoding. (Mayya Sharipova
   via Adrien Grand)
 
+* LUCENE-8190: Specialized cell interface to allow any spatial prefix tree to
+  benefit from the setting setPruneLeafyBranches on RecursivePrefixTreeStrategy.
+  (Ignacio Vera)
+
 Bug Fixes
 
 * LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
