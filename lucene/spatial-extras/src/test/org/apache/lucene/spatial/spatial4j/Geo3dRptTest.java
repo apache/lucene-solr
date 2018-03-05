@@ -56,17 +56,14 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     int type = random().nextInt(4);
     if (type == 0) {
       this.grid = new GeohashPrefixTree(ctx, 2);
-      this.rptStrategy = newRPT();
     } else if (type == 1) {
       this.grid = new QuadPrefixTree(ctx, 5);
-      this.rptStrategy = newRPT();
-    }
-    else {
+    } else {
       int arity = random().nextInt(3) + 1;
       this.grid = new S2PrefixTree(ctx, 5 - arity, arity);
-      this.rptStrategy = newRPT();
-      this.rptStrategy.setPruneLeafyBranches(false);
     }
+    this.rptStrategy = newRPT();
+    this.rptStrategy.setPruneLeafyBranches(random().nextBoolean());
   }
 
   protected RecursivePrefixTreeStrategy newRPT() {
