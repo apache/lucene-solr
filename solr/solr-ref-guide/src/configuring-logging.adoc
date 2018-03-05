@@ -90,7 +90,7 @@ When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR`
 
 When starting Solr in the foreground (`-f` option), all logs will be sent to the console, in addition to `solr.log`. When starting Solr in the background, it will write all `stdout` and `stderr` output to a log file in `solr-<port>-console.log`, and automatically disable the CONSOLE logger configured in `log4j.properties`, having the same effect as if you removed the CONSOLE appender from the rootLogger manually.
 
-Also, in `log4j.properties` the default log rotation size threshold of 4MB is most likely too small for production servers and should be increased to a larger value (such as 100MB or more).
+Also, in `log4j.properties` if the default log rotation size threshold of 32MB is too small for production servers then you should increase it to a larger value (such as 100MB or more).
 
 [source,text]
 ----
@@ -99,7 +99,7 @@ log4j.appender.file.MaxFileSize=100MB
 
 Java Garbage Collection logs are rotated by the JVM when size hits 20M, for a max of 9 generations. Old GC logs are moved to `SOLR_LOGS_DIR/archived`. These settings can only be changed by editing the start scripts.
 
-On every startup of Solr, the start script will clean up old logs and rotate the main `solr.log` file. If you changed the `log4j.appender.file.MaxBackupIndex` setting in `log4j.properties`, you also need to change the corresponding setting `-rotate_solr_logs 9` in the start script.
+On every startup of Solr, the start script will clean up old logs and rotate the main `solr.log` file. If you changed the `log4j.appender.file.MaxBackupIndex` setting in `log4j.properties`, you also need to change the corresponding setting `-rotate_solr_logs 10` in the start script.
 
 You can disable the automatic log rotation at startup by changing the setting `SOLR_LOG_PRESTART_ROTATION` found in `bin/solr.in.sh` or `bin/solr.in.cmd` to false.
 
