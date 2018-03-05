@@ -927,6 +927,54 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAddDistinct() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", new String[]{"aaa", "ccc"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "4");
+    doc.setField("cat", new String[]{"aaa", "ccc"});
+    assertU(adoc(doc));
+
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']");
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add-distinct", Arrays.asList(new String[]{"bbb", "bbb"})));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]"); //'bbb' already present will not be added again
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5");
+    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']"); //'cat' field not present, do 'add' atomic operation
+  }
+
+  @Test
   public void testSet() throws Exception {
     SolrInputDocument doc;
 
