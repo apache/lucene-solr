@@ -177,6 +177,9 @@ New Features
 
 * SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
 
+* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser. 
+  Introducing {!.. filters=$fq excludeTags=t,q} in {!parent} and {!child} (Dr. Oleg Savrasov via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 
