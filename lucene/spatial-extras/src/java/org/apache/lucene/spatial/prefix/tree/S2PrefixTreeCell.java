@@ -33,7 +33,7 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
  *
  * @lucene.internal
  */
-class S2PrefixTreeCell implements Cell {
+class S2PrefixTreeCell implements CellCanPrune {
 
     //Faces of S2 Geometry
     private static S2CellId[] FACES = new S2CellId[6];
@@ -263,6 +263,14 @@ class S2PrefixTreeCell implements Cell {
         bref.bytes = b;
         bref.length = getLevel();
         bref.offset = 0;
+    }
+
+    @Override
+    public int getSubCellsSize() {
+        if (cellId == null) { //root node
+            return 6;
+        }
+        return  (int) Math.pow(4, tree.arity);
     }
 
     @Override
