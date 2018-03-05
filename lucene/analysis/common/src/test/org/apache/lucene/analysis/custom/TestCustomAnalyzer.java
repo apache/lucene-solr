@@ -34,7 +34,9 @@ import org.apache.lucene.analysis.charfilter.MappingCharFilterFactory;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.core.LowerCaseTokenizerFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
@@ -247,7 +249,24 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
     a.close();
   }
-  
+
+  public void testNormalizeWithLCTokenizer() throws Exception {
+    CustomAnalyzer a = CustomAnalyzer.builder()
+        .withTokenizer(LowerCaseTokenizerFactory.class)
+        .build();
+    assertEquals(new BytesRef("hello"), a.normalize("f", "HellO"));
+    a.close();
+  }
+
+  public void testNormalizeWithCharFilterAndLCTokenizer() throws Exception {
+    CustomAnalyzer a = CustomAnalyzer.builder()
+        .addCharFilter(DummyMultiTermAwareCharFilterFactory.class)
+        .withTokenizer(LowerCaseTokenizerFactory.class)
+        .build();
+    assertEquals(new BytesRef("ab2c"), a.normalize("f", "AB0C"));
+    a.close();
+  }
+
   // Now test misconfigurations:
 
   public void testIncorrectOrder() throws Exception {
@@ -431,7 +450,8 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
 
     @Override
     public AbstractAnalysisFactory getMultiTermComponent() {
-      return new KeywordTokenizerFactory(getOriginalArgs());
+      Map<String, String> modifiableArgs = new HashMap<>(getOriginalArgs());
+      return new KeywordTokenizerFactory(modifiableArgs);
     }
     
   }
