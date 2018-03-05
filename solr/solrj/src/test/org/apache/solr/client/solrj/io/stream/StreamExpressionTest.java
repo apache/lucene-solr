@@ -6975,9 +6975,19 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(termVectors.get(0).size(), 0);
   }
 
+
+
   @Test
-  public void testEBESubtract() throws Exception {
-    String cexpr = "ebeSubtract(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testEbeSubtract() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeSubtract(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeSubtract(f, g))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6987,16 +6997,35 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 1);
-    assertTrue(out.get(1).intValue() == 2);
-    assertTrue(out.get(2).intValue() == 3);
-    assertTrue(out.get(3).intValue() == 4);
-    assertTrue(out.get(4).intValue() == 5);
-    assertTrue(out.get(5).intValue() == 6);
-  }
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 2.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 4.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 5.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 6.0, 0.0);
 
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), -8.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), -7.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), -6.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), -5.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), -4.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), -3.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), -99.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), -198.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), -297.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), -396.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), -495.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), -594.0, 0.0);
+  }
 
 
   @Test
@@ -7341,7 +7370,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testEBEMultiply() throws Exception {
+  public void testEbeMultiply() throws Exception {
     String cexpr = "ebeMultiply(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -7364,8 +7393,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  public void testEBEAdd() throws Exception {
-    String cexpr = "ebeAdd(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testEbeAdd() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeAdd(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeAdd(f, g))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -7375,19 +7412,39 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 3);
-    assertTrue(out.get(1).intValue() == 6);
-    assertTrue(out.get(2).intValue() == 9);
-    assertTrue(out.get(3).intValue() == 12);
-    assertTrue(out.get(4).intValue() == 15);
-    assertTrue(out.get(5).intValue() == 18);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 6.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 9.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 12.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 15.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 18.0, 0.0);
+
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 12.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 15.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 18.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 21.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 24.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 27.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), 101.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 202.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 303.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 404.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 505.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 606.0, 0.0);
   }
 
 
   @Test
-  public void testEBEDivide() throws Exception {
+  public void testEbeDivide() throws Exception {
     String cexpr = "ebeDivide(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);

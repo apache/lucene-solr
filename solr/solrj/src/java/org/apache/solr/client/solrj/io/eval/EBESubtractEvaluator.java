@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class EBESubtractEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+public class EBESubtractEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
   public EBESubtractEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -40,23 +42,27 @@ public class EBESubtractEvaluator extends RecursiveNumericEvaluator implements T
     if(null == second){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-    if(!(first instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
-    if(!(second instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
+    if(first instanceof List && second instanceof List) {
+      double[] result = MathArrays.ebeSubtract(
+          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+      );
 
-    double[] result =  MathArrays.ebeSubtract(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-    );
+      List<Number> numbers = new ArrayList();
+      for (double d : result) {
+        numbers.add(d);
+      }
 
-    List<Number> numbers = new ArrayList();
-    for(double d : result) {
-      numbers.add(d);
+      return numbers;
+    } else if(first instanceof Matrix && second instanceof Matrix) {
+      double[][] data1 = ((Matrix) first).getData();
+      double[][] data2 = ((Matrix) second).getData();
+      Array2DRowRealMatrix matrix1 = new Array2DRowRealMatrix(data1);
+      Array2DRowRealMatrix matrix2 = new Array2DRowRealMatrix(data2);
+      RealMatrix matrix3 = matrix1.subtract(matrix2);
+      return new Matrix(matrix3.getData());
+    } else {
+      throw new IOException("Parameters for ebeSubtract must either be two numeric arrays or two matrices. ");
     }
-
-    return numbers;
   }
 }
