@@ -746,6 +746,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
+    // test field faceting on date field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f1:{${terms}  type:field, field:${date}}" +
+            "}"
+        )
+        , "facets=={count:6 " +
+            ",f1:{ buckets:[ {val:'2001-01-01T01:01:01Z', count:1},{val:'2001-02-03T01:02:03Z', count:1},{val:'2002-02-02T02:02:02Z', count:1},{val:'2002-03-01T03:02:01Z', count:1},{val:'2003-03-03T03:03:03Z', count:1} ] }" +
+            "}"
+    );
+
 
     // percentiles 0,10,50,90,100
     // catA: 2.0 2.2 3.0 3.8 4.0
