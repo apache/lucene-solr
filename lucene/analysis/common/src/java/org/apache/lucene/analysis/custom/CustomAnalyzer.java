@@ -146,6 +146,15 @@ public final class CustomAnalyzer extends Analyzer {
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
     TokenStream result = in;
+
+    TokenizerFactory tokenizerFactory = getTokenizerFactory();
+    if (tokenizerFactory instanceof MultiTermAwareComponent) {
+      AbstractAnalysisFactory mtTokenizerFactory = ((MultiTermAwareComponent)tokenizerFactory).getMultiTermComponent();
+      if (mtTokenizerFactory instanceof TokenFilterFactory && mtTokenizerFactory instanceof MultiTermAwareComponent) {
+        TokenFilterFactory filter = (TokenFilterFactory)((MultiTermAwareComponent)mtTokenizerFactory).getMultiTermComponent();
+        result = filter.create(result);
+      }
+    }
     for (TokenFilterFactory filter : tokenFilters) {
       if (filter instanceof MultiTermAwareComponent) {
         filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
