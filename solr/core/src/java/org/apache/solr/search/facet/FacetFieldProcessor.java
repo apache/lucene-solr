@@ -18,8 +18,10 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -682,9 +684,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     FieldType ft = sf.getType();
     bucketVal = ft.toNativeType(bucketVal);  // refinement info passed in as JSON will cause int->long and float->double
     bucket.add("val", bucketVal);
-    // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
 
-    Query domainQ = ft.getFieldQuery(null, sf, bucketVal.toString());
+    // fieldQuery currently relies on a string input of the value...
+    String bucketStr = bucketVal instanceof Date ? Instant.ofEpochMilli(((Date)bucketVal).getTime()).toString() : bucketVal.toString();
+    Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 
