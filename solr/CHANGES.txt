@@ -81,6 +81,8 @@ Upgrade Notes
 * SOLR-12011: Replicas which are not up-to-date are not allowed to become leader. Use FORCELEADER API to
   allow these replicas become leader.
 
+* SOLR-11957: The default Solr log file size and number of backups is raised to 32MB and 10 respectively
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -346,6 +348,9 @@ Other Changes
 * SOLR-12028: BadApple and AwaitsFix annotations usage (Erick Erickson, Uwe Schindler)
 
 * SOLR-12031: Refactor Policy framework to make simulated changes affect more than a single node (noble)
+
+* SOLR-11957: Increase MaxFileSize=32MB and MaxBackupIndex=10 for RollingFileAppender in log4j.properties
+  (Varun Thacker, shalin)
 
 ==================  7.2.1 ==================
 
