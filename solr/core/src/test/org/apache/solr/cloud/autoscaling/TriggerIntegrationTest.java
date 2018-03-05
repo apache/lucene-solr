@@ -78,7 +78,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  * An end-to-end integration test for triggers
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -125,6 +125,20 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    // ensure that exactly 2 jetty nodes are running
+    int numJetties = cluster.getJettySolrRunners().size();
+    log.info("Found {} jetty instances running", numJetties);
+    for (int i = 2; i < numJetties; i++)  {
+      int r = random().nextInt(cluster.getJettySolrRunners().size());
+      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
+      cluster.stopJettySolrRunner(r);
+    }
+    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
+      // start jetty instances
+      cluster.startJettySolrRunner();
+    }
+    cluster.waitForAllNodes(5);
+
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
     int overseerLeaderIndex = 0;
@@ -1636,7 +1650,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(5, docCollection.getReplicas().size());
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11066")
   public void testScheduledTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
