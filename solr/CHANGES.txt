@@ -231,9 +231,15 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
+Bug Fixes
+----------------------
 
-(No Changes)
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+  (麦 香浓郁, Uwe Schindler)
 
+* SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
+* SOLR-11993: LeaderInitiatedRecoveryThread does not retry on UnknownHostException (shalin, Cao Manh Dat, Steve Rowe)
 
 ==================  6.6.2 ==================
 
