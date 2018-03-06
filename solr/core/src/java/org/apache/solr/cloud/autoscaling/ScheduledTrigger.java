@@ -33,7 +33,6 @@ import java.util.TimeZone;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.TimeZoneUtils;
@@ -49,6 +48,7 @@ public class ScheduledTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEFAULT_GRACE_DURATION = "+15MINUTES";
+  private static final String LAST_RUN_AT = "lastRunAt";
   static final String ACTUAL_EVENT_TIME = "actualEventTime";
 
   private final String everyStr;
@@ -72,13 +72,18 @@ public class ScheduledTrigger extends TriggerBase {
     this.everyStr = (String) properties.get("every");
     this.graceDurationStr = (String) properties.getOrDefault("graceDuration", DEFAULT_GRACE_DURATION);
 
-    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    preferredOp = (String) properties.get(PREFERRED_OP);
 
     // attempt parsing to validate date math strings
     Instant startTime = parseStartTime(startTimeStr, timeZoneStr);
     DateMathParser.parseMath(null, startTime + everyStr, timeZone);
     DateMathParser.parseMath(null, startTime + graceDurationStr, timeZone);
 
+    // We set lastRunAt to be the startTime (which could be a date math expression such as 'NOW')
+    // Ordinarily, NOW will always be evaluated in this constructor so it may seem that
+    // the trigger will always fire the first time.
+    // However, the lastRunAt is overwritten with the value from ZK
+    // during restoreState() operation (which is performed before run()) so the trigger works correctly
     this.lastRunAt = startTime;
   }
 
@@ -107,13 +112,13 @@ public class ScheduledTrigger extends TriggerBase {
 
   @Override
   protected Map<String, Object> getState() {
-    return Collections.singletonMap("lastRunAt", lastRunAt.toEpochMilli());
+    return Collections.singletonMap(LAST_RUN_AT, lastRunAt.toEpochMilli());
   }
 
   @Override
   protected void setState(Map<String, Object> state) {
-    if (state.containsKey("lastRunAt")) {
-      this.lastRunAt = Instant.ofEpochMilli((Long) state.get("lastRunAt"));
+    if (state.containsKey(LAST_RUN_AT)) {
+      this.lastRunAt = Instant.ofEpochMilli((Long) state.get(LAST_RUN_AT));
     }
   }
 
@@ -163,8 +168,10 @@ public class ScheduledTrigger extends TriggerBase {
         log.warn("ScheduledTrigger was not able to run event at scheduled time: {}. Now: {}",
             nextRunTime, now);
       }
-      if (processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
-          preferredOp, now.toEpochMilli(), true)))  {
+      // Even though we are skipping the event, we need to notify any listeners of the IGNORED stage
+      // so we create a dummy event with the ignored=true flag and ScheduledTriggers will do the rest
+      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
+          preferredOp, now.toEpochMilli(), true))) {
         lastRunAt = nextRunTime;
         return;
       }
@@ -191,7 +198,9 @@ public class ScheduledTrigger extends TriggerBase {
 
     public ScheduledEvent(TriggerEventType eventType, String source, long eventTime, String preferredOp, long actualEventTime, boolean ignored) {
       super(eventType, source, eventTime, null, ignored);
-      properties.put(PREFERRED_OP, preferredOp);
+      if (preferredOp != null)  {
+        properties.put(PREFERRED_OP, preferredOp);
+      }
       properties.put(ACTUAL_EVENT_TIME, actualEventTime);
     }
   }

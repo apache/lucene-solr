@@ -159,7 +159,10 @@ The Scheduled trigger generates events according to a fixed rate schedule.
 
 The trigger supports the following configuration:
 
-* `startTime` - (string, required) the start date/time of the schedule. This should either be an ISO-8601 date time string (the same standard used during search and indexing in Solr, thus defaulting to UTC) or be specified with the `timeZone` parameter.
+* `startTime` - (string, required) the start date/time of the schedule. This should either be a DateMath string e.g. 'NOW' or be an ISO-8601 date time string (the same standard used during search and indexing in Solr, thus defaulting to UTC) or be specified without the trailing 'Z' accompanied with the `timeZone` parameter. For example, each of the following values are acceptable:
+  ** `2018-01-31T15:30:00Z` - ISO-8601 date time string. The trailing `Z` signals that the time is in UTC
+  ** `NOW+5MINUTES` - Solr's date math string
+  ** `2018-01-31T15:30:00` - No trailing 'Z' signals that the `timeZone` parameter must be specified to avoid ambiguity
 * `every` - (string, required) a positive Solr date math string which is added to the `startTime` or the last run time to arrive at the next scheduled time
 * `graceTime` - (string, optional) a positive Solr date math string. This is the additional grace time over the scheduled time within which the trigger is allowed to generate an event.
 * `timeZone` - (string, optional) a time zone string which is used for calculating the scheduled times
