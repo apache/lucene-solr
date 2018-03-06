@@ -196,10 +196,6 @@ public final class BlockScoreQueryWrapper extends Query {
             return max;
           }
 
-          @Override
-          public IntervalIterator intervals(String field) {
-            throw new UnsupportedOperationException();
-          }
         };
       }
 

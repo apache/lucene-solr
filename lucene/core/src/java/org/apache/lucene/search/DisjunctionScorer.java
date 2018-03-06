@@ -20,10 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.util.PriorityQueue;
 
@@ -130,13 +127,18 @@ abstract class DisjunctionScorer extends Scorer {
           // implicitly verified, move it to verifiedMatches
           w.next = verifiedMatches;
           verifiedMatches = w;
+          
+          if (needsScores == false) {
+            // we can stop here
+            return true;
+          }
         } else {
           unverifiedMatches.add(w);
         }
         w = next;
       }
       
-      if (verifiedMatches != null || needsScores == false) {
+      if (verifiedMatches != null) {
         return true;
       }
       
@@ -176,30 +178,6 @@ abstract class DisjunctionScorer extends Scorer {
   @Override
   public final float score() throws IOException {
     return score(getSubMatches());
-  }
-
-  @Override
-  public IntervalIterator intervals(String field) {
-    Map<DisiWrapper, IntervalIterator> subIntervals = new IdentityHashMap<>();
-    for (DisiWrapper dw : subScorers) {
-      IntervalIterator subIt = dw.scorer.intervals(field);
-      if (subIt != null)
-        subIntervals.put(dw, subIt);
-    }
-    if (subIntervals.size() == 0)
-      return null;
-    return new DisjunctionIntervalIterator(subIntervals.size()) {
-      @Override
-      protected void fillQueue(int doc) throws IOException {
-        for (DisiWrapper dw = getSubMatches(); dw != null; dw = dw.next) {
-          IntervalIterator it = subIntervals.get(dw);
-          if (it.reset(doc)) {
-            it.nextInterval();
-            queue.add(it);
-          }
-        }
-      }
-    };
   }
 
   /** Compute the score for the given linked list of scorers. */

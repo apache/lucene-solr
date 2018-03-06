@@ -32,8 +32,6 @@ final class SloppyPhraseScorer extends Scorer {
 
   private final DocIdSetIterator conjunction;
   private final PhrasePositions[] phrasePositions;
-  private final IntervalIterator intervals;
-  private final String field;
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
@@ -42,8 +40,6 @@ final class SloppyPhraseScorer extends Scorer {
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
-
-  private int start, currentEnd, nextEnd;
   
   private int end; // current largest phrase position  
 
@@ -57,15 +53,13 @@ final class SloppyPhraseScorer extends Scorer {
   final boolean needsScores;
   private final float matchCost;
   
-  SloppyPhraseScorer(Weight weight, String field, PhraseQuery.PostingsAndFreq[] postings,
+  SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       int slop, LeafSimScorer docScorer, boolean needsScores,
       float matchCost) {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = needsScores;
     this.slop = slop;
-    this.field = field;
-    this.intervals = new SloppyIntervalIterator();
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
     DocIdSetIterator[] iterators = new DocIdSetIterator[postings.length];
@@ -79,72 +73,61 @@ final class SloppyPhraseScorer extends Scorer {
     this.matchCost = matchCost;
   }
 
-  private class SloppyIntervalIterator implements IntervalIterator {
-
-    @Override
-    public int start() {
-      return start;
+  /**
+   * Score a candidate doc for all slop-valid position-combinations (matches) 
+   * encountered while traversing/hopping the PhrasePositions.
+   * <br> The score contribution of a match depends on the distance: 
+   * <br> - highest score for distance=0 (exact match).
+   * <br> - score gets lower as distance gets higher.
+   * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice: 
+   * once for "a b" (distance=0), and once for "b a" (distance=2).
+   * <br>Possibly not all valid combinations are encountered, because for efficiency  
+   * we always propagate the least PhrasePosition. This allows to base on 
+   * PriorityQueue and move forward faster. 
+   * As result, for example, document "a b c b a"
+   * would score differently for queries "a b c"~4 and "c b a"~4, although 
+   * they really are equivalent. 
+   * Similarly, for doc "a b c b a f g", query "c b"~2 
+   * would get same score as "g f"~2, although "c b"~2 could be matched twice.
+   * We may want to fix this in the future (currently not, for performance reasons).
+   */
+  private float phraseFreq() throws IOException {
+    if (!initPhrasePositions()) {
+      return 0.0f;
     }
-
-    @Override
-    public int end() {
-      return currentEnd;
-    }
-
-    @Override
-    public int innerWidth() {
-      return currentEnd - start;
-    }
-
-    @Override
-    public boolean reset(int doc) throws IOException {
-      start = currentEnd = nextEnd = -1;
-      return initPhrasePositions();
-    }
-
-    @Override
-    public int nextInterval() throws IOException {
-      if (pq.size() < phrasePositions.length)
-        return IntervalIterator.NO_MORE_INTERVALS;
-      currentEnd = nextEnd;
-      PhrasePositions pp = pq.pop();
-      start = pp.realPosition;
-      int matchLength = end - pp.position;
-      int next = pq.top().position;
-      int nextStart = pq.top().realPosition;
-      while (advancePP(pp)) {
-        if (hasRpts && !advanceRpts(pp)) {
-          break; // pps exhausted
-        }
-        if (pp.position > next) { // done minimizing current match-length
-          if (matchLength <= slop) {
-            pq.add(pp);
-            if (pp.realPosition > nextEnd)
-              nextEnd = pp.realPosition;
-            return start;
+    float freq = 0.0f;
+    numMatches = 0;
+    PhrasePositions pp = pq.pop();
+    int matchLength = end - pp.position;
+    int next = pq.top().position; 
+    while (advancePP(pp)) {
+      if (hasRpts && !advanceRpts(pp)) {
+        break; // pps exhausted
+      }
+      if (pp.position > next) { // done minimizing current match-length 
+        if (matchLength <= slop) {
+          freq += (1.0 / (1.0 + matchLength)); // score match
+          numMatches++;
+          if (!needsScores) {
+            return freq;
           }
-          pq.add(pp);
-          pp = pq.pop();
-          next = pq.top().position;
-          matchLength = end - pp.position;
-        } else {
-          int matchLength2 = end - pp.position;
-          if (matchLength2 < matchLength) {
-            matchLength = matchLength2;
-          }
-          if (pp.realPosition > nextStart) {
-            start = nextStart;
-          }
-          else {
-            start = pp.realPosition;
-          }
+        }      
+        pq.add(pp);
+        pp = pq.pop();
+        next = pq.top().position;
+        matchLength = end - pp.position;
+      } else {
+        int matchLength2 = end - pp.position;
+        if (matchLength2 < matchLength) {
+          matchLength = matchLength2;
         }
       }
-      if (matchLength <= slop) {
-        return start;
-      }
-      return IntervalIterator.NO_MORE_INTERVALS;
     }
+    if (matchLength <= slop) {
+      freq += (1.0 / (1.0 + matchLength)); // score match
+      numMatches++;
+    }    
+    return freq;
   }
 
   /** advance a PhrasePosition and update 'end', return false if exhausted */
@@ -259,9 +242,6 @@ final class SloppyPhraseScorer extends Scorer {
       if (pp.position > end) {
         end = pp.position;
       }
-      if (pp.realPosition > nextEnd) {
-        nextEnd = pp.realPosition;
-      }
       pq.add(pp);
     }
   }
@@ -290,9 +270,6 @@ final class SloppyPhraseScorer extends Scorer {
     for (PhrasePositions pp : phrasePositions) {  // iterate cyclic list: done once handled max
       if (pp.position > end) {
         end = pp.position;
-      }
-      if (pp.realPosition > nextEnd) {
-        nextEnd = pp.realPosition;
       }
       pq.add(pp);
     }
@@ -538,13 +515,11 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  int freq() throws IOException {
-    ensureFreq();
+  int freq() {
     return numMatches;
   }
 
-  float sloppyFreq() throws IOException {
-    ensureFreq();
+  float sloppyFreq() {
     return sloppyFreq;
   }
   
@@ -568,36 +543,8 @@ final class SloppyPhraseScorer extends Scorer {
 //      }
 //    }
 //  }
-
-  /**
-   * Score a candidate doc for all slop-valid position-combinations (matches)
-   * encountered while traversing/hopping the PhrasePositions.
-   * <br> The score contribution of a match depends on the distance:
-   * <br> - highest score for distance=0 (exact match).
-   * <br> - score gets lower as distance gets higher.
-   * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice:
-   * once for "a b" (distance=0), and once for "b a" (distance=2).
-   * <br>Possibly not all valid combinations are encountered, because for efficiency
-   * we always propagate the least PhrasePosition. This allows to base on
-   * PriorityQueue and move forward faster.
-   * As result, for example, document "a b c b a"
-   * would score differently for queries "a b c"~4 and "c b a"~4, although
-   * they really are equivalent.
-   * Similarly, for doc "a b c b a f g", query "c b"~2
-   * would get same score as "g f"~2, although "c b"~2 could be matched twice.
-   * We may want to fix this in the future (currently not, for performance reasons).
-   */
-  private void ensureFreq() throws IOException {
-    if (sloppyFreq == -1) {
-      numMatches = 1;
-      sloppyFreq = intervals.score();
-      while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
-        sloppyFreq += intervals.score();
-        numMatches++;
-      }
-    }
-  }
-
+  
+  
   @Override
   public int docID() {
     return conjunction.docID(); 
@@ -605,7 +552,6 @@ final class SloppyPhraseScorer extends Scorer {
   
   @Override
   public float score() throws IOException {
-    ensureFreq();
     return docScorer.score(docID(), sloppyFreq);
   }
 
@@ -618,20 +564,12 @@ final class SloppyPhraseScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public IntervalIterator intervals(String field) {
-    if (this.field.equals(field))
-      return new CachedIntervalIterator(intervals, this);
-    return null;
-  }
-
-  @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
-        sloppyFreq = -1;
-        intervals.reset(docID());
-        return intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
+        sloppyFreq = phraseFreq(); // check for phrase
+        return sloppyFreq != 0F;
       }
 
       @Override

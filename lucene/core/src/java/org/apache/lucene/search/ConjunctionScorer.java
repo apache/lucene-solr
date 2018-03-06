@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
@@ -102,27 +101,14 @@ class ConjunctionScorer extends Scorer {
     return children;
   }
 
-  @Override
-  public IntervalIterator intervals(String field) {
-    List<IntervalIterator> subIntervals = new ArrayList<>();
-    for (Scorer scorer : required) {
-      IntervalIterator it = scorer.intervals(field);
-      if (it != null) {
-        subIntervals.add(it);
-      }
-    }
-    if (subIntervals.size() == 0) {
-      return null;
-    }
-    return new DisjunctionIntervalIterator(subIntervals.size()) {
-      @Override
-      protected void fillQueue(int doc) throws IOException {
-        for (IntervalIterator it : subIntervals) {
-          it.reset(doc);
-          queue.add(it);
-        }
-      }
-    };
-  }
+  static final class DocsAndFreqs {
+    final long cost;
+    final DocIdSetIterator iterator;
+    int doc = -1;
 
+    DocsAndFreqs(DocIdSetIterator iterator) {
+      this.iterator = iterator;
+      this.cost = iterator.cost();
+    }
+  }
 }

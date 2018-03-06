@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.PostingsEnum;
-
 /**
  * Different modes of search.
  */
@@ -31,11 +29,6 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
-
-    @Override
-    public int minRequiredPostings() {
-      return PostingsEnum.FREQS;
-    }
   },
 
   /**
@@ -46,26 +39,6 @@ public enum ScoreMode {
     @Override
     public boolean needsScores() {
       return false;
-    }
-
-    @Override
-    public int minRequiredPostings() {
-      return PostingsEnum.NONE;
-    }
-  },
-
-  /**
-   * Produced scorers will allow visiting all matches, and expose positions
-   */
-  COMPLETE_POSITIONS {
-    @Override
-    public boolean needsScores() {
-      return false;
-    }
-
-    @Override
-    public int minRequiredPostings() {
-      return PostingsEnum.POSITIONS;
     }
   },
 
@@ -78,22 +51,10 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
-
-    @Override
-    public int minRequiredPostings() {
-      return PostingsEnum.FREQS;
-    }
   };
 
   /**
    * Whether this {@link ScoreMode} needs to compute scores.
    */
   public abstract boolean needsScores();
-
-  /**
-   * The minimum flags to be passed to {@link org.apache.lucene.index.TermsEnum#postings(PostingsEnum, int)}
-   */
-  public abstract int minRequiredPostings();
-
-
 }

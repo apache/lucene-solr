@@ -31,6 +31,10 @@ public interface IntervalIterator {
    */
   int NO_MORE_INTERVALS = Integer.MAX_VALUE;
 
+  DocIdSetIterator approximation();
+
+  boolean advanceTo(int doc) throws IOException;
+
   /**
    * The start of the current interval
    */
@@ -47,13 +51,6 @@ public interface IntervalIterator {
   int innerWidth();
 
   /**
-   * Called to reset the iterator on a new document
-   *
-   * @return true if the iterator's parent Scorer is positioned on the given doc id
-   */
-  boolean reset(int doc) throws IOException;
-
-  /**
    * Advance the iterator to the next interval
    *
    * @return the starting interval of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
@@ -68,36 +65,6 @@ public interface IntervalIterator {
     return (float) (1.0 / (1 + innerWidth()));
   }
 
-  /**
-   * An empty iterator that always returns {@code false} from {@link #reset(int)} and
-   * {@link IntervalIterator#NO_MORE_INTERVALS} from {@link #nextInterval()}
-   */
-  IntervalIterator EMPTY = new IntervalIterator() {
-
-    @Override
-    public int start() {
-      return -1;
-    }
-
-    @Override
-    public int end() {
-      return -1;
-    }
-
-    @Override
-    public int innerWidth() {
-      return 0;
-    }
-
-    @Override
-    public boolean reset(int doc) {
-      return false;
-    }
-
-    @Override
-    public int nextInterval() {
-      return NO_MORE_INTERVALS;
-    }
-  };
+  float cost();
 
 }

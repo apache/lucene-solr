@@ -62,18 +62,6 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator intervals(String field) {
-    return new FilterIntervalIterator(reqScorer.intervals(field)) {
-      @Override
-      public boolean reset(int doc) throws IOException {
-        if (doc == ReqExclScorer.this.docID())
-          return in.reset(doc);
-        return false;
-      }
-    };
-  }
-
-  @Override
   public DocIdSetIterator iterator() {
     return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }

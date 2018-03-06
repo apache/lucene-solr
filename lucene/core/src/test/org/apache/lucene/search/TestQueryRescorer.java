@@ -438,11 +438,6 @@ public class TestQueryRescorer extends LuceneTestCase {
             }
 
             @Override
-            public IntervalIterator intervals(String field) {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
             public DocIdSetIterator iterator() {
               return new DocIdSetIterator() {
 

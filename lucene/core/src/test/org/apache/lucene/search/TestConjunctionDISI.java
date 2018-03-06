@@ -150,11 +150,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
       public float getMaxScore(int upTo) throws IOException {
         return 0;
       }
-
-      @Override
-      public IntervalIterator intervals(String field) {
-        return null;
-      }
     };
   }
 

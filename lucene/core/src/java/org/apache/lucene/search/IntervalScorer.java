@@ -21,21 +21,18 @@ import java.io.IOException;
 
 class IntervalScorer extends Scorer {
 
-  protected final IntervalIterator intervals;
-  private final String field;
-  protected final DocIdSetIterator approximation;
+  private final IntervalIterator intervals;
+  private final DocIdSetIterator approximation;
   private final LeafSimScorer simScorer;
 
   private float freq = -1;
   private int lastScoredDoc = -1;
 
-  protected IntervalScorer(Weight weight, String field, DocIdSetIterator approximation,
-                           IntervalIterator intervals, LeafSimScorer simScorer) {
+  protected IntervalScorer(Weight weight, IntervalIterator intervals, LeafSimScorer simScorer) {
     super(weight);
     this.intervals = intervals;
-    this.approximation = approximation;
+    this.approximation = intervals.approximation();
     this.simScorer = simScorer;
-    this.field = field;
   }
 
   @Override
@@ -75,13 +72,6 @@ class IntervalScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator intervals(String field) {
-    if (this.field.equals(field))
-      return new CachedIntervalIterator(intervals, this);
-    return null;
-  }
-
-  @Override
   public DocIdSetIterator iterator() {
     return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }
@@ -91,12 +81,12 @@ class IntervalScorer extends Scorer {
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        return intervals.reset(approximation.docID()) && intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
+        return intervals.advanceTo(docID()) && intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
       }
 
       @Override
       public float matchCost() {
-        return 0;
+        return intervals.cost();
       }
     };
   }

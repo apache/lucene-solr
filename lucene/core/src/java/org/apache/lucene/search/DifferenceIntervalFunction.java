@@ -101,13 +101,22 @@ public abstract class DifferenceIntervalFunction {
     }
 
     @Override
-    public boolean reset(int doc) throws IOException {
-      bpos = b.reset(doc);
+    public boolean advanceTo(int doc) throws IOException {
+      bpos = b.advanceTo(doc);
       if (bpos)
         bpos = b.nextInterval() != NO_MORE_INTERVALS;
-      return a.reset(doc);
+      return a.advanceTo(doc);
     }
 
+    @Override
+    public DocIdSetIterator approximation() {
+      return a.approximation();
+    }
+
+    @Override
+    public float cost() {
+      return a.cost() + b.cost();
+    }
   }
 
   private static class NonOverlappingIterator extends RelativeIterator {
@@ -166,7 +175,7 @@ public abstract class DifferenceIntervalFunction {
 
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      IntervalIterator notWithin = new IntervalIterator() {
+      IntervalIterator notWithin = new FilterIntervalIterator(subtrahend) {
         @Override
         public int start() {
           int start = subtrahend.start();
@@ -185,16 +194,6 @@ public abstract class DifferenceIntervalFunction {
         @Override
         public int innerWidth() {
           throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean reset(int doc) throws IOException {
-          return subtrahend.reset(doc);
-        }
-
-        @Override
-        public int nextInterval() throws IOException {
-          return subtrahend.nextInterval();
         }
       };
       return NON_OVERLAPPING.apply(minuend, notWithin);

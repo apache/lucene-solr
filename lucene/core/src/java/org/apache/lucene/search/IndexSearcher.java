@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -698,7 +697,7 @@ public class IndexSearcher {
   public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
     Weight weight = query.createWeight(this, scoreMode, boost);
-    if (scoreMode.minRequiredPostings() == PostingsEnum.NONE && queryCache != null) {
+    if (scoreMode.needsScores() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;

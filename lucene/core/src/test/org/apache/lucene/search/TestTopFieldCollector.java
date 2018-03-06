@@ -264,12 +264,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     public DocIdSetIterator iterator() {
                       return scorer.iterator();
                     }
-
-                    @Override
-                    public IntervalIterator intervals(String field) {
-                      return scorer.intervals(field);
-                    }
-
+                    
                   };
                   super.setScorer(s);
                 }

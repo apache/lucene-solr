@@ -51,11 +51,6 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     @Override public int docID() { return doc; }
 
     @Override
-    public IntervalIterator intervals(String field) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public DocIdSetIterator iterator() {
       return new DocIdSetIterator() {
         @Override public int docID() { return doc; }

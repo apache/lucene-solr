@@ -193,13 +193,11 @@ public class MultiPhraseQuery extends Query {
     private final Similarity.SimScorer stats;
     private final Map<Term,TermStates> termStates = new HashMap<>();
     private final ScoreMode scoreMode;
-    private final int postingsFlags;
 
     public MultiPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
       this.scoreMode = scoreMode;
-      this.postingsFlags = Math.max(scoreMode.minRequiredPostings(), PostingsEnum.POSITIONS);
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
 
@@ -267,7 +265,7 @@ public class MultiPhraseQuery extends Query {
           TermState termState = termStates.get(term).get(context);
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
-            postings.add(termsEnum.postings(null, this.postingsFlags));
+            postings.add(termsEnum.postings(null, PostingsEnum.POSITIONS));
             totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
         }
@@ -292,11 +290,11 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        return new ExactPhraseScorer(this, field, postingsFreqs,
+        return new ExactPhraseScorer(this, postingsFreqs,
                                       new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
-        return new SloppyPhraseScorer(this, field, postingsFreqs, slop,
+        return new SloppyPhraseScorer(this, postingsFreqs, slop,
                                         new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
                                         scoreMode.needsScores(), totalMatchCost);
       }
