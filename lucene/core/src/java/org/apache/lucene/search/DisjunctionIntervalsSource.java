@@ -90,7 +90,10 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       this.intervalQueue = new PriorityQueue<IntervalIterator>(iterators.size()) {
         @Override
         protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
-          return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
+          // This is different to the Vigna paper, because we're interested in matching rather
+          // than in minimizing intervals, so a wider interval should sort before its prefixes
+          return a.start() < b.start() || (a.start() == b.start() && a.end() > b.end());
+          //return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
         }
       };
       this.disiQueue = new DisiPriorityQueue(iterators.size());
@@ -142,13 +145,13 @@ class DisjunctionIntervalsSource extends IntervalsSource {
           intervalQueue.add(it);
         }
       }
-      current = null;
+      current = UNPOSITIONED;
       return intervalQueue.size() > 0;
     }
 
     @Override
     public int nextInterval() throws IOException {
-      if (current == null) {
+      if (current == UNPOSITIONED) {
         current = intervalQueue.top();
         return current.start();
       }
@@ -160,11 +163,16 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         }
       }
       if (intervalQueue.size() == 0) {
-        current = null;
+        current = EMPTY;
         return IntervalIterator.NO_MORE_INTERVALS;
       }
       current = intervalQueue.top();
       return current.start();
+    }
+
+    @Override
+    public String toString() {
+      return approximation.docID() + ":[" + start() + "->" + end() + "]";
     }
 
     private boolean contains(IntervalIterator it, int start, int end) {
@@ -172,4 +180,78 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
   }
+
+  private static final IntervalIterator EMPTY = new IntervalIterator() {
+    @Override
+    public DocIdSetIterator approximation() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceTo(int doc) throws IOException {
+      return false;
+    }
+
+    @Override
+    public int start() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int end() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int innerWidth() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public float cost() {
+      return 0;
+    }
+  };
+
+  private static final IntervalIterator UNPOSITIONED = new IntervalIterator() {
+    @Override
+    public DocIdSetIterator approximation() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceTo(int doc) throws IOException {
+      return false;
+    }
+
+    @Override
+    public int start() {
+      return -1;
+    }
+
+    @Override
+    public int end() {
+      return -1;
+    }
+
+    @Override
+    public int innerWidth() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public float cost() {
+      return 0;
+    }
+  };
 }

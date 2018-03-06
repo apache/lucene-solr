@@ -49,6 +49,11 @@ public abstract class IntervalFilter extends FilterIntervalIterator {
         int width = innerWidth();
         return width >= minWidth && width <= maxWidth;
       }
+
+      @Override
+      public String toString() {
+        return "widthfilter(" + minWidth + "," + maxWidth + "," + in.toString() + ")";
+      }
     };
   }
 

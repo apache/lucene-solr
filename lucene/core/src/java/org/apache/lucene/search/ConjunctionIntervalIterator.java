@@ -63,4 +63,8 @@ abstract class ConjunctionIntervalIterator implements IntervalIterator {
     return cost;
   }
 
+  @Override
+  public String toString() {
+    return approximation.docID() + ":[" + start() + "->" + end() + "]";
+  }
 }
