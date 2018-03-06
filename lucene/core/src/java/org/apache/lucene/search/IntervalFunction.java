@@ -157,7 +157,10 @@ public abstract class IntervalFunction {
         start = subIterators.get(0).start();
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
-        innerWidth = b - subIterators.get(0).end() - 1;
+        innerWidth = 0;
+        for (int j = 1; j < subIterators.size(); j++) {
+          innerWidth += subIterators.get(j).start() - subIterators.get(j - 1).end() - 1;
+        }
         i = 1;
         if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
           return start;

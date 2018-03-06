@@ -64,7 +64,9 @@ public class TestIntervalQuery extends LuceneTestCase {
       "w1 xx w2 w4 yy w3",
       "w1 w3 xx w2 yy w3",
       "w2 w1",
-      "w2 w1 w3 w2 w4"
+      "w2 w1 w3 w2 w4",
+      "coordinate genome mapping research",
+      "coordinate genome research"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -155,6 +157,14 @@ public class TestIntervalQuery extends LuceneTestCase {
         Intervals.unordered(Intervals.term("w1"), Intervals.term("w4"))
     ));
     checkHits(q, new int[]{ 1, 3, 4, 5 });
+  }
+
+  public void testNestedOr() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.orderedNear(0,
+        Intervals.term("coordinate"),
+        Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
   }
 
 }
