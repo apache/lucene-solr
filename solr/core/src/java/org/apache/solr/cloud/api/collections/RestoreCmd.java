@@ -191,6 +191,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       // note: when createCollection() returns, the collection exists (no race)
     }
 
+    // Restore collection properties
+    backupMgr.uploadCollectionProperties(location, backupName, restoreCollectionName);
+
     DocCollection restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
     DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());

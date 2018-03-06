@@ -58,6 +58,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -133,6 +134,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
@@ -682,6 +685,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String val = req.getParams().get(VALUE_LONG);
       ClusterProperties cp = new ClusterProperties(h.coreContainer.getZkController().getZkClient());
       cp.setClusterProperty(name, val);
+      return null;
+    }),
+    COLLECTIONPROP_OP(COLLECTIONPROP, (req, rsp, h) -> {
+      String collection = req.getParams().required().get(NAME);
+      String name = req.getParams().required().get(PROPERTY_NAME);
+      String val = req.getParams().get(PROPERTY_VALUE);
+      CollectionProperties cp = new CollectionProperties(h.coreContainer.getZkController().getZkClient());
+      cp.setCollectionProperty(collection, name, val);
       return null;
     }),
     REQUESTSTATUS_OP(REQUESTSTATUS, (req, rsp, h) -> {

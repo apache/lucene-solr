@@ -1073,6 +1073,49 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 </response>
 ----
 
+[[collectionprop]]
+== COLLECTIONPROP: Collection Properties
+
+Add, edit or delete a collection property.
+
+`/admin/collections?action=COLLECTIONPROP&name=_collectionName_&propertyName=_propertyName_&propertyValue=_propertyValue_`
+
+=== COLLECTIONPROP Parameters
+
+`name`::
+The name of the collection for which the property would be set.
+
+`propertyName`::
+The name of the property.
+
+`propertyValue`::
+The value of the property. When not provided, the property is deleted.
+
+=== COLLECTIONPROP Response
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+=== Examples using COLLECTIONPROP
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&val=bar&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 
