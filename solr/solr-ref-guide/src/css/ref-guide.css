@@ -2165,7 +2165,8 @@ ol.lowergreek
     background: none;
 }
 
-td.hdlist1
+td.hdlist1,
+td.hdlist1 > code
 {
     padding-right: .75em;
     font-weight: bold;
