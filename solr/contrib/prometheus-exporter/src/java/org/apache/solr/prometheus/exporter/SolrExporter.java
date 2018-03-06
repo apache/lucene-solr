@@ -56,31 +56,31 @@ public class SolrExporter {
   private static final String ARG_PORT_METAVAR = "PORT";
   private static final String ARG_PORT_DEST = "port";
   private static final Integer ARG_PORT_DEFAULT = 9983;
-  private static final String ARG_PORT_HELP = "solr-exporter listen port";
+  private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + String.valueOf(ARG_PORT_DEFAULT) + ".";
 
   private static final String[] ARG_BASE_URL_FLAGS = { "-b", "--baseurl" };
   private static final String ARG_BASE_URL_METAVAR = "BASE_URL";
   private static final String ARG_BASE_URL_DEST = "baseUrl";
   private static final String ARG_BASE_URL_DEFAULT = "";
-  private static final String ARG_BASE_URL_HELP = "specify Solr base URL when connecting to Solr in standalone mode (for example 'http://localhost:8983/solr')";
+  private static final String ARG_BASE_URL_HELP = "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.";
 
   private static final String[] ARG_ZK_HOST_FLAGS = { "-z", "--zkhost" };
   private static final String ARG_ZK_HOST_METAVAR = "ZK_HOST";
   private static final String ARG_ZK_HOST_DEST = "zkHost";
   private static final String ARG_ZK_HOST_DEFAULT = "";
-  private static final String ARG_ZK_HOST_HELP = "specify ZooKeeper connection string when connecting to Solr in SolrCloud mode (for example 'localhost:2181/solr')";
+  private static final String ARG_ZK_HOST_HELP = "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.";
 
   private static final String[] ARG_CONFIG_FLAGS = { "-f", "--config-file" };
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
   private static final String ARG_CONFIG_DEFAULT = "./conf/solr-exporter-config.xml";
-  private static final String ARG_CONFIG_HELP = "specify configuration file";
+  private static final String ARG_CONFIG_HELP = "Specify the configuration file; default is " + ARG_CONFIG_DEFAULT + ".";
 
-  private static final String[] ARG_NUM_THREADS_FLAGS = { "-n", "--num-thread" };
+  private static final String[] ARG_NUM_THREADS_FLAGS = { "-n", "--num-threads" };
   private static final String ARG_NUM_THREADS_METAVAR = "NUM_THREADS";
   private static final String ARG_NUM_THREADS_DEST = "numThreads";
   private static final Integer ARG_NUM_THREADS_DEFAULT = 1;
-  private static final String ARG_NUM_THREADS_HELP = "specify number of threads";
+  private static final String ARG_NUM_THREADS_HELP = "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; default is " + String.valueOf(ARG_NUM_THREADS_DEFAULT) + ".";
 
   private int port;
   private SolrClient solrClient;
@@ -135,7 +135,6 @@ public class SolrExporter {
   public void stop() {
     this.httpServer.stop();
     this.registry.unregister(this.collector);
-//    this.collector.shutdown();
   }
 
   /**

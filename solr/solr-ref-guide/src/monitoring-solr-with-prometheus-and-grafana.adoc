@@ -25,6 +25,7 @@ image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.
 
 This feature is experimental status.
 
+
 == Running solr-exporter
 
 You can start solr-exporter by running `./bin/solr-exporter` from the solr-exporter directory.
@@ -56,25 +57,27 @@ See command help:
 [source,plain]
 ----
 $ ./bin/solr-exporter -h
-usage: SolrCollector [-h] [-v] [-p PORT] [-b BASE_URL] [-z ZK_HOST] [-f CONFIG]
-                     [-n NUM_THREADS]
-
-Prometheus exporter for Apache Solr.
-
-optional arguments:
-  -h, --help             show this help message and exit
-  -p PORT, --port PORT   solr-exporter listen port
-  -b BASE_URL, --baseurl BASE_URL
-                         specify Solr base URL when connecting  to Solr in standalone mode (for
-                         example 'http://localhost:8983/solr')
-  -z ZK_HOST, --zkhost ZK_HOST
-                         specify  ZooKeeper  connection  string  when  connecting  to  Solr  in
-                         SolrCloud mode (for example 'localhost:2181/solr')
-  -f CONFIG, --config-file CONFIG
-                         specify configuration file
-  -n NUM_THREADS, --num-thread NUM_THREADS
-                         specify number of threads
 ----
+
+=== Command Line Parameters
+
+`-p`, `--port`::
+Specify the solr-exporter HTTP listen port; default is `9983`.
+
+`-b`, `--baseurl`::
+Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the `-b` parameter and the `-z` parameter, connect to `http://localhost:8983/solr`. For example `http://localhost:8983/solr`.
+
+`-z`, `--zkhost`::
+Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the `-b` parameter and the `-z` parameter, connect to `http://localhost:8983/solr`. For example `localhost:2181/solr`.
+
+`-f`, `--config-file`::
+Specify the configuration file; default is `./conf/solr-exporter-config.xml`.
+
+`-n`, `--num-threads`::
+Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; default is `1`.
+
+
+== Metrics Exposition URL
 
 The Solr's metrics exposed by solr-exporter can see at the following URL.
 
@@ -217,32 +220,70 @@ The configuration is in `./config/solr-exporter-config.xml`. An example with all
 </config>
 ----
 
-|===
-|Name|Description
+===  solr-exporter Configuration Tags and Elements
 
-|ping|Scrape <<ping.adoc#ping,Ping>> response.
-|metrics|Scrape <<metrics-reporting.adoc#metrics-api,Metrics API>> response.
-|collections|Scrape <<collections-api.adoc#collections-api,Collections API>> response.
-|search|Scrape <<searching.adoc#searching,Search API>> response.
-|*.query|Query parameter for each features. You can specify `collection`, `core`, `path`, and `params`.
-|*.jsonQueries|JSON Query that is jq syntax. For more details, see https://stedolan.github.io/jq/manual/[https://stedolan.github.io/jq/manual/].
-|===
+`/config/rules/ping`::
+Scrape <<ping.adoc#ping,Ping>> response.
+
+`/config/rules/metrics`::
+Scrape <<metrics-reporting.adoc#metrics-api,Metrics API>> response.
+
+`/config/rules/collections`::
+Scrape <<collections-api.adoc#collections-api,Collections API>> response.
+
+`/config/rules/search`::
+Scrape <<searching.adoc#searching,Search API>> response.
+
+`*[@query]`::
+Query parameter for each features. You can specify `collection`, `core`, `path`, and `params`.
+
+`*[@jsonQueries]`::
+JSON Query that is jq syntax. For more details, see https://stedolan.github.io/jq/manual/[https://stedolan.github.io/jq/manual/].
 
 jq query has to output JSON in the following format.
 
 [source,json]
 ----
 {
-  name         : "solr_ping",
-  type         : "GAUGE",
-  help         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
-  label_names  : ["base_url","core"],
-  label_values : ["http://localhost:8983/solr","collection1"],
-  value        : 1.0
+  "name"         : "solr_ping",
+  "type"         : "GAUGE",
+  "help"         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+  "label_names"  : ["base_url","core"],
+  "label_values" : ["http://localhost:8983/solr","collection1"],
+  "value"        : 1.0
 }
 ----
 
-It will be converted to the following exposition format.
+===  solr-exporter Exposition Format
+
+solr-exporter converts the JSON to the following exposition format:
+
+[source,plain]
+----
+# TYPE <name> <type>
+# HELP <name> <help>
+<name>{<label_names[0]>=<label_values[0]>,<label_names[1]>=<labelvalues[1]>,...} <value>
+----
+
+`name`::
+The metric name to set. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+
+`type`::
+The type of the metric, can be `COUNTER`, `GAUGE`, `SUMMARY`, `HISTOGRAM` or `UNTYPED`. For more detauils, see https://prometheus.io/docs/concepts/metric_types/[https://prometheus.io/docs/concepts/metric_types/].
+
+`help`::
+Help text for the metric.
+
+`label_names`::
+Label names for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+
+`label_values`::
+Label values for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+
+`value`::
+Value for the metric. Value must be set to Double type.
+
+For example, solr-exporter converts the above JSON to the following:
 
 [source,plain]
 ----
@@ -250,17 +291,6 @@ It will be converted to the following exposition format.
 # HELP solr_ping See following URL: https://lucene.apache.org/solr/guide/ping.html
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
-
-|===
-|Name|Description
-
-|name|The metric name to set. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
-|type|The type of the metric, can be `COUNTER`, `GAUGE`, `SUMMARY`, `HISTOGRAM` or `UNTYPED`. For more detauils, see https://prometheus.io/docs/concepts/metric_types/[https://prometheus.io/docs/concepts/metric_types/].
-|help|Help text for the metric.
-|label_names|Label names for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
-|label_values|Label values for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
-|value|Value for the metric. Value must be set to Double type.
-|===
 
 
 == Prometheus Configuration
