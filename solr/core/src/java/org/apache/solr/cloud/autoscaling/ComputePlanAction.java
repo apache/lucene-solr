@@ -209,7 +209,7 @@ public class ComputePlanAction extends TriggerActionBase {
         }
         break;
       case SCHEDULED:
-        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP);
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
         CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
         suggester = session.getSuggester(action);
         break;
