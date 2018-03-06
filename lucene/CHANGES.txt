@@ -645,7 +645,11 @@ Other
   (David Smiley)
 
 ======================= Lucene 6.6.3 =======================
-(No Changes)
+
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
 ======================= Lucene 6.6.2 =======================
 
