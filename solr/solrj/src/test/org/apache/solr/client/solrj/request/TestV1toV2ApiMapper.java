@@ -51,6 +51,13 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
     assertEquals("shard1", Utils.getObjectByPath(m,true,"/add-replica/shard"));
     assertEquals("NRT", Utils.getObjectByPath(m,true,"/add-replica/type"));
 
+    CollectionAdminRequest.CollectionProp collectionProp = CollectionAdminRequest.setCollectionProperty("mycoll", "prop", "value");
+    v2r = V1toV2ApiMapper.convert(collectionProp).build();
+    m = (Map) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
+    assertEquals("/c", v2r.getPath());
+    assertEquals("mycoll", Utils.getObjectByPath(m,true,"/set-collection-property/name"));
+    assertEquals("prop", Utils.getObjectByPath(m,true,"/set-collection-property/propertyName"));
+    assertEquals("value", Utils.getObjectByPath(m,true,"/set-collection-property/propertyValue"));
 
 
   }

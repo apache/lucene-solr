@@ -1823,6 +1823,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  public static CollectionProp setCollectionProperty(String collection, String propertyName, String propertyValue) {
+    return new CollectionProp(collection, propertyName, propertyValue);
+  }
+
+  // COLLECTIONPROP request
+  public static class CollectionProp extends AsyncCollectionSpecificAdminRequest {
+
+    private String propertyName;
+    private String propertyValue;
+
+    private CollectionProp(String collection, String propertyName, String propertyValue) {
+      super(CollectionAction.COLLECTIONPROP, collection);
+      this.propertyName = checkNotNull("propertyName", propertyName);
+      this.propertyValue = propertyValue;
+    }
+
+    public String getPropertyName() {
+      return this.propertyName;
+    }
+
+    public String getPropertyValue() {
+      return this.propertyValue;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.add(CollectionAdminParams.PROPERTY_NAME, propertyName);
+      params.add(CollectionAdminParams.PROPERTY_VALUE, propertyValue);
+
+      return params;
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
   /**
    * Returns a SolrRequest to migrate data matching a split key to another collection
    */

@@ -184,6 +184,8 @@ New Features
 
 * SOLR-11267: Add support for "add-distinct" atomic update operation (Amrit Sarkar via noble )
 
+* SOLR-11960: Add collection level properties similar to cluster properties (Peter Rusko, Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
