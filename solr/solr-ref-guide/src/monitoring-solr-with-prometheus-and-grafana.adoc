@@ -16,77 +16,99 @@
 // specific language governing permissions and limitations
 // under the License.
 
-You can monitor Solr using solr-exporter that exposes Solr's metrics to https://prometheus.io[Prometheus], and visualize metrics using https://grafana.com[Grafana].
+If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
-It allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#metrics-api,Metrics API>> but also facet counts which come from <<searching.adoc#searching,Searching>>.
+A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#metrics-api,Metrics API>>, but also facet counts which come from <<searching.adoc#searching,Searching>> and responses to <<collections-api.adoc#collections-api,Collections API>> commands and <<ping.adoc#ping,PingRequestHandler>> requests.
+
+This graphic provides a more detailed view:
 
 .solr-exporter Diagram
 image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
-This feature is experimental status.
+NOTE: This feature is considered experimental, meaning future improvements may break compatibility.
 
+The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
 
-== Running solr-exporter
+There are three aspects to running `solr-exporter`:
 
-You can start solr-exporter by running `./bin/solr-exporter` from the solr-exporter directory.
+* Modify the `solr-exporter-config.xml` to define the data to collect. Solr has a default configuration you can use, but if you would like to modify it before running the exporter the first time, see the section below <<Exporter Configuration>>.
+* Start the exporter from within Solr. See the section below <<Starting the Exporter>>.
+* Modify your Prometheus configuration to listen on the correct port. See the section below <<Prometheus Configuration>>
 
-[source,plain]
+== Starting the Exporter
+You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `contrib/prometheus-exporter` directory.
+
+See the commands below depending on your operating system and Solr operating mode:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#solr-exporter-linux]
+====
+[.tab-label]*Linux*
+
+.Standalone mode
+[source,bash]
 ----
-$ cd ./contrib/prometheus-exporter
-$ ./bin/solr-exporter -p 9983 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
+$ cd contrib/prometheus-exporter
+$ ./bin/solr-exporter -p 9854 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
 ----
 
-If you are on Windows platform, you can start solr-exporter by running `.\bin\solr-exporter.cmd` instead.
+.SolrCloud mode
+[source,bash]
+----
+$ cd contrib/prometheus-exporter
+$ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
+----
+====
 
-[source,plain]
+[example.tab-pane#solr-exporter-windows]
+====
+[.tab-label]*Windows*
+
+.Standalone mode
+[source,text]
 ----
-> cd .\contrib\prometheus
-> .\bin\solr-exporter.cmd -p 9983 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
+> cd contrib\prometheus-exporter
+> .\bin\solr-exporter.cmd -p 9854 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
 ----
 
-You can also connect to Solr in SolrCloud mode like this.
-
-[source,plain]
+.SolrCloud mode
+[source,text]
 ----
-$ cd ./contrib/prometheus
-$ ./bin/solr-exporter -p 9983 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
+> cd contrib\prometheus-exporter
+> .\bin\solr-exporter -p 9854 -z localhost:2181/solr -f .\conf\solr-exporter-config.xml -n 16
 ----
-
-See command help:
-
-[source,plain]
-----
-$ ./bin/solr-exporter -h
-----
+====
+--
 
 === Command Line Parameters
 
+The parameters in the example start commands shown above
+
+`h`, `--help`::
+Displays command line help and usage.
+
 `-p`, `--port`::
-Specify the solr-exporter HTTP listen port; default is `9983`.
+The port where Prometheus will listen for new data. This port will be used to configure Prometheus. It can be any port not already in use on your server. The default is `9983`.
 
 `-b`, `--baseurl`::
-Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the `-b` parameter and the `-z` parameter, connect to `http://localhost:8983/solr`. For example `http://localhost:8983/solr`.
+The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode. If you are running Solr in SolrCloud mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
 `-z`, `--zkhost`::
-Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the `-b` parameter and the `-z` parameter, connect to `http://localhost:8983/solr`. For example `localhost:2181/solr`.
+The ZooKeeper connect string (such as `localhost:8983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
 `-f`, `--config-file`::
-Specify the configuration file; default is `./conf/solr-exporter-config.xml`.
+The path to the configuration file that defines the Solr metrics to read. The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
 
 `-n`, `--num-threads`::
-Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; default is `1`.
+The number of threads. The `solr-exporter` creates thread pools for requests to Solr. Request latency can be improved by increasing the number of threads. The default is `1`.
 
+The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:9983/solr/admin/metrics`.
 
-== Metrics Exposition URL
+== Exporter Configuration
+The configuration for the `solr-exporter` defines the data to get from Solr. This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.
 
-The Solr's metrics exposed by solr-exporter can see at the following URL.
-
-http://localhost:9983/metrics[http://localhost:9983/metrics]
-
-
-== solr-exporter Configuration
-
-The configuration is in `./config/solr-exporter-config.xml`. An example with all possible options:
+A default example configuration is in `contrib/prometheus-exporter/config/solr-exporter-config.xml`. Below is a slightly shortened version of it:
 
 [source,xml]
 ----
@@ -144,9 +166,7 @@ The configuration is in `./config/solr-exporter-config.xml`. An example with all
             value        : $value
             }
           </str>
-
 ...
-
         </arr>
       </lst>
     </metrics>
@@ -171,9 +191,7 @@ The configuration is in `./config/solr-exporter-config.xml`. An example with all
               value        : $value
             }
           </str>
-
 ...
-
         </arr>
       </lst>
     </collections>
@@ -220,43 +238,60 @@ The configuration is in `./config/solr-exporter-config.xml`. An example with all
 </config>
 ----
 
-===  solr-exporter Configuration Tags and Elements
+=== Configuration Tags and Elements
+The `solr-exporter` works by making a request to Solr according to the definitions in the configuration file, scraping the response, and converting it to a JSON structure Prometheus can understand. The configuration file defines the elements to request, how to scrape them, and where to place the extracted data in the JSON template.
 
-`/config/rules/ping`::
-Scrape <<ping.adoc#ping,Ping>> response.
+The `solr-exporter` configuration file always starts and closes with two simple elements:
 
-`/config/rules/metrics`::
-Scrape <<metrics-reporting.adoc#metrics-api,Metrics API>> response.
+[source,xml]
+----
+<config>
+  <rules>
 
-`/config/rules/collections`::
-Scrape <<collections-api.adoc#collections-api,Collections API>> response.
+  </rules>
+</config>
+----
 
-`/config/rules/search`::
-Scrape <<searching.adoc#searching,Search API>> response.
+Between these elements, the data the `solr-exporter` should request is defined. There are several possible types of requests to make:
 
-`*[@query]`::
-Query parameter for each features. You can specify `collection`, `core`, `path`, and `params`.
+[horizontal]
+`<ping>`:: Scrape the response to a <<ping.adoc#ping,PingRequestHandler>> request.
+`<metrics>`:: Scrape the response to a <<metrics-reporting.adoc#metrics-api,Metrics API>> request.
+`<collections>`:: Scrape the response to a <<collections-api.adoc#collections-api,Collections API>> request.
+`<search>`:: Scrape the response to a <<searching.adoc#searching,search>> request.
 
-`*[@jsonQueries]`::
-JSON Query that is jq syntax. For more details, see https://stedolan.github.io/jq/manual/[https://stedolan.github.io/jq/manual/].
+Within each of these types, we need to define the query and how to work with the response. To do this, we define two additional elements:
 
-jq query has to output JSON in the following format.
+`<query>`::
+Defines the query parameter(s) used for the request. This section uses several additional properties to define your query:
 
+`collection`::: The collection to issue the query against. Only used in SolrCloud mode.
+`core`::: The core to issue the query against. Only used in Standalone mode.
+`path`::: The path to the query endpoint where the request will be sent. Examples include `admin/metrics` or `/select` or `admin/collections`.
+`params`::: Additional query parameters. These will vary depending on the request type and the endpoint. For example, if using the Metrics endpoint, you can add parameters to limit the query to a certain group and/or prefix. If you're using the Collections API, the command you want to use would be a parameter.
+
+`<jsonQueries>`::
+This is an array that defines one or more JSON Queries in jq syntax. For more details about how to structure these queries, see https://stedolan.github.io/jq/manual/[the jq user manual].
++
+A jq query has to output JSON in the following format:
++
 [source,json]
 ----
 {
-  "name"         : "solr_ping",
-  "type"         : "GAUGE",
-  "help"         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
-  "label_names"  : ["base_url","core"],
-  "label_values" : ["http://localhost:8983/solr","collection1"],
-  "value"        : 1.0
+  "name": "solr_ping",
+  "type": "GAUGE",
+  "help": "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+  "label_names": ["base_url","core"],
+  "label_values": ["http://localhost:8983/solr","collection1"],
+  "value": 1.0
 }
 ----
 
-===  solr-exporter Exposition Format
+See the section <<Exposition Format>> below for information about what information should go into each property, and an example of how the above example is translated for Prometheus.
 
-solr-exporter converts the JSON to the following exposition format:
+=== Exposition Format
+
+The `solr-exporter` converts the JSON to the following exposition format:
 
 [source,plain]
 ----
@@ -265,25 +300,27 @@ solr-exporter converts the JSON to the following exposition format:
 <name>{<label_names[0]>=<label_values[0]>,<label_names[1]>=<labelvalues[1]>,...} <value>
 ----
 
+The following parameters should be set:
+
 `name`::
-The metric name to set. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+The metric name to set. For more details, see https://prometheus.io/docs/practices/naming/[Prometheus naming best practices].
 
 `type`::
-The type of the metric, can be `COUNTER`, `GAUGE`, `SUMMARY`, `HISTOGRAM` or `UNTYPED`. For more detauils, see https://prometheus.io/docs/concepts/metric_types/[https://prometheus.io/docs/concepts/metric_types/].
+The type of the metric, can be `COUNTER`, `GAUGE`, `SUMMARY`, `HISTOGRAM` or `UNTYPED`. For more details, see https://prometheus.io/docs/concepts/metric_types/[Prometheus metric types].
 
 `help`::
 Help text for the metric.
 
 `label_names`::
-Label names for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+Label names for the metric. For more details, see https://prometheus.io/docs/practices/naming/[Prometheus naming best practices].
 
 `label_values`::
-Label values for the metric. For more details, see https://prometheus.io/docs/practices/naming/[https://prometheus.io/docs/practices/naming/].
+Label values for the metric. For more details, see https://prometheus.io/docs/practices/naming/[Prometheus naming best practices].
 
 `value`::
 Value for the metric. Value must be set to Double type.
 
-For example, solr-exporter converts the above JSON to the following:
+For example, `solr-exporter` converts the JSON in the previous section to the following:
 
 [source,plain]
 ----
@@ -292,27 +329,28 @@ For example, solr-exporter converts the above JSON to the following:
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 
-
 == Prometheus Configuration
 
-You need to specify the solr-exporter listen address into `scrape_configs` in `prometheus.yml`. See following example:
+In order for Prometheus to know about the `solr-exporter`, the listen address must be added to `prometheus.yml`, as in this example:
 
 [source,plain]
 ----
 scrape_configs:
   - job_name: 'solr'
     static_configs:
-      - targets: ['localhost:9983']
+      - targets: ['localhost:9854']
 ----
 
-When you apply the above settings to prometheus, it will start to pull Solr's metrics from solr-exporter.
+If you already have a section for `scrape_configs`, you can add the `job_name` and other values in the same section.
 
+When you apply the settings to Prometheus, it will start to pull Solr's metrics from `solr-exporter`.
 
-== Grafana Dashboard
+== Sample Grafana Dashboard
 
-A Grafana sample dashboard is provided at the following JSON file.
+A Grafana sample dashboard is provided in the following JSON file: `contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`.
+You can place this with your other Grafana dashboard configurations and modify it as necessary depending on any customization you've done for the `solr-exporter` configuration.
 
-`./contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`
+This screenshot shows what it might look like:
 
 .Grafana Dashboard
 image::images/monitoring-solr-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
