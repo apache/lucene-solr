@@ -41,7 +41,6 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RTimer;
 import org.noggit.CharArr;
-import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 
