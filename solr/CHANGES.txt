@@ -339,6 +339,8 @@ Other Changes
 * SOLR-11957: Increase MaxFileSize=32MB and MaxBackupIndex=10 for RollingFileAppender in log4j.properties
   (Varun Thacker, shalin)
 
+* SOLR-12047: Increase checkStateInZk timeout (Cao Manh Dat, Varun Thacker)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
