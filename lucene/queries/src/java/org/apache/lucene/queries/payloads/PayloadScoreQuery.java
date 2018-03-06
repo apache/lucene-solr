@@ -151,7 +151,7 @@ public class PayloadScoreQuery extends SpanQuery {
         return null;
       LeafSimScorer docScorer = innerWeight.getSimScorer(context);
       PayloadSpans payloadSpans = new PayloadSpans(spans, decoder);
-      return new PayloadSpanScorer(this, field, payloadSpans, docScorer);
+      return new PayloadSpanScorer(this, payloadSpans, docScorer);
     }
 
     @Override
@@ -227,8 +227,8 @@ public class PayloadScoreQuery extends SpanQuery {
 
     private final PayloadSpans spans;
 
-    private PayloadSpanScorer(SpanWeight weight, String field, PayloadSpans spans, LeafSimScorer docScorer) throws IOException {
-      super(weight, field, spans, docScorer);
+    private PayloadSpanScorer(SpanWeight weight, PayloadSpans spans, LeafSimScorer docScorer) throws IOException {
+      super(weight, spans, docScorer);
       this.spans = spans;
     }
 

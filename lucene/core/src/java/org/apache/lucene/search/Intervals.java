@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Constructor functions for interval-based queries
  *
@@ -31,189 +33,185 @@ public final class Intervals {
 
   private Intervals() {}
 
+  public static IntervalsSource term(BytesRef term) {
+    return new TermIntervalsSource(term);
+  }
+
+  public static IntervalsSource term(String term) {
+    return new TermIntervalsSource(new BytesRef(term));
+  }
+
+  public static IntervalsSource phrase(String... terms) {
+    IntervalsSource[] sources = new IntervalsSource[terms.length];
+    int i = 0;
+    for (String term : terms) {
+      sources[i] = term(term);
+      i++;
+    }
+    return orderedNear(0, sources);
+  }
+
+  public static IntervalsSource or(IntervalsSource... subSources) {
+    if (subSources.length == 1)
+      return subSources[0];
+    return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+  }
+
   /**
-   * Create an ordered query with a maximum width
+   * Create an ordered {@link IntervalsSource} with a maximum width
    *
-   * Matches documents in which the subqueries all match in the given order, and
-   * in which the width of the interval over which the queries match is less than
+   * Returns intervals in which the subsources all appear in the given order, and
+   * in which the width of the interval over which the subsources appear is less than
    * the defined width
    *
-   * @param field       the field to query
    * @param width       the maximum width of subquery-spanning intervals that will match
-   * @param subQueries  an ordered set of subqueries
+   * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
-  public static Query orderedQuery(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(0, width));
+  public static IntervalsSource orderedNear(int width, IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.OrderedNearFunction(0, width));
   }
 
   /**
-   * Create an ordered query with a defined width range
+   * Create an ordered {@link IntervalsSource} with a defined width range
    *
-   * Matches documents in which the subqueries all match in the given order, and in
-   * which the width of the interval over which the queries match is between the
+   * Returns intervals in which the subsources all appear in the given order, and in
+   * which the width of the interval over which the subsources appear is between the
    * minimum and maximum defined widths
    *
-   * @param field       the field to query
    * @param minWidth    the minimum width of subquery-spanning intervals that will match
    * @param maxWidth    the maximum width of subquery-spanning intervals that will match
-   * @param subQueries  an ordered set of subqueries
+   * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
-  public static Query orderedQuery(String field, int minWidth, int maxWidth, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.OrderedNearFunction(minWidth, maxWidth));
+  public static IntervalsSource orderedNear(int minWidth, int maxWidth, IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.OrderedNearFunction(minWidth, maxWidth));
   }
 
   /**
-   * Create an ordered query with an unbounded width range
+   * Create an ordered {@link IntervalsSource} with an unbounded width range
    *
-   * Matches documents in which the subqueries all match in the given order
+   * Returns intervals in which the subsources all appear in the given order
    *
-   * @param field       the field to query
-   * @param subQueries  an ordered set of subqueries
+   * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
-  public static Query orderedQuery(String field, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.ORDERED);
+  public static IntervalsSource ordered(IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
   }
 
   /**
-   * Create an unordered query with a maximum width
+   * Create an unordered {@link IntervalsSource} with a maximum width
    *
-   * Matches documents in which the subqueries all match in any order, and in which
-   * the width of the interval over which the queries match is less than the
+   * Returns intervals in which the subsources all appear in any order, and in which
+   * the width of the interval over which the subsources appear is less than the
    * defined width
    *
-   * @param field       the field to query
    * @param width       the maximum width of subquery-spanning intervals that will match
-   * @param subQueries  an unordered set of queries
+   * @param subSources  an unordered set of queries
    */
-  public static Query unorderedQuery(String field, int width, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(0, width));
+  public static IntervalsSource unorderedNear(int width, IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.UnorderedNearFunction(0, width));
   }
 
   /**
-   * Create an unordered query with a defined width range
+   * Create an unordered {@link IntervalsSource} with a defined width range
    *
-   * Matches documents in which the subqueries all match in any order, and in which
-   * the width of the interval over which the queries match is between the minimum
+   * Returns intervals in which the subsources all appear in any order, and in which
+   * the width of the interval over which the subsources appear is between the minimum
    * and maximum defined widths
    *
-   * @param field       the field to query
    * @param minWidth    the minimum width of subquery-spanning intervals that will match
    * @param maxWidth    the maximum width of subquery-spanning intervals that will match
-   * @param subQueries  an unordered set of queries
+   * @param subSources  an unordered set of subsources
    */
-  public static Query unorderedQuery(String field, int minWidth, int maxWidth, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), new IntervalFunction.UnorderedNearFunction(minWidth, maxWidth));
+  public static IntervalsSource unorderedNear(int minWidth, int maxWidth, IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.UnorderedNearFunction(minWidth, maxWidth));
   }
 
   /**
-   * Create an unordered query with an unbounded width range
+   * Create an unordered {@link IntervalsSource} with an unbounded width range
    *
-   * Matches documents in which all the subqueries match.  This is essence a pure conjunction
-   * query, but it will expose iterators over those conjunctions that may then be further
-   * nested in other interval queries
+   * Returns intervals in which all the subsources appear.
    *
-   * @param field       the field to query
-   * @param subQueries  an unordered set of queries
+   * @param subSources  an unordered set of queries
    */
-  public static Query unorderedQuery(String field, Query... subQueries) {
-    return new IntervalQuery(field, Arrays.asList(subQueries), IntervalFunction.UNORDERED);
+  public static IntervalsSource unordered(IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.UNORDERED);
   }
 
   /**
-   * Create a non-overlapping query
+   * Create a non-overlapping IntervalsSource
    *
-   * Matches documents that match the minuend query, except when the intervals of the minuend
-   * query overlap with intervals from the subtrahend query
-   *
-   * Exposes matching intervals from the minuend
-   *
-   * @param field       the field to query
-   * @param minuend     the query to filter
-   * @param subtrahend  the query to filter by
+   * Returns intervals of the minuend that do not overlap with intervals from the subtrahend
+
+   * @param minuend     the {@link IntervalsSource} to filter
+   * @param subtrahend  the {@link IntervalsSource} to filter by
    */
-  public static Query nonOverlappingQuery(String field, Query minuend, Query subtrahend) {
-    return new DifferenceIntervalQuery(field, minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
+  public static IntervalsSource nonOverlapping(IntervalsSource minuend, IntervalsSource subtrahend) {
+    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
   }
 
   /**
-   * Create a not-within query
+   * Create a not-within {@link IntervalsSource}
    *
-   * Matches documents that match the minuend query, except when the intervals of the minuend
-   * query appear within a set number of positions of intervals from the subtrahend query
+   * Returns intervals of the minuend that do not appear within a set number of positions of
+   * intervals from the subtrahend query
    *
-   * Exposes matching intervals from the minuend
-   *
-   * @param field       the field to query
-   * @param minuend     the query to filter
+   * @param minuend     the {@link IntervalsSource} to filter
    * @param positions   the maximum distance that intervals from the minuend may occur from intervals
    *                    of the subtrahend
-   * @param subtrahend  the query to filter by
+   * @param subtrahend  the {@link IntervalsSource} to filter by
    */
-  public static Query notWithinQuery(String field, Query minuend, int positions, Query subtrahend) {
-    return new DifferenceIntervalQuery(field, minuend, subtrahend, new DifferenceIntervalFunction.NotWithinFunction(positions));
+  public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
+    return new DifferenceIntervalsSource(minuend, subtrahend, new DifferenceIntervalFunction.NotWithinFunction(positions));
   }
 
   /**
-   * Create a not-containing query
+   * Create a not-containing {@link IntervalsSource}
    *
-   * Matches documents that match the minuend query, except when the intervals of the minuend
-   * query are contained within an interval of the subtrahend query
+   * Returns intervals from the minuend that do not contain intervals of the subtrahend
    *
-   * Exposes matching intervals from the minuend
-   *
-   * @param field       the field to query
-   * @param minuend     the query to filter
-   * @param subtrahend  the query to filter by
+   * @param minuend     the {@link IntervalsSource} to filter
+   * @param subtrahend  the {@link IntervalsSource} to filter by
    */
-  public static Query notContainingQuery(String field, Query minuend, Query subtrahend) {
-    return new DifferenceIntervalQuery(field, minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
+  public static IntervalsSource notContaining(IntervalsSource minuend, IntervalsSource subtrahend) {
+    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
   }
 
   /**
-   * Create a containing query
+   * Create a containing {@link IntervalsSource}
    *
-   * Matches documents where intervals of the big query contain one or more intervals from
-   * the small query
+   * Returns intervals from the big source that contain one or more intervals from
+   * the small source
    *
-   * Exposes matching intervals from the big query
-   *
-   * @param field   the field to query
-   * @param big     the query to filter
-   * @param small   the query to filter by
+   * @param big     the {@link IntervalsSource} to filter
+   * @param small   the {@link IntervalsSource} to filter by
    */
-  public static Query containingQuery(String field, Query big, Query small) {
-    return new IntervalQuery(field, Arrays.asList(big, small), IntervalFunction.CONTAINING);
+  public static IntervalsSource containing(IntervalsSource big, IntervalsSource small) {
+    return new ConjunctionIntervalsSource(Arrays.asList(big, small), IntervalFunction.CONTAINING);
   }
 
   /**
-   * Create a not-contained-by query
+   * Create a not-contained-by {@link IntervalsSource}
    *
-   * Matches documents that match the small query, except when the intervals of the small
-   * query are contained within an interval of the big query
+   * Returns intervals from the small {@link IntervalsSource} that do not appear within
+   * intervals from the big {@link IntervalsSource}.
    *
-   * Exposes matching intervals from the small query
-   *
-   * @param field   the field to query
-   * @param small   the query to filter
-   * @param big     the query to filter by
+   * @param small   the {@link IntervalsSource} to filter
+   * @param big     the {@link IntervalsSource} to filter by
    */
-  public static Query notContainedByQuery(String field, Query small, Query big) {
-    return new DifferenceIntervalQuery(field, small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
+  public static IntervalsSource notContainedBy(IntervalsSource small, IntervalsSource big) {
+    return new DifferenceIntervalsSource(small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
   }
 
   /**
-   * Create a contained-by query
+   * Create a contained-by {@link IntervalsSource}
    *
-   * Matches documents where intervals of the small query occur within intervals of the big query
+   * Returns intervals from the small query that appear within intervals of the big query
    *
-   * Exposes matching intervals from the small query
-   *
-   * @param field     the field to query
-   * @param small     the query to filter
-   * @param big       the query to filter by
+   * @param small     the {@link IntervalsSource} to filter
+   * @param big       the {@link IntervalsSource} to filter by
    */
-  public static Query containedByQuery(String field, Query small, Query big) {
-    return new IntervalQuery(field, Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
+  public static IntervalsSource containedBy(IntervalsSource small, IntervalsSource big) {
+    return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
   }
 
   // TODO: beforeQuery, afterQuery, arbitrary IntervalFunctions

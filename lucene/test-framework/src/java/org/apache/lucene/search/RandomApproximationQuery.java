@@ -109,11 +109,6 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public IntervalIterator intervals(String field) {
-      return scorer.intervals(field);
-    }
-
-    @Override
     public int advanceShallow(int target) throws IOException {
       return scorer.advanceShallow(target);
     }

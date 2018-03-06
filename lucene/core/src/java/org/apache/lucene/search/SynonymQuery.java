@@ -29,7 +29,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
@@ -209,7 +208,7 @@ public final class SynonymQuery extends Query {
           long termMaxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
           totalMaxFreq += termMaxFreq;
           LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), true, termMaxFreq);
-          subScorers.add(new TermScorer(this, terms[i].field(), termsEnum, ScoreMode.COMPLETE, simScorer));
+          subScorers.add(new TermScorer(this, termsEnum, ScoreMode.COMPLETE, simScorer));
         }
       }
       if (subScorers.isEmpty()) {

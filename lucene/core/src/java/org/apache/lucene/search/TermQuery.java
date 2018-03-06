@@ -48,7 +48,7 @@ public class TermQuery extends Query {
     private final ScoreMode scoreMode;
 
     public TermWeight(IndexSearcher searcher, ScoreMode scoreMode,
-                      float boost, TermStates termStates) throws IOException {
+        float boost, TermStates termStates) throws IOException {
       super(TermQuery.this);
       if (scoreMode.needsScores() && termStates == null) {
         throw new IllegalStateException("termStates are required when scores are needed");
@@ -98,7 +98,7 @@ public class TermQuery extends Query {
           .getIndexOptions();
       float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
       LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
-      return new TermScorer(this, getTerm().field(), termsEnum, scoreMode, scorer);
+      return new TermScorer(this, termsEnum, scoreMode, scorer);
     }
 
     private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {

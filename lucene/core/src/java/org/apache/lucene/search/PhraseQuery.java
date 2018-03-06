@@ -353,7 +353,6 @@ public class PhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimScorer stats;
     private final ScoreMode scoreMode;
-    private final int postingsFlags;
     private transient TermStates states[];
 
     public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
@@ -366,7 +365,6 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.scoreMode = scoreMode;
-      this.postingsFlags = Math.max(scoreMode.minRequiredPostings(), PostingsEnum.POSITIONS);
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermStates[terms.length];
@@ -424,7 +422,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(null, postingsFlags);
+        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.POSITIONS);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
         totalMatchCost += termPositionsCost(te);
       }
@@ -435,11 +433,11 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {  // optimize exact case
-        return new ExactPhraseScorer(this, field, postingsFreqs,
+        return new ExactPhraseScorer(this, postingsFreqs,
                                       new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
                                       scoreMode, totalMatchCost);
       } else {
-        return new SloppyPhraseScorer(this, field, postingsFreqs, slop,
+        return new SloppyPhraseScorer(this, postingsFreqs, slop,
                                         new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
                                         scoreMode.needsScores(), totalMatchCost);
       }

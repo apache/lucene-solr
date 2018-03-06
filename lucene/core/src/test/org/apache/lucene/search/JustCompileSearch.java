@@ -189,11 +189,6 @@ final class JustCompileSearch {
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-    @Override
-    public IntervalIterator intervals(String field) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
   }
 
   static final class JustCompileSimilarity extends Similarity {

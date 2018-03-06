@@ -185,26 +185,6 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator intervals(String field) {
-    IntervalIterator reqIntervals = reqScorer.intervals(field);
-    IntervalIterator optIntervals = optScorer.intervals(field);
-    if (optIntervals == null)
-      return reqIntervals;
-    if (reqIntervals == null)
-      return optIntervals;
-    return new DisjunctionIntervalIterator(2) {
-      @Override
-      protected void fillQueue(int doc) throws IOException {
-        reqIntervals.reset(doc);
-        queue.add(reqIntervals);
-        positionOptionalScorers();
-        if (optIntervals.reset(doc))
-          queue.add(optIntervals);
-      }
-    };
-  }
-
-  @Override
   public int docID() {
     return reqScorer.docID();
   }
@@ -212,17 +192,9 @@ class ReqOptSumScorer extends Scorer {
   @Override
   public float score() throws IOException {
     // TODO: sum into a double and cast to float if we ever send required clauses to BS1
-    positionOptionalScorers();
-    float score = reqScorer.score();
-    if (optScorer.docID() == reqScorer.docID()) {
-      score += optScorer.score();
-    }
-
-    return score;
-  }
-
-  private void positionOptionalScorers() throws IOException {
     int curDoc = reqScorer.docID();
+    float score = reqScorer.score();
+
     int optScorerDoc = optApproximation.docID();
     if (optScorerDoc < curDoc) {
       optScorerDoc = optApproximation.advance(curDoc);
@@ -230,6 +202,11 @@ class ReqOptSumScorer extends Scorer {
         optScorerDoc = optApproximation.nextDoc();
       }
     }
+    if (optScorerDoc == curDoc) {
+      score += optScorer.score();
+    }
+
+    return score;
   }
 
   @Override

@@ -84,22 +84,18 @@ public class TestIntervals extends LuceneTestCase {
     IOUtils.close(searcher.getIndexReader(), directory);
   }
 
-  private void checkIntervals(Query query, String field, int expectedMatchCount, int[][] expected) throws IOException {
-    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_POSITIONS, 1f);
+  private void checkIntervals(IntervalsSource source, String field, int expectedMatchCount, int[][] expected) throws IOException {
     int matchedDocs = 0;
     for (LeafReaderContext ctx : searcher.leafContexts) {
-      Scorer scorer = weight.scorer(ctx);
-      if (scorer == null)
-        continue;
-      assertNull(scorer.intervals(field + "1"));
+      assertNull(source.intervals(field + "1", ctx));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
-      IntervalIterator intervals = scorer.intervals(field);
-      DocIdSetIterator it = scorer.iterator();
-      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-        matchedDocs++;
+      IntervalIterator intervals = source.intervals(field, ctx);
+      if (intervals == null)
+        continue;
+      for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
         ids.advance(doc);
         int id = (int) ids.longValue();
-        if (intervals.reset(doc)) {
+        if (intervals.advanceTo(doc)) {
           int i = 0, pos;
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
             System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
@@ -109,6 +105,8 @@ public class TestIntervals extends LuceneTestCase {
             i += 2;
           }
           assertEquals(expected[id].length, i);
+          if (i > 0)
+            matchedDocs++;
         }
         else {
           assertEquals(0, expected[id].length);
@@ -119,7 +117,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testTermQueryIntervals() throws IOException {
-    checkIntervals(new TermQuery(new Term("field1", "porridge")), "field1", 4, new int[][]{
+    checkIntervals(Intervals.term("porridge"), "field1", 4, new int[][]{
         {},
         { 1, 1, 4, 4, 7, 7 },
         { 1, 1, 4, 4, 7, 7 },
@@ -129,38 +127,8 @@ public class TestIntervals extends LuceneTestCase {
     });
   }
 
-  public void testExactPhraseQueryIntervals() throws IOException {
-    checkIntervals(new PhraseQuery.Builder()
-        .add(new Term("field1", "pease"))
-        .add(new Term("field1", "porridge")).build(), "field1", 3, new int[][]{
-        {},
-        { 0, 1, 3, 4, 6, 7 },
-        { 0, 1, 3, 4, 6, 7 },
-        {},
-        { 0, 1, 3, 4, 6, 7 },
-        {}
-    });
-  }
-
-  public void testSloppyPhraseQueryIntervals() throws IOException {
-    checkIntervals(new PhraseQuery.Builder()
-        .add(new Term("field1", "pease"))
-        .add(new Term("field1", "porridge"))
-        .add(new Term("field1", "hot"))
-        .setSlop(3).build(), "field1", 3, new int[][]{
-        {},
-        { 0, 2, 1, 3, 2, 4 },
-        { 0, 5, 3, 5, 3, 7, 5, 7 },
-        {},
-        { 0, 2, 1, 3, 2, 4 },
-        {}
-        }
-    );
-  }
-
   public void testOrderedNearIntervals() throws IOException {
-    checkIntervals(Intervals.orderedQuery("field1", 100,
-        new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
+    checkIntervals(Intervals.ordered(Intervals.term("pease"), Intervals.term("hot")),
         "field1", 3, new int[][]{
         {},
         { 0, 2, 6, 17 },
@@ -172,8 +140,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testUnorderedNearIntervals() throws IOException {
-    checkIntervals(Intervals.unorderedQuery("field1", 100,
-        new TermQuery(new Term("field1", "pease")), new TermQuery(new Term("field1", "hot"))),
+    checkIntervals(Intervals.unordered(Intervals.term("pease"), Intervals.term("hot")),
         "field1", 4, new int[][]{
             {},
             { 0, 2, 2, 3, 6, 17 },
@@ -185,10 +152,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testIntervalDisjunction() throws IOException {
-    checkIntervals(new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
-        .build(), "field1", 4, new int[][]{
+    checkIntervals(Intervals.or(Intervals.term("pease"), Intervals.term("hot")), "field1", 4, new int[][]{
         {},
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},
@@ -199,97 +163,15 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testNesting() throws IOException {
-    checkIntervals(Intervals.unorderedQuery("field1", 100,
-        new TermQuery(new Term("field1", "pease")),
-        new TermQuery(new Term("field1", "porridge")),
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("field1", "hot")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("field1", "cold")), BooleanClause.Occur.SHOULD)
-            .build()), "field1", 3, new int[][]{
-        {},
-        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
-        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
-        {},
-        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
-        {}
-    });
-  }
-
-  // x near ((a not b) or (c not d))
-  public void testExclusionBooleans() throws IOException {
-    checkIntervals(Intervals.unorderedQuery("field1",
-        new TermQuery(new Term("field1", "pease")),
-        new BooleanQuery.Builder()
-            .add(new BooleanQuery.Builder()
-                .add(new TermQuery(new Term("field1", "nine")), BooleanClause.Occur.MUST)
-                .add(new TermQuery(new Term("field1", "years")), BooleanClause.Occur.MUST_NOT)
-                .build(), BooleanClause.Occur.SHOULD)
-            .add(new BooleanQuery.Builder()
-                .add(new TermQuery(new Term("field1", "twelve")), BooleanClause.Occur.MUST)
-                .add(new TermQuery(new Term("field1", "days")), BooleanClause.Occur.MUST_NOT)
-                .build(), BooleanClause.Occur.SHOULD)
-            .build()), "field1", 2, new int[][]{
-        {},
-        { 6, 11 },
-        {},
-        {},
-        { 6, 21 },
-        {}
-    });
-  }
-
-  public void testConjunctionBooleans() throws IOException {
-    checkIntervals(Intervals.unorderedQuery("field1",
-        new TermQuery(new Term("field1", "pease")),
-        new BooleanQuery.Builder()
-            .add(new BooleanQuery.Builder()
-                .add(new TermQuery(new Term("field1", "nine")), BooleanClause.Occur.MUST)
-                .add(new TermQuery(new Term("field2", "caverns")), BooleanClause.Occur.MUST)
-                .build(), BooleanClause.Occur.SHOULD)
-            .add(new BooleanQuery.Builder()
-                .add(new TermQuery(new Term("field1", "twelve")), BooleanClause.Occur.MUST)
-                .add(new TermQuery(new Term("field2", "sunless")), BooleanClause.Occur.MUST)
-                .build(), BooleanClause.Occur.SHOULD)
-            .build()), "field1", 2, new int[][]{
-        {},
-        { 6, 11 },
-        { 6, 11 },
-        {},
-        {},
-        {}
-    });
-  }
-
-  public void testMinimumShouldMatch() throws IOException {
-    checkIntervals(new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("field1", "pease")), BooleanClause.Occur.SHOULD)
-        .add(new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("field1", "porridge")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("field1", "days")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("field1", "fraggle")), BooleanClause.Occur.SHOULD)
-            .setMinimumNumberShouldMatch(2)
-            .build(), BooleanClause.Occur.SHOULD)
-        .build(), "field1", 4, new int[][]{
-        {},
-        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 12, 12, 29, 29 },
-        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 12, 12, 27, 27 },
-        { 7, 7 },
-        { 0, 0, 3, 3, 6, 6 },
-        {}
-    });
-  }
-
-  public void testSpanNearQueryEquivalence() throws IOException {
-    checkIntervals(new SpanNearQuery(new SpanQuery[]{
-            new SpanTermQuery(new Term("field1", "pease")),
-            new SpanTermQuery(new Term("field1", "hot"))}, 100, true),
+    checkIntervals(Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.or(Intervals.term("hot"), Intervals.term("cold"))),
         "field1", 3, new int[][]{
-            {},
-            {0, 2, 3, 17, 6, 17},
-            {0, 5, 3, 5, 6, 21},
-            {},
-            { 0, 2, 3, 17, 6, 17 },
-            { }
-        });
+        {},
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        {},
+        { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
+        {}
+    });
   }
+
 }

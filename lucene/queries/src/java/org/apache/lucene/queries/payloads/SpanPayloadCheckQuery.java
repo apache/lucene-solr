@@ -128,7 +128,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         return null;
       }
       final LeafSimScorer docScorer = getSimScorer(context);
-      return new SpanScorer(this, field, spans, docScorer);
+      return new SpanScorer(this, spans, docScorer);
     }
 
     @Override

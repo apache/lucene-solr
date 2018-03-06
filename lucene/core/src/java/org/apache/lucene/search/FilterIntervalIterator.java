@@ -43,8 +43,13 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public boolean reset(int doc) throws IOException {
-    return in.reset(doc);
+  public DocIdSetIterator approximation() {
+    return in.approximation();
+  }
+
+  @Override
+  public boolean advanceTo(int doc) throws IOException {
+    return in.advanceTo(doc);
   }
 
   @Override
@@ -55,5 +60,10 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   @Override
   public float score() {
     return in.score();
+  }
+
+  @Override
+  public float cost() {
+    return in.cost();
   }
 }

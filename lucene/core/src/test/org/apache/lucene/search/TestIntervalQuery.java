@@ -73,7 +73,7 @@ public class TestIntervalQuery extends LuceneTestCase {
 
   public void testScoring() throws IOException {
     PhraseQuery pq = new PhraseQuery.Builder().add(new Term(field, "w2")).add(new Term(field, "w3")).build();
-    Query equiv = Intervals.orderedQuery(field, 0, new TermQuery(new Term(field, "w2")), new TermQuery(new Term(field, "w3")));
+    Query equiv = new IntervalQuery(field, Intervals.phrase("w2", "w3"));
 
     TopDocs td1 = searcher.search(pq, 10);
     TopDocs td2 = searcher.search(equiv, 10);
@@ -85,100 +85,76 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testOrderedNearQueryWidth0() throws IOException {
-    checkHits(Intervals.orderedQuery(field, 0, new TermQuery(new Term(field, "w1")),
-        new TermQuery(new Term(field, "w2"))),
+    checkHits(new IntervalQuery(field, Intervals.orderedNear(0, Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0});
   }
 
   public void testOrderedNearQueryWidth1() throws IOException {
-    checkHits(Intervals.orderedQuery(field, 1, new TermQuery(new Term(field, "w1")),
-        new TermQuery(new Term(field, "w2"))),
+    checkHits(new IntervalQuery(field, Intervals.orderedNear(1, Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0, 1, 2, 5});
   }
 
   public void testOrderedNearQueryWidth2() throws IOException {
-    checkHits(Intervals.orderedQuery(field, 2, new TermQuery(new Term(field, "w1")),
-        new TermQuery(new Term(field, "w2"))),
+    checkHits(new IntervalQuery(field, Intervals.orderedNear(2, Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNestedOrderedNearQuery() throws IOException {
     // onear/1(w1, onear/2(w2, w3))
-    Query q = Intervals.orderedQuery(field, 1,
-        new TermQuery(new Term(field, "w1")),
-        Intervals.orderedQuery(field, 2,
-            new TermQuery(new Term(field, "w2")),
-            new TermQuery(new Term(field, "w3")))
-    );
+    Query q = new IntervalQuery(field,
+        Intervals.orderedNear(1,
+            Intervals.term("w1"),
+            Intervals.orderedNear(2, Intervals.term("w2"), Intervals.term("w3"))));
 
     checkHits(q, new int[]{0, 1, 2});
   }
 
-  public void testNearPhraseQuery() throws IOException {
-    Query q = Intervals.unorderedQuery(field,
-        new PhraseQuery.Builder().add(new Term(field, "w3")).add(new Term(field, "w2")).build(),
-        new TermQuery(new Term(field, "w4")));
-    checkHits(q, new int[]{ 5 });
-  }
-
-  public void testSloppyPhraseQuery() throws IOException {
-    Query q = Intervals.unorderedQuery(field,
-        new PhraseQuery.Builder().add(new Term(field, "w3")).add(new Term(field, "w2")).setSlop(2).build(),
-        new TermQuery(new Term(field, "w4")));
-    checkHits(q, new int[]{ 0, 5 });
-  }
-
   public void testUnorderedQuery() throws IOException {
-    Query q = Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3")));
+    Query q = new IntervalQuery(field, Intervals.unordered(Intervals.term("w1"), Intervals.term("w3")));
     checkHits(q, new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNonOverlappingQuery() throws IOException {
-    Query q = Intervals.nonOverlappingQuery(field,
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w3"))),
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w2")), new TermQuery(new Term(field, "w4"))));
-
+    Query q = new IntervalQuery(field, Intervals.nonOverlapping(
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w3")),
+        Intervals.unordered(Intervals.term("w2"), Intervals.term("w4"))));
     checkHits(q, new int[]{1, 3, 5});
   }
 
   public void testNotWithinQuery() throws IOException {
-    Query q = Intervals.notWithinQuery(field, new TermQuery(new Term(field, "w1")), 1,
-        new TermQuery(new Term(field, "w2")));
+    Query q = new IntervalQuery(field, Intervals.notWithin(Intervals.term("w1"), 1, Intervals.term("w2")));
     checkHits(q, new int[]{ 1, 2, 3 });
   }
 
   public void testNotContainingQuery() throws IOException {
-    Query q = Intervals.notContainingQuery(field,
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
-        new TermQuery(new Term(field, "w3")));
-
+    Query q = new IntervalQuery(field, Intervals.notContaining(
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w2")),
+        Intervals.term("w3")
+    ));
     checkHits(q, new int[]{ 0, 2, 4, 5 });
   }
 
   public void testContainingQuery() throws IOException {
-    Query q = Intervals.containingQuery(field,
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))),
-        new TermQuery(new Term(field, "w3")));
-
+    Query q = new IntervalQuery(field, Intervals.containing(
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w2")),
+        Intervals.term("w3")
+    ));
     checkHits(q, new int[]{ 1, 3, 5 });
   }
 
   public void testContainedByQuery() throws IOException {
-    Query q = Intervals.containedByQuery(field,
-        new TermQuery(new Term(field, "w3")),
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w2"))));
+    Query q = new IntervalQuery(field, Intervals.containedBy(
+        Intervals.term("w3"),
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w2"))));
     checkHits(q, new int[]{ 1, 3, 5 });
   }
 
   public void testNotContainedByQuery() throws IOException {
-    Query q = Intervals.notContainedByQuery(field,
-        new TermQuery(new Term(field, "w2")),
-        Intervals.unorderedQuery(field, new TermQuery(new Term(field, "w1")), new TermQuery(new Term(field, "w4"))));
+    Query q = new IntervalQuery(field, Intervals.notContainedBy(
+        Intervals.term("w2"),
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w4"))
+    ));
     checkHits(q, new int[]{ 1, 3, 4, 5 });
   }
-  // contained-by
-  // not-contained-by
-
-  // TODO: Overlapping
 
 }

@@ -46,9 +46,14 @@ public class DisiWrapper {
   public int lastApproxMatchDoc; // last doc of approximation that did match
   public int lastApproxNonMatchDoc; // last doc of approximation that did not match
 
+  // For IntervalIterators
+  // TODO clean this up!
+  public final IntervalIterator intervals;
+
   public DisiWrapper(Scorer scorer) {
     this.scorer = scorer;
     this.spans = null;
+    this.intervals = null;
     this.iterator = scorer.iterator();
     this.cost = iterator.cost();
     this.doc = -1;
@@ -66,6 +71,7 @@ public class DisiWrapper {
   public DisiWrapper(Spans spans) {
     this.scorer = null;
     this.spans = spans;
+    this.intervals = null;
     this.iterator = spans;
     this.cost = iterator.cost();
     this.doc = -1;
@@ -80,6 +86,18 @@ public class DisiWrapper {
     }
     this.lastApproxNonMatchDoc = -2;
     this.lastApproxMatchDoc = -2;
+  }
+
+  public DisiWrapper(IntervalIterator iterator) {
+    this.scorer = null;
+    this.spans = null;
+    this.intervals = iterator;
+    this.iterator = iterator.approximation();
+    this.cost = iterator.approximation().cost();
+    this.doc = -1;
+    this.twoPhaseView = null;
+    this.approximation = iterator.approximation();
+    this.matchCost = iterator.cost();
   }
 }
 

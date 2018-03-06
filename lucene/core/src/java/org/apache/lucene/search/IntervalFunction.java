@@ -98,15 +98,13 @@ public abstract class IntervalFunction {
 
   private static IntervalIterator orderedIntervalIterator(List<IntervalIterator> subIterators) {
     for (IntervalIterator it : subIterators) {
-      if (it == IntervalIterator.EMPTY)
-        return IntervalIterator.EMPTY;
+      if (it == null)
+        return null;
     }
     return new OrderedIntervalIterator(subIterators);
   }
 
-  private static class OrderedIntervalIterator implements IntervalIterator {
-
-    final List<IntervalIterator> subIntervals;
+  private static class OrderedIntervalIterator extends ConjunctionIntervalIterator {
 
     int start;
     int end;
@@ -114,7 +112,7 @@ public abstract class IntervalFunction {
     int i;
 
     private OrderedIntervalIterator(List<IntervalIterator> subIntervals) {
-      this.subIntervals = subIntervals;
+      super(subIntervals);
     }
 
     @Override
@@ -133,15 +131,10 @@ public abstract class IntervalFunction {
     }
 
     @Override
-    public boolean reset(int doc) throws IOException {
-      boolean positioned = true;
-      for (IntervalIterator it : subIntervals) {
-        positioned &= it.reset(doc);
-      }
-      subIntervals.get(0).nextInterval();
+    public void reset() throws IOException {
+      subIterators.get(0).nextInterval();
       i = 1;
       start = end = innerWidth = Integer.MIN_VALUE;
-      return positioned;
     }
 
     @Override
@@ -150,23 +143,23 @@ public abstract class IntervalFunction {
       int b = Integer.MAX_VALUE;
       while (true) {
         while (true) {
-          if (subIntervals.get(i - 1).end() >= b)
+          if (subIterators.get(i - 1).end() >= b)
             return start;
-          if (i == subIntervals.size() || subIntervals.get(i).start() > subIntervals.get(i - 1).end())
+          if (i == subIterators.size() || subIterators.get(i).start() > subIterators.get(i - 1).end())
             break;
           do {
-            if (subIntervals.get(i).end() >= b || subIntervals.get(i).nextInterval() == NO_MORE_INTERVALS)
+            if (subIterators.get(i).end() >= b || subIterators.get(i).nextInterval() == NO_MORE_INTERVALS)
               return start;
           }
-          while (subIntervals.get(i).start() <= subIntervals.get(i - 1).end());
+          while (subIterators.get(i).start() <= subIterators.get(i - 1).end());
           i++;
         }
-        start = subIntervals.get(0).start();
-        end = subIntervals.get(subIntervals.size() - 1).end();
-        b = subIntervals.get(subIntervals.size() - 1).start();
-        innerWidth = b - subIntervals.get(0).end() - 1;
+        start = subIterators.get(0).start();
+        end = subIterators.get(subIterators.size() - 1).end();
+        b = subIterators.get(subIterators.size() - 1).start();
+        innerWidth = b - subIterators.get(0).end() - 1;
         i = 1;
-        if (subIntervals.get(0).nextInterval() == NO_MORE_INTERVALS)
+        if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
           return start;
       }
     }
@@ -227,14 +220,10 @@ public abstract class IntervalFunction {
   }
 
   private static IntervalIterator unorderedIntervalIterator(List<IntervalIterator> subIntervals) {
-    for (IntervalIterator it : subIntervals) {
-      if (it == IntervalIterator.EMPTY)
-        return IntervalIterator.EMPTY;
-    }
     return new UnorderedIntervalIterator(subIntervals);
   }
 
-  private static class UnorderedIntervalIterator implements IntervalIterator {
+  private static class UnorderedIntervalIterator extends ConjunctionIntervalIterator {
 
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
@@ -242,6 +231,7 @@ public abstract class IntervalFunction {
     int start, end, innerStart, innerEnd, queueEnd;
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
+      super(subIterators);
       this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
         @Override
         protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
@@ -271,24 +261,17 @@ public abstract class IntervalFunction {
     }
 
     @Override
-    public boolean reset(int doc) throws IOException {
+    public void reset() throws IOException {
       this.queue.clear();
       this.queueEnd = start = end = innerEnd = innerStart = -1;
-      boolean positioned = true;
       for (IntervalIterator subIterator : subIterators) {
-        if (subIterator.reset(doc)) {
-          subIterator.nextInterval();
-          queue.add(subIterator);
-          if (subIterator.end() > queueEnd) {
-            queueEnd = subIterator.end();
-            innerEnd = subIterator.start();
-          }
-        }
-        else {
-          positioned = false;
+        subIterator.nextInterval();
+        queue.add(subIterator);
+        if (subIterator.end() > queueEnd) {
+          queueEnd = subIterator.end();
+          innerEnd = subIterator.start();
         }
       }
-      return positioned;
     }
 
     void updateRightExtreme(IntervalIterator it) {
@@ -337,7 +320,7 @@ public abstract class IntervalFunction {
         throw new IllegalStateException("CONTAINING function requires two iterators");
       IntervalIterator a = iterators.get(0);
       IntervalIterator b = iterators.get(1);
-      return new IntervalIterator() {
+      return new ConjunctionIntervalIterator(iterators) {
 
         boolean bpos;
 
@@ -357,9 +340,8 @@ public abstract class IntervalFunction {
         }
 
         @Override
-        public boolean reset(int doc) throws IOException {
-          bpos = b.reset(doc);
-          return a.reset(doc);
+        public void reset() {
+          bpos = true;
         }
 
         @Override
@@ -390,7 +372,7 @@ public abstract class IntervalFunction {
         throw new IllegalStateException("CONTAINED_BY function requires two iterators");
       IntervalIterator a = iterators.get(0);
       IntervalIterator b = iterators.get(1);
-      return new IntervalIterator() {
+      return new ConjunctionIntervalIterator(iterators) {
 
         boolean bpos;
 
@@ -410,9 +392,8 @@ public abstract class IntervalFunction {
         }
 
         @Override
-        public boolean reset(int doc) throws IOException {
-          bpos = b.reset(doc);
-          return a.reset(doc);
+        public void reset() throws IOException {
+          bpos = true;
         }
 
         @Override

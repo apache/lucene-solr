@@ -64,11 +64,6 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator intervals(String field) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return twoPhaseIterator;
   }

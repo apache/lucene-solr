@@ -18,37 +18,23 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Set;
 
-/**
- * An interval iterator which caches its first invocation.
- *
- * Useful for two-phase queries that confirm matches by checking that at least one
- * interval exists in a given document
- */
-class CachedIntervalIterator extends FilterIntervalIterator {
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 
-  final Scorer scorer;
+public abstract class IntervalsSource {
 
-  private boolean started = false;
-
-  CachedIntervalIterator(IntervalIterator in, Scorer scorer) {
-    super(in);
-    this.scorer = scorer;
-  }
+  public abstract IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException;
 
   @Override
-  public boolean reset(int doc) throws IOException {
-    // inner iterator already reset() in TwoPhaseIterator.matches()
-    started = false;
-    return doc == scorer.docID();
-  }
+  public abstract int hashCode();
 
   @Override
-  public int nextInterval() throws IOException {
-    if (started == false) {
-      started = true;
-      return start();
-    }
-    return in.nextInterval();
-  }
+  public abstract boolean equals(Object other);
+
+  @Override
+  public abstract String toString();
+
+  public abstract void extractTerms(String field, Set<Term> terms);
 }

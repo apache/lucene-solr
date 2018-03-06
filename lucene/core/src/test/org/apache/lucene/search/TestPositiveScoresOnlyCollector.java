@@ -69,11 +69,6 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
         } 
       };
     }
-
-    @Override
-    public IntervalIterator intervals(String field) {
-      throw new UnsupportedOperationException();
-    }
   }
 
   // The scores must have positive as well as negative values

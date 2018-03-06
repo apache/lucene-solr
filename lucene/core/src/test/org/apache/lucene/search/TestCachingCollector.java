@@ -44,11 +44,6 @@ public class TestCachingCollector extends LuceneTestCase {
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public IntervalIterator intervals(String field) {
-      throw new UnsupportedOperationException();
-    }
   }
   
   private static class NoOpCollector extends SimpleCollector {

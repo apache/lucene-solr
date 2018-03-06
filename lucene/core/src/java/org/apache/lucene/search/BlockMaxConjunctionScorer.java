@@ -240,8 +240,4 @@ final class BlockMaxConjunctionScorer extends Scorer {
     return children;
   }
 
-  @Override
-  public IntervalIterator intervals(String field) {
-    throw new UnsupportedOperationException();
-  }
 }

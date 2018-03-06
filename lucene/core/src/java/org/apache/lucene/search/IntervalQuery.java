@@ -33,24 +33,21 @@ import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A query that retrieves documents containing intervals returned from an
- * {@link IntervalFunction} over a set of subqueries
+ * {@link IntervalsSource}
  */
 public final class IntervalQuery extends Query {
 
   private final String field;
-  private final List<Query> subQueries;
-  private final IntervalFunction iteratorFunction;
+  private final IntervalsSource intervalsSource;
 
   /**
    * Create a new IntervalQuery
    * @param field             the field to query
-   * @param subQueries        the subqueries to generate intervals from
-   * @param iteratorFunction  an {@link IntervalFunction} to combine the intervals from the subqueries
+   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
    */
-  public IntervalQuery(String field, List<Query> subQueries, IntervalFunction iteratorFunction) {
+  public IntervalQuery(String field, IntervalsSource intervalsSource) {
     this.field = field;
-    this.subQueries = subQueries;
-    this.iteratorFunction = iteratorFunction;
+    this.intervalsSource = intervalsSource;
   }
 
   public String getField() {
@@ -59,25 +56,18 @@ public final class IntervalQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return iteratorFunction.toString() + subQueries.stream().map(Object::toString)
-        .collect(Collectors.joining(",", "(", ")"));
+    return intervalsSource.toString();
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    List<Weight> subWeights = new ArrayList<>();
-    for (Query q : subQueries) {
-      subWeights.add(searcher.createWeight(q, ScoreMode.COMPLETE_POSITIONS, boost));
-    }
-    return new IntervalWeight(this, subWeights, scoreMode.needsScores() ? buildSimScorer(field, searcher, subWeights, boost) : null,
+    return new IntervalWeight(this, scoreMode.needsScores() ? buildSimScorer(searcher, boost) : null,
         searcher.getSimilarity(), scoreMode);
   }
 
-  static Similarity.SimScorer buildSimScorer(String field, IndexSearcher searcher, List<Weight> subWeights, float boost) throws IOException {
+  private Similarity.SimScorer buildSimScorer(IndexSearcher searcher, float boost) throws IOException {
     Set<Term> terms = new HashSet<>();
-    for (Weight w : subWeights) {
-      w.extractTerms(terms);
-    }
+    intervalsSource.extractTerms(field, terms);
     TermStatistics[] termStats = new TermStatistics[terms.size()];
     int termUpTo = 0;
     for (Term term : terms) {
@@ -96,25 +86,22 @@ public final class IntervalQuery extends Query {
     if (o == null || getClass() != o.getClass()) return false;
     IntervalQuery that = (IntervalQuery) o;
     return Objects.equals(field, that.field) &&
-        Objects.equals(subQueries, that.subQueries) &&
-        Objects.equals(iteratorFunction, that.iteratorFunction);
+        Objects.equals(intervalsSource, that.intervalsSource);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(field, subQueries, iteratorFunction);
+    return Objects.hash(field, intervalsSource);
   }
 
   private class IntervalWeight extends Weight {
 
-    final List<Weight> subWeights;
     final Similarity.SimScorer simScorer;
     final Similarity similarity;
     final ScoreMode scoreMode;
 
-    public IntervalWeight(Query query, List<Weight> subWeights, Similarity.SimScorer simScorer, Similarity similarity, ScoreMode scoreMode) {
+    public IntervalWeight(Query query, Similarity.SimScorer simScorer, Similarity similarity, ScoreMode scoreMode) {
       super(query);
-      this.subWeights = subWeights;
       this.simScorer = simScorer;
       this.similarity = similarity;
       this.scoreMode = scoreMode;
@@ -122,9 +109,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {
-      for (Weight w : subWeights) {
-        w.extractTerms(terms);
-      }
+      intervalsSource.extractTerms(field, terms);
     }
 
     @Override
@@ -141,30 +126,16 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      List<IntervalIterator> subIntervals = new ArrayList<>();
-      List<DocIdSetIterator> disis = new ArrayList<>();
-      for (Weight w : subWeights) {
-        Scorer scorer = w.scorer(context);
-        if (scorer == null)
-          return null;
-        disis.add(scorer.iterator());
-        IntervalIterator it = scorer.intervals(field);
-        if (it == null)
-          return null;
-        subIntervals.add(it);
-      }
-      IntervalIterator intervals = IntervalQuery.this.iteratorFunction.apply(subIntervals);
+      IntervalIterator intervals = intervalsSource.intervals(field, context);
+      if (intervals == null)
+        return null;
       LeafSimScorer leafScorer = simScorer == null ? null
           : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
-      return new IntervalScorer(this, field, ConjunctionDISI.intersectIterators(disis), intervals, leafScorer);
+      return new IntervalScorer(this, intervals, leafScorer);
     }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
-      for (Weight w : subWeights) {
-        if (w.isCacheable(ctx) == false)
-          return false;
-      }
       return true;
     }
   }

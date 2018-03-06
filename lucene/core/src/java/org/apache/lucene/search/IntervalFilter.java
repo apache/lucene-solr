@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
  */
-public abstract class IntervalFilter implements IntervalIterator {
+public abstract class IntervalFilter extends FilterIntervalIterator {
 
   /**
    * Filter an {@link IntervalIterator} by its outer width, ie the distance between the
@@ -52,13 +52,11 @@ public abstract class IntervalFilter implements IntervalIterator {
     };
   }
 
-  private final IntervalIterator in;
-
   /**
    * Create a new filter
    */
   public IntervalFilter(IntervalIterator in) {
-    this.in = in;
+    super(in);
   }
 
   /**
@@ -76,23 +74,4 @@ public abstract class IntervalFilter implements IntervalIterator {
     return next;
   }
 
-  @Override
-  public final int start() {
-    return in.start();
-  }
-
-  @Override
-  public final int end() {
-    return in.end();
-  }
-
-  @Override
-  public int innerWidth() {
-    return in.innerWidth();
-  }
-
-  @Override
-  public boolean reset(int doc) throws IOException {
-    return in.reset(doc);
-  }
 }
