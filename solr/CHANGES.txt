@@ -252,6 +252,8 @@ Bug Fixes
 * SOLR-12020: JSON Facet API: terms facet on date field fails in refinement phase with
   "Invalid Date String" error. (yonik)
 
+* SOLR-12061: Fix substitution bug in API V1 to V2 migration when using SolrJ with V2 API. (Tomás Fernánadez Löbbe)
+
 Optimizations
 ----------------------
 

@@ -81,9 +81,9 @@ public class V1toV2ApiMapper {
       }
     }
 
-    public V2Request.Builder convert(SolrParams params) {
+    public V2Request.Builder convert(SolrParams paramsV1) {
       String[] list = new String[template.variables.size()];
-      MapWriter data = serializeToV2Format(params, list);
+      MapWriter data = serializeToV2Format(paramsV1, list);
       Map o = data.toMap(new LinkedHashMap<>());
       return new V2Request.Builder(template.apply(s -> {
         int idx = template.variables.indexOf(s);
@@ -94,9 +94,9 @@ public class V1toV2ApiMapper {
 
     }
 
-    private MapWriter serializeToV2Format(SolrParams params, String[] list) {
+    private MapWriter serializeToV2Format(SolrParams paramsV1, String[] list) {
       return ew -> ew.put(meta.commandName, (MapWriter) ew1 -> {
-        Iterator<String> iter = params.getParameterNamesIterator();
+        Iterator<String> iter = paramsV1.getParameterNamesIterator();
         Map<String, Map<String, String>> subProperties = null;
         while (iter.hasNext()) {
           String key = iter.next();
@@ -104,17 +104,18 @@ public class V1toV2ApiMapper {
           Object substitute = meta.getReverseParamSubstitute(key);
           int idx = template.variables.indexOf(substitute);
           if (idx > -1) {
-            String val = params.get(String.valueOf(substitute));
+            String val = paramsV1.get(key);
             if (val == null) throw new RuntimeException("null value is not valid for " + key);
             list[idx] = val;
             continue;
           }
           if (substitute instanceof Pair) {//this is a nested object
+            @SuppressWarnings("unchecked")
             Pair<String, String> p = (Pair<String, String>) substitute;
             if (subProperties == null) subProperties = new HashMap<>();
-            subProperties.computeIfAbsent(p.first(), s -> new HashMap<>()).put(p.second(), params.get(key));
+            subProperties.computeIfAbsent(p.first(), s -> new HashMap<>()).put(p.second(), paramsV1.get(key));
           } else {
-            Object val = params.get(key);
+            Object val = paramsV1.get(key);
             ew1.put(substitute.toString(), val);
           }
         }
@@ -128,7 +129,7 @@ public class V1toV2ApiMapper {
   }
 
 
-  public static V2Request.Builder convert(CollectionAdminRequest request) {
+  public static V2Request.Builder convert(CollectionAdminRequest<?> request) {
     ActionInfo info = mapping.get(request.action);
     if (info == null) throw new RuntimeException("Unsupported action :" + request.action);
 
