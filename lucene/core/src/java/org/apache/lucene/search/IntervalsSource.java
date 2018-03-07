@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -37,4 +38,5 @@ public abstract class IntervalsSource {
   public abstract String toString();
 
   public abstract void extractTerms(String field, Set<Term> terms);
+
 }

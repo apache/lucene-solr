@@ -76,8 +76,11 @@ public final class IntervalQuery extends Query {
         termStats[termUpTo++] = termStatistics;
       }
     }
+    if (termUpTo == 0) {
+      return null;
+    }
     CollectionStatistics collectionStats = searcher.collectionStatistics(field);
-    return searcher.getSimilarity().scorer(boost, collectionStats, termStats);
+    return searcher.getSimilarity().scorer(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
   }
 
   @Override

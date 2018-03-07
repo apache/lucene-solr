@@ -25,39 +25,6 @@ import java.io.IOException;
 public abstract class IntervalFilter extends FilterIntervalIterator {
 
   /**
-   * Filter an {@link IntervalIterator} by its outer width, ie the distance between the
-   * start and end of the iterator
-   */
-  public static IntervalIterator widthFilter(IntervalIterator in, int minWidth, int maxWidth) {
-    return new IntervalFilter(in) {
-      @Override
-      protected boolean accept() {
-        int width = end() - start();
-        return width >= minWidth && width <= maxWidth;
-      }
-    };
-  }
-
-  /**
-   * Filter an {@link IntervalIterator} by its inner width, ie the distance between the
-   * end of its first subiterator and the beginning of its last
-   */
-  public static IntervalIterator innerWidthFilter(IntervalIterator in, int minWidth, int maxWidth) {
-    return new IntervalFilter(in) {
-      @Override
-      protected boolean accept() {
-        int width = innerWidth();
-        return width >= minWidth && width <= maxWidth;
-      }
-
-      @Override
-      public String toString() {
-        return "widthfilter(" + minWidth + "," + maxWidth + "," + in.toString() + ")";
-      }
-    };
-  }
-
-  /**
    * Create a new filter
    */
   public IntervalFilter(IntervalIterator in) {

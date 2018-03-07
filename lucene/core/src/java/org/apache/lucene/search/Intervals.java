@@ -17,8 +17,12 @@
 
 package org.apache.lucene.search;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -48,7 +52,11 @@ public final class Intervals {
       sources[i] = term(term);
       i++;
     }
-    return orderedNear(0, sources);
+    return phrase(sources);
+  }
+
+  public static IntervalsSource phrase(IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.BLOCK);
   }
 
   public static IntervalsSource or(IntervalsSource... subSources) {
@@ -57,33 +65,8 @@ public final class Intervals {
     return new DisjunctionIntervalsSource(Arrays.asList(subSources));
   }
 
-  /**
-   * Create an ordered {@link IntervalsSource} with a maximum width
-   *
-   * Returns intervals in which the subsources all appear in the given order, and
-   * in which the width of the interval over which the subsources appear is less than
-   * the defined width
-   *
-   * @param width       the maximum width of subquery-spanning intervals that will match
-   * @param subSources  an ordered set of {@link IntervalsSource} objects
-   */
-  public static IntervalsSource orderedNear(int width, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.OrderedNearFunction(0, width));
-  }
-
-  /**
-   * Create an ordered {@link IntervalsSource} with a defined width range
-   *
-   * Returns intervals in which the subsources all appear in the given order, and in
-   * which the width of the interval over which the subsources appear is between the
-   * minimum and maximum defined widths
-   *
-   * @param minWidth    the minimum width of subquery-spanning intervals that will match
-   * @param maxWidth    the maximum width of subquery-spanning intervals that will match
-   * @param subSources  an ordered set of {@link IntervalsSource} objects
-   */
-  public static IntervalsSource orderedNear(int minWidth, int maxWidth, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.OrderedNearFunction(minWidth, maxWidth));
+  public static IntervalsSource maxwidth(int width, IntervalsSource subSource) {
+    return new LowpassIntervalsSource(subSource, width);
   }
 
   /**
@@ -95,35 +78,6 @@ public final class Intervals {
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
     return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
-  }
-
-  /**
-   * Create an unordered {@link IntervalsSource} with a maximum width
-   *
-   * Returns intervals in which the subsources all appear in any order, and in which
-   * the width of the interval over which the subsources appear is less than the
-   * defined width
-   *
-   * @param width       the maximum width of subquery-spanning intervals that will match
-   * @param subSources  an unordered set of queries
-   */
-  public static IntervalsSource unorderedNear(int width, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.UnorderedNearFunction(0, width));
-  }
-
-  /**
-   * Create an unordered {@link IntervalsSource} with a defined width range
-   *
-   * Returns intervals in which the subsources all appear in any order, and in which
-   * the width of the interval over which the subsources appear is between the minimum
-   * and maximum defined widths
-   *
-   * @param minWidth    the minimum width of subquery-spanning intervals that will match
-   * @param maxWidth    the maximum width of subquery-spanning intervals that will match
-   * @param subSources  an unordered set of subsources
-   */
-  public static IntervalsSource unorderedNear(int minWidth, int maxWidth, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), new IntervalFunction.UnorderedNearFunction(minWidth, maxWidth));
   }
 
   /**

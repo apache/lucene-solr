@@ -38,11 +38,6 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public int innerWidth() {
-    return in.innerWidth();
-  }
-
-  @Override
   public DocIdSetIterator approximation() {
     return in.approximation();
   }

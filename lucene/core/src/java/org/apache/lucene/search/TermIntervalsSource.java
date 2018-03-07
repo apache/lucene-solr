@@ -78,16 +78,16 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
-      public int innerWidth() {
-        return 1;
-      }
-
-      @Override
       public int nextInterval() throws IOException {
         if (upto <= 0)
           return pos = NO_MORE_INTERVALS;
         upto--;
         return pos = pe.nextPosition();
+      }
+
+      @Override
+      public float score() {
+        return 1;
       }
 
       @Override

@@ -86,29 +86,29 @@ public class TestIntervalQuery extends LuceneTestCase {
     }
   }
 
-  public void testOrderedNearQueryWidth0() throws IOException {
-    checkHits(new IntervalQuery(field, Intervals.orderedNear(0, Intervals.term("w1"), Intervals.term("w2"))),
+  public void testPhraseQuery() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.phrase(Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0});
   }
 
-  public void testOrderedNearQueryWidth1() throws IOException {
-    checkHits(new IntervalQuery(field, Intervals.orderedNear(1, Intervals.term("w1"), Intervals.term("w2"))),
+  public void testOrderedNearQueryWidth3() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxwidth(3, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
         new int[]{0, 1, 2, 5});
   }
 
-  public void testOrderedNearQueryWidth2() throws IOException {
-    checkHits(new IntervalQuery(field, Intervals.orderedNear(2, Intervals.term("w1"), Intervals.term("w2"))),
+  public void testOrderedNearQueryWidth4() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxwidth(4, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
         new int[]{0, 1, 2, 3, 5});
   }
 
   public void testNestedOrderedNearQuery() throws IOException {
     // onear/1(w1, onear/2(w2, w3))
     Query q = new IntervalQuery(field,
-        Intervals.orderedNear(1,
+        Intervals.ordered(
             Intervals.term("w1"),
-            Intervals.orderedNear(2, Intervals.term("w2"), Intervals.term("w3"))));
+            Intervals.maxwidth(3, Intervals.ordered(Intervals.term("w2"), Intervals.term("w3")))));
 
-    checkHits(q, new int[]{0, 1, 2});
+    checkHits(q, new int[]{0, 1, 3});
   }
 
   public void testUnorderedQuery() throws IOException {
@@ -160,7 +160,7 @@ public class TestIntervalQuery extends LuceneTestCase {
   }
 
   public void testNestedOr() throws IOException {
-    Query q = new IntervalQuery(field, Intervals.orderedNear(0,
+    Query q = new IntervalQuery(field, Intervals.phrase(
         Intervals.term("coordinate"),
         Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
         Intervals.term("research")));

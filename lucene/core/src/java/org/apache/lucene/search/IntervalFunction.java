@@ -42,73 +42,80 @@ public abstract class IntervalFunction {
    */
   public abstract IntervalIterator apply(List<IntervalIterator> iterators);
 
+  public static final IntervalFunction BLOCK = new SingletonFunction("BLOCK") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> iterators) {
+      return new BlockIntervalIterator(iterators);
+    }
+  };
+
+  private static class BlockIntervalIterator extends ConjunctionIntervalIterator {
+
+    int start, end;
+
+    BlockIntervalIterator(List<IntervalIterator> subIterators) {
+      super(subIterators);
+    }
+
+    @Override
+    protected void reset() throws IOException {
+      start = end = -1;
+    }
+
+    @Override
+    public int start() {
+      return start;
+    }
+
+    @Override
+    public int end() {
+      return end;
+    }
+
+    @Override
+    public float score() {
+      return 1;
+    }
+
+    @Override
+    public int nextInterval() throws IOException {
+      if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
+        return NO_MORE_INTERVALS;
+      int i = 1;
+      while (i < subIterators.size()) {
+        while (subIterators.get(i).start() <= subIterators.get(i - 1).end()) {
+          if (subIterators.get(i).nextInterval() == NO_MORE_INTERVALS)
+            return NO_MORE_INTERVALS;
+        }
+        if (subIterators.get(i).start() == subIterators.get(i - 1).end() + 1) {
+          i = i + 1;
+        }
+        else {
+          if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
+            return NO_MORE_INTERVALS;
+          i = 1;
+        }
+      }
+      start = subIterators.get(0).start();
+      end = subIterators.get(subIterators.size() - 1).end();
+      return start;
+    }
+  }
+
   /**
    * Return an iterator over intervals where the subiterators appear in a given order
    */
   public static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
-      return orderedIntervalIterator(intervalIterators);
+      return new OrderedIntervalIterator(intervalIterators);
     }
   };
-
-  /**
-   * Return an iterator over intervals where the subiterators appear in a given order,
-   * filtered by width
-   */
-  public static class OrderedNearFunction extends IntervalFunction {
-
-    /**
-     * Create a new OrderedNearFunction
-     * @param minWidth  the minimum width of returned intervals
-     * @param maxWidth  the maximum width of returned intervals
-     */
-    public OrderedNearFunction(int minWidth, int maxWidth) {
-      this.minWidth = minWidth;
-      this.maxWidth = maxWidth;
-    }
-
-    final int minWidth;
-    final int maxWidth;
-
-    @Override
-    public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
-      return IntervalFilter.innerWidthFilter(orderedIntervalIterator(intervalIterators), minWidth, maxWidth);
-    }
-
-    @Override
-    public String toString() {
-      return "ONEAR[" + minWidth + "/" + maxWidth + "]";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      OrderedNearFunction that = (OrderedNearFunction) o;
-      return minWidth == that.minWidth &&
-          maxWidth == that.maxWidth;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(minWidth, maxWidth);
-    }
-  }
-
-  private static IntervalIterator orderedIntervalIterator(List<IntervalIterator> subIterators) {
-    for (IntervalIterator it : subIterators) {
-      if (it == null)
-        return null;
-    }
-    return new OrderedIntervalIterator(subIterators);
-  }
 
   private static class OrderedIntervalIterator extends ConjunctionIntervalIterator {
 
     int start;
     int end;
-    int innerWidth;
     int i;
 
     private OrderedIntervalIterator(List<IntervalIterator> subIntervals) {
@@ -126,15 +133,10 @@ public abstract class IntervalFunction {
     }
 
     @Override
-    public int innerWidth() {
-      return innerWidth;
-    }
-
-    @Override
     public void reset() throws IOException {
       subIterators.get(0).nextInterval();
       i = 1;
-      start = end = innerWidth = Integer.MIN_VALUE;
+      start = end = Integer.MIN_VALUE;
     }
 
     @Override
@@ -157,10 +159,6 @@ public abstract class IntervalFunction {
         start = subIterators.get(0).start();
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
-        innerWidth = 0;
-        for (int j = 1; j < subIterators.size(); j++) {
-          innerWidth += subIterators.get(j).start() - subIterators.get(j - 1).end() - 1;
-        }
         i = 1;
         if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
           return start;
@@ -174,64 +172,16 @@ public abstract class IntervalFunction {
   public static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
-      return unorderedIntervalIterator(intervalIterators);
+      return new UnorderedIntervalIterator(intervalIterators);
     }
   };
-
-  /**
-   * An iterator over intervals where the subiterators appear in any order, within a given width range
-   */
-  public static class UnorderedNearFunction extends IntervalFunction {
-
-    final int minWidth;
-    final int maxWidth;
-
-    /**
-     * Create a new UnorderedNearFunction
-     * @param minWidth the minimum width of the returned intervals
-     * @param maxWidth the maximum width of the returned intervals
-     */
-    public UnorderedNearFunction(int minWidth, int maxWidth) {
-      this.minWidth = minWidth;
-      this.maxWidth = maxWidth;
-    }
-
-    @Override
-    public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
-      return IntervalFilter.innerWidthFilter(unorderedIntervalIterator(intervalIterators), minWidth, maxWidth);
-    }
-
-    @Override
-    public String toString() {
-      return "ONEAR[" + minWidth + "/" + maxWidth + "]";
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      UnorderedNearFunction that = (UnorderedNearFunction) o;
-      return minWidth == that.minWidth &&
-          maxWidth == that.maxWidth;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(minWidth, maxWidth);
-    }
-  }
-
-  private static IntervalIterator unorderedIntervalIterator(List<IntervalIterator> subIntervals) {
-    return new UnorderedIntervalIterator(subIntervals);
-  }
 
   private static class UnorderedIntervalIterator extends ConjunctionIntervalIterator {
 
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
 
-    int start, end, innerStart, innerEnd, queueEnd;
+    int start, end, queueEnd;
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
@@ -259,20 +209,14 @@ public abstract class IntervalFunction {
     }
 
     @Override
-    public int innerWidth() {
-      return innerEnd - innerStart + 1;
-    }
-
-    @Override
     public void reset() throws IOException {
       this.queue.clear();
-      this.queueEnd = start = end = innerEnd = innerStart = -1;
+      this.queueEnd = start = end = -1;
       for (IntervalIterator subIterator : subIterators) {
         subIterator.nextInterval();
         queue.add(subIterator);
         if (subIterator.end() > queueEnd) {
           queueEnd = subIterator.end();
-          innerEnd = subIterator.start();
         }
       }
     }
@@ -281,7 +225,6 @@ public abstract class IntervalFunction {
       int itEnd = it.end();
       if (itEnd > queueEnd) {
         queueEnd = itEnd;
-        innerEnd = it.start();
       }
     }
 
@@ -298,7 +241,6 @@ public abstract class IntervalFunction {
         return NO_MORE_INTERVALS;
       do {
         start = queue.top().start();
-        innerStart = queue.top().end();
         end = queueEnd;
         if (queue.top().end() == end)
           return start;
@@ -335,11 +277,6 @@ public abstract class IntervalFunction {
         @Override
         public int end() {
           return a.end();
-        }
-
-        @Override
-        public int innerWidth() {
-          return a.innerWidth();
         }
 
         @Override
@@ -387,11 +324,6 @@ public abstract class IntervalFunction {
         @Override
         public int end() {
           return a.end();
-        }
-
-        @Override
-        public int innerWidth() {
-          return a.innerWidth();
         }
 
         @Override

@@ -46,11 +46,6 @@ public interface IntervalIterator {
   int end();
 
   /**
-   * The width of the current interval
-   */
-  int innerWidth();
-
-  /**
    * Advance the iterator to the next interval
    *
    * @return the starting interval of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
@@ -62,7 +57,7 @@ public interface IntervalIterator {
    * The score of the current interval
    */
   default float score() {
-    return (float) (1.0 / (1 + innerWidth()));
+    return (float) (1.0 / (end() - start() + 1));
   }
 
   float cost();

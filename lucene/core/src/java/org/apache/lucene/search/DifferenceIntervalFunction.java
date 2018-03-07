@@ -96,11 +96,6 @@ public abstract class DifferenceIntervalFunction {
     }
 
     @Override
-    public int innerWidth() {
-      return a.innerWidth();
-    }
-
-    @Override
     public boolean advanceTo(int doc) throws IOException {
       bpos = b.advanceTo(doc);
       if (bpos)
@@ -191,10 +186,6 @@ public abstract class DifferenceIntervalFunction {
           return newEnd;
         }
 
-        @Override
-        public int innerWidth() {
-          throw new UnsupportedOperationException();
-        }
       };
       return NON_OVERLAPPING.apply(minuend, notWithin);
     }
