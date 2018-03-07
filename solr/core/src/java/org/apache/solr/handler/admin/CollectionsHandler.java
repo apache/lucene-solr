@@ -1148,16 +1148,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           .noneMatch(rep -> zkShardTerms.registered(rep.getName()) && zkShardTerms.canBecomeLeader(rep.getName()));
       // we won't increase replica's terms if exist a live replica with term equals to leader
       if (shouldIncreaseReplicaTerms) {
-        OptionalLong optionalMaxTerm = liveReplicas.stream()
+        //TODO only increase terms of replicas less out-of-sync
+        liveReplicas.stream()
             .filter(rep -> zkShardTerms.registered(rep.getName()))
-            .mapToLong(rep -> zkShardTerms.getTerm(rep.getName()))
-            .max();
-        // increase terms of replicas less out-of-sync
-        if (optionalMaxTerm.isPresent()) {
-          liveReplicas.stream()
-              .filter(rep -> zkShardTerms.getTerm(rep.getName()) == optionalMaxTerm.getAsLong())
-              .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
-        }
+            .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
       }
 
       // Wait till we have an active leader
