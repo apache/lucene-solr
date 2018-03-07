@@ -20,7 +20,6 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -101,12 +100,13 @@ public class ScheduledTrigger extends TriggerBase {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Either 'startTime' should be an ISO-8601 date time string or 'timeZone' must be not be null");
     }
+    TimeZone timeZone = TimeZone.getTimeZone(timeZoneStr);
     DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
         .append(DateTimeFormatter.ISO_LOCAL_DATE).appendPattern("['T'[HH[:mm[:ss]]]]")
         .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
         .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
         .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-        .toFormatter(Locale.ROOT).withZone(ZoneId.of(timeZoneStr));
+        .toFormatter(Locale.ROOT).withZone(timeZone.toZoneId());
     return Instant.from(dateTimeFormatter.parse(startTimeStr));
   }
 
