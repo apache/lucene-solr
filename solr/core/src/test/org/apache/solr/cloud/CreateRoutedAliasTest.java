@@ -109,7 +109,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     //TODO fix Solr test infra so that this /____v2/ becomes /api/
     HttpPost post = new HttpPost(baseUrl + "/____v2/c");
     post.setEntity(new StringEntity("{\n" +
-        "  \"create-routed-alias\" : {\n" +
+        "  \"create-alias\" : {\n" +
         "    \"name\": \"" + aliasName + "\",\n" +
         "    \"router\" : {\n" +
         "      \"name\": \"time\",\n" +
@@ -184,7 +184,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=xml" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -241,9 +241,32 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCollectionNamesMustBeAbsent() throws Exception {
+    CollectionAdminRequest.createCollection("collection1meta", "_default", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("collection2meta", "_default", 1, 1).process(cluster.getSolrClient());
+    waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 1));
+    waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    zkStateReader.createClusterStateWatchersAndUpdate();
+
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
+        "&wt=json" +
+        "&name=" + getTestName() +
+        "&collections=collection1meta,collection2meta" +
+        "&router.field=evt_dt" +
+        "&router.name=time" +
+        "&router.start=2018-01-15T00:00:00Z" +
+        "&router.interval=%2B30MINUTE" +
+        "&create-collection.collection.configName=_default" +
+        "&create-collection.numShards=1");
+    assertFailure(get, "Collections cannot be specified");
+  }
+
+  @Test
   public void testAliasNameMustBeValid() throws Exception {
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=735741!45" +  // ! not allowed
         "&router.field=evt_dt" +
@@ -259,7 +282,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testRandomRouterNameFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -275,7 +298,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testTimeStampWithMsFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -291,7 +314,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testBadDateMathIntervalFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -307,7 +330,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testNegativeFutureFails() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +
@@ -323,7 +346,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testUnParseableFutureFails() throws Exception {
     final String aliasName = "testAlias";
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEROUTEDALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
         "&name=" + aliasName +
         "&router.field=evt_dt" +

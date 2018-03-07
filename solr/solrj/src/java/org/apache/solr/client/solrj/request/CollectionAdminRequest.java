@@ -1434,7 +1434,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private final Create createCollTemplate;
 
     public CreateTimeRoutedAlias(String aliasName, String routerField, String start, String interval, Create createCollTemplate) {
-      super(CollectionAction.CREATEROUTEDALIAS);
+      super(CollectionAction.CREATEALIAS);
       this.aliasName = aliasName;
       this.start = start;
       this.interval = interval;

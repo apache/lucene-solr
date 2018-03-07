@@ -519,21 +519,27 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
 
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
-      SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
-      return req.getParams().required().getAll(null, NAME, "collections");
-    }),
-
-    CREATEROUTEDALIAS_OP(CREATEROUTEDALIAS, (req, rsp, h) -> {
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
-      Map<String, Object> result = req.getParams().required().getAll(null, REQUIRED_ROUTER_PARAMS);
+      String collections = req.getParams().get("collections");
+      Map<String, Object> result = req.getParams().getAll(null, REQUIRED_ROUTER_PARAMS);
       req.getParams().getAll(result, OPTIONAL_ROUTER_PARAMS);
+      if (collections != null) {
+        if (result.size() > 1) { // (NAME should be there, and if it's not we will fail below)
+          throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a time routed alias.");
+        }
+        // regular alias creation...
+        return req.getParams().required().getAll(null, NAME, "collections");
+      }
 
+      // Ok so we are creating a time routed alias from here
+
+      // for validation....
+      req.getParams().required().getAll(null, REQUIRED_ROUTER_PARAMS);
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
 
       // add to result params that start with "create-collection.".
       //   Additionally, save these without the prefix to createCollParams
-
       forEach(req.getParams(), (p, v) -> {
           if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
             // This is what SolrParams#getAll(Map, Collection)} does
