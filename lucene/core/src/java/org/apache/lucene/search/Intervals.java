@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Constructor functions for interval-based queries
+ * Constructor functions for {@link IntervalsSource} types
  *
  * These queries use {@link IntervalFunction} or {@link DifferenceIntervalFunction}
  * classes, implementing minimum-interval algorithms taken from the paper
@@ -37,14 +37,23 @@ public final class Intervals {
 
   private Intervals() {}
 
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term
+   */
   public static IntervalsSource term(BytesRef term) {
     return new TermIntervalsSource(term);
   }
 
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term
+   */
   public static IntervalsSource term(String term) {
     return new TermIntervalsSource(new BytesRef(term));
   }
 
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of terms
+   */
   public static IntervalsSource phrase(String... terms) {
     IntervalsSource[] sources = new IntervalsSource[terms.length];
     int i = 0;
@@ -55,16 +64,27 @@ public final class Intervals {
     return phrase(sources);
   }
 
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of IntervalsSources
+   */
   public static IntervalsSource phrase(IntervalsSource... subSources) {
     return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.BLOCK);
   }
 
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   */
   public static IntervalsSource or(IntervalsSource... subSources) {
     if (subSources.length == 1)
       return subSources[0];
     return new DisjunctionIntervalsSource(Arrays.asList(subSources));
   }
 
+  /**
+   * Create an {@link IntervalsSource} that filters a sub-source by the width of its intervals
+   * @param width       the maximum width of intervals in the sub-source ot return
+   * @param subSource   the sub-source to filter
+   */
   public static IntervalsSource maxwidth(int width, IntervalsSource subSource) {
     return new LowpassIntervalsSource(subSource, width);
   }
