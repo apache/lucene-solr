@@ -127,11 +127,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public int innerWidth() {
-      return current.innerWidth();
-    }
-
-    @Override
     public boolean advanceTo(int doc) throws IOException {
       intervalQueue.clear();
       int approxDoc = this.approximation.docID();
@@ -203,11 +198,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public int innerWidth() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int nextInterval() throws IOException {
       return NO_MORE_INTERVALS;
     }
@@ -237,11 +227,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public int end() {
       return -1;
-    }
-
-    @Override
-    public int innerWidth() {
-      throw new UnsupportedOperationException();
     }
 
     @Override
