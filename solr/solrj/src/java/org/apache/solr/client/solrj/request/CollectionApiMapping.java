@@ -191,7 +191,8 @@ public class CollectionApiMapping {
         POST,
         COLLECTIONPROP,
         "set-collection-property",
-        Utils.makeMap(NAME, "collection",
+        Utils.makeMap(
+            NAME, "collection",
             "propertyName", "name",
             "propertyValue", "value")),
     ADD_ROLE(CLUSTER_CMD,
