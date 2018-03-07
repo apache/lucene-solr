@@ -87,7 +87,7 @@ public class TestIntervals extends LuceneTestCase {
   private void checkIntervals(IntervalsSource source, String field, int expectedMatchCount, int[][] expected) throws IOException {
     int matchedDocs = 0;
     for (LeafReaderContext ctx : searcher.leafContexts) {
-      assertNull(source.intervals(field + "1", ctx));
+      // assertNull(source.intervals(field + "1", ctx));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
       IntervalIterator intervals = source.intervals(field, ctx);
       if (intervals == null)
@@ -172,6 +172,19 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
+  }
+
+  public void testCrossFieldMasking() throws IOException {
+    checkIntervals(Intervals.ordered(Intervals.mask("field2", Intervals.term("xanadu")), Intervals.term("interest")),
+        "field1", 1, new int[][]{
+            { 1, 2 },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        });
   }
 
 }
