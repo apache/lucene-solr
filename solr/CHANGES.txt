@@ -117,8 +117,8 @@ New Features
 
 * SOLR-11648: A new admin UI to display and execute suggestions (Apoorv Bhawsar , noble)
 
-* SOLR-11722: New CREATEROUTEDALIAS SolrCloud command to create a "time routed alias" over a series of collections
-  partitioned by time. (Gus Heck, David Smiley)
+* SOLR-11722: Added "time routed alias" creation support to the CREATEALIAS command.  It's for managing multiple
+  collections partitioned by time. (Gus Heck, David Smiley)
 
 * SOLR-11782: Refactor LatchWatcher.await to protect against spurious wakeup (Tomás Fernández Löbbe, David Smiley, Dawid Weiss)
 
