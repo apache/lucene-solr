@@ -229,6 +229,25 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
+  public void testSetTermEqualsToLeader() throws InterruptedException {
+    String collection = "setTermEqualsToLeader";
+    ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    ZkShardTerms replicaTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    leaderTerms.registerTerm("leader");
+    replicaTerms.registerTerm("replica");
+
+    leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
+    waitFor(false, () -> replicaTerms.canBecomeLeader("replica"));
+    waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica"));
+
+    replicaTerms.setTermEqualsToLeader("replica");
+    waitFor(true, () -> replicaTerms.canBecomeLeader("replica"));
+    waitFor(false, () -> leaderTerms.skipSendingUpdatesTo("replica"));
+
+    leaderTerms.close();
+    replicaTerms.close();
+  }
+
   private <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {

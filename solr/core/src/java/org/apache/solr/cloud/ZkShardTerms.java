@@ -194,7 +194,7 @@ public class ZkShardTerms implements AutoCloseable{
   }
 
   /**
-   * Set a replica's term equals to leader's term.
+   * Set a replica's term equals to leader's term, and remove recovering flag of a replica.
    * This call should only be used by {@link org.apache.solr.common.params.CollectionParams.CollectionAction#FORCELEADER}
    * @param coreNodeName of the replica
    */
@@ -554,6 +554,7 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       newValues.put(coreNodeName, maxTerm);
+      newValues.remove(coreNodeName+"_recovering");
       return new Terms(newValues, version);
     }
 
