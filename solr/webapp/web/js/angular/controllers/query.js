@@ -24,7 +24,7 @@ solrAdminApp.controller('QueryController',
     $scope.filters = [{fq:""}];
     $scope.dismax = {defType: "dismax"};
     $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: false};
-    $scope.hl = {hl:"on"};
+    $scope.hl = {hl:"on", 'hl.usePhraseHighLighter': "true", 'hl.highlightMultiTerm': "true"};
     $scope.facet = {facet: "on"};
     $scope.spatial = {};
     $scope.spellcheck = {spellcheck:"on"};
