@@ -166,9 +166,11 @@ public class AutoScaling {
 
   }
 
+  public static final String AUTO_ADD_REPLICAS_TRIGGER_NAME = ".auto_add_replicas";
+
   public static final String AUTO_ADD_REPLICAS_TRIGGER_DSL =
       "    {" +
-      "        'name' : '.auto_add_replicas'," +
+      "        'name' : '" + AUTO_ADD_REPLICAS_TRIGGER_NAME + "'," +
       "        'event' : 'nodeLost'," +
       "        'waitFor' : -1," +
       "        'enabled' : true," +
@@ -185,4 +187,27 @@ public class AutoScaling {
       "    }";
 
   public static final Map<String, Object> AUTO_ADD_REPLICAS_TRIGGER_PROPS = (Map) Utils.fromJSONString(AUTO_ADD_REPLICAS_TRIGGER_DSL);
+
+  public static final String SCHEDULED_MAINTENANCE_TRIGGER_NAME = ".scheduled_maintenance";
+
+  public static final String SCHEDULED_MAINTENANCE_TRIGGER_DSL =
+          "    {" +
+          "        'name' : '" + SCHEDULED_MAINTENANCE_TRIGGER_NAME + "'," +
+          "        'event' : 'scheduled'," +
+          "        'startTime' : 'NOW'," +
+          "        'every' : '+1DAY'," +
+          "        'enabled' : true," +
+          "        'actions' : [" +
+          "            {" +
+          "                'name':'inactive_shard_plan'," +
+          "                'class':'solr.InactiveShardPlanAction'" +
+          "            }," +
+          "            {" +
+          "                'name':'execute_plan'," +
+          "                'class':'solr.ExecutePlanAction'" +
+          "            }" +
+          "        ]" +
+          "    }";
+
+  public static final Map<String, Object> SCHEDULED_MAINTENANCE_TRIGGER_PROPS = (Map) Utils.fromJSONString(SCHEDULED_MAINTENANCE_TRIGGER_DSL);
 }

@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class is responsible for executing cluster operations read from the {@link ActionContext}'s properties
- * with the key name "operations"
+ * with the key name "operations".
  */
 public class ExecutePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

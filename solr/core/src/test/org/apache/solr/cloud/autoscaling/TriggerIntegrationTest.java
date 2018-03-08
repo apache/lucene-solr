@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -105,6 +106,14 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     zkStateReader = cluster.getSolrClient().getZkStateReader();
+    // disable .scheduled_maintenance
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    SolrClient solrClient = cluster.getSolrClient();
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
   }
 
   private static CountDownLatch getTriggerFiredLatch() {

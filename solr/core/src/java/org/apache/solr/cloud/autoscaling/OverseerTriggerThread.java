@@ -121,13 +121,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     int lastZnodeVersion = znodeVersion;
 
     // we automatically add a trigger for auto add replicas if it does not exists already
+    // we also automatically add a scheduled maintenance trigger
     while (!isClosed)  {
       try {
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        AutoScalingConfig withAutoAddReplicasTrigger = withAutoAddReplicasTrigger(autoScalingConfig);
-        if (withAutoAddReplicasTrigger.equals(autoScalingConfig)) break;
-        log.debug("Adding .autoAddReplicas trigger");
-        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(withAutoAddReplicasTrigger), withAutoAddReplicasTrigger.getZkVersion());
+        AutoScalingConfig updatedConfig = withAutoAddReplicasTrigger(autoScalingConfig);
+        updatedConfig = withScheduledMaintenanceTrigger(updatedConfig);
+        if (updatedConfig.equals(autoScalingConfig)) break;
+        log.debug("Adding .auto_add_replicas and .scheduled_maintenance triggers");
+        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(updatedConfig), updatedConfig.getZkVersion());
         break;
       } catch (BadVersionException bve) {
         // somebody else has changed the configuration so we must retry
@@ -338,6 +340,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private AutoScalingConfig withAutoAddReplicasTrigger(AutoScalingConfig autoScalingConfig) {
     Map<String, Object> triggerProps = AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_PROPS;
+    return withDefaultTrigger(triggerProps, autoScalingConfig);
+  }
+
+  private AutoScalingConfig withScheduledMaintenanceTrigger(AutoScalingConfig autoScalingConfig) {
+    Map<String, Object> triggerProps = AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_PROPS;
+    return withDefaultTrigger(triggerProps, autoScalingConfig);
+  }
+
+  private AutoScalingConfig withDefaultTrigger(Map<String, Object> triggerProps, AutoScalingConfig autoScalingConfig) {
     String triggerName = (String) triggerProps.get("name");
     Map<String, AutoScalingConfig.TriggerConfig> configs = autoScalingConfig.getTriggerConfigs();
     for (AutoScalingConfig.TriggerConfig cfg : configs.values()) {

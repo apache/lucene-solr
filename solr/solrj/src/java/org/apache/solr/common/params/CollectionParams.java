@@ -118,7 +118,8 @@ public interface CollectionParams {
     //TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
+    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    NONE(false, LockLevel.NONE)
     ;
     public final boolean isWrite;
 

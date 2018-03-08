@@ -95,6 +95,7 @@ public class ZkStateReader implements Closeable {
   public static final String PROPERTY_VALUE_PROP = "property.value";
   public static final String MAX_AT_ONCE_PROP = "maxAtOnce";
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";
+  public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";
