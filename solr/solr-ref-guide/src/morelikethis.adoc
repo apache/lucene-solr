@@ -55,6 +55,9 @@ Specifies the Minimum Document Frequency, the frequency at which words will be i
 `mlt.maxdf`::
 Specifies the Maximum Document Frequency, the frequency at which words will be ignored which occur in more than this many documents.
 
+`mlt.maxdfpct`::
+Specifies the Maximum Document Frequency using a relative ratio to the number of documents in the index. The argument must be an integer between 0 and 100. For example 75 means the word will be ignored if it occurs in more than 75 percent of the documents in the index.
+
 `mlt.minwl`::
 Sets the minimum word length below which words will be ignored.
 

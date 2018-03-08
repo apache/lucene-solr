@@ -549,7 +549,7 @@ topicQueryParams.put("q","hello");  // The query for the topic
 topicQueryparams.put("rows", "500"); // How many rows to fetch during each run
 topicQueryparams.put("fl", "id", "title"); // The field list to return with the documents
 
-TopicStream topicStream = new TopicStream(zkHost,        // Host address for the zookeeper service housing the collections
+TopicStream topicStream = new TopicStream(zkHost,        // Host address for the ZooKeeper service housing the collections
                                          "checkpoints",  // The collection to store the topic checkpoints
                                          "topicData",    // The collection to query for the topic records
                                          "topicId",      // The id of the topic
@@ -1088,7 +1088,7 @@ See section in <<graph-traversal.adoc#using-the-scorenodes-function-to-make-a-re
 
 == select
 
-The `select` function wraps a streaming expression and outputs tuples containing a subset or modified set of fields from the incoming tuples. The list of fields included in the output tuple can contain aliases to effectively rename fields. The `select` stream supports both operations and evaluators. One can provide a list of operations and evaluators to perform on any fields, such as `replace, add, if`, etc....
+The `select` function wraps a streaming expression and outputs tuples containing a subset or modified set of fields from the incoming tuples. The list of fields included in the output tuple can contain aliases to effectively rename fields. The `select` stream supports both operations and evaluators. One can provide a list of operations and evaluators to perform on any fields, such as `replace, add, if`, etc.
 
 === select Parameters
 

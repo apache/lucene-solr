@@ -269,6 +269,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingDocAbsent() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(4);
     docs.add(makeGSDoc(2, fieldsToTestGroupSortFirst, null));

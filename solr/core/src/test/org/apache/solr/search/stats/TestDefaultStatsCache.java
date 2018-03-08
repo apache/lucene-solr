@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   private int docId = 0;
   

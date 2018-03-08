@@ -231,7 +231,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrParams.add("qt", "/stream");
       solrParams.add("expr", "search(myCollection, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       solrParams.add("myCollection.shards", buf.toString());
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
@@ -6577,7 +6576,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(prob.doubleValue(),  0.09184805266259899, 0.0);
   }
 
-      @Test
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDistributions() throws Exception {
     String cexpr = "let(a=normalDistribution(10, 2), " +
                        "b=sample(a, 250), " +
@@ -6975,9 +6975,19 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(termVectors.get(0).size(), 0);
   }
 
+
+
   @Test
-  public void testEBESubtract() throws Exception {
-    String cexpr = "ebeSubtract(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testEbeSubtract() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeSubtract(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeSubtract(f, g))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6987,14 +6997,111 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 1);
-    assertTrue(out.get(1).intValue() == 2);
-    assertTrue(out.get(2).intValue() == 3);
-    assertTrue(out.get(3).intValue() == 4);
-    assertTrue(out.get(4).intValue() == 5);
-    assertTrue(out.get(5).intValue() == 6);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 2.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 4.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 5.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 6.0, 0.0);
+
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), -8.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), -7.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), -6.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), -5.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), -4.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), -3.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), -99.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), -198.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), -297.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), -396.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), -495.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), -594.0, 0.0);
+  }
+
+
+  @Test
+  public void testMatrixMult() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,2,3)," +
+        "               b=matrix(array(4), array(5), array(6))," +
+        "               c=matrixMult(a, b)," +
+        "               d=matrix(array(3, 4), array(10,11), array(30, 40))," +
+        "               e=matrixMult(a, d)," +
+        "               f=array(4,8,10)," +
+        "               g=matrix(a, f)," +
+        "               h=matrixMult(d, g)," +
+        "               i=matrixMult(b, a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(matrix.size(), 1);
+    List<Number> row = matrix.get(0);
+    assertEquals(row.size(), 1);
+    assertEquals(row.get(0).doubleValue(), 32.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("e");
+    assertEquals(matrix.size(), 1);
+    row = matrix.get(0);
+    assertEquals(row.size(), 2);
+    assertEquals(row.get(0).doubleValue(), 113.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 146.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 19.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 38.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 49.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 54.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 108.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 140.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 190.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 380.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 490.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("i");
+
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 4.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 8.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 12.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 5.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 10.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 15.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 12.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 18.0, 0.0);
   }
 
   @Test
@@ -7263,7 +7370,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testEBEMultiply() throws Exception {
+  public void testEbeMultiply() throws Exception {
     String cexpr = "ebeMultiply(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -7286,8 +7393,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  public void testEBEAdd() throws Exception {
-    String cexpr = "ebeAdd(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testEbeAdd() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeAdd(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeAdd(f, g))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -7297,19 +7412,39 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 3);
-    assertTrue(out.get(1).intValue() == 6);
-    assertTrue(out.get(2).intValue() == 9);
-    assertTrue(out.get(3).intValue() == 12);
-    assertTrue(out.get(4).intValue() == 15);
-    assertTrue(out.get(5).intValue() == 18);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 6.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 9.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 12.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 15.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 18.0, 0.0);
+
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 12.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 15.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 18.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 21.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 24.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 27.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), 101.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 202.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 303.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 404.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 505.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 606.0, 0.0);
   }
 
 
   @Test
-  public void testEBEDivide() throws Exception {
+  public void testEbeDivide() throws Exception {
     String cexpr = "ebeDivide(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -8100,6 +8235,45 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testBicubicSpline() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(300, 400, 500, 600, 700), " +
+        "               b=array(340, 410, 495, 590, 640)," +
+        "               c=array(600, 395, 550, 510, 705),"+
+        "               d=array(500, 420, 510, 601, 690),"+
+        "               e=array(420, 411, 511, 611, 711),"+
+        "               f=matrix(a, b, c, d, e),"+
+        "               x=array(1,2,3,4,5),"+
+        "               y=array(100, 200, 300, 400, 500),"+
+        "               bspline=bicubicSpline(x, y, f), " +
+        "               p1=predict(bspline, 1.5, 250)," +
+        "               p2=predict(bspline, 3.5, 350)," +
+        "               p3=predict(bspline, 4.5, 450)," +
+        "               p4=predict(bspline,matrix(array(1.5, 250), array(3.5, 350), array(4.5, 450))))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number p1 = (Number)tuples.get(0).get("p1");
+    assertEquals(p1.doubleValue(), 449.7837701612903, 0.0);
+    Number p2 = (Number)tuples.get(0).get("p2");
+    assertEquals(p2.doubleValue(), 536.8916383774491, 0.0);
+    Number p3 = (Number)tuples.get(0).get("p3");
+    assertEquals(p3.doubleValue(), 659.921875, 0.0);
+    List<Number> p4 = (List<Number>)tuples.get(0).get("p4");
+    assertEquals(p4.get(0).doubleValue(), 449.7837701612903, 0.0);
+    assertEquals(p4.get(1).doubleValue(), 536.8916383774491, 0.0);
+    assertEquals(p4.get(2).doubleValue(), 659.921875, 0.0);
+  }
+
+
+  @Test
   public void testAkima() throws Exception {
     String cexpr = "let(echo=true," +
         "    a=array(0,1,2,3,4,5,6,7), " +
@@ -8789,6 +8963,41 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     Number mean = (Number)tuples.get(0).get("return-value");
     assertEquals(mean.doubleValue(), 3.0D, 0.0D);
+  }
+
+
+  @Test
+  public void testNorms() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "               a=array(1,2,3,4,5,6), " +
+        "               b=l1norm(a), " +
+        "               c=l2norm(a), " +
+        "               d=linfnorm(a), " +
+        "               e=sqrt(add(pow(a, 2)))," +
+        "               f=add(abs(a)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number l1norm = (Number)tuples.get(0).get("b");
+    assertEquals(l1norm.doubleValue(), 21.0D, 0.0D);
+
+    Number norm = (Number)tuples.get(0).get("c");
+    assertEquals(norm.doubleValue(), 9.5393920141695, 0.0001D);
+
+    Number inorm = (Number)tuples.get(0).get("d");
+    assertEquals(inorm.doubleValue(), 6.0, 0.0);
+
+    Number norm2 = (Number)tuples.get(0).get("e");
+    assertEquals(norm.doubleValue(), norm2.doubleValue(), 0.0);
+
+    Number l1norm2 = (Number)tuples.get(0).get("f");
+    assertEquals(l1norm.doubleValue(), l1norm2.doubleValue(), 0.0);
   }
 
 

@@ -84,7 +84,7 @@
     "balance-shard-unique":{
       "type":"object",
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#balanceshardunique",
-      "description": "Insures a property is distributed equally across all physical nodes of a collection. If the property already exists on a replica, effort is made to leave it there. However, if it does not exist on any repica, a shard will be chosen and the property added.",
+      "description": "Ensures a property is distributed equally across all physical nodes of a collection. If the property already exists on a replica, effort is made to leave it there. However, if it does not exist on any repica, a shard will be chosen and the property added.",
       "properties":{
         "property":{
           "type":"string",
@@ -171,6 +171,24 @@
         }
       },
       "required":["shard","replica","property"]
+    },
+    "set-collection-property": {
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#collectionprop",
+      "description": "Sets a property for the collection",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the property"
+        },
+        "value": {
+          "type": "string",
+          "description": "The value of the property. When not provided, the property is deleted"
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   }
 }

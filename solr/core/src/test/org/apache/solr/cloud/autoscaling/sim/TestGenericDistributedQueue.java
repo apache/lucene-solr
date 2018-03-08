@@ -16,12 +16,14 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
 
 /**
  *
  */
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 public class TestGenericDistributedQueue extends TestSimDistributedQueue {
   DistribStateManager stateManager = new SimDistribStateManager();
 

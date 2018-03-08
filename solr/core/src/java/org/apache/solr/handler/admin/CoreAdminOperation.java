@@ -28,7 +28,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -221,31 +220,6 @@ enum CoreAdminOperation implements CoreAdminOp {
     }
   }),
   INVOKE_OP(INVOKE, new InvokeOp()),
-  FORCEPREPAREFORLEADERSHIP_OP(FORCEPREPAREFORLEADERSHIP, it -> {
-    final SolrParams params = it.req.getParams();
-
-    log().info("I have been forcefully prepare myself for leadership.");
-    ZkController zkController = it.handler.coreContainer.getZkController();
-    if (zkController == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
-    }
-
-    String cname = params.get(CoreAdminParams.CORE);
-    if (cname == null) {
-      throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
-    }
-    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-
-      // Setting the last published state for this core to be ACTIVE
-      if (core != null) {
-        core.getCoreDescriptor().getCloudDescriptor().setLastPublished(Replica.State.ACTIVE);
-        log().info("Setting the last published state for this core, {}, to {}", core.getName(), Replica.State.ACTIVE);
-      } else {
-        SolrException.log(log(), "Could not find core: " + cname);
-      }
-    }
-  }),
-
   BACKUPCORE_OP(BACKUPCORE, new BackupCoreOp()),
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),

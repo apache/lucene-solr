@@ -573,81 +573,77 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
-    final OffsetWindowTokenFilter tvWindowStream;
-    if (tvStream != null && fieldValues.size() > 1) {
-      tvWindowStream = new OffsetWindowTokenFilter(tvStream);
-    } else {
-      tvWindowStream = null;
-    }
+    try (OffsetWindowTokenFilter tvWindowStream = (tvStream != null && fieldValues.size() > 1) ? new OffsetWindowTokenFilter(tvStream) : null) {
 
-    for (String thisText : fieldValues) {
-      if (mvToMatch <= 0 || maxCharsToAnalyze <= 0) {
-        break;
-      }
+      for (String thisText : fieldValues) {
+        if (mvToMatch <= 0 || maxCharsToAnalyze <= 0) {
+          break;
+        }
 
-      TokenStream tstream;
-      if (tvWindowStream != null) {
-        // if we have a multi-valued field with term vectors, then get the next offset window
-        tstream = tvWindowStream.advanceToNextWindowOfLength(thisText.length());
-      } else if (tvStream != null) {
-        tstream = tvStream; // single-valued with term vectors
-      } else {
-        // fall back to analyzer
-        tstream = createAnalyzerTStream(schemaField, thisText);
-      }
-
-      Highlighter highlighter;
-      if (params.getFieldBool(fieldName, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
-        // We're going to call getPhraseHighlighter and it might consume the tokenStream. If it does, the tokenStream
-        // needs to implement reset() efficiently.
-
-        //If the tokenStream is right from the term vectors, then CachingTokenFilter is unnecessary.
-        //  It should be okay if OffsetLimit won't get applied in this case.
-        final TokenStream tempTokenStream;
-        if (tstream != tvStream) {
-          if (maxCharsToAnalyze >= thisText.length()) {
-            tempTokenStream = new CachingTokenFilter(tstream);
-          } else {
-            tempTokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tstream, maxCharsToAnalyze));
-          }
+        TokenStream tstream;
+        if (tvWindowStream != null) {
+          // if we have a multi-valued field with term vectors, then get the next offset window
+          tstream = tvWindowStream.advanceToNextWindowOfLength(thisText.length());
+        } else if (tvStream != null) {
+          tstream = tvStream; // single-valued with term vectors
         } else {
-          tempTokenStream = tstream;
+          // fall back to analyzer
+          tstream = createAnalyzerTStream(schemaField, thisText);
         }
 
-        // get highlighter
-        highlighter = getPhraseHighlighter(query, fieldName, req, tempTokenStream);
+        Highlighter highlighter;
+        if (params.getFieldBool(fieldName, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
+          // We're going to call getPhraseHighlighter and it might consume the tokenStream. If it does, the tokenStream
+          // needs to implement reset() efficiently.
 
-        // if the CachingTokenFilter was consumed then use it going forward.
-        if (tempTokenStream instanceof CachingTokenFilter && ((CachingTokenFilter) tempTokenStream).isCached()) {
-          tstream = tempTokenStream;
-        }
-        //tstream.reset(); not needed; getBestTextFragments will reset it.
-      } else {
-        // use "the old way"
-        highlighter = getHighlighter(query, fieldName, req);
-      }
-
-      highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
-      maxCharsToAnalyze -= thisText.length();
-
-      // Highlight!
-      try {
-        TextFragment[] bestTextFragments =
-            highlighter.getBestTextFragments(tstream, thisText, mergeContiguousFragments, numFragments);
-        for (TextFragment bestTextFragment : bestTextFragments) {
-          if (bestTextFragment == null)//can happen via mergeContiguousFragments
-            continue;
-          // normally we want a score (must be highlighted), but if preserveMulti then we return a snippet regardless.
-          if (bestTextFragment.getScore() > 0 || preserveMulti) {
-            frags.add(bestTextFragment);
-            if (bestTextFragment.getScore() > 0)
-              --mvToMatch; // note: limits fragments (for multi-valued fields), not quite the number of values
+          //If the tokenStream is right from the term vectors, then CachingTokenFilter is unnecessary.
+          //  It should be okay if OffsetLimit won't get applied in this case.
+          final TokenStream tempTokenStream;
+          if (tstream != tvStream) {
+            if (maxCharsToAnalyze >= thisText.length()) {
+              tempTokenStream = new CachingTokenFilter(tstream);
+            } else {
+              tempTokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tstream, maxCharsToAnalyze));
+            }
+          } else {
+            tempTokenStream = tstream;
           }
+
+          // get highlighter
+          highlighter = getPhraseHighlighter(query, fieldName, req, tempTokenStream);
+
+          // if the CachingTokenFilter was consumed then use it going forward.
+          if (tempTokenStream instanceof CachingTokenFilter && ((CachingTokenFilter) tempTokenStream).isCached()) {
+            tstream = tempTokenStream;
+          }
+          //tstream.reset(); not needed; getBestTextFragments will reset it.
+        } else {
+          // use "the old way"
+          highlighter = getHighlighter(query, fieldName, req);
         }
-      } catch (InvalidTokenOffsetsException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    }//end field value loop
+
+        highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
+        maxCharsToAnalyze -= thisText.length();
+
+        // Highlight!
+        try {
+          TextFragment[] bestTextFragments =
+              highlighter.getBestTextFragments(tstream, thisText, mergeContiguousFragments, numFragments);
+          for (TextFragment bestTextFragment : bestTextFragments) {
+            if (bestTextFragment == null)//can happen via mergeContiguousFragments
+              continue;
+            // normally we want a score (must be highlighted), but if preserveMulti then we return a snippet regardless.
+            if (bestTextFragment.getScore() > 0 || preserveMulti) {
+              frags.add(bestTextFragment);
+              if (bestTextFragment.getScore() > 0)
+                --mvToMatch; // note: limits fragments (for multi-valued fields), not quite the number of values
+            }
+          }
+        } catch (InvalidTokenOffsetsException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }//end field value loop
+    }
 
     // Put the fragments onto the Solr response (docSummaries)
     if (frags.size() > 0) {

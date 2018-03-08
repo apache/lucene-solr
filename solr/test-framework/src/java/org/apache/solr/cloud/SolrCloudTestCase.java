@@ -243,7 +243,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Get the collection state for a particular collection
    */
-  protected DocCollection getCollectionState(String collectionName) {
+  protected static DocCollection getCollectionState(String collectionName) {
     return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
   }
 
@@ -256,7 +256,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param collection  the collection to watch
    * @param predicate   a predicate to match against the collection state
    */
-  protected void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {

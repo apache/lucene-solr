@@ -55,6 +55,12 @@ Changes in Runtime Behavior
 * LUCENE-8116: Similarities now score fields that omit norms as if the norm was
   1. This might change score values on fields that omit norms. (Adrien Grand)
 
+* LUCENE-8134: Index options are no longer automatically downgraded.
+  (Adrien Grand)
+
+* LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
+  (Robert Muir, Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -67,6 +73,9 @@ Improvements
 
 * LUCENE-4198: Codecs now have the ability to index score impacts.
   (Adrien Grand)
+
+* LUCENE-8135: Boolean queries now implement the block-max WAND algorithm in
+  order to speed up selection of top scored documents. (Adrien Grand)
 
 Optimizations
 
@@ -111,6 +120,11 @@ New Features
   (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
   Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
 
+* LUCENE-8126: Add new spatial prefix tree (SPT) based on google S2 geometry.
+  It can only be used currently with Geo3D spatial context and it provides
+  improvements on indexing time for non-points shapes and on query performance.
+  (Ignacio Vera, David Smiley).
+
 Improvements
 
 * LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
@@ -130,8 +144,6 @@ Improvements
   position sensitive (e.g. part of a phrase) by having an accurate freq.
   (David Smiley)
 
-* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
-
 * LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
   (Ere Maijala)
 
@@ -149,6 +161,10 @@ Improvements
 
 * LUCENE-8033: FieldInfos now always use a dense encoding. (Mayya Sharipova
   via Adrien Grand)
+
+* LUCENE-8190: Specialized cell interface to allow any spatial prefix tree to
+  benefit from the setting setPruneLeafyBranches on RecursivePrefixTreeStrategy.
+  (Ignacio Vera)
 
 Bug Fixes
 
@@ -174,12 +190,20 @@ Bug Fixes
 * LUCENE-8163: BaseDirectoryTestCase could produce random filenames that fail
   on Windows (Alan Woodward)
 
+* LUCENE-8174: Fixed {Float,Double,Int,Long}Range.toString(). (Oliver Kaleske
+  via Adrien Grand)
+
+* LUCENE-8182: Fixed BoostingQuery to apply the context boost instead of the parent query
+  boost (Jim Ferenczi)
+
+* LUCENE-8188: Fixed bugs in OpenNLPOpsFactory that were causing InputStreams fetched from the
+  ResourceLoader to be leaked (hossman)
+
+
 Other
 
 * LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
   (Kai Chan via Adrien Grand)
-
-* LUCENE-8122: Upgrade analysis/icu to ICU 60.2. (Robert Muir)
 
 * LUCENE-8106: Add script (reproduceJenkinsFailures.py) to attempt to reproduce
   failing tests from a Jenkins log. (Steve Rowe)
@@ -707,6 +731,13 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.3 =======================
+
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
 ======================= Lucene 6.6.2 =======================
 

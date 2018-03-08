@@ -128,7 +128,7 @@
     },
     "create-alias": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-      "description": "Allows one or more collections to be known by another name. If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
+      "description": "Allows one or more collections to be known by another name, or creates an alias that manages a series of time-partitioned collections.. If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
       "type": "object",
       "properties": {
         "name": {
@@ -137,29 +137,10 @@
         },
         "collections": {
           "type": "array",
-          "description": "The list of collections to be known as this alias.",
+          "description": "The list of collections to be known as this alias. Incompatible with any of the routing parameters. Either this parameter or a complete set of routing parameters is required",
           "items": {
             "type": "string"
           }
-        },
-        "async": {
-          "type": "string",
-          "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
-        }
-      },
-      "required": [
-        "name",
-        "collections"
-      ]
-    },
-    "create-routed-alias": {
-      "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-      "description": "Creates an alias that manages a series of time-partitioned collections.",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The alias name to be created."
         },
         "router" : {
           "type":"object",
@@ -185,7 +166,7 @@
             "maxFutureMs": {
               "type": "integer",
               "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + maxFutureMs will be rejected to avoid provisioning too much resources."
-            }
+            },
             "autoDeleteAge": {
               "type": "string",
               "description": "A date math expressions yielding a time in the past. Collections covering a period of time entirely before this age will be automatically deleted."
@@ -208,9 +189,7 @@
         }
       },
       "required": [
-        "name",
-        "router",
-        "create-collection"
+        "name"
       ]
     },
     "delete-alias": {

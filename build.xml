@@ -618,6 +618,16 @@ Test args: [${args}]</echo>
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.badapples" value="false"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-badapples">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.badapples" value="true"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -627,10 +637,21 @@ Test args: [${args}]</echo>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
       <param name="tests.nightly" value="true"/>
+      <param name="tests.badapples" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
-  
+
+  <target name="jenkins-nightly-badapples">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.nightly" value="true"/>
+      <param name="tests.badapples" value="true"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+
   <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
     <!-- step 1: build, install, validate and publish ANT-generated maven artifacts: -->
     <antcall>

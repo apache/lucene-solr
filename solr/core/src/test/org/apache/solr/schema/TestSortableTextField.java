@@ -488,7 +488,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     final List<String> test_fields = Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                                    "keyword_s_dv", "keyword_s");
     // we use embedded client instead of assertQ: we want to compare the responses from multiple requests
-    final SolrClient client = new EmbeddedSolrServer(h.getCore());
+    @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(h.getCore());
     
     final int numDocs = atLeast(100);
     final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);

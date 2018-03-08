@@ -556,7 +556,7 @@ final class SloppyPhraseScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     return docScorer.maxScore();
   }
 

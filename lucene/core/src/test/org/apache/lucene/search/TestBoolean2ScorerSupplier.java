@@ -51,7 +51,7 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return 1;
     }
 

@@ -54,8 +54,6 @@ public final class StandardTokenizer extends Tokenizer {
   public static final int KATAKANA = 5;
   /** Hangul token type */
   public static final int HANGUL = 6;
-  /** Emoji token type. */
-  public static final int EMOJI = 7;
   
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
@@ -65,8 +63,7 @@ public final class StandardTokenizer extends Tokenizer {
     "<IDEOGRAPHIC>",
     "<HIRAGANA>",
     "<KATAKANA>",
-    "<HANGUL>",
-    "<EMOJI>"
+    "<HANGUL>"
   };
   
   /** Absolute maximum sized token */

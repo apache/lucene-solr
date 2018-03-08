@@ -176,7 +176,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

@@ -32,11 +32,11 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
    * @param weight The weight to be used.
    * @param subScorers Array of at least two subscorers.
    */
-  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) {
+  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) throws IOException {
     super(weight, subScorers, needsScores);
     double maxScore = 0;
     for (Scorer scorer : subScorers) {
-      maxScore += scorer.maxScore();
+      maxScore += scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
     }
     // The error of sums depends on the order in which values are summed up. In
     // order to avoid this issue, we compute an upper bound of the value that
@@ -57,7 +57,7 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     return maxScore;
   }
 

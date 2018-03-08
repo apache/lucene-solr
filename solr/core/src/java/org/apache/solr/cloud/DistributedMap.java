@@ -16,15 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
-
-import java.util.List;
 
 /**
  * A distributed map.
@@ -57,6 +59,19 @@ public class DistributedMap {
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
     zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+  }
+  
+  /**
+   * Puts an element in the map only if there isn't one with the same trackingId already
+   * @return True if the the element was added. False if it wasn't (because the key already exists)
+   */
+  public boolean putIfAbsent(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+    try {
+      zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true, true);
+      return true;
+    } catch (NodeExistsException e) {
+      return false;
+    }
   }
 
   public byte[] get(String trackingId) throws KeeperException, InterruptedException {
@@ -95,6 +110,17 @@ public class DistributedMap {
     for(String childName: childNames) {
       zookeeper.delete(dir + "/" + childName, -1, true);
     }
+
+  }
+  
+  /**
+   * Returns the keys of all the elements in the map
+   */
+  public Collection<String> keys() throws KeeperException, InterruptedException {
+    List<String> childs = zookeeper.getChildren(dir, null, true);
+    final List<String> ids = new ArrayList<>(childs.size());
+    childs.stream().forEach((child) -> ids.add(child.substring(PREFIX.length())));
+    return ids;
 
   }
 

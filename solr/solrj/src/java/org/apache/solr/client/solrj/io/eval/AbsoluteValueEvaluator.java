@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -40,7 +41,7 @@ public class AbsoluteValueEvaluator extends RecursiveNumericEvaluator implements
       return null;
     }
     else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue));
+      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
       return Math.abs(((Number)value).doubleValue());

@@ -324,8 +324,8 @@ Example:
 ----
 The value of `filter` can be a single query to treat as a filter, or a list of filter queries.  Each one can be:
 
-* a string containing a query in solr query syntax
-* a reference to a request parameter containing solr query syntax, of the form: `{param : <request_param_name>}`
+* a string containing a query in Solr query syntax
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
 
 [[AggregationFunctions]]
 == Aggregation Functions

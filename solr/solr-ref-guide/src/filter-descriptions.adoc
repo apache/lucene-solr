@@ -831,7 +831,7 @@ This is specialized version of the <<Synonym Graph Filter>> that uses a mapping 
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
-Note: although this filter produces correct token graphs, it cannot consume an input token graph correctly.
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
 *Arguments:*
 
@@ -1437,7 +1437,7 @@ This filter maps single- or multi-token synonyms, producing a fully correct grap
 
 If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Synonym Filter, because the indexer can't directly consume a graph. To get fully correct positional queries when your synonym replacements are multiple tokens, you should instead apply synonyms using this filter at query time.
 
-Note: although this filter produces correct token graphs, it cannot consume an input token graph correctly.
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
 *Factory class:* `solr.SynonymGraphFilterFactory`
 

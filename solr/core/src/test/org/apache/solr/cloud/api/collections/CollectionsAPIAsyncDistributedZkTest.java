@@ -16,13 +16,22 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -30,8 +39,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tests the Cloud Collections API.
@@ -40,6 +53,8 @@ import org.junit.Test;
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   private static final int MAX_TIMEOUT_SECONDS = 60;
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -173,6 +188,75 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     state = CollectionAdminRequest.deleteCollection(collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
+  }
+  
+  public void testAsyncIdRaceCondition() throws Exception {
+    SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
+    int j = 0;
+    for (JettySolrRunner r:cluster.getJettySolrRunners()) {
+      clients[j++] = new HttpSolrClient.Builder(r.getBaseUrl().toString()).build();
+    }
+    RequestStatusState state = CollectionAdminRequest.createCollection("testAsyncIdRaceCondition","conf1",1,1)
+        .setRouterName("implicit")
+        .setShards("shard1")
+        .processAndWait(cluster.getSolrClient(), MAX_TIMEOUT_SECONDS);
+    assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
+    
+    int numThreads = 10;
+    final AtomicInteger numSuccess = new AtomicInteger(0);
+    final AtomicInteger numFailure = new AtomicInteger(0);
+    final CountDownLatch latch = new CountDownLatch(numThreads);
+    
+    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new DefaultSolrThreadFactory("testAsyncIdRaceCondition"));
+    try {
+      for (int i = 0; i < numThreads; i++) {
+        es.submit(new Runnable() {
+          
+          @Override
+          public void run() {
+            CollectionAdminRequest.Reload reloadCollectionRequest = CollectionAdminRequest.reloadCollection("testAsyncIdRaceCondition");
+            latch.countDown();
+            try {
+              latch.await();
+            } catch (InterruptedException e) {
+              throw new RuntimeException();
+            }
+            
+            try {
+              log.info("{} - Reloading Collection.", Thread.currentThread().getName());
+              reloadCollectionRequest.processAsync("repeatedId", clients[random().nextInt(clients.length)]);
+              numSuccess.incrementAndGet();
+            } catch (SolrServerException e) {
+              log.info(e.getMessage());
+              assertEquals("Task with the same requestid already exists.", e.getMessage());
+              numFailure.incrementAndGet();
+            } catch (IOException e) {
+              throw new RuntimeException();
+            }
+          }
+        });
+      }
+      es.shutdown();
+      assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
+      assertEquals(1, numSuccess.get());
+      assertEquals(numThreads - 1, numFailure.get());
+    } finally {
+      for (int i = 0; i < clients.length; i++) {
+        clients[i].close();
+      }
+    }
+  }
+  
+  public void testAsyncIdBackCompat() throws Exception {
+    //remove with Solr 9
+    cluster.getZkClient().makePath("/overseer/collection-map-completed/mn-testAsyncIdBackCompat", true, true);
+    try {
+      CollectionAdminRequest.createCollection("testAsyncIdBackCompat","conf1",1,1)
+      .processAsync("testAsyncIdBackCompat", cluster.getSolrClient());
+      fail("Expecting exception");
+    } catch (SolrServerException e) {
+      assertTrue(e.getMessage().contains("Task with the same requestid already exists"));
+    }
   }
 
 }

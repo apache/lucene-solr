@@ -255,6 +255,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
     TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
@@ -756,6 +757,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeMarkersRegistration() throws Exception {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -896,6 +898,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testListeners() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -1040,6 +1043,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCooldown() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     failDummyAction = false;
@@ -1079,9 +1083,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(1000);
+    cluster.getTimeSource().sleep(5000);
 
     List<CapturedEvent> capturedEvents = listenerEvents.get("bar");
+    assertNotNull("no events for 'bar'!", capturedEvents);
     // we may get a few IGNORED events if other tests caused events within cooldown period
     assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
     long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;
@@ -1128,6 +1133,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";

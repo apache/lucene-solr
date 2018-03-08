@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -187,16 +186,7 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     if (!cluster.getDistribStateManager().hasData(path)) {
       return;
     }
-    List<String> children = cluster.getDistribStateManager().listData(path);
-    for (String c : children) {
-      if (cluster.getDistribStateManager().hasData(path + "/" + c)) {
-        try {
-          cluster.getDistribStateManager().removeData(path + "/" + c, -1);
-        } catch (NoSuchElementException e) {
-          // ignore
-        }
-      }
-    }
+    cluster.getDistribStateManager().removeRecursively(path, true, false);
   }
 
   /* Cluster helper methods ************************************/

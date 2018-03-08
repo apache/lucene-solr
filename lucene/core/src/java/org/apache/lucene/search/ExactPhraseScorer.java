@@ -121,7 +121,7 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     return docScorer.maxScore();
   }
 

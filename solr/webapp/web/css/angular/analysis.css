@@ -70,7 +70,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/question-white.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   margin-left: 5px;
   padding-left: 21px;
 }
@@ -116,7 +116,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/ui-check-box-uncheck.png );
   background-position: 0 50%;
-  color: #999;
+  color: #4D4D4D;
   display: block;
   padding-left: 21px;
 }
@@ -216,8 +216,7 @@ limitations under the License.
 
 #content #analysis #analysis-result .match
 {
-  background-color: #e9eff7;
-  background-color: #f2f2ff;
+  background-color: #F0D9C3;
 }
 
 #content #analysis #analysis-result td.part
@@ -233,7 +232,7 @@ limitations under the License.
 
 #content #analysis #analysis-result td.part.analyzer abbr
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #analysis #analysis-result td.part.legend .holder,
@@ -246,7 +245,7 @@ limitations under the License.
 
 #content #analysis #analysis-result td.part.legend td
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #analysis #analysis-result td.part.legend .holder
@@ -260,7 +259,7 @@ limitations under the License.
   border-right: 0;
 }
 
-#content #analysis #analysis-result td.details 
+#content #analysis #analysis-result td.details
 {
   padding-left: 10px;
   padding-right: 10px;

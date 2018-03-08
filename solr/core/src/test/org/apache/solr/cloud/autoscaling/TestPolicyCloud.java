@@ -223,16 +223,18 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     DocCollection collection = getCollectionState("metricsTest");
     DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(cluster.getZkClient());
-    SolrCloudManager provider = new SolrClientCloudManager(queueFactory, solrClient);
-    List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
-        "metrics:solr.jvm:buffers.direct.Count");
-    Map<String, Object> val = provider.getNodeStateProvider().getNodeValues(collection .getReplicas().get(0).getNodeName(), tags);
-    for (String tag : tags) {
-      assertNotNull( "missing : "+ tag , val.get(tag));
+    try (SolrCloudManager provider = new SolrClientCloudManager(queueFactory, solrClient)) {
+      List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
+          "metrics:solr.jvm:buffers.direct.Count");
+      Map<String, Object> val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), tags);
+      for (String tag : tags) {
+        assertNotNull("missing : " + tag, val.get(tag));
+      }
+      val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), Collections.singleton("diskType"));
+
+      Set<String> diskTypes = ImmutableSet.of("rotational", "ssd");
+      assertTrue(diskTypes.contains(val.get("diskType")));
     }
-    val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), Collections.singleton("diskType"));
-    Set<String> diskTypes = ImmutableSet.of("rotational", "ssd");
-    assertTrue(diskTypes.contains(val.get("diskType")));
   }
 
   public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {
@@ -325,42 +327,43 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
-    SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
-    Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
-        "freedisk",
-        "cores",
-        "heapUsage",
-        "sysLoadAvg"));
-    assertNotNull(val.get("freedisk"));
-    assertNotNull(val.get("heapUsage"));
-    assertNotNull(val.get("sysLoadAvg"));
-    assertTrue(((Number) val.get("cores")).intValue() > 0);
-    assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(),  Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
-    assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
-    if (!Constants.WINDOWS)  {
-      // the system load average metrics is not available on windows platform
-      assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
-    }
-    String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
-    cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
-    for (int i = 0; i < 10; i++) {
-      Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
-      if (i >= 9 && data.isEmpty()) {
-        throw new RuntimeException("NO overseer node created");
+    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
+      Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
+          "freedisk",
+          "cores",
+          "heapUsage",
+          "sysLoadAvg"));
+      assertNotNull(val.get("freedisk"));
+      assertNotNull(val.get("heapUsage"));
+      assertNotNull(val.get("sysLoadAvg"));
+      assertTrue(((Number) val.get("cores")).intValue() > 0);
+      assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(), Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
+      assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
+      if (!Constants.WINDOWS) {
+        // the system load average metrics is not available on windows platform
+        assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
       }
-      Thread.sleep(100);
+      String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
+      cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
+      for (int i = 0; i < 10; i++) {
+        Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
+        if (i >= 9 && data.isEmpty()) {
+          throw new RuntimeException("NO overseer node created");
+        }
+        Thread.sleep(100);
+      }
+      val = cloudManager.getNodeStateProvider().getNodeValues(overseerNode, Arrays.asList(
+          "nodeRole",
+          "ip_1", "ip_2", "ip_3", "ip_4",
+          "sysprop.java.version",
+          "sysprop.java.vendor"));
+      assertEquals("overseer", val.get("nodeRole"));
+      assertNotNull(val.get("ip_1"));
+      assertNotNull(val.get("ip_2"));
+      assertNotNull(val.get("ip_3"));
+      assertNotNull(val.get("ip_4"));
+      assertNotNull(val.get("sysprop.java.version"));
+      assertNotNull(val.get("sysprop.java.vendor"));
     }
-    val = cloudManager.getNodeStateProvider().getNodeValues(overseerNode, Arrays.asList(
-        "nodeRole",
-        "ip_1", "ip_2", "ip_3", "ip_4",
-        "sysprop.java.version",
-        "sysprop.java.vendor"));
-    assertEquals("overseer", val.get("nodeRole"));
-    assertNotNull(val.get("ip_1"));
-    assertNotNull(val.get("ip_2"));
-    assertNotNull(val.get("ip_3"));
-    assertNotNull(val.get("ip_4"));
-    assertNotNull(val.get("sysprop.java.version"));
-    assertNotNull(val.get("sysprop.java.vendor"));
   }
 }

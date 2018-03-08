@@ -30,7 +30,9 @@ public class SmileResponseWriter extends BinaryResponseWriter {
 
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
-    new SmileWriter(out, request, response).writeResponse();
+    try (SmileWriter sw = new SmileWriter(out, request, response)) {
+      sw.writeResponse();
+    }
   }
 
   @Override

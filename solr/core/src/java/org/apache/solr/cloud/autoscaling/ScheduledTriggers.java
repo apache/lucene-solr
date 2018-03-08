@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -59,7 +58,6 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.zookeeper.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +87,7 @@ public class ScheduledTriggers implements Closeable {
     DEFAULT_PROPERTIES.put(ACTION_THROTTLE_PERIOD_SECONDS, DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS);
   }
 
-  private final Map<String, ScheduledTrigger> scheduledTriggers = new ConcurrentHashMap<>();
+  private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>();
 
   /**
    * Thread pool for scheduling the triggers
@@ -159,10 +157,10 @@ public class ScheduledTriggers implements Closeable {
           case TRIGGER_SCHEDULE_DELAY_SECONDS:
             triggerDelay.set(((Number) newProps.get(key)).intValue());
             synchronized (this) {
-              scheduledTriggers.forEach((s, scheduledTrigger) -> {
-                if (scheduledTrigger.scheduledFuture.cancel(false)) {
-                  scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(
-                      scheduledTrigger, 0,
+              scheduledTriggerWrappers.forEach((s, triggerWrapper) -> {
+                if (triggerWrapper.scheduledFuture.cancel(false)) {
+                  triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(
+                      triggerWrapper, 0,
                       cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS),
                       TimeUnit.MILLISECONDS);
                 } else  {
@@ -200,9 +198,9 @@ public class ScheduledTriggers implements Closeable {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
-    ScheduledTrigger st;
+    TriggerWrapper st;
     try {
-      st = new ScheduledTrigger(newTrigger, cloudManager, queueStats);
+      st = new TriggerWrapper(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
       if (isClosed) {
         throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
@@ -214,9 +212,9 @@ public class ScheduledTriggers implements Closeable {
       }
       return;
     }
-    ScheduledTrigger scheduledTrigger = st;
+    TriggerWrapper triggerWrapper = st;
 
-    ScheduledTrigger old = scheduledTriggers.putIfAbsent(newTrigger.getName(), scheduledTrigger);
+    TriggerWrapper old = scheduledTriggerWrappers.putIfAbsent(newTrigger.getName(), triggerWrapper);
     if (old != null) {
       if (old.trigger.equals(newTrigger)) {
         // the trigger wasn't actually modified so we do nothing
@@ -224,8 +222,8 @@ public class ScheduledTriggers implements Closeable {
       }
       IOUtils.closeQuietly(old);
       newTrigger.restoreState(old.trigger);
-      scheduledTrigger.setReplay(false);
-      scheduledTriggers.replace(newTrigger.getName(), scheduledTrigger);
+      triggerWrapper.setReplay(false);
+      scheduledTriggerWrappers.replace(newTrigger.getName(), triggerWrapper);
     }
     newTrigger.setProcessor(event -> {
       if (cloudManager.isClosed()) {
@@ -234,7 +232,7 @@ public class ScheduledTriggers implements Closeable {
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
         return false;
       }
-      ScheduledTrigger scheduledSource = scheduledTriggers.get(event.getSource());
+      TriggerWrapper scheduledSource = scheduledTriggerWrappers.get(event.getSource());
       if (scheduledSource == null) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because the source trigger: %s doesn't exist.", event.toString(), event.getSource());
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, msg);
@@ -249,6 +247,12 @@ public class ScheduledTriggers implements Closeable {
         log.warn(msg);
         // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
         return false;
+      }
+      if (event.isIgnored())  {
+        log.debug("-------- Ignoring event: " + event);
+        event.getProperties().put(TriggerEvent.IGNORED, true);
+        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Event was ignored.");
+        return true; // always return true for ignored events
       }
       // even though we pause all triggers during action execution there is a possibility that a trigger was already
       // running at the time and would have already created an event so we reject such events during cooldown period
@@ -268,7 +272,7 @@ public class ScheduledTriggers implements Closeable {
         if (replaying) {
           enqueued = false;
         } else {
-          enqueued = scheduledTrigger.enqueue(event);
+          enqueued = triggerWrapper.enqueue(event);
         }
         // fire STARTED event listeners after enqueuing the event is successful
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.STARTED);
@@ -306,7 +310,7 @@ public class ScheduledTriggers implements Closeable {
                 listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
               }
               if (enqueued) {
-                TriggerEvent ev = scheduledTrigger.dequeue();
+                TriggerEvent ev = triggerWrapper.dequeue();
                 assert ev.getId().equals(event.getId());
               }
               listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
@@ -323,9 +327,9 @@ public class ScheduledTriggers implements Closeable {
           });
         } else {
           if (enqueued) {
-            TriggerEvent ev = scheduledTrigger.dequeue();
+            TriggerEvent ev = triggerWrapper.dequeue();
             if (!ev.getId().equals(event.getId())) {
-              throw new RuntimeException("Wrong event dequeued, queue of " + scheduledTrigger.trigger.getName()
+              throw new RuntimeException("Wrong event dequeued, queue of " + triggerWrapper.trigger.getName()
               + " is broken! Expected event=" + event + " but got " + ev);
             }
           }
@@ -342,30 +346,32 @@ public class ScheduledTriggers implements Closeable {
       }
     });
     newTrigger.init(); // mark as ready for scheduling
-    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0,
+    triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(triggerWrapper, 0,
         cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS),
         TimeUnit.MILLISECONDS);
   }
 
   /**
    * Pauses all scheduled trigger invocations without interrupting any that are in progress
+   * @lucene.internal
    */
-  private synchronized void pauseTriggers()  {
+  public synchronized void pauseTriggers()  {
     if (log.isDebugEnabled()) {
-      log.debug("Pausing all triggers: {}", scheduledTriggers.keySet());
+      log.debug("Pausing all triggers: {}", scheduledTriggerWrappers.keySet());
     }
-    scheduledTriggers.forEach((s, scheduledTrigger) -> scheduledTrigger.scheduledFuture.cancel(false));
+    scheduledTriggerWrappers.forEach((s, triggerWrapper) -> triggerWrapper.scheduledFuture.cancel(false));
   }
 
   /**
    * Resumes all previously cancelled triggers to be scheduled after the given initial delay
    * @param afterDelayMillis the initial delay in milliseconds after which triggers should be resumed
+   * @lucene.internal
    */
-  private synchronized void resumeTriggers(long afterDelayMillis) {
-    scheduledTriggers.forEach((s, scheduledTrigger) ->  {
-      if (scheduledTrigger.scheduledFuture.isCancelled()) {
+  public synchronized void resumeTriggers(long afterDelayMillis) {
+    scheduledTriggerWrappers.forEach((s, triggerWrapper) ->  {
+      if (triggerWrapper.scheduledFuture.isCancelled()) {
         log.debug("Resuming trigger: {} after {}ms", s, afterDelayMillis);
-        scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, afterDelayMillis,
+        triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(triggerWrapper, afterDelayMillis,
             cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
       }
     });
@@ -431,13 +437,24 @@ public class ScheduledTriggers implements Closeable {
   }
 
   /**
+   * Remove and stop all triggers. Also cleans up any leftover
+   * state / events in ZK.
+   */
+  public synchronized void removeAll() {
+    getScheduledTriggerNames().forEach(t -> {
+      log.info("-- removing trigger: " + t);
+      remove(t);
+    });
+  }
+
+  /**
    * Removes and stops the trigger with the given name. Also cleans up any leftover
    * state / events in ZK.
    *
    * @param triggerName the name of the trigger to be removed
    */
   public synchronized void remove(String triggerName) {
-    ScheduledTrigger removed = scheduledTriggers.remove(triggerName);
+    TriggerWrapper removed = scheduledTriggerWrappers.remove(triggerName);
     IOUtils.closeQuietly(removed);
     removeTriggerZKData(triggerName);
   }
@@ -446,26 +463,12 @@ public class ScheduledTriggers implements Closeable {
     String statePath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName;
     String eventsPath = ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH + "/" + triggerName;
     try {
-      if (stateManager.hasData(statePath)) {
-        stateManager.removeData(statePath, -1);
-      }
-    } catch (NoSuchElementException e) {
-      // already removed by someone else
+      stateManager.removeRecursively(statePath, true, true);
     } catch (Exception e) {
       log.warn("Failed to remove state for removed trigger " + statePath, e);
     }
     try {
-      if (stateManager.hasData(eventsPath)) {
-        List<String> events = stateManager.listData(eventsPath);
-        List<Op> ops = new ArrayList<>(events.size() + 1);
-        events.forEach(ev -> {
-          ops.add(Op.delete(eventsPath + "/" + ev, -1));
-        });
-        ops.add(Op.delete(eventsPath, -1));
-        stateManager.multi(ops);
-      }
-    } catch (NoSuchElementException e) {
-      // already removed by someone else
+      stateManager.removeRecursively(eventsPath, true, true);
     } catch (Exception e) {
       log.warn("Failed to remove events for removed trigger " + eventsPath, e);
     }
@@ -475,7 +478,7 @@ public class ScheduledTriggers implements Closeable {
    * @return an unmodifiable set of names of all triggers being managed by this class
    */
   public synchronized Set<String> getScheduledTriggerNames() {
-    return Collections.unmodifiableSet(new HashSet<>(scheduledTriggers.keySet())); // shallow copy
+    return Collections.unmodifiableSet(new HashSet<>(scheduledTriggerWrappers.keySet())); // shallow copy
   }
 
   @Override
@@ -483,10 +486,10 @@ public class ScheduledTriggers implements Closeable {
     synchronized (this) {
       // mark that we are closed
       isClosed = true;
-      for (ScheduledTrigger scheduledTrigger : scheduledTriggers.values()) {
-        IOUtils.closeQuietly(scheduledTrigger);
+      for (TriggerWrapper triggerWrapper : scheduledTriggerWrappers.values()) {
+        IOUtils.closeQuietly(triggerWrapper);
       }
-      scheduledTriggers.clear();
+      scheduledTriggerWrappers.clear();
     }
     // shutdown and interrupt all running tasks because there's no longer any
     // guarantee about cluster state
@@ -495,14 +498,14 @@ public class ScheduledTriggers implements Closeable {
     listeners.close();
   }
 
-  private class ScheduledTrigger implements Runnable, Closeable {
+  private class TriggerWrapper implements Runnable, Closeable {
     AutoScaling.Trigger trigger;
     ScheduledFuture<?> scheduledFuture;
     TriggerEventQueue queue;
     boolean replay;
     volatile boolean isClosed;
 
-    ScheduledTrigger(AutoScaling.Trigger trigger, SolrCloudManager cloudManager, Stats stats) throws IOException {
+    TriggerWrapper(AutoScaling.Trigger trigger, SolrCloudManager cloudManager, Stats stats) throws IOException {
       this.trigger = trigger;
       this.queue = new TriggerEventQueue(cloudManager, trigger.getName(), stats);
       this.replay = true;
@@ -542,7 +545,7 @@ public class ScheduledTriggers implements Closeable {
         // to change the schedule delay, we can safely cancel the old scheduled task
         // and create another one with the new delay without worrying about concurrent
         // execution of the same trigger instance
-        synchronized (ScheduledTrigger.this) {
+        synchronized (TriggerWrapper.this) {
           // replay accumulated events on first run, if any
           if (replay) {
             TriggerEvent event;

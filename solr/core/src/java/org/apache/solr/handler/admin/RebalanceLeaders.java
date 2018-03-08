@@ -287,6 +287,7 @@ class RebalanceLeaders {
         String asyncId = pair.getKey();
         if (coreContainer.getZkController().getOverseerFailureMap().contains(asyncId)) {
           coreContainer.getZkController().getOverseerFailureMap().remove(asyncId);
+          coreContainer.getZkController().clearAsyncId(asyncId);
           NamedList<Object> fails = (NamedList<Object>) results.get("failures");
           if (fails == null) {
             fails = new NamedList<>();
@@ -300,6 +301,7 @@ class RebalanceLeaders {
           foundChange = true;
         } else if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId)) {
           coreContainer.getZkController().getOverseerCompletedMap().remove(asyncId);
+          coreContainer.getZkController().clearAsyncId(asyncId);
           NamedList<Object> successes = (NamedList<Object>) results.get("successes");
           if (successes == null) {
             successes = new NamedList<>();

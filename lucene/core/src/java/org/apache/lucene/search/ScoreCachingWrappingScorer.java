@@ -54,8 +54,13 @@ public final class ScoreCachingWrappingScorer extends FilterScorer {
   }
 
   @Override
-  public float maxScore() {
-    return in.maxScore();
+  public float getMaxScore(int upTo) throws IOException {
+    return in.getMaxScore(upTo);
+  }
+
+  @Override
+  public int advanceShallow(int target) throws IOException {
+    return in.advanceShallow(target);
   }
 
   @Override

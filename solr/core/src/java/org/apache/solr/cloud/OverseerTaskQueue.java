@@ -70,7 +70,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
-              LOG.debug(">>>> {}", message.get(requestIdKey));
+              LOG.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
               if(message.get(requestIdKey).equals(requestId)) return true;
             }
           }

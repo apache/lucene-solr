@@ -213,6 +213,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @SuppressWarnings("unchecked")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -424,16 +425,30 @@ public class TestPullReplica extends SolrCloudTestCase {
     Replica pullReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
     assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
 
+    long highestTerm = 0L;
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+      highestTerm = zkShardTerms.getHighestTerm();
+    }
     // add document, this should fail since there is no leader. Pull replica should not accept the update
     expectThrows(SolrException.class, () -> 
       cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
     );
+    if (removeReplica) {
+      try(ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+      }
+    }
     
     // Also fails if I send the update to the pull replica explicitly
     try (HttpSolrClient pullReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(SolrException.class, () -> 
         cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
       );
+    }
+    if (removeReplica) {
+      try(ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+      }
     }
     
     // Queries should still work

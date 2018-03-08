@@ -159,8 +159,7 @@ public abstract class TermsEnum implements BytesRefIterator {
   /** Get {@link PostingsEnum} for the current term, with
    *  control over whether freqs, positions, offsets or payloads
    *  are required.  Do not call this when the enum is
-   *  unpositioned.  This method may return null if the postings
-   *  information required is not available from the index
+   *  unpositioned.  This method will not return null.
    *  <p>
    *  <b>NOTE</b>: the returned iterator may return deleted documents, so
    *  deleted documents have to be checked on top of the {@link PostingsEnum}.

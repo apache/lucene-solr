@@ -225,7 +225,7 @@ public class TransactionLog implements Closeable {
     byte[] buf = new byte[ END_MESSAGE.length() ];
     long pos = size - END_MESSAGE.length() - 4;
     if (pos < 0) return false;
-    ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
+    @SuppressWarnings("resource") final ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
     is.read(buf);
     for (int i=0; i<buf.length; i++) {
       if (buf[i] != END_MESSAGE.charAt(i)) return false;
@@ -257,7 +257,7 @@ public class TransactionLog implements Closeable {
   }
 
   public long writeData(Object o) {
-    LogCodec codec = new LogCodec(resolver);
+    @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
     try {
       long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
       codec.init(fos);
@@ -272,7 +272,7 @@ public class TransactionLog implements Closeable {
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
     fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
-    LogCodec codec = new LogCodec(resolver);
+    @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
     Map header = (Map)codec.unmarshal(fis);
 
     fis.readInt(); // skip size
@@ -507,6 +507,7 @@ public class TransactionLog implements Closeable {
 
 
   /* This method is thread safe */
+
   public Object lookup(long pos) {
     // A negative position can result from a log replay (which does not re-log, but does
     // update the version map.  This is OK since the node won't be ACTIVE when this happens.
@@ -526,8 +527,9 @@ public class TransactionLog implements Closeable {
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
-      LogCodec codec = new LogCodec(resolver);
-      return codec.readVal(fis);
+      try (LogCodec codec = new LogCodec(resolver)) {
+        return codec.readVal(fis);
+      }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

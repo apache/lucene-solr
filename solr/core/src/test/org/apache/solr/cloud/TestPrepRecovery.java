@@ -49,6 +49,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderUnloaded() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
@@ -83,6 +84,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         collectionName, clusterShape(1, 3));
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderNotResponding() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 

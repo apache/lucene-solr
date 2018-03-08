@@ -70,7 +70,7 @@ public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
 
   // System properties are used in tests to make them run fast
-  public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE = Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
   public static final int STATE_UPDATE_MAX_QUEUE = 20000;
 
@@ -468,6 +468,10 @@ public class Overseer implements SolrCloseable {
       this.isClosed = true;
     }
 
+    public Closeable getThread() {
+      return thread;
+    }
+
     public boolean isClosed() {
       return this.isClosed;
     }
@@ -565,6 +569,15 @@ public class Overseer implements SolrCloseable {
    */
   public synchronized OverseerThread getUpdaterThread() {
     return updaterThread;
+  }
+
+  /**
+   * For tests.
+   * @lucene.internal
+   * @return trigger thread
+   */
+  public synchronized OverseerThread getTriggerThread() {
+    return triggerThread;
   }
   
   public synchronized void close() {
@@ -679,13 +692,19 @@ public class Overseer implements SolrCloseable {
   /* Size-limited map for successfully completed tasks*/
   static DistributedMap getCompletedMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", NUM_RESPONSES_TO_STORE);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
   }
 
   /* Map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getFailureMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
+  }
+  
+  /* Map of async IDs currently in use*/
+  static DistributedMap getAsyncIdsMap(final SolrZkClient zkClient) {
+    createOverseerNode(zkClient);
+    return new DistributedMap(zkClient, "/overseer/async_ids");
   }
 
   /**
@@ -770,6 +789,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(zkClient);
     return getCollectionQueue(zkClient, zkStats);
   }
+  
 
   private static void createOverseerNode(final SolrZkClient zkClient) {
     try {

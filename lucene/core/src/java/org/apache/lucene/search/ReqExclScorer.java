@@ -77,8 +77,8 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
-    return reqScorer.maxScore();
+  public float getMaxScore(int upTo) throws IOException {
+    return reqScorer.getMaxScore(upTo);
   }
 
   @Override

@@ -62,6 +62,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -1467,6 +1468,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDocValuesUpdatesDontBreakCache() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
@@ -1475,7 +1478,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
     DirectoryReader reader = DirectoryReader.open(w);
-    IndexSearcher searcher = newSearcher(reader);
+
+    // Don't use newSearcher(), because that will sometimes use an ExecutorService, and
+    // we need to be single threaded to ensure that LRUQueryCache doesn't skip the cache
+    // due to thread contention
+    IndexSearcher searcher = new AssertingIndexSearcher(random(), reader);
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
     LRUQueryCache cache = new LRUQueryCache(1, 10000, context -> true, Float.POSITIVE_INFINITY);

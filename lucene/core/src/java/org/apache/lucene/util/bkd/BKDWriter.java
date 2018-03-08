@@ -82,12 +82,8 @@ import org.apache.lucene.util.StringHelper;
 public class BKDWriter implements Closeable {
 
   public static final String CODEC_NAME = "BKD";
-  public static final int VERSION_START = 0;
-  public static final int VERSION_COMPRESSED_DOC_IDS = 1;
-  public static final int VERSION_COMPRESSED_VALUES = 2;
-  public static final int VERSION_IMPLICIT_SPLIT_DIM_1D = 3;
-  public static final int VERSION_PACKED_INDEX = 4;
-  public static final int VERSION_CURRENT = VERSION_PACKED_INDEX;
+  public static final int VERSION_START = 4; // version used by Lucene 7.0
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;

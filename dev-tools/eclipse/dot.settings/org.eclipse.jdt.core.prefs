@@ -13,6 +13,7 @@ org.eclipse.jdt.core.compiler.problem.finallyBlockNotCompletingNormally=error
 org.eclipse.jdt.core.compiler.problem.forbiddenReference=error
 org.eclipse.jdt.core.compiler.problem.hiddenCatchBlock=error
 org.eclipse.jdt.core.compiler.problem.incompatibleNonInheritedInterfaceMethod=error
+org.eclipse.jdt.core.compiler.problem.incompleteEnumSwitch=error
 org.eclipse.jdt.core.compiler.problem.invalidJavadoc=error
 org.eclipse.jdt.core.compiler.problem.invalidJavadocTags=enabled
 org.eclipse.jdt.core.compiler.problem.invalidJavadocTagsDeprecatedRef=disabled

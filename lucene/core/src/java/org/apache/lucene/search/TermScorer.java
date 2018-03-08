@@ -21,12 +21,14 @@ import java.io.IOException;
 
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermsEnum;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;
+  private final ImpactsEnum impactsEnum;
   private final DocIdSetIterator iterator;
   private final LeafSimScorer docScorer;
   private float minCompetitiveScore;
@@ -45,7 +47,7 @@ final class TermScorer extends Scorer {
     super(weight);
     this.docScorer = docScorer;
     if (scoreMode == ScoreMode.TOP_SCORES) {
-      ImpactsEnum impactsEnum = te.impacts(docScorer.getSimScorer(), PostingsEnum.FREQS);
+      impactsEnum = te.impacts(docScorer.getSimScorer(), PostingsEnum.FREQS);
       postingsEnum = impactsEnum;
       iterator = new DocIdSetIterator() {
 
@@ -103,6 +105,7 @@ final class TermScorer extends Scorer {
       };
     } else {
       postingsEnum = te.postings(null, scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE);
+      impactsEnum = new SlowImpactsEnum(postingsEnum, docScorer.getSimScorer().score(Float.MAX_VALUE, 1));
       iterator = postingsEnum;
     }
   }
@@ -128,8 +131,13 @@ final class TermScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
-    return docScorer.maxScore();
+  public int advanceShallow(int target) throws IOException {
+    return impactsEnum.advanceShallow(target);
+  }
+
+  @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return impactsEnum.getMaxScore(upTo);
   }
 
   @Override

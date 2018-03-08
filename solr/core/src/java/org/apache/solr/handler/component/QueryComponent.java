@@ -1481,7 +1481,7 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return Float.POSITIVE_INFINITY;
     }
 

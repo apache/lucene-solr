@@ -124,6 +124,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     backupMgr.writeBackupProperties(location, backupName, properties);
 
+    backupMgr.downloadCollectionProperties(location, backupName, collectionName);
+
     log.info("Completed backing up ZK data for backupName={}", backupName);
   }
 

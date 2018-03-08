@@ -149,6 +149,7 @@ public class ZkController {
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
   private final DistributedMap overseerFailureMap;
+  private final DistributedMap asyncIdsMap;
 
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
@@ -436,6 +437,8 @@ public class ZkController {
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
+    this.asyncIdsMap = Overseer.getAsyncIdsMap(zkClient);
+
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
@@ -1042,7 +1045,7 @@ public class ZkController {
 
       // This flag is used for testing rolling updates and should be removed in SOLR-11812
       boolean isRunningInNewLIR = "new".equals(desc.getCoreProperty("lirVersion", "new"));
-      if (isRunningInNewLIR) {
+      if (isRunningInNewLIR && cloudDesc.getReplicaType() != Type.PULL) {
         shardTerms.registerTerm(coreZkNodeName);
       }
       String shardId = cloudDesc.getShardId();
@@ -1452,13 +1455,20 @@ public class ZkController {
 
       // This flag is used for testing rolling updates and should be removed in SOLR-11812
       boolean isRunningInNewLIR = "new".equals(cd.getCoreProperty("lirVersion", "new"));
-      if (state == Replica.State.RECOVERING && isRunningInNewLIR) {
-        getShardTerms(collection, shardId).setEqualsToMax(coreNodeName);
+      // pull replicas are excluded because their terms are not considered
+      if (state == Replica.State.RECOVERING && isRunningInNewLIR && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+        // state is used by client, state of replica can change from RECOVERING to DOWN without needed to finish recovery
+        // by calling this we will know that a replica actually finished recovery or not
+        getShardTerms(collection, shardId).startRecovering(coreNodeName);
       }
+      if (state == Replica.State.ACTIVE && isRunningInNewLIR && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+        getShardTerms(collection, shardId).doneRecovering(coreNodeName);
+      }
+
       ZkNodeProps m = new ZkNodeProps(props);
       
       if (updateLastState) {
-        cd.getCloudDescriptor().lastPublished = state;
+        cd.getCloudDescriptor().setLastPublished(state);
       }
       overseerJobQueue.offer(Utils.toJSON(m));
     } finally {
@@ -1694,7 +1704,7 @@ public class ZkController {
       AtomicReference<String> errorMessage = new AtomicReference<>();
       AtomicReference<DocCollection> collectionState = new AtomicReference<>();
       try {
-        zkStateReader.waitForState(cd.getCollectionName(), 3, TimeUnit.SECONDS, (n, c) -> {
+        zkStateReader.waitForState(cd.getCollectionName(), 10, TimeUnit.SECONDS, (n, c) -> {
           collectionState.set(c);
           if (c == null)
             return false;
@@ -1928,6 +1938,45 @@ public class ZkController {
 
   public DistributedMap getOverseerFailureMap() {
     return overseerFailureMap;
+  }
+
+  /**
+   * When an operation needs to be performed in an asynchronous mode, the asyncId needs
+   * to be claimed by calling this method to make sure it's not duplicate (hasn't been
+   * claimed by other request). If this method returns true, the asyncId in the parameter
+   * has been reserved for the operation, meaning that no other thread/operation can claim
+   * it. If for whatever reason, the operation is not scheduled, the asuncId needs to be
+   * cleared using {@link #clearAsyncId(String)}.
+   * If this method returns false, no reservation has been made, and this asyncId can't 
+   * be used, since it's being used by another operation (currently or in the past)
+   * @param asyncId A string representing the asyncId of an operation. Can't be null.
+   * @return True if the reservation succeeds.
+   *         False if this ID is already in use.
+   */
+  public boolean claimAsyncId(String asyncId) throws KeeperException {
+    try {
+      return asyncIdsMap.putIfAbsent(asyncId, new byte[0]);
+    } catch (InterruptedException e) {
+      log.error("Could not claim asyncId=" + asyncId, e);
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+  
+  /**
+   * Clears an asyncId previously claimed by calling {@link #claimAsyncId(String)}
+   * @param asyncId A string representing the asyncId of an operation. Can't be null.
+   * @return True if the asyncId existed and was cleared.
+   *         False if the asyncId didn't exist before.
+   */
+  public boolean clearAsyncId(String asyncId) throws KeeperException {
+    try {
+      return asyncIdsMap.remove(asyncId);
+    } catch (InterruptedException e) {
+      log.error("Could not release asyncId=" + asyncId, e);
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   public int getClientTimeout() {

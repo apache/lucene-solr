@@ -25,6 +25,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BoostQuery;
@@ -107,7 +108,9 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
       final int length = TestUtil.nextInt(random(), 1, 100);
       final int position = random().nextInt(length);
       final int numOverlaps = random().nextInt(length);
-      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", position, length, numOverlaps, 100);
+      final int maxTermFrequency = 1;
+      final int uniqueTermCount = 1;
+      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS, position, length, numOverlaps, 100, maxTermFrequency, uniqueTermCount);
       assertEquals(
           sim2.computeNorm(state),
           sim1.computeNorm(state),

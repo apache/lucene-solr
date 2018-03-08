@@ -512,7 +512,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document document = new Document();
-    FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
+    FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorPositions(true);
     customType2.setStoreTermVectorOffsets(true);
@@ -524,7 +524,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Make first segment
     iw.commit();
 
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
     document = new Document();
     document.add(newField("tvtest", "a b c", customType));
@@ -542,7 +542,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document document = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
     document.add(newField("tvtest", "a b c", customType));
     iw.addDocument(document);
@@ -556,7 +556,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     iw.forceMerge(1);
 
-    FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
+    FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setStoreTermVectors(true);
     document.add(newField("tvtest", "a b c", customType2));
     document = new Document();

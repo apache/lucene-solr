@@ -551,7 +551,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
     expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);
-    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo");
+    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS);
     state.setLength(5);
     state.setNumOverlap(2);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));

@@ -43,7 +43,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
    * @param subScorers
    *          The sub scorers this Scorer should iterate on
    */
-  DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, List<Scorer> subScorers, boolean needsScores) {
+  DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, List<Scorer> subScorers, boolean needsScores) throws IOException {
     super(weight, subScorers, needsScores);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     if (tieBreakerMultiplier < 0 || tieBreakerMultiplier > 1) {
@@ -53,7 +53,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
     float scoreMax = 0;
     double otherScoreSum = 0;
     for (Scorer scorer : subScorers) {
-      float subScore = scorer.maxScore();
+      float subScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
       if (subScore >= scoreMax) {
         otherScoreSum += scoreMax;
         scoreMax = subScore;
@@ -91,7 +91,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     return maxScore;
   }
 }

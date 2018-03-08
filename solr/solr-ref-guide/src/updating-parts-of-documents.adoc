@@ -40,6 +40,9 @@ May be specified as a single value, or as a list for multiValued fields.
 `add`::
 Adds the specified values to a multiValued field. May be specified as a single value, or as a list.
 
+`add-distinct`::
+Adds the specified values to a multiValued field, only if not already present. May be specified as a single value, or as a list.
+
 `remove`::
 Removes (all occurrences of) the specified values from a multiValued field. May be specified as a single value, or as a list.
 
@@ -67,6 +70,7 @@ If the following document exists in our collection:
  "price":10,
  "popularity":42,
  "categories":["kids"],
+ "sub_categories":["under_5","under_10"],
  "promo_ids":["a123x"],
  "tags":["free_to_try","buy_now","clearance","on_sale"]
 }
@@ -80,6 +84,7 @@ And we apply the following update command:
  "price":{"set":99},
  "popularity":{"inc":20},
  "categories":{"add":["toys","games"]},
+ "sub_categories":{"add-distinct":"under_10"},
  "promo_ids":{"remove":"a123x"},
  "tags":{"remove":["free_to_try","on_sale"]}
 }
@@ -93,6 +98,7 @@ The resulting document in our collection will be:
  "price":99,
  "popularity":62,
  "categories":["kids","toys","games"],
+ "sub_categories":["under_5","under_10"],
  "tags":["buy_now","clearance"]
 }
 ----

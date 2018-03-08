@@ -92,4 +92,4 @@ In the example above `IBSimilarityFactory` (using the Information-Based model) w
 
 If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
 
-In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc.... For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].
+In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc. For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

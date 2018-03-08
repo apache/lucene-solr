@@ -96,14 +96,14 @@ limitations under the License.
 }
 
 #content #threads #thread-dump tbody .stacktrace .name a span
-{    
+{
   background-image: url( ../../img/ico/chevron-small-expand.png );
   background-position: 100% 50%;
   padding-right: 21px;
 }
 
 #content #threads #thread-dump tbody .stacktrace.open .name a span
-{   
+{
   background-image: url( ../../img/ico/chevron-small.png );
 }
 
@@ -111,7 +111,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/arrow-000-small.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   font-size: 11px;
   margin-left: 21px;
   padding-left: 21px;
@@ -158,4 +158,3 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/chevron-small.png );
 }
-

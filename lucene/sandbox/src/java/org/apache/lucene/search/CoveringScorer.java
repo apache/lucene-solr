@@ -212,7 +212,7 @@ final class CoveringScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     // TODO: implement but beware of floating-point errors
     return Float.POSITIVE_INFINITY;
   }

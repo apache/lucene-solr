@@ -520,7 +520,6 @@ public class ZkTestServer {
     log.info("start zk server on port:" + port);
   }
 
-  @SuppressWarnings("deprecation")
   public void shutdown() throws IOException, InterruptedException {
     // TODO: this can log an exception while trying to unregister a JMX MBean
     zkServer.shutdown();

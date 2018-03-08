@@ -29,7 +29,7 @@ import org.apache.solr.common.util.Utils;
 
 public class TestV1toV2ApiMapper extends LuceneTestCase {
 
-  public void testCommands() throws IOException {
+  public void testCreate() throws IOException {
     Create cmd = CollectionAdminRequest
         .createCollection("mycoll", "conf1", 3, 2)
         .setProperties(ImmutableMap.<String,String>builder()
@@ -37,21 +37,29 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
             .put("p2","v2")
             .build());
     V2Request v2r = V1toV2ApiMapper.convert(cmd).build();
-    Map m = (Map) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
+    Map<?,?> m = (Map<?,?>) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
     assertEquals("/c", v2r.getPath());
     assertEquals("v1", Utils.getObjectByPath(m,true,"/create/properties/p1"));
     assertEquals("v2", Utils.getObjectByPath(m,true,"/create/properties/p2"));
     assertEquals("3", Utils.getObjectByPath(m,true,"/create/numShards"));
     assertEquals("2", Utils.getObjectByPath(m,true,"/create/nrtReplicas"));
-
+  }
+  
+  public void testAddReplica() throws IOException {
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard("mycoll", "shard1");
-    v2r = V1toV2ApiMapper.convert(addReplica).build();
-    m = (Map) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
+    V2Request v2r = V1toV2ApiMapper.convert(addReplica).build();
+    Map<?,?> m = (Map<?,?>) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
     assertEquals("/c/mycoll/shards", v2r.getPath());
     assertEquals("shard1", Utils.getObjectByPath(m,true,"/add-replica/shard"));
     assertEquals("NRT", Utils.getObjectByPath(m,true,"/add-replica/type"));
-
-
-
+  }
+  
+  public void testSetCollectionProperty() throws IOException {
+    CollectionAdminRequest.CollectionProp collectionProp = CollectionAdminRequest.setCollectionProperty("mycoll", "prop", "value");
+    V2Request v2r = V1toV2ApiMapper.convert(collectionProp).build();
+    Map<?,?> m = (Map<?,?>) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
+    assertEquals("/c/mycoll", v2r.getPath());
+    assertEquals("prop", Utils.getObjectByPath(m,true,"/set-collection-property/name"));
+    assertEquals("value", Utils.getObjectByPath(m,true,"/set-collection-property/value"));
   }
 }

@@ -44,7 +44,7 @@ class ReqOptSumScorer extends Scorer {
    */
   public ReqOptSumScorer(
       Scorer reqScorer,
-      Scorer optScorer)
+      Scorer optScorer) throws IOException
   {
     super(reqScorer.weight);
     assert reqScorer != null;
@@ -52,7 +52,7 @@ class ReqOptSumScorer extends Scorer {
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
 
-    this.reqMaxScore = reqScorer.maxScore();
+    this.reqMaxScore = reqScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
     this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
 
     final TwoPhaseIterator reqTwoPhase = reqScorer.twoPhaseIterator();
@@ -210,8 +210,12 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
-    return maxScorePropagator.maxScore();
+  public float getMaxScore(int upTo) throws IOException {
+    float maxScore = reqScorer.getMaxScore(upTo);
+    if (optScorer.docID() <= upTo) {
+      maxScore += optScorer.getMaxScore(upTo);
+    }
+    return maxScore;
   }
 
   @Override
@@ -220,8 +224,6 @@ class ReqOptSumScorer extends Scorer {
     if (optIsRequired == false && minScore > reqMaxScore) {
       optIsRequired = true;
     }
-    // And also propagate to sub clauses.
-    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override

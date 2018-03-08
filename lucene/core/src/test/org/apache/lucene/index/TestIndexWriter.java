@@ -1627,29 +1627,6 @@ public class TestIndexWriter extends LuceneTestCase {
     d.close();
   }
 
-  public void testChangeIndexOptions() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(new MockAnalyzer(random())));
-
-    FieldType docsAndFreqs = new FieldType(TextField.TYPE_NOT_STORED);
-    docsAndFreqs.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-
-    FieldType docsOnly = new FieldType(TextField.TYPE_NOT_STORED);
-    docsOnly.setIndexOptions(IndexOptions.DOCS);
-
-    Document doc = new Document();
-    doc.add(new Field("field", "a b c", docsAndFreqs));
-    w.addDocument(doc);
-    w.addDocument(doc);
-
-    doc = new Document();
-    doc.add(new Field("field", "a b c", docsOnly));
-    w.addDocument(doc);
-    w.close();
-    dir.close();
-  }
-
   public void testOnlyUpdateDocuments() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir,
@@ -2468,7 +2445,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Make sure CheckIndex includes id output:
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(d);
-    checker.setCrossCheckTermVectors(false);
+    checker.setDoSlowChecks(false);
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     String s = bos.toString(IOUtils.UTF_8);

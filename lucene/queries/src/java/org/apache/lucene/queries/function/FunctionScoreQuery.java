@@ -209,7 +209,7 @@ public final class FunctionScoreQuery extends Query {
           return 0;
         }
         @Override
-        public float maxScore() {
+        public float getMaxScore(int upTo) throws IOException {
           return Float.POSITIVE_INFINITY;
         }
       };
