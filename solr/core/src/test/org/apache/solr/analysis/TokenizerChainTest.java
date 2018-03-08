@@ -16,38 +16,28 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Analyzer;
+import java.util.Collections;
+
+import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.TextField;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * This is a simple test to make sure that the TokenizerChain
- * is correctly normalizing queries.
- *
- */
 
 public class TokenizerChainTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
-    initCore("solrconfig-basic.xml", "schema.xml");
-  }
-
   @Test
   public void testNormalization() throws Exception {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    Analyzer lowerAscii = ((TextField)schema.getFieldOrNull("lowerascii").getType()).getQueryAnalyzer();
-    String normed = lowerAscii.normalize("lowerascii", "FOOBA").utf8ToString();
-    assertEquals("fooba", normed);
-
-    lowerAscii = ((TextField)schema.getFieldOrNull("lowerascii").getType()).getMultiTermAnalyzer();
-    normed = lowerAscii.normalize("lowerascii", "FOOBA").utf8ToString();
-    assertEquals("fooba", normed);
-
+    String fieldName = "f";
+    TokenFilterFactory[] tff = new TokenFilterFactory[2];
+    tff[0] = new LowerCaseFilterFactory(Collections.EMPTY_MAP);
+    tff[1] = new ASCIIFoldingFilterFactory(Collections.EMPTY_MAP);
+    TokenizerChain tokenizerChain = new TokenizerChain(
+        new MockTokenizerFactory(Collections.EMPTY_MAP),
+        tff);
+    assertEquals(new BytesRef("fooba"),
+        tokenizerChain.normalize(fieldName, "FOOB\u00c4"));
   }
 }
