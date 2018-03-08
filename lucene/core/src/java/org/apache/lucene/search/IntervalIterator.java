@@ -20,8 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /**
- * Defines methods to iterate over the intervals that a {@link Scorer} matches
- * on a document
+ * Defines methods to iterate over the intervals that a term, phrase or more
+ * complex positional query matches on a document
  */
 public interface IntervalIterator {
 
@@ -31,17 +31,28 @@ public interface IntervalIterator {
    */
   int NO_MORE_INTERVALS = Integer.MAX_VALUE;
 
+  /**
+   * An iterator over documents that might have matching intervals
+   */
   DocIdSetIterator approximation();
 
-  boolean advanceTo(int doc) throws IOException;
+  /**
+   * Advances the iterator to {@code target}, returning {@code false} if there
+   * are definitely no matching intervals
+   */
+  boolean advanceTo(int target) throws IOException;
 
   /**
    * The start of the current interval
+   *
+   * Returns -1 if {@link #nextInterval()} has not yet been called
    */
   int start();
 
   /**
    * The end of the current interval
+   *
+   * Returns -1 if {@link #nextInterval()} has not yet been called
    */
   int end();
 
@@ -60,6 +71,11 @@ public interface IntervalIterator {
     return (float) (1.0 / (end() - start() + 1));
   }
 
+  /**
+   * An indication of the cost of finding the next interval
+   *
+   * @see TwoPhaseIterator#matchCost()
+   */
   float cost();
 
 }

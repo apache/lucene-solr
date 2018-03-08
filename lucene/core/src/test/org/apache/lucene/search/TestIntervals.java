@@ -87,7 +87,7 @@ public class TestIntervals extends LuceneTestCase {
   private void checkIntervals(IntervalsSource source, String field, int expectedMatchCount, int[][] expected) throws IOException {
     int matchedDocs = 0;
     for (LeafReaderContext ctx : searcher.leafContexts) {
-      // assertNull(source.intervals(field + "1", ctx));
+      assertNull(source.intervals(field + "fake", ctx));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
       IntervalIterator intervals = source.intervals(field, ctx);
       if (intervals == null)
@@ -97,8 +97,10 @@ public class TestIntervals extends LuceneTestCase {
         int id = (int) ids.longValue();
         if (intervals.advanceTo(doc)) {
           int i = 0, pos;
+          assertEquals(-1, intervals.start());
+          assertEquals(-1, intervals.end());
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
-            System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
+            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());
@@ -136,6 +138,17 @@ public class TestIntervals extends LuceneTestCase {
         {},
         { 0, 2, 6, 17 },
         { }
+    });
+  }
+
+  public void testPhraseIntervals() throws IOException {
+    checkIntervals(Intervals.phrase("pease", "porridge"), "field1", 3, new int[][]{
+        {},
+        { 0, 1, 3, 4, 6, 7 },
+        { 0, 1, 3, 4, 6, 7 },
+        {},
+        { 0, 1, 3, 4, 6, 7 },
+        {}
     });
   }
 
