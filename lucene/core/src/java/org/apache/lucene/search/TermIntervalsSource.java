@@ -55,16 +55,9 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
-      public boolean advanceTo(int doc) throws IOException {
+      public void reset() throws IOException {
         pos = -1;
-        if (pe.docID() > doc || (pe.docID() != doc && pe.advance(doc) != doc)) {
-          upto = -1;
-          return false;
-        }
-        else {
-          upto = pe.freq();
-          return true;
-        }
+        upto = pe.freq();
       }
 
       @Override

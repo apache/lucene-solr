@@ -127,21 +127,14 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public boolean advanceTo(int doc) throws IOException {
+    public void reset() throws IOException {
       intervalQueue.clear();
-      int approxDoc = this.approximation.docID();
-      if (approxDoc > doc || (approxDoc != doc && this.approximation.advance(doc) != doc)) {
-        return false;
-      }
       for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
-        IntervalIterator it = dw.intervals;
-        if (it.advanceTo(doc)) {
-          it.nextInterval();
-          intervalQueue.add(it);
-        }
+        dw.intervals.reset();
+        dw.intervals.nextInterval();
+        intervalQueue.add(dw.intervals);
       }
       current = UNPOSITIONED;
-      return intervalQueue.size() > 0;
     }
 
     @Override
@@ -183,9 +176,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public boolean advanceTo(int doc) throws IOException {
-      return false;
-    }
+    public void reset() throws IOException { }
 
     @Override
     public int start() {
@@ -215,9 +206,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public boolean advanceTo(int doc) throws IOException {
-      return false;
-    }
+    public void reset() throws IOException { }
 
     @Override
     public int start() {

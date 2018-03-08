@@ -58,7 +58,10 @@ public abstract class IntervalFunction {
     }
 
     @Override
-    protected void reset() throws IOException {
+    public void reset() throws IOException {
+      for (IntervalIterator it : subIterators) {
+        it.reset();
+      }
       start = end = -1;
     }
 
@@ -134,6 +137,9 @@ public abstract class IntervalFunction {
 
     @Override
     public void reset() throws IOException {
+      for (IntervalIterator it : subIterators) {
+        it.reset();
+      }
       subIterators.get(0).nextInterval();
       i = 1;
       start = end = -1;
@@ -213,6 +219,7 @@ public abstract class IntervalFunction {
       this.queue.clear();
       this.queueEnd = start = end = -1;
       for (IntervalIterator subIterator : subIterators) {
+        subIterator.reset();
         subIterator.nextInterval();
         queue.add(subIterator);
         if (subIterator.end() > queueEnd) {
@@ -280,7 +287,9 @@ public abstract class IntervalFunction {
         }
 
         @Override
-        public void reset() {
+        public void reset() throws IOException {
+          a.reset();
+          b.reset();
           bpos = true;
         }
 
@@ -328,6 +337,8 @@ public abstract class IntervalFunction {
 
         @Override
         public void reset() throws IOException {
+          a.reset();
+          b.reset();
           bpos = true;
         }
 

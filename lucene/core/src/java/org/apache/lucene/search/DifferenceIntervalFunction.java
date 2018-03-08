@@ -96,11 +96,15 @@ public abstract class DifferenceIntervalFunction {
     }
 
     @Override
-    public boolean advanceTo(int doc) throws IOException {
-      bpos = b.advanceTo(doc);
-      if (bpos)
+    public void reset() throws IOException {
+      int doc = a.approximation().docID();
+      bpos = b.approximation().docID() == doc ||
+          (b.approximation().docID() < doc && b.approximation().advance(doc) == doc);
+      if (bpos) {
+        b.reset();
         bpos = b.nextInterval() != NO_MORE_INTERVALS;
-      return a.advanceTo(doc);
+      }
+      a.reset();
     }
 
     @Override

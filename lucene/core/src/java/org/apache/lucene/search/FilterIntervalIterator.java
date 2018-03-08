@@ -43,8 +43,8 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public boolean advanceTo(int doc) throws IOException {
-    return in.advanceTo(doc);
+  public void reset() throws IOException {
+    in.reset();
   }
 
   @Override
