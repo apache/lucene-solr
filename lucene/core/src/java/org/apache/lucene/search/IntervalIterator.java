@@ -36,11 +36,7 @@ public interface IntervalIterator {
    */
   DocIdSetIterator approximation();
 
-  /**
-   * Advances the iterator to {@code target}, returning {@code false} if there
-   * are definitely no matching intervals
-   */
-  boolean advanceTo(int target) throws IOException;
+  void reset() throws IOException;
 
   /**
    * The start of the current interval

@@ -47,18 +47,6 @@ abstract class ConjunctionIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public final boolean advanceTo(int doc) throws IOException {
-    for (IntervalIterator it : subIterators) {
-      if (it.advanceTo(doc) == false)
-        return false;
-    }
-    reset();
-    return true;
-  }
-
-  protected abstract void reset() throws IOException;
-
-  @Override
   public final float cost() {
     return cost;
   }
