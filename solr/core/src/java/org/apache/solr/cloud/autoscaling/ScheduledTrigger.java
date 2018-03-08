@@ -28,10 +28,12 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.TimeZoneUtils;
@@ -143,6 +145,7 @@ public class ScheduledTrigger extends TriggerBase {
       }
     }
 
+    TimeSource timeSource = cloudManager.getTimeSource();
     DateMathParser dateMathParser = new DateMathParser(timeZone);
     dateMathParser.setNow(new Date(lastRunAt.toEpochMilli()));
     Instant nextRunTime, nextPlusGrace;
@@ -156,7 +159,8 @@ public class ScheduledTrigger extends TriggerBase {
           "Unable to calculate next run time. lastRan: " + lastRunAt.toString() + " and date math string: " + everyStr, e);
     }
 
-    Instant now = Instant.now(); // todo how to play well with simulation framework?
+    Instant now = Instant.ofEpochMilli(
+        TimeUnit.NANOSECONDS.toMillis(timeSource.getEpochTime()));
     AutoScaling.TriggerEventProcessor processor = processorRef.get();
 
     if (now.isBefore(nextRunTime)) {
@@ -182,7 +186,7 @@ public class ScheduledTrigger extends TriggerBase {
         log.debug("ScheduledTrigger {} firing registered processor for scheduled time {}, now={}", name,
             nextRunTime, now);
       }
-      if (processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
+      if (processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTime(),
           preferredOp, now.toEpochMilli()))) {
         lastRunAt = nextRunTime; // set to nextRunTime instead of now to avoid drift
       }

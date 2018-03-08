@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
@@ -141,8 +142,8 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
         "conf",1, 2);
     create.process(solrClient);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeLost", clusterShape(1, 2));
+    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
+        "testNodeLost", CloudTestUtils.clusterShape(1, 2));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);
@@ -204,8 +205,8 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
 //    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeWithMultipleReplicasLost", clusterShape(2, 3));
+    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
+        "testNodeWithMultipleReplicasLost", CloudTestUtils.clusterShape(2, 3));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);
@@ -281,7 +282,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
         "conf",1, 2);
     create.process(solrClient);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
+    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
         "testNodeAdded", (liveNodes, collectionState) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     // reset to the original policy which has only 1 replica per shard per node

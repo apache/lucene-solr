@@ -186,6 +186,9 @@ New Features
 
 * SOLR-11960: Add collection level properties similar to cluster properties (Peter Rusko, Tomás Fernández Löbbe)
 
+* SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
+  currently performs cleanup of old inactive shards. (ab, shalin)
+
 Bug Fixes
 ----------------------
 

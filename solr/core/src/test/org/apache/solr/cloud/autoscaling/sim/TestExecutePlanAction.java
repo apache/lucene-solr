@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
@@ -86,7 +87,8 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    log.info("Collection ready after " + waitForState(collectionName, 120, TimeUnit.SECONDS, clusterShape(1, 2)) + "ms");
+    log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
+        CloudTestUtils.clusterShape(1, 2)) + "ms");
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -147,7 +149,8 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
       assertNotNull(response.get("success"));
     }
 
-    log.info("Collection ready after " + waitForState(collectionName, 300, TimeUnit.SECONDS, clusterShape(1, 2)) + "ms");
+    log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
+        CloudTestUtils.clusterShape(1, 2)) + "ms");
   }
 
   @Test
@@ -173,8 +176,8 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionName, clusterShape(1, 2));
+    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
+        collectionName, CloudTestUtils.clusterShape(1, 2));
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -190,8 +193,8 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
 
     cluster.simRemoveNode(sourceNodeName, false);
 
-    waitForState("Timed out waiting for replicas of collection to be 2 again",
-        collectionName, clusterShape(1, 2));
+    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of collection to be 2 again",
+        collectionName, CloudTestUtils.clusterShape(1, 2));
 
     clusterState = cluster.getClusterStateProvider().getClusterState();
     docCollection = clusterState.getCollection(collectionName);
