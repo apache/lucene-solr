@@ -118,7 +118,7 @@ Chooses the JVM specifics dealing with fair policy queuing, if enabled distribut
 
 Document and term statistics are needed in order to calculate relevancy. Solr provides four implementations out of the box when it comes to document stats calculation:
 
-* `LocalStatsCache`: This only uses local term and document statistics to compute relevance. In cases with uniform term distribution across shards, this works reasonably well.This option is the default if no `<statsCache>` is configured.
+* `LocalStatsCache`: This only uses local term and document statistics to compute relevance. In cases with uniform term distribution across shards, this works reasonably well. This option is the default if no `<statsCache>` is configured.
 * `ExactStatsCache`: This implementation uses global values (across the collection) for document frequency.
 * `ExactSharedStatsCache`: This is exactly like the exact stats cache in its functionality but the global stats are reused for subsequent requests with the same terms.
 * `LRUStatsCache`: This implementation uses an LRU cache to hold global stats, which are shared between requests.
