@@ -33,6 +33,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -50,7 +51,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -96,7 +96,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     Analyzer analyzer = context.getAnalyzer();
 
-    if (!TokenizerChain.class.isInstance(analyzer)) {
+    if (!CustomAnalyzer.class.isInstance(analyzer)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
         NamedList<List<NamedList>> namedList = new NamedList<>();
@@ -107,14 +107,14 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
-    CharFilterFactory[] cfiltfacs = tokenizerChain.getCharFilterFactories();
-    TokenizerFactory tfac = tokenizerChain.getTokenizerFactory();
-    TokenFilterFactory[] filtfacs = tokenizerChain.getTokenFilterFactories();
+    CustomAnalyzer customAnalyzer = (CustomAnalyzer) analyzer;
+    List<CharFilterFactory> cfiltfacs = customAnalyzer.getCharFilterFactories();
+    TokenizerFactory tfac = customAnalyzer.getTokenizerFactory();
+    List<TokenFilterFactory> filtfacs = customAnalyzer.getTokenFilterFactories();
 
     NamedList<Object> namedList = new NamedList<>();
 
-    if (0 < cfiltfacs.length) {
+    if (0 < cfiltfacs.size()) {
       String source = value;
       for(CharFilterFactory cfiltfac : cfiltfacs ){
         try (Reader sreader = new StringReader(source);
@@ -126,8 +126,10 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create();
-    ((Tokenizer)tokenStream).setReader(tokenizerChain.initReader(null, new StringReader(value)));
+    Analyzer tokenizer = CustomAnalyzer.builder().withTokenizer(tfac).build();
+    //shouldn't we cache the charfiltered source and build tokens from that?
+    TokenStream tokenStream = tokenizer.tokenStream(null, new StringReader(value));
+    
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));

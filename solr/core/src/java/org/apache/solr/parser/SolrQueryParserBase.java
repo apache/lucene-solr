@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
@@ -49,7 +50,6 @@ import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.parser.QueryParser.Operator;
 import org.apache.solr.query.FilterQuery;
@@ -958,11 +958,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof CustomAnalyzer) {
       // examine the indexing analysis chain if it supports leading wildcards
-      TokenizerChain tc = (TokenizerChain)a;
-      TokenFilterFactory[] factories = tc.getTokenFilterFactories();
-      for (TokenFilterFactory factory : factories) {
+      for (TokenFilterFactory factory : ((CustomAnalyzer)a).getTokenFilterFactories()) {
         if (factory instanceof ReversedWildcardFilterFactory) {
           fac = (ReversedWildcardFilterFactory)factory;
           break;

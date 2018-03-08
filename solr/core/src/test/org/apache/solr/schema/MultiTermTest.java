@@ -21,11 +21,11 @@ import org.apache.lucene.analysis.charfilter.MappingCharFilterFactory;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.TrimFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.analysis.TokenizerChain;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,51 +43,51 @@ public class MultiTermTest extends SolrTestCaseJ4 {
   public void testMultiFound() {
     SchemaField field = h.getCore().getLatestSchema().getField("content_multi");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
-    assertTrue(analyzer instanceof TokenizerChain);
-    assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
-    TokenizerChain tc = (TokenizerChain) analyzer;
+    assertTrue(analyzer instanceof CustomAnalyzer);
+    assertTrue(((CustomAnalyzer) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
+    CustomAnalyzer tc = (CustomAnalyzer) analyzer;
     for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
       assertTrue((factory instanceof ASCIIFoldingFilterFactory) || (factory instanceof LowerCaseFilterFactory));
     }
 
     analyzer = field.getType().getIndexAnalyzer();
-    assertTrue(analyzer instanceof TokenizerChain);
-    assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
-    tc = (TokenizerChain) analyzer;
+    assertTrue(analyzer instanceof CustomAnalyzer);
+    assertTrue(((CustomAnalyzer) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
+    tc = (CustomAnalyzer) analyzer;
     for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
       assertTrue((factory instanceof ASCIIFoldingFilterFactory) || (factory instanceof TrimFilterFactory));
     }
 
-    assertTrue(tc.getCharFilterFactories().length == 0);
+    assertTrue(tc.getCharFilterFactories().size() == 0);
   }
 
   @Test
   public void testQueryCopiedToMulti() {
     SchemaField field = h.getCore().getLatestSchema().getField("content_charfilter");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
-    assertTrue(analyzer instanceof TokenizerChain);
-    assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);
-    TokenizerChain tc = (TokenizerChain) analyzer;
+    assertTrue(analyzer instanceof CustomAnalyzer);
+    assertTrue(((CustomAnalyzer) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);
+    CustomAnalyzer tc = (CustomAnalyzer) analyzer;
     for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
       assertTrue(factory instanceof LowerCaseFilterFactory);
     }
 
-    assertTrue(tc.getCharFilterFactories().length == 1);
-    assertTrue(tc.getCharFilterFactories()[0] instanceof MappingCharFilterFactory);
+    assertTrue(tc.getCharFilterFactories().size() == 1);
+    assertTrue(tc.getCharFilterFactories().get(0) instanceof MappingCharFilterFactory);
   }
 
   @Test
   public void testDefaultCopiedToMulti() {
     SchemaField field = h.getCore().getLatestSchema().getField("content_ws");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
-    assertTrue(analyzer instanceof TokenizerChain);
-    assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);
-    TokenizerChain tc = (TokenizerChain) analyzer;
+    assertTrue(analyzer instanceof CustomAnalyzer);
+    assertTrue(((CustomAnalyzer) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);
+    CustomAnalyzer tc = (CustomAnalyzer) analyzer;
     for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
       assertTrue((factory instanceof ASCIIFoldingFilterFactory) || (factory instanceof LowerCaseFilterFactory));
     }
 
-    assertTrue(tc.getCharFilterFactories().length == 0);
+    assertTrue(tc.getCharFilterFactories().size() == 0);
 
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
@@ -45,9 +46,9 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     final IndexSchema schema = h.getCore().getLatestSchema();
     
     FieldType type = schema.getFieldType("textDefault");
-    TokenizerChain ana = (TokenizerChain) type.getIndexAnalyzer();
+    CustomAnalyzer ana = (CustomAnalyzer) type.getIndexAnalyzer();
     assertEquals(DEFAULT_VERSION, (ana.getTokenizerFactory()).getLuceneMatchVersion());
-    assertEquals(DEFAULT_VERSION, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
+    assertEquals(DEFAULT_VERSION, (ana.getTokenFilterFactories().get(2)).getLuceneMatchVersion());
 
     type = schema.getFieldType("textTurkishAnalyzerDefault");
     Analyzer ana1 = type.getIndexAnalyzer();

@@ -251,7 +251,18 @@ public final class CustomAnalyzer extends Analyzer {
       this.offsetGap.set(offsetGap);
       return this;
     }
-    
+
+
+    /** Uses the given tokenizer.
+     * @param factory class that is used to create the tokenizer.
+     */
+    public Builder withTokenizer(TokenizerFactory factory) {
+      Objects.requireNonNull(factory, "Tokenizer factory may not be null");
+      tokenizer.set(factory);
+      componentsAdded = true;
+      return this;
+    }
+
     /** Uses the given tokenizer.
      * @param factory class that is used to create the tokenizer.
      * @param params a list of factory string params as key/value pairs.
@@ -267,9 +278,7 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder withTokenizer(Class<? extends TokenizerFactory> factory, Map<String,String> params) throws IOException {
       Objects.requireNonNull(factory, "Tokenizer factory may not be null");
-      tokenizer.set(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
-      componentsAdded = true;
-      return this;
+      return withTokenizer(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
     }
     
     /** Uses the given tokenizer.
@@ -289,11 +298,19 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder withTokenizer(String name, Map<String,String> params) throws IOException {
       Objects.requireNonNull(name, "Tokenizer name may not be null");
-      tokenizer.set(applyResourceLoader(TokenizerFactory.forName(name, applyDefaultParams(params))));
+      return withTokenizer(TokenizerFactory.forName(name, applyDefaultParams(params)));
+    }
+
+    /** Adds the given token filter.
+     * @param factory class that is used to create the token filter.
+     */
+    public Builder addTokenFilter(TokenFilterFactory factory) {
+      tokenFilters.add(factory);
       componentsAdded = true;
       return this;
     }
-    
+
+
     /** Adds the given token filter.
      * @param factory class that is used to create the token filter.
      * @param params a list of factory string params as key/value pairs.
@@ -309,9 +326,7 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder addTokenFilter(Class<? extends TokenFilterFactory> factory, Map<String,String> params) throws IOException {
       Objects.requireNonNull(factory, "TokenFilter name may not be null");
-      tokenFilters.add(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
-      componentsAdded = true;
-      return this;
+      return addTokenFilter(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
     }
     
     /** Adds the given token filter.
@@ -331,11 +346,23 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder addTokenFilter(String name, Map<String,String> params) throws IOException {
       Objects.requireNonNull(name, "TokenFilter name may not be null");
-      tokenFilters.add(applyResourceLoader(TokenFilterFactory.forName(name, applyDefaultParams(params))));
+      return addTokenFilter(applyResourceLoader(TokenFilterFactory.forName(name, applyDefaultParams(params))));
+    }
+
+    /**
+     * Adds the given pre-built factory.
+     *
+     * @param factory class that is used to create the char filter.
+     * @return builder
+     * @throws IOException
+     */
+    public Builder addCharFilter(CharFilterFactory factory) {
+      Objects.requireNonNull(factory, "CharFilter name may not be null");
+      charFilters.add(factory);
       componentsAdded = true;
       return this;
     }
-    
+
     /** Adds the given char filter.
      * @param factory class that is used to create the char filter.
      * @param params a list of factory string params as key/value pairs.
@@ -351,9 +378,7 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder addCharFilter(Class<? extends CharFilterFactory> factory, Map<String,String> params) throws IOException {
       Objects.requireNonNull(factory, "CharFilter name may not be null");
-      charFilters.add(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
-      componentsAdded = true;
-      return this;
+      return addCharFilter(applyResourceLoader(newFactoryClassInstance(factory, applyDefaultParams(params))));
     }
     
     /** Adds the given char filter.
@@ -373,9 +398,7 @@ public final class CustomAnalyzer extends Analyzer {
      */
     public Builder addCharFilter(String name, Map<String,String> params) throws IOException {
       Objects.requireNonNull(name, "CharFilter name may not be null");
-      charFilters.add(applyResourceLoader(CharFilterFactory.forName(name, applyDefaultParams(params))));
-      componentsAdded = true;
-      return this;
+      return addCharFilter(applyResourceLoader(CharFilterFactory.forName(name, applyDefaultParams(params))));
     }
     
     /** Builds the analyzer. */

@@ -216,7 +216,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       } else if (name.equals(FieldType.FILTERS)) {
         filterPropertiesList = (List<SimpleOrderedMap<Object>>)analyzerProperties.getVal(i);
       } else if (name.equals(FieldType.CLASS_NAME)) {
-        if ( ! "solr.TokenizerChain".equals(analyzerProperties.getVal(i))) {
+        if ( ! "solr.CustomAnalyzer".equals(analyzerProperties.getVal(i))) {
           writeAttr(name, analyzerProperties.getVal(i).toString());
         }
       }
