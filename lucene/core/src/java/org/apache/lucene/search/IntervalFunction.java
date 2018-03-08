@@ -136,7 +136,7 @@ public abstract class IntervalFunction {
     public void reset() throws IOException {
       subIterators.get(0).nextInterval();
       i = 1;
-      start = end = Integer.MIN_VALUE;
+      start = end = -1;
     }
 
     @Override
