@@ -24,9 +24,26 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
+/**
+ * A helper class for {@link IntervalQuery} that provides an {@link IntervalIterator}
+ * for a given field and segment
+ */
 public abstract class IntervalsSource {
 
+  /**
+   * Create an {@link IntervalIterator} exposing the minimum intervals defined by this {@link IntervalsSource}
+   *
+   * @param field the field to read positions from
+   * @param ctx   the context for which to return the iterator
+   */
   public abstract IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException;
+
+  /**
+   * Expert: collect {@link Term} objects from this source, to be used for top-level term scoring
+   * @param field the field to be scored
+   * @param terms a {@link Set} which terms should be added to
+   */
+  public abstract void extractTerms(String field, Set<Term> terms);
 
   @Override
   public abstract int hashCode();
@@ -36,7 +53,5 @@ public abstract class IntervalsSource {
 
   @Override
   public abstract String toString();
-
-  public abstract void extractTerms(String field, Set<Term> terms);
 
 }
