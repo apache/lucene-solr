@@ -162,7 +162,7 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-    copyConfigDir(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, null);
+    copyConfigDir(fromConfig, toConfig, null);
   }
 
   /**

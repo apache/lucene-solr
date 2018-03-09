@@ -261,6 +261,9 @@ Bug Fixes
   in normalization instead of all.  This bug normally doesn't matter since TextField doesn't call it.
   (Tim Allison via David Smiley)
 
+* SOLR-12072: Invalid path string using ZkConfigManager.copyConfigDir(String fromConfig, String toConfig)
+  (Alessandro Hoss via Erick Erickson)
+
 Optimizations
 ----------------------
 
