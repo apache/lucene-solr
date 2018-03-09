@@ -70,13 +70,6 @@ public interface IntervalIterator {
   int nextInterval() throws IOException;
 
   /**
-   * The score of the current interval
-   */
-  default float score() {
-    return (float) (1.0 / (end() - start() + 1));
-  }
-
-  /**
    * An indication of the average cost of iterating over all intervals in a document
    *
    * @see TwoPhaseIterator#matchCost()

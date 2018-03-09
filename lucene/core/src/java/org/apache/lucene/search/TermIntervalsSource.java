@@ -82,11 +82,6 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
-      public float score() {
-        return 1;
-      }
-
-      @Override
       public float cost() {
         return cost;
       }

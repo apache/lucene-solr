@@ -76,11 +76,6 @@ abstract class IntervalFunction {
     }
 
     @Override
-    public float score() {
-      return 1;
-    }
-
-    @Override
     public int nextInterval() throws IOException {
       if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
         return NO_MORE_INTERVALS;

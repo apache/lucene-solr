@@ -53,11 +53,6 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public float score() {
-    return in.score();
-  }
-
-  @Override
   public float cost() {
     return in.cost();
   }
