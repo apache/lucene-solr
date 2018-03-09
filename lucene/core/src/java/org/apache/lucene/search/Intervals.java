@@ -29,8 +29,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Constructor functions for {@link IntervalsSource} types
  *
- * These queries use {@link IntervalFunction} or {@link DifferenceIntervalFunction}
- * classes, implementing minimum-interval algorithms taken from the paper
+ * These sources implement minimum-interval algorithms taken from the paper
  * <a href="http://vigna.di.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics.pdf">
  * Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
  */
