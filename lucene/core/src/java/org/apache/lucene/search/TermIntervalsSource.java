@@ -41,6 +41,9 @@ class TermIntervalsSource extends IntervalsSource {
     Terms terms = ctx.reader().terms(field);
     if (terms == null)
       return null;
+    if (terms.hasPositions() == false) {
+      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+    }
     TermsEnum te = terms.iterator();
     te.seekExact(term);
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);

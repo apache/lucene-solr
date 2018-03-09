@@ -188,50 +188,6 @@ public final class Intervals {
     return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
   }
 
-  public static IntervalsSource mask(String field, IntervalsSource in) {
-    return new FieldMaskIntervalsSource(field, in);
-  }
-
-  private static class FieldMaskIntervalsSource extends IntervalsSource {
-
-    final String field;
-    final IntervalsSource in;
-
-    private FieldMaskIntervalsSource(String field, IntervalsSource in) {
-      this.field = field;
-      this.in = in;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      FieldMaskIntervalsSource that = (FieldMaskIntervalsSource) o;
-      return Objects.equals(field, that.field) &&
-          Objects.equals(in, that.in);
-    }
-
-    @Override
-    public String toString() {
-      return "XFIELD/" + field + "(" + in + ")";
-    }
-
-    @Override
-    public void extractTerms(String field, Set<Term> terms) {
-      in.extractTerms(field, terms);
-    }
-
-    @Override
-    public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
-      return in.intervals(this.field, ctx);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(field, in);
-    }
-  }
-
   // TODO: beforeQuery, afterQuery, arbitrary IntervalFunctions
 
 }

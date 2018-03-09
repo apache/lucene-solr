@@ -22,6 +22,11 @@ import java.io.IOException;
 /**
  * Defines methods to iterate over the intervals that a term, phrase or more
  * complex positional query matches on a document
+ *
+ * The iterator is advanced by calling {@link DocIdSetIterator#advance(int)} on the
+ * DocIdSetIterator returned by {@link #approximation()}.  Consumers should then call
+ * {@link #reset()}, and then {@link #nextInterval()} to retrieve intervals until
+ * {@link #NO_MORE_INTERVALS} is returned.
  */
 public interface IntervalIterator {
 
@@ -36,6 +41,10 @@ public interface IntervalIterator {
    */
   DocIdSetIterator approximation();
 
+  /**
+   * Prepare to iterate over the intervals in a document after the approximation
+   * {@link DocIdSetIterator} has been advanced.
+   */
   void reset() throws IOException;
 
   /**
@@ -68,7 +77,7 @@ public interface IntervalIterator {
   }
 
   /**
-   * An indication of the cost of finding the next interval
+   * An indication of the average cost of iterating over all intervals in a document
    *
    * @see TwoPhaseIterator#matchCost()
    */

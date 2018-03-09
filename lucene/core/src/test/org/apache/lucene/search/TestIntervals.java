@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -72,6 +73,7 @@ public class TestIntervals extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new TextField("field1", field1_docs[i], Field.Store.NO));
       doc.add(new TextField("field2", field2_docs[i], Field.Store.NO));
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       doc.add(new NumericDocValuesField("id", i));
       writer.addDocument(doc);
     }
@@ -118,6 +120,13 @@ public class TestIntervals extends LuceneTestCase {
       }
     }
     assertEquals(expectedMatchCount, matchedDocs);
+  }
+
+  public void testIntervalsOnFieldWithNoPositions() throws IOException {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      Intervals.term("wibble").intervals("id", searcher.leafContexts.get(0));
+    });
+    assertEquals("Cannot create an IntervalIterator over field id because it has no indexed positions", e.getMessage());
   }
 
   public void testTermQueryIntervals() throws IOException {
@@ -187,19 +196,6 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
-  }
-
-  public void testCrossFieldMasking() throws IOException {
-    checkIntervals(Intervals.ordered(Intervals.mask("field2", Intervals.term("xanadu")), Intervals.term("interest")),
-        "field1", 1, new int[][]{
-            { 1, 2 },
-            {},
-            {},
-            {},
-            {},
-            {},
-            {}
-        });
   }
 
 }
