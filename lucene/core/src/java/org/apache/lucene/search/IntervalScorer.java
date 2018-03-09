@@ -65,7 +65,7 @@ class IntervalScorer extends Scorer {
       lastScoredDoc = docID();
       freq = 0;
       do {
-        freq += intervals.score();
+        freq += (1.0 / (intervals.end() - intervals.start() + 1));
       }
       while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS);
     }

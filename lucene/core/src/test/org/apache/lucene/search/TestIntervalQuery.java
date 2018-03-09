@@ -73,19 +73,6 @@ public class TestIntervalQuery extends LuceneTestCase {
     CheckHits.checkHits(random(), query, field, searcher, results);
   }
 
-  public void testScoring() throws IOException {
-    PhraseQuery pq = new PhraseQuery.Builder().add(new Term(field, "w2")).add(new Term(field, "w3")).build();
-    Query equiv = new IntervalQuery(field, Intervals.phrase("w2", "w3"));
-
-    TopDocs td1 = searcher.search(pq, 10);
-    TopDocs td2 = searcher.search(equiv, 10);
-    assertEquals(td1.totalHits, td2.totalHits);
-    for (int i = 0; i < td1.scoreDocs.length; i++) {
-      assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
-      assertEquals(td1.scoreDocs[i].score, td2.scoreDocs[i].score, 0f);
-    }
-  }
-
   public void testPhraseQuery() throws IOException {
     checkHits(new IntervalQuery(field, Intervals.phrase(Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0});
