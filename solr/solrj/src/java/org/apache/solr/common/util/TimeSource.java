@@ -25,20 +25,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Source of time. NOTE: depending on implementation returned values may not be related in any way to the
- * current Epoch or calendar time, and they may even be negative - but the API guarantees that they are
- * always monotonically increasing.
+ * Source of time.
+ * <p>NOTE: depending on implementation returned values may not be related in any way to the
+ * current Epoch or calendar time, and they may even be negative - but the API guarantees that
+ * they are always monotonically increasing.</p>
  */
 public abstract class TimeSource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** Implementation that uses {@link System#currentTimeMillis()}. */
+  /**
+   * Implementation that uses {@link System#currentTimeMillis()}.
+   * This implementation's {@link #getTime()} returns the same values as
+   * {@link #getEpochTime()}.
+   */
   public static final class CurrentTimeSource extends TimeSource {
 
     @Override
     @SuppressForbidden(reason = "Needed to provide timestamps based on currentTimeMillis.")
     public long getTime() {
       return TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public long getEpochTime() {
+      return getTime();
     }
 
     @Override
@@ -52,12 +62,29 @@ public abstract class TimeSource {
     }
   }
 
-  /** Implementation that uses {@link System#nanoTime()}. */
+  /**
+   * Implementation that uses {@link System#nanoTime()}.
+   * Epoch time is initialized using {@link CurrentTimeSource}, and then
+   * calculated as the elapsed number of nanoseconds as measured by this
+   * implementation.
+   */
   public static final class NanoTimeSource extends TimeSource {
+    private final long epochStart;
+    private final long nanoStart;
+
+    public NanoTimeSource() {
+      epochStart = CURRENT_TIME.getTime();
+      nanoStart = System.nanoTime();
+    }
 
     @Override
     public long getTime() {
       return System.nanoTime();
+    }
+
+    @Override
+    public long getEpochTime() {
+      return epochStart + getTime() - nanoStart;
     }
 
     @Override
@@ -75,24 +102,27 @@ public abstract class TimeSource {
   public static final class SimTimeSource extends TimeSource {
 
     final double multiplier;
-    long start;
+    final long nanoStart;
+    final long epochStart;
 
     /**
-     * Create a simulated time source that runs faster than real time by a multipler.
+     * Create a simulated time source that runs faster than real time by a multiplier.
      * @param multiplier must be greater than 0.0
      */
     public SimTimeSource(double multiplier) {
       this.multiplier = multiplier;
-      start = NANO_TIME.getTime();
-    }
-
-    public void advance(long delta) {
-      start = getTime() + delta;
+      epochStart = CURRENT_TIME.getTime();
+      nanoStart = NANO_TIME.getTime();
     }
 
     @Override
     public long getTime() {
-      return start + Math.round((double)(NANO_TIME.getTime() - start) * multiplier);
+      return nanoStart + Math.round((double)(NANO_TIME.getTime() - nanoStart) * multiplier);
+    }
+
+    @Override
+    public long getEpochTime() {
+      return epochStart + getTime() - nanoStart;
     }
 
     @Override
@@ -151,9 +181,17 @@ public abstract class TimeSource {
   }
 
   /**
-   * Return a time value, in nanosecond unit.
+   * Return a time value, in nanosecond units. Depending on implementation this value may or
+   * may not be related to Epoch time.
    */
   public abstract long getTime();
+
+  /**
+   * Return Epoch time. Implementations that are not natively based on epoch time may
+   * return values that are consistently off by a (small) fixed number of milliseconds from
+   * the actual epoch time.
+   */
+  public abstract long getEpochTime();
 
   public abstract void sleep(long ms) throws InterruptedException;
 

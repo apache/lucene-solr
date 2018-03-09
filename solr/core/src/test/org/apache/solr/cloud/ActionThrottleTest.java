@@ -41,6 +41,11 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
     }
 
     @Override
+    public long getEpochTime() {
+      return getTime();
+    }
+
+    @Override
     public void sleep(long ms) throws InterruptedException {
       throw new UnsupportedOperationException();
     }

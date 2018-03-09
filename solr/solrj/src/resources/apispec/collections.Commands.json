@@ -128,7 +128,7 @@
     },
     "create-alias": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-      "description": "Allows one or more collections to be known by another name, or creates an alias that manages a series of time-partitioned collections.. If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
+      "description": "Allows one or more collections to be known by another name (to include time partitioned collections). If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
       "type": "object",
       "properties": {
         "name": {
@@ -137,7 +137,7 @@
         },
         "collections": {
           "type": "array",
-          "description": "The list of collections to be known as this alias. Incompatible with any of the routing parameters. Either this parameter or a complete set of routing parameters is required",
+          "description": "The list of collections to be known as this alias. Incompatible with any of the routing parameters. Either this parameter or a complete set of routing parameters is required.",
           "items": {
             "type": "string"
           }
@@ -145,7 +145,7 @@
         "router" : {
           "type":"object",
           "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-          "description":"routing specific attributes",
+          "description":"Routing specific properties to define a time routed alias.  Do not specify 'collections' when creating a time routed alias.",
           "properties" : {
             "name" : {
               "type" : "string",
