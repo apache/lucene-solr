@@ -53,8 +53,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, 
-        {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}, {"llp_N_dv_dvasst"}
+        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}
     });
   }
 
@@ -158,7 +157,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void checkResultFormat() throws Exception {
     //Check input and output format is the same
-    String IN = "89.9,-130.0";//lat,lon
+    String IN = "89.9,-130";//lat,lon
     String OUT = IN;//IDENTICAL!
 
     assertU(adoc("id", "11", fieldName, IN));

@@ -486,16 +486,14 @@ public class SolrDocumentFetcher {
       case SORTED_NUMERIC:
         final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
         if (numericDv != null && numericDv.advance(localId) == localId) {
-          if (schemaField.getType() instanceof LatLonPointSpatialField) {
-            long number = numericDv.nextValue();
-            return ((LatLonPointSpatialField) schemaField.getType()).geoValueToStringValue(number);
-          }
           final List<Object> outValues = new ArrayList<>(numericDv.docValueCount());
           for (int i = 0; i < numericDv.docValueCount(); i++) {
             long number = numericDv.nextValue();
             Object value = decodeNumberFromDV(schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) return null;
+            // return the value as "lat, lon" if its not multi-valued
+            else if (schemaField.getType() instanceof LatLonPointSpatialField && numericDv.docValueCount() == 1) return value;
             else outValues.add(value);
           }
           assert outValues.size() > 0;
@@ -520,6 +518,10 @@ public class SolrDocumentFetcher {
   }
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
+    if (schemaField.getType() instanceof LatLonPointSpatialField) {
+      return LatLonPointSpatialField.decodeDocValueToString(value);
+    }
+    
     if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);

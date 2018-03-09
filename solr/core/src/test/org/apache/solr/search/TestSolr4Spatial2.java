@@ -120,21 +120,27 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   
   @Test
   public void testLatLonRetrieval() throws Exception {
-    assertU(adoc("id", "0",
-        "llp_1_dv_st", "-75,41",
-        "llp_1_dv", "-80.0,20.0",
-        "llp_1_dv_dvasst", "40.299599,-74.082728"));
+    assertU(adoc("id", "0", "llp_1_dv_st", "-75,41")); // stored
+    assertU(adoc("id", "1", "llp_1_dv", "-80.0,20.0")); // only docValues
+    assertU(adoc("id", "2", "llp_1_dv_dvasst", "40.299599,-74.082728")); // stored and docValues 
+    assertU(adoc("id", "3", "llp_N_dv_dvasst", "-11.0,77.0", "llp_N_dv_dvasst", "3.0,85.0")); // stored, docValues and multiValued 
+    assertU(adoc("id", "4", "llp_1_dv", "40.2996543270,-74.0824956673")); // only docValues, to show precision level
     assertU(commit());
     assertJQ(req("q","*:*", "fl","*"),
         "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Right now we do not support decoding point value from dv field
-        "!response/docs/[0]/llp_1_dv=='-80.0,20.0'",
-        "response/docs/[0]/llp_1_dv_dvasst=='40.299599,-74.082728'");
-    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_1_dv, llp_1_dv_dvasst"),
+        // We are decoding point value from dv field
+        "!response/docs/[1]/llp_1_dv==''",
+        "response/docs/[2]/llp_1_dv_dvasst=='40.299599,-74.082728'",
+        "response/docs/[3]/llp_N_dv_dvasst==['-11.0,77.0', '3.0,85.0']",
+        "!response/docs/[4]/llp_1_dv==''");
+    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_1_dv, llp_1_dv_dvasst, llp_N_dv_dvasst"),
         "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Even when these fields are specified, we won't return them
-        "response/docs/[0]/llp_1_dv=='-80.0,20.0'",
-        "response/docs/[0]/llp_1_dv_dvasst=='40.299599,-74.082728'");
+        // We are decoding point value from dv field
+        "response/docs/[1]/llp_1_dv=='-80.0,20.0'",
+        "response/docs/[2]/llp_1_dv_dvasst=='40.299599,-74.082728'",
+        "response/docs/[3]/llp_N_dv_dvasst==['-11.0,77.0', '3.0,85.0']",
+        // decoding from dv field will give value rounded to 6 decimal
+        "response/docs/[4]/llp_1_dv=='40.299654,-74.082496'");
   }
 
   private void testRptWithGeometryField(String fieldName) throws Exception {

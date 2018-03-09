@@ -17,10 +17,12 @@
 
 package org.apache.solr.schema;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitudeCeil;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitudeCeil;
+import static java.math.RoundingMode.HALF_UP;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
@@ -75,8 +77,16 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
   }
   
-  public String geoValueToStringValue(long value) {
-    return new String(decodeLatitudeCeil(value) + "," + decodeLongitudeCeil(value));
+  /**
+   * Converts to "lat, lon"
+   * @param value Non-null; stored location field data
+   * @return Non-null; "lat, lon" with 6 decimal point precision
+   */
+  public static String decodeDocValueToString(long value) {
+    double latitudeDecoded = BigDecimal.valueOf(decodeLatitude((int) (value >> 32))).setScale(6, HALF_UP).doubleValue();
+    double longitudeDecoded = BigDecimal.valueOf(decodeLongitude((int) (value & 0xFFFFFFFFL))).setScale(6, HALF_UP)
+        .doubleValue();
+    return new String(latitudeDecoded + "," + longitudeDecoded);
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox

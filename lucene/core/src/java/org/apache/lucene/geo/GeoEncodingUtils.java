@@ -20,8 +20,6 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 
-import static java.math.RoundingMode.HALF_UP;
-
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
@@ -29,7 +27,6 @@ import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 
-import java.math.BigDecimal;
 import java.util.function.Function;
 
 /**
@@ -130,10 +127,6 @@ public final class GeoEncodingUtils {
   public static double decodeLatitude(byte[] src, int offset) {
     return decodeLatitude(NumericUtils.sortableBytesToInt(src, offset));
   }
-  
-  public static double decodeLatitudeCeil(long encoded) {
-    return BigDecimal.valueOf(decodeLatitude((int) (encoded >> 32))).setScale(6, HALF_UP).doubleValue();
-  }
 
   /**
    * Turns quantized value from {@link #encodeLongitude} back into a double.
@@ -154,10 +147,6 @@ public final class GeoEncodingUtils {
    */
   public static double decodeLongitude(byte[] src, int offset) {
     return decodeLongitude(NumericUtils.sortableBytesToInt(src, offset));
-  }
-
-  public static double decodeLongitudeCeil(long encoded) {
-    return BigDecimal.valueOf(decodeLongitude((int) (encoded & 0xFFFFFFFFL))).setScale(6, HALF_UP).doubleValue();
   }
 
   /** Create a predicate that checks whether points are within a distance of a given point.
