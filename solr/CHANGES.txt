@@ -78,11 +78,13 @@ Upgrade Notes
 * LUCENE-8161: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.  This new version
   of JTS is now dual-licensed to include a BSD style license.
 
-* SOLR-12051: By using term value introduced in SOLR-11702, a replica will know that it is in-sync with the leader or not.  
-  If all the replicas who participate in the election are out-of-sync with previous leader, the election will hang for 
-  leaderVoteWait before allowing out-of-sync with previous leader replicas become leader. Note that the new leader 
-  still needs to contains more updates than any other active replicas in the same shard. Therefore by increasing 
-  leaderVoteWait will increase the consistency (over availability) of the system. 
+* SOLR-12051: A new mechanism is introduced in SOLR-11702 to maintain consistency in SolrCloud between leader and replicas.
+  This mechanism lets Solr know whether a replica is in-sync with the leader or not, even when the leader is not live.
+  If all the replicas who participate in the leader election are out-of-sync with previous leader, the election will
+  pause until a timeout (named "leaderVoteWait") before allowing an out-of-sync replica to become leader. Note that the
+  new leader still needs to contains more updates than any other active replicas in the same shard. Therefore by
+  increasing leaderVoteWait will increase the consistency (over availability) of the system. The default value of
+  leaderVoteWait is 180,000 ms (3 minutes) and it can be adjusted in the "solrcloud" section of the solr.xml
 
 * SOLR-11957: The default Solr log file size and number of backups is raised to 32MB and 10 respectively
 
