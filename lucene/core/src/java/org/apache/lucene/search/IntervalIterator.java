@@ -25,8 +25,7 @@ import java.io.IOException;
  *
  * The iterator is advanced by calling {@link DocIdSetIterator#advance(int)} on the
  * DocIdSetIterator returned by {@link #approximation()}.  Consumers should then call
- * {@link #reset()}, and then {@link #nextInterval()} to retrieve intervals until
- * {@link #NO_MORE_INTERVALS} is returned.
+ * {@link #nextInterval()} to retrieve intervals until {@link #NO_MORE_INTERVALS} is returned.
  */
 public interface IntervalIterator {
 
