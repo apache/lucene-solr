@@ -20,12 +20,12 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,19 +34,18 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestCloudConsistency extends SolrCloudTestCase {
+public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -57,11 +56,12 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("leaderVoteWait", "60000");
+    System.setProperty("leaderVoteWait", "2000");
 
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());
     jettys = new HashMap<>();
@@ -90,17 +90,44 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
-  public void testOutOfSyncReplicasCannotBecomeLeader() throws Exception {
-    testOutOfSyncReplicasCannotBecomeLeader(false);
+  public void basicTest() throws Exception {
+    final String collectionName = "basicTest";
+    CollectionAdminRequest.createCollection(collectionName, 1, 1)
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
+        .process(cluster.getSolrClient());
+    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
+    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
+    cluster.getSolrClient().commit(collectionName);
+
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      assertEquals(1, zkShardTerms.getTerms().size());
+      assertEquals(1L, zkShardTerms.getHighestTerm());
+    }
+
+    cluster.getJettySolrRunner(0).stop();
+
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .setNode(cluster.getJettySolrRunner(1).getNodeName())
+        .process(cluster.getSolrClient());
+
+    waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState) -> {
+      Replica newLeader = collectionState.getSlice("shard1").getLeader();
+      return newLeader.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName());
+    });
+
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      Replica newLeader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+      assertEquals(2, zkShardTerms.getTerms().size());
+      assertEquals(1L, zkShardTerms.getTerm(newLeader.getName()));
+    }
+
+    cluster.getJettySolrRunner(0).start();
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   @Test
-  public void testOutOfSyncReplicasCannotBecomeLeaderAfterRestart() throws Exception {
-    testOutOfSyncReplicasCannotBecomeLeader(true);
-  }
-
-  public void testOutOfSyncReplicasCannotBecomeLeader(boolean onRestart) throws Exception {
-    final String collectionName = "outOfSyncReplicasCannotBecomeLeader-"+onRestart;
+  public void testMostInSyncReplicasCanWinElection() throws Exception {
+    final String collectionName = "collection1";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
         .setCreateNodeSet("")
         .process(cluster.getSolrClient());
@@ -108,119 +135,83 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
     waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
+    Replica leader = getCollectionState(collectionName).getSlice("shard1").getLeader();
 
+    // this replica will ahead of election queue
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
+    waitForState("Timeout waiting for 1x2 collection", collectionName, clusterShape(1, 2));
+    Replica replica1 = getCollectionState(collectionName).getSlice("shard1")
+        .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName())).get(0);
+
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(2).getNodeName())
         .process(cluster.getSolrClient());
     waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
+    Replica replica2 = getCollectionState(collectionName).getSlice("shard1")
+        .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(2).getNodeName())).get(0);
 
-    addDocs(collectionName, 3, 1);
+    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
+    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
+    cluster.getSolrClient().commit(collectionName);
 
-    final Replica oldLeader = getCollectionState(collectionName).getSlice("shard1").getLeader();
-    assertEquals(cluster.getJettySolrRunner(0).getNodeName(), oldLeader.getNodeName());
+    // replica in node1 won't be able to do recovery
+    proxies.get(cluster.getJettySolrRunner(0)).close();
+    // leader won't be able to send request to replica in node1
+    proxies.get(cluster.getJettySolrRunner(1)).close();
 
-    if (onRestart) {
-      addDocToWhenOtherReplicasAreDown(collectionName, oldLeader, 4);
-    } else {
-      addDocWhenOtherReplicasAreNetworkPartitioned(collectionName, oldLeader, 4);
+    addDoc(collectionName, 3, cluster.getJettySolrRunner(0));
+
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      assertEquals(3, zkShardTerms.getTerms().size());
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica2.getName()));
+      assertTrue(zkShardTerms.getHighestTerm() > zkShardTerms.getTerm(replica1.getName()));
     }
 
-    assertDocsExistInAllReplicas(getCollectionState(collectionName).getReplicas(), collectionName, 1, 4);
+    proxies.get(cluster.getJettySolrRunner(2)).close();
+    addDoc(collectionName, 4, cluster.getJettySolrRunner(0));
 
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      assertEquals(3, zkShardTerms.getTerms().size());
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
+      assertTrue(zkShardTerms.getHighestTerm() > zkShardTerms.getTerm(replica2.getName()));
+      assertTrue(zkShardTerms.getHighestTerm() > zkShardTerms.getTerm(replica1.getName()));
+      assertTrue(zkShardTerms.getTerm(replica2.getName()) > zkShardTerms.getTerm(replica1.getName()));
+    }
+
+    proxies.get(cluster.getJettySolrRunner(1)).reopen();
+    proxies.get(cluster.getJettySolrRunner(2)).reopen();
+    cluster.getJettySolrRunner(0).stop();
+
+    // even replica2 joined election at the end of the queue, but it is the one with highest term
+    waitForState("Timeout waiting for new leader", collectionName, new CollectionStatePredicate() {
+      @Override
+      public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
+        Replica newLeader = collectionState.getSlice("shard1").getLeader();
+        return newLeader.getName().equals(replica2.getName());
+      }
+    });
+
+    cluster.getJettySolrRunner(0).start();
+    proxies.get(cluster.getJettySolrRunner(0)).reopen();
+
+    waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
+    assertDocsExistInAllReplicas(Arrays.asList(leader, replica1), collectionName, 1, 3);
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
 
-  /**
-   * Adding doc when replicas (not leader) are down,
-   * These replicas are out-of-sync hence they should not become leader even when current leader is DOWN.
-   * Leader should be on node - 0
-   */
-  private void addDocToWhenOtherReplicasAreDown(String collection, Replica leader, int docId) throws Exception {
-    ChaosMonkey.stop(cluster.getJettySolrRunner(1));
-    ChaosMonkey.stop(cluster.getJettySolrRunner(2));
-    waitForState("", collection, (liveNodes, collectionState) ->
-      collectionState.getSlice("shard1").getReplicas().stream()
-          .filter(replica -> replica.getState() == Replica.State.DOWN).count() == 2);
-
-    addDocs(collection, 1, docId);
-    ChaosMonkey.stop(cluster.getJettySolrRunner(0));
-    waitForState("", collection, (liveNodes, collectionState) -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
-
-    ChaosMonkey.start(cluster.getJettySolrRunner(1));
-    ChaosMonkey.start(cluster.getJettySolrRunner(2));
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getSlice("shard1").getLeader();
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
-
-    ChaosMonkey.start(cluster.getJettySolrRunner(0));
-    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
-      Replica newLeader = collectionState.getLeader("shard1");
-      return newLeader != null && newLeader.getName().equals(leader.getName());
-    });
-    waitForState("Timeout waiting for active collection", collection, clusterShape(1, 3));
-  }
-
-
-  /**
-   * Adding doc when replicas (not leader) are network partitioned with leader,
-   * These replicas are out-of-sync hence they should not become leader even when current leader is DOWN.
-   * Leader should be on node - 0
-   */
-  private void addDocWhenOtherReplicasAreNetworkPartitioned(String collection, Replica leader, int docId) throws Exception {
-    for (int i = 0; i < 3; i++) {
-      proxies.get(cluster.getJettySolrRunner(i)).close();
-    }
-    addDoc(collection, docId, cluster.getJettySolrRunner(0));
-    ChaosMonkey.stop(cluster.getJettySolrRunner(0));
-    for (int i = 1; i < 3; i++) {
-      proxies.get(cluster.getJettySolrRunner(i)).reopen();
-    }
-    waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState)
-        -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
-
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getLeader("shard1");
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
-
-    proxies.get(cluster.getJettySolrRunner(0)).reopen();
-    ChaosMonkey.start(cluster.getJettySolrRunner(0));
-    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
-      Replica newLeader = collectionState.getLeader("shard1");
-      return newLeader != null && newLeader.getName().equals(leader.getName());
-    });
-    waitForState("Timeout waiting for active collection", collection, clusterShape(1, 3));
-  }
-
-  private void addDocs(String collection, int numDocs, int startId) throws SolrServerException, IOException {
-    List<SolrInputDocument> docs = new ArrayList<>(numDocs);
-    for (int i = 0; i < numDocs; i++) {
-      int id = startId + i;
-      docs.add(new SolrInputDocument("id", String.valueOf(id), "fieldName_s", String.valueOf(id)));
-    }
-    cluster.getSolrClient().add(collection, docs);
-    cluster.getSolrClient().commit(collection);
-  }
-
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner) throws IOException, SolrServerException {
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-      solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId), "fieldName_s", String.valueOf(docId)));
+      solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId)));
+      solrClient.commit(collection);
     }
   }
 
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
-                                              String testCollectionName, int firstDocId, int lastDocId) throws Exception {
+                                            String testCollectionName, int firstDocId, int lastDocId) throws Exception {
     Replica leader =
         cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
@@ -265,5 +256,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     String url = zkProps.getBaseUrl() + "/" + coll;
     return getHttpSolrClient(url);
   }
+
 
 }
