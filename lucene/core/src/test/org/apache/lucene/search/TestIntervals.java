@@ -99,7 +99,6 @@ public class TestIntervals extends LuceneTestCase {
         int id = (int) ids.longValue();
         if (intervals.approximation().docID() == doc ||
             (intervals.approximation().docID() < doc && intervals.approximation().advance(doc) == doc)) {
-          intervals.reset();
           int i = 0, pos;
           assertEquals(-1, intervals.start());
           assertEquals(-1, intervals.end());
