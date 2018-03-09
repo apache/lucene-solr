@@ -652,17 +652,17 @@ public class SimplePostTool {
    * @throws IOException If there is a low-level I/O error.
    */
   public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
-    BAOS bos =  new BAOS();
-    long sz = 0;
-    int next = is.read();
-    while (next > -1) {
-      if(++sz > maxSize) throw new BufferOverflowException();
-      bos.write(next);
-      next = is.read();
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) throw new BufferOverflowException();
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
     }
-    bos.flush();
-    is.close();
-    return bos.getByteBuffer();
   }
 
   /**

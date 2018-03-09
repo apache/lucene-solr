@@ -25,7 +25,32 @@ When planning your Solr upgrade, consider the customizations you have made to yo
 
 Detailed steps for upgrading a Solr cluster can be found in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
-== Upgrading from Solr 7.0
+== Upgrading from 7.x Releases
+
+=== Solr 7.2
+
+See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
+
+Users should be aware of the following major changes from v7.1:
+
+* Starting a query string with <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
++
+So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
++
+Another example is if `deftype=edismax` then `hl.q={!myparser ...}` won't work for the same reason. In this example, either put the desired query parser into the `hl.qparser` parameter or set `hl.qparser=lucene`. Most users won't run into these cases but some will need to change.
++
+If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or an earlier version.
+
+* The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local parameters, or the older `\_query_` magic field trick.
++
+For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=*,\_query_` or some other value that includes `\_query_`.
++
+If you need full backwards compatibility for the time being, use `luceneMatchVersion=7.1.0` or something earlier.
+
+=== Solr 7.1
+
+See the https://wiki.apache.org/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
+
 Users should be aware of the following major changes from v7.0:
 
 * The feature to automatically add replicas if a replica goes down, previously available only when storing indexes in HDFS, has been ported to the autoscaling framework. Due to this, `autoAddReplicas` is now available to all users even if their indexes are on local disks.
@@ -39,7 +64,7 @@ More information about the changes to this feature can be found in the section <
 
 * Shard and cluster metric reporter configuration now require a class attribute.
 ** If a reporter configures the `group="shard"` attribute then please also configure the `class="org.apache.solr.metrics.reporters.solr.SolrShardReporter"` attribute.
-** If a reporter configures the `group="cluster"` attribute then please also configure the   `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
+** If a reporter configures the `group="cluster"` attribute then please also configure the  `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
 +
 See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and Cluster Reporters>> for more information.
 
@@ -48,12 +73,12 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 * The `RunExecutableListener` was removed for security reasons. If you want to listen to events caused by updates, commits, or optimize, write your own listener as native Java class as part of a Solr plugin.
 * In the XML query parser (`defType=xmlparser` or `{!xmlparser ... }`) the resolving of external entities is now disallowed by default.
 
-== Upgrading from Any 6.x Release
+== Upgrading to 7.0 from Any 6.x Release
 
 The upgrade from Solr 6.x to Solr 7 introduces several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
 
-== Upgrading from Older Versions of Solr
+== Upgrading from pre-6.x Versions of Solr
 
 Users upgrading from versions of Solr prior to 6.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 can be found in the <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>> section.
+A summary of the significant changes between Solr 5.x and Solr 6.0 can be found in the section <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>>.

@@ -2,10 +2,10 @@
 :page-tocclass: right
 :experimental:
 
-This tutorial covers getting Solr up and running, ingesting a variety of data sources into multiple collections,
+This tutorial covers getting Solr up and running, ingesting a variety of data sources into Solr collections,
 and getting a feel for the Solr administrative and search interfaces.
 
-It is organized into three sections that each build on the one before it. The <<exercise-1,first exercise>> will ask you to start Solr, create a collection, index some basic documents, and then perform a few searches.
+The tutorial is organized into three sections that each build on the one before it. The <<exercise-1,first exercise>> will ask you to start Solr, create a collection, index some basic documents, and then perform some searches.
 
 The <<exercise-2,second exercise>> works with a different set of data, and explores requesting facets with the dataset.
 
@@ -267,7 +267,7 @@ Solr has very powerful search options, and this tutorial won't be able to cover 
 
 ==== Search for a Single Term
 
-To search for a term, enter it as the `q` param value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
+To search for a term, enter it as the `q` parameter value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
 
 Enter "foundation" and hit btn:[Execute Query] again.
 

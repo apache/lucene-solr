@@ -148,8 +148,8 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]
       {77, 177, 277, 377, 477, 577, 677, 777, 877, 977, 1077, 1177, 1277, 1377, 1477, 1577, 1677, 1777, 1877, 1977});
 
-    assertTrue(searcher.explain(query, 77).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 977).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 77).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 977).getValue().doubleValue() > 0.0f);
   }
   
   public void testSpanTermQuery() throws Exception {
@@ -193,8 +193,8 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]
       {801, 821, 831, 851, 861, 871, 881, 891, 1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanNotNoOverflowOnLargeSpans() throws Exception {
@@ -214,8 +214,8 @@ public class TestBasics extends LuceneTestCase {
       {801, 821, 831, 851, 861, 871, 881, 891,
               1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanWithMultipleNotMany() throws Exception {
@@ -226,8 +226,8 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]
       {801, 821, 831, 851, 871, 891, 1801, 1821, 1831, 1851, 1871, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testNpeInSpanNearWithSpanNot() throws Exception {
@@ -239,8 +239,8 @@ public class TestBasics extends LuceneTestCase {
       {801, 821, 831, 851, 861, 871, 881, 891,
               1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testNpeInSpanNearInSpanFirstInSpanNot() throws Exception {
@@ -267,8 +267,8 @@ public class TestBasics extends LuceneTestCase {
       {840, 842, 843, 844, 845, 846, 847, 848, 849,
           1840, 1842, 1843, 1844, 1845, 1846, 1847, 1848, 1849});
 
-    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 1842).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 840).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 1842).getValue().doubleValue() > 0.0f);
   }
   
   public void testSpanNotWindowTwoBefore() throws Exception {
@@ -278,8 +278,8 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]
       {840, 841, 842, 843, 844, 845, 846, 847, 848, 849});
 
-    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 849).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 840).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 849).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanNotWindowNegPost() throws Exception {
@@ -296,8 +296,8 @@ public class TestBasics extends LuceneTestCase {
        {801, 821, 831, 841, 851, 861, 871, 881, 891,
                1801, 1821, 1831, 1841, 1851, 1861, 1871, 1881, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanNotWindowNegPre() throws Exception {
@@ -314,8 +314,8 @@ public class TestBasics extends LuceneTestCase {
         {801, 821, 831, 841, 851, 861, 871, 881, 891,
             1801, 1821, 1831, 1841, 1851, 1861, 1871, 1881, 1891});
 
-    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 801).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanNotWindowDoubleExcludesBefore() throws Exception {
@@ -327,8 +327,8 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]
        {42, 242, 342, 442, 542, 642, 742, 842, 942});
 
-    assertTrue(searcher.explain(query, 242).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 942).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 242).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 942).getValue().doubleValue() > 0.0f);
   }
   
   public void testSpanFirst() throws Exception {
@@ -344,8 +344,8 @@ public class TestBasics extends LuceneTestCase {
        584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597,
        598, 599});
 
-    assertTrue(searcher.explain(query, 5).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 599).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 5).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 599).getValue().doubleValue() > 0.0f);
 
   }
 
@@ -355,8 +355,8 @@ public class TestBasics extends LuceneTestCase {
     
     checkHits(query, new int[]
       {25,35, 45, 55, 65, 75, 85, 95});
-    assertTrue(searcher.explain(query, 25).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 95).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 25).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 95).getValue().doubleValue() > 0.0f);
 
     query = spanPositionRangeQuery(term1, 0, 1);
     checkHits(query, new int[]
@@ -384,8 +384,8 @@ public class TestBasics extends LuceneTestCase {
               747, 833, 847, 933, 947, 1033, 1047, 1133, 1147, 1233, 1247, 1333,
               1347, 1433, 1447, 1533, 1547, 1633, 1647, 1733, 1747, 1833, 1847, 1933, 1947});
 
-    assertTrue(searcher.explain(query, 33).getValue() > 0.0f);
-    assertTrue(searcher.explain(query, 947).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 33).getValue().doubleValue() > 0.0f);
+    assertTrue(searcher.explain(query, 947).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanExactNested() throws Exception {
@@ -395,7 +395,7 @@ public class TestBasics extends LuceneTestCase {
     
     checkHits(query, new int[] {333, 1333});
 
-    assertTrue(searcher.explain(query, 333).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 333).getValue().doubleValue() > 0.0f);
   }
 
   public void testSpanNearOr() throws Exception {

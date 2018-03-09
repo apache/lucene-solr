@@ -49,9 +49,6 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGrou
  */
 public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {

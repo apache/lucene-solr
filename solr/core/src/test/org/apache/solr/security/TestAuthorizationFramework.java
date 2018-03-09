@@ -17,7 +17,6 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -59,22 +58,30 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   public void authorizationFrameworkTest() throws Exception {
     MockAuthorizationPlugin.denyUsers.add("user1");
     MockAuthorizationPlugin.denyUsers.add("user1");
-    waitForThingsToLevelOut(10);
-    String baseUrl = jettys.get(0).getBaseUrl().toString();
-    verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
-    log.info("Starting test");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    // This should work fine.
-    cloudClient.query(params);
 
-    // This user is blacklisted in the mock. The request should return a 403.
-    params.add("uname", "user1");
     try {
+      waitForThingsToLevelOut(10);
+      String baseUrl = jettys.get(0).getBaseUrl().toString();
+      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+      log.info("Starting test");
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("q", "*:*");
+      // This should work fine.
       cloudClient.query(params);
-      fail("This should have failed");
-    } catch (Exception e) {}
-    log.info("Ending test");
+      MockAuthorizationPlugin.protectedResources.add("/select");
+
+      // This user is blacklisted in the mock. The request should return a 403.
+      params.add("uname", "user1");
+      try {
+        cloudClient.query(params);
+        fail("This should have failed");
+      } catch (Exception e) {}
+      log.info("Ending test");
+    } finally {
+      MockAuthorizationPlugin.denyUsers.clear();
+      MockAuthorizationPlugin.protectedResources.clear();
+
+    }
   }
 
   @Override

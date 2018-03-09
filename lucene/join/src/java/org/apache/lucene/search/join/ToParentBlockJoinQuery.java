@@ -84,8 +84,8 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores, boost), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode weightScoreMode, float boost) throws IOException {
+    return new BlockJoinWeight(this, childQuery.createWeight(searcher, weightScoreMode, boost), parentsFilter, weightScoreMode.needsScores() ? scoreMode : ScoreMode.None);
   }
 
   /** Return our child query. */
@@ -286,6 +286,17 @@ public class ToParentBlockJoinQuery extends Query {
       return score;
     }
 
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      switch(scoreMode) {
+        case Max:
+        case Min:
+          return childScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+        default:
+          return Float.POSITIVE_INFINITY;
+      }
+    }
+
     private void setScoreAndFreq() throws IOException {
       if (childApproximation.docID() >= parentApproximation.docID()) {
         return;
@@ -336,7 +347,7 @@ public class ToParentBlockJoinQuery extends Query {
         Explanation child = childWeight.explain(context, childDoc - context.docBase);
         if (child.isMatch()) {
           matches++;
-          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+          if (bestChild == null || child.getValue().floatValue() > bestChild.getValue().floatValue()) {
             bestChild = child;
           }
         }

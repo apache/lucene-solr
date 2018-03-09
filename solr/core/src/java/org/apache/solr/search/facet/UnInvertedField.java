@@ -426,13 +426,11 @@ public class UnInvertedField extends DocTermOrds {
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
-        try ( DocSet intersection = searcher.getDocSet(tt.termQuery, docs); )
-        {
-          int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
-          countAcc.incrementCount(tt.termNum - startTermIndex, collected);
-          if (collected > 0) {
-            uniqueTerms++;
-          }
+        DocSet intersection = searcher.getDocSet(tt.termQuery, docs);
+        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
+        countAcc.incrementCount(tt.termNum - startTermIndex, collected);
+        if (collected > 0) {
+          uniqueTerms++;
         }
       }
     }

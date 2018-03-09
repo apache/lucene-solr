@@ -89,8 +89,12 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
     allSims = new ArrayList<>();
     allSims.add(new ClassicSimilarity());
     allSims.add(new BM25Similarity());
-    // We cannot do this, because this similarity behaves in "non-traditional" ways:
-    // allSims.add(new BooleanSimilarity());
+    allSims.add(new AxiomaticF1EXP());
+    allSims.add(new AxiomaticF1LOG());
+    allSims.add(new AxiomaticF2EXP());
+    allSims.add(new AxiomaticF2LOG());
+
+    allSims.add(new BooleanSimilarity());
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {
@@ -105,8 +109,7 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
         }
       }
     }
-    /* TODO: enable Dirichlet 
-    allSims.add(new LMDirichletSimilarity()); */
+    allSims.add(new LMDirichletSimilarity());
     allSims.add(new LMJelinekMercerSimilarity(0.1f));
     allSims.add(new LMJelinekMercerSimilarity(0.7f));
     for (Independence independence : INDEPENDENCE_MEASURES) {

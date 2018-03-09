@@ -146,6 +146,10 @@ public class TestConjunctionDISI extends LuceneTestCase {
         return 0;
       }
 
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return 0;
+      }
     };
   }
 

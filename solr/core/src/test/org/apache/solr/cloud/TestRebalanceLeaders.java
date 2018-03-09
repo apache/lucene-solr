@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -118,7 +119,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   // 2> All the replicas we _think_ are leaders are in the 0th position in the leader election queue.
   // 3> The node that ZooKeeper thinks is the leader is the one we think should be the leader.
   void checkConsistency() throws InterruptedException, KeeperException {
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     boolean checkAppearOnce = false;
     boolean checkElectionZero = false;
     boolean checkZkLeadersAgree = false;
@@ -323,7 +324,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   boolean waitForAllPreferreds() throws KeeperException, InterruptedException {
     boolean goAgain = true;
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (! timeout.hasTimedOut()) {
       goAgain = false;
       Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();

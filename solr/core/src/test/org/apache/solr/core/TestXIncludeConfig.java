@@ -21,14 +21,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
 /** 
  * Test both XInclude as well as more old school "entity includes"
  */
-public class TestXIncludeConfig extends AbstractSolrTestCase {
+public class TestXIncludeConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

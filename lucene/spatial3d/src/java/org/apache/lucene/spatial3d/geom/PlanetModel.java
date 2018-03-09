@@ -122,6 +122,13 @@ public class PlanetModel implements SerializableObject {
     SerializableObject.writeDouble(outputStream, c);
   }
   
+  /** Does this planet model describe a sphere?
+   *@return true if so.
+   */
+  public boolean isSphere() {
+    return this.ab == this.c;
+  }
+  
   /** Find the minimum magnitude of all points on the ellipsoid.
    * @return the minimum magnitude for the planet.
    */

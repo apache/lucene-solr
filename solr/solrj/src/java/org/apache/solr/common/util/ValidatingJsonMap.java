@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -313,17 +314,22 @@ public class ValidatingJsonMap implements Map<String, Object> {
   }
 
   public static ValidatingJsonMap parse(String resourceName, String includeLocation) {
-    InputStream is = ValidatingJsonMap.class.getClassLoader().getResourceAsStream(resourceName);
-    if (is == null)
+    final URL resource = ValidatingJsonMap.class.getClassLoader().getResource(resourceName);
+    if (null == resource) {
       throw new RuntimeException("invalid API spec: " + resourceName);
+    }
     ValidatingJsonMap map = null;
-    try {
-      map = fromJSON(is, includeLocation);
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
+    try (InputStream is = resource.openStream()) {
+      try {
+        map = fromJSON(is, includeLocation);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
+      }
+    } catch (IOException ioe) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Unable to read resource: " + resourceName, ioe);
     }
     if (map == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
-
     return getDeepCopy(map, 5, false);
   }
 

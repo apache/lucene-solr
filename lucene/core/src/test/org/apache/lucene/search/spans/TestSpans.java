@@ -33,6 +33,7 @@ import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -193,7 +194,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearOrderedOverlap() throws Exception {
     final SpanQuery query = spanNearOrderedQuery(field, 1, "t1", "t2", "t3");
     
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
     assertEquals("first doc", 11, spans.nextDoc());
     assertEquals("first start", 0, spans.nextStartPosition());
@@ -208,7 +209,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearUnOrdered() throws Exception {
     //See http://www.gossamer-threads.com/lists/lucene/java-dev/52270 for discussion about this test
     SpanQuery senq = spanNearUnorderedQuery(field, 0, "u1", "u2");
-    Spans spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = senq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 1, 3);
     assertNext(spans, 5, 2, 4);
     assertNext(spans, 8, 2, 4);
@@ -217,7 +218,7 @@ public class TestSpans extends LuceneTestCase {
     assertFinished(spans);
 
     senq = spanNearUnorderedQuery(1, senq, spanTermQuery(field, "u2")); 
-    spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    spans = senq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 0, 3);
     assertNext(spans, 4, 1, 3); // unordered spans can be subsets
     assertNext(spans, 5, 0, 4);
@@ -231,7 +232,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   private Spans orSpans(String[] terms) throws Exception {
-    return spanOrQuery(field, terms).createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    return spanOrQuery(field, terms).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   public void testSpanOrEmpty() throws Exception {
@@ -413,7 +414,7 @@ public class TestSpans extends LuceneTestCase {
      SpanQuery iq = includeTerms.length == 1 ? spanTermQuery(field, include) : spanNearOrderedQuery(field, slop, includeTerms);
      SpanQuery eq = spanTermQuery(field, exclude);
      SpanQuery snq = spanNotQuery(iq, eq, pre, post);
-     Spans spans = snq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+     Spans spans = snq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
      int i = 0;
      if (spans != null) {

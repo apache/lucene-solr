@@ -27,6 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.model.AdapterModel;
 import org.apache.solr.ltr.model.WrapperModel;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
@@ -241,25 +242,29 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
         featureStore.getFeatures(),
         (Map<String,Object>) modelMap.get(PARAMS_KEY));
 
-    if (ltrScoringModel instanceof WrapperModel) {
-      initWrapperModel(solrResourceLoader, (WrapperModel)ltrScoringModel, managedFeatureStore);
+    if (ltrScoringModel instanceof AdapterModel) {
+      initAdapterModel(solrResourceLoader, (AdapterModel)ltrScoringModel, managedFeatureStore);
     }
 
     return ltrScoringModel;
   }
 
+  private static void initAdapterModel(SolrResourceLoader solrResourceLoader,
+      AdapterModel adapterModel, ManagedFeatureStore managedFeatureStore) {
+    adapterModel.init(solrResourceLoader);
+    if (adapterModel instanceof WrapperModel) {
+      initWrapperModel(solrResourceLoader, (WrapperModel)adapterModel, managedFeatureStore);
+    }
+  }
+
   private static void initWrapperModel(SolrResourceLoader solrResourceLoader,
                                        WrapperModel wrapperModel, ManagedFeatureStore managedFeatureStore) {
-    wrapperModel.setSolrResourceLoader(solrResourceLoader);
     final LTRScoringModel model = fromLTRScoringModelMap(
         solrResourceLoader,
         wrapperModel.fetchModelMap(),
         managedFeatureStore);
-    if (model instanceof WrapperModel) {
-      log.warn("It is unusual for one WrapperModel ({}) to wrap another WrapperModel ({})",
-          wrapperModel.getName(),
-          model.getName());
-      initWrapperModel(solrResourceLoader, (WrapperModel)model, managedFeatureStore);
+    if (model instanceof AdapterModel) {
+      initAdapterModel(solrResourceLoader, (AdapterModel)model, managedFeatureStore);
     }
     wrapperModel.updateModel(model);
   }
@@ -268,7 +273,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     final LinkedHashMap<String,Object> modelMap = new LinkedHashMap<>(5, 1.0f);
 
     modelMap.put(NAME_KEY, model.getName());
-    modelMap.put(CLASS_KEY, model.getClass().getCanonicalName());
+    modelMap.put(CLASS_KEY, model.getClass().getName());
     modelMap.put(STORE_KEY, model.getFeatureStoreName());
 
     final List<Map<String,Object>> features = new ArrayList<>();
@@ -321,7 +326,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
   private static LinkedHashMap<String,Object> toNormalizerMap(Normalizer norm) {
     final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
 
-    normalizer.put(CLASS_KEY, norm.getClass().getCanonicalName());
+    normalizer.put(CLASS_KEY, norm.getClass().getName());
 
     final LinkedHashMap<String,Object> params = norm.paramsToMap();
     if (params != null) {

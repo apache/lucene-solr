@@ -18,6 +18,7 @@ package org.apache.lucene.spatial3d.geom;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Iterator;
@@ -162,6 +163,14 @@ public class GeoPolygonFactory {
     if (filteredPointList == null) {
       return null;
     }
+
+    //First approximation to find a point
+    final GeoPoint centerOfMass = getCenterOfMass(filteredPointList);
+    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
+    if (isCenterOfMassInside != null) {
+      return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
+    }
+    
     //System.err.println("points="+pointList);
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
@@ -181,6 +190,19 @@ public class GeoPolygonFactory {
       // If pole choice was illegal, try another one
     }
     throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
+  }
+
+  private static GeoPoint getCenterOfMass(List<GeoPoint> points) {
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    //get center of mass
+    for (GeoPoint point : points) {
+      x += point.x;
+      y += point.y;
+      z += point.z;
+    }
+    return new GeoPoint(x / points.size(), y / points.size(), z / points.size());
   }
   
   /** Use this class to specify a polygon with associated holes.
@@ -422,18 +444,13 @@ public class GeoPolygonFactory {
    */
   static List<GeoPoint> filterEdges(final List<GeoPoint> noIdenticalPoints, final double leniencyValue) {
   
-    // Now, do the depth-first search needed to find a path that has no coplanarities in it.
-    // This is, unfortunately, not easy, because coplanarity is not transitive as you walk around the polygon.
-    // If point C is not coplanar with edge A-B, there is no guarantee that A is not coplanar with B-C.
-    // But we have to produce a polygon that is safe no matter which way it is looked at.
-    // The approach I'm taking therefore is to do a depth-first search until we find a valid polygon.
-    // This algorithmically awful in the worst case, but luckily we can presume that real-life data
-    // does not require more than a couple of iterations.
+    // Now, do the search needed to find a path that has no coplanarities in it.
+    // It is important to check coplanarities using the points that are further away so the
+    // plane is more precise.
     
     for  (int i = 0; i < noIdenticalPoints.size(); i++) {
-      final SafePath startPath = new SafePath(null, noIdenticalPoints.get(i), i, null);
-      // Search, with this as the start path.
-      final SafePath resultPath = findSafePath(startPath, noIdenticalPoints, getLegalIndex(i+1, noIdenticalPoints.size()), i, leniencyValue);
+      //Search starting for current index.
+      final SafePath resultPath = findSafePath(noIdenticalPoints, i, leniencyValue);
       if (resultPath != null && resultPath.previous != null) {
         // Read out result, maintaining ordering
         final List<GeoPoint> rval = new ArrayList<>(noIdenticalPoints.size());
@@ -444,134 +461,65 @@ public class GeoPolygonFactory {
     // No path found.  This means that everything was coplanar.
     return null;
   }
-  
-  /** Recursive depth-first path search.  In order to find a valid path, we must consider all possible legal extensions of
-   * the current path.  We discard any path that produces illegalities (meaning anything that would allow any coplanarity
-   * to continue to exist no matter from which direction one looks at it), and take the first legal path we find.
-   * @param currentPath is the current path (not null).
-   * @param points is the raw list of points under consideration.
-   * @param pointIndex is the index of the point that represents the next possible point for consideration for path
-   *  extension.
-   * @param startPointIndex is index of the point that starts the current path, so that we can know when we are done.
-   * @param leniencyValue is the maximum allowed distance of a point being skipped from the revised polygon.  Pass zero if
-   *  no leniency desired.
-   * @return null if there was no safe path found, or the safe path if one was discovered.
+
+  /** Iterative path search through ordered list of points. The method merges together
+   * all consecutive coplanar points and builds the plane using the first and the last point.
+   * It does not converge if the starting point is coplanar with the last and next point of the path.
+   *
+   * @param points is the ordered raw list of points under consideration.
+   * @param startIndex is index of the point that starts the current path, so that we can know when we are done.
+   * @param leniencyValue is the allowed distance of a point from the plane to be considered coplanar.
+   * @return null if the starting point is coplanar with the last and next point of the path.
    */
-  private static SafePath findSafePath(final SafePath currentPath, final List<GeoPoint> points, final int pointIndex,
-    final int startPointIndex, final double leniencyValue) {
-    //System.err.println("extending path...");
-      
-    // Loop across all possible path extensions, and consider each in turn
-    int considerPointIndex = pointIndex;
-    while (true) {
-      // Check if the extension of currentPath to considerPointIndex is workable
-      final GeoPoint considerStartPoint = currentPath.lastPoint;
-      final GeoPoint considerEndPoint = points.get(considerPointIndex);
-      final int nextPointIndex = getLegalIndex(considerPointIndex + 1, points.size());
-      if (!considerStartPoint.isNumericallyIdentical(considerEndPoint)) {
-        // Create a plane including these two
-        final Plane considerPlane = new Plane(considerStartPoint, considerEndPoint);
-        
-        boolean isChoiceLegal = true;
+  private static SafePath findSafePath(final List<GeoPoint> points, final int startIndex, final double leniencyValue) {
+    SafePath safePath = null;
+    for (int i = startIndex; i < startIndex + points.size(); i++) {
+      //get start point, always the same for an iteration
+      final int startPointIndex = getLegalIndex(i -1, points.size());
+      final GeoPoint startPoint = points.get(startPointIndex);
+      //get end point, can be coplanar and therefore change
+      int endPointIndex = getLegalIndex(i, points.size());
+      GeoPoint endPoint = points.get(endPointIndex);
 
-        //System.err.println(" considering "+considerStartPoint+" to "+considerEndPoint);
-        if (isChoiceLegal) {
-          // Consider the previous plane/point
-          if (currentPath.lastPlane != null) {
-            if (currentPath.lastPlane.evaluateIsZero(considerEndPoint)) {
-              //System.err.println("  coplanar with last plane");
-              // no good
-              isChoiceLegal = false;
-            } else if (considerPlane.evaluateIsZero(currentPath.previous.lastPoint)) {
-              //System.err.println("  last point coplanar with this plane");
-              isChoiceLegal = false;
-            } else {
-              // To guarantee that no planes we build are coplanar with edge points, we need to verify everything back from
-              // considerEndPoint back to the start of the path.  We build the edge from considerEndPoint back to each
-              // of the SafePath points already determined.  Then, we need to look at all triangles that include that edge and
-              // the SafePath points in between.  If all of those triangles are legal, we can be assured that adding the current
-              // proposed point is safe to do.
-              // This is, of course, a lot of work -- specifically, it's O(n^2) for each point in the path, which leads to an O(n^3)
-              // evaluation time overall!!
-              // The only alternative is to understand the cases under which these triangles would be introduced, and tailor the
-              // cleaning to catch those cases only.  Still need to figure that out.  The case that blows up is when *all* the points
-              // for a triangle are coplanar, so theoretically we don't even need to generate the triangle at all(!)
-              // 
-              // Build a plane that represents the third edge in this triangle, to guarantee that we can compose
-              // the polygon from triangles
-              final Plane thirdPlane = new Plane(currentPath.previous.lastPoint, considerEndPoint);
-              if (thirdPlane.evaluateIsZero(considerStartPoint)) {
-                isChoiceLegal = false;
-              }
-            }
-          }
-        }
-        
-        if (isChoiceLegal && considerPointIndex == startPointIndex) {
-          // Verify that the first plane (already recorded) works together with the last plane
-          final SafePath firstPlaneEndpoint = currentPath.findFirstEndpoint();
-          if (firstPlaneEndpoint == null) {
-            //System.err.println("  path not long enough");
-            isChoiceLegal = false;
-          } else {
-            if (firstPlaneEndpoint.lastPlane.evaluateIsZero(considerStartPoint)) {
-              //System.err.println("  last point is coplanar with start plane");
-              isChoiceLegal = false;
-            } else if (considerPlane.evaluateIsZero(firstPlaneEndpoint.lastPoint)) {
-              //System.err.println("  first point is coplanar with last plane");
-              isChoiceLegal = false;
-            } else {
-              // Build a plane that represents the third edge in this triangle, to guarantee that we can compose
-              // the polygon from triangles
-              final Plane thirdPlane = new Plane(considerStartPoint, firstPlaneEndpoint.lastPoint);
-              if (thirdPlane.evaluateIsZero(considerEndPoint)) {
-                isChoiceLegal = false;
-              }
-            }
-          }
-        }
-        
-        if (isChoiceLegal) {
-          // All points between the start and end, if any, must be on the plane.
-          int checkIndex = getLegalIndex(currentPath.lastPointIndex + 1, points.size());
-          while (checkIndex != considerPointIndex) {
-            if (Math.abs(considerPlane.evaluate(points.get(checkIndex))) >= Vector.MINIMUM_RESOLUTION + leniencyValue) {
-              // This possibility is no good.  But does it say anything about other possibilities?  I think
-              // it may mean we don't have to consider any further extensions.  I can't prove this, but
-              // it makes this algorithm complete in not an insane period of time at least...
-              //System.err.println("  interior point not coplanar with trial plane");
-              //isChoiceLegal = false;
-              //break;
-              return null;
-            }
-            checkIndex = getLegalIndex(checkIndex + 1, points.size());
-          }
-        }
-        
-        if (isChoiceLegal) {
-          // Extend the path and call ourselves recursively.
-          if (considerPointIndex == startPointIndex) {
-            // Current path has been validated; return it
-            return currentPath;
-          }
-          //System.err.println(" adding to path: "+considerEndPoint+"; "+considerPlane);
-          final SafePath newPath = new SafePath(currentPath, considerEndPoint, considerPointIndex, considerPlane);
-          final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex, leniencyValue);
-          if (result != null) {
-            return result;
-          }
-        }
-
+      if (startPoint.isNumericallyIdentical(endPoint)) {
+        //go to next if identical
+        continue;
       }
-      
-      if (considerPointIndex == startPointIndex) {
+      //Check if nextPoints are co-planar, if so advance to next point.
+      //if we go over the start index then we have no succeed.
+      while (true) {
+        int nextPointIndex = getLegalIndex(endPointIndex + 1, points.size());
+        final GeoPoint nextPoint = points.get(nextPointIndex);
+        if (startPoint.isNumericallyIdentical(nextPoint)) {
+          //all coplanar
+          return null;
+        }
+        if (!Plane.arePointsCoplanar(startPoint, endPoint, nextPoint)) {
+          //no coplanar.
+          break;
+        }
+        if (endPointIndex == startIndex) {
+          //we are over the path, we fail.
+          return null;
+        }
+        //advance
+        endPointIndex = nextPointIndex;
+        endPoint = nextPoint;
+        i++;
+      }
+
+      if (safePath != null && endPointIndex == startIndex) {
+        //We are already at the start, current point is coplanar with
+        //start point, no need to add this node.
         break;
       }
-      considerPointIndex = nextPointIndex;
+      //Create node and move to next one
+      Plane currentPlane = new Plane(startPoint, endPoint);
+      safePath = new SafePath(safePath, endPoint, endPointIndex, currentPlane);
     }
-    return null;
+    return safePath;
   }
-    
+
   /** Pick a random pole that has a good chance of being inside the polygon described by the points.
    * @param generator is the random number generator to use.
    * @param planetModel is the planet model to use.
@@ -1129,12 +1077,19 @@ public class GeoPolygonFactory {
         break;
       }
       final Edge newLastEdge = edgeBuffer.getNext(lastEdge);
+      if (Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newLastEdge.endPoint)) {
+        break;
+      }
       if (isWithin(newLastEdge.endPoint, includedEdges)) {
         //System.out.println(" maybe can extend to next edge");
         // Found a candidate for extension.  But do some other checks first.  Basically, we need to know if we construct a polygon
         // here will overlap with other remaining points?
         final SidedPlane returnBoundary;
         if (firstEdge.startPoint != newLastEdge.endPoint) {
+          if (Plane.arePointsCoplanar(firstEdge.endPoint, firstEdge.startPoint, newLastEdge.endPoint) ||
+            Plane.arePointsCoplanar(firstEdge.startPoint, newLastEdge.endPoint, newLastEdge.startPoint)) {
+            break;
+          }
           returnBoundary = new SidedPlane(firstEdge.endPoint, firstEdge.startPoint, newLastEdge.endPoint);
         } else {
           returnBoundary = null;
@@ -1185,12 +1140,19 @@ public class GeoPolygonFactory {
         break;
       }
       final Edge newFirstEdge = edgeBuffer.getPrevious(firstEdge);
+      if (Plane.arePointsCoplanar(newFirstEdge.startPoint, newFirstEdge.endPoint, firstEdge.endPoint)) {
+        break;
+      }
       if (isWithin(newFirstEdge.startPoint, includedEdges)) {
         //System.out.println(" maybe can extend to previous edge");
         // Found a candidate for extension.  But do some other checks first.  Basically, we need to know if we construct a polygon
         // here will overlap with other remaining points?
         final SidedPlane returnBoundary;
         if (newFirstEdge.startPoint != lastEdge.endPoint) {
+          if(Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newFirstEdge.startPoint) ||
+            Plane.arePointsCoplanar(lastEdge.endPoint, newFirstEdge.startPoint, newFirstEdge.endPoint)) {
+            break;
+          }
           returnBoundary = new SidedPlane(lastEdge.startPoint, lastEdge.endPoint, newFirstEdge.startPoint);
         } else {
           returnBoundary = null;
@@ -1275,27 +1237,6 @@ public class GeoPolygonFactory {
         edge = edgeBuffer.getNext(edge);
       }
       returnIsInternal = lastEdge.isInternal;
-      
-      // Look for coplanarity; abort if so
-      for (int i = 0; i < points.size(); i++) {
-        final GeoPoint start = points.get(i);
-        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
-        // We have to find the next point that is not on the plane between start and end.
-        // If there is no such point, it's an error.
-        final Plane planeToFind = new Plane(start, end);
-        int endPointIndex = -1;
-        for (int j = 0; j < points.size(); j++) {
-          final int index = getLegalIndex(j + i + 2, points.size());
-          if (!planeToFind.evaluateIsZero(points.get(index))) {
-            endPointIndex = index;
-            break;
-          }
-        }
-        if (endPointIndex == -1) {
-          return false;
-        }
-      }
-
       edgeBuffer.clear();
     } else {
       // Build the return edge (internal, of course)
@@ -1320,27 +1261,6 @@ public class GeoPolygonFactory {
         }
         edge = edgeBuffer.getNext(edge);
       }
-      
-      // Look for coplanarity; abort if so
-      for (int i = 0; i < points.size(); i++) {
-        final GeoPoint start = points.get(i);
-        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
-        // We have to find the next point that is not on the plane between start and end.
-        // If there is no such point, it's an error.
-        final Plane planeToFind = new Plane(start, end);
-        int endPointIndex = -1;
-        for (int j = 0; j < points.size(); j++) {
-          final int index = getLegalIndex(j + i + 2, points.size());
-          if (!planeToFind.evaluateIsZero(points.get(index))) {
-            endPointIndex = index;
-            break;
-          }
-        }
-        if (endPointIndex == -1) {
-          return false;
-        }
-      }
-
       // Modify the edge buffer
       edgeBuffer.replace(edges, returnEdge);
     }
@@ -1701,25 +1621,19 @@ public class GeoPolygonFactory {
       this.lastPlane = lastPlane;
       this.previous = previous;
     }
-    
-    /** Find the first endpoint */
-    public SafePath findFirstEndpoint() {
-      if (previous == null) {
-        return null;
-      }
-      if (previous.previous == null) {
-        return this;
-      }
-      return previous.findFirstEndpoint();
-    }
-    
+
     /** Fill in a list, in order, of safe points.
      */
     public void fillInList(final List<GeoPoint> pointList) {
-      if (previous != null) {
-        previous.fillInList(pointList);
+      //we don't use recursion because it can be problematic
+      //for polygons with many points.
+      SafePath safePath = this;
+      while (safePath.previous != null) {
+        pointList.add(safePath.lastPoint);
+        safePath = safePath.previous;
       }
-      pointList.add(lastPoint);
+      pointList.add(safePath.lastPoint);
+      Collections.reverse(pointList);
     }
   }
   

@@ -39,6 +39,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -109,8 +110,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores, float boost) throws IOException{
-      return q.createWeight(indexSearcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher indexSearcher, ScoreMode scoreMode, float boost) throws IOException{
+      return q.createWeight(indexSearcher, scoreMode, boost);
     }
 
     @Override
@@ -457,6 +458,11 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
 
       @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return score;
+      }
+
+      @Override
       public DocIdSetIterator iterator() {
         throw new UnsupportedOperationException();
       }
@@ -687,12 +693,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
         public void setScorer(Scorer scorer) throws IOException {}
         
         public void collect(int doc) throws IOException {
-          int valuesDocID = values.docID();
-          if (valuesDocID < doc) {
-            valuesDocID = values.advance(doc);
-          }
           long value;
-          if (valuesDocID == doc) {
+          if (values.advanceExact(doc)) {
             value = values.longValue();
           } else {
             value = 0;
@@ -733,8 +735,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 
@@ -795,8 +797,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 

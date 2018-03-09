@@ -17,6 +17,7 @@
 package org.apache.lucene.search.similarities;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.Explanation;
@@ -111,12 +112,12 @@ public class DFRSimilarity extends SimilarityBase {
     double aeTimes1pTfn = afterEffect.scoreTimes1pTfn(stats);
     return stats.getBoost() * basicModel.score(stats, tfn, aeTimes1pTfn);
   }
-  
+
   @Override
   protected void explain(List<Explanation> subs,
-      BasicStats stats, int doc, double freq, double docLen) {
+      BasicStats stats, double freq, double docLen) {
     if (stats.getBoost() != 1.0d) {
-      subs.add(Explanation.match( (float)stats.getBoost(), "boost"));
+      subs.add(Explanation.match( (float)stats.getBoost(), "boost, query boost"));
     }
     
     Explanation normExpl = normalization.explain(stats, freq, docLen);
@@ -125,6 +126,20 @@ public class DFRSimilarity extends SimilarityBase {
     subs.add(normExpl);
     subs.add(basicModel.explain(stats, tfn, aeTimes1pTfn));
     subs.add(afterEffect.explain(stats, tfn));
+  }
+
+  @Override
+  protected Explanation explain(
+      BasicStats stats, Explanation freq, double docLen) {
+    List<Explanation> subs = new ArrayList<>();
+    explain(subs, stats, freq.getValue().doubleValue(), docLen);
+
+    return Explanation.match(
+        (float) score(stats, freq.getValue().doubleValue(), docLen),
+        "score(" + getClass().getSimpleName() + ", freq=" +
+            freq.getValue() +"), computed as boost * " +
+            "basicModel.score(stats, tfn) * afterEffect.score(stats, tfn) from:",
+        subs);
   }
 
   @Override

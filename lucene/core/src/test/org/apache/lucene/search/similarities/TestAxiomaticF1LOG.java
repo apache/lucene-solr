@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.search.similarities;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
-// returns NaN scores for sloppy freqs < 1 (due to log without floor)
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8010")
 public class TestAxiomaticF1LOG extends AxiomaticTestCase {
 
   @Override

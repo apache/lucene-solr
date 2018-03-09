@@ -223,8 +223,6 @@ Reads the field text and generates edge n-gram tokens of sizes in the given rang
 
 `maxGramSize`: (integer, default is 1) The maximum n-gram size, must be >= `minGramSize`.
 
-`side`: ("front" or "back", default is "front") Whether to compute the n-grams from the beginning (front) of the text or from the end (back).
-
 *Example:*
 
 Default behavior (min and max default to 1):
@@ -254,21 +252,6 @@ Edge n-gram range of 2 to 5
 *In:* "babaloo"
 
 **Out:**"ba", "bab", "baba", "babal"
-
-*Example:*
-
-Edge n-gram range of 2 to 5, from the back side:
-
-[source,xml]
-----
-<analyzer>
-  <tokenizer class="solr.EdgeNGramTokenizerFactory" minGramSize="2" maxGramSize="5" side="back"/>
-</analyzer>
-----
-
-*In:* "babaloo"
-
-*Out:* "oo", "loo", "aloo", "baloo"
 
 == ICU Tokenizer
 
@@ -502,3 +485,7 @@ Specifies how to define whitespace for the purpose of tokenization. Valid values
 *In:* "To be, or what?"
 
 *Out:* "To", "be,", "or", "what?"
+
+== OpenNLP Tokenizer and OpenNLP Filters
+
+See <<language-analysis.adoc#opennlp-integration,OpenNLP Integration>> for information about using the OpenNLP Tokenizer, along with information about available OpenNLP token filters.

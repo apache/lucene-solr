@@ -18,16 +18,13 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -41,9 +38,9 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public abstract class FieldOffsetStrategy {
 
   protected final String field;
-  protected final PhraseHelper phraseHelper; // Query: position-sensitive information TODO: rename
-  protected final BytesRef[] terms; // Query: free-standing terms
-  protected final CharacterRunAutomaton[] automata; // Query: free-standing wildcards (multi-term query)
+  protected final PhraseHelper phraseHelper; // Query: position-sensitive information
+  protected final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
+  protected final CharacterRunAutomaton[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
 
   public FieldOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     this.field = field;
@@ -60,57 +57,61 @@ public abstract class FieldOffsetStrategy {
 
   /**
    * The primary method -- return offsets for highlightable words in the specified document.
-   * IMPORTANT: remember to close them all.
+   *
+   * Callers are expected to close the returned OffsetsEnum when it has been finished with
    */
-  public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
+  public abstract OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException;
 
-  protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+  protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
     final Terms termsIndex = leafReader.terms(field);
     if (termsIndex == null) {
-      return Collections.emptyList();
+      return OffsetsEnum.EMPTY;
     }
 
-    // For strict positions, get a Map of term to Spans:
-    //    note: ScriptPhraseHelper.NONE does the right thing for these method calls
-    final Map<BytesRef, Spans> strictPhrasesTermToSpans =
-        phraseHelper.getTermToSpans(leafReader, doc);
-    // Usually simply wraps terms in a List; but if willRewrite() then can be expanded
-    final List<BytesRef> sourceTerms =
-        phraseHelper.expandTermsIfRewrite(terms, strictPhrasesTermToSpans);
+    final List<OffsetsEnum> offsetsEnums = new ArrayList<>(terms.length + automata.length);
 
-    final List<OffsetsEnum> offsetsEnums = new ArrayList<>(sourceTerms.size() + automata.length);
+    // Handle position insensitive terms (a subset of this.terms field):
+    final BytesRef[] insensitiveTerms;
+    if (phraseHelper.hasPositionSensitivity()) {
+      insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
+      assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
+    } else {
+      insensitiveTerms = terms;
+    }
+    if (insensitiveTerms.length > 0) {
+      createOffsetsEnumsForTerms(insensitiveTerms, termsIndex, doc, offsetsEnums);
+    }
 
-    // Handle sourceTerms:
-    if (!sourceTerms.isEmpty()) {
-      TermsEnum termsEnum = termsIndex.iterator();//does not return null
-      for (BytesRef term : sourceTerms) {
-        if (termsEnum.seekExact(term)) {
-          PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
-
-          if (postingsEnum == null) {
-            // no offsets or positions available
-            throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
-          }
-
-          if (doc == postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
-            postingsEnum = phraseHelper.filterPostings(term, postingsEnum, strictPhrasesTermToSpans.get(term));
-            if (postingsEnum != null) {
-              offsetsEnums.add(new OffsetsEnum(term, postingsEnum));
-            }
-          }
-        }
-      }
+    // Handle spans
+    if (phraseHelper.hasPositionSensitivity()) {
+      phraseHelper.createOffsetsEnumsForSpans(leafReader, doc, offsetsEnums);
     }
 
     // Handle automata
     if (automata.length > 0) {
-      offsetsEnums.addAll(createAutomataOffsetsFromTerms(termsIndex, doc));
+      createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
     }
 
-    return offsetsEnums;
+    return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
   }
 
-  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
+  protected void createOffsetsEnumsForTerms(BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
+    TermsEnum termsEnum = termsIndex.iterator();//does not return null
+    for (BytesRef term : sourceTerms) {
+      if (termsEnum.seekExact(term)) {
+        PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
+        if (postingsEnum == null) {
+          // no offsets or positions available
+          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
+        }
+        if (doc == postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
+          results.add(new OffsetsEnum.OfPostings(term, postingsEnum));
+        }
+      }
+    }
+  }
+
+  protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());
@@ -118,6 +119,7 @@ public abstract class FieldOffsetStrategy {
 
     TermsEnum termsEnum = termsIndex.iterator();
     BytesRef term;
+
     CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {
       for (int i = 0; i < automata.length; i++) {
@@ -132,22 +134,23 @@ public abstract class FieldOffsetStrategy {
       }
     }
 
-    List<OffsetsEnum> offsetsEnums = new ArrayList<>(automata.length); //will be at most this long
     for (int i = 0; i < automata.length; i++) {
       CharacterRunAutomaton automaton = automata[i];
       List<PostingsEnum> postingsEnums = automataPostings.get(i);
-      int size = postingsEnums.size();
-      if (size > 0) { //only add if we have offsets
-        BytesRef wildcardTerm = new BytesRef(automaton.toString());
-        if (size == 1) { //don't wrap in a composite if there's only one OffsetsEnum
-          offsetsEnums.add(new OffsetsEnum(wildcardTerm, postingsEnums.get(0)));
-        } else {
-          offsetsEnums.add(new OffsetsEnum(wildcardTerm, new CompositeOffsetsPostingsEnum(postingsEnums)));
-        }
+      if (postingsEnums.isEmpty()) {
+        continue;
+      }
+      // Build one OffsetsEnum exposing the automata.toString as the term, and the sum of freq
+      BytesRef wildcardTerm = new BytesRef(automaton.toString());
+      int sumFreq = 0;
+      for (PostingsEnum postingsEnum : postingsEnums) {
+        sumFreq += postingsEnum.freq();
+      }
+      for (PostingsEnum postingsEnum : postingsEnums) {
+        results.add(new OffsetsEnum.OfPostings(wildcardTerm, sumFreq, postingsEnum));
       }
     }
 
-    return offsetsEnums;
   }
 
 }

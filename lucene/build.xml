@@ -353,8 +353,6 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${src.export.dir}/tools/javadoc/java8"/>
-    <!-- Exclude clover license files incompatible with the ASL -->
-    <delete dir="${src.export.dir}/tools/clover"/>
 
     <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: -->
     <property name="local.src.export.dir" location="${src.export.dir}/lucene"/>
@@ -557,7 +555,7 @@
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
-  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+  <target name="jar-core" depends="resolve-groovy,check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
     <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>

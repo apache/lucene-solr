@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -40,7 +39,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -75,32 +74,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class IndexSearcher {
 
-  /** A search-time {@link Similarity} that does not make use of scoring factors
-   *  and may be used when scores are not needed. */
-  private static final Similarity NON_SCORING_SIMILARITY = new Similarity() {
-
-    @Override
-    public long computeNorm(FieldInvertState state) {
-      throw new UnsupportedOperationException("This Similarity may only be used for searching, not indexing");
-    }
-
-    @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimWeight() {};
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
-        @Override
-        public float score(int doc, float freq) {
-          return 0f;
-        }
-      };
-    }
-
-  };
-
   private static QueryCache DEFAULT_QUERY_CACHE;
   private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
   static {
@@ -132,7 +105,7 @@ public class IndexSearcher {
    * Expert: returns a default Similarity instance.
    * In general, this method is only called to initialize searchers and writers.
    * User code and query implementations should respect
-   * {@link IndexSearcher#getSimilarity(boolean)}.
+   * {@link IndexSearcher#getSimilarity()}.
    * @lucene.internal
    */
   public static Similarity getDefaultSimilarity() {
@@ -325,15 +298,11 @@ public class IndexSearcher {
     this.similarity = similarity;
   }
 
-  /** Expert: Get the {@link Similarity} to use to compute scores. When
-   *  {@code needsScores} is {@code false}, this method will return a simple
-   *  {@link Similarity} that does not leverage scoring factors such as norms.
-   *  When {@code needsScores} is {@code true}, this returns the
+  /** Expert: Get the {@link Similarity} to use to compute scores. This returns the
    *  {@link Similarity} that has been set through {@link #setSimilarity(Similarity)}
-   *  or the {@link #getDefaultSimilarity()} default {@link Similarity} if none
-   *  has been set explicitly. */
-  public Similarity getSimilarity(boolean needsScores) {
-    return needsScores ? similarity : NON_SCORING_SIMILARITY;
+   *  or the default {@link Similarity} if none has been set explicitly. */
+  public Similarity getSimilarity() {
+    return similarity;
   }
 
   /**
@@ -407,7 +376,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after);
+        return TopScoreDocCollector.create(cappedNumHits, after, true);
       }
 
       @Override
@@ -445,7 +414,7 @@ public class IndexSearcher {
    */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createNormalizedWeight(query, results.needsScores()), results);
+    search(leafContexts, createNormalizedWeight(query, results.scoreMode()), results);
   }
 
   /** Search implementation with arbitrary sorting, plus
@@ -570,14 +539,22 @@ public class IndexSearcher {
       return collectorManager.reduce(Collections.singletonList(collector));
     } else {
       final List<C> collectors = new ArrayList<>(leafSlices.length);
-      boolean needsScores = false;
+      ScoreMode scoreMode = null;
       for (int i = 0; i < leafSlices.length; ++i) {
         final C collector = collectorManager.newCollector();
         collectors.add(collector);
-        needsScores |= collector.needsScores();
+        if (scoreMode == null) {
+          scoreMode = collector.scoreMode();
+        } else if (scoreMode != collector.scoreMode()) {
+          throw new IllegalStateException("CollectorManager does not always produce collectors with the same score mode");
+        }
+      }
+      if (scoreMode == null) {
+        // no segments
+        scoreMode = ScoreMode.COMPLETE;
       }
 
-      final Weight weight = createNormalizedWeight(query, needsScores);
+      final Weight weight = createNormalizedWeight(query, scoreMode);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -674,7 +651,7 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createNormalizedWeight(query, true), doc);
+    return explain(createNormalizedWeight(query, ScoreMode.COMPLETE), doc);
   }
 
   /** Expert: low-level implementation method
@@ -707,9 +684,9 @@ public class IndexSearcher {
    * can then directly be used to get a {@link Scorer}.
    * @lucene.internal
    */
-  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+  public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
     query = rewrite(query);
-    return createWeight(query, needsScores, 1f);
+    return createWeight(query, scoreMode, 1f);
   }
 
   /**
@@ -717,10 +694,10 @@ public class IndexSearcher {
    * if possible and configured.
    * @lucene.experimental
    */
-  public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
-    Weight weight = query.createWeight(this, needsScores, boost);
-    if (needsScores == false && queryCache != null) {
+    Weight weight = query.createWeight(this, scoreMode, boost);
+    if (scoreMode.needsScores() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;
@@ -762,7 +739,7 @@ public class IndexSearcher {
    * across a distributed collection.
    * @lucene.experimental
    */
-  public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
     if (context.docFreq() == 0) {
       return null;
     } else {

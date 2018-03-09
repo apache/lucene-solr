@@ -214,7 +214,7 @@ limitations under the License.
 
 #content #cloud #file-content #data em
 {
-  color: #c0c0c0;
+  color: #4d4d4d;
 }
 
 #content #cloud #file-content #prop
@@ -331,13 +331,13 @@ limitations under the License.
 {
   color: #C43C35;
   stroke: #C43C35;
-  font-style: italic; 
+  font-style: italic;
 }
 
 #content #graph-content .node.recovery_failed text
 {
   fill: #C43C35;
-  font-style: italic; 
+  font-style: italic;
 }
 
 #content #cloud #legend .down,
@@ -359,13 +359,13 @@ limitations under the License.
 {
   color: #d5dd00;
   stroke: #d5dd00;
-  font-style: italic; 
+  font-style: italic;
 }
 
 #content #graph-content .node.recovering text
 {
   fill: #d5dd00;
-  font-style: italic; 
+  font-style: italic;
 }
 
 #content #cloud #legend .active,

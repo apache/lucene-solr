@@ -48,6 +48,9 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
@@ -163,6 +166,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }", null,
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}"
     );
+    
+    compareOutput(apiBag, "/collections/coll1", POST,
+        "{set-collection-property : {name: 'foo', value:'bar'} }", null,
+        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}"
+    );
 
   }
 
@@ -252,7 +260,16 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
                       CoreContainer cores,
                       CollectionParams.CollectionAction action,
                       CollectionOperation operation) throws Exception {
-      Map<String, Object> result = operation.execute(req, rsp, this);
+      Map<String, Object> result = null;
+      if (action == CollectionParams.CollectionAction.COLLECTIONPROP) {
+        //Fake this action, since we don't want to write to ZooKeeper in this test
+        result = new HashMap<>();
+        result.put(NAME, req.getParams().required().get(NAME));
+        result.put(PROPERTY_NAME, req.getParams().required().get(PROPERTY_NAME));
+        result.put(PROPERTY_VALUE, req.getParams().required().get(PROPERTY_VALUE));
+      } else {
+        result = operation.execute(req, rsp, this);
+      }
       if (result != null) {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         rsp.add(ZkNodeProps.class.getName(), new ZkNodeProps(result));

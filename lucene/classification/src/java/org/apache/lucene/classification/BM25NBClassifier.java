@@ -99,17 +99,11 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
     this.query = query;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     return assignClassNormalizedList(inputDocument).get(0);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(text);
@@ -117,9 +111,6 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(text);

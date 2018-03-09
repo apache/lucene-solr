@@ -16,7 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import javax.xml.parsers.ParserConfigurationException;
+import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,10 +37,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
+import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
@@ -64,7 +69,10 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher.Event;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.proto.WatcherEvent;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -74,11 +82,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
@@ -294,34 +297,34 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
 
-      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+        zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
 
-      final int numShards=6;
+        final int numShards = 6;
 
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
-          "name", COLLECTION,
-          ZkStateReader.REPLICATION_FACTOR, "1",
-          ZkStateReader.NUM_SHARDS_PROP, "3",
-          "createNodeSet", "");
-      ZkDistributedQueue q = Overseer.getStateUpdateQueue(zkClient);
-      q.offer(Utils.toJSON(m));
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+            "name", COLLECTION,
+            ZkStateReader.REPLICATION_FACTOR, "1",
+            ZkStateReader.NUM_SHARDS_PROP, "3",
+            "createNodeSet", "");
+        ZkDistributedQueue q = Overseer.getStateUpdateQueue(zkClient);
+        q.offer(Utils.toJSON(m));
 
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i+1), "node" + (i+1), "shard"+((i%3)+1), Replica.State.ACTIVE, 3));
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i + 1), "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+        final Map<String, Replica> rmap = reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap();
+        assertEquals(rmap.toString(), 2, rmap.size());
+        assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+        assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
       }
-      final Map<String,Replica> rmap = reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap();
-      assertEquals(rmap.toString(), 2, rmap.size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
-
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
-
     } finally {
       close(zkClient);
       if (zkController != null) {
@@ -352,47 +355,48 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
-      
-      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
 
-      final int numShards=3;
-      zkController.createCollection(COLLECTION, 3);
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i+1),
-            "node" + (i+1), "shard"+((i%3)+1) , Replica.State.ACTIVE, 3));
+        zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+
+        final int numShards = 3;
+        zkController.createCollection(COLLECTION, 3);
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i + 1),
+              "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
+
+        // publish a bad queue item
+        String emptyCollectionName = "";
+        zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", Replica.State.ACTIVE, 1);
+        zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", null, 1);
+
+        zkController.createCollection("collection2", 3);
+        // make sure the Overseer is still processing items
+        for (int i = 0; i < numShards; i++) {
+          assertNotNull("shard got no id?", zkController.publishState("collection2",
+              "core" + (i + 1), "node" + (i + 1), "shard" + ((i % 3) + 1), Replica.State.ACTIVE, 3));
+        }
+
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard1").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard2").getReplicasMap().size());
+        assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard3").getReplicasMap().size());
+
+        //make sure leaders are in cloud state
+        assertNotNull(reader.getLeaderUrl("collection2", "shard1", 15000));
+        assertNotNull(reader.getLeaderUrl("collection2", "shard2", 15000));
+        assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       }
-
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
-      
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl(COLLECTION, "shard3", 15000));
-      
-      // publish a bad queue item
-      String emptyCollectionName = "";
-      zkController.publishState(emptyCollectionName, "core0", "node0", "shard1",  Replica.State.ACTIVE, 1);
-      zkController.publishState(emptyCollectionName, "core0", "node0", "shard1", null, 1);
-
-      zkController.createCollection("collection2", 3);
-      // make sure the Overseer is still processing items
-      for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState("collection2",
-            "core" + (i + 1), "node" + (i + 1),"shard"+((i%3)+1), Replica.State.ACTIVE, 3));
-      }
-
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard3").getReplicasMap().size());
-      
-      //make sure leaders are in cloud state
-      assertNotNull(reader.getLeaderUrl("collection2", "shard1", 15000));
-      assertNotNull(reader.getLeaderUrl("collection2", "shard2", 15000));
-      assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       
     } finally {
       close(zkClient);
@@ -1474,6 +1478,45 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       server.shutdown();
     }
+  }
+  
+  @Test
+  public void testLatchWatcher() throws InterruptedException {
+    OverseerTaskQueue.LatchWatcher latch1 = new OverseerTaskQueue.LatchWatcher();
+    long before = System.nanoTime();
+    latch1.await(100);
+    long after = System.nanoTime();
+    assertTrue(TimeUnit.NANOSECONDS.toMillis(after-before) > 50);
+    assertTrue(TimeUnit.NANOSECONDS.toMillis(after-before) < 500);// Mostly to make sure the millis->nanos->millis is not broken
+    latch1.process(new WatchedEvent(new WatcherEvent(1, 1, "/foo/bar")));
+    before = System.nanoTime();
+    latch1.await(10000);// Expecting no wait
+    after = System.nanoTime();
+    assertTrue(TimeUnit.NANOSECONDS.toMillis(after-before) < 1000);
+    
+    final AtomicBoolean expectedEventProcessed = new AtomicBoolean(false);
+    final AtomicBoolean doneWaiting = new AtomicBoolean(false);
+    final OverseerTaskQueue.LatchWatcher latch2 = new OverseerTaskQueue.LatchWatcher(Event.EventType.NodeCreated);
+    Thread t = new Thread(()->{
+      //Process an event of a different type first, this shouldn't release the latch
+      latch2.process(new WatchedEvent(new WatcherEvent(Event.EventType.NodeDeleted.getIntValue(), 1, "/foo/bar")));
+      try {
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      assertFalse("Latch shouldn't have been released", doneWaiting.get());
+      // Now process the correct type of event
+      expectedEventProcessed.set(true);
+      latch2.process(new WatchedEvent(new WatcherEvent(Event.EventType.NodeCreated.getIntValue(), 1, "/foo/bar")));
+    });
+    t.start();
+    before = System.nanoTime();
+    latch2.await(10000); // It shouldn't wait this long, t should notify the lock
+    after = System.nanoTime();
+    doneWaiting.set(true);
+    assertTrue(expectedEventProcessed.get());
+    assertTrue(TimeUnit.NANOSECONDS.toMillis(after-before) < 1000);
   }
 
 }

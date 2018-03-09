@@ -19,34 +19,50 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This class is responsible for using the configured policy and preferences
  * with the hints provided by the trigger event to compute the required cluster operations.
- *
+ * <p>
  * The cluster operations computed here are put into the {@link ActionContext}'s properties
  * with the key name "operations". The value is a List of SolrRequest objects.
  */
 public class ComputePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  Set<String> collections = new HashSet<>();
+
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
+    String colString = args.get("collections");
+    if (colString != null && !colString.isEmpty()) {
+      collections.addAll(StrUtils.splitSmart(colString, ','));
+    }
+  }
 
   @Override
   public void process(TriggerEvent event, ActionContext context) throws Exception {
@@ -57,18 +73,62 @@ public class ComputePlanAction extends TriggerActionBase {
       if (autoScalingConf.isEmpty()) {
         throw new Exception("Action: " + getName() + " executed but no policy is configured");
       }
-
-      //    Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
-//    return new PolicyHelper.SessionWrapper(session, null);
       PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getSession(cloudManager);
       Policy.Session session = sessionWrapper.get();
-//      Policy policy = autoScalingConf.getPolicy();
+      ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+      if (log.isTraceEnabled()) {
+        log.trace("-- session: {}", session);
+        log.trace("-- state: {}", clusterState);
+      }
       try {
-        Suggester suggester = getSuggester(session, event, cloudManager);
-        while (true) {
+        Suggester intialSuggester = getSuggester(session, event, cloudManager);
+        Suggester suggester = intialSuggester;
+        int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
+        int requestedOperations = getRequestedNumOps(event);
+        if (requestedOperations > maxOperations) {
+          log.warn("Requested number of operations {} higher than maximum {}, adjusting...",
+              requestedOperations, maxOperations);
+        }
+        int opCount = 0;
+        int opLimit = maxOperations;
+        if (requestedOperations > 0) {
+          opLimit = requestedOperations;
+        }
+        do {
           SolrRequest operation = suggester.getSuggestion();
-          if (operation == null) break;
+          opCount++;
+          // prepare suggester for the next iteration
+          if (suggester.getSession() != null) {
+            session = suggester.getSession();
+          }
+          suggester = getSuggester(session, event, cloudManager);
+
+          // break on first null op
+          // unless a specific number of ops was requested
+          // uncomment the following to log too many operations
+          /*if (opCount > 10) {
+            PolicyHelper.logState(cloudManager, intialSuggester);
+          }*/
+
+          if (operation == null) {
+            if (requestedOperations < 0) {
+              //uncomment the following to log zero operations
+//              PolicyHelper.logState(cloudManager, intialSuggester);
+              break;
+            } else {
+              log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
+              continue;
+            }
+          }
           log.info("Computed Plan: {}", operation.getParams());
+          if (!collections.isEmpty()) {
+            String coll = operation.getParams().get(CoreAdminParams.COLLECTION);
+            if (coll != null && !collections.contains(coll)) {
+              // discard an op that doesn't affect our collections
+              log.debug("-- discarding due to collection={} not in {}", coll, collections);
+              continue;
+            }
+          }
           Map<String, Object> props = context.getProperties();
           props.compute("operations", (k, v) -> {
             List<SolrRequest> operations = (List<SolrRequest>) v;
@@ -76,15 +136,14 @@ public class ComputePlanAction extends TriggerActionBase {
             operations.add(operation);
             return operations;
           });
-          session = suggester.getSession();
-          suggester = getSuggester(session, event, cloudManager);
-        }
+        } while (opCount < opLimit);
       } finally {
         releasePolicySession(sessionWrapper, session);
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected exception while processing event: " + event, e);    }
+          "Unexpected exception while processing event: " + event, e);
+    }
   }
 
   private void releasePolicySession(PolicyHelper.SessionWrapper sessionWrapper, Policy.Session session) {
@@ -93,50 +152,69 @@ public class ComputePlanAction extends TriggerActionBase {
 
   }
 
+  protected int getMaxNumOps(TriggerEvent event, AutoScalingConfig autoScalingConfig, ClusterState clusterState) {
+    // estimate a maximum default limit that should be sufficient for most purposes:
+    // number of nodes * total number of replicas * 3
+    AtomicInteger totalRF = new AtomicInteger();
+    clusterState.forEachCollection(coll -> totalRF.addAndGet(coll.getReplicationFactor() * coll.getSlices().size()));
+    int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
+    int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
+    Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
+    try {
+      return Integer.parseInt(String.valueOf(o));
+    } catch (Exception e) {
+      log.warn("Invalid '" + AutoScalingParams.MAX_COMPUTE_OPERATIONS + "' event property: " + o + ", using default " + maxOp);
+      return maxOp;
+    }
+  }
+
+  protected int getRequestedNumOps(TriggerEvent event) {
+    Collection<TriggerEvent.Op> ops = (Collection<TriggerEvent.Op>) event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
+    if (ops.isEmpty()) {
+      return -1;
+    } else {
+      return ops.size();
+    }
+  }
+
+  private static final String START = "__start__";
+
   protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
     Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODEADDED Created suggester with targetNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case NODELOST:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
-        log.debug("NODELOST Created suggester with srcNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
         break;
       case SEARCHRATE:
-        Map<String, Map<String, Double>> hotShards = (Map<String, Map<String, Double>>)event.getProperty(AutoScalingParams.SHARD);
-        Map<String, Double> hotCollections = (Map<String, Double>)event.getProperty(AutoScalingParams.COLLECTION);
-        List<ReplicaInfo> hotReplicas = (List<ReplicaInfo>)event.getProperty(AutoScalingParams.REPLICA);
-        Map<String, Double> hotNodes = (Map<String, Double>)event.getProperty(AutoScalingParams.NODE);
-
-        if (hotShards.isEmpty() && hotCollections.isEmpty() && hotReplicas.isEmpty()) {
-          // node -> MOVEREPLICA
-          if (hotNodes.isEmpty()) {
-            log.warn("Neither hot replicas / collection nor nodes are reported in event: " + event);
-            return NoneSuggester.INSTANCE;
-          }
-          suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA);
-          for (String node : hotNodes.keySet()) {
-            suggester = suggester.hint(Suggester.Hint.SRC_NODE, node);
-          }
+      case METRIC:
+        List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>)event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
+        int start = (Integer)event.getProperty(START, 0);
+        if (ops.isEmpty() || start >= ops.size()) {
+          return NoneSuggester.get(session);
+        }
+        TriggerEvent.Op op = ops.get(start);
+        suggester = session.getSuggester(op.getAction());
+        for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
+          suggester = suggester.hint(e.getKey(), e.getValue());
+        }
+        if (++start >= ops.size()) {
+          event.getProperties().remove(START);
         } else {
-          // collection || shard || replica -> ADDREPLICA
-          suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
-          Set<String> collections = new HashSet<>();
-          // XXX improve this when AddReplicaSuggester supports coll_shard hint
-          hotReplicas.forEach(r -> collections.add(r.getCollection()));
-          hotShards.forEach((coll, shards) -> collections.add(coll));
-          hotCollections.forEach((coll, rate) -> collections.add(coll));
-          for (String coll : collections) {
-            suggester = suggester.hint(Suggester.Hint.COLL, coll);
-          }
+          event.getProperties().put(START, start);
         }
         break;
+      case SCHEDULED:
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        suggester = session.getSuggester(action);
+        break;
       default:
-        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost and searchRate, received: " + event.getEventType());
+        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate and metric. Received: " + event.getEventType());
     }
     return suggester;
   }

@@ -25,12 +25,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -101,9 +101,9 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, needsScores, boost);
-    if (!needsScores)
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, scoreMode, boost);
+    if (!scoreMode.needsScores())
       return innerWeight;
     return new PayloadSpanWeight(searcher, innerWeight, boost);
   }
@@ -135,8 +135,8 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      innerWeight.extractTermContexts(contexts);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      innerWeight.extractTermStates(contexts);
     }
 
     @Override
@@ -149,7 +149,7 @@ public class PayloadScoreQuery extends SpanQuery {
       Spans spans = getSpans(context, Postings.PAYLOADS);
       if (spans == null)
         return null;
-      SimScorer docScorer = innerWeight.getSimScorer(context);
+      LeafSimScorer docScorer = innerWeight.getSimScorer(context);
       PayloadSpans payloadSpans = new PayloadSpans(spans, decoder);
       return new PayloadSpanScorer(this, payloadSpans, docScorer);
     }
@@ -227,7 +227,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
     private final PayloadSpans spans;
 
-    private PayloadSpanScorer(SpanWeight weight, PayloadSpans spans, Similarity.SimScorer docScorer) throws IOException {
+    private PayloadSpanScorer(SpanWeight weight, PayloadSpans spans, LeafSimScorer docScorer) throws IOException {
       super(weight, spans, docScorer);
       this.spans = spans;
     }
@@ -243,9 +243,9 @@ public class PayloadScoreQuery extends SpanQuery {
 
     protected Explanation getPayloadExplanation() {
       Explanation expl = function.explain(docID(), getField(), spans.payloadsSeen, spans.payloadScore);
-      if (expl.getValue() < 0) {
+      if (expl.getValue().floatValue() < 0) {
         expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
-      } else if (Float.isNaN(expl.getValue())) {
+      } else if (Float.isNaN(expl.getValue().floatValue())) {
         expl = Explanation.match(0, "payload score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
       }
       return expl;

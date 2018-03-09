@@ -516,8 +516,8 @@ public class TestJoinUtil extends LuceneTestCase {
         private final Query fieldQuery = new DocValuesFieldExistsQuery(field);
 
         @Override
-        public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-          Weight fieldWeight = fieldQuery.createWeight(searcher, false, boost);
+        public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+          Weight fieldWeight = fieldQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
           return new Weight(this) {
 
             @Override
@@ -541,6 +541,10 @@ public class TestJoinUtil extends LuceneTestCase {
                 public float score() throws IOException {
                   assertEquals(in.docID(), price.advance(in.docID()));
                   return (float) price.longValue();
+                }
+                @Override
+                public float getMaxScore(int upTo) throws IOException {
+                  return Float.POSITIVE_INFINITY;
                 }
               };
             }
@@ -802,8 +806,8 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         @Override
-        public boolean needsScores() {
-          return false;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       });
 
@@ -1289,7 +1293,7 @@ public class TestJoinUtil extends LuceneTestCase {
       assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
       assertEquals(expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score, 0.0f);
       Explanation explanation = indexSearcher.explain(joinQuery, expectedTopDocs.scoreDocs[i].doc);
-      assertEquals(expectedTopDocs.scoreDocs[i].score, explanation.getValue(), 0.0f);
+      assertEquals(expectedTopDocs.scoreDocs[i].score, explanation.getValue().doubleValue(), 0.0f);
     }
   }
 
@@ -1455,8 +1459,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE;
           }
         });
       } else {
@@ -1467,11 +1471,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > terms.docID()) {
-              terms.advance(doc);
-            }
             final BytesRef joinValue;
-            if (doc == terms.docID()) {
+            if (terms.advanceExact(doc)) {
               joinValue = terms.binaryValue();
             } else {
               // missing;
@@ -1499,8 +1500,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE;
           }
         });
       }
@@ -1536,11 +1537,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > terms.docID()) {
-              terms.advance(doc);
-            }
             final BytesRef joinValue;
-            if (doc == terms.docID()) {
+            if (terms.advanceExact(doc)) {
               joinValue = terms.binaryValue();
             } else {
               // missing;
@@ -1564,8 +1562,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public org.apache.lucene.search.ScoreMode scoreMode() {
+            return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
           }
         });
       }
@@ -1782,8 +1780,8 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     @Override
-    public boolean needsScores() {
-      return false;
+    public org.apache.lucene.search.ScoreMode scoreMode() {
+      return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
@@ -158,8 +159,7 @@ public abstract class TermsEnum implements BytesRefIterator {
   /** Get {@link PostingsEnum} for the current term, with
    *  control over whether freqs, positions, offsets or payloads
    *  are required.  Do not call this when the enum is
-   *  unpositioned.  This method may return null if the postings
-   *  information required is not available from the index
+   *  unpositioned.  This method will not return null.
    *  <p>
    *  <b>NOTE</b>: the returned iterator may return deleted documents, so
    *  deleted documents have to be checked on top of the {@link PostingsEnum}.
@@ -170,6 +170,12 @@ public abstract class TermsEnum implements BytesRefIterator {
    */
   public abstract PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException;
 
+  /**
+   * Return a {@link ImpactsEnum} that computes impacts with {@code scorer}.
+   * @see #postings(PostingsEnum, int)
+   */
+  public abstract ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException;
+  
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
    * without re-seeking the term dictionary.
@@ -228,7 +234,12 @@ public abstract class TermsEnum implements BytesRefIterator {
     public PostingsEnum postings(PostingsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
-      
+
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      throw new IllegalStateException("this method should never be called");
+    }
+
     @Override
     public BytesRef next() {
       return null;

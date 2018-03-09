@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.search;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
@@ -126,8 +129,8 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 
@@ -316,7 +319,7 @@ public class CheckHits {
                                        float score,
                                        boolean deep,
                                        Explanation expl) {
-    float value = expl.getValue();
+    float value = expl.getValue().floatValue();
     // TODO: clean this up if we use junit 5 (the assert message is costly)
     try {
       Assert.assertEquals(score, value, 0d);
@@ -382,7 +385,7 @@ public class CheckHits {
         float max = Float.NEGATIVE_INFINITY;
         double maxError = 0;
         for (int i=0; i<detail.length; i++) {
-          float dval = detail[i].getValue();
+          float dval = detail[i].getValue().floatValue();
           verifyExplanation(q,doc,dval,deep,detail[i]);
           product *= dval;
           sum += dval;
@@ -515,11 +518,155 @@ public class CheckHits {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 
+  public static void checkTopScores(Random random, Query query, IndexSearcher searcher) throws IOException {
+    // Check it computed the top hits correctly
+    doCheckTopScores(query, searcher, 1);
+    doCheckTopScores(query, searcher, 10);
+
+    // Now check that the exposed max scores and block boundaries are valid
+    doCheckMaxScores(random, query, searcher);
+  }
+
+  private static void doCheckTopScores(Query query, IndexSearcher searcher, int numHits) throws IOException {
+    TopScoreDocCollector collector1 = TopScoreDocCollector.create(numHits, null, true); // COMPLETE
+    TopScoreDocCollector collector2 = TopScoreDocCollector.create(numHits, null, false); // TOP_SCORES
+    searcher.search(query, collector1);
+    searcher.search(query, collector2);
+    checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
+  }
+
+  private static void doCheckMaxScores(Random random, Query query, IndexSearcher searcher) throws IOException {
+    Weight w1 = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    Weight w2 = searcher.createNormalizedWeight(query, ScoreMode.TOP_SCORES);
+
+    // Check boundaries and max scores when iterating all matches
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+      Scorer s1 = w1.scorer(ctx);
+      Scorer s2 = w2.scorer(ctx);
+      if (s1 == null) {
+        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        continue;
+      }
+      TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
+      TwoPhaseIterator twoPhase2 = s2.twoPhaseIterator();
+      DocIdSetIterator approx1 = twoPhase1 == null ? s1.iterator() : twoPhase1.approximation;
+      DocIdSetIterator approx2 = twoPhase2 == null ? s2.iterator() : twoPhase2.approximation;
+      int upTo = -1;
+      float maxScore = 0;
+      float minScore = 0;
+      for (int doc2 = approx2.nextDoc(); ; doc2 = approx2.nextDoc()) {
+        int doc1;
+        for (doc1 = approx1.nextDoc(); doc1 < doc2; doc1 = approx1.nextDoc()) {
+          if (twoPhase1 == null || twoPhase1.matches()) {
+            Assert.assertTrue(s1.score() < minScore);
+          }
+        }
+        Assert.assertEquals(doc1, doc2);
+        if (doc2 == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+
+        if (doc2 > upTo) {
+          upTo = s2.advanceShallow(doc2);
+          Assert.assertTrue(upTo >= doc2);
+          maxScore = s2.getMaxScore(upTo);
+        }
+
+        if (twoPhase2 == null || twoPhase2.matches()) {
+          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          float score = s2.score();
+          Assert.assertEquals(s1.score(), score);
+          Assert.assertTrue(score <= maxScore);
+
+          if (score >= minScore && random.nextInt(10) == 0) {
+            // On some scorers, changing the min score changes the way that docs are iterated
+            minScore = score;
+            s2.setMinCompetitiveScore(minScore);
+          }
+        }
+      }
+    }
+
+    // Now check advancing
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+      Scorer s1 = w1.scorer(ctx);
+      Scorer s2 = w2.scorer(ctx);
+      if (s1 == null) {
+        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        continue;
+      }
+      TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
+      TwoPhaseIterator twoPhase2 = s2.twoPhaseIterator();
+      DocIdSetIterator approx1 = twoPhase1 == null ? s1.iterator() : twoPhase1.approximation;
+      DocIdSetIterator approx2 = twoPhase2 == null ? s2.iterator() : twoPhase2.approximation;
+
+      int upTo = -1;
+      float minScore = 0;
+      float maxScore = 0;
+      while (true) {
+        int doc2 = s2.docID();
+        boolean advance;
+        int target;
+        if (random.nextBoolean()) {
+          advance = false;
+          target = doc2 + 1;
+        } else {
+          advance = true;
+          int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc2);
+          target = s2.docID() + delta;
+        }
+
+        if (target > upTo && random.nextBoolean()) {
+          int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
+          upTo = target + delta;
+          int m = s2.advanceShallow(target);
+          assertTrue(m >= target);
+          maxScore = s2.getMaxScore(upTo);
+        }
+
+        if (advance) {
+          doc2 = approx2.advance(target);
+        } else {
+          doc2 = approx2.nextDoc();
+        }
+
+        int doc1;
+        for (doc1 = approx1.advance(target); doc1 < doc2; doc1 = approx1.nextDoc()) {
+          if (twoPhase1 == null || twoPhase1.matches()) {
+            Assert.assertTrue(s1.score() < minScore);
+          }
+        }
+        assertEquals(doc1, doc2);
+
+        if (doc2 == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+
+        if (twoPhase2 == null || twoPhase2.matches()) {
+          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          float score = s2.score();
+          Assert.assertEquals(s1.score(), score);
+
+          if (doc2 > upTo) {
+            upTo = s2.advanceShallow(doc2);
+            Assert.assertTrue(upTo >= doc2);
+            maxScore = s2.getMaxScore(upTo);
+          }
+
+          Assert.assertTrue(score <= maxScore);
+
+          if (score >= minScore && random.nextInt(10) == 0) {
+            // On some scorers, changing the min score changes the way that docs are iterated
+            minScore = score;
+            s2.setMinCompetitiveScore(minScore);
+          }
+        }
+      }
+    }
+  }
 }
-
-

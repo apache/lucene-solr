@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
@@ -69,7 +70,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   private static void testAutoAddReplicas() throws Exception {
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
       ZkNodeProps loaded = ZkNodeProps.load(data);
@@ -555,6 +556,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReadApi() throws Exception  {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // first trigger

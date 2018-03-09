@@ -67,7 +67,7 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
         .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 2), NumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)), Occur.MUST)
         .build();
 
-    final Weight w1 = searcher.createNormalizedWeight(q1, random().nextBoolean());
+    final Weight w1 = searcher.createNormalizedWeight(q1, ScoreMode.COMPLETE);
     final Scorer s1 = w1.scorer(searcher.getIndexReader().leaves().get(0));
     assertNotNull(s1.twoPhaseIterator()); // means we use doc values
 
@@ -77,7 +77,7 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
         .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), NumericDocValuesField.newSlowRangeQuery("f2", 42L, 42L)), Occur.MUST)
         .build();
 
-    final Weight w2 = searcher.createNormalizedWeight(q2, random().nextBoolean());
+    final Weight w2 = searcher.createNormalizedWeight(q2, ScoreMode.COMPLETE);
     final Scorer s2 = w2.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(s2.twoPhaseIterator()); // means we use points
 

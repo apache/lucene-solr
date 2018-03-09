@@ -706,17 +706,11 @@ public class Grouping {
     TotalHitCountCollector fallBackCollector;
     Collection<SearchGroup<BytesRef>> topGroups;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void prepare() throws IOException {
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Collector createFirstPassCollector() throws IOException {
       // Ok we don't want groups, but do want a total count
@@ -730,9 +724,6 @@ public class Grouping {
       return firstPass;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
@@ -767,18 +758,12 @@ public class Grouping {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
       return AllGroupHeadsCollector.newCollector(new TermGroupSelector(groupBy), sortWithinGroup);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void finish() throws IOException {
       result = secondPass != null ? secondPass.getTopGroups(0) : null;
@@ -826,9 +811,6 @@ public class Grouping {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getMatches() {
       if (result == null && fallBackCollector == null) {
@@ -838,9 +820,6 @@ public class Grouping {
       return result != null ? result.totalHitCount : fallBackCollector.getTotalHits();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Integer getNumberOfGroups() {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
@@ -857,17 +836,11 @@ public class Grouping {
     TopDocsCollector topCollector;
     FilterCollector collector;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void prepare() throws IOException {
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Collector createFirstPassCollector() throws IOException {
       DocSet groupFilt = searcher.getDocSet(query);
@@ -885,9 +858,6 @@ public class Grouping {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void finish() throws IOException {
       TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
@@ -901,9 +871,6 @@ public class Grouping {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getMatches() {
       return collector.getMatches();
@@ -929,9 +896,6 @@ public class Grouping {
     AllGroupsCollector<MutableValue> allGroupsCollector;
     Collection<SearchGroup<MutableValue>> topGroups;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void prepare() throws IOException {
       context = ValueSource.newContext(searcher);
@@ -939,9 +903,6 @@ public class Grouping {
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Collector createFirstPassCollector() throws IOException {
       // Ok we don't want groups, but do want a total count
@@ -955,9 +916,6 @@ public class Grouping {
       return firstPass;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
@@ -998,9 +956,6 @@ public class Grouping {
       return AllGroupHeadsCollector.newCollector(newSelector(), sortWithinGroup);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void finish() throws IOException {
       result = secondPass != null ? secondPass.getTopGroups(0) : null;
@@ -1034,9 +989,6 @@ public class Grouping {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getMatches() {
       if (result == null && fallBackCollector == null) {
@@ -1046,9 +998,6 @@ public class Grouping {
       return result != null ? result.totalHitCount : fallBackCollector.getTotalHits();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Integer getNumberOfGroups() {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();

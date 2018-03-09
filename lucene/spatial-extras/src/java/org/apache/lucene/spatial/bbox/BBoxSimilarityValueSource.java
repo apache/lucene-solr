@@ -104,7 +104,7 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
 
   @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
     if (dv.advanceExact(docId)) {
       AtomicReference<Explanation> explanation = new AtomicReference<>();
       final ShapeValues shapeValues = bboxValueSource.getValues(ctx);

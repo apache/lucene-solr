@@ -70,7 +70,7 @@ public abstract class LMSimilarity extends SimilarityBase {
   }
 
   @Override
-  protected void explain(List<Explanation> subExpls, BasicStats stats, int doc,
+  protected void explain(List<Explanation> subExpls, BasicStats stats,
       double freq, double docLen) {
     subExpls.add(Explanation.match((float) collectionModel.computeProbability(stats),
                                    "collection probability"));

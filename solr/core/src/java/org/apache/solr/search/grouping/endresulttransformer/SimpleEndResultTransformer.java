@@ -32,9 +32,6 @@ import java.util.Map;
  */
 public class SimpleEndResultTransformer implements EndResultTransformer {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<>();

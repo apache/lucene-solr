@@ -21,4 +21,12 @@
   </description>
 
   <import file="../module-build.xml"/>
+
+  <path id="test.classpath">
+    <pathelement path="${expressions.jar}"/>
+    <fileset dir="../expressions/lib"/>
+    <path refid="test.base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-expressions,common.compile-core" />
 </project>

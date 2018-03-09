@@ -34,9 +34,6 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
 
   private final Map<String, DocumentAnalysis> documentAnalysisByKey = new HashMap<>();
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);

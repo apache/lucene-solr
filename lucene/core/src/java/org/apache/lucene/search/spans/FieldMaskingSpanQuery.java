@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -89,8 +90,8 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   // ...this is done to be more consistent with things like SpanFirstQuery
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return maskedQuery.createWeight(searcher, needsScores, boost);
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return maskedQuery.createWeight(searcher, scoreMode, boost);
   }
 
   @Override

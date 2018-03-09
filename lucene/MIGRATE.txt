@@ -15,3 +15,25 @@ negative scores.
 
 As a side-effect of this change, negative boosts are now rejected and
 FunctionScoreQuery maps negative values to 0.
+
+
+## CustomScoreQuery, BoostedQuery and BoostingQuery removed (LUCENE-8099) ##
+
+Instead use FunctionScoreQuery and a DoubleValuesSource implementation.  BoostedQuery
+and BoostingQuery may be replaced by calls to FunctionScoreQuery.boostByValue() and
+FunctionScoreQuery.boostByQuery().  To replace more complex calculations in
+CustomScoreQuery, use the lucene-expressions module:
+
+SimpleBindings bindings = new SimpleBindings();
+bindings.add("score", DoubleValuesSource.SCORES);
+bindings.add("boost1", DoubleValuesSource.fromIntField("myboostfield"));
+bindings.add("boost2", DoubleValuesSource.fromIntField("myotherboostfield"));
+Expression expr = JavascriptCompiler.compile("score * (boost1 + ln(boost2))");
+FunctionScoreQuery q = new FunctionScoreQuery(inputQuery, expr.getDoubleValuesSource(bindings));
+
+## Index options can no longer be changed dynamically (LUCENE-8134) ##
+
+Changing index options on the fly is now going to result into an
+IllegalArgumentException. If a field is indexed
+(FieldType.indexOptions() != IndexOptions.NONE) then all documents must have
+the same index options for that field.

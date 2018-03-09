@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 
@@ -23,7 +23,7 @@ import org.junit.BeforeClass;
  *
  * @see TestSortByMinMaxFunction
  **/
-public class SortByFunctionTest extends AbstractSolrTestCase {
+public class SortByFunctionTest extends SolrTestCaseJ4 {
 
   
   @BeforeClass

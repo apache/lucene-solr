@@ -23,7 +23,7 @@ import org.apache.lucene.index.Terms;
  * Stores all statistics commonly used ranking methods.
  * @lucene.experimental
  */
-public class BasicStats extends Similarity.SimWeight {
+public class BasicStats {
   final String field;
   /** The number of documents. */
   protected long numberOfDocuments;

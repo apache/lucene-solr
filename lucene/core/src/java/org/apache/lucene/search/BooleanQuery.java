@@ -183,6 +183,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
+    if (clauseSets.get(Occur.MUST).size() == 0) {
+      return this;
+    }
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
@@ -196,12 +199,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     BooleanQuery query = this;
-    if (needsScores == false) {
+    if (scoreMode.needsScores() == false) {
       query = rewriteNoScoring();
     }
-    return new BooleanWeight(query, searcher, needsScores, boost);
+    return new BooleanWeight(query, searcher, scoreMode, boost);
   }
 
   @Override

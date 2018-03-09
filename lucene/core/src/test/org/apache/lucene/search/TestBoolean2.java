@@ -148,7 +148,7 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     singleSegmentReader = DirectoryReader.open(singleSegmentDirectory);
     singleSegmentSearcher = newSearcher(singleSegmentReader);
-    singleSegmentSearcher.setSimilarity(searcher.getSimilarity(true));
+    singleSegmentSearcher.setSimilarity(searcher.getSimilarity());
     
     // Make big index
     dir2 = copyOf(directory);
@@ -379,7 +379,7 @@ public class TestBoolean2 extends LuceneTestCase {
         QueryUtils.check(random(), q1,searcher); // baseline sim
         try {
           // a little hackish, QueryUtils.check is too costly to do on bigSearcher in this loop.
-          searcher.setSimilarity(bigSearcher.getSimilarity(true)); // random sim
+          searcher.setSimilarity(bigSearcher.getSimilarity()); // random sim
           QueryUtils.check(random(), q1, searcher);
         } finally {
           searcher.setSimilarity(new ClassicSimilarity()); // restore

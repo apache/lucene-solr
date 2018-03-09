@@ -17,12 +17,10 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -49,55 +47,39 @@ public class MultiSimilarity extends Similarity {
   }
 
   @Override
-  public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    SimWeight subStats[] = new SimWeight[sims.length];
-    for (int i = 0; i < subStats.length; i++) {
-      subStats[i] = sims[i].computeWeight(boost, collectionStats, termStats);
-    }
-    return new MultiStats(subStats);
-  }
-
-  @Override
-  public SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
+  public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     SimScorer subScorers[] = new SimScorer[sims.length];
     for (int i = 0; i < subScorers.length; i++) {
-      subScorers[i] = sims[i].simScorer(((MultiStats)stats).subStats[i], context);
+      subScorers[i] = sims[i].scorer(boost, collectionStats, termStats);
     }
-    return new MultiSimScorer(subScorers);
+    return new MultiSimScorer(collectionStats.field(), subScorers);
   }
   
   static class MultiSimScorer extends SimScorer {
     private final SimScorer subScorers[];
     
-    MultiSimScorer(SimScorer subScorers[]) {
+    MultiSimScorer(String field, SimScorer subScorers[]) {
+      super(field);
       this.subScorers = subScorers;
     }
     
     @Override
-    public float score(int doc, float freq) throws IOException {
+    public float score(float freq, long norm) {
       float sum = 0.0f;
       for (SimScorer subScorer : subScorers) {
-        sum += subScorer.score(doc, freq);
+        sum += subScorer.score(freq, norm);
       }
       return sum;
     }
 
     @Override
-    public Explanation explain(int doc, Explanation freq) throws IOException {
+    public Explanation explain(Explanation freq, long norm) {
       List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {
-        subs.add(subScorer.explain(doc, freq));
+        subs.add(subScorer.explain(freq, norm));
       }
-      return Explanation.match(score(doc, freq.getValue()), "sum of:", subs);
+      return Explanation.match(score(freq.getValue().floatValue(), norm), "sum of:", subs);
     }
 
-  }
-
-  static class MultiStats extends SimWeight {
-    final SimWeight subStats[];
-    
-    MultiStats(SimWeight subStats[]) {
-      this.subStats = subStats;
-    }
   }
 }

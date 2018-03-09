@@ -28,11 +28,12 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 
 /** Matches spans containing a term.
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
@@ -40,21 +41,21 @@ import org.apache.lucene.search.IndexSearcher;
 public class SpanTermQuery extends SpanQuery {
 
   protected final Term term;
-  protected final TermContext termContext;
+  protected final TermStates termStates;
 
   /** Construct a SpanTermQuery matching the named term's spans. */
   public SpanTermQuery(Term term) {
     this.term = Objects.requireNonNull(term);
-    this.termContext = null;
+    this.termStates = null;
   }
 
   /**
    * Expert: Construct a SpanTermQuery matching the named term's spans, using
-   * the provided TermContext
+   * the provided TermStates
    */
-  public SpanTermQuery(Term term, TermContext context) {
+  public SpanTermQuery(Term term, TermStates termStates) {
     this.term = Objects.requireNonNull(term);
-    this.termContext = context;
+    this.termStates = termStates;
   }
 
   /** Return the term whose spans are matched. */
@@ -64,26 +65,26 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final TermContext context;
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final TermStates context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
-    if (termContext == null || termContext.wasBuiltFor(topContext) == false) {
-      context = TermContext.build(topContext, term);
+    if (termStates == null || termStates.wasBuiltFor(topContext) == false) {
+      context = TermStates.build(topContext, term, scoreMode.needsScores());
     }
     else {
-      context = termContext;
+      context = termStates;
     }
-    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, boost);
+    return new SpanTermWeight(context, searcher, scoreMode.needsScores() ? Collections.singletonMap(term, context) : null, boost);
   }
 
   public class SpanTermWeight extends SpanWeight {
 
-    final TermContext termContext;
+    final TermStates termStates;
 
-    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+    public SpanTermWeight(TermStates termStates, IndexSearcher searcher, Map<Term, TermStates> terms, float boost) throws IOException {
       super(SpanTermQuery.this, searcher, terms, boost);
-      this.termContext = termContext;
-      assert termContext != null : "TermContext must not be null";
+      this.termStates = termStates;
+      assert termStates != null : "TermStates must not be null";
     }
 
     @Override
@@ -97,16 +98,16 @@ public class SpanTermQuery extends SpanQuery {
     }
 
     @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      contexts.put(term, termContext);
+    public void extractTermStates(Map<Term, TermStates> contexts) {
+      contexts.put(term, termStates);
     }
 
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
 
-      assert termContext.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+      assert termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
 
-      final TermState state = termContext.get(context.ord);
+      final TermState state = termStates.get(context);
       if (state == null) { // term is not present in that reader
         assert context.reader().docFreq(term) == 0 : "no termstate found but term exists in reader term=" + term;
         return null;

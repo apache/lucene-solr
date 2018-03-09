@@ -64,7 +64,9 @@ This registry is returned at `solr.node` and includes the following information.
 
 The <<Core Level Metrics,Core (SolrCore) Registry>> includes `solr.core.<collection>`, one for each core. When making requests with the <<Metrics API>>, you can specify `&group=core` to limit to only these metrics.
 
-* all common RequestHandler-s report: request timers / counters, timeouts, errors.
+* all common RequestHandlers report: request timers / counters, timeouts, errors. Handlers that support
+  process distributed shard requests also report `shardRequests` sub-counters for each type of distributed
+  request.
 * <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, gauges for currently running merges and their size.
 * shard replication and transaction log replay on replicas (TBD, SOLR-9856)
 * open / available / pending connections for shard handler and update handler
@@ -75,7 +77,7 @@ This registry is returned at `solr.jetty` and includes the following information
 
 * threads and pools,
 * connection and request timers,
-* meters for responses by HTTP class (1xx, 2xx, etc)
+* meters for responses by HTTP class (1xx, 2xx, etc.)
 
 In the future, metrics will be added for shard leaders and cluster nodes, including aggregations from per-core metrics.
 
@@ -316,7 +318,7 @@ When `true` use multicast UDP communication, otherwise use UDP unicast. Default 
 These two reporters can be used for aggregation of metrics reported from replicas to shard leader (the "shard" reporter),
 and from any local registry to the Overseer node.
 
-Metric reports from these reporters are periodically sent as batches of regular SolrInputDocument-s,
+Metric reports from these reporters are periodically sent as batches of regular SolrInputDocuments,
 so they can be processed by any Solr handler. By default they are sent to `/admin/metrics/collector` handler
 (an instance of `MetricsCollectorHandler`) on a target node, which aggregates these reports and keeps them in
 additional local metric registries so that they can be accessed using `/admin/metrics` handler,
@@ -512,15 +514,18 @@ The `admin/metrics` endpoint provides access to all the metrics for all metric g
 
 A few query parameters are available to limit your request to only certain metrics:
 
-group:: The metric group to retrieve. The default is `all` to retrieve all metrics for all groups. Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
+`group`:: The metric group to retrieve. The default is `all` to retrieve all metrics for all groups. Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
 
-type:: The type of metric to retrieve. The default is `all` to retrieve all metric types. Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
+`type`:: The type of metric to retrieve. The default is `all` to retrieve all metric types. Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
 
-prefix:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with `group` and/or `type` parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
+`prefix`:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with `group` and/or `type` parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
 
-property:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.
+`regex`:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, eg.
+`QUERY\./select\..*` is a valid regex that matches all metrics with the `QUERY./select.` prefix.
 
-key:: fully-qualified metric name, which specifies one concrete metric instance (parameter can be
+`property`:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.
+
+`key`:: fully-qualified metric name, which specifies one concrete metric instance (parameter can be
 specified multiple times to retrieve multiple concrete metrics). *NOTE: when this parameter is used, other
 selection methods listed above are ignored.* Fully-qualified name consists of registry name, colon and
 metric name, with optional colon and metric property. Colons in names can be escaped using back-slash `\`
@@ -530,10 +535,11 @@ character. Examples:
 * `key=solr.core.collection1:QUERY./select.requestTimes:max_ms`
 * `key=solr.jvm:system.properties:user.name`
 
-compact:: When false, a more verbose format of the response will be returned. Instead of a response like this:
+`compact`:: When false, a more verbose format of the response will be returned. Instead of a response like this:
 +
 [source,json]
-  "metrics": [
+----
+{"metrics": [
     "solr.core.gettingstarted",
     {
       "CORE.aliases": {
@@ -555,12 +561,14 @@ compact:: When false, a more verbose format of the response will be returned. In
         "value": "2017-03-14T11:43:23.822Z"
       }
     }
-  ]
+  ]}
+----
 +
 The response will look like this:
 +
 [source,json]
-  "metrics": [
+----
+{"metrics": [
     "solr.core.gettingstarted",
     {
       "CORE.aliases": [
@@ -572,7 +580,8 @@ The response will look like this:
       "CORE.refCount": 1,
       "CORE.startTime": "2017-03-14T11:43:23.822Z"
     }
-  ]
+  ]}
+----
 
 Like other request handlers, the Metrics API can also take the `wt` parameter to define the output format.
 
@@ -588,6 +597,11 @@ Request only "core" group metrics that start with "INDEX", returned in XML:
 
 [source,text]
 http://localhost:8983/solr/admin/metrics?wt=xml&prefix=INDEX&group=core
+
+Request only "core" group metrics that end with ".requests":
+
+[source,text]
+http://localhost:8983/solr/admin/metrics?regex=.*\.requests&group=core
 
 Request only "user.name" property of "system.properties" metric from registry "solr.jvm":
 

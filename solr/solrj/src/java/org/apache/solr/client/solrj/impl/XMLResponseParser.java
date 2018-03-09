@@ -252,6 +252,15 @@ public class XMLResponseParser extends ResponseParser
           case ARR:    nl.add( name, readArray(     parser ) ); depth--; continue;
           case RESULT: nl.add( name, readDocuments( parser ) ); depth--; continue;
           case DOC:    nl.add( name, readDocument(  parser ) ); depth--; continue;
+          case BOOL:
+          case DATE:
+          case DOUBLE:
+          case FLOAT:
+          case INT:
+          case LONG:
+          case NULL:
+          case STR:
+            break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
         }
@@ -316,6 +325,15 @@ public class XMLResponseParser extends ResponseParser
           case ARR:    vals.add( readArray( parser ) ); depth--; continue;
           case RESULT: vals.add( readDocuments( parser ) ); depth--; continue;
           case DOC:    vals.add( readDocument( parser ) ); depth--; continue;
+          case BOOL:
+          case DATE:
+          case DOUBLE:
+          case FLOAT:
+          case INT:
+          case LONG:
+          case NULL:
+          case STR:
+            break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
         }

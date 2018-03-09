@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -42,11 +44,11 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
@@ -55,6 +57,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -69,9 +72,7 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -83,7 +84,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -100,17 +101,20 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.OPTIONAL_ROUTER_PARAMS;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.REQUIRED_ROUTER_PARAMS;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
@@ -129,6 +133,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
@@ -233,82 +239,113 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(BAD_REQUEST,
           "Invalid request. collections can be accessed only in SolrCloud mode");
     }
-    SolrResponse response = null;
     Map<String, Object> props = operation.execute(req, rsp, this);
+    if (props == null) {
+      return;
+    }
+
     String asyncId = req.getParams().get(ASYNC);
-    if (props != null) {
-      if (asyncId != null) {
-        props.put(ASYNC, asyncId);
-      }
-      props.put(QUEUE_OPERATION, operation.action.toLower());
+    if (asyncId != null) {
+      props.put(ASYNC, asyncId);
+    }
+
+    props.put(QUEUE_OPERATION, operation.action.toLower());
+
+    if (operation.sendToOCPQueue) {
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      if (operation.sendToOCPQueue) {
-        response = handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+      SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
+      rsp.getValues().addAll(overseerResponse.getResponse());
+      Exception exp = overseerResponse.getException();
+      if (exp != null) {
+        rsp.setException(exp);
       }
-      else Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
-      final String collectionName = zkProps.getStr(NAME);
+
+      //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
       if (action.equals(CollectionAction.CREATE) && asyncId == null) {
         if (rsp.getException() == null) {
-          waitForActiveCollection(collectionName, zkProps, cores, response);
+          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
         }
       }
+
+    } else {
+      // submits and doesn't wait for anything (no response)
+      Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
     }
+
   }
 
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
+  /*
+   * In SOLR-11739 we change the way the async IDs are checked to decide if one has
+   * already been used or not. For backward compatibility, we continue to check in the
+   * old way (meaning, in all the queues) for now. This extra check should be removed
+   * in Solr 9 
+   */
+  private static final boolean CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS = true;
+
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
-  void handleResponse(String operation, ZkNodeProps m,
-                              SolrQueryResponse rsp) throws KeeperException, InterruptedException {
-    handleResponse(operation, m, rsp, DEFAULT_COLLECTION_OP_TIMEOUT);
+  public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
+    return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  private SolrResponse handleResponse(String operation, ZkNodeProps m,
-      SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
-    long time = System.nanoTime();
-
-    if (m.containsKey(ASYNC) && m.get(ASYNC) != null) {
+  public SolrResponse sendToOCPQueue(ZkNodeProps m, long timeout) throws KeeperException, InterruptedException {
+    String operation = m.getStr(QUEUE_OPERATION);
+    if (operation == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
+    }
+    if (m.get(ASYNC) != null) {
 
        String asyncId = m.getStr(ASYNC);
 
-       if(asyncId.equals("-1")) {
+       if (asyncId.equals("-1")) {
          throw new SolrException(ErrorCode.BAD_REQUEST, "requestid can not be -1. It is reserved for cleanup purposes.");
        }
 
        NamedList<String> r = new NamedList<>();
-
-       if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
+       
+       if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
+           coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
-           overseerCollectionQueueContains(asyncId)) {
+           overseerCollectionQueueContains(asyncId))) {
+         // for back compatibility, check in the old places. This can be removed in Solr 9
          r.add("error", "Task with the same requestid already exists.");
-
        } else {
-         coreContainer.getZkController().getOverseerCollectionQueue()
+         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+           boolean success = false;
+           try {
+             coreContainer.getZkController().getOverseerCollectionQueue()
              .offer(Utils.toJSON(m));
+             success = true;
+           } finally {
+             if (!success) {
+               try {
+                 coreContainer.getZkController().clearAsyncId(asyncId);
+               } catch (Exception e) {
+                 // let the original exception bubble up
+                 log.error("Unable to release async ID={}", asyncId, e);
+                 SolrZkClient.checkInterrupted(e);
+               }
+             }
+           }
+         } else {
+           r.add("error", "Task with the same requestid already exists.");
+         }
        }
        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
-       SolrResponse response = new OverseerSolrResponse(r);
 
-       rsp.getValues().addAll(response.getResponse());
+      return new OverseerSolrResponse(r);
+    }
 
-       return response;
-     }
-
+    long time = System.nanoTime();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      SolrResponse response = SolrResponse.deserialize(event.getBytes());
-      rsp.getValues().addAll(response.getResponse());
-      SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
-      if (exp != null) {
-        Integer code = (Integer) exp.get("rspCode");
-        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
-      }
-      return response;
+      return SolrResponse.deserialize(event.getBytes());
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -331,12 +368,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
+  /**
+   * Copy prefixed params into a map.  There must only be one value for these parameters.
+   *
+   * @param params The source of params from which copies should be made
+   * @param props The map into which param names and values should be copied as keys and values respectively
+   * @param prefix The prefix to select.
+   * @return the map supplied in the props parameter, modified to contain the prefixed params.
+   */
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {
     Iterator<String> iter =  params.getParameterNamesIterator();
     while (iter.hasNext()) {
       String param = iter.next();
       if (param.startsWith(prefix)) {
-        props.put(param, params.get(param));
+        final String[] values = params.getParams(param);
+        if (values.length != 1) {
+          throw new SolrException(BAD_REQUEST, "Only one value can be present for parameter " + param);
+        }
+        props.put(param, values[0]);
       }
     }
     return props;
@@ -391,7 +440,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     results.add("status", status);
   }
 
-  enum CollectionOperation implements CollectionOp {
+  public enum CollectionOperation implements CollectionOp {
     /**
      * very simple currently, you can pass a template collection, and the new collection is created on
      * every node the template collection is on
@@ -468,21 +517,88 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return null;
     }),
+
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
-      SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
-      return req.getParams().required().getAll(null, NAME, "collections");
+      String alias = req.getParams().get(NAME);
+      SolrIdentifierValidator.validateAliasName(alias);
+      String collections = req.getParams().get("collections");
+      Map<String, Object> result = req.getParams().getAll(null, REQUIRED_ROUTER_PARAMS);
+      req.getParams().getAll(result, OPTIONAL_ROUTER_PARAMS);
+      if (collections != null) {
+        if (result.size() > 1) { // (NAME should be there, and if it's not we will fail below)
+          throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a time routed alias.");
+        }
+        // regular alias creation...
+        return req.getParams().required().getAll(null, NAME, "collections");
+      }
+
+      // Ok so we are creating a time routed alias from here
+
+      // for validation....
+      req.getParams().required().getAll(null, REQUIRED_ROUTER_PARAMS);
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
+
+      // add to result params that start with "create-collection.".
+      //   Additionally, save these without the prefix to createCollParams
+      forEach(req.getParams(), (p, v) -> {
+          if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
+            // This is what SolrParams#getAll(Map, Collection)} does
+            if (v.length == 1) {
+              result.put(p, v[0]);
+            } else {
+              result.put(p, v);
+            }
+            createCollParams.set(p.substring(CREATE_COLLECTION_PREFIX.length()), v);
+          }
+        });
+
+      // Verify that the create-collection prefix'ed params appear to be valid.
+      if (createCollParams.get(NAME) != null) {
+        throw new SolrException(BAD_REQUEST, "routed aliases calculate names for their " +
+            "dependent collections, you cannot specify the name.");
+      }
+      if (createCollParams.get(COLL_CONF) == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "We require an explicit " + COLL_CONF );
+      }
+      // note: could insist on a config name here as well.... or wait to throw at overseer
+      createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
+      CREATE_OP.execute(new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
+
+      return result;
     }),
+
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
     /**
-     * Handle cluster status request.
-     * Can return status per specific collection/shard or per all collections.
+     * Change metadata for an alias (use CREATEALIAS_OP to change the actual value of the alias)
+     */
+    MODIFYALIAS_OP(MODIFYALIAS, (req, rsp, h) -> {
+      Map<String, Object> params = req.getParams().required().getAll(null, NAME);
+
+      // Note: success/no-op in the event of no metadata supplied is intentional. Keeps code simple and one less case
+      // for api-callers to check for.
+      return convertPrefixToMap(req.getParams(), params, "metadata");
+    }),
+
+    /**
+     * List the aliases and associated metadata.
      */
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
       Aliases aliases = zkStateReader.getAliases();
       if (aliases != null) {
+        // the aliases themselves...
         rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
+        // Any metadata for the above aliases.
+        Map<String,Map<String,String>> meta = new LinkedHashMap<>();
+        for (String alias : aliases.getCollectionAliasListMap().keySet()) {
+          Map<String, String> collectionAliasMetadata = aliases.getCollectionAliasMetadata(alias);
+          if (collectionAliasMetadata != null) {
+            meta.put(alias, collectionAliasMetadata);
+          }
+        }
+        rsp.getValues().add("metadata", meta);
       }
       return null;
     }),
@@ -576,6 +692,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       cp.setClusterProperty(name, val);
       return null;
     }),
+    COLLECTIONPROP_OP(COLLECTIONPROP, (req, rsp, h) -> {
+      String collection = req.getParams().required().get(NAME);
+      String name = req.getParams().required().get(PROPERTY_NAME);
+      String val = req.getParams().get(PROPERTY_VALUE);
+      CollectionProperties cp = new CollectionProperties(h.coreContainer.getZkController().getZkClient());
+      cp.setCollectionProperty(collection, name, val);
+      return null;
+    }),
     REQUESTSTATUS_OP(REQUESTSTATUS, (req, rsp, h) -> {
       req.getParams().required().check(REQUESTID);
 
@@ -623,18 +747,29 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         if (flush) {
-          zkController.getOverseerCompletedMap().clear();
-          zkController.getOverseerFailureMap().clear();
+          Collection<String> completed = zkController.getOverseerCompletedMap().keys();
+          Collection<String> failed = zkController.getOverseerFailureMap().keys();
+          for (String asyncId:completed) {
+            zkController.getOverseerCompletedMap().remove(asyncId);
+            zkController.clearAsyncId(asyncId);
+          }
+          for (String asyncId:failed) {
+            zkController.getOverseerFailureMap().remove(asyncId);
+            zkController.clearAsyncId(asyncId);
+          }
           rsp.getValues().add("status", "successfully cleared stored collection api responses");
           return null;
         } else {
           // Request to cleanup
           if (zkController.getOverseerCompletedMap().remove(requestId)) {
+            zkController.clearAsyncId(requestId);
             rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
           } else if (zkController.getOverseerFailureMap().remove(requestId)) {
+            zkController.clearAsyncId(requestId);
             rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
           } else {
             rsp.getValues().add("status", "[" + requestId + "] not found in stored responses");
+            // Don't call zkController.clearAsyncId for this, since it could be a running/pending task
           }
         }
         return null;
@@ -902,16 +1037,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> {
-      SolrParams params = req.getParams();
-      String sourceNode = params.get(CollectionParams.SOURCE_NODE, params.get("source"));
-      if (sourceNode == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.SOURCE_NODE + " is a require parameter");
-      }
-      String targetNode = params.get(CollectionParams.TARGET_NODE, params.get("target"));
-      if (targetNode == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.TARGET_NODE + " is a require parameter");
-      }
-      return params.getAll(null, "source", "target", WAIT_FOR_FINAL_STATE, CollectionParams.SOURCE_NODE, CollectionParams.TARGET_NODE);
+      return req.getParams().getAll(null,
+          "source", //legacy
+          "target",//legacy
+          WAIT_FOR_FINAL_STATE,
+          CollectionParams.SOURCE_NODE,
+          CollectionParams.TARGET_NODE);
     }),
     MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
       Map<String, Object> map = req.getParams().required().getAll(null,
@@ -927,6 +1058,32 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "shard");
     }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
+
+    /**
+     * Places all prefixed properties in the sink map (or a new map) using the prefix as the key and a map of
+     * all prefixed properties as the value. The sub-map keys have the prefix removed.
+     *
+     * @param params The solr params from which to extract prefixed properties.
+     * @param sink The map to add the properties too.
+     * @param prefix The prefix to identify properties to be extracted
+     * @return The sink map, or a new map if the sink map was null
+     */
+    private static Map<String, Object> convertPrefixToMap(SolrParams params, Map<String, Object> sink, String prefix) {
+      Map<String,Object> result = new LinkedHashMap<>();
+      Iterator<String> iter =  params.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String param = iter.next();
+        if (param.startsWith(prefix)) {
+          result.put(param.substring(prefix.length()+1), params.get(param));
+        }
+      }
+      if (sink == null) {
+        sink = new LinkedHashMap<>();
+      }
+      sink.put(prefix, result);
+      return sink;
+    }
+
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
@@ -959,7 +1116,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
-    ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
+    ZkController zkController = handler.coreContainer.getZkController();
+    ClusterState clusterState = zkController.getClusterState();
     String collectionName = req.getParams().required().get(COLLECTION_PROP);
     String sliceId = req.getParams().required().get(SHARD_ID_PROP);
 
@@ -971,7 +1129,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "No shard with name " + sliceId + " exists for collection " + collectionName);
     }
 
-    try {
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, slice.getName(), zkController.getZkClient())) {
       // if an active replica is the leader, then all is fine already
       Replica leader = slice.getLeader();
       if (leader != null && leader.getState() == State.ACTIVE) {
@@ -988,20 +1146,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         handler.coreContainer.getZkController().getZkClient().clean(lirPath);
       }
 
-      // Call all live replicas to prepare themselves for leadership, e.g. set last published
-      // state to active.
-      for (Replica rep : slice.getReplicas()) {
-        if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
-          ShardHandler shardHandler = handler.coreContainer.getShardHandlerFactory().getShardHandler();
-
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CoreAdminParams.ACTION, CoreAdminAction.FORCEPREPAREFORLEADERSHIP.toString());
-          params.set(CoreAdminParams.CORE, rep.getStr("core"));
-          String nodeName = rep.getNodeName();
-
-          OverseerCollectionMessageHandler.sendShardRequest(nodeName, params, shardHandler, null, null,
-              CommonParams.CORES_HANDLER_PATH, handler.coreContainer.getZkController().getZkStateReader()); // synchronous request
-        }
+      final Set<String> liveNodes = clusterState.getLiveNodes();
+      List<Replica> liveReplicas = slice.getReplicas().stream()
+          .filter(rep -> liveNodes.contains(rep.getNodeName())).collect(Collectors.toList());
+      boolean shouldIncreaseReplicaTerms = liveReplicas.stream()
+          .noneMatch(rep -> zkShardTerms.registered(rep.getName()) && zkShardTerms.canBecomeLeader(rep.getName()));
+      // we won't increase replica's terms if exist a live replica with term equals to leader
+      if (shouldIncreaseReplicaTerms) {
+        //TODO only increase terms of replicas less out-of-sync
+        liveReplicas.stream()
+            .filter(rep -> zkShardTerms.registered(rep.getName()))
+            .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
       }
 
       // Wait till we have an active leader
@@ -1031,16 +1186,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
+  public static void waitForActiveCollection(String collectionName, CoreContainer cc, SolrResponse createCollResponse)
       throws KeeperException, InterruptedException {
 
-    if (response.getResponse().get("exception") != null) {
+    if (createCollResponse.getResponse().get("exception") != null) {
       // the main called failed, don't wait
-      log.info("Not waiting for active collection due to exception: " + response.getResponse().get("exception"));
+      log.info("Not waiting for active collection due to exception: " + createCollResponse.getResponse().get("exception"));
       return;
     }
     
-    if (response.getResponse().get("failure") != null) {
+    if (createCollResponse.getResponse().get("failure") != null) {
       // TODO: we should not wait for Replicas we know failed
     }
     
@@ -1049,7 +1204,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     String nodeNotLive = null;
 
     CloudConfig ccfg = cc.getConfig().getCloudConfig();
-    Integer numRetries = ccfg.getCreateCollectionWaitTimeTillActive();
+    Integer numRetries = ccfg.getCreateCollectionWaitTimeTillActive(); // this config is actually # seconds, not # tries
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
     log.info("Wait for new collection to be active for at most " + numRetries + " seconds. Check all shard "
         + (checkLeaderOnly ? "leaders" : "replicas"));
@@ -1086,7 +1241,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         if (replicaNotAlive == null) return;
       }
-      Thread.sleep(1000);
+      Thread.sleep(1000); // thus numRetries is roughly number of seconds
     }
     if (nodeNotLive != null && replicaState != null) {
       log.error("Timed out waiting for new collection's replicas to become ACTIVE "
@@ -1161,5 +1316,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  /**
+   * Calls the consumer for each parameter and with all values.
+   * This may be more convenient than using the iterator.
+   */
+  //TODO put on SolrParams, or maybe SolrParams should implement Iterable<Map.Entry<String,String[]>
+  private static void forEach(SolrParams params, BiConsumer<String, String[]> consumer) {
+    //TODO do we add a predicate for the parameter as a filter? It would avoid calling getParams
+    final Iterator<String> iterator = params.getParameterNamesIterator();
+    while (iterator.hasNext()) {
+      String param = iterator.next();
+      String[] values = params.getParams(param);
+      consumer.accept(param, values);
+    }
   }
 }

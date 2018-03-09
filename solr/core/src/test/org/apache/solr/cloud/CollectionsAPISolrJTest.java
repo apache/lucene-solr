@@ -23,7 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -41,7 +43,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -340,6 +344,38 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "false");
   }
+
+  @Test
+  public void testCollectionProp() throws InterruptedException, IOException, SolrServerException {
+    final String collectionName = "collectionPropTest";
+    final String propName = "testProperty";
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+
+    // Check for value change
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName, "false")
+        .process(cluster.getSolrClient());
+    checkCollectionProperty(collectionName, propName, "false", 3000);
+
+    // Check for removing value
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName, null)
+        .process(cluster.getSolrClient());
+    checkCollectionProperty(collectionName, propName, null, 3000);
+  }
+
+  private void checkCollectionProperty(String collection, String propertyName, String propertyValue, long timeoutMs) throws InterruptedException {
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()){
+      Thread.sleep(10);
+      if (Objects.equals(cluster.getSolrClient().getZkStateReader().getCollectionProperties(collection).get(propertyName), propertyValue)) {
+        return;
+      }
+    }
+
+    fail("Timed out waiting for cluster property value");
+  }
+
 
   @Test
   public void testOverseerStatus() throws IOException, SolrServerException {

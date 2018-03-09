@@ -17,6 +17,6 @@
 -->
 <schema name="minimal" version="1.1">
   <fieldType name="string" class="solr.StrField"/>
-  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" omitTermFreqAndPositions="true" />
   <uniquekey>id</uniquekey>
 </schema>

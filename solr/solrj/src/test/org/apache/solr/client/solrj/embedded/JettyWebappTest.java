@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -74,7 +74,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
+    server.setSessionIdManager(new DefaultSessionIdManager(server, new Random(random().nextLong())));
     new WebAppContext(server, path, context );
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());

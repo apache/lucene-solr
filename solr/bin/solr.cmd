@@ -200,6 +200,7 @@ IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_assert
+if "%1"=="config" goto run_config
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -268,7 +269,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -356,6 +357,8 @@ goto done
 @echo.
 @echo Usage: solr healthcheck [-c collection] [-z zkHost]
 @echo.
+@echo Can be run from remote (non-Solr^) hosts, as long as a proper ZooKeeper connection is provided
+@echo.
 @echo   -c collection  Collection to run healthcheck against.
 @echo.
 @echo   -z zkHost      Zookeeper connection string; default is localhost:9983
@@ -389,6 +392,8 @@ echo  mode (collection). If you're deleting a collection in SolrCloud mode, the 
 echo  delete the configuration directory from Zookeeper so long as it is not being used by another collection.
 echo  You can override this behavior by passing -deleteConfig false when running this command.
 echo.
+echo  Can be run on remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd
+echo.
 echo   -c name     Name of core to create
 echo.
 echo   -deleteConfig boolean Delete the configuration directory from Zookeeper; default is true
@@ -404,6 +409,9 @@ goto done
 :create_core_usage
 echo.
 echo Usage: solr create_core [-c name] [-d confdir] [-p port] [-V]
+echo.
+echo When a configSet is used, this can be run from any host.  If pointing at a non-configSet directory, this
+echo must be run from the host that you wish to create the core on.
 echo.
 echo   -c name     Name of core to create
 echo.
@@ -429,6 +437,8 @@ goto done
 :create_collection_usage
 echo.
 echo Usage: solr create_collection [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port] [-V]
+echo.
+echo Can be run from remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd.
 echo.
 echo   -c name               Name of collection to create
 echo.
@@ -468,6 +478,7 @@ goto done
 set ZK_FULL=true
 goto zk_short_usage
 :zk_full_usage
+echo         Can be run on remote (non-Solr^) hosts, as long as valid ZK_HOST information is provided.
 echo         Be sure to check the Solr logs in case of errors.
 echo.
 echo             -z zkHost       Optional Zookeeper connection string for all commands. If specified it
@@ -567,6 +578,8 @@ goto done
 echo Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>] [-V]
 echo        solr auth enable [-type basicAuth] -prompt ^<true|false^> [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>] [-V]
 echo        solr auth disable [-updateIncludeFileOnly ^<true|false^>] [-V]
+echo
+echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
 echo
 echo   -type ^<type^>                 The authentication mechanism to enable. Defaults to 'basicAuth'.
 echo
@@ -1351,6 +1364,16 @@ if errorlevel 1 (
 )
 goto done
 
+:run_config
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI %* 
+if errorlevel 1 (
+   exit /b 1
+)
+goto done
+
 :get_version
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
@@ -1463,10 +1486,8 @@ if "!CREATE_PORT!"=="" (
 )
 
 if "!CREATE_CONFDIR!"=="_default" (
-  echo WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
-  echo          NOT RECOMMENDED for production use.
-  echo          To turn it off:
-  echo             curl http://%SOLR_TOOL_HOST%:!CREATE_PORT!/solr/!CREATE_NAME!/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+  echo WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use.
+  echo          To turn off: bin\solr config -c !CREATE_NAME! -p !CREATE_PORT! -property update.autoCreateFields -value false
 )
 
 if "%SCRIPT_CMD%"=="create_core" (

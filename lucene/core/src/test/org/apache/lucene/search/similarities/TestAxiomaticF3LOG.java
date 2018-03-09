@@ -16,16 +16,11 @@
  */
 package org.apache.lucene.search.similarities;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
-// returns negative scores at least, but it (now) warns it has problems
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8010")
 public class TestAxiomaticF3LOG extends AxiomaticTestCase {
 
   @Override
   protected final Similarity getAxiomaticModel(float s, int queryLen, float k) {
-    // TODO: use the randomized parameters and not these hardcoded ones
-    return new AxiomaticF3LOG(0.25f, 1);
+    return new AxiomaticF3LOG(s, queryLen);
   }
 
 }

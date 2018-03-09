@@ -38,7 +38,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
-import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -197,7 +196,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq1.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq1.add(new PhraseQuery(F2, "search", "engine"), Occur.SHOULD);
 
-    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), true);
+    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), ScoreMode.COMPLETE);
     Scorer s1 = w1.scorer(reader.leaves().get(0));
     assertEquals(0, s1.iterator().nextDoc());
     assertEquals(2, s1.getChildren().size());
@@ -206,7 +205,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq2.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq2.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
 
-    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), true);
+    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), ScoreMode.COMPLETE);
     Scorer s2 = w2.scorer(reader.leaves().get(0));
     assertEquals(0, s2.iterator().nextDoc());
     assertEquals(1, s2.getChildren().size());
@@ -219,7 +218,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
     bq.setMinimumNumberShouldMatch(2);
 
-    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), true);
+    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
     Scorer s = w.scorer(reader.leaves().get(0));
     assertEquals(0, s.iterator().nextDoc());
     assertEquals(2, s.getChildren().size());
@@ -275,8 +274,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
     @Override
@@ -329,15 +328,10 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new BasicStats("", boost);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return new SimScorer() {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimScorer(collectionStats.field()) {
         @Override
-        public float score(int doc, float freq) throws IOException {
+        public float score(float freq, long norm) {
           return freq;
         }
       };

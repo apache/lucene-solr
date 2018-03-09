@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -759,6 +760,10 @@ public class SolrZkClient implements Closeable {
   // Some pass-throughs to allow less code disruption to other classes that use SolrZkClient.
   public void clean(String path) throws InterruptedException, KeeperException {
     ZkMaintenanceUtils.clean(this, path);
+  }
+
+  public void clean(String path, Predicate<String> nodeFilter) throws InterruptedException, KeeperException {
+    ZkMaintenanceUtils.clean(this, path, nodeFilter);
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {

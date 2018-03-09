@@ -262,6 +262,21 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     }
 
   }
+  
+  public void testLucene8124() throws Exception {
+    InputSource is = new InputSource(getClass().getResource("hyphenation-LUCENE-8124.xml").toExternalForm());
+    HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
+        .getHyphenationTree(is);
+
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
+        whitespaceMockTokenizer(
+                "Rindfleisch"),
+        hyphenator);
+
+    // TODO Rindfleisch returned twice is another issue of the HyphenationCompoundTokenFilter 
+    assertTokenStreamContents(tf, new String[] { "Rindfleisch", "Rind", "Rindfleisch", "fleisch"});
+  }
+
 
   public static interface MockRetainAttribute extends Attribute {
     void setRetain(boolean attr);

@@ -17,18 +17,15 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.Objects;
 
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.SmallFloat;
 
 /** 
@@ -38,9 +35,9 @@ import org.apache.lucene.util.SmallFloat;
  * <p>
  * This is a low-level API, you should only extend this API if you want to implement 
  * an information retrieval <i>model</i>.  If you are instead looking for a convenient way 
- * to alter Lucene's scoring, consider extending a higher-level implementation
- * such as {@link TFIDFSimilarity}, which implements the vector space model with this API, or 
- * just tweaking the default implementation: {@link BM25Similarity}.
+ * to alter Lucene's scoring, consider just tweaking the default implementation:
+ * {@link BM25Similarity} or extend {@link SimilarityBase}, which makes it easy to compute
+ * a score from index statistics.
  * <p>
  * Similarity determines how Lucene weights terms, and Lucene interacts with
  * this class at both <a href="#indextime">index-time</a> and 
@@ -49,23 +46,22 @@ import org.apache.lucene.util.SmallFloat;
  * <a name="indextime">Indexing Time</a>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.  Lucene makes no assumption
- * about what is in this norm, but it is most useful for encoding length normalization 
- * information.
+ * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.
+ * Lucene makes no assumption about what is in this norm, but it is most useful for
+ * encoding length normalization information.
  * <p>
  * Implementations should carefully consider how the normalization is encoded: while
- * Lucene's {@link BM25Similarity} encodes a combination of index-time boost
- * and length normalization information with {@link SmallFloat} into a single byte, this 
- * might not be suitable for all purposes.
+ * Lucene's {@link BM25Similarity} encodes length normalization information with
+ * {@link SmallFloat} into a single byte, this might not be suitable for all purposes.
  * <p>
  * Many formulas require the use of average document length, which can be computed via a 
  * combination of {@link CollectionStatistics#sumTotalTermFreq()} and 
- * {@link CollectionStatistics#maxDoc()} or {@link CollectionStatistics#docCount()}, 
- * depending upon whether the average should reflect field sparsity.
+ * {@link CollectionStatistics#docCount()}.
  * <p>
- * Additional scoring factors can be stored in named
- * <code>NumericDocValuesField</code>s and accessed
- * at query-time with {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
+ * Additional scoring factors can be stored in named {@link NumericDocValuesField}s and
+ * accessed at query-time with {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
+ * However this should not be done in the {@link Similarity} but externally, for instance
+ * by using <tt>FunctionScoreQuery</tt>.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -76,14 +72,13 @@ import org.apache.lucene.util.SmallFloat;
  * <a name="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
- *   <li>The {@link #computeWeight(float, CollectionStatistics, TermStatistics...)} method is called a single time,
+ *   <li>The {@link #scorer(float, CollectionStatistics, TermStatistics...)} method is called a single time,
  *       allowing the implementation to compute any statistics (such as IDF, average document length, etc)
  *       across <i>the entire collection</i>. The {@link TermStatistics} and {@link CollectionStatistics} passed in 
  *       already contain all of the raw statistics involved, so a Similarity can freely use any combination
  *       of statistics without causing any additional I/O. Lucene makes no assumption about what is 
- *       stored in the returned {@link Similarity.SimWeight} object.
- *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, org.apache.lucene.index.LeafReaderContext)}
- *       The score() method is called for each matching document.
+ *       stored in the returned {@link Similarity.SimScorer} object.
+ *   <li>Then {@link SimScorer#score(float, long)} is called for every matching document to compute its score.
  * </ol>
  * <p>
  * <a name="explaintime">Explanations</a>
@@ -110,7 +105,17 @@ public abstract class Similarity {
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually set smaller values when <code>state.getLength()</code> is large,
    * and larger values when <code>state.getLength()</code> is small.
-   * 
+   *
+   * <p>Note that for a given term-document frequency, greater unsigned norms
+   * must produce scores that are lower or equal, ie. for two encoded norms
+   * {@code n1} and {@code n2} so that
+   * {@code Long.compareUnsigned(n1, n2) &gt; 0} then
+   * {@code SimScorer.score(freq, n1) &lt;= SimScorer.score(freq, n2)}
+   * for any legal {@code freq}.
+   *
+   * <p>{@code 0} is not a legal norm, so {@code 1} is the norm that produces
+   * the highest scores.
+   *
    * @lucene.experimental
    * 
    * @param state current processing state for this field
@@ -126,64 +131,68 @@ public abstract class Similarity {
    * @param termStats term-level statistics, such as the document frequency of a term across the collection.
    * @return SimWeight object with the information this Similarity needs to score a query.
    */
-  public abstract SimWeight computeWeight(float boost,
+  public abstract SimScorer scorer(float boost,
       CollectionStatistics collectionStats, TermStatistics... termStats);
-
-  /**
-   * Creates a new {@link Similarity.SimScorer} to score matching documents from a segment of the inverted index.
-   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
-   * @param context segment of the inverted index to be scored.
-   * @return SloppySimScorer for scoring documents across <code>context</code>
-   * @throws IOException if there is a low-level I/O error
-   */
-  public abstract SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException;
-  
-  /**
-   * API for scoring "sloppy" queries such as {@link TermQuery},
-   * {@link SpanQuery}, and {@link PhraseQuery}.
-   */
-  public static abstract class SimScorer {
-    
-    /**
-     * Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.)
-     */
-    public SimScorer() {}
-
-    /**
-     * Score a single document
-     * @param doc document id within the inverted index segment
-     * @param freq sloppy term frequency
-     * @return document's score
-     */
-    public abstract float score(int doc, float freq) throws IOException;
-
-    /**
-     * Explain the score for a single document
-     * @param doc document id within the inverted index segment
-     * @param freq Explanation of how the sloppy term frequency was computed
-     * @return document's score
-     */
-    public Explanation explain(int doc, Explanation freq) throws IOException {
-      return Explanation.match(
-          score(doc, freq.getValue()),
-          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:",
-          Collections.singleton(freq));
-    }
-  }
   
   /** Stores the weight for a query across the indexed collection. This abstract
    * implementation is empty; descendants of {@code Similarity} should
    * subclass {@code SimWeight} and define the statistics they require in the
    * subclass. Examples include idf, average field length, etc.
    */
-  public static abstract class SimWeight {
-    
+  public static abstract class SimScorer {
+
+    private final String field;
+
     /**
      * Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.)
+     * constructors.)
      */
-    public SimWeight() {}
+    public SimScorer(String field) {
+      this.field = Objects.requireNonNull(field);
+    }
+
+    /** Return the field that this {@link SimScorer} operates on. */
+    public final String getField() {
+      return field;
+    }
+
+    /**
+     * Score a single document. {@code freq} is the document-term sloppy
+     * frequency and must be finite and positive. {@code norm} is the
+     * encoded normalization factor as computed by
+     * {@link Similarity#computeNorm(FieldInvertState)} at index time, or
+     * {@code 1} if norms are disabled. {@code norm} is never {@code 0}.
+     * <p>
+     * Score must not decrease when {@code freq} increases, ie. if
+     * {@code freq1 &gt; freq2}, then {@code score(freq1, norm) &gt;=
+     * score(freq2, norm)} for any value of {@code norm} that may be produced
+     * by {@link Similarity#computeNorm(FieldInvertState)}.
+     * <p>
+     * Score must not increase when the unsigned {@code norm} increases, ie. if
+     * {@code Long.compareUnsigned(norm1, norm2) &gt; 0} then
+     * {@code score(freq, norm1) &lt;= score(freq, norm2)} for any legal
+     * {@code freq}.
+     * <p>
+     * As a consequence, the maximum score that this scorer can produce is bound
+     * by {@code score(Float.MAX_VALUE, 1)}.
+     * @param freq sloppy term frequency, must be finite and positive
+     * @param norm encoded normalization factor or {@code 1} if norms are disabled
+     * @return document's score
+     */
+    public abstract float score(float freq, long norm);
+
+    /**
+     * Explain the score for a single document
+     * @param freq Explanation of how the sloppy term frequency was computed
+     * @param norm encoded normalization factor, as returned by {@link Similarity#computeNorm}, or {@code 1} if norms are disabled
+     * @return document's score
+     */
+    public Explanation explain(Explanation freq, long norm) {
+      return Explanation.match(
+          score(freq.getValue().floatValue(), norm),
+          "score(freq=" + freq.getValue() +"), with freq of:",
+          Collections.singleton(freq));
+    }
 
   }
 }

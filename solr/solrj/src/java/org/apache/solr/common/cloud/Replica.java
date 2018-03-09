@@ -124,6 +124,17 @@ public class Replica extends ZkNodeProps {
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+
+    Replica replica = (Replica) o;
+
+    return name.equals(replica.name);
+  }
+
   public String getName() {
     return name;
   }

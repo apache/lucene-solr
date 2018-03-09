@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -61,14 +62,19 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<String> listData(String path) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public List<String> listData(String path, Watcher watcher) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.getChildren(path, null, true);
+      return zkClient.getChildren(path, watcher, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {
       throw e;
     }
+  }
+
+  @Override
+  public List<String> listData(String path) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+    return listData(path, null);
   }
 
   @Override
@@ -96,9 +102,9 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public String createData(String path, byte[] data, CreateMode mode) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
+  public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.create(path, data, mode, true);
+      zkClient.makePath(path, data, createMode, null, failOnExists, true);
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
@@ -107,11 +113,28 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public String createData(String path, byte[] data, CreateMode mode) throws NoSuchElementException, AlreadyExistsException, IOException, KeeperException, InterruptedException {
+    try {
+      return zkClient.create(path, data, mode, true);
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException.NodeExistsException e) {
+      throw new AlreadyExistsException(path);
+    } catch (InterruptedException e) {
+      throw e;
+    }
+  }
+
+  @Override
+  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, NotEmptyException, IOException, KeeperException, InterruptedException {
     try {
       zkClient.delete(path, version, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
+    } catch (KeeperException.NotEmptyException e) {
+      throw new NotEmptyException(path);
+    } catch (KeeperException.BadVersionException e) {
+      throw new BadVersionException(version, path);
     } catch (InterruptedException e) {
       throw e;
     }
@@ -163,4 +186,12 @@ public class ZkDistribStateManager implements DistribStateManager {
     return new AutoScalingConfig(map);
   }
 
+  @Override
+  public void close() throws IOException {
+
+  }
+
+  public SolrZkClient getZkClient() {
+    return zkClient;
+  }
 }

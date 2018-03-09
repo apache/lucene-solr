@@ -190,6 +190,14 @@ public class GeoPoint extends Vector implements SerializableObject {
   }
   
   /** Compute whether point matches another.
+   *@param p is the other point.
+   *@return true if the same.
+   */
+  public boolean isIdentical(final GeoPoint p) {
+    return isIdentical(p.x, p.y, p.z);
+  }
+  
+  /** Compute whether point matches another.
    *@param x is the x value
    *@param y is the y value
    *@param z is the z value

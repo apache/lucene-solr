@@ -20,7 +20,7 @@ An analyzer examines the text of fields and generates a token stream.
 
 Analyzers are specified as a child of the `<fieldType>` element in the `schema.xml` configuration file (in the same `conf/` directory as `solrconfig.xml`).
 
-In normal usage, only fields of type `solr.TextField` will specify an analyzer. The simplest way to configure an analyzer is with a single `<analyzer>` element whose class attribute is a fully qualified Java class name. The named class must derive from `org.apache.lucene.analysis.Analyzer`. For example:
+In normal usage, only fields of type `solr.TextField` or `solr.SortableTextField` will specify an analyzer. The simplest way to configure an analyzer is with a single `<analyzer>` element whose class attribute is a fully qualified Java class name. The named class must derive from `org.apache.lucene.analysis.Analyzer`. For example:
 
 [source,xml]
 ----
@@ -88,7 +88,7 @@ At query time, the only normalization that happens is to convert the query terms
 
 === Analysis for Multi-Term Expansion
 
-In some types of queries (i.e., Prefix, Wildcard, Regex, etc...) the input provided by the user is not natural language intended for Analysis. Things like Synonyms or Stop word filtering do not work in a logical way in these types of Queries.
+In some types of queries (i.e., Prefix, Wildcard, Regex, etc.) the input provided by the user is not natural language intended for Analysis. Things like Synonyms or Stop word filtering do not work in a logical way in these types of Queries.
 
 The analysis factories that _can_ work in these types of queries (such as Lowercasing, or Normalizing Factories) are known as {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/util/MultiTermAwareComponent.html[`MultiTermAwareComponents`]. When Solr needs to perform analysis for a query that results in Multi-Term expansion, only the `MultiTermAwareComponents` used in the `query` analyzer are used, Factory that is not Multi-Term aware will be skipped.
 

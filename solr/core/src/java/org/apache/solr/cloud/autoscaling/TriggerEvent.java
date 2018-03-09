@@ -17,11 +17,14 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.IdUtils;
 
@@ -29,24 +32,71 @@ import org.apache.solr.util.IdUtils;
  * Trigger event.
  */
 public class TriggerEvent implements MapWriter {
+  public static final String IGNORED = "ignored";
   public static final String COOLDOWN = "cooldown";
   public static final String REPLAYING = "replaying";
   public static final String NODE_NAMES = "nodeNames";
   public static final String EVENT_TIMES = "eventTimes";
+  public static final String REQUESTED_OPS = "requestedOps";
+
+  public static final class Op {
+    private final CollectionParams.CollectionAction action;
+    private final EnumMap<Suggester.Hint, Object> hints = new EnumMap<>(Suggester.Hint.class);
+
+    public Op(CollectionParams.CollectionAction action) {
+      this.action = action;
+    }
+
+    public Op(CollectionParams.CollectionAction action, Suggester.Hint hint, Object hintValue) {
+      this.action = action;
+      this.hints.put(hint, hintValue);
+    }
+
+    public void setHint(Suggester.Hint hint, Object value) {
+      hints.put(hint, value);
+    }
+
+    public CollectionParams.CollectionAction getAction() {
+      return action;
+    }
+
+    public EnumMap<Suggester.Hint, Object> getHints() {
+      return hints;
+    }
+
+    @Override
+    public String toString() {
+      return "Op{" +
+          "action=" + action +
+          ", hints=" + hints +
+          '}';
+    }
+  }
 
   protected final String id;
   protected final String source;
   protected final long eventTime;
   protected final TriggerEventType eventType;
   protected final Map<String, Object> properties = new HashMap<>();
+  protected final boolean ignored;
 
   public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
-    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties);
+    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties, false);
+  }
+
+  public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
+                      Map<String, Object> properties, boolean ignored) {
+    this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties, ignored);
   }
 
   public TriggerEvent(String id, TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
+    this(id, eventType, source, eventTime, properties, false);
+  }
+
+  public TriggerEvent(String id, TriggerEventType eventType, String source, long eventTime,
+                      Map<String, Object> properties, boolean ignored) {
     this.id = id;
     this.eventType = eventType;
     this.source = source;
@@ -54,6 +104,7 @@ public class TriggerEvent implements MapWriter {
     if (properties != null) {
       this.properties.putAll(properties);
     }
+    this.ignored = ignored;
   }
 
   /**
@@ -94,10 +145,26 @@ public class TriggerEvent implements MapWriter {
   }
 
   /**
+   * Get a named event property or default value if missing.
+   */
+  public Object getProperty(String name, Object defaultValue) {
+    Object v = properties.get(name);
+    if (v == null) {
+      return defaultValue;
+    } else {
+      return v;
+    }
+  }
+
+  /**
    * Event type.
    */
   public TriggerEventType getEventType() {
     return eventType;
+  }
+
+  public boolean isIgnored() {
+    return ignored;
   }
 
   /**
@@ -119,6 +186,9 @@ public class TriggerEvent implements MapWriter {
     ew.put("eventTime", eventTime);
     ew.put("eventType", eventType.toString());
     ew.put("properties", properties);
+    if (ignored)  {
+      ew.put("ignored", true);
+    }
   }
 
   @Override
@@ -132,6 +202,7 @@ public class TriggerEvent implements MapWriter {
     if (!id.equals(that.id)) return false;
     if (!source.equals(that.source)) return false;
     if (eventType != that.eventType) return false;
+    if (ignored != that.ignored)  return false;
     return properties.equals(that.properties);
   }
 
@@ -142,6 +213,7 @@ public class TriggerEvent implements MapWriter {
     result = 31 * result + (int) (eventTime ^ (eventTime >>> 32));
     result = 31 * result + eventType.hashCode();
     result = 31 * result + properties.hashCode();
+    result = 31 * result + Boolean.hashCode(ignored);
     return result;
   }
 

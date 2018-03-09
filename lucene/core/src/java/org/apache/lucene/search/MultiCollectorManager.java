@@ -34,6 +34,9 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
   @SafeVarargs
   @SuppressWarnings({"varargs", "unchecked"})
   public MultiCollectorManager(final CollectorManager<? extends Collector, ?>... collectorManagers) {
+    if (collectorManagers.length < 1) {
+      throw new IllegalArgumentException("There must be at least one collector");
+    }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
   }
 
@@ -71,11 +74,16 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
     }
 
     @Override
-    final public boolean needsScores() {
-      for (Collector collector : collectors)
-        if (collector.needsScores())
-          return true;
-      return false;
+    final public ScoreMode scoreMode() {
+      ScoreMode scoreMode = null;
+      for (Collector collector : collectors) {
+        if (scoreMode == null) {
+          scoreMode = collector.scoreMode();
+        } else if (scoreMode != collector.scoreMode()) {
+          return ScoreMode.COMPLETE;
+        }
+      }
+      return scoreMode;
     }
 
     public class LeafCollectors implements LeafCollector {

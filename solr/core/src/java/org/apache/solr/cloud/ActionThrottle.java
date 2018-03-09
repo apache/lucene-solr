@@ -20,7 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.util.TimeSource;
+import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +35,7 @@ public class ActionThrottle {
   private final TimeSource timeSource;
 
   public ActionThrottle(String name, long minMsBetweenActions) {
-    this.name = name;
-    this.minMsBetweenActions = minMsBetweenActions;
-    this.timeSource = TimeSource.NANO_TIME;
+    this(name, minMsBetweenActions, TimeSource.NANO_TIME);
   }
   
   public ActionThrottle(String name, long minMsBetweenActions, TimeSource timeSource) {
@@ -47,16 +45,20 @@ public class ActionThrottle {
   }
 
   public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt)  {
+    this(name, minMsBetweenActions, lastActionStartedAt, TimeSource.NANO_TIME);
+  }
+
+  public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt, TimeSource timeSource)  {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
     this.lastActionStartedAt = lastActionStartedAt;
-    this.timeSource = TimeSource.NANO_TIME;
+    this.timeSource = timeSource;
   }
 
   public void reset() {
     lastActionStartedAt = null;
   }
-  
+
   public void markAttemptingAction() {
     lastActionStartedAt = timeSource.getTime();
   }
@@ -68,7 +70,7 @@ public class ActionThrottle {
     long diff = timeSource.getTime() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
-    log.info("The last {} attempt started {}ms ago.", name, diffMs);
+    log.debug("The last {} attempt started {}ms ago.", name, diffMs);
     int sleep = 0;
     
     if (diffMs > 0 && diff < minNsBetweenActions) {

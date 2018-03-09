@@ -262,26 +262,26 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     loadFeature(
             featureNames[0],
-            SolrFeature.class.getCanonicalName(),
+            SolrFeature.class.getName(),
             featureStore,
             "{\"q\":\"{!func}pow(popularity,2)\"}"
     );
     loadFeature(
             featureNames[1],
-            ValueFeature.class.getCanonicalName(),
+            ValueFeature.class.getName(),
             featureStore,
             "{\"value\":2}"
     );
     loadFeature(
             featureNames[2],
-            OriginalScoreFeature.class.getCanonicalName(),
+            OriginalScoreFeature.class.getName(),
             featureStore,
             null
     );
 
     loadModel(
              "powpularityS-model",
-             LinearModel.class.getCanonicalName(),
+             LinearModel.class.getName(),
              featureNames,
              featureStore,
              jsonModelParams

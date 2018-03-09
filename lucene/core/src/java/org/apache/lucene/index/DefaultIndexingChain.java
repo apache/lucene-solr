@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
@@ -126,6 +127,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
     }
+    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, IOContext.READ, state.segmentSuffix);
     
     t0 = System.nanoTime();
     writeDocValues(state, sortMap);
@@ -159,7 +161,16 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     }
 
-    termsHash.flush(fieldsToFlush, state, sortMap);
+    try (NormsProducer norms = readState.fieldInfos.hasNorms()
+        ? state.segmentInfo.getCodec().normsFormat().normsProducer(readState)
+        : null) {
+      NormsProducer normsMergeInstance = null;
+      if (norms != null) {
+        // Use the merge instance in order to reuse the same IndexInput for all terms
+        normsMergeInstance = norms.getMergeInstance();
+      }
+      termsHash.flush(fieldsToFlush, state, sortMap, normsMergeInstance);
+    }
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write postings and finish vectors");
     }
@@ -597,11 +608,7 @@ final class DefaultIndexingChain extends DocConsumer {
       // First time we are seeing this field in this segment
 
       FieldInfo fi = fieldInfos.getOrAdd(name);
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fi.setIndexOptions(fieldType.indexOptions());
-      
+      initIndexOptions(fi, fieldType.indexOptions());
       fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
@@ -619,14 +626,22 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
     } else if (invert && fp.invertState == null) {
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fp.fieldInfo.setIndexOptions(fieldType.indexOptions());
+      initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
       fp.setInvertState();
     }
 
     return fp;
+  }
+
+  private void initIndexOptions(FieldInfo info, IndexOptions indexOptions) {
+    // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
+    // IndexOptions to decide what arrays it must create).
+    assert info.getIndexOptions() == IndexOptions.NONE;
+    // This is the first time we are seeing this field indexed, so we now
+    // record the index options so that any future attempt to (illegally)
+    // change the index options of this field, will throw an IllegalArgExc:
+    fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
+    info.setIndexOptions(indexOptions);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */
@@ -669,7 +684,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     void setInvertState() {
-      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name);
+      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name, fieldInfo.getIndexOptions());
       termsHashPerField = termsHash.addField(invertState, fieldInfo);
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
@@ -693,6 +708,9 @@ final class DefaultIndexingChain extends DocConsumer {
           normValue = 0;
         } else {
           normValue = similarity.computeNorm(invertState);
+          if (normValue == 0) {
+            throw new IllegalStateException("Similarity " + similarity + " return 0 for non-empty field");
+          }
         }
         norms.addValue(docState.docID, normValue);
       }

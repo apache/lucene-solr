@@ -424,7 +424,7 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 }
 ----
 
-The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes. The next example demonstrates using the `maxDepth` param to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
+The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes. The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
 
 [source,text]
 ----
@@ -466,7 +466,7 @@ curl -H 'Content-Type: application/json' 'http://localhost:8983/solr/alt_graph/u
   ]'
 ----
 
-With this alternative document model, all of the same queries demonstrated above can still be executed, simply by changing the "```from```" param to replace the "```in_edge```" field with the "```id```" field:
+With this alternative document model, all of the same queries demonstrated above can still be executed, simply by changing the "```from```" parameter to replace the "```in_edge```" field with the "```id```" field:
 
 [source,text]
 ----

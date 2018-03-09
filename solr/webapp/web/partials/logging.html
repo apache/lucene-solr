@@ -46,11 +46,12 @@ limitations under the License.
         <tr ng-show="events.length==0">
           <td colspan="4">No Events available</td>
         </tr>
-      </thead>
+     </tfoot>
     </table>
     <div id="footer" class="clearfix">
-      <div id="state" class="loader">Last Check: {{sinceDisplay}}</div>
+      <div id="state">Last Check: {{sinceDisplay}}</div>
       <div id="date-format" ng-click="toggleTimezone()"><a ng-class="{on: timezone=='UTC'}">Show dates in UTC</a></div>
+      <a id="refresh-toggle" ng-class="{'active': !stopped, 'stopped': stopped}" ng-click="toggleRefresh()">Auto-Refresh</a>
     </div>
   </div>
 </div>

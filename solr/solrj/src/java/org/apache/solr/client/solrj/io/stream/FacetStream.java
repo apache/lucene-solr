@@ -348,7 +348,9 @@ public class FacetStream extends TupleStream implements Expressible  {
 
   public void close() throws IOException {
     if(cache == null) {
-      cloudSolrClient.close();
+      if (cloudSolrClient != null) {
+        cloudSolrClient.close();
+      }
     }
   }
 

@@ -17,9 +17,6 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -46,26 +43,13 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    PerFieldSimWeight weight = new PerFieldSimWeight();
-    weight.delegate = get(collectionStats.field());
-    weight.delegateWeight = weight.delegate.computeWeight(boost, collectionStats, termStats);
-    return weight;
-  }
-
-  @Override
-  public final SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-    PerFieldSimWeight perFieldWeight = (PerFieldSimWeight) weight;
-    return perFieldWeight.delegate.simScorer(perFieldWeight.delegateWeight, context);
+  public final SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    return get(collectionStats.field()).scorer(boost, collectionStats, termStats);
   }
   
   /** 
    * Returns a {@link Similarity} for scoring a field.
    */
   public abstract Similarity get(String name);
-  
-  static class PerFieldSimWeight extends SimWeight {
-    Similarity delegate;
-    SimWeight delegateWeight;
-  }
+
 }

@@ -137,8 +137,7 @@ public final class FieldInfo {
       if (this.indexOptions == IndexOptions.NONE) {
         this.indexOptions = indexOptions;
       } else if (indexOptions != IndexOptions.NONE) {
-        // downgrade
-        this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
+        throw new IllegalArgumentException("cannot change field \"" + name + "\" from index options=" + this.indexOptions + " to inconsistent index options=" + indexOptions);
       }
     }
 
@@ -226,8 +225,7 @@ public final class FieldInfo {
       if (indexOptions == IndexOptions.NONE) {
         indexOptions = newIndexOptions;
       } else if (newIndexOptions != IndexOptions.NONE) {
-        // downgrade
-        indexOptions = indexOptions.compareTo(newIndexOptions) < 0 ? indexOptions : newIndexOptions;
+        throw new IllegalArgumentException("cannot change field \"" + name + "\" from index options=" + indexOptions + " to inconsistent index options=" + newIndexOptions);
       }
     }
 

@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -36,7 +37,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.TFIDFSimilarity.IDFStats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -157,7 +157,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
   
   public void testSaneNormValues() throws IOException {
     ClassicSimilarity sim = new ClassicSimilarity();
-    TFIDFSimilarity.IDFStats stats = (IDFStats) sim.computeWeight(1f, indexSearcher.collectionStatistics("test"));
+    TFIDFSimilarity.TFIDFScorer stats = (TFIDFSimilarity.TFIDFScorer) sim.scorer(1f, indexSearcher.collectionStatistics("test"));
     for (int i = 0; i < 256; i++) {
       float boost = stats.normTable[i];
       assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
@@ -177,7 +177,9 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
       final int length = TestUtil.nextInt(random(), 1, 1000);
       final int position = random().nextInt(length);
       final int numOverlaps = random().nextInt(length);
-      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", position, length, numOverlaps, 100);
+      final int maxTermFrequency = 1;
+      final int uniqueTermCount = 1;
+      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS, position, length, numOverlaps, 100, maxTermFrequency, uniqueTermCount);
       assertEquals(
           sim2.computeNorm(state),
           sim1.computeNorm(state),

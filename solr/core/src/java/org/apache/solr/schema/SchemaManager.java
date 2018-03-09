@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -93,7 +94,7 @@ public class SchemaManager {
     if (timeout < 1) {
       timeout = 600;
     }
-    TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();

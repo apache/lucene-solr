@@ -24,7 +24,10 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
+
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 
 class AddReplicaSuggester extends Suggester {
 
@@ -39,37 +42,38 @@ class AddReplicaSuggester extends Suggester {
     if (shards.isEmpty()) {
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");
     }
-    for (Pair<String,String> shard : shards) {
+    for (Pair<String, String> shard : shards) {
       Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
-      //iterate through elements and identify the least loaded
+      //iterate through elemenodesnts and identify the least loaded
       List<Violation> leastSeriousViolation = null;
-      Integer targetNodeIndex = null;
+      Row bestNode = null;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
-        if (!row.isLive) continue;
-        if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
+        if (!isNodeSuitableForReplicaAddition(row)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type);
-
-        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
+        List<Violation> errs = testChangedMatrix(strict, tmpRow.session.matrix);
         if (!containsNewErrors(errs)) {
           if (isLessSerious(errs, leastSeriousViolation)) {
             leastSeriousViolation = errs;
-            targetNodeIndex = i;
+            bestNode = tmpRow;
           }
         }
       }
 
-      if (targetNodeIndex != null) {// there are no rule violations
-        getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(shard.first(), shard.second(), type));
+      if (bestNode != null) {// there are no rule violations
+        this.session = bestNode.session;
         return CollectionAdminRequest
             .addReplicaToShard(shard.first(), shard.second())
             .setType(type)
-            .setNode(getMatrix().get(targetNodeIndex).node);
+            .setNode(bestNode.node);
       }
     }
 
     return null;
   }
 
-
+  @Override
+  public CollectionParams.CollectionAction getAction() {
+    return ADDREPLICA;
+  }
 }

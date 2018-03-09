@@ -831,6 +831,8 @@ This is specialized version of the <<Synonym Graph Filter>> that uses a mapping 
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
+
 *Arguments:*
 
 `managed`:: The name that should be used for this mapping on synonyms in the managed REST API.
@@ -1435,6 +1437,8 @@ This filter maps single- or multi-token synonyms, producing a fully correct grap
 
 If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Synonym Filter, because the indexer can't directly consume a graph. To get fully correct positional queries when your synonym replacements are multiple tokens, you should instead apply synonyms using this filter at query time.
 
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
+
 *Factory class:* `solr.SynonymGraphFilterFactory`
 
 *Arguments:*
@@ -1575,6 +1579,38 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 *Tokenizer to Filter:* "Pay", "Bob's", "I.O.U."
 
 *Out:* "Pay"[<ALPHANUM>], "Bob's"[<APOSTROPHE>], "I.O.U."[<ACRONYM>]
+
+== Type As Synonym Filter
+
+This filter adds the token's type, as a token at the same position as the token, optionally with a configurable prefix prepended.
+
+*Factory class:* `solr.TypeAsSynonymFilterFactory`
+
+*Arguments:*
+
+`prefix`:: (optional) The prefix to prepend to the token's type.
+
+*Examples:*
+
+With the example below, each token's type will be emitted verbatim at the same position:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory"/>
+</analyzer>
+----
+
+With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="_type_"/>
+</analyzer>
+----
 
 == Type Token Filter
 

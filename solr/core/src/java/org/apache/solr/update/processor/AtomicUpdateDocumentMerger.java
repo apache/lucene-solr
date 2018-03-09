@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -115,6 +116,10 @@ public class AtomicUpdateDocumentMerger {
             case "inc":
               updateField = true;
               doInc(toDoc, sif, fieldVal);
+              break;
+            case "add-distinct":
+              updateField = true;
+              doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
               //Perhaps throw an error here instead?
@@ -315,6 +320,41 @@ public class AtomicUpdateDocumentMerger {
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
     toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal));
+  }
+
+  protected void doAddDistinct(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
+    final String name = sif.getName();
+    SolrInputField existingField = toDoc.get(name);
+
+    SchemaField sf = schema.getField(name);
+
+    if (sf != null) {
+      Collection<Object> original = existingField != null ?
+          existingField.getValues() :
+          new ArrayList<>();
+
+      int initialSize = original.size();
+      if (fieldVal instanceof Collection) {
+        for (Object object : (Collection) fieldVal) {
+          if (!original.contains(object)) {
+            original.add(object);
+          }
+        }
+      } else {
+        Object object = sf.getType().toNativeType(fieldVal);
+        if (!original.contains(object)) {
+          original.add(object);
+        }
+      }
+
+      if (original.size() > initialSize) { // update only if more are added
+        if (original.size() == 1) { // if single value, pass the value instead of List
+          doAdd(toDoc, sif, original.toArray()[0]);
+        } else {
+          toDoc.setField(name, original);
+        }
+      }
+    }
   }
 
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {

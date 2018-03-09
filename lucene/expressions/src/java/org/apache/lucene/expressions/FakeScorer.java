@@ -45,4 +45,9 @@ class FakeScorer extends Scorer {
   public float score() throws IOException {
     return score;
   }
+
+  @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return Float.POSITIVE_INFINITY;
+  }
 }

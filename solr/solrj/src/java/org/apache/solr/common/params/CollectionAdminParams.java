@@ -28,6 +28,8 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
+  String ROLE = "role";
+
   /** Predefined system collection name. */
   String SYSTEM_COLL = ".system";
 
@@ -62,4 +64,14 @@ public interface CollectionAdminParams {
    */
   public static final Collection<String> INDEX_BACKUP_STRATEGIES =
       Arrays.asList(COPY_FILES_STRATEGY, NO_INDEX_BACKUP_STRATEGY);
+
+  /**
+   * Name of collection property to set
+   */
+  public static final String PROPERTY_NAME = "propertyName";
+
+  /**
+   * Value of collection property to set
+   */
+  public static final String PROPERTY_VALUE = "propertyValue";
 }

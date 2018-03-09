@@ -42,16 +42,16 @@ final class BooleanWeight extends Weight {
   final BooleanQuery query;
   
   final ArrayList<Weight> weights;
-  final boolean needsScores;
+  final ScoreMode scoreMode;
 
-  BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     super(query);
     this.query = query;
-    this.needsScores = needsScores;
-    this.similarity = searcher.getSimilarity(needsScores);
+    this.scoreMode = scoreMode;
+    this.similarity = searcher.getSimilarity();
     weights = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring(), boost);
+      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
       weights.add(w);
     }
   }
@@ -60,7 +60,7 @@ final class BooleanWeight extends Weight {
   public void extractTerms(Set<Term> terms) {
     int i = 0;
     for (BooleanClause clause : query) {
-      if (clause.isScoring() || (needsScores == false && clause.isProhibited() == false)) {
+      if (clause.isScoring() || (scoreMode.needsScores() == false && clause.isProhibited() == false)) {
         weights.get(i).extractTerms(terms);
       }
       i++;
@@ -178,7 +178,7 @@ final class BooleanWeight extends Weight {
       return optional.get(0);
     }
 
-    return new BooleanScorer(this, optional, Math.max(1, query.getMinimumNumberShouldMatch()), needsScores);
+    return new BooleanScorer(this, optional, Math.max(1, query.getMinimumNumberShouldMatch()), scoreMode.needsScores());
   }
 
   // Return a BulkScorer for the required clauses only,
@@ -201,7 +201,7 @@ final class BooleanWeight extends Weight {
         // no matches
         return null;
       }
-      if (c.isScoring() == false && needsScores) {
+      if (c.isScoring() == false && scoreMode.needsScores()) {
         scorer = disableScoring(scorer);
       }
     }
@@ -285,6 +285,11 @@ final class BooleanWeight extends Weight {
 
   @Override
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      // If only the top docs are requested, use the default bulk scorer
+      // so that we can dynamically prune non-competitive hits.
+      return super.bulkScorer(context);
+    }
     final BulkScorer bulkScorer = booleanScorer(context);
     if (bulkScorer != null) {
       // bulk scoring is applicable, use it
@@ -361,11 +366,11 @@ final class BooleanWeight extends Weight {
     }
 
     // we don't need scores, so if we have required clauses, drop optional clauses completely
-    if (!needsScores && minShouldMatch == 0 && scorers.get(Occur.MUST).size() + scorers.get(Occur.FILTER).size() > 0) {
+    if (scoreMode.needsScores() == false && minShouldMatch == 0 && scorers.get(Occur.MUST).size() + scorers.get(Occur.FILTER).size() > 0) {
       scorers.get(Occur.SHOULD).clear();
     }
 
-    return new Boolean2ScorerSupplier(this, scorers, needsScores, minShouldMatch);
+    return new Boolean2ScorerSupplier(this, scorers, scoreMode, minShouldMatch);
   }
 
 }

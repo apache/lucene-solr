@@ -26,6 +26,18 @@ API Changes
 * LUCENE-7996: Queries are now required to produce positive scores.
   (Adrien Grand)
 
+* LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
+  removed (Alan Woodward)
+
+* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward, 
+  Robert Muir)
+
+* LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
+  scoring factors. (Adrien Grand)
+
+* LUCENE-8113: TermContext has been renamed to TermStates, and can now be
+  constructed lazily if term statistics are not required (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -37,6 +49,18 @@ Changes in Runtime Behavior
   divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
   instead of returning bogus values for a non-existent term or field. (Robert Muir)
 
+* LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
+  when the function produces a negative value. (Adrien Grand)
+
+* LUCENE-8116: Similarities now score fields that omit norms as if the norm was
+  1. This might change score values on fields that omit norms. (Adrien Grand)
+
+* LUCENE-8134: Index options are no longer automatically downgraded.
+  (Adrien Grand)
+
+* LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
+  (Robert Muir, Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -44,10 +68,30 @@ Improvements
   Add missing range checks for similarity parameters.
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
+* LUCENE-8011: Improved similarity explanations.
+  (Mayya Sharipova via Adrien Grand)
+
+* LUCENE-4198: Codecs now have the ability to index score impacts.
+  (Adrien Grand)
+
+* LUCENE-8135: Boolean queries now implement the block-max WAND algorithm in
+  order to speed up selection of top scored documents. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
+
+* LUCENE-4100: Disjunctions now support faster collection of top hits when the
+  total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
+
+* LUCENE-7993: Phrase queries are now faster if total hit counts are not
+  required. (Adrien Grand)
+
+* LUCENE-8109: Boolean queries propagate information about the minimum
+  competitive score in order to make collection faster if there are disjunctions
+  or phrase queries as sub queries, which know how to leverage this information
+  to run faster. (Adrien Grand)
 
 ======================= Lucene 7.3.0 =======================
 
@@ -55,6 +99,145 @@ API Changes
 
 * LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
   (Pulak Ghosh via Adrien Grand)
+
+* LUCENE-8099: Deprecate CustomScoreQuery, BoostedQuery and BoostingQuery.
+  Users should instead use FunctionScoreQuery, possibly combined with
+  a lucene expression (Alan Woodward)
+
+* LUCENE-8104: Remove facets module compile-time dependency on queries
+  (Alan Woodward)
+
+* LUCENE-8145: UnifiedHighlighter now uses a unitary OffsetsEnum rather
+  than a list of enums (Alan Woodward, David Smiley, Jim Ferenczi, Timothy
+  Rodriguez)
+
+New Features
+
+* LUCENE-2899: Add new module analysis/opennlp, with analysis components
+  to perform tokenization, part-of-speech tagging, lemmatization and phrase
+  chunking by invoking the corresponding OpenNLP tools. Named entity
+  recognition is also provided as a Solr update request processor.
+  (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
+  Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
+
+* LUCENE-8126: Add new spatial prefix tree (SPT) based on google S2 geometry.
+  It can only be used currently with Geo3D spatial context and it provides
+  improvements on indexing time for non-points shapes and on query performance.
+  (Ignacio Vera, David Smiley).
+
+Improvements
+
+* LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
+  Index/Update Threads try to help out flushing pending document buffers to
+  disk. This change adds an expert setting to opt ouf of this behavior unless
+  flusing is falling behind. (Simon Willnauer)
+
+* LUCENE-8086: spatial-extras Geo3dFactory: Use GeoExactCircle with
+  configurable precision for non-spherical planet models.
+  (Ignacio Vera via David Smiley)
+
+* LUCENE-8093: TrimFilterFactory implements MultiTermAwareComponent (Alan Woodward)
+
+* LUCENE-8094: TermInSetQuery.toString now returns "field:(A B C)" (Mike McCandless)
+
+* LUCENE-8121: UnifiedHighlighter passage relevancy is improved for terms that are
+  position sensitive (e.g. part of a phrase) by having an accurate freq.
+  (David Smiley)
+
+* LUCENE-8129: A Unicode set filter can now be specified when using ICUFoldingFilter.
+  (Ere Maijala)
+
+* LUCENE-7966: Build Multi-Release JARs to enable usage of optimized intrinsic methods
+  from Java 9 for index bounds checking and array comparison/mismatch. This change
+  introduces Java 8 replacements for those Java 9 methods and patches the compiled
+  classes to use the optimized variants through the MR-JAR mechanism.
+  (Uwe Schindler, Robert Muir, Adrien Grand, Mike McCandless)
+
+* LUCENE-8127: Speed up rewriteNoScoring when there are no MUST clauses.
+  (Michael Braun via Adrien Grand)
+
+* LUCENE-8152: Improve consumption of doc-value iterators. (Horatiu Lazu via
+  Adrien Grand)
+
+* LUCENE-8033: FieldInfos now always use a dense encoding. (Mayya Sharipova
+  via Adrien Grand)
+
+* LUCENE-8190: Specialized cell interface to allow any spatial prefix tree to
+  benefit from the setting setPruneLeafyBranches on RecursivePrefixTreeStrategy.
+  (Ignacio Vera)
+
+Bug Fixes
+
+* LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
+  (Xiaoshan Sun via Adrien Grand)
+
+* SOLR-11758: Fixed FloatDocValues.boolVal to correctly return true for all values != 0.0F
+  (Munendra S N via hossman)
+
+* LUCENE-8121: The UnifiedHighlighter would highlight some terms within some nested
+  SpanNearQueries at positions where it should not have.  It's fixed in the UH by
+  switching to the SpanCollector API.  The original Highlighter still has this
+  problem (LUCENE-2287, LUCENE-5455, LUCENE-6796).  Some public but internal parts of
+  the UH were refactored. (David Smiley, Steve Davids)
+
+* LUCENE-8120: Fix LatLonBoundingBox's toString() method (Martijn van Groningen, Adrien Grand)
+
+* LUCENE-8130: Fix NullPointerException from TermStates.toString() (Mike McCandless)
+
+* LUCENE-8124: Fixed HyphenationCompoundWordTokenFilter to handle correctly
+  hyphenation patterns with indicator >= 7. (Holger Bruch via Adrien Grand)
+
+* LUCENE-8163: BaseDirectoryTestCase could produce random filenames that fail
+  on Windows (Alan Woodward)
+
+* LUCENE-8174: Fixed {Float,Double,Int,Long}Range.toString(). (Oliver Kaleske
+  via Adrien Grand)
+
+* LUCENE-8182: Fixed BoostingQuery to apply the context boost instead of the parent query
+  boost (Jim Ferenczi)
+
+* LUCENE-8188: Fixed bugs in OpenNLPOpsFactory that were causing InputStreams fetched from the
+  ResourceLoader to be leaked (hossman)
+
+
+Other
+
+* LUCENE-8111: IndexOrDocValuesQuery Javadoc references outdated method name.
+  (Kai Chan via Adrien Grand)
+
+* LUCENE-8106: Add script (reproduceJenkinsFailures.py) to attempt to reproduce
+  failing tests from a Jenkins log. (Steve Rowe)
+
+* LUCENE-8075: Removed unnecessary null check in IntersectTermsEnum.
+  (Pulak Ghosh via Adrien Grand)
+
+* LUCENE-8156: Require users to not have ASM on the Ant classpath during build.
+  This is required by LUCENE-7966. (Adrien Grand, Uwe Schindler)
+
+* LUCENE-8161: spatial-extras: the Spatial4j dependency has been updated from 0.6 to 0.7,
+  which is drop-in compatible (Lucene doesn't expressly use any of the few API differences).
+  Spatial4j 0.7 is compatible with JTS 1.15.0 and not any prior version.  JTS 1.15.0 is
+  dual-licensed to include BSD; prior versions were LGPL.  (David Smiley)
+
+* LUCENE-8155: Add back support in smoke tester to run against later Java versions.
+  (Uwe Schindler)
+
+* LUCENE-8169: Migrated build to use OpenClover 4.2.1 for checking code coverage.
+  (Uwe Schindler)
+
+* LUCENE-8170: Improve OpenClover reports (separate test from production code);
+  enable coverage reports inside test-frameworks.  (Uwe Schindler)
+
+Build
+
+* LUCENE-8168: Moved Groovy scripts in build files to separate files.
+  Update Groovy to 2.4.13.  (Uwe Schindler)
+
+======================= Lucene 7.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-8117: Fix advanceExact on SortedNumericDocValues produced by Lucene54DocValues. (Jim Ferenczi).
 
 ======================= Lucene 7.2.0 =======================
 
@@ -158,26 +341,23 @@ Optimizations
   caching as they could break memory accounting of the query cache.
   (Adrien Grand)
 
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents
+  instead of 1. (Simon Willnauer)
+
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless)
+
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
   on Java 9+.  (Uwe Schindler)
 
-======================= Lucene 7.1.1 =======================
-
-Bug Fixes
-
-* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
-  instead of 1. (Simon Willnauer)
-
-* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
-  documents. Once this happens, Lucene refuses to open the index and throws a
-  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless) 
-
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
   jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
+
 
 ======================= Lucene 7.1.0 =======================
 
@@ -551,6 +731,13 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.3 =======================
+
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
 ======================= Lucene 6.6.2 =======================
 

@@ -87,7 +87,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
       CoreContainer container = info.getReq().getCore().getCoreContainer();
@@ -102,12 +102,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final Query joinQuery;
       try {
         joinQuery = JoinUtil.createJoinQuery(fromField, true,
-            toField, fromQuery, fromHolder.get(), scoreMode);
+            toField, fromQuery, fromHolder.get(), this.scoreMode);
       } finally {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores, boost);
+      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -157,11 +157,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       final Query jq = JoinUtil.createJoinQuery(fromField, true,
-          toField, fromQuery, info.getReq().getSearcher(), scoreMode);
-      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores, boost);
+          toField, fromQuery, info.getReq().getSearcher(), this.scoreMode);
+      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
     }
 
 

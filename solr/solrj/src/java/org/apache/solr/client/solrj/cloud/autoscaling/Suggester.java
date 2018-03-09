@@ -29,13 +29,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
 
 /* A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
@@ -44,7 +49,7 @@ import org.apache.solr.common.util.Utils;
  *  b) it causes no new violations
  *
  */
-public abstract class Suggester {
+public abstract class Suggester implements MapWriter {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
@@ -59,12 +64,16 @@ public abstract class Suggester {
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
     if (hint.multiValued) {
-      Collection<?> values = value instanceof Collection ? (Collection)value : Collections.singletonList(value);
+      Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
       ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
     } else {
       hints.put(hint, value == null ? null : String.valueOf(value));
     }
     return this;
+  }
+
+  public CollectionParams.CollectionAction getAction() {
+    return null;
   }
 
   /**
@@ -74,6 +83,13 @@ public abstract class Suggester {
   public Suggester forceOperation(boolean force) {
     this.force = force;
     return this;
+  }
+
+  protected boolean isNodeSuitableForReplicaAddition(Row row) {
+    if (!row.isLive) return false;
+    if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
+    if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+    return true;
   }
 
   abstract SolrRequest init();
@@ -104,8 +120,8 @@ public abstract class Suggester {
       if (srcNodes != null && !srcNodes.isEmpty()) {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
-          if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
-            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session.cloudManager));
+          if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
+            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
         }
       }
       session.applyRules();
@@ -174,7 +190,7 @@ public abstract class Suggester {
   boolean containsNewErrors(List<Violation> violations) {
     for (Violation v : violations) {
       int idx = originalViolations.indexOf(v);
-      if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
+      if (idx < 0 /*|| originalViolations.get(idx).isLessSerious(v)*/) return true;
     }
     return false;
   }
@@ -199,14 +215,14 @@ public abstract class Suggester {
       if (!isAllowed(e.getKey(), Hint.COLL)) continue;
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
-        if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
+        if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
         replicaList.add(new Pair<>(shard.getValue().get(0), r));
       }
     }
   }
 
   List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences,rows);
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, rows);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
@@ -219,19 +235,15 @@ public abstract class Suggester {
     return errors;
   }
 
-  ArrayList<Row> getModifiedMatrix(List<Row> matrix, Row tmpRow, int i) {
-    ArrayList<Row> copy = new ArrayList<>(matrix);
-    copy.set(i, tmpRow);
-    return copy;
-  }
 
   protected boolean isAllowed(Object v, Hint hint) {
     Object hintVal = hints.get(hint);
+    if (hintVal == null) return true;
     if (hint.multiValued) {
       Set set = (Set) hintVal;
       return set == null || set.contains(v);
     } else {
-      return hintVal == null || Objects.equals(v, hintVal);
+      return hintVal == null || hint.valueValidator.test(new Pair<>(hintVal, v));
     }
   }
 
@@ -251,17 +263,36 @@ public abstract class Suggester {
         }
       }
 
-    }),
+    }) {
+      @Override
+      public Object parse(Object v) {
+        if (v instanceof Map) {
+          Map map = (Map) v;
+          return Pair.parse(map);
+        }
+        return super.parse(v);
+      }
+    },
     SRC_NODE(true),
     TARGET_NODE(true),
     REPLICATYPE(false, o -> {
       if (!(o instanceof Replica.Type)) {
         throw new RuntimeException("REPLICATYPE hint must use a ReplicaType");
       }
+    }),
+
+    MINFREEDISK(false, o -> {
+      if (!(o instanceof Number)) throw new RuntimeException("MINFREEDISK hint must be a number");
+    }, hintValVsActual -> {
+      Double hintFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.first(), false);
+      Double actualFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.second(), false);
+      if (actualFreediskInGb == null) return false;
+      return actualFreediskInGb > hintFreediskInGb;
     });
 
     public final boolean multiValued;
     public final Consumer<Object> validator;
+    public final Predicate<Pair<Object, Object>> valueValidator;
 
     Hint(boolean multiValued) {
       this(multiValued, v -> {
@@ -273,11 +304,39 @@ public abstract class Suggester {
     }
 
     Hint(boolean multiValued, Consumer<Object> c) {
+      this(multiValued, c, equalsPredicate);
+    }
+
+    Hint(boolean multiValued, Consumer<Object> c, Predicate<Pair<Object, Object>> testval) {
       this.multiValued = multiValued;
       this.validator = c;
+      this.valueValidator = testval;
     }
+
+    public static Hint get(String s) {
+      for (Hint hint : values()) {
+        if (hint.name().equals(s)) return hint;
+      }
+      return null;
+    }
+
+    public Object parse(Object v) {
+      return v;
+    }
+
 
   }
 
+  static Predicate<Pair<Object, Object>> equalsPredicate = valPair -> Objects.equals(valPair.first(), valPair.second());
 
+  @Override
+  public String toString() {
+    return jsonStr();
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("action", String.valueOf(getAction()));
+    ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
+  }
 }

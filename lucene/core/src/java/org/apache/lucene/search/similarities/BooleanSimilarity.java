@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.search.similarities;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -47,39 +44,31 @@ public class BooleanSimilarity extends Similarity {
   }
 
   @Override
-  public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    return new BooleanWeight(boost);
+  public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    return new BooleanWeight(collectionStats.field(), boost);
   }
 
-  private static class BooleanWeight extends SimWeight {
+  private static class BooleanWeight extends SimScorer {
     final float boost;
 
-    BooleanWeight(float boost) {
+    BooleanWeight(String field, float boost) {
+      super(field);
       this.boost = boost;
     }
-  }
 
-  @Override
-  public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-    final float boost = ((BooleanWeight) weight).boost;
+    @Override
+    public float score(float freq, long norm) {
+      return boost;
+    }
 
-    return new SimScorer() {
-
-      @Override
-      public float score(int doc, float freq) throws IOException {
-        return boost;
-      }
-
-      @Override
-      public Explanation explain(int doc, Explanation freq) throws IOException {
-        Explanation queryBoostExpl = Explanation.match(boost, "boost");
-        return Explanation.match(
-            queryBoostExpl.getValue(),
-            "score(" + getClass().getSimpleName() + ", doc=" + doc + "), computed from:",
-            queryBoostExpl);
-      }
-
-    };
+    @Override
+    public Explanation explain(Explanation freq, long norm) {
+      Explanation queryBoostExpl = Explanation.match(boost, "boost, query boost");
+      return Explanation.match(
+          queryBoostExpl.getValue(),
+          "score(" + getClass().getSimpleName() + "), computed from:",
+          queryBoostExpl);
+    }
   }
 
 }

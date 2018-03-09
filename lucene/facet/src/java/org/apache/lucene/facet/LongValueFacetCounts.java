@@ -23,11 +23,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.Facets;
+import com.carrotsearch.hppc.LongIntScatterMap;
+import com.carrotsearch.hppc.cursors.LongIntCursor;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,9 +37,6 @@ import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
-
-import com.carrotsearch.hppc.LongIntScatterMap;
-import com.carrotsearch.hppc.cursors.LongIntCursor;
 
 
 /** {@link Facets} implementation that computes counts for
@@ -72,14 +67,14 @@ public class LongValueFacetCounts extends Facets {
   }
 
   /** Create {@code LongValueFacetCounts}, using the provided
-   *  {@link org.apache.lucene.queries.function.ValueSource}.  If hits is
+   *  {@link LongValuesSource}.  If hits is
    *  null then all facets are counted. */
   public LongValueFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits) throws IOException {
     this(field, valueSource, hits, false);
   }
 
   /** Create {@code LongValueFacetCounts}, using the provided
-   *  {@link org.apache.lucene.queries.function.ValueSource}.
+   *  {@link LongValuesSource}.
    *  random access (implement {@link org.apache.lucene.search.DocIdSet#bits}). */
   public LongValueFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits,
                               boolean multiValued) throws IOException {

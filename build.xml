@@ -125,176 +125,7 @@
   </target>
   
   <target name="-validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
-    <!-- check that there are no @author javadoc tags, tabs, svn keywords, javadoc-style licenses, or nocommits: -->
-    <property name="validate.baseDir" location="."/>
-    <groovy taskname="source-patterns" classpathref="rat.classpath"><![CDATA[
-      import org.apache.tools.ant.BuildException;
-      import org.apache.tools.ant.Project;
-      import org.apache.rat.Defaults;
-      import org.apache.rat.document.impl.FileDocument;
-      import org.apache.rat.api.MetaData;
-      
-      def extensions = [
-        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
-        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
-        'properties', 'mdtext',
-        'template', 'adoc', 'json',
-      ];
-      def invalidPatterns = [
-        (~$/@author\b/$) : '@author javadoc tag',
-        (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
-        (~$/\bTOOD:/$) : 'TOOD instead TODO',
-        (~$/\t/$) : 'tabs instead spaces',
-        (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
-        (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
-        (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
-        (~$/\$$(?:Head)?URL\b/$) : 'svn keyword',
-        (~$/\$$Id\b/$) : 'svn keyword',
-        (~$/\$$Header\b/$) : 'svn keyword',
-        (~$/\$$Source\b/$) : 'svn keyword',
-        (~$/^\uFEFF/$) : 'UTF-8 byte order mark'
-      ];
-      
-      def baseDir = properties['validate.baseDir'];
-      def baseDirLen = baseDir.length() + 1;
-      
-      def found = 0;
-      def violations = new TreeSet();
-      def reportViolation = { f, name ->
-        task.log(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'), Project.MSG_ERR);
-        violations.add(name);
-        found++;
-      }
-      
-      def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
-      def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
-      def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
-      def lineSplitter = ~$/[\r\n]+/$;
-      def singleLineSplitter = ~$/\n\r?/$;
-      def licenseMatcher = Defaults.createDefaultMatcher();
-      def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
-      def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
-      def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
-      def sourceHeaderPattern = ~$/\[source\b.*/$;
-      def blockBoundaryPattern = ~$/----\s*/$;
-      def blockTitlePattern = ~$/\..*/$;
-      def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
-      
-      def isLicense = { matcher, ratDocument ->
-        licenseMatcher.reset();
-        return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
-      }
-
-      def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
-        def contentMatcher = contentPattern.matcher(text);
-        if (contentMatcher.find()) {
-          def contentStartPos = contentMatcher.start();
-          def commentMatcher = commentPattern.matcher(text);
-          while (commentMatcher.find()) {
-            if (isLicense(commentMatcher, ratDocument)) {
-              if (commentMatcher.start() < contentStartPos) {
-                break; // This file is all good, so break loop: license header precedes 'description' definition
-              } else {
-                reportViolation(f, description+' declaration precedes license header');
-              }
-            }
-          }
-        }
-      }
-
-      def checkMockitoAssume = { f, text ->
-        if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
-          reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
-        }
-      }
-
-      def checkForUnescapedSymbolSubstitutions = { f, text ->
-        def inCodeBlock = false;
-        def underSourceHeader = false;
-        def lineNumber = 0;
-        singleLineSplitter.split(text).each {
-          ++lineNumber;
-          if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
-            inCodeBlock = blockBoundaryPattern.matcher(it).matches();
-            if ( ! blockTitlePattern.matcher(it).matches()) {
-              underSourceHeader = false;
-            }
-          } else {
-            if (inCodeBlock) {
-              inCodeBlock = ! blockBoundaryPattern.matcher(it).matches();
-            } else {
-              underSourceHeader = sourceHeaderPattern.matcher(it).lookingAt();
-              if ( ! underSourceHeader) {
-                def unescapedSymbolMatcher = unescapedSymbolPattern.matcher(it);
-                if (unescapedSymbolMatcher.find()) {
-                  reportViolation(f, 'Unescaped symbol "' + unescapedSymbolMatcher.group(1) + '" on line #' + lineNumber);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      ant.fileScanner{
-        fileset(dir: baseDir){
-          extensions.each{
-            include(name: 'lucene/**/*.' + it)
-            include(name: 'solr/**/*.' + it)
-            include(name: 'dev-tools/**/*.' + it)
-            include(name: '*.' + it)
-          }
-          // TODO: For now we don't scan txt files, so we
-          // check licenses in top-level folders separately:
-          include(name: '*.txt')
-          include(name: '*/*.txt')
-          // excludes:
-          exclude(name: '**/build/**')
-          exclude(name: '**/dist/**')
-          exclude(name: 'lucene/benchmark/work/**')
-          exclude(name: 'lucene/benchmark/temp/**')
-          exclude(name: '**/CheckLoggingConfiguration.java')
-          exclude(name: 'build.xml') // ourselves :-)
-        }
-      }.each{ f ->
-        task.log('Scanning file: ' + f, Project.MSG_VERBOSE);
-        def text = f.getText('UTF-8');
-        invalidPatterns.each{ pattern,name ->
-          if (pattern.matcher(text).find()) {
-            reportViolation(f, name);
-          }
-        }
-        def javadocsMatcher = javadocsPattern.matcher(text);
-        def ratDocument = new FileDocument(f);
-        while (javadocsMatcher.find()) {
-          if (isLicense(javadocsMatcher, ratDocument)) {
-            reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
-              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
-          }
-        }
-        if (f.name.endsWith('.java')) {
-          if (text.contains('org.slf4j.LoggerFactory')) {
-            if (!validLoggerPattern.matcher(text).find()) {
-              reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
-            }
-          }
-          checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
-          if (f.name.contains("Test")) {
-            checkMockitoAssume(f, text);
-          }
-        }
-        if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
-          checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
-        }
-        if (f.name.endsWith('.adoc')) {
-          checkForUnescapedSymbolSubstitutions(f, text);
-        }
-      };
-      
-      if (found) {
-        throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-          found, violations.join(', ')));
-      }
-    ]]></groovy>
+    <groovy taskname="source-patterns" classpathref="rat.classpath" src="${common.dir}/tools/src/groovy/check-source-patterns.groovy"/>
   </target>
   
   <target name="rat-sources" description="Runs rat across all sources and tests" depends="common.rat-sources">
@@ -409,31 +240,7 @@
   </target>
   
   <target name="run-maven-build" depends="get-maven-poms,install-maven-tasks,resolve-groovy" description="Runs the Maven build using automatically generated POMs">
-    <groovy><![CDATA[
-      import groovy.xml.NamespaceBuilder;
-      import org.apache.tools.ant.Project;
-      def userHome = properties['user.home'], commonDir = properties['common.dir'];
-      def propPrefix = '-mvn.inject.'; int propPrefixLen = propPrefix.length();
-      def subProject = project.createSubProject();
-      project.copyUserProperties(subProject);
-      subProject.initProperties();
-      new AntBuilder(subProject).sequential{
-        property(file: userHome+'/lucene.build.properties', prefix: propPrefix);
-        property(file: userHome+'/build.properties', prefix: propPrefix);
-        property(file: commonDir+'/build.properties', prefix: propPrefix);
-      };
-      def cmdlineProps = subProject.properties
-        .findAll{ k, v -> k.startsWith(propPrefix) }
-        .collectEntries{ k, v -> [k.substring(propPrefixLen), v] };
-      cmdlineProps << project.userProperties.findAll{ k, v -> !k.startsWith('ant.') };
-      def artifact = NamespaceBuilder.newInstance(ant, 'antlib:org.apache.maven.artifact.ant');
-      task.log('Running Maven with props: ' + cmdlineProps.toString(), Project.MSG_INFO);
-      artifact.mvn(pom: properties['maven-build-dir']+'/pom.xml', mavenVersion: properties['maven-version'], failonerror: true, fork: true) {
-        cmdlineProps.each{ k, v -> arg(value: '-D' + k + '=' + v) };
-        arg(value: '-fae');
-        arg(value: 'install');
-      };
-    ]]></groovy>
+    <groovy src="${common.dir}/tools/src/groovy/run-maven-build.groovy"/>
   </target>
   
   <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
@@ -616,13 +423,22 @@ File | Project Structure | Platform Settings | SDKs):
     </subant>
   </target>
   
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it"
-    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks">
+  <target name="-nightly-smoke-java9params" if="smokeTestRelease.java9">
+    <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
+    <pathconvert targetos="unix" property="-smokeTestRelease.java9params">
+      <regexpmapper from="^(.*)$" to="--test-java9 '\1'"/>
+      <path location="${smokeTestRelease.java9}"/>
+    </pathconvert>
+  </target>
+
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it (pass '-DsmokeTestRelease.java9=/path/to/jdk-9' to additionally test with Java 9 or later)"
+    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks,-nightly-smoke-java9params">
     <fail message="To run nightly smoke, the JDK must be exactly Java 1.8, was: ${java.specification.version}">
       <condition>
         <not><equals arg1="${java.specification.version}" arg2="1.8"/></not>
       </condition>
     </fail>
+    <property name="-smokeTestRelease.java9params" value=""/><!-- (if not yet defined) -->
     <exec executable="${python32.exe}" failonerror="true" taskname="python32">
       <arg value="-V"/>
     </exec>
@@ -647,6 +463,7 @@ File | Project Structure | Platform Settings | SDKs):
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
+      <arg line="${-smokeTestRelease.java9params}"/>
       <arg value="--revision"/>
       <arg value="skip"/>
       <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
@@ -670,48 +487,7 @@ File | Project Structure | Platform Settings | SDKs):
       <ivy:cachepath xmlns:ivy="antlib:org.apache.ivy.ant"
         organisation="org.eclipse.jgit" module="org.eclipse.jgit" revision="${jgit-version}"
         inline="true" conf="default" transitive="true" pathid="jgit.classpath"/>
-      <groovy taskname="wc-checker" classpathref="jgit.classpath"><![CDATA[
-        import org.apache.tools.ant.BuildException;
-        import org.apache.tools.ant.Project;
-        import org.eclipse.jgit.api.Git;
-        import org.eclipse.jgit.api.Status;
-        import org.eclipse.jgit.lib.Repository;
-        import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-        import org.eclipse.jgit.errors.*;
-
-        def setProjectPropertyFromSet(prop, set) {
-          if (set) {
-            properties[prop] = '* ' + set.join(properties['line.separator'] + '* ');
-          }
-        };
-
-        try {
-          task.log('Initializing working copy...', Project.MSG_INFO);
-          final Repository repository = new FileRepositoryBuilder()
-            .setWorkTree(project.getBaseDir())
-            .setMustExist(true)
-            .build();
-
-          task.log('Checking working copy status...', Project.MSG_INFO);
-          final Status status = new Git(repository).status().call();
-          if (!status.isClean()) {
-            final SortedSet unversioned = new TreeSet(), modified = new TreeSet();
-            status.properties.each{ prop, val ->
-              if (val instanceof Set) {
-                if (prop in ['untracked', 'untrackedFolders', 'missing']) {
-                  unversioned.addAll(val);
-                } else if (prop != 'ignoredNotInIndex') {
-                  modified.addAll(val);
-                }
-              }
-            };
-            setProjectPropertyFromSet('wc.unversioned.files', unversioned);
-            setProjectPropertyFromSet('wc.modified.files', modified);
-          }
-        } catch (RepositoryNotFoundException | NoWorkTreeException | NotSupportedException e) {
-          task.log('WARNING: Development directory is not a valid GIT checkout! Disabling checks...', Project.MSG_WARN);
-        }
-      ]]></groovy>
+      <groovy taskname="wc-checker" classpathref="jgit.classpath" src="${common.dir}/tools/src/groovy/check-working-copy.groovy"/>
       <fail if="wc.unversioned.files"
         message="Source checkout is dirty (unversioned/missing files) after running tests!!! Offending files:${line.separator}${wc.unversioned.files}"/>
       <fail message="Source checkout is modified!!! Offending files:${line.separator}${wc.modified.files}">
@@ -729,7 +505,7 @@ File | Project Structure | Platform Settings | SDKs):
     <wc-checker failonmodifications="${is.jenkins.build}"/>
   </target>
 
-  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx1536M&quot; as environment)" depends="clean">
+  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx2G&quot; as environment)" depends="clean">
     <antcall inheritAll="false">
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
@@ -762,14 +538,21 @@ File | Project Structure | Platform Settings | SDKs):
     <fileset dir="." id="clover.test.result.files">
       <include name="*/build/**/test/TEST-*.xml"/>
     </fileset>
+    <fileset dir="." id="clover.test.src.files">
+      <include name="**/src/test/**/*.java"/>
+      <!-- test framework source files are all test code: -->
+      <include name="*/test-framework/src/**/*.java"/>
+    </fileset>
     <clover-report projectName="Apache Lucene/Solr">
       <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
         <format type="html" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
+        <testsources refid="clover.test.src.files"/>
       </current>
       <current outfile="${clover.report.dir}/clover.xml" title="Apache Lucene/Solr ${version}">
         <format type="xml" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
+        <testsources refid="clover.test.src.files"/>
       </current>
     </clover-report>
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
@@ -849,6 +632,16 @@ Test args: [${args}]</echo>
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.badapples" value="false"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-badapples">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.badapples" value="true"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -858,17 +651,28 @@ Test args: [${args}]</echo>
       <param name="is.jenkins.build" value="true"/>
       <param name="tests.haltonfailure" value="false"/>
       <param name="tests.nightly" value="true"/>
+      <param name="tests.badapples" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
-  
+
+  <target name="jenkins-nightly-badapples">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
+      <param name="tests.nightly" value="true"/>
+      <param name="tests.badapples" value="true"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+
   <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
-    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
+    <!-- step 1: build, install, validate and publish ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
-      <!-- this implicitely publishes the maven artifacts: -->
       <target name="validate-maven-dependencies"/>
+      <target name="generate-maven-artifacts"/>
     </antcall>
     <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
     <antcall>
@@ -887,4 +691,5 @@ Test args: [${args}]</echo>
 
   <!-- useless targets (override common-build.xml): -->
   <target name="generate-test-reports"/>
+  <target name="patch-mrjar-classes"/>
 </project>

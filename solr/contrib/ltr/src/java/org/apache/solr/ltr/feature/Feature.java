@@ -327,6 +327,10 @@ public abstract class Feature extends Query {
         return constScore;
       }
 
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return constScore;
+      }
     }
 
   }

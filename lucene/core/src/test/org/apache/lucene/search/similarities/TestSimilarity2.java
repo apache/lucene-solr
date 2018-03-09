@@ -54,6 +54,13 @@ public class TestSimilarity2 extends LuceneTestCase {
     sims = new ArrayList<>();
     sims.add(new ClassicSimilarity());
     sims.add(new BM25Similarity());
+    sims.add(new BooleanSimilarity());
+    sims.add(new AxiomaticF1EXP());
+    sims.add(new AxiomaticF1LOG());
+    sims.add(new AxiomaticF2EXP());
+    sims.add(new AxiomaticF2LOG());
+    sims.add(new AxiomaticF3EXP(0.25f, 3));
+    sims.add(new AxiomaticF3LOG(0.25f, 3));
     // TODO: not great that we dup this all with TestSimilarityBase
     for (BasicModel basicModel : TestSimilarityBase.BASIC_MODELS) {
       for (AfterEffect afterEffect : TestSimilarityBase.AFTER_EFFECTS) {
@@ -201,7 +208,7 @@ public class TestSimilarity2 extends LuceneTestCase {
       is.setSimilarity(sims.get(i));
       Explanation expected = scores.get(i);
       Explanation actual = is.explain(query, 0);
-      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue(), 0F);
+      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue());
     }
     
     iw.close();

@@ -16,10 +16,12 @@
  */
 package org.apache.solr.cloud;
 
+  
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -129,7 +131,9 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
     }
     //Create new SolrServer to configure new HttpClient w/ SSL config
-    getLBHttpSolrClient(urls.toArray(new String[]{})).request(request);
+    try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[]{}))) {
+      client.request(request);
+    }
   }
   
 }

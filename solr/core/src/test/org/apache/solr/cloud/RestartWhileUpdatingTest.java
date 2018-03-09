@@ -125,7 +125,7 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     
     int restartTimes = 1;//random().nextInt(4) + 1;;
     for (int i = 0; i < restartTimes; i++) {
-      Thread.sleep(random().nextInt(300000));
+      Thread.sleep(random().nextInt(30000));
       stopAndStartAllReplicas();
       Thread.sleep(random().nextInt(30000));
     }
@@ -151,6 +151,9 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
 
+    for (StoppableIndexingThread thread : threads) {
+      thread.join();
+    }
     
     checkShardConsistency(false, false);
   }

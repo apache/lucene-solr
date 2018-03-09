@@ -82,7 +82,7 @@ import org.apache.lucene.util.Version;
  *  since they will just be regnerated (at a cost though). */
 
 // @SuppressSysoutChecks(bugUrl="we print stuff")
-
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   static final boolean DEBUG = false;

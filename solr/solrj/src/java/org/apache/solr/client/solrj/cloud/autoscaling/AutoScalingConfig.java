@@ -520,6 +520,15 @@ public class AutoScalingConfig implements MapWriter {
     return withTriggerListenerConfigs(configs);
   }
 
+  @Override
+  public Object clone() {
+    if (jsonMap != null) {
+      return new AutoScalingConfig(jsonMap);
+    } else {
+      return new AutoScalingConfig(getPolicy(), getTriggerConfigs(), getTriggerListenerConfigs(), getProperties(), zkVersion);
+    }
+  }
+
   /**
    * Return the znode version that was used to create this configuration.
    */

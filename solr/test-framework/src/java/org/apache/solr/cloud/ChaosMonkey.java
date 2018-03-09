@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -417,11 +418,7 @@ public class ChaosMonkey {
       CoreContainer cc = cjetty.jetty.getCoreContainer();
       if (cc != null) {
         try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          if (core == null) {
-            monkeyLog("selected jetty not running correctly - skip");
-            return null;
-          }
-          rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
+          rtIsLeader = core != null && core.getCoreDescriptor().getCloudDescriptor().isLeader();
         }
       } else {
         return null;
@@ -698,7 +695,7 @@ public class ChaosMonkey {
    * @param zkStateReader current state reader
    */
   public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader) throws InterruptedException {
-    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS);
+    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!t.hasTimedOut()) {
       Thread.sleep(Math.min(1000, t.timeLeft(TimeUnit.MILLISECONDS)));
       logCollectionStateSummary(collectionName, zkStateReader);

@@ -89,4 +89,9 @@ public abstract class ValueSourceScorer extends Scorer {
     return score > Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
   }
 
+  @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return Float.POSITIVE_INFINITY;
+  }
+
 }

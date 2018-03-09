@@ -71,9 +71,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     this.field2analyzer = field2analyzer;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(Document document) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignNormClasses(document);
@@ -88,9 +85,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     return assignedClass;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(Document document) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignNormClasses(document);
@@ -98,9 +92,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(Document document, int max) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignNormClasses(document);

@@ -16,15 +16,16 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 
-public interface ClusterStateProvider extends Closeable {
+public interface ClusterStateProvider extends SolrCloseable {
 
   /**
    * Obtain the state of the collection (cluster status).
@@ -47,6 +48,10 @@ public interface ClusterStateProvider extends Closeable {
    * Obtain the current cluster state.
    */
   ClusterState getClusterState() throws IOException;
+
+  default DocCollection getCollection(String name) throws IOException{
+   return getClusterState().getCollectionOrNull(name);
+  }
 
   /**
    * Obtain cluster properties.

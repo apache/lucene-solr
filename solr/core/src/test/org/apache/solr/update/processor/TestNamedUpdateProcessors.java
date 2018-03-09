@@ -20,14 +20,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -44,28 +42,11 @@ import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 
 public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
-
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness r : restTestHarnesses) {
-      r.close();
-    }
-  }
 
   @Test
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    setupHarnesses();
+    setupRestTestHarnesses();
 
     String blobName = "colltest";
 
@@ -81,7 +62,7 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
     String payload = "{\n" +
         "'add-runtimelib' : { 'name' : 'colltest' ,'version':1}\n" +
         "}";
-    RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    RestTestHarness client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
@@ -96,16 +77,24 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
         "'create-updateprocessor' : { 'name' : 'maxFld', 'class': 'solr.MaxFieldValueUpdateProcessorFactory', 'fieldName':'mul_s'} \n" +
         "}";
 
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
-    for (RestTestHarness restTestHarness : restTestHarnesses) {
-      TestSolrConfigHandler.testForResponseElement(restTestHarness,
-          null,
-          "/config/overlay",
-          null,
-          Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
-          "test_s", 10);
-    }
+    forAllRestTestHarnesses( new UnaryOperator<RestTestHarness>() {
+      @Override
+      public RestTestHarness apply(RestTestHarness restTestHarness) {
+        try {
+          TestSolrConfigHandler.testForResponseElement(restTestHarness,
+              null,
+              "/config/overlay",
+              null,
+              Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
+              "test_s", 10);
+        } catch (Exception ex) {
+          fail("Caught exception: "+ex);
+        }
+        return restTestHarness;
+      }
+    });
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "123");

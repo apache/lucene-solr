@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -76,8 +77,9 @@ public abstract class AbstractReRankQuery extends RankQuery {
 
   protected abstract Query rewrite(Query rewrittenMainQuery) throws IOException;
 
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
-    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
+  @Override
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException{
+    final Weight mainWeight = mainQuery.createWeight(searcher, scoreMode, boost);
     return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
   }
 }

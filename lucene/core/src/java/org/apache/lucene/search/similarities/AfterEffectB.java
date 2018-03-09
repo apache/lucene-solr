@@ -39,10 +39,14 @@ public class AfterEffectB extends AfterEffect {
   public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
         (float) (scoreTimes1pTfn(stats) / (1 + tfn)),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match((float) tfn, "tfn"),
-        Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"),
-        Explanation.match(stats.getDocFreq(), "docFreq"));
+        getClass().getSimpleName()
+            + ", computed as (F + 1) / (n * (tfn + 1)) from:",
+        Explanation.match((float) tfn, "tfn, normalized term frequency"),
+        Explanation.match(stats.getTotalTermFreq(),
+            "F, total number of occurrences of term across all documents + 1"),
+        Explanation.match(stats.getDocFreq(),
+            "n, number of documents containing term + 1"),
+        Explanation.match((float) tfn, "tfn, normalized term frequency"));
   }
 
   @Override

@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,7 @@ import java.util.Arrays;
  * @since solr 1.4
  *
  */
-public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
+public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   protected CoreContainer cores;
   private String saveProp;
@@ -49,14 +48,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Override
-  public String getSolrHome() {
+  static String getSolrHome() {
     return SolrTestCaseJ4.getFile("solrj/solr/multicore").getAbsolutePath();
-  }
-
-  @BeforeClass
-  public static void beforeClass2() throws Exception {
-
   }
 
   protected void setupCoreContainer() {
@@ -91,16 +84,6 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);
-  }
-
-  @Override
-  protected final SolrClient getSolrClient() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  protected final SolrClient createNewSolrClient() {
-    throw new UnsupportedOperationException();
   }
 
   protected abstract SolrClient getSolrCore0();

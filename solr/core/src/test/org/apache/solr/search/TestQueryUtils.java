@@ -21,7 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.index.Term;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 import java.util.Collection;
@@ -29,7 +29,7 @@ import java.util.Collection;
 /**
  *
  */
-public class TestQueryUtils extends AbstractSolrTestCase {
+public class TestQueryUtils extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

@@ -58,6 +58,11 @@ public abstract class FloatDocValues extends FunctionValues {
   }
 
   @Override
+  public boolean boolVal(int doc) throws IOException {
+    return floatVal(doc) != 0.0f;
+  }
+
+  @Override
   public double doubleVal(int doc) throws IOException {
     return (double)floatVal(doc);
   }

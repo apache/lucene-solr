@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +44,6 @@ import org.slf4j.LoggerFactory;
 public class NodeAddedTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final TimeSource timeSource;
-
   private Set<String> lastLiveNodes;
 
   private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
@@ -55,7 +52,6 @@ public class NodeAddedTrigger extends TriggerBase {
                           SolrResourceLoader loader,
                           SolrCloudManager cloudManager) {
     super(TriggerEventType.NODEADDED, name, properties, loader, cloudManager);
-    this.timeSource = TimeSource.CURRENT_TIME;
     lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
     log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
@@ -71,7 +67,7 @@ public class NodeAddedTrigger extends TriggerBase {
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n)) {
           log.debug("Adding node from marker path: {}", n);
-          nodeNameVsTimeAdded.put(n, timeSource.getTime());
+          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTime());
         }
         removeMarker(n);
       });
@@ -131,7 +127,7 @@ public class NodeAddedTrigger extends TriggerBase {
       log.debug("Running NodeAddedTrigger {}", name);
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      log.debug("Found livenodes: {}", newLiveNodes);
+      log.debug("Found livenodes: {}", newLiveNodes.size());
 
       // have any nodes that we were tracking been removed from the cluster?
       // if so, remove them from the tracking map
@@ -142,7 +138,7 @@ public class NodeAddedTrigger extends TriggerBase {
       Set<String> copyOfNew = new HashSet<>(newLiveNodes);
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
-        long eventTime = timeSource.getTime();
+        long eventTime = cloudManager.getTimeSource().getTime();
         log.debug("Tracking new node: {} at time {}", n, eventTime);
         nodeNameVsTimeAdded.put(n, eventTime);
       });
@@ -154,7 +150,7 @@ public class NodeAddedTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
-        long now = timeSource.getTime();
+        long now = cloudManager.getTimeSource().getTime();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeAdded);
@@ -163,7 +159,8 @@ public class NodeAddedTrigger extends TriggerBase {
       AutoScaling.TriggerEventProcessor processor = processorRef.get();
       if (!nodeNames.isEmpty()) {
         if (processor != null) {
-          log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name, nodeNames, times, timeSource.getTime());
+          log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
+              nodeNames, times, cloudManager.getTimeSource().getTime());
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {

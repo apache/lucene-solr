@@ -19,93 +19,57 @@ package org.apache.solr.handler.component;
 import java.util.List;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.search.facet.DistributedFacetSimpleRefinementLongTailTest;
+
 import org.junit.Test;
 
 /**
+ * <p>
  * test demonstrating how overrequesting helps finds top-terms in the "long tail" 
  * of shards that don't have even distributions of terms (something that can be common
  * in cases of custom sharding -- even if you don't know that there is a corrolation 
  * between the property you are sharding on and the property you are faceting on).
- *
- * NOTE: This test ignores the control collection (in single node mode, there is no 
+ * <p>
+ * <b>NOTE:</b> This test ignores the control collection (in single node mode, there is no 
  * need for the overrequesting, all the data is local -- so comparisons with it wouldn't 
  * be valid in the cases we are testing here)
+ * </p>
+ * <p>
+ * <b>NOTE:</b> uses the same indexed documents as {@link DistributedFacetSimpleRefinementLongTailTest} -- 
+ * however the behavior of <code>refine:simple</code> is "simpler" then the refinement logic used by 
+ * <code>facet.pivot</code> so the assertions in this test vary from that test.
+ * </p>
  */
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
   
-  private int docNumber = 0;
+  private String STAT_FIELD = null; // will be randomized single value vs multivalued
 
   public DistributedFacetPivotLongTailTest() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+
+    STAT_FIELD = random().nextBoolean() ? "stat_i1" : "stat_i";
   }
   
-  public int getDocNum() {
-    docNumber++;
-    return docNumber;
-  }
-
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-
-    final SolrClient shard0 = clients.get(0);
-    final SolrClient shard1 = clients.get(1);
-    final SolrClient shard2 = clients.get(2);
-    
-    // the 5 top foo_s terms have 100 docs each on every shard
-    for (int i = 0; i < 100; i++) {
-      for (int j = 0; j < 5; j++) {
-        shard0.add(sdoc("id", getDocNum(), "foo_s", "aaa"+j, "stat_i", j * 13 - i));
-        shard1.add(sdoc("id", getDocNum(), "foo_s", "aaa"+j, "stat_i", j * 3 + i));
-        shard2.add(sdoc("id", getDocNum(), "foo_s", "aaa"+j, "stat_i", i * 7 + j));
-      }
-    }
-
-    // 20 foo_s terms that come in "second" with 50 docs each 
-    // on both shard0 & shard1 ("bbb_")
-    for (int i = 0; i < 50; i++) {
-      for (int j = 0; j < 20; j++) {
-        shard0.add(sdoc("id", getDocNum(), "foo_s", "bbb"+j, "stat_i", 0));
-        shard1.add(sdoc("id", getDocNum(), "foo_s", "bbb"+j, "stat_i", 1));
-      }
-      // distracting term appears on only on shard2 50 times
-      shard2.add(sdoc("id", getDocNum(), "foo_s", "junkA"));
-    }
-    // put "bbb0" on shard2 exactly once to sanity check refinement
-    shard2.add(sdoc("id", getDocNum(), "foo_s", "bbb0", "stat_i", -2));
-
-    // long 'tail' foo_s term appears in 45 docs on every shard
-    // foo_s:tail is the only term with bar_s sub-pivot terms
-    for (int i = 0; i < 45; i++) {
-
-      // for sub-pivot, shard0 & shard1 have 6 docs each for "tailB"
-      // but the top 5 terms are ccc(0-4) -- 7 on each shard
-      // (4 docs each have junk terms)
-      String sub_term = (i < 35) ? "ccc"+(i % 5) : ((i < 41) ? "tailB" : "junkA");
-      shard0.add(sdoc("id", getDocNum(), "foo_s", "tail", "bar_s", sub_term, "stat_i", i));
-      shard1.add(sdoc("id", getDocNum(), "foo_s", "tail", "bar_s", sub_term, "stat_i", i));
-
-      // shard2's top 5 sub-pivot terms are junk only it has with 8 docs each
-      // and 5 docs that use "tailB"
-      // NOTE: none of these get stat_i ! !
-      sub_term = (i < 40) ? "junkB"+(i % 5) : "tailB";
-      shard2.add(sdoc("id", getDocNum(), "foo_s", "tail", "bar_s", sub_term));
-    }
-
-    // really long tail uncommon foo_s terms on shard2
-    for (int i = 0; i < 30; i++) {
-      shard2.add(sdoc("id", getDocNum(), "foo_s", "zzz"+i));
-    }
-
+    DistributedFacetSimpleRefinementLongTailTest.buildIndexes(clients, STAT_FIELD);
     commit();
 
+    sanityCheckIndividualShards();
+    checkRefinementAndOverrequesting();
+    doTestDeepPivotStats();
+  }
+  
+  private void sanityCheckIndividualShards() throws Exception {
+    assertEquals("This test assumes exactly 3 shards/clients", 3, clients.size());
+    
     SolrParams req = params( "q", "*:*", 
                              "distrib", "false",
                              "facet", "true", 
@@ -116,10 +80,11 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
 
     PivotField pivot = null;
     List<PivotField> pivots = null;
-    List<PivotField>[] shardPivots = new List[3];
-    shardPivots[0] = shard0.query( req ).getFacetPivot().get("foo_s,bar_s");
-    shardPivots[1] = shard1.query( req ).getFacetPivot().get("foo_s,bar_s");
-    shardPivots[2] = shard2.query( req ).getFacetPivot().get("foo_s,bar_s");
+    
+    List<PivotField>[] shardPivots = new List[clients.size()];
+    for (int i = 0; i < clients.size(); i++) {
+      shardPivots[i] = clients.get(i).query( req ).getFacetPivot().get("foo_s,bar_s");
+    }
 
     // top 5 same on all shards
     for (int i = 0; i < 3; i++) {
@@ -143,11 +108,9 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     assertEquals(50, shardPivots[2].get(5).getCount());
     assertEquals("tail", shardPivots[2].get(6).getValue());
     assertEquals(45, shardPivots[2].get(6).getCount());
-    assertEquals("bbb0", shardPivots[2].get(7).getValue());
-    assertEquals(1, shardPivots[2].get(7).getCount());
-    for (int j = 8; j < 10; j++) {
+    for (int j = 7; j < 10; j++) {
       pivot = shardPivots[2].get(j);
-      assertTrue(pivot.toString(), pivot.getValue().toString().startsWith("zzz"));
+      assertTrue(pivot.toString(), pivot.getValue().toString().startsWith("ZZZ"));
       assertEquals(pivot.toString(), 1, pivot.getCount());
     }
     // check sub-shardPivots on "tail" from shard2
@@ -161,9 +124,12 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     pivot = pivots.get(5);
     assertEquals("tailB", pivot.getValue());
     assertEquals(5, pivot.getCount());
+  }
 
+  private void checkRefinementAndOverrequesting() throws Exception {
     // if we disable overrequesting, we don't find the long tail
-
+    List<PivotField> pivots = null;
+    PivotField pivot = null;
     pivots = queryServer( params( "q", "*:*",
                                   "shards", getShardsString(),
                                   FacetParams.FACET_OVERREQUEST_COUNT, "0",
@@ -172,7 +138,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
                                   "facet.limit", "6",
                                   "facet.pivot", "{!stats=sxy}foo_s,bar_s",
                                   "stats", "true",
-                                  "stats.field", "{!tag=sxy}stat_i")
+                                  "stats.field", "{!tag=sxy}" + STAT_FIELD)
                           ).getFacetPivot().get("foo_s,bar_s");
     assertEquals(6, pivots.size());
     for (int i = 0; i < 5; i++) {
@@ -185,8 +151,8 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
       assertTrue(pivot.toString(), pivot.getValue().equals("bbb0"));
       assertEquals(pivot.toString(), 101, pivot.getCount());
       // basic check of refined stats
-      FieldStatsInfo bbb0Stats = pivot.getFieldStatsInfo().get("stat_i");
-      assertEquals("stat_i", bbb0Stats.getName());
+      FieldStatsInfo bbb0Stats = pivot.getFieldStatsInfo().get(STAT_FIELD);
+      assertEquals(STAT_FIELD, bbb0Stats.getName());
       assertEquals(-2.0, bbb0Stats.getMin());
       assertEquals(1.0, bbb0Stats.getMax());
       assertEquals(101, (long) bbb0Stats.getCount());
@@ -295,11 +261,10 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
       assertTrue(pivot.toString(), pivot.getValue().toString().startsWith("ccc"));
       assertEquals(pivot.toString(), 14, pivot.getCount());
     }
-    
-    doTestDeepPivotStats();
+
   }
 
-  public void doTestDeepPivotStats() throws Exception {
+  private void doTestDeepPivotStats() throws Exception {
     // Deep checking of some Facet stats - no refinement involved here
 
     List<PivotField> pivots = 
@@ -309,7 +274,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
             "rows" , "0",
             "facet.pivot","{!stats=s1}foo_s,bar_s",
             "stats", "true",
-            "stats.field", "{!key=avg_price tag=s1}stat_i").getFacetPivot().get("foo_s,bar_s");
+            "stats.field", "{!key=avg_price tag=s1}" + STAT_FIELD).getFacetPivot().get("foo_s,bar_s");
     PivotField aaa0PivotField = pivots.get(0);
     assertEquals("aaa0", aaa0PivotField.getValue());
     assertEquals(300, aaa0PivotField.getCount());

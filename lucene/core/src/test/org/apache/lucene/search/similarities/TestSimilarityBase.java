@@ -37,6 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.SimilarityBase.BasicSimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -207,13 +208,13 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
-      BasicStats realStats = (BasicStats) sim.computeWeight(
+      BasicStats realStats = ((BasicSimScorer) sim.scorer(
           (float)stats.getBoost(),
           toCollectionStats(stats), 
-          toTermStats(stats));
+          toTermStats(stats))).stats;
       float score = (float)sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
-          realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
+          realStats, Explanation.match(freq, "freq"), docLen).getValue().floatValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
       assertFalse("Score NaN: " + sim.toString(), Float.isNaN(score));
       assertTrue("Score negative: " + sim.toString(), score >= 0);
@@ -489,10 +490,10 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
-    BasicStats realStats = (BasicStats) sim.computeWeight(
+    BasicStats realStats = ((BasicSimScorer) sim.scorer(
         (float)stats.getBoost(),
         toCollectionStats(stats), 
-        toTermStats(stats));
+        toTermStats(stats))).stats;
     float score = (float) sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);
@@ -550,7 +551,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
     expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);
-    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo");
+    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS);
     state.setLength(5);
     state.setNumOverlap(2);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));

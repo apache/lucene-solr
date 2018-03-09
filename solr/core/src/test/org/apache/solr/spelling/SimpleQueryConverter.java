@@ -39,9 +39,8 @@ class SimpleQueryConverter extends SpellingQueryConverter {
   @Override
   public Collection<Token> convert(String origQuery) {
     Collection<Token> result = new HashSet<>();
-    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
-    
-    try (TokenStream ts = analyzer.tokenStream("", origQuery)) {
+
+    try (WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(); TokenStream ts = analyzer.tokenStream("", origQuery)) {
       // TODO: support custom attributes
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

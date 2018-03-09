@@ -57,8 +57,8 @@ public class DocValuesStatsCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
 
 }

@@ -345,7 +345,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {
-      fv[index] = featureExplain.getValue();
+      fv[index] = featureExplain.getValue().floatValue();
       index++;
     }
 

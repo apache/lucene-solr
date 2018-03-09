@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -144,6 +144,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     outOfOrderUpdatesIndividualReplicaTest();
     delayedReorderingFetchesMissingUpdateFromLeaderTest();
     updatingDVsInAVeryOldSegment();
+    updateExistingThenNonExistentDoc();
 
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
     reorderedDBQIndividualReplicaTest();
@@ -409,6 +410,45 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("updatingDVsInAVeryOldSegment: This test passed fine...");
+  }
+
+
+  /**
+   * Test scenario:
+   * <ul>
+   *   <li>Send a batch of documents to one node</li>
+   *   <li>Batch consist of an update for document which is existed and an update for documents which is not existed </li>
+   *   <li>Assumption which is made is that both updates will be applied: field for existed document will be updated,
+   *   new document will be created for a non existed one</li>
+   * </ul>
+   *
+   */
+  private void updateExistingThenNonExistentDoc() throws Exception {
+    clearIndex();
+    index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
+    commit();
+    SolrInputDocument existingDocUpdate = new SolrInputDocument();
+    existingDocUpdate.setField("id", 1);
+    existingDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    SolrInputDocument nonexistentDocUpdate = new SolrInputDocument();
+    nonexistentDocUpdate.setField("id", 2);
+    nonexistentDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+    
+    SolrInputDocument docs[] = new SolrInputDocument[] {existingDocUpdate, nonexistentDocUpdate};
+
+    SolrClient solrClient = clients.get(random().nextInt(clients.size()));
+    add(solrClient, null, docs);
+    commit();
+    for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
+      for (SolrInputDocument expectDoc : docs) {
+        String docId = expectDoc.getFieldValue("id").toString();
+        SolrDocument actualDoc = client.getById(docId);
+        assertNotNull("expected to get doc by id:" + docId, actualDoc);
+        assertEquals("expected to update "+actualDoc, 
+            50.0f, actualDoc.get("inplace_updatable_float"));
+      }
+    }
   }
 
   /**
@@ -908,23 +948,20 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
       commit();
 
-      // TODO: Could try checking ZK for LIR flags to ensure LIR has not kicked in
-      // Check every 10ms, 100 times, for a replica to go down (& assert that it doesn't)
-      ZkController zkController = shardToLeaderJetty.get(SHARD1).jetty.getCoreContainer().getZkController();
-      String lirPath = zkController.getLeaderInitiatedRecoveryZnodePath(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
-      assertFalse (zkController.getZkClient().exists(lirPath, true));
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
+        for (int i=0; i<100; i++) {
+          Thread.sleep(10);
+          cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+          ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
-      for (int i=0; i<100; i++) {
-        Thread.sleep(10);
-        cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
-        ClusterState state = cloudClient.getZkStateReader().getClusterState();
-
-        int numActiveReplicas = 0;
-        for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
-          if (rep.getState().equals(Replica.State.ACTIVE))
-            numActiveReplicas++;
-
-        assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+          int numActiveReplicas = 0;
+          for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
+            assertTrue(zkShardTerms.canBecomeLeader(rep.getName()));
+            if (rep.getState().equals(Replica.State.ACTIVE))
+              numActiveReplicas++;
+          }
+          assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+        }
       }
 
       for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), 

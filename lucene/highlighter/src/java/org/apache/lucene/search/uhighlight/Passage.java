@@ -19,7 +19,6 @@ package org.apache.lucene.search.uhighlight;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -38,57 +37,33 @@ public class Passage {
   private int[] matchStarts = new int[8];
   private int[] matchEnds = new int[8];
   private BytesRef[] matchTerms = new BytesRef[8];
+  private int[] matchTermFreqInDoc = new int[8];
   private int numMatches = 0;
 
   /** @lucene.internal */
-  public void addMatch(int startOffset, int endOffset, BytesRef term) {
+  public void addMatch(int startOffset, int endOffset, BytesRef term, int termFreqInDoc) {
     assert startOffset >= this.startOffset && startOffset <= this.endOffset;
     if (numMatches == matchStarts.length) {
       int newLength = ArrayUtil.oversize(numMatches + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       int newMatchStarts[] = new int[newLength];
       int newMatchEnds[] = new int[newLength];
+      int newMatchTermFreqInDoc[] = new int[newLength];
       BytesRef newMatchTerms[] = new BytesRef[newLength];
       System.arraycopy(matchStarts, 0, newMatchStarts, 0, numMatches);
       System.arraycopy(matchEnds, 0, newMatchEnds, 0, numMatches);
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
+      System.arraycopy(matchTermFreqInDoc, 0, newMatchTermFreqInDoc, 0, numMatches);
       matchStarts = newMatchStarts;
       matchEnds = newMatchEnds;
       matchTerms = newMatchTerms;
+      matchTermFreqInDoc = newMatchTermFreqInDoc;
     }
     assert matchStarts.length == matchEnds.length && matchEnds.length == matchTerms.length;
     matchStarts[numMatches] = startOffset;
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;
+    matchTermFreqInDoc[numMatches] = termFreqInDoc;
     numMatches++;
-  }
-
-  /** @lucene.internal */
-  public void sort() {
-    final int starts[] = matchStarts;
-    final int ends[] = matchEnds;
-    final BytesRef terms[] = matchTerms;
-    new InPlaceMergeSorter() {
-      @Override
-      protected void swap(int i, int j) {
-        int temp = starts[i];
-        starts[i] = starts[j];
-        starts[j] = temp;
-
-        temp = ends[i];
-        ends[i] = ends[j];
-        ends[j] = temp;
-
-        BytesRef tempTerm = terms[i];
-        terms[i] = terms[j];
-        terms[j] = tempTerm;
-      }
-
-      @Override
-      protected int compare(int i, int j) {
-        return Integer.compare(starts[i], starts[j]);
-      }
-
-    }.sort(0, numMatches);
   }
 
   /** @lucene.internal */
@@ -96,6 +71,24 @@ public class Passage {
     startOffset = endOffset = -1;
     score = 0.0f;
     numMatches = 0;
+  }
+
+  /** For debugging.  ex: Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213 */
+  @Override
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("Passage[").append(startOffset).append('-').append(endOffset).append(']');
+    buf.append('{');
+    for (int i = 0; i < numMatches; i++) {
+      if (i != 0) {
+        buf.append(',');
+      }
+      buf.append(matchTerms[i].utf8ToString());
+      buf.append('[').append(matchStarts[i] - startOffset).append('-').append(matchEnds[i] - startOffset).append(']');
+    }
+    buf.append('}');
+    buf.append("score=").append(score);
+    return buf.toString();
   }
 
   /**
@@ -118,11 +111,19 @@ public class Passage {
     return endOffset;
   }
 
+  public int getLength() {
+    return endOffset - startOffset;
+  }
+
   /**
    * Passage's score.
    */
   public float getScore() {
     return score;
+  }
+
+  public void setScore(float score) {
+    this.score = score;
   }
 
   /**
@@ -164,6 +165,10 @@ public class Passage {
     return matchTerms;
   }
 
+  public int[] getMatchTermFreqsInDoc() {
+    return matchTermFreqInDoc;
+  }
+
   /** @lucene.internal */
   public void setStartOffset(int startOffset) {
     this.startOffset = startOffset;
@@ -175,8 +180,4 @@ public class Passage {
     this.endOffset = endOffset;
   }
 
-  /** @lucene.internal */
-  public void setScore(float score) {
-    this.score = score;
-  }
 }

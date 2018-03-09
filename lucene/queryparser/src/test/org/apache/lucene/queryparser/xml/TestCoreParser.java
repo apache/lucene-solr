@@ -102,7 +102,7 @@ public class TestCoreParser extends LuceneTestCase {
     assertEquals(0.0f, d.getTieBreakerMultiplier(), 0.0001f);
     assertEquals(2, d.getDisjuncts().size());
     DisjunctionMaxQuery ndq = (DisjunctionMaxQuery) d.getDisjuncts().get(1);
-    assertEquals(1.2f, ndq.getTieBreakerMultiplier(), 0.0001f);
+    assertEquals(0.3f, ndq.getTieBreakerMultiplier(), 0.0001f);
     assertEquals(1, ndq.getDisjuncts().size());
   }
 

@@ -231,7 +231,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrParams.add("qt", "/stream");
       solrParams.add("expr", "search(myCollection, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       solrParams.add("myCollection.shards", buf.toString());
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
@@ -933,7 +932,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testKnnStream() throws Exception {
+  public void testKnnSearchStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
     update.add(id, "1", "a_t", "hello world have a very nice day blah");
@@ -947,7 +946,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       context.setSolrClientCache(cache);
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples = getTuples(solrStream);
@@ -955,26 +954,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertOrder(tuples, 2, 3, 4);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 2);
       assertOrder(tuples, 2, 3);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
+      sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
@@ -5493,6 +5492,51 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
     assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
 
+
+    expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2012-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "format=\"yyyy-MM\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 5);
+    assertTrue(tuples.get(0).get("test_dt").equals("2012-01"));
+    assertTrue(tuples.get(0).getLong("count(*)").equals(0L));
+    assertTrue(tuples.get(0).getDouble("sum(price_f)") == null);
+    assertTrue(tuples.get(0).getDouble("max(price_f)") == null);
+    assertTrue(tuples.get(0).getDouble("min(price_f)") == null);
+
+    assertTrue(tuples.get(1).get("test_dt").equals("2013-01"));
+    assertTrue(tuples.get(1).getLong("count(*)").equals(100L));
+    assertTrue(tuples.get(1).getDouble("sum(price_f)").equals(10000D));
+    assertTrue(tuples.get(1).getDouble("max(price_f)").equals(100D));
+    assertTrue(tuples.get(1).getDouble("min(price_f)").equals(100D));
+
+    assertTrue(tuples.get(2).get("test_dt").equals("2014-01"));
+    assertTrue(tuples.get(2).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(2).getDouble("sum(price_f)").equals(25000D));
+    assertTrue(tuples.get(2).getDouble("max(price_f)").equals(500D));
+    assertTrue(tuples.get(2).getDouble("min(price_f)").equals(500D));
+
+    assertTrue(tuples.get(3).get("test_dt").equals("2015-01"));
+    assertTrue(tuples.get(3).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(3).getDouble("sum(price_f)").equals(15000D));
+    assertTrue(tuples.get(3).getDouble("max(price_f)").equals(300D));
+    assertTrue(tuples.get(3).getDouble("min(price_f)").equals(300D));
+
+    assertTrue(tuples.get(4).get("test_dt").equals("2016-01"));
+    assertTrue(tuples.get(4).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(4).getDouble("sum(price_f)").equals(20000D));
+    assertTrue(tuples.get(4).getDouble("max(price_f)").equals(400D));
+    assertTrue(tuples.get(4).getDouble("min(price_f)").equals(400D));
   }
 
   @Test
@@ -6130,7 +6174,18 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testMatrix() throws Exception {
-    String cexpr = "matrix(array(1, 2, 3), rev(array(4,5,6)))";
+    String cexpr = "let(echo=true," +
+        "               a=setColumnLabels(matrix(array(1, 2, 3), " +
+        "                                        rev(array(4,5,6)))," +
+        "                                        array(col1, col2, col3))," +
+        "               b=rowAt(a, 1)," +
+        "               c=colAt(a, 2)," +
+        "               d=getColumnLabels(a)," +
+        "               e=topFeatures(a, 1)," +
+        "               f=rowCount(a)," +
+        "               g=columnCount(a)," +
+        "               h=indexOf(d, \"col2\")," +
+        "               i=indexOf(d, col3))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6140,7 +6195,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("return-value");
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
 
     List<Number> array1 = out.get(0);
     assertEquals(array1.size(), 3);
@@ -6153,6 +6208,36 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
     assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> row = (List<Number>)tuples.get(0).get("b");
+
+    assertEquals(row.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+
+    List<Number> col = (List<Number>)tuples.get(0).get("c");
+    assertEquals(col.size(), 2);
+    assertEquals(col.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(col.get(1).doubleValue(), 4.0, 0.0);
+
+    List<String> colLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(colLabels.size(), 3);
+    assertEquals(colLabels.get(0), "col1");
+    assertEquals(colLabels.get(1), "col2");
+    assertEquals(colLabels.get(2), "col3");
+
+    List<List<String>> features  = (List<List<String>>)tuples.get(0).get("e");
+    assertEquals(features.size(), 2);
+    assertEquals(features.get(0).size(), 1);
+    assertEquals(features.get(1).size(), 1);
+    assertEquals(features.get(0).get(0), "col3");
+    assertEquals(features.get(1).get(0), "col1");
+
+    assertTrue(tuples.get(0).getLong("f") == 2);
+    assertTrue(tuples.get(0).getLong("g")== 3);
+    assertTrue(tuples.get(0).getLong("h")== 1);
+    assertTrue(tuples.get(0).getLong("i")== 2);
   }
 
 
@@ -6491,7 +6576,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(prob.doubleValue(),  0.09184805266259899, 0.0);
   }
 
-      @Test
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDistributions() throws Exception {
     String cexpr = "let(a=normalDistribution(10, 2), " +
                        "b=sample(a, 250), " +
@@ -6587,10 +6673,18 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(sd, 3.5, 0.0);
   }
 
-
   @Test
-  public void testEBESubtract() throws Exception {
-    String cexpr = "ebeSubtract(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testTermVectors() throws Exception {
+    // Test termVectors with only documents and default termVector settings
+    String cexpr = "let(echo=true," +
+                       "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+                                     "tuple(id=\"2\", text=\"hello steve\"), " +
+                                     "tuple(id=\"3\", text=\"hello jim jim\"), " +
+                                     "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+                   "    b=termVectors(a, minDocFreq=0, maxDocFreq=1)," +
+        "               c=getRowLabels(b)," +
+        "               d=getColumnLabels(b)," +
+        "               e=getAttribute(b, docFreqs))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6600,19 +6694,683 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 1);
-    assertTrue(out.get(1).intValue() == 2);
-    assertTrue(out.get(2).intValue() == 3);
-    assertTrue(out.get(3).intValue() == 4);
-    assertTrue(out.get(4).intValue() == 5);
-    assertTrue(out.get(5).intValue() == 6);
+    List<List<Number>> termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+
+    assertEquals(termVectors.size(), 4);
+    List<Number> termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 2.7100443424662948, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 5);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(4).doubleValue(), 0.0, 0.0);
+
+    List<String> rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    List<String> columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 5);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "jim");
+    assertEquals(columnLabels.get(3), "steve");
+    assertEquals(columnLabels.get(4), "world");
+
+    Map<String, Number> docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 5);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("jim").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
+    //Test minTermLength. This should drop off the term jim
+
+    cexpr = "let(echo=true," +
+                 "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+                               "tuple(id=\"2\", text=\"hello steve\"), " +
+                               "tuple(id=\"3\", text=\"hello jim jim\"), " +
+                               "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+            "    b=termVectors(a, minTermLength=4, minDocFreq=0, maxDocFreq=1)," +
+            "    c=getRowLabels(b)," +
+            "    d=getColumnLabels(b)," +
+            "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 4);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "steve");
+    assertEquals(columnLabels.get(3), "world");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 4);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
+
+    //Test exclude. This should drop off the term jim
+
+    cexpr = "let(echo=true," +
+        "        a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "                      tuple(id=\"2\", text=\"hello steve\"), " +
+        "                      tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "                      tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "        b=termVectors(a, exclude=jim, minDocFreq=0, maxDocFreq=1)," +
+        "        c=getRowLabels(b)," +
+        "        d=getColumnLabels(b)," +
+        "        e=getAttribute(b, docFreqs))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 1.916290731874155, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 4);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(termVector.get(1).doubleValue(), 1.916290731874155, 0.0);
+    assertEquals(termVector.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(termVector.get(3).doubleValue(), 0.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 4);
+    assertEquals(columnLabels.get(0), "hello");
+    assertEquals(columnLabels.get(1), "jack");
+    assertEquals(columnLabels.get(2), "steve");
+    assertEquals(columnLabels.get(3), "world");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 4);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+    assertEquals(docFreqs.get("jack").intValue(), 1);
+    assertEquals(docFreqs.get("steve").intValue(), 1);
+    assertEquals(docFreqs.get("world").intValue(), 1);
+
+    //Test minDocFreq attribute at .5. This should eliminate all but the term hello
+
+    cexpr = "let(echo=true," +
+        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "tuple(id=\"2\", text=\"hello steve\"), " +
+        "tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "    b=termVectors(a, minDocFreq=.5, maxDocFreq=1)," +
+        "    c=getRowLabels(b)," +
+        "    d=getColumnLabels(b)," +
+        "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+
+    assertEquals(termVectors.size(), 4);
+    termVector = termVectors.get(0);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(1);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(2);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    termVector = termVectors.get(3);
+    assertEquals(termVector.size(), 1);
+    assertEquals(termVector.get(0).doubleValue(), 1.0, 0.0);
+
+    rowLabels  = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.size(), 4);
+    assertEquals(rowLabels.get(0), "1");
+    assertEquals(rowLabels.get(1), "2");
+    assertEquals(rowLabels.get(2), "3");
+    assertEquals(rowLabels.get(3), "4");
+
+    columnLabels  = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.size(), 1);
+    assertEquals(columnLabels.get(0), "hello");
+
+    docFreqs  = (Map<String, Number>)tuples.get(0).get("e");
+
+    assertEquals(docFreqs.size(), 1);
+    assertEquals(docFreqs.get("hello").intValue(), 4);
+
+    //Test maxDocFreq attribute at 0. This should eliminate all terms
+
+    cexpr = "let(echo=true," +
+        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "tuple(id=\"2\", text=\"hello steve\"), " +
+        "tuple(id=\"3\", text=\"hello jim jim\"), " +
+        "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
+        "    b=termVectors(a, maxDocFreq=0)," +
+        "    c=getRowLabels(b)," +
+        "    d=getColumnLabels(b)," +
+        "    e=getAttribute(b, docFreqs))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    termVectors  = (List<List<Number>>)tuples.get(0).get("b");
+    assertEquals(termVectors.size(), 4);
+    assertEquals(termVectors.get(0).size(), 0);
+  }
+
+
+
+  @Test
+  public void testEbeSubtract() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeSubtract(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeSubtract(f, g))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 2.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 4.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 5.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 6.0, 0.0);
+
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), -8.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), -7.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), -6.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), -5.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), -4.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), -3.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), -99.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), -198.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), -297.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), -396.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), -495.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), -594.0, 0.0);
   }
 
 
   @Test
-  public void testEBEMultiply() throws Exception {
+  public void testMatrixMult() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,2,3)," +
+        "               b=matrix(array(4), array(5), array(6))," +
+        "               c=matrixMult(a, b)," +
+        "               d=matrix(array(3, 4), array(10,11), array(30, 40))," +
+        "               e=matrixMult(a, d)," +
+        "               f=array(4,8,10)," +
+        "               g=matrix(a, f)," +
+        "               h=matrixMult(d, g)," +
+        "               i=matrixMult(b, a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(matrix.size(), 1);
+    List<Number> row = matrix.get(0);
+    assertEquals(row.size(), 1);
+    assertEquals(row.get(0).doubleValue(), 32.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("e");
+    assertEquals(matrix.size(), 1);
+    row = matrix.get(0);
+    assertEquals(row.size(), 2);
+    assertEquals(row.get(0).doubleValue(), 113.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 146.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 19.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 38.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 49.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 54.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 108.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 140.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 190.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 380.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 490.0, 0.0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("i");
+
+    assertEquals(matrix.size(), 3);
+    row = matrix.get(0);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 4.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 8.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 12.0, 0.0);
+
+    row = matrix.get(1);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 5.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 10.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 15.0, 0.0);
+
+    row = matrix.get(2);
+    assertEquals(row.size(), 3);
+    assertEquals(row.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(row.get(1).doubleValue(), 12.0, 0.0);
+    assertEquals(row.get(2).doubleValue(), 18.0, 0.0);
+  }
+
+  @Test
+  public void testKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=kmeans(e, 2)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+              ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0);
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
+    }
+  }
+
+  @Test
+  public void testMultiKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=multiKmeans(e, 2, 5)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+        ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.0);
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.0);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.0);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
+    }
+  }
+
+
+
+
+  @Test
+  public void testFuzzyKmeans() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(1,1,1,0,0,0)," +
+        "               b=array(1,1,1,0,0,0)," +
+        "               c=array(0,0,0,1,1,1)," +
+        "               d=array(0,0,0,1,1,1)," +
+        "               e=setRowLabels(matrix(a,b,c,d), " +
+        "                              array(doc1, doc2, doc3, doc4))," +
+        "               f=fuzzyKmeans(e, 2)," +
+        "               g=getCluster(f, 0)," +
+        "               h=getCluster(f, 1)," +
+        "               i=getCentroids(f)," +
+        "               j=getRowLabels(g)," +
+        "               k=getRowLabels(h)," +
+        "               l=getMembershipMatrix(f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    List<List<Number>> membership = (List<List<Number>>)tuples.get(0).get("l");
+
+    List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    List<String> labels2 = (List<String>)tuples.get(0).get("k");
+
+    assertEquals(cluster1.size(), 2);
+    assertEquals(cluster2.size(), 2);
+    assertEquals(centroids.size(), 2);
+
+    //Assert that the docs are not in both clusters
+    assertTrue(!(labels1.contains("doc1") && labels2.contains("doc1")));
+    assertTrue(!(labels1.contains("doc2") && labels2.contains("doc2")));
+    assertTrue(!(labels1.contains("doc3") && labels2.contains("doc3")));
+    assertTrue(!(labels1.contains("doc4") && labels2.contains("doc4")));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels1
+    assertTrue((labels1.contains("doc1") && labels1.contains("doc2")) ||
+        ((labels1.contains("doc3") && labels1.contains("doc4"))));
+
+    //Assert that (doc1 and doc2) or (doc3 and doc4) are in labels2
+    assertTrue((labels2.contains("doc1") && labels2.contains("doc2")) ||
+        ((labels2.contains("doc3") && labels2.contains("doc4"))));
+
+
+    if(labels1.contains("doc1")) {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 0.0, 0.001);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 1.0, 0.001);
+
+      //Assert the membership matrix
+      assertEquals(membership.get(0).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 1.0, 0.001);
+
+    } else {
+      assertEquals(centroids.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(2).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(0).get(3).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(4).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(0).get(5).doubleValue(), 1.0, 0.001);
+
+      assertEquals(centroids.get(1).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(2).doubleValue(), 1.0, 0.001);
+      assertEquals(centroids.get(1).get(3).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.001);
+      assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.001);
+
+      //Assert the membership matrix
+      assertEquals(membership.get(0).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(0).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(1).get(0).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(1).get(1).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(2).get(1).doubleValue(), 0.0, 0.001);
+      assertEquals(membership.get(3).get(0).doubleValue(), 1.0, 0.001);
+      assertEquals(membership.get(3).get(1).doubleValue(), 0.0, 0.001);
+    }
+  }
+
+  @Test
+  public void testEbeMultiply() throws Exception {
     String cexpr = "ebeMultiply(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -6635,8 +7393,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  public void testEBEAdd() throws Exception {
-    String cexpr = "ebeAdd(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+  public void testEbeAdd() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(2, 4, 6, 8, 10, 12)," +
+        "               b=array(1, 2, 3, 4, 5, 6)," +
+        "               c=ebeAdd(a,b)," +
+        "               d=array(10, 11, 12, 13, 14, 15)," +
+        "               e=array(100, 200, 300, 400, 500, 600)," +
+        "               f=matrix(a, b)," +
+        "               g=matrix(d, e)," +
+        "               h=ebeAdd(f, g))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6646,19 +7412,39 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size() == 6);
-    assertTrue(out.get(0).intValue() == 3);
-    assertTrue(out.get(1).intValue() == 6);
-    assertTrue(out.get(2).intValue() == 9);
-    assertTrue(out.get(3).intValue() == 12);
-    assertTrue(out.get(4).intValue() == 15);
-    assertTrue(out.get(5).intValue() == 18);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(out.get(1).doubleValue(), 6.0, 0.0);
+    assertEquals(out.get(2).doubleValue(), 9.0, 0.0);
+    assertEquals(out.get(3).doubleValue(), 12.0, 0.0);
+    assertEquals(out.get(4).doubleValue(), 15.0, 0.0);
+    assertEquals(out.get(5).doubleValue(), 18.0, 0.0);
+
+    List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(mout.size(), 2);
+    List<Number> row1 = mout.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 12.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 15.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 18.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 21.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 24.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 27.0, 0.0);
+
+    List<Number> row2 = mout.get(1);
+    assertEquals(row2.size(), 6);
+    assertEquals(row2.get(0).doubleValue(), 101.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 202.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 303.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 404.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 505.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 606.0, 0.0);
   }
 
 
   @Test
-  public void testEBEDivide() throws Exception {
+  public void testEbeDivide() throws Exception {
     String cexpr = "ebeDivide(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -6796,12 +7582,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Map> listh = (List<Map>)tuples.get(0).get("h");
     Map maph = listh.get(0);
     double pcth = (double)maph.get("pct");
-    assertEquals(pcth, .5, .02 );
+    assertEquals(pcth, .5, .02);
 
     List<Map> listi = (List<Map>)tuples.get(0).get("i");
     Map mapi = listi.get(0);
     double pcti = (double)mapi.get("pct");
-    assertEquals(pcti, .8, .02 );
+    assertEquals(pcti, .8, .02);
   }
 
   @Test
@@ -7114,6 +7900,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(),21.0,0.01);
   }
 
+
   @Test
   public void testPolyfit() throws Exception {
     String cexpr = "let(echo=true," +
@@ -7138,6 +7925,230 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == 5);
     assertTrue(out.get(6).intValue() == 6);
     assertTrue(out.get(7).intValue() == 7);
+  }
+
+
+  @Test
+  public void testTtest() throws Exception {
+    String cexpr = "let(echo=true," +
+                       "a=array(0,1,2,3,4,5,6,7,9,10,11,12), " +
+                       "b=array(0,1,2,3,4,5,6,7,1,1,1,1), " +
+                       "ttest=ttest(a, b)," +
+                       "sample2Mean=mean(b),"+
+                       "onesamplettest=ttest(sample2Mean, b)," +
+                       "pairedttest=pairedTtest(a,b))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map testResult = (Map)tuples.get(0).get("ttest");
+    Number tstat = (Number)testResult.get("t-statistic");
+    Number pval = (Number)testResult.get("p-value");
+    assertEquals(tstat.doubleValue(), 2.3666107120397575, .0001);
+    assertEquals(pval.doubleValue(), 0.029680704317867967, .0001);
+
+    Map testResult2 = (Map)tuples.get(0).get("onesamplettest");
+    Number tstat2 = (Number)testResult2.get("t-statistic");
+    Number pval2 = (Number)testResult2.get("p-value");
+    assertEquals(tstat2.doubleValue(), 0, .0001);
+    assertEquals(pval2.doubleValue(), 1, .0001);
+
+    Map testResult3 = (Map)tuples.get(0).get("pairedttest");
+    Number tstat3 = (Number)testResult3.get("t-statistic");
+    Number pval3 = (Number)testResult3.get("p-value");
+    assertEquals(tstat3.doubleValue(), 2.321219442769799, .0001);
+    assertEquals(pval3.doubleValue(), 0.0404907407662755, .0001);
+  }
+
+
+  @Test
+  public void testChiSquareDataSet() throws Exception {
+    String cexpr = "let(echo=true," +
+                   "    a=array(1,1,2,3,4,5,6,7,9,10,11,12), " +
+                   "    b=array(1,1,2,3,4,5,6,7,1,1,1,1), " +
+                   "    chisquare=chiSquareDataSet(a, b))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map testResult = (Map)tuples.get(0).get("chisquare");
+    Number tstat = (Number)testResult.get("chisquare-statistic");
+    Number pval = (Number)testResult.get("p-value");
+    assertEquals(tstat.doubleValue(), 20.219464814599252, .0001);
+    assertEquals(pval.doubleValue(), 0.04242018685334226, .0001);
+  }
+
+  @Test
+  public void testGtestDataSet() throws Exception {
+    String cexpr = "let(echo=true," +
+        "    a=array(1,1,2,3,4,5,6,7,9,10,11,12), " +
+        "    b=array(1,1,2,3,4,5,6,7,1,1,1,1), " +
+        "    gtest=gtestDataSet(a, b))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map testResult = (Map)tuples.get(0).get("gtest");
+    Number gstat = (Number)testResult.get("G-statistic");
+    Number pval = (Number)testResult.get("p-value");
+    assertEquals(gstat.doubleValue(), 22.41955157784917, .0001);
+    assertEquals(pval.doubleValue(), 0.021317102314826752, .0001);
+  }
+
+
+  @Test
+  public void testMultiVariateNormalDistribution() throws Exception {
+    String cexpr = "let(echo=true," +
+        "     a=array(1,2,3,4,5,6,7)," +
+        "     b=array(100, 110, 120, 130,140,150,180)," +
+        "     c=transpose(matrix(a, b))," +
+        "     d=array(mean(a), mean(b))," +
+        "     e=cov(c)," +
+        "     f=multiVariateNormalDistribution(d, e)," +
+        "     g=sample(f, 10000)," +
+        "     h=cov(g)," +
+        "     i=sample(f)," +
+        "     j=density(f, array(4.016093243274465, 138.7283428008585)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cov = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(cov.size(), 2);
+    List<Number> row1 = cov.get(0);
+    assertEquals(row1.size(), 2);
+
+    double a = row1.get(0).doubleValue();
+    double b = row1.get(1).doubleValue();
+    assertEquals(a, 4.666666666666667, 2.5);
+    assertEquals(b, 56.66666666666667, 7);
+
+    List<Number> row2 = cov.get(1);
+
+    double c = row2.get(0).doubleValue();
+    double d = row2.get(1).doubleValue();
+    assertEquals(c, 56.66666666666667, 7);
+    assertEquals(d, 723.8095238095239, 50);
+
+    List<Number> sample = (List<Number>)tuples.get(0).get("i");
+    assertEquals(sample.size(), 2);
+    Number sample1 = sample.get(0);
+    Number sample2 = sample.get(1);
+    assertTrue(sample1.doubleValue() > -30 && sample1.doubleValue() < 30);
+    assertTrue(sample2.doubleValue() > 50 && sample2.doubleValue() < 250);
+
+    Number density = (Number)tuples.get(0).get("j");
+    assertEquals(density.doubleValue(), 0.007852638121596995, .00001);
+  }
+
+  @Test
+  public void testKnn() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=setRowLabels(matrix(array(1,1,1,0,0,0),"+
+        "                                     array(1,0,0,0,1,1),"+
+        "                                     array(0,0,0,1,1,1)), array(row1,row2,row3)),"+
+        "               b=array(0,0,0,1,1,1),"+
+        "               c=knn(a, b, 2),"+
+        "               d=getRowLabels(c),"+
+        "               e=getAttributes(c)," +
+        "               f=knn(a, b, 2, distance=manhattan)," +
+        "               g=getAttributes(f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<List<Number>> knnMatrix = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(knnMatrix.size(), 2);
+
+    List<Number> row1 = knnMatrix.get(0);
+    assertEquals(row1.size(), 6);
+    assertEquals(row1.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row1.get(3).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(5).doubleValue(), 1.0, 0.0);
+
+    List<Number> row2 = knnMatrix.get(1);
+    assertEquals(row2.size(), 6);
+
+    assertEquals(row2.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(3).doubleValue(), 0.0, 0.0);
+    assertEquals(row2.get(4).doubleValue(), 1.0, 0.0);
+    assertEquals(row2.get(5).doubleValue(), 1.0, 0.0);
+
+    Map atts = (Map)tuples.get(0).get("e");
+    List<Number> dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 1.4142135623730951, 0.0);
+
+    List<String> rowLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(rowLabels.size(), 2);
+    assertEquals(rowLabels.get(0), "row3");
+    assertEquals(rowLabels.get(1), "row2");
+
+    atts = (Map)tuples.get(0).get("g");
+    dists = (List<Number>)atts.get("distances");
+    assertEquals(dists.size(), 2);
+    assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
+    assertEquals(dists.get(1).doubleValue(), 2.0, 0.0);
+  }
+
+  @Test
+  public void testIntegrate() throws Exception {
+    String cexpr = "let(echo=true, " +
+                       "a=sequence(50, 1, 0), " +
+                       "b=spline(a), " +
+                       "c=integrate(b, 0, 49), " +
+                       "d=integrate(b, 0, 20), " +
+                       "e=integrate(b, 20, 49))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number integral = (Number)tuples.get(0).get("c");
+    assertEquals(integral.doubleValue(), 49, 0.0);
+    integral = (Number)tuples.get(0).get("d");
+    assertEquals(integral.doubleValue(), 20, 0.0);
+    integral = (Number)tuples.get(0).get("e");
+    assertEquals(integral.doubleValue(), 29, 0.0);
   }
 
 
@@ -7184,7 +8195,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testSpline() throws Exception {
     String cexpr = "let(echo=true," +
-                   "    a=array(0,1,2,3,4,5,6,7), b=array(1,70,90,10,78, 100, 1, 9)," +
+                   "    a=array(0,1,2,3,4,5,6,7), " +
+                   "    b=array(1,70,90,10,78, 100, 1, 9)," +
                    "    fit=spline(a, b), " +
                    "    der=derivative(fit))";
 
@@ -7223,6 +8235,127 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testBicubicSpline() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(300, 400, 500, 600, 700), " +
+        "               b=array(340, 410, 495, 590, 640)," +
+        "               c=array(600, 395, 550, 510, 705),"+
+        "               d=array(500, 420, 510, 601, 690),"+
+        "               e=array(420, 411, 511, 611, 711),"+
+        "               f=matrix(a, b, c, d, e),"+
+        "               x=array(1,2,3,4,5),"+
+        "               y=array(100, 200, 300, 400, 500),"+
+        "               bspline=bicubicSpline(x, y, f), " +
+        "               p1=predict(bspline, 1.5, 250)," +
+        "               p2=predict(bspline, 3.5, 350)," +
+        "               p3=predict(bspline, 4.5, 450)," +
+        "               p4=predict(bspline,matrix(array(1.5, 250), array(3.5, 350), array(4.5, 450))))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number p1 = (Number)tuples.get(0).get("p1");
+    assertEquals(p1.doubleValue(), 449.7837701612903, 0.0);
+    Number p2 = (Number)tuples.get(0).get("p2");
+    assertEquals(p2.doubleValue(), 536.8916383774491, 0.0);
+    Number p3 = (Number)tuples.get(0).get("p3");
+    assertEquals(p3.doubleValue(), 659.921875, 0.0);
+    List<Number> p4 = (List<Number>)tuples.get(0).get("p4");
+    assertEquals(p4.get(0).doubleValue(), 449.7837701612903, 0.0);
+    assertEquals(p4.get(1).doubleValue(), 536.8916383774491, 0.0);
+    assertEquals(p4.get(2).doubleValue(), 659.921875, 0.0);
+  }
+
+
+  @Test
+  public void testAkima() throws Exception {
+    String cexpr = "let(echo=true," +
+        "    a=array(0,1,2,3,4,5,6,7), " +
+        "    b=array(1,70,90,10,78, 100, 1, 9)," +
+        "    fit=akima(a, b), " +
+        "    der=derivative(fit))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(1).doubleValue(), 70.0, 0.0001);
+    assertEquals(out.get(2).doubleValue(), 90.0, 0.0001);
+    assertEquals(out.get(3).doubleValue(), 10.0, 0.0001);
+    assertEquals(out.get(4).doubleValue(), 78.0, 0.0001);
+    assertEquals(out.get(5).doubleValue(), 100.0, 0.0001);
+    assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 93.5, 0.0001);
+    assertEquals(out1.get(1).doubleValue(), 44.5, 0.0001);
+    assertEquals(out1.get(2).doubleValue(),-4.873096446700508, 0.0001);
+    assertEquals(out1.get(3).doubleValue(), 21.36986301369863, 0.0001);
+    assertEquals(out1.get(4).doubleValue(),42.69144981412639, 0.0001);
+    assertEquals(out1.get(5).doubleValue(),-14.379084967320262, 0.0001);
+    assertEquals(out1.get(6).doubleValue(), -45.5, 0.0001);
+    assertEquals(out1.get(7).doubleValue(), 61.5, 0.0001);
+  }
+
+
+  @Test
+  public void testLerp() throws Exception {
+    String cexpr = "let(echo=true," +
+        "    a=array(0,1,2,3,4,5,6,7), " +
+        "    b=array(1,70,90,10,78, 100, 1, 9)," +
+        "    fit=lerp(a, b), " +
+        "    der=derivative(fit))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(1).doubleValue(), 70.0, 0.0001);
+    assertEquals(out.get(2).doubleValue(), 90.0, 0.0001);
+    assertEquals(out.get(3).doubleValue(), 10.0, 0.0001);
+    assertEquals(out.get(4).doubleValue(), 78.0, 0.0001);
+    assertEquals(out.get(5).doubleValue(), 100.0, 0.0001);
+    assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
+    assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
+
+    List<Number> out1 = (List<Number>)tuples.get(0).get("der");
+    assertTrue(out1.size() == 8);
+    assertEquals(out1.get(0).doubleValue(), 69.0, 0.0001);
+    assertEquals(out1.get(1).doubleValue(), 20.0, 0.0001);
+    assertEquals(out1.get(2).doubleValue(),-80.0, 0.0001);
+    assertEquals(out1.get(3).doubleValue(), 68, 0.0001);
+    assertEquals(out1.get(4).doubleValue(), 22.0, 0.0001);
+    assertEquals(out1.get(5).doubleValue(),-99.0, 0.0001);
+    assertEquals(out1.get(6).doubleValue(), 8.0, 0.0001);
+    assertEquals(out1.get(7).doubleValue(), 8.0, 0.0001);
+  }
+
+
+  @Test
   public void testHarmonicFit() throws Exception {
     String cexpr = "let(a=sin(sequence(100, 1, 6)), b=harmonicFit(a), s=ebeSubtract(a, b))";
 
@@ -7241,7 +8374,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(n.doubleValue(), 0.0, .01);
     }
   }
-
 
   @Test
   public void testAnova() throws Exception {
@@ -7352,6 +8484,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals((double) out.get(3), 5.5, .0);
   }
 
+  @Test
+  public void testMannWhitney() throws Exception {
+    String cexpr = "mannWhitney(array(0.15,0.10,0.11,0.24,0.08,0.08,0.10,0.10,0.10,0.12,0.04,0.07), " +
+                               "array(0.10,0.20,0.30,0.10,0.10,0.02,0.05,0.07))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map out = (Map)tuples.get(0).get("return-value");
+    assertEquals((double) out.get("u-statistic"), 52.5, .1);
+    assertEquals((double) out.get("p-value"), 0.7284, .001);
+  }
 
   @Test
   public void testMovingMedian() throws Exception {
@@ -7371,6 +8520,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(1).doubleValue(), 9.0, .0);
     assertEquals(out.get(2).doubleValue(), 10.0, .0);
   }
+
+  @Test
+  public void testSumSq() throws Exception {
+    String cexpr = "sumSq(array(-3,-2.5, 10))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number sumSq = (Number)tuples.get(0).get("return-value");
+    assertEquals(sumSq.doubleValue(), 115.25D, 0.0D);
+  }
+
 
   @Test
   public void testMonteCarlo() throws Exception {
@@ -7797,6 +8963,41 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     Number mean = (Number)tuples.get(0).get("return-value");
     assertEquals(mean.doubleValue(), 3.0D, 0.0D);
+  }
+
+
+  @Test
+  public void testNorms() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "               a=array(1,2,3,4,5,6), " +
+        "               b=l1norm(a), " +
+        "               c=l2norm(a), " +
+        "               d=linfnorm(a), " +
+        "               e=sqrt(add(pow(a, 2)))," +
+        "               f=add(abs(a)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number l1norm = (Number)tuples.get(0).get("b");
+    assertEquals(l1norm.doubleValue(), 21.0D, 0.0D);
+
+    Number norm = (Number)tuples.get(0).get("c");
+    assertEquals(norm.doubleValue(), 9.5393920141695, 0.0001D);
+
+    Number inorm = (Number)tuples.get(0).get("d");
+    assertEquals(inorm.doubleValue(), 6.0, 0.0);
+
+    Number norm2 = (Number)tuples.get(0).get("e");
+    assertEquals(norm.doubleValue(), norm2.doubleValue(), 0.0);
+
+    Number l1norm2 = (Number)tuples.get(0).get("f");
+    assertEquals(l1norm.doubleValue(), l1norm2.doubleValue(), 0.0);
   }
 
 

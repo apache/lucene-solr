@@ -162,7 +162,7 @@
   <target name="validate" depends="compile-tools">
   </target>
 
-  <target name="init-dist" >
+  <target name="init-dist" depends="resolve-groovy">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${package.dir}"/>
     <mkdir dir="${dist}"/>
@@ -170,7 +170,8 @@
   </target>
 
   <target name="prep-lucene-jars" 
-          depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
+          depends="resolve-groovy,
+                   jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
                    jar-misc, jar-spatial-extras, jar-spatial3d, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox, jar-classification">
       <property name="solr.deps.compiled" value="true"/>
   </target>
@@ -555,4 +556,7 @@
   <target name="test" unless="tests.disable-solr">
     <antcall target="common.test" inheritrefs="true" inheritall="true"/>
   </target>
+  
+  <!-- In Solr we do not generate MR-JARs yet; disable completely so we do not accidentally patch -->
+  <target name="patch-mrjar-classes"/>
 </project>

@@ -24,11 +24,12 @@ import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.TopTermsRewrite;
 
@@ -95,7 +96,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     throw new IllegalArgumentException("Rewrite first!");
   }
 
@@ -162,7 +163,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       }
     
       @Override
-      protected void addClause(List<SpanQuery> topLevel, Term term, int docCount, float boost, TermContext states) {
+      protected void addClause(List<SpanQuery> topLevel, Term term, int docCount, float boost, TermStates states) {
         final SpanTermQuery q = new SpanTermQuery(term, states);
         topLevel.add(q);
       }
@@ -210,7 +211,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
         }
 
         @Override
-        protected void addClause(List<SpanQuery> topLevel, Term term, int docFreq, float boost, TermContext states) {
+        protected void addClause(List<SpanQuery> topLevel, Term term, int docFreq, float boost, TermStates states) {
           final SpanTermQuery q = new SpanTermQuery(term, states);
           topLevel.add(q);
         }

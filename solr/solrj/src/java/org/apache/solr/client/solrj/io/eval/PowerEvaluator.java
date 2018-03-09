@@ -17,8 +17,9 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Locale;
+import java.util.List;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -40,10 +41,21 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
     if(null == first || null == second){
       return null;
     }
-    
-    BigDecimal value = (BigDecimal)first;
-    BigDecimal exponent = (BigDecimal)second;
-        
-    return Math.pow(value.doubleValue(), exponent.doubleValue());
+
+    if(first instanceof Number) {
+      Number value = (Number) first;
+      Number exponent = (Number) second;
+      return Math.pow(value.doubleValue(), exponent.doubleValue());
+    } else {
+      List<Number> values = (List<Number>) first;
+      Number exponent = (Number) second;
+
+      List<Number> out = new ArrayList(values.size());
+      for(Number value : values) {
+        out.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
+      }
+
+      return out;
+    }
   }
 }

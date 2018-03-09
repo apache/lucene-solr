@@ -68,9 +68,9 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
    * @throws IOException if an {@link IOException} occurs
    */
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
     if (dv.advanceExact(docId))
-      return Explanation.match((float) dv.doubleValue(), this.toString());
+      return Explanation.match(dv.doubleValue(), this.toString());
     return Explanation.noMatch(this.toString());
   }
 
@@ -81,7 +81,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
    * IndexReader-independent implementations can just return {@code this}
    *
    * Queries that use DoubleValuesSource objects should call rewrite() during
-   * {@link Query#createWeight(IndexSearcher, boolean, float)} rather than during
+   * {@link Query#createWeight(IndexSearcher, ScoreMode, float)} rather than during
    * {@link Query#rewrite(IndexReader)} to avoid IndexReader reference leakage
    */
   public abstract DoubleValuesSource rewrite(IndexSearcher reader) throws IOException;
@@ -305,7 +305,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) {
-      return Explanation.match((float) value, "constant(" + value + ")");
+      return Explanation.match(value, "constant(" + value + ")");
     }
 
     @Override
@@ -405,7 +405,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
       DoubleValues values = getValues(ctx, null);
       if (values.advanceExact(docId))
-        return Explanation.match((float) values.doubleValue(), this.toString());
+        return Explanation.match(values.doubleValue(), this.toString());
       else
         return Explanation.noMatch(this.toString());
     }
@@ -553,7 +553,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-      return new WeightDoubleValuesSource(searcher.rewrite(query).createWeight(searcher, true, 1f));
+      return new WeightDoubleValuesSource(searcher.rewrite(query).createWeight(searcher, ScoreMode.COMPLETE, 1f));
     }
 
     @Override

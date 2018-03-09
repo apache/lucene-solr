@@ -98,7 +98,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay));
     checkHits(query, new int[]
       {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
-    assertTrue(searcher.explain(query, 1125).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 1125).getValue().doubleValue() > 0.0f);
 
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "hundred"));
     SpanNearQuery snq;

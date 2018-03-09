@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -541,8 +541,8 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     }
 
     @Override
-    protected Query newTermQuery(Term term, TermContext context) {
-      Query query = super.newTermQuery(term, context);
+    protected Query newTermQuery(Term term, TermStates termStates) {
+      Query query = super.newTermQuery(term, termStates);
       if (term.text().equals("universe")) {
         query = new BoostQuery(query, 100f);
       }

@@ -69,126 +69,108 @@ public class StreamExpressionToExplanationTest extends LuceneTestCase {
     
   @Test
   public void testCloudSolrStream() throws Exception {
-
-    CloudSolrStream stream;
-    
     // Basic test
-    stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("search", explanation.getFunctionName());
-    Assert.assertEquals(CloudSolrStream.class.getName(), explanation.getImplementingClass());
-
+    try (CloudSolrStream stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("search", explanation.getFunctionName());
+      Assert.assertEquals(CloudSolrStream.class.getName(), explanation.getImplementingClass());
+    }
   }
   
   @Test
   public void testSelectStream() throws Exception {
-
-    SelectStream stream;
-    
     // Basic test
-    stream = new SelectStream(StreamExpressionParser.parse("select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("select", explanation.getFunctionName());
-    Assert.assertEquals(SelectStream.class.getName(), explanation.getImplementingClass());    
+    try (SelectStream stream = new SelectStream(StreamExpressionParser.parse("select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("select", explanation.getFunctionName());
+      Assert.assertEquals(SelectStream.class.getName(), explanation.getImplementingClass());
+    }
   }
 
   @Test
   public void testDaemonStream() throws Exception {
-
-    DaemonStream stream;
-
     // Basic test
-    stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("daemon", explanation.getFunctionName());
-    Assert.assertEquals(DaemonStream.class.getName(), explanation.getImplementingClass());
+    try (DaemonStream stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("daemon", explanation.getFunctionName());
+      Assert.assertEquals(DaemonStream.class.getName(), explanation.getImplementingClass());
+    }
   }
 
   @Test
   public void testTopicStream() throws Exception {
-
-    TopicStream stream;
-
     // Basic test
-    stream = new TopicStream(StreamExpressionParser.parse("topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("topic", explanation.getFunctionName());
-    Assert.assertEquals(TopicStream.class.getName(), explanation.getImplementingClass());
+    try (TopicStream stream = new TopicStream(StreamExpressionParser.parse("topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("topic", explanation.getFunctionName());
+      Assert.assertEquals(TopicStream.class.getName(), explanation.getImplementingClass());
+    }
   }
 
 
   @Test
   public void testStatsStream() throws Exception {
-
-    StatsStream stream;
-    
     // Basic test
-    stream = new StatsStream(StreamExpressionParser.parse("stats(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", sum(a_i), avg(a_i), count(*), min(a_i), max(a_i))"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("stats", explanation.getFunctionName());
-    Assert.assertEquals(StatsStream.class.getName(), explanation.getImplementingClass());
-    
+    try (StatsStream stream = new StatsStream(StreamExpressionParser.parse("stats(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", sum(a_i), avg(a_i), count(*), min(a_i), max(a_i))"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("stats", explanation.getFunctionName());
+      Assert.assertEquals(StatsStream.class.getName(), explanation.getImplementingClass());
+    }
   }
 
   @Test
   public void testUniqueStream() throws Exception {
-
-    UniqueStream stream;
-    
     // Basic test
-    stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("unique", explanation.getFunctionName());
-    Assert.assertEquals(UniqueStream.class.getName(), explanation.getImplementingClass());
+    try (UniqueStream stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("unique", explanation.getFunctionName());
+      Assert.assertEquals(UniqueStream.class.getName(), explanation.getImplementingClass());
+    }
   }
   
   @Test
   public void testMergeStream() throws Exception {
-
-    MergeStream stream;
-    
     // Basic test
-    stream = new MergeStream(StreamExpressionParser.parse("merge("
+    try (MergeStream stream = new MergeStream(StreamExpressionParser.parse("merge("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f asc, a_s asc\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("merge", explanation.getFunctionName());
-    Assert.assertEquals(MergeStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(2, ((StreamExplanation)explanation).getChildren().size());
+                              + "on=\"a_f asc, a_s asc\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("merge", explanation.getFunctionName());
+      Assert.assertEquals(MergeStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
   
   @Test
   public void testRankStream() throws Exception {
-
-    RankStream stream;
     String expressionString;
     
     // Basic test
-    stream = new RankStream(StreamExpressionParser.parse("top("
+    try (RankStream stream = new RankStream(StreamExpressionParser.parse("top("
                                               + "n=3,"
                                               + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc,a_i asc\"),"
-                                              + "sort=\"a_f asc, a_i asc\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("top", explanation.getFunctionName());
-    Assert.assertEquals(RankStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(1, ((StreamExplanation)explanation).getChildren().size());
+                                              + "sort=\"a_f asc, a_i asc\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("top", explanation.getFunctionName());
+      Assert.assertEquals(RankStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
 
   @Test
   public void testReducerStream() throws Exception {
-
-    ReducerStream stream;
     String expressionString;
     
     // Basic test
-    stream = new ReducerStream(StreamExpressionParser.parse("reduce("
+    try (ReducerStream stream = new ReducerStream(StreamExpressionParser.parse("reduce("
                                                   + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc, a_f asc\"),"
-                                                  + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("reduce", explanation.getFunctionName());
-    Assert.assertEquals(ReducerStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(1, ((StreamExplanation)explanation).getChildren().size());
+                                                  + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("reduce", explanation.getFunctionName());
+      Assert.assertEquals(ReducerStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
   
   @Test
@@ -202,26 +184,25 @@ public class StreamExpressionToExplanationTest extends LuceneTestCase {
                                                                  + "fl=\"id,a_s,a_i,a_f\", "
                                                                  + "sort=\"a_f asc, a_i asc\"))");
     
-    UpdateStream updateStream = new UpdateStream(expression, factory);
-    Explanation explanation = updateStream.toExplanation(factory);
-    Assert.assertEquals("solr (collection2)", explanation.getFunctionName());
-    Assert.assertEquals("Solr/Lucene", explanation.getImplementingClass());
-    
-    StreamExplanation updateExplanation = (StreamExplanation)explanation;
-    Assert.assertEquals(1, updateExplanation.getChildren().size());
-    Assert.assertEquals("update", updateExplanation.getChildren().get(0).getFunctionName());
-    Assert.assertEquals(UpdateStream.class.getName(), updateExplanation.getChildren().get(0).getImplementingClass());
+    try (UpdateStream updateStream = new UpdateStream(expression, factory)) {
+      Explanation explanation = updateStream.toExplanation(factory);
+      Assert.assertEquals("solr (collection2)", explanation.getFunctionName());
+      Assert.assertEquals("Solr/Lucene", explanation.getImplementingClass());
+
+      StreamExplanation updateExplanation = (StreamExplanation) explanation;
+      Assert.assertEquals(1, updateExplanation.getChildren().size());
+      Assert.assertEquals("update", updateExplanation.getChildren().get(0).getFunctionName());
+      Assert.assertEquals(UpdateStream.class.getName(), updateExplanation.getChildren().get(0).getImplementingClass());
+    }
     
   }
   
   @Test
   public void testFacetStream() throws Exception {
-
-    FacetStream stream;
     String expressionString;
     
     // Basic test
-    stream = new FacetStream(StreamExpressionParser.parse("facet("
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
                                                         +   "collection1, "
                                                         +   "q=\"*:*\", "
                                                         +   "buckets=\"a_s\", "
@@ -232,57 +213,57 @@ public class StreamExpressionToExplanationTest extends LuceneTestCase {
                                                         +   "max(a_i), max(a_f), "
                                                         +   "avg(a_i), avg(a_f), "
                                                         +   "count(*)"
-                                                        + ")"), factory);
-    expressionString = stream.toExpression(factory).toString();
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("facet", explanation.getFunctionName());
-    Assert.assertEquals(FacetStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(1, ((StreamExplanation)explanation).getChildren().size());
+                                                        + ")"), factory)) {
+      expressionString = stream.toExpression(factory).toString();
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("facet", explanation.getFunctionName());
+      Assert.assertEquals(FacetStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
   
   @Test
   public void testJDBCStream() throws Exception {
-
-    JDBCStream stream;
     String expressionString;
     
     // Basic test
-    stream = new JDBCStream(StreamExpressionParser.parse("jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("jdbc", explanation.getFunctionName());
-    Assert.assertEquals(JDBCStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(1, ((StreamExplanation)explanation).getChildren().size());
+    try (JDBCStream stream = new JDBCStream(StreamExpressionParser.parse("jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("jdbc", explanation.getFunctionName());
+      Assert.assertEquals(JDBCStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
 
   @Test 
   public void testIntersectStream() throws Exception {
-    IntersectStream stream;
     String expressionString;
     
     // Basic test
-    stream = new IntersectStream(StreamExpressionParser.parse("intersect("
+    try (IntersectStream stream = new IntersectStream(StreamExpressionParser.parse("intersect("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f, a_s\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("intersect", explanation.getFunctionName());
-    Assert.assertEquals(IntersectStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(2, ((StreamExplanation)explanation).getChildren().size());
+                              + "on=\"a_f, a_s\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("intersect", explanation.getFunctionName());
+      Assert.assertEquals(IntersectStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
 
   @Test 
   public void testComplementStream() throws Exception {
-    ComplementStream stream;
     String expressionString;
     
     // Basic test
-    stream = new ComplementStream(StreamExpressionParser.parse("complement("
+    try (ComplementStream stream = new ComplementStream(StreamExpressionParser.parse("complement("
                               + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
                               + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-                              + "on=\"a_f, a_s\")"), factory);
-    Explanation explanation = stream.toExplanation(factory);
-    Assert.assertEquals("complement", explanation.getFunctionName());
-    Assert.assertEquals(ComplementStream.class.getName(), explanation.getImplementingClass());
-    Assert.assertEquals(2, ((StreamExplanation)explanation).getChildren().size());
+                              + "on=\"a_f, a_s\")"), factory)) {
+      Explanation explanation = stream.toExplanation(factory);
+      Assert.assertEquals("complement", explanation.getFunctionName());
+      Assert.assertEquals(ComplementStream.class.getName(), explanation.getImplementingClass());
+      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+    }
   }
 }

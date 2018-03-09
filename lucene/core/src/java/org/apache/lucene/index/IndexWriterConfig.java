@@ -479,5 +479,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     sb.append("writer=").append(writer.get()).append("\n");
     return sb.toString();
   }
+
+  @Override
+  public IndexWriterConfig setCheckPendingFlushUpdate(boolean checkPendingFlushOnUpdate) {
+    return (IndexWriterConfig) super.setCheckPendingFlushUpdate(checkPendingFlushOnUpdate);
+  }
   
 }

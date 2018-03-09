@@ -37,6 +37,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
@@ -52,6 +54,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -141,7 +144,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
@@ -150,12 +153,13 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) throws Exception {
-    AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction();
-    TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));
-    ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
-    action.process(lostNode, context);
-    List<SolrRequest> operations = (List) context.getProperty("operations");
-    return operations;
+    try (AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction()) {
+      TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));
+      ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
+      action.process(lostNode, context);
+      List<SolrRequest> operations = (List) context.getProperty("operations");
+      return operations;
+    }
   }
 
   private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName,

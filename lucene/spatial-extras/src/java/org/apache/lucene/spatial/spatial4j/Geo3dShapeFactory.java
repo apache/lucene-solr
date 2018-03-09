@@ -20,6 +20,10 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.geometry.S2Cell;
+import com.google.common.geometry.S2CellId;
+import com.google.common.geometry.S2Point;
+import org.apache.lucene.spatial.prefix.tree.S2ShapeFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircle;
@@ -32,6 +36,7 @@ import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
 import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoS2ShapeFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
@@ -42,18 +47,24 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeCollection;
-import org.locationtech.spatial4j.shape.ShapeFactory;
 
 /**
- * Geo3d implementation of {@link ShapeFactory}
+ * Geo3d implementation of {@link S2ShapeFactory}
  *
  * @lucene.experimental
  */
-public class Geo3dShapeFactory implements ShapeFactory {
+public class Geo3dShapeFactory implements S2ShapeFactory {
 
   private final boolean normWrapLongitude;
   private SpatialContext context;
   private PlanetModel planetModel;
+
+  /**
+   * Default accuracy for circles when not using the unit sphere.
+   * It is equivalent to ~10m on the surface of the earth.
+   */
+  private static final double DEFAULT_CIRCLE_ACCURACY = 1e-4;
+  private double circleAccuracy = DEFAULT_CIRCLE_ACCURACY;
 
   @SuppressWarnings("unchecked")
   public Geo3dShapeFactory(SpatialContext context, SpatialContextFactory factory) {
@@ -65,6 +76,16 @@ public class Geo3dShapeFactory implements ShapeFactory {
   @Override
   public SpatialContext getSpatialContext() {
     return context;
+  }
+
+  /**
+   * Set the accuracy for circles in decimal degrees. Note that accuracy has no effect
+   * when the planet model is a sphere. In that case, circles are always fully precise.
+   *
+   * @param circleAccuracy the provided accuracy in decimal degrees.
+   */
+  public void setCircleAccuracy(double circleAccuracy) {
+    this.circleAccuracy = circleAccuracy;
   }
 
   @Override
@@ -150,10 +171,23 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   @Override
   public Circle circle(double x, double y, double distance) {
-    GeoCircle circle = GeoCircleFactory.makeGeoCircle(planetModel,
-        y * DistanceUtils.DEGREES_TO_RADIANS,
-        x * DistanceUtils.DEGREES_TO_RADIANS,
-        distance * DistanceUtils.DEGREES_TO_RADIANS);
+    GeoCircle circle;
+    if (planetModel.isSphere()) {
+      circle = GeoCircleFactory.makeGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS);
+    }
+    else {
+      //accuracy is defined as a linear distance in this class. At tiny distances, linear distance
+      //can be approximated to surface distance in radians.
+      circle = GeoCircleFactory.makeExactGeoCircle(planetModel,
+          y * DistanceUtils.DEGREES_TO_RADIANS,
+          x * DistanceUtils.DEGREES_TO_RADIANS,
+          distance * DistanceUtils.DEGREES_TO_RADIANS,
+          circleAccuracy * DistanceUtils.DEGREES_TO_RADIANS);
+
+    }
     return new Geo3dCircleShape(circle, context);
   }
 
@@ -207,6 +241,20 @@ public class Geo3dShapeFactory implements ShapeFactory {
     return new Geo3dMultiPolygonBuilder();
   }
 
+  @Override
+  public Shape getS2CellShape(S2CellId cellId) {
+    S2Cell cell = new S2Cell(cellId);
+    GeoPoint point1 = getGeoPoint(cell.getVertexRaw(0));
+    GeoPoint point2 = getGeoPoint(cell.getVertexRaw(1));
+    GeoPoint point3 = getGeoPoint(cell.getVertexRaw(2));
+    GeoPoint point4 = getGeoPoint(cell.getVertexRaw(3));
+    return new Geo3dShape<>(GeoS2ShapeFactory.makeGeoS2Shape(planetModel, point1, point2, point3, point4), context);
+  }
+
+  private GeoPoint getGeoPoint(S2Point point) {
+    return planetModel.createSurfacePoint(point.get(0), point.get(1), point.get(2));
+  }
+
   /**
    * Geo3d implementation of {@link org.locationtech.spatial4j.shape.ShapeFactory.PointsBuilder} interface to
    * generate {@link GeoPoint}.
@@ -238,8 +286,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   /**
    * Geo3d implementation of {@link org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder} to generate
-   * nine Strings. Note that GeoPath needs a buffer so we set the
-   * buffer to 1e-10.
+   * line strings.
    */
   private class Geo3dLineStringBuilder extends Geo3dPointBuilder<LineStringBuilder> implements LineStringBuilder {
 
@@ -373,7 +420,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   /**
    * Geo3d implementation of {@link org.locationtech.spatial4j.shape.ShapeFactory.MultiShapeBuilder} to generate
-   * geometry collections
+   * geometry collections.
    *
    * @param <T> is the type of shapes.
    */

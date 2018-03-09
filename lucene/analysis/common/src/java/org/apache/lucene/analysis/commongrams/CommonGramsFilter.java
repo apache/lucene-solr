@@ -123,9 +123,6 @@ public final class CommonGramsFilter extends TokenFilter {
     return true;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();

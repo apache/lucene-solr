@@ -21,7 +21,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -198,9 +201,17 @@ public class Utils {
     }
   }
 
-  public static Object fromJSONResource(String resourceName){
-   return fromJSON(Utils.class.getClassLoader().getResourceAsStream(resourceName));
-
+  public static Object fromJSONResource(String resourceName) {
+    final URL resource = Utils.class.getClassLoader().getResource(resourceName);
+    if (null == resource) {
+      throw new IllegalArgumentException("invalid resource name: " + resourceName);
+    }
+    try (InputStream stream = resource.openStream()) {
+      return fromJSON(stream);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Resource error: " + e.getMessage(), e);
+    }
   }
   public static JSONParser getJSONParser(Reader reader){
     JSONParser parser = new JSONParser(reader);
@@ -445,12 +456,25 @@ public class Utils {
     }
   }
 
-  public static long time(TimeUnit unit) {
-    return unit.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+    final int _offset = nodeName.indexOf("_");
+    if (_offset < 0) {
+      throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
+    }
+    final String hostAndPort = nodeName.substring(0,_offset);
+    try {
+      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
   }
 
-  public static long timeElapsed(long start, TimeUnit unit) {
-    return unit.convert(System.nanoTime() - NANOSECONDS.convert(start, unit), NANOSECONDS);
+  public static long time(TimeSource timeSource, TimeUnit unit) {
+    return unit.convert(timeSource.getTime(), TimeUnit.NANOSECONDS);
   }
 
+  public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
+    return unit.convert(timeSource.getTime() - NANOSECONDS.convert(start, unit), NANOSECONDS);
+  }
 }
