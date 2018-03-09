@@ -24,7 +24,7 @@ import java.util.Objects;
  * A function that takes two interval iterators and combines them to produce a third,
  * generally by computing a difference interval between them
  */
-public abstract class DifferenceIntervalFunction {
+abstract class DifferenceIntervalFunction {
 
   @Override
   public abstract int hashCode();
@@ -44,7 +44,7 @@ public abstract class DifferenceIntervalFunction {
    * Filters the minuend iterator so that only intervals that do not overlap intervals from the
    * subtrahend iterator are returned
    */
-  public static final DifferenceIntervalFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
+  static final DifferenceIntervalFunction NON_OVERLAPPING = new SingletonFunction("NON_OVERLAPPING") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
       return new NonOverlappingIterator(minuend, subtrahend);
@@ -55,7 +55,7 @@ public abstract class DifferenceIntervalFunction {
    * Filters the minuend iterator so that only intervals that do not contain intervals from the
    * subtrahend iterator are returned
    */
-  public static final DifferenceIntervalFunction NOT_CONTAINING = new SingletonFunction("NOT_CONTAINING") {
+  static final DifferenceIntervalFunction NOT_CONTAINING = new SingletonFunction("NOT_CONTAINING") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
       return new NotContainingIterator(minuend, subtrahend);
@@ -66,7 +66,7 @@ public abstract class DifferenceIntervalFunction {
    * Filters the minuend iterator so that only intervals that are not contained by intervals from
    * the subtrahend iterator are returned
    */
-  public static final DifferenceIntervalFunction NOT_CONTAINED_BY = new SingletonFunction("NOT_CONTAINED_BY") {
+  static final DifferenceIntervalFunction NOT_CONTAINED_BY = new SingletonFunction("NOT_CONTAINED_BY") {
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
       return new NotContainedByIterator(minuend, subtrahend);
@@ -146,7 +146,7 @@ public abstract class DifferenceIntervalFunction {
    * Filters the minuend iterator so that only intervals that do not occur within a set number
    * of positions of intervals from the subtrahend iterator are returned
    */
-  public static class NotWithinFunction extends DifferenceIntervalFunction {
+  static class NotWithinFunction extends DifferenceIntervalFunction {
 
     private final int positions;
 

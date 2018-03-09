@@ -26,7 +26,7 @@ import org.apache.lucene.util.PriorityQueue;
 /**
  * Combine a list of {@link IntervalIterator}s into another
  */
-public abstract class IntervalFunction {
+abstract class IntervalFunction {
 
   @Override
   public abstract int hashCode();
@@ -42,7 +42,7 @@ public abstract class IntervalFunction {
    */
   public abstract IntervalIterator apply(List<IntervalIterator> iterators);
 
-  public static final IntervalFunction BLOCK = new SingletonFunction("BLOCK") {
+  static final IntervalFunction BLOCK = new SingletonFunction("BLOCK") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       return new BlockIntervalIterator(iterators);
@@ -108,7 +108,7 @@ public abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the subiterators appear in a given order
    */
-  public static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
+  static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
       return new OrderedIntervalIterator(intervalIterators);
@@ -175,7 +175,7 @@ public abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the subiterators appear in any order
    */
-  public static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
+  static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
       return new UnorderedIntervalIterator(intervalIterators);
@@ -265,7 +265,7 @@ public abstract class IntervalFunction {
   /**
    * Returns an interval over iterators where the first iterator contains intervals from the second
    */
-  public static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING") {
+  static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       if (iterators.size() != 2)
@@ -314,7 +314,7 @@ public abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the first iterator is contained by intervals from the second
    */
-  public static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY") {
+  static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       if (iterators.size() != 2)
