@@ -119,11 +119,17 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
     @Override
     public int start() {
+      if (doc != approximation.docID()) {
+        return -1;
+      }
       return current.start();
     }
 
     @Override
     public int end() {
+      if (doc != approximation.docID()) {
+        return -1;
+      }
       return current.end();
     }
 

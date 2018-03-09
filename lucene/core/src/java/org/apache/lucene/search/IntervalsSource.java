@@ -33,6 +33,8 @@ public abstract class IntervalsSource {
   /**
    * Create an {@link IntervalIterator} exposing the minimum intervals defined by this {@link IntervalsSource}
    *
+   * Returns {@code null} if no intervals for this field exist in this segment
+   *
    * @param field the field to read positions from
    * @param ctx   the context for which to return the iterator
    */
