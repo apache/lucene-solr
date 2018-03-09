@@ -79,6 +79,7 @@ abstract class DifferenceIntervalFunction {
     final IntervalIterator b;
 
     boolean bpos;
+    int doc = -1;
 
     RelativeIterator(IntervalIterator a, IntervalIterator b) {
       this.a = a;
@@ -95,16 +96,13 @@ abstract class DifferenceIntervalFunction {
       return a.end();
     }
 
-    @Override
-    public void reset() throws IOException {
-      int doc = a.approximation().docID();
-      bpos = b.approximation().docID() == doc ||
-          (b.approximation().docID() < doc && b.approximation().advance(doc) == doc);
-      if (bpos) {
-        b.reset();
-        bpos = b.nextInterval() != NO_MORE_INTERVALS;
+    protected void checkDoc() throws IOException {
+      if (doc != a.approximation().docID()) {
+        doc = a.approximation().docID();
+        bpos = (b.approximation().docID() == doc ||
+            (b.approximation().docID() < doc && b.approximation().advance(doc) == doc)) &&
+            b.nextInterval() != NO_MORE_INTERVALS;
       }
-      a.reset();
     }
 
     @Override
@@ -126,6 +124,7 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
+      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -203,6 +202,7 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
+      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -228,6 +228,7 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
+      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {

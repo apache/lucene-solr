@@ -83,7 +83,8 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     final List<IntervalIterator> iterators;
     final float matchCost;
 
-    IntervalIterator current;
+    IntervalIterator current = EMPTY;
+    int doc = -1;
 
     DisjunctionIntervalIterator(List<IntervalIterator> iterators) {
       this.iterators = iterators;
@@ -127,19 +128,14 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public void reset() throws IOException {
-      intervalQueue.clear();
-      for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
-        dw.intervals.reset();
-        dw.intervals.nextInterval();
-        intervalQueue.add(dw.intervals);
-      }
-      current = UNPOSITIONED;
-    }
-
-    @Override
     public int nextInterval() throws IOException {
-      if (current == UNPOSITIONED) {
+      if (doc != approximation.docID()) {
+        doc = approximation.docID();
+        intervalQueue.clear();
+        for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
+          dw.intervals.nextInterval();
+          intervalQueue.add(dw.intervals);
+        }
         current = intervalQueue.top();
         return current.start();
       }
@@ -176,39 +172,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public void reset() throws IOException { }
-
-    @Override
-    public int start() {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public int end() {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public int nextInterval() throws IOException {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public float cost() {
-      return 0;
-    }
-  };
-
-  private static final IntervalIterator UNPOSITIONED = new IntervalIterator() {
-    @Override
-    public DocIdSetIterator approximation() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void reset() throws IOException { }
-
-    @Override
     public int start() {
       return -1;
     }
@@ -219,7 +182,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
-    public int nextInterval() throws IOException {
+    public int nextInterval() {
       return NO_MORE_INTERVALS;
     }
 
@@ -228,4 +191,5 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return 0;
     }
   };
+
 }

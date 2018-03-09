@@ -43,11 +43,6 @@ public abstract class FilterIntervalIterator implements IntervalIterator {
   }
 
   @Override
-  public void reset() throws IOException {
-    in.reset();
-  }
-
-  @Override
   public int nextInterval() throws IOException {
     return in.nextInterval();
   }

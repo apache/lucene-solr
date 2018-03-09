@@ -50,7 +50,7 @@ class TermIntervalsSource extends IntervalsSource {
     float cost = PhraseQuery.termPositionsCost(te);
     return new IntervalIterator() {
 
-      int pos, upto;
+      int doc = -1, pos = -1, upto;
 
       @Override
       public DocIdSetIterator approximation() {
@@ -58,23 +58,27 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
-      public void reset() throws IOException {
-        pos = -1;
-        upto = pe.freq();
-      }
-
-      @Override
       public int start() {
+        if (doc != pe.docID()) {
+          return -1;
+        }
         return pos;
       }
 
       @Override
       public int end() {
+        if (doc != pe.docID()) {
+          return -1;
+        }
         return pos;
       }
 
       @Override
       public int nextInterval() throws IOException {
+        if (doc != pe.docID()) {
+          doc = pe.docID();
+          upto = pe.freq();
+        }
         if (upto <= 0)
           return pos = NO_MORE_INTERVALS;
         upto--;

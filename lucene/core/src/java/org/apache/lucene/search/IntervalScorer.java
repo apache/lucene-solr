@@ -81,7 +81,6 @@ class IntervalScorer extends Scorer {
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        intervals.reset();
         return intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
       }
 

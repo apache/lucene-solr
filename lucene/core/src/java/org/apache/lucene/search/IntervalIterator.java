@@ -42,12 +42,6 @@ public interface IntervalIterator {
   DocIdSetIterator approximation();
 
   /**
-   * Prepare to iterate over the intervals in a document after the approximation
-   * {@link DocIdSetIterator} has been advanced.
-   */
-  void reset() throws IOException;
-
-  /**
    * The start of the current interval
    *
    * Returns -1 if {@link #nextInterval()} has not yet been called
