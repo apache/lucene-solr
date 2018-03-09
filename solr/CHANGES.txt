@@ -234,6 +234,10 @@ Bug Fixes
 
 * SOLR-12061: Fix substitution bug in API V1 to V2 migration when using SolrJ with V2 API. (Tomás Fernánadez Löbbe)
 
+* SOLR-11976: TokenizerChain.normalize: only the first filter that is a MultiTermAwareComponent was participating
+  in normalization instead of all.  This bug normally doesn't matter since TextField doesn't call it.
+  (Tim Allison via David Smiley)
+
 Optimizations
 ----------------------
 
