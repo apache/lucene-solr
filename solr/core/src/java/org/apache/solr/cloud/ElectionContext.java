@@ -347,6 +347,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       Replica.Type replicaType;
       String coreNodeName;
+      boolean setTermToMax = false;
       try (SolrCore core = cc.getCore(coreName)) {
         
         if (core == null) {
@@ -365,9 +366,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
         if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
           if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
-            log.info("Can't become leader, term of replica {} less than leader", coreNodeName);
             rejoinLeaderElection(core);
             return;
+          } else {
+            // only log an error if this replica win the election
+            setTermToMax = true;
           }
         }
 
@@ -470,7 +473,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             }
           }
           // in case of leaderVoteWait timeout, a replica with lower term can win the election
-          if (zkController.getShardTerms(collection, shardId).registered(coreNodeName)) {
+          if (setTermToMax) {
+            log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " +
+                "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
           super.runLeaderProcess(weAreReplacement, 0);
