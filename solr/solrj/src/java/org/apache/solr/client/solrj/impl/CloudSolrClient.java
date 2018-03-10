@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1356,6 +1357,35 @@ public class CloudSolrClient extends SolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
+    
+    /**
+     * @deprecated use other constructors instead.  This constructor will be changing visibility in an upcoming release.
+     */
+    @Deprecated
+    public Builder() {}
+    
+    /**
+     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
+     * The solr client will use these urls to understand the cluster topology, which solr nodes are active etc.
+     * 
+     * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
+     * include any collections, cores, or other path components.
+     */
+    public Builder(List<String> solrUrls) {
+      this.solrUrls = solrUrls;
+    }
+    
+    /**
+     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient} instances.
+     * 
+     * @param zkHosts a List of at least one ZooKeeper host and port
+     * @param zkChroot the path to the root ZooKeeper node containing Solr data.  May be empty if Solr-data is located
+     * at the ZooKeeper root
+     */
+    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
+      this.zkHosts = zkHosts;
+      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
 
     /**
      * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
@@ -1365,7 +1395,10 @@ public class CloudSolrClient extends SolrClient {
      * @param zkHost
      *          The client endpoint of the ZooKeeper quorum containing the cloud
      *          state.
+     *          
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkHost(String zkHost) {
       this.zkHosts.add(zkHost);
       return this;
@@ -1379,7 +1412,10 @@ public class CloudSolrClient extends SolrClient {
      * 
      * Provided Solr URL is expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
      * include any collections, cores, or other path components.
+     * 
+     * @deprecated use Solr-URL constructor instead
      */
+    @Deprecated
     public Builder withSolrUrl(String solrUrl) {
       this.solrUrls.add(solrUrl);
       return this;
@@ -1392,7 +1428,10 @@ public class CloudSolrClient extends SolrClient {
      * 
      * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
      * include any collections, cores, or other path components.
+     * 
+     * @deprecated use Solr URL constructors instead
      */
+    @Deprecated
     public Builder withSolrUrl(Collection<String> solrUrls) {
       this.solrUrls.addAll(solrUrls);
       return this;
@@ -1416,7 +1455,10 @@ public class CloudSolrClient extends SolrClient {
      *          each host in the ZooKeeper ensemble. Note that with certain
      *          Collection types like HashSet, the order of hosts in the final
      *          connect string may not be in the same order you added them.
+     *          
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkHost(Collection<String> zkHosts) {
       this.zkHosts.addAll(zkHosts);
       return this;
@@ -1424,7 +1466,10 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Provides a ZooKeeper chroot for the builder to use when creating clients.
+     * 
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkChroot(String zkChroot) {
       this.zkChroot = zkChroot;
       return this;
@@ -1477,6 +1522,14 @@ public class CloudSolrClient extends SolrClient {
       return this;
     }
 
+    /**
+     * Expert feature where you want to implement a custom cluster discovery mechanism of the solr nodes as part of the
+     * cluster.
+     *
+     * @deprecated since this is an expert feature we don't want to expose this to regular users. To use this feature
+     * extend CloudSolrClient.Builder and pass your custom ClusterStateProvider
+     */
+    @Deprecated
     public Builder withClusterStateProvider(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
       return this;

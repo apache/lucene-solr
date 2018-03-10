@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -261,9 +262,9 @@ public class UpdateStream extends TupleStream implements Expressible {
     if(this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
-      this.cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      this.cloudSolrClient = new Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
     }
   }

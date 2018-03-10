@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -323,9 +324,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);

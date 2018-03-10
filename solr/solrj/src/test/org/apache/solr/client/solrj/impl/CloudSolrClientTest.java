@@ -22,11 +22,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -104,8 +106,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
     
-    httpBasedCloudSolrClient = new CloudSolrClient.Builder().withSolrUrl(
-        cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    httpBasedCloudSolrClient = new CloudSolrClient.Builder(solrUrls).build();
   }
 
   @AfterClass
@@ -269,8 +272,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(0, docs.getNumFound());
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    try (CloudSolrClient threadedClient = new CloudSolrClientBuilder()
-        .withZkHost(cluster.getZkServer().getZkAddress())
+    try (CloudSolrClient threadedClient = new CloudSolrClientBuilder
+        (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withParallelUpdates(true)
         .build()) {
       threadedClient.setDefaultCollection(COLLECTION);
@@ -789,8 +792,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final String old_leader_core_node_name = slice.getLeader().getName();
 
     // NOTE: creating our own CloudSolrClient whose settings we can muck with...
-    try (CloudSolrClient stale_client = new CloudSolrClientBuilder()
-        .withZkHost(cluster.getZkServer().getZkAddress())
+    try (CloudSolrClient stale_client = new CloudSolrClientBuilder
+        (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .sendDirectUpdatesToAnyShardReplica()
         .withParallelUpdates(true)
         .build()) {

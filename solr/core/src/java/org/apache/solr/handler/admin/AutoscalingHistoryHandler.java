@@ -17,9 +17,11 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -120,8 +122,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
         }
       }
     }
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-        .withZkHost(coreContainer.getZkController().getZkServerAddress())
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(coreContainer.getZkController().getZkServerAddress()), Optional.empty())
         .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
         .build()) {
       QueryResponse qr = cloudSolrClient.query(collection, params);
