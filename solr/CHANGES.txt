@@ -175,6 +175,8 @@ New Features
 
 * SOLR-11960: Add collection level properties similar to cluster properties (Peter Rusko, Tomás Fernández Löbbe)
 
+* SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
+
 Bug Fixes
 ----------------------
 
