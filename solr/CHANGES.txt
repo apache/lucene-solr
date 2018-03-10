@@ -88,6 +88,10 @@ Upgrade Notes
 
 * SOLR-11957: The default Solr log file size and number of backups is raised to 32MB and 10 respectively
 
+* SOLR-12067: The default value of `autoReplicaFailoverWaitAfterExpiration` has been increased to 120 seconds
+  from the earlier default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas
+  on nodes which have either crashed or shutdown.
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -379,6 +383,9 @@ Other Changes
 * SOLR-12047: Increase checkStateInZk timeout (Cao Manh Dat, Varun Thacker)
 
 * SOLR-12051: Election timeout when no replicas are qualified to become leader (Cao Manh Dat)
+
+* SOLR-12067: Increase autoAddReplicas default 30 second wait time to 120 seconds.
+  (Varun Thacker, Mark Miller via shalin)
 
 ==================  7.2.1 ==================
 
