@@ -198,6 +198,8 @@ New Features
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
+* SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
+
 Bug Fixes
 ----------------------
 
