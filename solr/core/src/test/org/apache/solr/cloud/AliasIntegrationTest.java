@@ -94,7 +94,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  public void testMetadata() throws Exception {
+  public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 1));
@@ -117,32 +117,32 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     //noinspection unchecked
     assertTrue(((Map<String,Map<String,?>>)Utils.fromJSON(rawBytes)).get("collection").get("meta1") instanceof String);
 
-    // set metadata
-    UnaryOperator<Aliases> op5 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", "bar");
+    // set properties
+    UnaryOperator<Aliases> op5 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", "bar");
     aliasesManager.applyModificationAndExportToZk(op5);
-    Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
     assertEquals("bar", meta.get("foo"));
 
-    // set more metadata
-    UnaryOperator<Aliases> op4 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foobar", "bazbam");
+    // set more properties
+    UnaryOperator<Aliases> op4 = a -> a.cloneWithCollectionAliasProperties("meta1", "foobar", "bazbam");
     aliasesManager.applyModificationAndExportToZk(op4);
-    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
 
-    // old metadata still there
+    // old properties still there
     assertTrue(meta.containsKey("foo"));
     assertEquals("bar", meta.get("foo"));
 
-    // new metadata added
+    // new properties added
     assertTrue(meta.containsKey("foobar"));
     assertEquals("bazbam", meta.get("foobar"));
 
-    // remove metadata
-    UnaryOperator<Aliases> op3 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
+    // remove properties
+    UnaryOperator<Aliases> op3 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", null);
     aliasesManager.applyModificationAndExportToZk(op3);
-    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
 
     // verify key was removed
@@ -153,13 +153,13 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("bazbam", meta.get("foobar"));
 
     // removal of non existent key should succeed.
-    UnaryOperator<Aliases> op2 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
+    UnaryOperator<Aliases> op2 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", null);
     aliasesManager.applyModificationAndExportToZk(op2);
 
     // chained invocations
     UnaryOperator<Aliases> op1 = a ->
-        a.cloneWithCollectionAliasMetadata("meta1", "foo2", "bazbam")
-        .cloneWithCollectionAliasMetadata("meta1", "foo3", "bazbam2");
+        a.cloneWithCollectionAliasProperties("meta1", "foo2", "bazbam")
+        .cloneWithCollectionAliasProperties("meta1", "foo3", "bazbam2");
     aliasesManager.applyModificationAndExportToZk(op1);
 
     // some other independent update (not overwritten)
@@ -169,17 +169,17 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // competing went through
     assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
 
-    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
 
-    // old metadata still there
+    // old properties still there
     assertTrue(meta.containsKey("foobar"));
     assertEquals("bazbam", meta.get("foobar"));
 
     // competing update not overwritten
     assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
 
-    // new metadata added
+    // new properties added
     assertTrue(meta.containsKey("foo2"));
     assertEquals("bazbam", meta.get("foo2"));
     assertTrue(meta.containsKey("foo3"));
@@ -197,7 +197,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       createdZKSR = true;
       zkStateReader.createClusterStateWatchersAndUpdate();
 
-      meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+      meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
       assertNotNull(meta);
 
       // verify key was removed in independent view
@@ -209,7 +209,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
       Aliases a = zkStateReader.getAliases();
       Aliases clone = a.cloneWithCollectionAlias("meta1", null);
-      meta = clone.getCollectionAliasMetadata("meta1");
+      meta = clone.getCollectionAliasProperties("meta1");
       assertEquals(0,meta.size());
     } finally {
       if (createdZKSR) {
@@ -218,16 +218,17 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     }
   }
 
-  public void testModifyMetadataV2() throws Exception {
+  @Test
+  public void testModifyPropertiesV2() throws Exception {
     final String aliasName = getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     //TODO fix Solr test infra so that this /____v2/ becomes /api/
     HttpPost post = new HttpPost(baseUrl + "/____v2/c");
     post.setEntity(new StringEntity("{\n" +
-        "\"modify-alias\" : {\n" +
+        "\"set-alias-property\" : {\n" +
         "  \"name\": \"" + aliasName + "\",\n" +
-        "  \"metadata\" : {\n" +
+        "  \"properties\" : {\n" +
         "    \"foo\": \"baz\",\n" +
         "    \"bar\": \"bam\"\n" +
         "    }\n" +
@@ -238,51 +239,52 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     checkFooAndBarMeta(aliasName, zkStateReader);
   }
 
-  public void testModifyMetadataV1() throws Exception {
+  @Test
+  public void testModifyPropertiesV1() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=MODIFYALIAS" +
+    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=ALIASPROP" +
         "&wt=xml" +
         "&name=" + aliasName +
-        "&metadata.foo=baz" +
-        "&metadata.bar=bam");
+        "&properties.foo=baz" +
+        "&properties.bar=bam");
     assertSuccess(get);
     checkFooAndBarMeta(aliasName, zkStateReader);
   }
 
   @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  public void testModifyMetadataCAR() throws Exception {
+  public void testModifyPropertiesCAR() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    CollectionAdminRequest.ModifyAlias modifyAlias = CollectionAdminRequest.modifyAlias(aliasName);
-    modifyAlias.addMetadata("foo","baz");
-    modifyAlias.addMetadata("bar","bam");
-    modifyAlias.process(cluster.getSolrClient());
+    CollectionAdminRequest.SetAliasProperty setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty("foo","baz");
+    setAliasProperty.addProperty("bar","bam");
+    setAliasProperty.process(cluster.getSolrClient());
     checkFooAndBarMeta(aliasName, zkStateReader);
 
     // now verify we can delete
-    modifyAlias = CollectionAdminRequest.modifyAlias(aliasName);
-    modifyAlias.addMetadata("foo","");
-    modifyAlias.process(cluster.getSolrClient());
-    modifyAlias = CollectionAdminRequest.modifyAlias(aliasName);
-    modifyAlias.addMetadata("bar",null);
-    modifyAlias.process(cluster.getSolrClient());
-    modifyAlias = CollectionAdminRequest.modifyAlias(aliasName);
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty("foo","");
+    setAliasProperty.process(cluster.getSolrClient());
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty("bar",null);
+    setAliasProperty.process(cluster.getSolrClient());
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
 
     // whitespace value
-    modifyAlias.addMetadata("foo"," ");
-    modifyAlias.process(cluster.getSolrClient());
+    setAliasProperty.addProperty("foo"," ");
+    setAliasProperty.process(cluster.getSolrClient());
 
 
   }
 
   private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
     zkStateReader.aliasesManager.update(); // ensure our view is up to date
-    Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata(aliasName);
+    Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
     assertEquals("baz", meta.get("foo"));

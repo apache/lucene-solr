@@ -202,8 +202,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
 
     // update metadata to auto-delete oldest collections
-    CollectionAdminRequest.modifyAlias(alias)
-        .addMetadata(TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE, "-1DAY")  // thus usually keep 2 collections of a day size
+    CollectionAdminRequest.setAliasProperty(alias)
+        .addProperty(TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE, "-1DAY")  // thus usually keep 2 collections of a day size
         .process(solrClient);
 
     // add more docs, creating one new collection, but trigger ones prior to

@@ -227,7 +227,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(DELETE, new DeleteCollectionCmd(this))
         .put(CREATEALIAS, new CreateAliasCmd(this))
         .put(DELETEALIAS, new DeleteAliasCmd(this))
-        .put(MODIFYALIAS, new ModifyAliasCmd(this))
+        .put(ALIASPROP, new ModifyAliasCmd(this))
         .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(this))
         .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
         .put(DELETESHARD, new DeleteShardCmd(this))

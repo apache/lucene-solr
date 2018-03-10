@@ -124,7 +124,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     collHandler = cc.getCollectionsHandler();
 
-    final Map<String, String> aliasMetadata = zkController.getZkStateReader().getAliases().getCollectionAliasMetadata(aliasName);
+    final Map<String, String> aliasMetadata = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
     if (aliasMetadata == null) {
       throw newAliasMustExistException(); // if it did exist, we'd have a non-null map
     }

@@ -103,7 +103,7 @@ public class MaintainRoutedAliasCmd implements OverseerCollectionMessageHandler.
     //---- PARSE ALIAS INFO FROM ZK
     final ZkStateReader.AliasesManager aliasesManager = ocmh.zkStateReader.aliasesManager;
     final Aliases aliases = aliasesManager.getAliases();
-    final Map<String, String> aliasMetadata = aliases.getCollectionAliasMetadata(aliasName);
+    final Map<String, String> aliasMetadata = aliases.getCollectionAliasProperties(aliasName);
     if (aliasMetadata == null) {
       throw newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
     }
