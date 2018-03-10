@@ -50,7 +50,22 @@ Apache ZooKeeper 3.4.11
 Jetty 9.4.8.v20171121
 
 
-(No Changes)
+Upgrade Notes
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
 
 
 ==================  7.3.0 ==================

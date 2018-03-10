@@ -49,7 +49,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -196,12 +195,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     CloudSolrClient server = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     return server;
-  }
-
-  protected void printLayout() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStdOut();
-    zkClient.close();
   }
 
   protected SolrInputDocument getDoc(Object... fields) throws Exception {
@@ -606,7 +599,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     // now wait till we see the leader for each shard
     for (int i = 1; i <= shardCount; i++) {
-      this.printLayout();
       zkStateReader.getLeaderRetry(temporaryCollection, "shard" + i, 15000);
     }
 
