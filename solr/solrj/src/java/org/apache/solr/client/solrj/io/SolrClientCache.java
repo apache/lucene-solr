@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -54,8 +57,9 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder()
-          .withZkHost(zkHost);
+      final List<String> hosts = new ArrayList<String>();
+      hosts.add(zkHost);
+      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty());
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }

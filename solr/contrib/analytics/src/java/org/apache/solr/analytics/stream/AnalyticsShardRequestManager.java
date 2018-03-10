@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -83,9 +84,7 @@ public class AnalyticsShardRequestManager {
    */
   public void sendRequests(String collection, String zkHost) throws IOException {
     this.replicaUrls = new ArrayList<>();
-    this.cloudSolrClient = new Builder()
-        .withZkHost(zkHost)
-        .build();
+    this.cloudSolrClient = new Builder(Collections.singletonList(zkHost), Optional.empty()).build();
     try {
       this.cloudSolrClient.connect();
       pickShards(collection);
