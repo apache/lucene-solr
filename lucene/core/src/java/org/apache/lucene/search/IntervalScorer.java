@@ -22,7 +22,6 @@ import java.io.IOException;
 class IntervalScorer extends Scorer {
 
   private final IntervalIterator intervals;
-  private final DocIdSetIterator approximation;
   private final LeafSimScorer simScorer;
 
   private float freq = -1;
@@ -31,13 +30,12 @@ class IntervalScorer extends Scorer {
   protected IntervalScorer(Weight weight, IntervalIterator intervals, LeafSimScorer simScorer) {
     super(weight);
     this.intervals = intervals;
-    this.approximation = intervals.approximation();
     this.simScorer = simScorer;
   }
 
   @Override
   public int docID() {
-    return approximation.docID();
+    return intervals.docID();
   }
 
   @Override
@@ -78,7 +76,7 @@ class IntervalScorer extends Scorer {
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    return new TwoPhaseIterator(approximation) {
+    return new TwoPhaseIterator(intervals) {
       @Override
       public boolean matches() throws IOException {
         return intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;

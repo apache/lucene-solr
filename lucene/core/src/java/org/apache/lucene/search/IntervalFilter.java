@@ -22,13 +22,36 @@ import java.io.IOException;
 /**
  * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
  */
-public abstract class IntervalFilter extends FilterIntervalIterator {
+public abstract class IntervalFilter extends IntervalIterator {
+
+  private final IntervalIterator in;
 
   /**
    * Create a new filter
    */
   public IntervalFilter(IntervalIterator in) {
-    super(in);
+    super(in.approximation);
+    this.in = in;
+  }
+
+  @Override
+  public int start() {
+    return in.start();
+  }
+
+  @Override
+  public int end() {
+    return in.end();
+  }
+
+  @Override
+  public float matchCost() {
+    return in.matchCost();
+  }
+
+  @Override
+  protected void reset() throws IOException {
+    in.reset();
   }
 
   /**

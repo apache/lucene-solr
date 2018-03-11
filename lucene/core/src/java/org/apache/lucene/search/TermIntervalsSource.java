@@ -48,37 +48,22 @@ class TermIntervalsSource extends IntervalsSource {
     te.seekExact(term);
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);
     float cost = PhraseQuery.termPositionsCost(te);
-    return new IntervalIterator() {
+    return new IntervalIterator(pe) {
 
-      int doc = -1, pos = -1, upto;
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return pe;
-      }
+      int pos = -1, upto;
 
       @Override
       public int start() {
-        if (doc != pe.docID()) {
-          return -1;
-        }
         return pos;
       }
 
       @Override
       public int end() {
-        if (doc != pe.docID()) {
-          return -1;
-        }
         return pos;
       }
 
       @Override
       public int nextInterval() throws IOException {
-        if (doc != pe.docID()) {
-          doc = pe.docID();
-          upto = pe.freq();
-        }
         if (upto <= 0)
           return pos = NO_MORE_INTERVALS;
         upto--;
@@ -86,8 +71,20 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
-      public float cost() {
+      public float matchCost() {
         return cost;
+      }
+
+      @Override
+      protected void reset() throws IOException {
+        if (pe.docID() == NO_MORE_DOCS) {
+          upto = -1;
+          pos = NO_MORE_INTERVALS;
+        }
+        else {
+          upto = pe.freq();
+          pos = -1;
+        }
       }
 
       @Override

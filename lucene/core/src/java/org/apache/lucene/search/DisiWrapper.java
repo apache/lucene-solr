@@ -92,12 +92,12 @@ public class DisiWrapper {
     this.scorer = null;
     this.spans = null;
     this.intervals = iterator;
-    this.iterator = iterator.approximation();
-    this.cost = iterator.approximation().cost();
+    this.iterator = iterator;
+    this.cost = iterator.cost();
     this.doc = -1;
     this.twoPhaseView = null;
-    this.approximation = iterator.approximation();
-    this.matchCost = iterator.cost();
+    this.approximation = iterator;
+    this.matchCost = iterator.matchCost();
   }
 }
 

@@ -21,38 +21,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class ConjunctionIntervalIterator implements IntervalIterator {
+abstract class ConjunctionIntervalIterator extends IntervalIterator {
 
-  protected final List<IntervalIterator> subIterators;
+  final List<IntervalIterator> subIterators;
 
-  final DocIdSetIterator approximation;
   final float cost;
 
   ConjunctionIntervalIterator(List<IntervalIterator> subIterators) {
+    super(ConjunctionDISI.intersectIterators(subIterators));
     this.subIterators = subIterators;
     float costsum = 0;
-    List<DocIdSetIterator> approximations = new ArrayList<>();
     for (IntervalIterator it : subIterators) {
-      costsum += it.cost();
-      approximations.add(it.approximation());
+      costsum += it.matchCost();
     }
     this.cost = costsum;
-    this.approximation = ConjunctionDISI.intersectIterators(approximations);
-
   }
 
   @Override
-  public final DocIdSetIterator approximation() {
-    return approximation;
-  }
-
-  @Override
-  public final float cost() {
+  public final float matchCost() {
     return cost;
   }
 
-  @Override
-  public String toString() {
-    return approximation.docID() + ":[" + start() + "->" + end() + "]";
-  }
 }
