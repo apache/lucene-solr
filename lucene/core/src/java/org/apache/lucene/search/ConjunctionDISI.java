@@ -58,7 +58,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
    * returned {@link DocIdSetIterator} might leverage two-phase iteration in
    * which case it is possible to retrieve the {@link TwoPhaseIterator} using
    * {@link TwoPhaseIterator#unwrap}. */
-  public static DocIdSetIterator intersectIterators(List<DocIdSetIterator> iterators) {
+  public static DocIdSetIterator intersectIterators(List<? extends DocIdSetIterator> iterators) {
     if (iterators.size() < 2) {
       throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
     }

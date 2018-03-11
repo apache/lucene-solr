@@ -23,36 +23,61 @@ import java.io.IOException;
  * Defines methods to iterate over the intervals that a term, phrase or more
  * complex positional query matches on a document
  *
- * The iterator is advanced by calling {@link DocIdSetIterator#advance(int)} on the
- * DocIdSetIterator returned by {@link #approximation()}.  Consumers should then call
- * {@link #nextInterval()} to retrieve intervals until {@link #NO_MORE_INTERVALS} is returned.
+ * The iterator is advanced by calling {@link #advance(int)} or {@link #nextDoc()}.
+ * Consumers should then call {@link #nextInterval()} to retrieve intervals until
+ * {@link #NO_MORE_INTERVALS} is returned.
  */
-public interface IntervalIterator {
+public abstract class IntervalIterator extends DocIdSetIterator {
+
+  protected final DocIdSetIterator approximation;
+
+  protected IntervalIterator(DocIdSetIterator approximation) {
+    this.approximation = approximation;
+  }
 
   /**
    * When returned from {@link #nextInterval()}, indicates that there are no more
    * matching intervals on the current document
    */
-  int NO_MORE_INTERVALS = Integer.MAX_VALUE;
+  public static final int NO_MORE_INTERVALS = Integer.MAX_VALUE;
 
-  /**
-   * An iterator over documents that might have matching intervals
-   */
-  DocIdSetIterator approximation();
+  @Override
+  public final int docID() {
+    return approximation.docID();
+  }
+
+  @Override
+  public final int nextDoc() throws IOException {
+    int doc = approximation.nextDoc();
+    reset();
+    return doc;
+  }
+
+  @Override
+  public final int advance(int target) throws IOException {
+    int doc = approximation.advance(target);
+    reset();
+    return doc;
+  }
+
+  @Override
+  public final long cost() {
+    return approximation.cost();
+  }
 
   /**
    * The start of the current interval
    *
    * Returns -1 if {@link #nextInterval()} has not yet been called
    */
-  int start();
+  public abstract int start();
 
   /**
    * The end of the current interval
    *
    * Returns -1 if {@link #nextInterval()} has not yet been called
    */
-  int end();
+  public abstract int end();
 
   /**
    * Advance the iterator to the next interval
@@ -60,13 +85,23 @@ public interface IntervalIterator {
    * @return the starting interval of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
    *         there are no more intervals on the current document
    */
-  int nextInterval() throws IOException;
+  public abstract int nextInterval() throws IOException;
 
   /**
    * An indication of the average cost of iterating over all intervals in a document
    *
    * @see TwoPhaseIterator#matchCost()
    */
-  float cost();
+  public abstract float matchCost();
+
+  /**
+   * Called when the underlying iterator has been advanced.
+   */
+  protected abstract void reset() throws IOException;
+
+  @Override
+  public String toString() {
+    return approximation.docID() + ":[" + start() + "->" + end() + "]";
+  }
 
 }

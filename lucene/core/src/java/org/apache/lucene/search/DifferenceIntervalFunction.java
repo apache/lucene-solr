@@ -73,17 +73,24 @@ abstract class DifferenceIntervalFunction {
     }
   };
 
-  private static abstract class RelativeIterator implements IntervalIterator {
+  private static abstract class RelativeIterator extends IntervalIterator {
 
     final IntervalIterator a;
     final IntervalIterator b;
 
     boolean bpos;
-    int doc = -1;
 
     RelativeIterator(IntervalIterator a, IntervalIterator b) {
+      super(a);
       this.a = a;
       this.b = b;
+    }
+
+    @Override
+    protected void reset() throws IOException {
+      int doc = a.docID();
+      bpos = b.docID() == doc ||
+          (b.docID() < doc && b.advance(doc) == doc);
     }
 
     @Override
@@ -96,23 +103,9 @@ abstract class DifferenceIntervalFunction {
       return a.end();
     }
 
-    protected void checkDoc() throws IOException {
-      if (doc != a.approximation().docID()) {
-        doc = a.approximation().docID();
-        bpos = (b.approximation().docID() == doc ||
-            (b.approximation().docID() < doc && b.approximation().advance(doc) == doc)) &&
-            b.nextInterval() != NO_MORE_INTERVALS;
-      }
-    }
-
     @Override
-    public DocIdSetIterator approximation() {
-      return a.approximation();
-    }
-
-    @Override
-    public float cost() {
-      return a.cost() + b.cost();
+    public float matchCost() {
+      return a.matchCost() + b.matchCost();
     }
   }
 
@@ -124,7 +117,6 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -173,20 +165,46 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      IntervalIterator notWithin = new FilterIntervalIterator(subtrahend) {
+      IntervalIterator notWithin = new IntervalIterator(subtrahend) {
+
+        boolean positioned = false;
+
         @Override
         public int start() {
+          if (positioned == false)
+            return -1;
           int start = subtrahend.start();
           return Math.max(0, start - positions);
         }
 
         @Override
         public int end() {
+          if (positioned == false)
+            return -1;
           int end = subtrahend.end();
           int newEnd = end + positions;
           if (newEnd < 0) // check for overflow
             return Integer.MAX_VALUE;
           return newEnd;
+        }
+
+        @Override
+        public int nextInterval() throws IOException {
+          if (positioned == false) {
+            positioned = true;
+          }
+          return subtrahend.nextInterval();
+        }
+
+        @Override
+        public float matchCost() {
+          return subtrahend.matchCost();
+        }
+
+        @Override
+        protected void reset() throws IOException {
+          // already called when the subtrahend approximation is advanced
+          positioned = false;
         }
 
       };
@@ -202,7 +220,6 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -228,7 +245,6 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      checkDoc();
       if (bpos == false)
         return a.nextInterval();
       while (a.nextInterval() != NO_MORE_INTERVALS) {

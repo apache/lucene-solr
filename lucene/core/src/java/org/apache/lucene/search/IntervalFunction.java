@@ -51,7 +51,7 @@ abstract class IntervalFunction {
 
   private static class BlockIntervalIterator extends ConjunctionIntervalIterator {
 
-    int doc = -1, start = -1, end = -1;
+    int start = -1, end = -1;
 
     BlockIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
@@ -59,26 +59,16 @@ abstract class IntervalFunction {
 
     @Override
     public int start() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return start;
     }
 
     @Override
     public int end() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return end;
     }
 
     @Override
     public int nextInterval() throws IOException {
-      if (doc != approximation.docID()) {
-        doc = approximation.docID();
-        start = end = -1;
-      }
       if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
         return NO_MORE_INTERVALS;
       int i = 1;
@@ -100,6 +90,11 @@ abstract class IntervalFunction {
       end = subIterators.get(subIterators.size() - 1).end();
       return start;
     }
+
+    @Override
+    protected void reset() {
+      start = end = -1;
+    }
   }
 
   /**
@@ -114,7 +109,7 @@ abstract class IntervalFunction {
 
   private static class OrderedIntervalIterator extends ConjunctionIntervalIterator {
 
-    int doc = -1, start = -1, end = -1, i;
+    int start = -1, end = -1, i;
 
     private OrderedIntervalIterator(List<IntervalIterator> subIntervals) {
       super(subIntervals);
@@ -122,30 +117,19 @@ abstract class IntervalFunction {
 
     @Override
     public int start() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return start;
     }
 
     @Override
     public int end() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return end;
     }
 
     @Override
     public int nextInterval() throws IOException {
-      if (doc != approximation.docID()) {
-        doc = approximation.docID();
-        subIterators.get(0).nextInterval();
-        i = 1;
-        start = end = -1;
-      }
       start = end = NO_MORE_INTERVALS;
       int b = Integer.MAX_VALUE;
+      i = 1;
       while (true) {
         while (true) {
           if (subIterators.get(i - 1).end() >= b)
@@ -167,6 +151,13 @@ abstract class IntervalFunction {
           return start;
       }
     }
+
+    @Override
+    protected void reset() throws IOException {
+      subIterators.get(0).nextInterval();
+      i = 1;
+      start = end = -1;
+    }
   }
 
   /**
@@ -184,7 +175,7 @@ abstract class IntervalFunction {
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
 
-    int doc = -1, start = -1, end = -1, queueEnd;
+    int start = -1, end = -1, queueEnd;
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
@@ -203,17 +194,11 @@ abstract class IntervalFunction {
 
     @Override
     public int start() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return start;
     }
 
     @Override
     public int end() {
-      if (doc != approximation.docID()) {
-        return -1;
-      }
       return end;
     }
 
@@ -226,16 +211,6 @@ abstract class IntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      if (doc != approximation.docID()) {
-        doc = approximation.docID();
-        this.queue.clear();
-        this.queueEnd = start = end = -1;
-        for (IntervalIterator it : subIterators) {
-          it.nextInterval();
-          queue.add(it);
-          updateRightExtreme(it);
-        }
-      }
       while (this.queue.size() == subIterators.length && queue.top().start() == start) {
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != NO_MORE_INTERVALS) {
@@ -259,6 +234,17 @@ abstract class IntervalFunction {
       return start;
     }
 
+    @Override
+    protected void reset() throws IOException {
+      queueEnd = start = end = -1;
+      this.queue.clear();
+      for (IntervalIterator it : subIterators) {
+        it.nextInterval();
+        queue.add(it);
+        updateRightExtreme(it);
+      }
+    }
+
   }
 
   /**
@@ -274,7 +260,6 @@ abstract class IntervalFunction {
       return new ConjunctionIntervalIterator(iterators) {
 
         boolean bpos;
-        int doc = -1;
 
         @Override
         public int start() {
@@ -288,10 +273,6 @@ abstract class IntervalFunction {
 
         @Override
         public int nextInterval() throws IOException {
-          if (doc != approximation.docID()) {
-            doc = approximation.docID();
-            bpos = true;
-          }
           if (bpos == false)
             return NO_MORE_INTERVALS;
           while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -303,6 +284,11 @@ abstract class IntervalFunction {
               return a.start();
           }
           return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        protected void reset() throws IOException {
+          bpos = true;
         }
       };
     }
@@ -321,7 +307,6 @@ abstract class IntervalFunction {
       return new ConjunctionIntervalIterator(iterators) {
 
         boolean bpos;
-        int doc = -1;
 
         @Override
         public int start() {
@@ -335,10 +320,6 @@ abstract class IntervalFunction {
 
         @Override
         public int nextInterval() throws IOException {
-          if (doc != approximation.docID()) {
-            doc = approximation.docID();
-            bpos = true;
-          }
           if (bpos == false)
             return NO_MORE_INTERVALS;
           while (a.nextInterval() != NO_MORE_INTERVALS) {
@@ -350,6 +331,11 @@ abstract class IntervalFunction {
               return a.start();
           }
           return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        protected void reset() throws IOException {
+          bpos = true;
         }
       };
     }

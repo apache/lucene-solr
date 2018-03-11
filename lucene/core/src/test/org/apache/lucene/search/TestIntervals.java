@@ -97,13 +97,13 @@ public class TestIntervals extends LuceneTestCase {
       for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
         ids.advance(doc);
         int id = (int) ids.longValue();
-        if (intervals.approximation().docID() == doc ||
-            (intervals.approximation().docID() < doc && intervals.approximation().advance(doc) == doc)) {
+        if (intervals.docID() == doc ||
+            (intervals.docID() < doc && intervals.advance(doc) == doc)) {
           int i = 0, pos;
           assertEquals(-1, intervals.start());
           assertEquals(-1, intervals.end());
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
-            //System.out.println(doc + ": " + intervals.start() + "->" + intervals.end());
+            //System.out.println(doc + ": " + intervals);
             assertEquals(expected[id][i], pos);
             assertEquals(expected[id][i], intervals.start());
             assertEquals(expected[id][i + 1], intervals.end());
