@@ -233,6 +233,9 @@ Build
 * LUCENE-8168: Moved Groovy scripts in build files to separate files.
   Update Groovy to 2.4.13.  (Uwe Schindler)
 
+* LUCENE-8176: HttpReplicatorTest awaits more than a minute for stopping Jetty threads
+  (Mikhail Khludnev)
+
 ======================= Lucene 7.2.1 =======================
 
 Bug Fixes
