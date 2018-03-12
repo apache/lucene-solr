@@ -433,7 +433,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                       final Term delTerm) throws IOException, AbortingException {
+                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException, AbortingException {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
@@ -449,7 +449,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delTerm);
+        seqNo = dwpt.updateDocuments(docs, analyzer, delNode);
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -460,7 +460,7 @@ final class DocumentsWriter implements Closeable, Accountable {
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
       }
-      final boolean isUpdate = delTerm != null;
+      final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
@@ -477,7 +477,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final Term delTerm) throws IOException, AbortingException {
+      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException, AbortingException {
 
     boolean hasEvents = preUpdate();
 
@@ -494,7 +494,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocument(doc, analyzer, delTerm); 
+        seqNo = dwpt.updateDocument(doc, analyzer, delNode);
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -505,7 +505,7 @@ final class DocumentsWriter implements Closeable, Accountable {
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
       }
-      final boolean isUpdate = delTerm != null;
+      final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;

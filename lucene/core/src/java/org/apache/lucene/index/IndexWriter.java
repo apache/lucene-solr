@@ -1461,7 +1461,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    */
   public long addDocument(Iterable<? extends IndexableField> doc) throws IOException {
-    return updateDocument(null, doc);
+    return updateDocument((DocumentsWriterDeleteQueue.Node<?>) null, doc);
   }
 
   /**
@@ -1505,7 +1505,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @lucene.experimental
    */
   public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
-    return updateDocuments(null, docs);
+    return updateDocuments((DocumentsWriterDeleteQueue.Node<?>) null, docs);
   }
 
   /**
@@ -1525,11 +1525,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @lucene.experimental
    */
   public long updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+    return updateDocuments(delTerm == null ? null : DocumentsWriterDeleteQueue.newNode(delTerm), docs);
+  }
+
+  private long updateDocuments(final DocumentsWriterDeleteQueue.Node<?> delNode, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
       try {
-        long seqNo = docWriter.updateDocuments(docs, analyzer, delTerm);
+        long seqNo = docWriter.updateDocuments(docs, analyzer, delNode);
         if (seqNo < 0) {
           seqNo = -seqNo;
           processEvents(true, false);
@@ -1549,6 +1553,48 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // dead code but javac disagrees
       return -1;
     }
+  }
+
+  /**
+   * Expert:
+   * Atomically updates documents matching the provided
+   * term with the given doc-values fields
+   * and adds a block of documents with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents.
+   *
+   * One use of this API is to retain older versions of
+   * documents instead of replacing them. The existing
+   * documents can be updated to reflect they are no
+   * longer current while atomically adding new documents
+   * at the same time.
+   *
+   * In contrast to {@link #updateDocuments(Term, Iterable)}
+   * this method will not delete documents in the index
+   * matching the given term but instead update them with
+   * the given doc-values fields which can be used as a
+   * soft-delete mechanism.
+   *
+   * See {@link #addDocuments(Iterable)}
+   * and {@link #updateDocuments(Term, Iterable)}.
+   *
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public long softUpdateDocuments(Term term, Iterable<? extends Iterable<? extends IndexableField>> docs, Field... softDeletes) throws IOException {
+    if (term == null) {
+      throw new IllegalArgumentException("term must not be null");
+    }
+    if (softDeletes == null || softDeletes.length == 0) {
+      throw new IllegalArgumentException("at least one soft delete must be present");
+    }
+    return updateDocuments(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes, false)), docs);
   }
 
   /** Expert: attempts to delete by document ID, as long as
@@ -1722,11 +1768,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    */
   public long updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
+    return updateDocument(term == null ? null : DocumentsWriterDeleteQueue.newNode(term), doc);
+  }
+
+  private long updateDocument(final DocumentsWriterDeleteQueue.Node<?> delNode,
+                              Iterable<? extends IndexableField> doc) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
       try {
-        long seqNo = docWriter.updateDocument(doc, analyzer, term);
+        long seqNo = docWriter.updateDocument(doc, analyzer, delNode);
         if (seqNo < 0) {
           seqNo = - seqNo;
           processEvents(true, false);
@@ -1747,6 +1798,50 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       return -1;
     }
   }
+
+
+  /**
+   * Expert:
+   * Updates a document by first updating the document(s)
+   * containing <code>term</code> with the given doc-values fields
+   * and then adding the new document.  The doc-values update and
+   * then add are atomic as seen by a reader on the same index
+   * (flush may happen only after the add).
+   *
+   * One use of this API is to retain older versions of
+   * documents instead of replacing them. The existing
+   * documents can be updated to reflect they are no
+   * longer current while atomically adding new documents
+   * at the same time.
+   *
+   * In contrast to {@link #updateDocument(Term, Iterable)}
+   * this method will not delete documents in the index
+   * matching the given term but instead update them with
+   * the given doc-values fields which can be used as a
+   * soft-delete mechanism.
+   *
+   * See {@link #addDocuments(Iterable)}
+   * and {@link #updateDocuments(Term, Iterable)}.
+   *
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public long softUpdateDocument(Term term, Iterable<? extends IndexableField> doc, Field... softDeletes) throws IOException {
+    if (term == null) {
+      throw new IllegalArgumentException("term must not be null");
+    }
+    if (softDeletes == null || softDeletes.length == 0) {
+      throw new IllegalArgumentException("at least one soft delete must be present");
+    }
+    return updateDocument(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes, false)), doc);
+  }
+
 
   /**
    * Updates a document's {@link NumericDocValues} for <code>field</code> to the
@@ -1857,6 +1952,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public long updateDocValues(Term term, Field... updates) throws IOException {
     ensureOpen();
+    DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates, true);
+    try {
+      long seqNo = docWriter.updateDocValues(dvUpdates);
+      if (seqNo < 0) {
+        seqNo = -seqNo;
+        processEvents(true, false);
+      }
+      return seqNo;
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "updateDocValues");
+
+      // dead code but javac disagrees:
+      return -1;
+    }
+  }
+
+  private DocValuesUpdate[] buildDocValuesUpdate(Term term, Field[] updates, boolean enforceFieldExistence) {
     DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
     for (int i = 0; i < updates.length; i++) {
       final Field f = updates[i];
@@ -1867,7 +1979,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
-      if (!globalFieldNumberMap.contains(f.name(), dvType)) {
+      if (enforceFieldExistence && !globalFieldNumberMap.contains(f.name(), dvType)) {
         throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
       }
       if (config.getIndexSortFields().contains(f.name())) {
@@ -1884,21 +1996,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           throw new IllegalArgumentException("can only update NUMERIC or BINARY fields: field=" + f.name() + ", type=" + dvType);
       }
     }
-    try {
-      long seqNo = docWriter.updateDocValues(dvUpdates);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true, false);
-      }
-      return seqNo;
-    } catch (VirtualMachineError tragedy) {
-      tragicEvent(tragedy, "updateDocValues");
-
-      // dead code but javac disagrees:
-      return -1;
-    }
+    return dvUpdates;
   }
-  
+
   // for test purpose
   final synchronized int getSegmentCount(){
     return segmentInfos.size();
@@ -3695,18 +3795,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
   
-  private static class MergedDeletesAndUpdates {
-    ReadersAndUpdates mergedDeletesAndUpdates = null;
-    
-    MergedDeletesAndUpdates() {}
-    
-    final void init(ReaderPool readerPool, MergePolicy.OneMerge merge) throws IOException {
-      if (mergedDeletesAndUpdates == null) {
-        mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-      }
-    }
-  }
-
   /**
    * Carefully merges deletes and updates for the segments we just merged. This
    * is tricky because, although merging will clear all deletes (compacts the

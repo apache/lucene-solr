@@ -236,8 +236,9 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       int i = 0;
       while ((i = index.getAndIncrement()) < ids.length) {
         Term term = new Term("id", ids[i].toString());
-        queue.add(term, slice);
-        assertTrue(slice.isTailItem(term));
+        DocumentsWriterDeleteQueue.Node<Term> termNode = DocumentsWriterDeleteQueue.newNode(term);
+        queue.add(termNode, slice);
+        assertTrue(slice.isTail(termNode));
         slice.apply(deletes, BufferedUpdates.MAX_INT);
       }
     }

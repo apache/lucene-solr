@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -71,6 +72,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -86,6 +88,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -2977,6 +2980,262 @@ public class TestIndexWriter extends LuceneTestCase {
         return;
       }
     }
+  }
+  private static Bits getSoftDeletesLiveDocs(LeafReader reader, String field) {
+    try {
+      NumericDocValues softDelete = reader.getNumericDocValues(field);
+      if (softDelete != null) {
+        BitSet bitSet = BitSet.of(softDelete, reader.maxDoc());
+        Bits inLiveDocs = reader.getLiveDocs() == null ? new Bits.MatchAllBits(reader.maxDoc()) : reader.getLiveDocs();
+        Bits newliveDocs = new Bits() {
+          @Override
+          public boolean get(int index) {
+            return inLiveDocs.get(index) && bitSet.get(index) == false;
+          }
+
+          @Override
+          public int length() {
+            return inLiveDocs.length();
+          }
+        };
+        return newliveDocs;
+
+      } else {
+        return reader.getLiveDocs();
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static DirectoryReader wrapSoftDeletes(DirectoryReader reader, String field) throws IOException {
+    return new FilterDirectoryReader(reader, new FilterDirectoryReader.SubReaderWrapper() {
+      @Override
+      public LeafReader wrap(LeafReader reader) {
+        Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, field);
+        int numDocs = getNumDocs(reader, softDeletesLiveDocs);
+        return new FilterLeafReader(reader) {
+
+          @Override
+          public Bits getLiveDocs() {
+            return softDeletesLiveDocs;
+          }
+
+          @Override
+          public CacheHelper getReaderCacheHelper() {
+            return in.getReaderCacheHelper();
+          }
+
+          @Override
+          public CacheHelper getCoreCacheHelper() {
+            return in.getCoreCacheHelper();
+          }
+
+          @Override
+          public int numDocs() {
+            return numDocs;
+          }
+        };
+      }
+    }) {
+      @Override
+      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+        return wrapSoftDeletes(in, field);
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return in.getReaderCacheHelper();
+      }
+    };
+  }
+
+  private static int getNumDocs(LeafReader reader, Bits softDeletesLiveDocs) {
+    int numDocs;
+    if (softDeletesLiveDocs == reader.getLiveDocs()) {
+      numDocs = reader.numDocs();
+    } else {
+      int tmp = 0;
+      for (int i = 0; i < softDeletesLiveDocs.length(); i++) {
+        if (softDeletesLiveDocs.get(i) ) {
+           tmp++;
+        }
+      }
+      numDocs = tmp;
+    }
+    return numDocs;
+  }
+
+  public void testSoftUpdateDocuments() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
+    });
+    
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocument(new Term("id", "1"), new Document());
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocuments(null, Arrays.asList(new Document()), new NumericDocValuesField("soft_delete", 1));
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocuments(new Term("id", "1"), Arrays.asList(new Document()));
+    });
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "2", Field.Store.YES));
+    Field field = new NumericDocValuesField("soft_delete", 1);
+    writer.softUpdateDocument(new Term("id", "1"), doc, field);
+    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    assertEquals(2, reader.docFreq(new Term("id", "1")));
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TopDocs topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(1, topDocs.totalHits);
+    Document document = reader.document(topDocs.scoreDocs[0].doc);
+    assertEquals("2", document.get("version"));
+
+    // update the on-disk version
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "3", Field.Store.YES));
+    field = new NumericDocValuesField("soft_delete", 1);
+    writer.softUpdateDocument(new Term("id", "1"), doc, field);
+    DirectoryReader oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    assertNotSame(reader, oldReader);
+    oldReader.close();
+    searcher = new IndexSearcher(reader);
+    topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(1, topDocs.totalHits);
+    document = reader.document(topDocs.scoreDocs[0].doc);
+    assertEquals("3", document.get("version"));
+
+    // now delete it
+    writer.updateDocValues(new Term("id", "1"), field);
+    oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    assertNotSame(reader, oldReader);
+    oldReader.close();
+    searcher = new IndexSearcher(reader);
+    topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(0, topDocs.totalHits);
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testSoftUpdatesConcurrently() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    AtomicBoolean mergeAwaySoftDeletes = new AtomicBoolean(random().nextBoolean());
+
+    indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
+      new MergePolicy.OneMerge(towrap.segments) {
+        @Override
+        public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+          if (mergeAwaySoftDeletes.get() == false) {
+            return towrap.wrapForMerge(reader);
+          }
+          Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, "soft_delete");
+          int numDocs = getNumDocs(reader, softDeletesLiveDocs);
+          CodecReader wrapped = towrap.wrapForMerge(reader);
+          return new FilterCodecReader(wrapped) {
+            @Override
+            public CacheHelper getCoreCacheHelper() {
+              return in.getCoreCacheHelper();
+            }
+
+            @Override
+            public CacheHelper getReaderCacheHelper() {
+              return in.getReaderCacheHelper();
+            }
+
+            @Override
+            public Bits getLiveDocs() {
+              return softDeletesLiveDocs;
+            }
+
+            @Override
+            public int numDocs() {
+              return numDocs;
+            }
+          };
+        }
+      }
+    ));
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    Thread[] threads = new Thread[2 + random().nextInt(3)];
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch started = new CountDownLatch(threads.length);
+    boolean updateSeveralDocs = random().nextBoolean();
+    Set<String> ids = Collections.synchronizedSet(new HashSet<>());
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        try {
+          started.countDown();
+          startLatch.await();
+          for (int d = 0;  d < 100; d++) {
+            String id = String.valueOf(random().nextInt(10));
+            if (updateSeveralDocs) {
+              Document doc = new Document();
+              doc.add(new StringField("id", id, Field.Store.YES));
+              writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
+                  new NumericDocValuesField("soft_delete", 1));
+            } else {
+              Document doc = new Document();
+              doc.add(new StringField("id", id, Field.Store.YES));
+              writer.softUpdateDocument(new Term("id", id), doc,
+                  new NumericDocValuesField("soft_delete", 1));
+            }
+            ids.add(id);
+          }
+        } catch (IOException | InterruptedException e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    started.await();
+    startLatch.countDown();
+
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+    }
+    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    IndexSearcher searcher = new IndexSearcher(reader);
+    for (String id : ids) {
+      TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
+      if (updateSeveralDocs) {
+        assertEquals(2, topDocs.totalHits);
+        assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
+      } else {
+        assertEquals(1, topDocs.totalHits);
+      }
+    }
+    mergeAwaySoftDeletes.set(true);
+    writer.forceMerge(1);
+    DirectoryReader oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    assertNotSame(oldReader, reader);
+    oldReader.close();
+    for (String id : ids) {
+      if (updateSeveralDocs) {
+        assertEquals(2, reader.docFreq(new Term("id", id)));
+      } else {
+        assertEquals(1, reader.docFreq(new Term("id", id)));
+      }
+    }
+
+    IOUtils.close(reader, writer, dir);
   }
 
 }
