@@ -33,15 +33,15 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class ModifyAliasCmd implements Cmd {
+public class SetAliasPropCmd implements Cmd {
 
-  public static final String META_DATA = "metadata";
+  public static final String PROPERTIES = "property";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final OverseerCollectionMessageHandler messageHandler;
 
-  ModifyAliasCmd(OverseerCollectionMessageHandler messageHandler) {
+  SetAliasPropCmd(OverseerCollectionMessageHandler messageHandler) {
     this.messageHandler = messageHandler;
   }
 
@@ -58,22 +58,22 @@ public class ModifyAliasCmd implements Cmd {
     }
 
     @SuppressWarnings("unchecked")
-    Map<String, String> metadata = (Map<String, String>) message.get(META_DATA);
+    Map<String, String> properties = (Map<String, String>) message.get(PROPERTIES);
 
     zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases1 -> {
-      for (Map.Entry<String, String> entry : metadata.entrySet()) {
+      for (Map.Entry<String, String> entry : properties.entrySet()) {
         String key = entry.getKey();
         if ("".equals(key.trim())) {
-          throw new SolrException(BAD_REQUEST, "metadata keys must not be pure whitespace");
+          throw new SolrException(BAD_REQUEST, "property keys must not be pure whitespace");
         }
         if (!key.equals(key.trim())) {
-          throw new SolrException(BAD_REQUEST, "metadata keys should not begin or end with whitespace");
+          throw new SolrException(BAD_REQUEST, "property keys should not begin or end with whitespace");
         }
         String value = entry.getValue();
         if ("".equals(value)) {
           value = null;
         }
-        aliases1 = aliases1.cloneWithCollectionAliasMetadata(aliasName, key, value);
+        aliases1 = aliases1.cloneWithCollectionAliasProperties(aliasName, key, value);
       }
       return aliases1;
     });

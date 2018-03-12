@@ -521,7 +521,7 @@ the data to shards based on customer id. Such shards can be of any type (NRT, PU
 placement strategies may also be used.
 
 The values supplied in this command for collection creation will be retained
-in alias metadata, and can be verified by inspecting `aliases.json` in ZooKeeper.
+in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
 
 *NOTE:* Presently only updates are routed and queries are distributed to all collections in the alias, but future
 features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
@@ -559,7 +559,7 @@ just fine. This parameter is required.
 `TZ`::
 The timezone to be used when evaluating any date math in router.start or router.interval. This is equivalent to the
 same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
-as alias metadata.
+as an alias property.
 +
 If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the
 myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
@@ -740,7 +740,7 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
         <str name="testalias1">collection1</str>
         <str name="testalias2">collection1,collection2</str>
     </lst>
-    <lst name="metadata">
+    <lst name="properties">
         <lst name="testalias1"/>
         <lst name="testalias2">
             <str name="someKey">someValue</str>
@@ -749,37 +749,39 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 </response>
 ----
 
-[[modifyalias]]
-== MODIFYALIAS: Modify Alias Metadata for a Collection
+[[aliasprop]]
+== ALIASPROP: Modify Alias Properties for a Collection
 
-The `MODIFYALIAS` action modifies the metadata on an alias. If a key is set with a value that is empty it will be removed.
+The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
-`/admin/collections?action=MODIFYALIAS&name=_name_&metadata.someKey=somevalue`
+`/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
 
-=== MODIFYALIAS Parameters
+=== ALIASPROP Parameters
 
 `name`::
-The alias name on which to set metadata. This parameter is required.
+The alias name on which to set properties. This parameter is required.
 
-`metadata.*`::
-The name of the key for the metadata element to be modified replaces '*', the value for the parameter is passed as the value for the metadata.
+`property.*`::
+The name of the property to be modified replaces '*', the value for the parameter is passed as the value for the property.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
-=== MODIFYALIAS Response
+=== ALIASPROP Response
 
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the creation of the metadata, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file or use the LISTALIASES api command.
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
+find the `aliases.json` file or use the LISTALIASES api command.
 
-=== Examples using MODIFYALIAS
+=== Examples using ALIASPROP
 
 *Input*
 
-For an alias named "testalias2" and set the value "someValue" for a metadata key of "someKey" and "otherValue" for "otherKey".
+For an alias named "testalias2" and set the value "someValue" for a property of "someKey" and "otherValue" for "otherKey".
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=MODIFYALIAS&name=testalias2&metadata.someKey=someValue&metadata.otherKey=otherValue&wt=xml
+http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&property.someKey=someValue&property.otherKey=otherValue&wt=xml
 ----
 
 *Output*
@@ -809,7 +811,9 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 === DELETEALIAS Response
 
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and find the `aliases.json` file.
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and
+find the `aliases.json` file.
 
 === Examples using DELETEALIAS
 

@@ -210,18 +210,18 @@
         "name"
       ]
     },
-    "modify-alias": {
+    "set-alias-property": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#modifyalias",
-      "description": "Allows changing the metadata on an alias. If a key is set with an empty string then it will be removed",
+      "description": "Allows changing the properties on an alias. If a key is set with an empty string then it will be removed",
       "type": "object",
       "properties": {
         "name": {
           "type": "string",
-          "description": "The alias name on which to set metadata."
+          "description": "The alias name on which to set properties."
         },
-        "metadata" : {
+        "properties" : {
           "type": "object",
-          "description": "A map of key/value pairs that will be associated with the alias as alias metadata. An empty value will delete any existing value for a given key.",
+          "description": "A map of key/value pairs that will be associated with the alias as alias properties (metadata). An empty value will delete any existing value for a given key.",
           "additionalProperties": true
         },
         "async": {

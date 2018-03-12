@@ -111,8 +111,8 @@ New Features
 
 * SOLR-11782: Refactor LatchWatcher.await to protect against spurious wakeup (Tomás Fernández Löbbe, David Smiley, Dawid Weiss)
 
-* SOLR-11617: Alias metadata is now mutable via a new MODIFYALIAS command.  Metadata is returned from LISTALIASES.
-  (Gus Heck via David Smiley)
+* SOLR-11617: Alias properties (formerly "metadata") are now mutable via a new ALIASPROP command.
+  These properties are returned from LISTALIASES. (Gus Heck via David Smiley)
 
 * SOLR-11702: Redesign current LIR implementation (Cao Manh Dat, shalin)
 

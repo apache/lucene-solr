@@ -84,7 +84,7 @@ public class TimeRoutedAlias {
       ROUTER_MAX_FUTURE,
       TZ)); // kinda special
 
-  static Predicate<String> PARAM_IS_METADATA =
+  static Predicate<String> PARAM_IS_PROP =
       key -> key.equals(TZ) ||
           (key.startsWith(ROUTER_PREFIX) && !key.equals(ROUTER_START)) || //TODO reconsider START special case
           key.startsWith(CREATE_COLLECTION_PREFIX);
