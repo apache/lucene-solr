@@ -20,12 +20,19 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /**
- * Defines methods to iterate over the intervals that a term, phrase or more
- * complex positional query matches on a document
+ * A {@link DocIdSetIterator} than also allows iteration over matching
+ * intervals in a document.
  *
- * The iterator is advanced by calling {@link #advance(int)} or {@link #nextDoc()}.
- * Consumers should then call {@link #nextInterval()} to retrieve intervals until
- * {@link #NO_MORE_INTERVALS} is returned.
+ * Once the iterator is positioned on a document by calling {@link #advance(int)}
+ * or {@link #nextDoc()}, intervals may be retrieved by calling {@link #nextInterval()}
+ * until {@link #NO_MORE_INTERVALS} is returned.
+ *
+ * The limits of the current interval are returned by {@link #start()} and {@link #end()}.
+ * When the iterator has been moved to a new document, but before {@link #nextInterval()}
+ * has been called, both these methods return {@code -1}.
+ *
+ * Note that it is possible for a document to return {@link #NO_MORE_INTERVALS}
+ * on the first call to {@link #nextInterval()}
  */
 public abstract class IntervalIterator extends DocIdSetIterator {
 
