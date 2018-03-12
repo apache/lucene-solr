@@ -36,6 +36,38 @@ Upgrade Notes
   when a negative value is produced. This change is due to the fact that
   Lucene now requires scores to be positive. (Adrien Grand)
 
+==================  7.4.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.8.v20171121
+
+
+Upgrade Notes
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
+
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -78,10 +110,19 @@ Upgrade Notes
 * LUCENE-8161: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.  This new version
   of JTS is now dual-licensed to include a BSD style license.
 
-* SOLR-12011: Replicas which are not up-to-date are not allowed to become leader. Use FORCELEADER API to
-  allow these replicas become leader.
+* SOLR-12051: A new mechanism is introduced in SOLR-11702 to maintain consistency in SolrCloud between leader and replicas.
+  This mechanism lets Solr know whether a replica is in-sync with the leader or not, even when the leader is not live.
+  If all the replicas who participate in the leader election are out-of-sync with previous leader, the election will
+  pause until a timeout (named "leaderVoteWait") before allowing an out-of-sync replica to become leader. Note that the
+  new leader still needs to contains more updates than any other active replicas in the same shard. Therefore by
+  increasing leaderVoteWait will increase the consistency (over availability) of the system. The default value of
+  leaderVoteWait is 180,000 ms (3 minutes) and it can be adjusted in the "solrcloud" section of the solr.xml
 
 * SOLR-11957: The default Solr log file size and number of backups is raised to 32MB and 10 respectively
+
+* SOLR-12067: The default value of `autoReplicaFailoverWaitAfterExpiration` has been increased to 120 seconds
+  from the earlier default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas
+  on nodes which have either crashed or shutdown.
 
 New Features
 ----------------------
@@ -122,8 +163,8 @@ New Features
 
 * SOLR-11782: Refactor LatchWatcher.await to protect against spurious wakeup (Tomás Fernández Löbbe, David Smiley, Dawid Weiss)
 
-* SOLR-11617: Alias metadata is now mutable via a new MODIFYALIAS command.  Metadata is returned from LISTALIASES.
-  (Gus Heck via David Smiley)
+* SOLR-11617: Alias properties (formerly "metadata") are now mutable via a new ALIASPROP command.
+  These properties are returned from LISTALIASES. (Gus Heck via David Smiley)
 
 * SOLR-11702: Redesign current LIR implementation (Cao Manh Dat, shalin)
 
@@ -185,6 +226,14 @@ New Features
 * SOLR-11267: Add support for "add-distinct" atomic update operation (Amrit Sarkar via noble )
 
 * SOLR-11960: Add collection level properties similar to cluster properties (Peter Rusko, Tomás Fernández Löbbe)
+
+* SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
+  currently performs cleanup of old inactive shards. (ab, shalin)
+
+* SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
+
+* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser. 
+  Introducing {!.. filters=$fq excludeTags=t,q} in {!parent} and {!child} (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
@@ -254,6 +303,13 @@ Bug Fixes
 
 * SOLR-12061: Fix substitution bug in API V1 to V2 migration when using SolrJ with V2 API. (Tomás Fernánadez Löbbe)
 
+* SOLR-11976: TokenizerChain.normalize: only the first filter that is a MultiTermAwareComponent was participating
+  in normalization instead of all.  This bug normally doesn't matter since TextField doesn't call it.
+  (Tim Allison via David Smiley)
+
+* SOLR-12072: Invalid path string using ZkConfigManager.copyConfigDir(String fromConfig, String toConfig)
+  (Alessandro Hoss via Erick Erickson)
+
 Optimizations
 ----------------------
 
@@ -273,6 +329,8 @@ Optimizations
 
 Other Changes
 ----------------------
+
+* SOLR-11629: Add more intuitive CloudSolrClient.Builder constructors (Varun Thacker, Jason Gerlowski)
 
 * SOLR-11575: Improve ref-guide solrj snippets via mock 'print()' method (Jason Gerlowski via hossman)
 
@@ -362,6 +420,11 @@ Other Changes
   (Varun Thacker, shalin)
 
 * SOLR-12047: Increase checkStateInZk timeout (Cao Manh Dat, Varun Thacker)
+
+* SOLR-12051: Election timeout when no replicas are qualified to become leader (Cao Manh Dat)
+
+* SOLR-12067: Increase autoAddReplicas default 30 second wait time to 120 seconds.
+  (Varun Thacker, Mark Miller via shalin)
 
 ==================  7.2.1 ==================
 

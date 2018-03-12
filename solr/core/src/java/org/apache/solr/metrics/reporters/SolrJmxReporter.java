@@ -54,6 +54,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
   private MetricRegistry registry;
   private MBeanServer mBeanServer;
   private JmxMetricsReporter reporter;
+  private String instanceTag;
   private boolean started;
 
   /**
@@ -98,17 +99,24 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
     registry = metricManager.registry(registryName);
 
     final MetricFilter filter = newMetricFilter();
-    String tag = Integer.toHexString(this.hashCode());
+    instanceTag = Integer.toHexString(this.hashCode());
     reporter = JmxMetricsReporter.forRegistry(registry)
                           .registerWith(mBeanServer)
                           .inDomain(fullDomain)
                           .filter(filter)
                           .createsObjectNamesWith(jmxObjectNameFactory)
-                          .withTag(tag)
+                          .withTag(instanceTag)
                           .build();
     reporter.start();
     started = true;
     log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
+  }
+
+  /**
+   * For unit tests.
+   */
+  public String getInstanceTag() {
+    return instanceTag;
   }
 
   /**

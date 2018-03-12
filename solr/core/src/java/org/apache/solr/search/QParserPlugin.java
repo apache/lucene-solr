@@ -27,6 +27,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
+import org.apache.solr.search.join.FiltersQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -66,6 +67,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class);
     map.put(BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class);
     map.put(BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class);
+    map.put(FiltersQParserPlugin.NAME, FiltersQParserPlugin.class);
     map.put(CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class);
     map.put(SimpleQParserPlugin.NAME, SimpleQParserPlugin.class);
     map.put(ComplexPhraseQParserPlugin.NAME, ComplexPhraseQParserPlugin.class);

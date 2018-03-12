@@ -16,13 +16,14 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.*;
+import java.io.Reader;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-
-import java.io.Reader;
 
 /**
  * An analyzer that uses a tokenizer and a list of token filters to
@@ -113,7 +114,7 @@ public final class TokenizerChain extends SolrAnalyzer {
     for (TokenFilterFactory filter : filters) {
       if (filter instanceof MultiTermAwareComponent) {
         filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(in);
+        result = filter.create(result);
       }
     }
     return result;

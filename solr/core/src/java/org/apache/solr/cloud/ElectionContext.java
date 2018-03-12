@@ -346,7 +346,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       Replica.Type replicaType;
-      
+      String coreNodeName;
+      boolean setTermToMax = false;
       try (SolrCore core = cc.getCore(coreName)) {
         
         if (core == null) {
@@ -360,13 +361,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
         
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
-        String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+        coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
         // should I be leader?
-        if (zkController.getShardTerms(collection, shardId).registered(coreNodeName)
-            && !zkController.getShardTerms(collection, shardId).canBecomeLeader(coreNodeName)) {
-          log.info("Can't become leader, term of replica {} less than leader", coreNodeName);
-          rejoinLeaderElection(core);
-          return;
+        ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
+        if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
+          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
+            rejoinLeaderElection(core);
+            return;
+          } else {
+            // only log an error if this replica win the election
+            setTermToMax = true;
+          }
         }
 
         if (isClosed) {
@@ -467,7 +472,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               }
             }
           }
-
+          // in case of leaderVoteWait timeout, a replica with lower term can win the election
+          if (setTermToMax) {
+            log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " +
+                "without being up-to-date with the previous leader", coreNodeName);
+            zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
+          }
           super.runLeaderProcess(weAreReplacement, 0);
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
@@ -515,6 +525,53 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  /**
+   * Wait for other replicas with higher terms participate in the electioon
+   * @return true if after {@code timeout} there are no other replicas with higher term participate in the election,
+   * false if otherwise
+   */
+  private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
+    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+    while (!isClosed && !cc.isShutDown()) {
+      if (System.nanoTime() > timeoutAt) {
+        return true;
+      }
+      if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
+        log.info("Can't become leader, other replicas with higher term participated in leader election");
+        return false;
+      }
+      Thread.sleep(500L);
+    }
+    return false;
+  }
+
+  /**
+   * Do other replicas with higher term participated in the election
+   * @return true if other replicas with higher term participated in the election, false if otherwise
+   */
+  private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) {
+    ClusterState clusterState = zkController.getClusterState();
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
+    if (slices == null) return false;
+
+    long replicaTerm = zkShardTerms.getTerm(coreNodeName);
+    boolean isRecovering = zkShardTerms.isRecovering(coreNodeName);
+
+    for (Replica replica : slices.getReplicas()) {
+      if (replica.getName().equals(coreNodeName)) continue;
+
+      if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
+        long otherTerm = zkShardTerms.getTerm(replica.getName());
+        boolean isOtherReplicaRecovering = zkShardTerms.isRecovering(replica.getName());
+
+        if (isRecovering && !isOtherReplicaRecovering) return true;
+        if (otherTerm > replicaTerm) return true;
+      }
+    }
+    return false;
   }
 
   public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws Exception {

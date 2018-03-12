@@ -83,7 +83,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
       "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
       "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">10000</int>\n" +
+      "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n" +
       "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
       "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +
@@ -498,8 +498,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder()
-        .withZkHost(getZkServer().getZkAddress())
+    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .build();
   }
 

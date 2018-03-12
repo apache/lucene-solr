@@ -496,6 +496,7 @@ public class SimCloudManager implements SolrCloudManager {
       SolrQueryResponse queryResponse = new SolrQueryResponse();
       autoScalingHandler.handleRequest(queryRequest, queryResponse);
       if (queryResponse.getException() != null) {
+        LOG.debug("-- exception handling request", queryResponse.getException());
         throw new IOException(queryResponse.getException());
       }
       SolrResponse rsp = new SolrResponseBase();
@@ -604,6 +605,13 @@ public class SimCloudManager implements SolrCloudManager {
         case SPLITSHARD:
           try {
             clusterStateProvider.simSplitShard(new ZkNodeProps(req.getParams().toNamedList().asMap(10)), results);
+          } catch (Exception e) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          }
+          break;
+        case DELETESHARD:
+          try {
+            clusterStateProvider.simDeleteShard(new ZkNodeProps(req.getParams().toNamedList().asMap(10)), results);
           } catch (Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }

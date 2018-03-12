@@ -20,9 +20,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -90,8 +92,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         String zkHost = params.get(CdcrParams.ZK_HOST_PARAM);
         String targetCollection = params.get(CdcrParams.TARGET_COLLECTION_PARAM);
 
-        CloudSolrClient client = new Builder()
-            .withZkHost(zkHost)
+        CloudSolrClient client = new Builder(Collections.singletonList(zkHost), Optional.empty())
             .sendUpdatesOnlyToShardLeaders()
             .build();
         client.setDefaultCollection(targetCollection);

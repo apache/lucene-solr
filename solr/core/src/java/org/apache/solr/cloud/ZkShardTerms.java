@@ -170,10 +170,16 @@ public class ZkShardTerms implements AutoCloseable{
       listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms));
       numListeners = listeners.size();
     }
+    return removeTerm(cd.getCloudDescriptor().getCoreNodeName()) || numListeners == 0;
+  }
+
+  // package private for testing, only used by tests
+  // return true if this object should not be reused
+  boolean removeTerm(String coreNodeName) {
     Terms newTerms;
-    while ( (newTerms = terms.removeTerm(cd.getCloudDescriptor().getCoreNodeName())) != null) {
+    while ( (newTerms = terms.removeTerm(coreNodeName)) != null) {
       try {
-        if (saveTerms(newTerms)) return numListeners == 0;
+        if (saveTerms(newTerms)) return false;
       } catch (KeeperException.NoNodeException e) {
         return true;
       }
@@ -231,6 +237,11 @@ public class ZkShardTerms implements AutoCloseable{
       if (forceSaveTerms(newTerms)) break;
     }
   }
+
+  public boolean isRecovering(String name) {
+    return terms.values.containsKey(name + "_recovering");
+  }
+
 
   /**
    * When first updates come in, all replicas have some data now,

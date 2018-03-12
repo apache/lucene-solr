@@ -77,7 +77,7 @@ public interface CollectionParams {
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
-    MODIFYALIAS(true, LockLevel.COLLECTION),
+    ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
     MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
@@ -118,7 +118,8 @@ public interface CollectionParams {
     //TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
+    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    NONE(false, LockLevel.NONE)
     ;
     public final boolean isWrite;
 

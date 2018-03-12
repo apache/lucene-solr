@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -273,12 +274,12 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    if(cache != null) {
+    if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
