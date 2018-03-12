@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -159,16 +160,30 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
         numDocs > oldNumDocs);
   }
 
-  @Test @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
+  @Test
   public void testJmxOnCoreReload() throws Exception {
 
+    SolrMetricManager mgr = h.getCoreContainer().getMetricManager();
+    String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String coreName = h.getCore().getName();
+    String coreHashCode = String.valueOf(h.getCore().hashCode());
+    Map<String, SolrMetricReporter> reporters = mgr.getReporters(registryName);
+    // take first JMX reporter
+    SolrJmxReporter reporter = null;
+    for (Map.Entry<String, SolrMetricReporter> e : reporters.entrySet()) {
+      if (e.getKey().endsWith(coreHashCode) && e.getValue() instanceof SolrJmxReporter) {
+        reporter = (SolrJmxReporter)e.getValue();
+        break;
+      }
+    }
+    assertNotNull("could not find JMX reporter for " + registryName, reporter);
+    String tag = reporter.getInstanceTag();
 
     Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
     int oldNumberOfObjects = 0;
     for (ObjectInstance bean : oldBeans) {
       try {
-        if (String.valueOf(h.getCore().hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+        if (tag.equals(mbeanServer.getAttribute(bean.getObjectName(), JmxMetricsReporter.INSTANCE_TAG))) {
           oldNumberOfObjects++;
         }
       } catch (AttributeNotFoundException e) {
@@ -176,19 +191,31 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("Before Reload: Size of infoRegistry: " + h.getCore().getInfoRegistry().size() + " MBeans: " + oldNumberOfObjects);
-    assertEquals("Number of registered MBeans is not the same as info registry size", h.getCore().getInfoRegistry().size(), oldNumberOfObjects);
-
+    int totalCoreMetrics = mgr.registry(registryName).getMetrics().size();
+    log.info("Before Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + oldNumberOfObjects);
+    assertEquals("Number of registered MBeans is not the same as the number of core metrics", totalCoreMetrics, oldNumberOfObjects);
     h.getCoreContainer().reload(coreName);
+
+    reporters = mgr.getReporters(registryName);
+    coreHashCode = String.valueOf(h.getCore().hashCode());
+    // take first JMX reporter
+    reporter = null;
+    for (Map.Entry<String, SolrMetricReporter> e : reporters.entrySet()) {
+      if (e.getKey().endsWith(coreHashCode) && e.getValue() instanceof SolrJmxReporter) {
+        reporter = (SolrJmxReporter)e.getValue();
+        break;
+      }
+    }
+    assertNotNull("could not find JMX reporter for " + registryName, reporter);
+    tag = reporter.getInstanceTag();
 
     Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
     int newNumberOfObjects = 0;
-    int registrySize = 0;
     try (SolrCore core = h.getCoreContainer().getCore(coreName)) {
-      registrySize = core.getInfoRegistry().size();
+      totalCoreMetrics = mgr.registry(registryName).getMetrics().size();
       for (ObjectInstance bean : newBeans) {
         try {
-          if (String.valueOf(core.hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+          if (tag.equals(mbeanServer.getAttribute(bean.getObjectName(), JmxMetricsReporter.INSTANCE_TAG))) {
             newNumberOfObjects++;
           }
         } catch (AttributeNotFoundException e) {
@@ -197,7 +224,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("After Reload: Size of infoRegistry: " + registrySize + " MBeans: " + newNumberOfObjects);
-    assertEquals("Number of registered MBeans is not the same as info registry size", registrySize, newNumberOfObjects);
+    log.info("After Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + newNumberOfObjects);
+    assertEquals("Number of registered MBeans is not the same as the number of core metrics", totalCoreMetrics, newNumberOfObjects);
   }
 }
