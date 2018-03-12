@@ -94,7 +94,14 @@ Optimizations
   to run faster. (Adrien Grand)
 
 ======================= Lucene 7.4.0 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-8200: Allow doc-values to be updated atomically together
+  with a document. Doc-Values updates now can be used as a soft-delete
+  mechanism to all keeping several version of a document or already 
+  deleted documents around for later reuse. See "IW.softUpdateDocument(...)"
+  for reference. (Simon Willnauer)
 
 ======================= Lucene 7.3.0 =======================
 

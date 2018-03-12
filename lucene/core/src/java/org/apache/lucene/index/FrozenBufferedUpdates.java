@@ -141,42 +141,42 @@ class FrozenBufferedUpdates {
     throws IOException {
     // TODO: we could do better here, e.g. collate the updates by field
     // so if you are updating 2 fields interleaved we don't keep writing the field strings
+    try (RAMOutputStream out = new RAMOutputStream()) {
+      String lastTermField = null;
+      String lastUpdateField = null;
+      for (LinkedHashMap<Term, NumericDocValuesUpdate> numericUpdates : numericDVUpdates.values()) {
+        numericDVUpdateCount += numericUpdates.size();
+        for (NumericDocValuesUpdate update : numericUpdates.values()) {
 
-    RAMOutputStream out = new RAMOutputStream();
-    String lastTermField = null;
-    String lastUpdateField = null;
-    for (LinkedHashMap<Term,NumericDocValuesUpdate> numericUpdates : numericDVUpdates.values()) {
-      numericDVUpdateCount += numericUpdates.size();
-      for (NumericDocValuesUpdate update : numericUpdates.values()) {
+          int code = update.term.bytes().length << 2;
 
-        int code = update.term.bytes().length << 2;
+          String termField = update.term.field();
+          if (termField.equals(lastTermField) == false) {
+            code |= 1;
+          }
+          String updateField = update.field;
+          if (updateField.equals(lastUpdateField) == false) {
+            code |= 2;
+          }
+          out.writeVInt(code);
+          out.writeVInt(update.docIDUpto);
+          if ((code & 1) != 0) {
+            out.writeString(termField);
+            lastTermField = termField;
+          }
+          if ((code & 2) != 0) {
+            out.writeString(updateField);
+            lastUpdateField = updateField;
+          }
 
-        String termField = update.term.field();
-        if (termField.equals(lastTermField) == false) {
-          code |= 1;
+          out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
+          out.writeZLong(((Long) update.value).longValue());
         }
-        String updateField = update.field;
-        if (updateField.equals(lastUpdateField) == false) {
-          code |= 2;
-        }
-        out.writeVInt(code);
-        out.writeVInt(update.docIDUpto);
-        if ((code & 1) != 0) {
-          out.writeString(termField);
-          lastTermField = termField;
-        }
-        if ((code & 2) != 0) {
-          out.writeString(updateField);
-          lastUpdateField = updateField;
-        }
-
-        out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-        out.writeZLong(((Long) update.value).longValue());
       }
+      byte[] bytes = new byte[(int) out.getFilePointer()];
+      out.writeTo(bytes, 0);
+      return bytes;
     }
-    byte[] bytes = new byte[(int) out.getFilePointer()];
-    out.writeTo(bytes, 0);
-    return bytes;
   }
 
   private byte[] freezeBinaryDVUpdates(Map<String,LinkedHashMap<Term,BinaryDocValuesUpdate>> binaryDVUpdates)
@@ -184,43 +184,44 @@ class FrozenBufferedUpdates {
     // TODO: we could do better here, e.g. collate the updates by field
     // so if you are updating 2 fields interleaved we don't keep writing the field strings
 
-    RAMOutputStream out = new RAMOutputStream();
-    String lastTermField = null;
-    String lastUpdateField = null;
-    for (LinkedHashMap<Term,BinaryDocValuesUpdate> binaryUpdates : binaryDVUpdates.values()) {
-      binaryDVUpdateCount += binaryUpdates.size();
-      for (BinaryDocValuesUpdate update : binaryUpdates.values()) {
+    try (RAMOutputStream out = new RAMOutputStream()) {
+      String lastTermField = null;
+      String lastUpdateField = null;
+      for (LinkedHashMap<Term, BinaryDocValuesUpdate> binaryUpdates : binaryDVUpdates.values()) {
+        binaryDVUpdateCount += binaryUpdates.size();
+        for (BinaryDocValuesUpdate update : binaryUpdates.values()) {
 
-        int code = update.term.bytes().length << 2;
+          int code = update.term.bytes().length << 2;
 
-        String termField = update.term.field();
-        if (termField.equals(lastTermField) == false) {
-          code |= 1;
-        }
-        String updateField = update.field;
-        if (updateField.equals(lastUpdateField) == false) {
-          code |= 2;
-        }
-        out.writeVInt(code);
-        out.writeVInt(update.docIDUpto);
-        if (termField.equals(lastTermField) == false) {
-          out.writeString(termField);
-          lastTermField = termField;
-        }
-        if (updateField.equals(lastUpdateField) == false) {
-          out.writeString(updateField);
-          lastUpdateField = updateField;
-        }
-        out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
+          String termField = update.term.field();
+          if (termField.equals(lastTermField) == false) {
+            code |= 1;
+          }
+          String updateField = update.field;
+          if (updateField.equals(lastUpdateField) == false) {
+            code |= 2;
+          }
+          out.writeVInt(code);
+          out.writeVInt(update.docIDUpto);
+          if (termField.equals(lastTermField) == false) {
+            out.writeString(termField);
+            lastTermField = termField;
+          }
+          if (updateField.equals(lastUpdateField) == false) {
+            out.writeString(updateField);
+            lastUpdateField = updateField;
+          }
+          out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
 
-        BytesRef value = (BytesRef) update.value;
-        out.writeVInt(value.length);
-        out.writeBytes(value.bytes, value.offset, value.length);
+          BytesRef value = (BytesRef) update.value;
+          out.writeVInt(value.length);
+          out.writeBytes(value.bytes, value.offset, value.length);
+        }
       }
+      byte[] bytes = new byte[(int) out.getFilePointer()];
+      out.writeTo(bytes, 0);
+      return bytes;
     }
-    byte[] bytes = new byte[(int) out.getFilePointer()];
-    out.writeTo(bytes, 0);
-    return bytes;
   }
 
   /** Returns the {@link SegmentCommitInfo} that this packet is supposed to apply its deletes to, or null

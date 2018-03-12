@@ -218,7 +218,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
+  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     reserveOneDoc();
@@ -226,7 +226,7 @@ class DocumentsWriterPerThread {
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
+      infoStream.message("DWPT", Thread.currentThread().getName() + " update delNode=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
     }
     // Even on exception, the document is still added (but marked
     // deleted), so we don't need to un-reserve at that point.
@@ -250,15 +250,15 @@ class DocumentsWriterPerThread {
       }
     }
 
-    return finishDocument(delTerm);
+    return finishDocument(deleteNode);
   }
 
-  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
+  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
+      infoStream.message("DWPT", Thread.currentThread().getName() + " update delNode=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
     }
     int docCount = 0;
     boolean allDocsIndexed = false;
@@ -296,9 +296,9 @@ class DocumentsWriterPerThread {
       // succeeded, but apply it only to docs prior to when
       // this batch started:
       long seqNo;
-      if (delTerm != null) {
-        seqNo = deleteQueue.add(delTerm, deleteSlice);
-        assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
+      if (deleteNode != null) {
+        seqNo = deleteQueue.add(deleteNode, deleteSlice);
+        assert deleteSlice.isTail(deleteNode) : "expected the delete node as the tail";
         deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
         return seqNo;
       } else {
@@ -328,7 +328,7 @@ class DocumentsWriterPerThread {
     }
   }
   
-  private long finishDocument(Term delTerm) {
+  private long finishDocument(DocumentsWriterDeleteQueue.Node<?> deleteNode) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -339,9 +339,9 @@ class DocumentsWriterPerThread {
      */
     boolean applySlice = numDocsInRAM != 0;
     long seqNo;
-    if (delTerm != null) {
-      seqNo = deleteQueue.add(delTerm, deleteSlice);
-      assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
+    if (deleteNode != null) {
+      seqNo = deleteQueue.add(deleteNode, deleteSlice);
+      assert deleteSlice.isTail(deleteNode) : "expected the delete node as the tail";
     } else  {
       seqNo = deleteQueue.updateSlice(deleteSlice);
       

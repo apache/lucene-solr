@@ -56,7 +56,7 @@ import org.apache.lucene.util.InfoStream;
  * <ol>
  * <li>consumes a document and finishes its processing</li>
  * <li>updates its private {@link DeleteSlice} either by calling
- * {@link #updateSlice(DeleteSlice)} or {@link #add(Term, DeleteSlice)} (if the
+ * {@link #updateSlice(DeleteSlice)} or {@link #add(Node, DeleteSlice)} (if the
  * document has a delTerm)</li>
  * <li>applies all deletes in the slice to its private {@link BufferedUpdates}
  * and resets it</li>
@@ -131,13 +131,20 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     tryApplyGlobalSlice();
     return seqNo;
   }
-  
+
+  static Node<Term> newNode(Term term) {
+    return new TermNode(term);
+  }
+
+  static Node<DocValuesUpdate[]> newNode(DocValuesUpdate... updates) {
+    return new DocValuesUpdatesNode(updates);
+  }
+
   /**
    * invariant for document update
    */
-  long add(Term term, DeleteSlice slice) {
-    final TermNode termNode = new TermNode(term);
-    long seqNo = add(termNode);
+  long add(Node<?> deleteNode, DeleteSlice slice) {
+    long seqNo = add(deleteNode);
     /*
      * this is an update request where the term is the updated documents
      * delTerm. in that case we need to guarantee that this insert is atomic
@@ -148,7 +155,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
      * will apply this delete next time we update our slice and one of the two
      * competing updates wins!
      */
-    slice.sliceTail = termNode;
+    slice.sliceTail = deleteNode;
     assert slice.sliceHead != slice.sliceTail : "slice head and tail must differ after add";
     tryApplyGlobalSlice(); // TODO doing this each time is not necessary maybe
     // we can do it just every n times or so?
@@ -292,11 +299,19 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     }
 
     /**
+     * Returns <code>true</code> iff the given node is identical to the the slices tail,
+     * otherwise <code>false</code>.
+     */
+    boolean isTail(Node<?> node) {
+      return sliceTail == node;
+    }
+
+    /**
      * Returns <code>true</code> iff the given item is identical to the item
      * hold by the slices tail, otherwise <code>false</code>.
      */
-    boolean isTailItem(Object item) {
-      return sliceTail.item == item;
+    boolean isTailItem(Object object) {
+      return sliceTail.item == object;
     }
 
     boolean isEmpty() {
@@ -319,7 +334,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     }
   }
 
-  private static class Node<T> {
+  static class Node<T> {
     volatile Node<?> next;
     final T item;
 
@@ -329,6 +344,10 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
     void apply(BufferedUpdates bufferedDeletes, int docIDUpto) {
       throw new IllegalStateException("sentinel item must never be applied");
+    }
+
+    boolean isDelete() {
+      return true;
     }
   }
 
@@ -347,6 +366,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     public String toString() {
       return "del=" + item;
     }
+
   }
 
   private static final class QueryArrayNode extends Node<Query[]> {
@@ -378,6 +398,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     public String toString() {
       return "dels=" + Arrays.toString(item);
     }
+
   }
 
   private static final class DocValuesUpdatesNode extends Node<DocValuesUpdate[]> {
@@ -400,6 +421,12 @@ final class DocumentsWriterDeleteQueue implements Accountable {
             throw new IllegalArgumentException(update.type + " DocValues updates not supported yet!");
         }
       }
+    }
+
+
+    @Override
+    boolean isDelete() {
+      return false;
     }
 
     @Override
