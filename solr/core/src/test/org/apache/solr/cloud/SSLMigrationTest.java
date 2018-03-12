@@ -52,7 +52,6 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 @SuppressSSL
-@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6213")
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   @Test
