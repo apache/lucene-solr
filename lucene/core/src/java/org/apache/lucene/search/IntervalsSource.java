@@ -27,6 +27,9 @@ import org.apache.lucene.index.Term;
 /**
  * A helper class for {@link IntervalQuery} that provides an {@link IntervalIterator}
  * for a given field and segment
+ *
+ * Static constructor functions for various different sources can be found in the
+ * {@link Intervals} class
  */
 public abstract class IntervalsSource {
 

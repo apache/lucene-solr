@@ -89,7 +89,7 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public String toString() {
-        return pe.docID() + ":" + pos;
+        return term.utf8ToString() + ":" + super.toString();
       }
     };
   }
