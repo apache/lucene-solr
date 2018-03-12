@@ -571,18 +571,18 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
 
     /**
-     * Change metadata for an alias (use CREATEALIAS_OP to change the actual value of the alias)
+     * Change properties for an alias (use CREATEALIAS_OP to change the actual value of the alias)
      */
-    MODIFYALIAS_OP(MODIFYALIAS, (req, rsp, h) -> {
+    ALIASPROP_OP(ALIASPROP, (req, rsp, h) -> {
       Map<String, Object> params = req.getParams().required().getAll(null, NAME);
 
-      // Note: success/no-op in the event of no metadata supplied is intentional. Keeps code simple and one less case
+      // Note: success/no-op in the event of no properties supplied is intentional. Keeps code simple and one less case
       // for api-callers to check for.
-      return convertPrefixToMap(req.getParams(), params, "metadata");
+      return convertPrefixToMap(req.getParams(), params, "property");
     }),
 
     /**
-     * List the aliases and associated metadata.
+     * List the aliases and associated properties.
      */
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
@@ -590,15 +590,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (aliases != null) {
         // the aliases themselves...
         rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
-        // Any metadata for the above aliases.
+        // Any properties for the above aliases.
         Map<String,Map<String,String>> meta = new LinkedHashMap<>();
         for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-          Map<String, String> collectionAliasMetadata = aliases.getCollectionAliasMetadata(alias);
-          if (collectionAliasMetadata != null) {
-            meta.put(alias, collectionAliasMetadata);
+          Map<String, String> collectionAliasProperties = aliases.getCollectionAliasProperties(alias);
+          if (collectionAliasProperties != null) {
+            meta.put(alias, collectionAliasProperties);
           }
         }
-        rsp.getValues().add("metadata", meta);
+        rsp.getValues().add("properties", meta);
       }
       return null;
     }),

@@ -169,7 +169,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     assertEquals(initialCollectionName, collectionAliasMap.get(aliasName));
-    Map<String, String> meta = aliases.getCollectionAliasMetadata(aliasName);
+    Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
     //System.err.println(new TreeMap(meta));
     assertEquals("evt_dt",meta.get("router.field"));
     assertEquals("_default",meta.get("create-collection.collection.configName"));
@@ -214,7 +214,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     String alias = collectionAliasMap.get(aliasName);
     assertNotNull(alias);
-    Map<String, String> meta = aliases.getCollectionAliasMetadata(aliasName);
+    Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
     assertNotNull(meta);
     assertEquals("evt_dt",meta.get("router.field"));
     assertEquals("_default",meta.get("create-collection.collection.configName"));
