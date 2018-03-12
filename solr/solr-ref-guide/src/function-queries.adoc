@@ -29,7 +29,7 @@ Functions must be expressed as function calls (for example, `sum(a,b)` instead o
 
 There are several ways of using function queries in a Solr query:
 
-* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>>. For example:
+* Via an explicit query parser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>>. For example:
 +
 [source,text]
 ----
@@ -58,13 +58,13 @@ the output would be:
 <float name="score">0.343</float>
 ...
 ----
-* Use in a parameter that is explicitly for specifying functions, such as the EDisMax query parser's <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,`boost`>> param, or DisMax query parser's <<the-dismax-query-parser.adoc#bf-boost-functions-parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
+* Use in a parameter that is explicitly for specifying functions, such as the eDisMax query parser's <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,`boost`>> param, or DisMax query parser's <<the-dismax-query-parser.adoc#bf-boost-functions-parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
 +
 [source,text]
 ----
 q=dismax&bf="ord(popularity)^0.5 recip(rord(price),1,1000,1000)^0.3"
 ----
-* Introduce a function query inline in the lucene QParser with the `\_val_` keyword. For example:
+* Introduce a function query inline in the Lucene query parser with the `\_val_` keyword. For example:
 +
 [source,text]
 ----
@@ -506,11 +506,13 @@ Returns `true` if any member of the field exists.
 
 To give you a better understanding of how function queries can be used in Solr, suppose an index stores the dimensions in meters x,y,z of some hypothetical boxes with arbitrary names stored in field `boxname`. Suppose we want to search for box matching name `findbox` but ranked according to volumes of boxes. The query parameters would be:
 
-`q=boxname:findbox _val_:"product(x,y,z)"`
+[source,text]
+q=boxname:findbox _val_:"product(x,y,z)"
 
 This query will rank the results based on volumes. In order to get the computed volume, you will need to request the `score`, which will contain the resultant volume:
 
-`&fl=*, score`
+[source,text]
+&fl=*, score
 
 Suppose that you also have a field storing the weight of the box as `weight`. To sort by the density of the box and return the value of the density in score, you would submit the following query:
 

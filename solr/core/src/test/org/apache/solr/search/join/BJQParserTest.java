@@ -16,14 +16,7 @@
  */
 package org.apache.solr.search.join;
 
-import org.apache.lucene.search.join.ScoreMode;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.util.BaseTestHarness;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +26,14 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.xml.xpath.XPathConstants;
+import org.apache.lucene.search.join.ScoreMode;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.util.BaseTestHarness;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
   
@@ -100,7 +100,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     List<String[]> block = new ArrayList<>();
     for (String child : klm) {
       block
-          .add(new String[] {"child_s", child, "parentchild_s", parent + child});
+          .add(new String[] {"child_s", child, "parentchild_s", parent + child, "childparent_s", parent});
     }
     Collections.shuffle(block, random());
     addGrandChildren(block);
@@ -148,6 +148,19 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testJustParentsFilter() throws IOException {
     assertQ(req("q", "{!parent which=\"parent_s:[* TO *]\"}"), sixParents);
+  }
+  
+  @Test
+  public void testJustParentsFilterInChild() throws IOException {
+    assertQ(req("q", "{!child of=\"parent_s:[* TO *]\"}",
+          "fq", "childparent_s:"+abcdef[random().nextInt(abcdef.length)],
+        "indent","on"), 
+        "//*[@numFound='"+klm.length+"']", //for any parent we have all three children
+        "//doc/arr[@name='child_s']/str='"+klm[0]+"'",
+        "//doc/arr[@name='child_s']/str='"+klm[1]+"'",
+        "//doc/arr[@name='child_s']/str='"+klm[2]+"'"
+        );
+    assert klm.length==3 : "change asserts pls "+klm;
   }
   
   private final static String beParents[] = new String[] {"//*[@numFound='2']",
@@ -326,6 +339,111 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   public void nullInit() {
     new BlockJoinParentQParserPlugin().init(null);
   }
-  
+
+  private final static String eParent[] = new String[]{"//*[@numFound='1']",
+      "//doc/arr[@name=\"parent_s\"]/str='e'"};
+
+  @Test
+  public void testToParentFilters() {
+    assertQ(
+        req("fq", "{!parent filters=$child.fq which=$pq v=$chq}\"",
+            "q", "parent_s:(e b)",
+            "child.fq", "+childparent_s:e +child_s:l",
+            "chq", "child_s:[* TO *]",
+            "pq", "parent_s:[* TO *]"), eParent);
+
+    assertQ(
+        req("fq", "{!parent filters=$child.fq which=$pq v=$chq}\"",
+            "q", "parent_s:(e b)",
+            "child.fq", "childparent_s:e",
+            "child.fq", "child_s:l",
+            "chq", "child_s:[* TO *]",
+            "pq", "parent_s:[* TO *]"), eParent);
+  }
+
+  @Test
+  public void testToChildFilters() {
+    assertQ(
+        req("fq", "{!child of=$pq filters=$parent.fq  v=$pq}\"",
+            "q", "child_s:(l m)",
+            "parent.fq", "+parent_s:(d c)",
+            "pq", "parent_s:[* TO *]"),
+        "//*[@numFound='4']",
+        "//doc/arr[@name=\"parentchild_s\"]/str='dl'",
+        "//doc/arr[@name=\"parentchild_s\"]/str='dm'",
+        "//doc/arr[@name=\"parentchild_s\"]/str='cl'",
+        "//doc/arr[@name=\"parentchild_s\"]/str='cm'"
+    );
+
+    assertQ(
+        req("fq", "{!child of=$pq filters=$parent.fq  v=$pq}\"",
+            "q", "child_s:(l m)",
+            "parent.fq", "+parent_s:(d c)",
+            "parent.fq", "+parent_s:(c a)",
+            "pq", "parent_s:[* TO *]"),
+        "//*[@numFound='2']",
+        "//doc/arr[@name=\"parentchild_s\"]/str='cl'",
+        "//doc/arr[@name=\"parentchild_s\"]/str='cm'"
+    );
+  }
+
+  private final static String elChild[] = new String[]{"//*[@numFound='1']",
+      "//doc[" +
+          "arr[@name=\"child_s\"]/str='l' and child::arr[@name=\"childparent_s\"]/str='e']"};
+
+
+  @Test
+  public void testFilters() {
+    assertQ(
+        req("q", "{!filters param=$child.fq v=$gchq}",
+            "child.fq", "childparent_s:e",
+            "child.fq", "child_s:l",
+            "gchq", "child_s:[* TO *]"), elChild);
+
+    assertQ(
+        req("q", "{!filters param=$child.fq excludeTags=firstTag v=$gchq}",
+            "child.fq", "{!tag=zeroTag,firstTag}childparent_s:e",
+            "child.fq", "{!tag=secondTag}child_s:l",
+            "gchq", "child_s:[* TO *]"), "//*[@numFound='6']");
+
+    assertQ(
+        req("q", "{!filters param=$child.fq excludeTags=secondTag v=$gchq}",
+            "child.fq", "{!tag=firstTag}childparent_s:e",
+            "child.fq", "{!tag=secondTag}child_s:l",
+            "gchq", "child_s:[* TO *]"), "//*[@numFound='3']");
+
+    assertQ(req("q",
+             random().nextBoolean() ? "{!filters param=$child.fq excludeTags=firstTag,secondTag v=$gchq}" :
+               random().nextBoolean() ? "{!filters param=$thereAreNoLikeThese v=$gchq}" :
+                 "{!filters v=$gchq}" ,
+            "child.fq", "{!tag=firstTag}childparent_s:e",
+            "child.fq", "{!tag=secondTag}child_s:l",
+            "gchq", "child_s:[* TO *]"), "//*[@numFound='18']");
+    
+    assertQEx("expecting exception on weird param",
+        req("q", "{!filters v=$gchq param=}\"" ,
+            "gchq", "child_s:[* TO *]"
+       ),ErrorCode.BAD_REQUEST);
+    
+    assertQ( // omit main query
+        req("q", "{!filters param=$child.fq}",
+            "child.fq", "{!tag=firstTag}childparent_s:(e f)",
+            "child.fq", "{!tag=secondTag}child_s:l"), "//*[@numFound='2']");
+    
+    assertQ( // all excluded, matching all 
+        req("q", "{!filters param=$child.fq excludeTags=firstTag,secondTag}",
+            "child.fq", "{!tag=firstTag}childparent_s:(e f)",
+            "child.fq", "{!tag=secondTag}child_s:l"), "//*[@numFound='42']");
+    
+    assertQ(req("q", // excluding top level
+            "{!filters param=$child.fq excludeTags=bot,top v=$gchq}" ,
+       "child.fq", "{!tag=secondTag}child_s:l", // 6 ls remains
+       "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='6']");
+    
+    assertQ(req("q", // top and filter are excluded, got zero result, but is it right? 
+        "{!filters excludeTags=bot,secondTag,top v=$gchq}" ,
+         "child.fq", "{!tag=secondTag}child_s:l",
+         "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='42']");
+  }
 }
 

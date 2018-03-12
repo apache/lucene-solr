@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -46,7 +48,6 @@ import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
@@ -687,7 +688,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
-      MockZkController mockZkController = createMockZkController(zkClient, reader);
+      MockZkController mockZkController = createMockZkController(server.getZkAddress(), zkClient, reader);
       Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, mockZkController,
           new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
       overseers.add(overseer);
@@ -1313,7 +1314,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
-    MockZkController zkController = createMockZkController(zkClient, reader);
+    MockZkController zkController = createMockZkController(address, zkClient, reader);
 
     Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
         new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
@@ -1325,7 +1326,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     return zkClient;
   }
 
-  private MockZkController createMockZkController(SolrZkClient zkClient, ZkStateReader reader) {
+  private MockZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
@@ -1335,15 +1336,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);
-    doReturn(getCloudDataProvider(zkClient,reader))
+    doReturn(getCloudDataProvider(zkAddress, zkClient,reader))
         .when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(SolrZkClient zkClient, ZkStateReader reader) {
-    CloudSolrClient client = new CloudSolrClient.Builder()
-        .withClusterStateProvider(new ZkClientClusterStateProvider(reader))
-        .build();
+  private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
+    CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty()).build();
     solrClients.add(client);
     return new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), client);
   }
