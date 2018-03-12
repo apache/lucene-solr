@@ -578,7 +578,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       // Note: success/no-op in the event of no properties supplied is intentional. Keeps code simple and one less case
       // for api-callers to check for.
-      return convertPrefixToMap(req.getParams(), params, "properties");
+      return convertPrefixToMap(req.getParams(), params, "property");
     }),
 
     /**

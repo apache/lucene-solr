@@ -248,8 +248,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=ALIASPROP" +
         "&wt=xml" +
         "&name=" + aliasName +
-        "&properties.foo=baz" +
-        "&properties.bar=bam");
+        "&property.foo=baz" +
+        "&property.bar=bam");
     assertSuccess(get);
     checkFooAndBarMeta(aliasName, zkStateReader);
   }

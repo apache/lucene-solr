@@ -33,15 +33,15 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class ModifyAliasCmd implements Cmd {
+public class SetAliasPropCmd implements Cmd {
 
-  public static final String PROPERTIES = "properties";
+  public static final String PROPERTIES = "property";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final OverseerCollectionMessageHandler messageHandler;
 
-  ModifyAliasCmd(OverseerCollectionMessageHandler messageHandler) {
+  SetAliasPropCmd(OverseerCollectionMessageHandler messageHandler) {
     this.messageHandler = messageHandler;
   }
 

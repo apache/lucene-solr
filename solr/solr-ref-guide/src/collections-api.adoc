@@ -749,14 +749,14 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 </response>
 ----
 
-[[modifyalias]]
-== MODIFYALIAS: Modify Alias Properties for a Collection
+[[aliasprop]]
+== ALIASPROP: Modify Alias Properties for a Collection
 
-The `MODIFYALIAS` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
+The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
-`/admin/collections?action=MODIFYALIAS&name=_name_&properties.someKey=somevalue`
+`/admin/collections?action=ALIASPROP&name=_name_&properties.someKey=somevalue`
 
-=== MODIFYALIAS Parameters
+=== ALIASPROP Parameters
 
 `name`::
 The alias name on which to set properties. This parameter is required.
@@ -767,13 +767,13 @@ The name of the property to be modified replaces '*', the value for the paramete
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
-=== MODIFYALIAS Response
+=== ALIASPROP Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
 To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
 find the `aliases.json` file or use the LISTALIASES api command.
 
-=== Examples using MODIFYALIAS
+=== Examples using ALIASPROP
 
 *Input*
 
@@ -781,7 +781,7 @@ For an alias named "testalias2" and set the value "someValue" for a property of 
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=MODIFYALIAS&name=testalias2&properties.someKey=someValue&properties.otherKey=otherValue&wt=xml
+http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&properties.someKey=someValue&properties.otherKey=otherValue&wt=xml
 ----
 
 *Output*

@@ -1350,7 +1350,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.NAME, aliasName);
-      properties.forEach((key, value) ->  params.set("properties." + key, value));
+      properties.forEach((key, value) ->  params.set("property." + key, value));
       return params;
     }
   }
