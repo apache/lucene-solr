@@ -34,6 +34,9 @@ import org.apache.lucene.search.similarities.Similarity;
 /**
  * A query that retrieves documents containing intervals returned from an
  * {@link IntervalsSource}
+ *
+ * Static constructor functions for various different sources can be found in the
+ * {@link Intervals} class
  */
 public final class IntervalQuery extends Query {
 

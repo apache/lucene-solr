@@ -160,11 +160,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return current.start();
     }
 
-    @Override
-    public String toString() {
-      return approximation.docID() + ":[" + start() + "->" + end() + "]";
-    }
-
     private boolean contains(IntervalIterator it, int start, int end) {
       return start >= it.start() && start <= it.end() && end >= it.start() && end <= it.end();
     }

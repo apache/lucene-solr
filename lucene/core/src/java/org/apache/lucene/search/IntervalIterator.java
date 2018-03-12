@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /**
- * A {@link DocIdSetIterator} than also allows iteration over matching
+ * A {@link DocIdSetIterator} that also allows iteration over matching
  * intervals in a document.
  *
  * Once the iterator is positioned on a document by calling {@link #advance(int)}
@@ -89,7 +89,7 @@ public abstract class IntervalIterator extends DocIdSetIterator {
   /**
    * Advance the iterator to the next interval
    *
-   * @return the starting interval of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
+   * @return the start of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
    *         there are no more intervals on the current document
    */
   public abstract int nextInterval() throws IOException;
