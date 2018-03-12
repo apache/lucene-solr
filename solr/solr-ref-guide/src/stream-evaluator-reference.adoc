@@ -1182,8 +1182,6 @@ The `length` function returns the length of a numeric array.
 [source,text]
 length(numericArray)
 
-== lerp (TOD0)
-
 == loess
 
 The `leoss` function is a smoothing curve fitter which uses a https://en.wikipedia.org/wiki/Local_regression[local regression] algorithm.
