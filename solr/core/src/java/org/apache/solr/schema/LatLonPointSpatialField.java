@@ -78,15 +78,16 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   }
   
   /**
-   * Converts to "lat, lon"
+   * Each value stores a 64-bit long where the upper 32 bits are the encoded latitude,
+   * and the lower 32 bits are the encoded longitude.
+   * Converts to "lat, lon", decoded using {@link LatLonDocValuesField#setLocationValue(double, double)}
    * @param value Non-null; stored location field data
    * @return Non-null; "lat, lon" with 6 decimal point precision
    */
   public static String decodeDocValueToString(long value) {
-    double latitudeDecoded = BigDecimal.valueOf(decodeLatitude((int) (value >> 32))).setScale(6, HALF_UP).doubleValue();
-    double longitudeDecoded = BigDecimal.valueOf(decodeLongitude((int) (value & 0xFFFFFFFFL))).setScale(6, HALF_UP)
-        .doubleValue();
-    return new String(latitudeDecoded + "," + longitudeDecoded);
+    BigDecimal latitudeDecoded = BigDecimal.valueOf(decodeLatitude((int) (value >> 32))).setScale(6, HALF_UP);
+    BigDecimal longitudeDecoded = BigDecimal.valueOf(decodeLongitude((int) (value & 0xFFFFFFFFL))).setScale(6, HALF_UP);
+    return new String(latitudeDecoded.stripTrailingZeros().toPlainString() + "," + longitudeDecoded.stripTrailingZeros().toPlainString());
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox
