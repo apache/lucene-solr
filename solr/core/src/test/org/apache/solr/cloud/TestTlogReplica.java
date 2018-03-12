@@ -70,6 +70,7 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -451,7 +452,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     waitForNumDocsInAllActiveReplicas(2);
   }
-  
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
   public void testOnlyLeaderIndexes() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
     

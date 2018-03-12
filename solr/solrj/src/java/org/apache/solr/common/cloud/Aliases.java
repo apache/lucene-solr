@@ -44,24 +44,28 @@ public class Aliases {
    */
   public static final Aliases EMPTY = new Aliases(Collections.emptyMap(), Collections.emptyMap(), 0);
 
+  // These two constants correspond to the top level elements in aliases.json. The first one denotes
+  // a section containing a list of aliases and their attendant collections, the second contains a list of
+  // aliases and their attendant properties (metadata) They probably should be
+  // named "aliases" and "alias_properties" but for back compat reasons, we cannot change them
   private static final String COLLECTION = "collection";
   private static final String COLLECTION_METADATA = "collection_metadata";
 
   // aliasName -> list of collections.  (note: the Lists here should be unmodifiable)
   private final Map<String, List<String>> collectionAliases; // not null
 
-  // aliasName --> metadataKey --> metadataValue (note: the inner Map here should be unmodifiable)
-  private final Map<String, Map<String, String>> collectionAliasMetadata; // notnull
+  // aliasName --> propertiesKey --> propertiesValue (note: the inner Map here should be unmodifiable)
+  private final Map<String, Map<String, String>> collectionAliasProperties; // notnull
 
   private final int zNodeVersion;
 
   /** Construct aliases directly with this information -- caller should not retain.
    * Any deeply nested collections are assumed to already be unmodifiable. */
   private Aliases(Map<String, List<String>> collectionAliases,
-                 Map<String, Map<String, String>> collectionAliasMetadata,
+                 Map<String, Map<String, String>> collectionAliasProperties,
                  int zNodeVersion) {
     this.collectionAliases = Objects.requireNonNull(collectionAliases);
-    this.collectionAliasMetadata = Objects.requireNonNull(collectionAliasMetadata);
+    this.collectionAliasProperties = Objects.requireNonNull(collectionAliasProperties);
     this.zNodeVersion = zNodeVersion;
   }
 
@@ -96,13 +100,13 @@ public class Aliases {
    */
   public byte[] toJSON() {
     if (collectionAliases.isEmpty()) {
-      assert collectionAliasMetadata.isEmpty();
+      assert collectionAliasProperties.isEmpty();
       return null;
     } else {
       Map<String,Map> tmp = new LinkedHashMap<>();
       tmp.put(COLLECTION, convertMapOfListToMapOfCommaDelimited(collectionAliases));
-      if (!collectionAliasMetadata.isEmpty()) {
-        tmp.put(COLLECTION_METADATA, collectionAliasMetadata);
+      if (!collectionAliasProperties.isEmpty()) {
+        tmp.put(COLLECTION_METADATA, collectionAliasProperties);
       }
       return Utils.toJSON(tmp);
     }
@@ -154,15 +158,15 @@ public class Aliases {
   }
 
   /**
-   * Returns an unmodifiable Map of metadata for a given alias. If an alias by the given name
+   * Returns an unmodifiable Map of properties for a given alias. If an alias by the given name
    * exists, this method will never return null.
    *
    * @param alias the name of an alias also found as a key in {@link #getCollectionAliasListMap()}
-   * @return The metadata for the alias (possibly empty) or null if the alias does not exist.
+   * @return The properties for the alias (possibly empty) or null if the alias does not exist.
    */
-  public Map<String,String> getCollectionAliasMetadata(String alias) {
+  public Map<String,String> getCollectionAliasProperties(String alias) {
     // Note: map is already unmodifiable; it can be shared safely
-    return collectionAliasMetadata.getOrDefault(alias, Collections.emptyMap());
+    return collectionAliasProperties.getOrDefault(alias, Collections.emptyMap());
   }
 
   /**
@@ -212,72 +216,72 @@ public class Aliases {
     if (alias == null) {
       throw new NullPointerException("Alias name cannot be null");
     }
-    Map<String, Map<String, String>> newColMetadata;
+    Map<String, Map<String, String>> newColProperties;
     Map<String, List<String>> newColAliases = new LinkedHashMap<>(this.collectionAliases);//clone to modify
     if (collections == null) { // REMOVE:
-      newColMetadata = new LinkedHashMap<>(this.collectionAliasMetadata);//clone to modify
-      newColMetadata.remove(alias);
+      newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);//clone to modify
+      newColProperties.remove(alias);
       newColAliases.remove(alias);
     } else {
-      newColMetadata = this.collectionAliasMetadata;// no changes
+      newColProperties = this.collectionAliasProperties;// no changes
       // java representation is a list, so split before adding to maintain consistency
       newColAliases.put(alias, splitCollections(collections)); // note: unmodifiableList
     }
-    return new Aliases(newColAliases, newColMetadata, zNodeVersion);
+    return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
 
   /**
-   * Set the value for some metadata on a collection alias. This is done by creating a new Aliases instance
+   * Set the value for some properties on a collection alias. This is done by creating a new Aliases instance
    * with the same data as the current one but with a modification based on the parameters.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
    * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
-   * @param metadataKey the key for the metadata
-   * @param metadataValue the metadata to add/replace, null to remove the key.
-   *                      @return An immutable copy of the aliases with the new metadata.
+   * @param propertiesKey the key for the properties
+   * @param propertiesValue the properties to add/replace, null to remove the key.
+   * @return An immutable copy of the aliases with the new properties.
    */
-  public Aliases cloneWithCollectionAliasMetadata(String alias, String metadataKey, String metadataValue) {
-    return cloneWithCollectionAliasMetadata(alias, Collections.singletonMap(metadataKey,metadataValue));
+  public Aliases cloneWithCollectionAliasProperties(String alias, String propertiesKey, String propertiesValue) {
+    return cloneWithCollectionAliasProperties(alias, Collections.singletonMap(propertiesKey,propertiesValue));
   }
 
   /**
-   * Set the values for some metadata keys on a collection alias. This is done by creating a new Aliases instance
+   * Set the values for some properties keys on a collection alias. This is done by creating a new Aliases instance
    * with the same data as the current one but with a modification based on the parameters.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
    * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
-   * @param metadata the metadata to add/replace, null values in the map will remove the key.
-   * @return An immutable copy of the aliases with the new metadata.
+   * @param properties the properties to add/replace, null values in the map will remove the key.
+   * @return An immutable copy of the aliases with the new properties.
    */
-  public Aliases cloneWithCollectionAliasMetadata(String alias, Map<String,String> metadata) {
+  public Aliases cloneWithCollectionAliasProperties(String alias, Map<String,String> properties) {
     if (!collectionAliases.containsKey(alias)) {
       throw new IllegalArgumentException(alias + " is not a valid alias");
     }
-    if (metadata == null) {
-      throw new IllegalArgumentException("Null is not a valid metadata map");
+    if (properties == null) {
+      throw new IllegalArgumentException("Null is not a valid properties map");
     }
-    Map<String,Map<String,String>> newColMetadata = new LinkedHashMap<>(this.collectionAliasMetadata);//clone to modify
-    Map<String, String> newMetaMap = new LinkedHashMap<>(newColMetadata.getOrDefault(alias, Collections.emptyMap()));
-    for (Map.Entry<String, String> metaEntry : metadata.entrySet()) {
+    Map<String,Map<String,String>> newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);//clone to modify
+    Map<String, String> newMetaMap = new LinkedHashMap<>(newColProperties.getOrDefault(alias, Collections.emptyMap()));
+    for (Map.Entry<String, String> metaEntry : properties.entrySet()) {
       if (metaEntry.getValue() != null) {
         newMetaMap.put(metaEntry.getKey(), metaEntry.getValue());
       } else {
         newMetaMap.remove(metaEntry.getKey());
       }
     }
-    newColMetadata.put(alias, Collections.unmodifiableMap(newMetaMap));
-    return new Aliases(collectionAliases, newColMetadata, zNodeVersion);
+    newColProperties.put(alias, Collections.unmodifiableMap(newMetaMap));
+    return new Aliases(collectionAliases, newColProperties, zNodeVersion);
   }
 
   @Override
   public String toString() {
     return "Aliases{" +
         "collectionAliases=" + collectionAliases +
-        ", collectionAliasMetadata=" + collectionAliasMetadata +
+        ", collectionAliasProperties=" + collectionAliasProperties +
         ", zNodeVersion=" + zNodeVersion +
         '}';
   }

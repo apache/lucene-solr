@@ -498,8 +498,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder()
-        .withZkHost(getZkServer().getZkAddress())
+    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .build();
   }
 

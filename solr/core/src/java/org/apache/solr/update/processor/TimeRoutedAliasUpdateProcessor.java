@@ -63,7 +63,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * requests to create new collections on-demand.
  *
  * Depends on this core having a special core property that points to the alias name that this collection is a part of.
- * And further requires certain metadata on the Alias. Collections pointed to by the alias must be named for the alias
+ * And further requires certain properties on the Alias. Collections pointed to by the alias must be named for the alias
  * plus underscored ('_') and a time stamp of ISO_DATE plus optionally _HH_mm_ss. These collections should not be
  * created by the user, but are created automatically by the time partitioning system.
  *
@@ -124,14 +124,14 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     collHandler = cc.getCollectionsHandler();
 
-    final Map<String, String> aliasMetadata = zkController.getZkStateReader().getAliases().getCollectionAliasMetadata(aliasName);
-    if (aliasMetadata == null) {
+    final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
+    if (aliasProperties == null) {
       throw newAliasMustExistException(); // if it did exist, we'd have a non-null map
     }
     try {
-      this.timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata);
+      this.timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasProperties);
     } catch (Exception e) { // ensure we throw SERVER_ERROR not BAD_REQUEST at this stage
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid metadata: " + e, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid properties: " + e, e);
     }
 
     ModifiableSolrParams outParams = new ModifiableSolrParams(req.getParams());
@@ -237,7 +237,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * Ensure {@link #parsedCollectionsAliases} is up to date. If it was modified, return true.
-   * Note that this will return true if some other alias was modified or if metadata was modified. These
+   * Note that this will return true if some other alias was modified or if properties were modified. These
    * are spurious and the caller should be written to be tolerant of no material changes.
    */
   private boolean updateParsedCollectionAliases() {

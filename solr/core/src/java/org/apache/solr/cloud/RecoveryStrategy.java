@@ -780,11 +780,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
-        LOG.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl(), e);
+        LOG.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
         Thread.sleep(500);
       } catch (Exception e) {
         if (e.getCause() instanceof IOException) {
-          LOG.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl(), e);
+          LOG.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
           Thread.sleep(500);
         } else {
           return leaderReplica;

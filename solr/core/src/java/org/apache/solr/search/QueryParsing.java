@@ -97,12 +97,12 @@ public class QueryParsing {
         throw new SyntaxError("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
 
       }
-      String val = null;
+      String[] val = new String[1];
 
       ch = p.peek();
       if (ch != '=') {
         // single word... treat {!func} as type=func for easy lookup
-        val = id;
+        val[0] = id;
         id = TYPE;
       } else {
         // saw equals, so read value
@@ -116,7 +116,7 @@ public class QueryParsing {
         }
 
         if (ch == '\"' || ch == '\'') {
-          val = p.getQuotedString();
+          val[0] = p.getQuotedString();
         } else {
           // read unquoted literal ended by whitespace or endChar (normally '}')
           // there is no escaping.
@@ -127,7 +127,7 @@ public class QueryParsing {
             }
             char c = p.val.charAt(p.pos);
             if (c == endChar || Character.isWhitespace(c)) {
-              val = p.val.substring(valStart, p.pos);
+              val[0] = p.val.substring(valStart, p.pos);
               break;
             }
             p.pos++;
@@ -136,7 +136,7 @@ public class QueryParsing {
 
         if (deref) {  // dereference parameter
           if (params != null) {
-            val = params.get(val);
+            val = params.getParams(val[0]);
           }
         }
       }

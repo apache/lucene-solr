@@ -16,14 +16,16 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   
@@ -35,7 +37,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   Collection<String> hosts;
 
   @Test
-  public void testWithChroot() throws IOException {
+  public void testZkConnectionStringSetterWithValidChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
     boolean withChroot = random().nextBoolean();
@@ -70,13 +72,39 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
     try (CloudSolrClient client = (new CloudSolrClient.Builder()).withZkHost(hosts).withZkChroot(clientChroot).build()) {
       assertEquals(sb.toString(), client.getZkHost());
     }
+  }
+  
+  @Test
+  public void testZkConnectionStringConstructorWithValidChroot() throws IOException {
+    int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
+    boolean withChroot = random().nextBoolean();
 
+    final String chroot = "/mychroot";
+
+    StringBuilder sb = new StringBuilder();
+
+    List<String> hosts = new ArrayList<>();
+    for (int i=0; i<numOfZKServers; i++) {
+      String ZKString = "host" + i + ":2181";
+      hosts.add(ZKString);
+      sb.append(ZKString);
+      if (i<numOfZKServers -1) sb.append(",");
+    }
+
+    if (withChroot) {
+      sb.append(chroot);
+    }
+
+    final Optional<String> chrootOption = withChroot == false ? Optional.empty() : Optional.of(chroot);
+    try (CloudSolrClient client = new CloudSolrClient.Builder(hosts, chrootOption).build()) {
+      assertEquals(sb.toString(), client.getZkHost());
+    }
   }
   
   @Test(expected = IllegalArgumentException.class)
   public void testBadChroot() {
-    hosts = new ArrayList<>();
-    hosts.add("host1:2181");
-    (new CloudSolrClient.Builder()).withZkHost(hosts).withZkChroot("foo").build();
+    final List<String> zkHosts = new ArrayList<>();
+    zkHosts.add("host1:2181");
+    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build();
   }
 }

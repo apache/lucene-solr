@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -66,6 +67,7 @@ import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -79,7 +81,9 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -2234,22 +2238,43 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * some internal settings.
    */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
-
-    public CloudSolrClientBuilder() {
+    
+    public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
+      super(zkHosts, zkChroot);
+      randomizeCloudSolrClient();
+    }
+    
+    public CloudSolrClientBuilder(ClusterStateProvider stateProvider) {
+      this.stateProvider = stateProvider;
+      randomizeCloudSolrClient();
+    }
+    
+    public CloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
+      if (random().nextBoolean()) {
+        this.zkHosts.add(cluster.getZkServer().getZkAddress());
+      } else {
+        populateSolrUrls(cluster);
+      }
+      
+      randomizeCloudSolrClient();
+    }
+    
+    private void populateSolrUrls(MiniSolrCloudCluster cluster) {
+      if (random().nextBoolean()) {
+        final List<JettySolrRunner> solrNodes = cluster.getJettySolrRunners();
+        for (JettySolrRunner node : solrNodes) {
+          this.solrUrls.add(node.getBaseUrl().toString());
+        }
+      } else {
+        this.solrUrls.add(cluster.getRandomJetty(random()).getBaseUrl().toString());
+      }
+    }
+    
+    private void randomizeCloudSolrClient() {
       this.directUpdatesToLeadersOnly = random().nextBoolean();
       this.shardLeadersOnly = random().nextBoolean();
       this.parallelUpdates = random().nextBoolean();
     }
-
-    /** Randomly chooses the cluster state provider -- either ZK based or HTTP. */
-    public CloudSolrClient.Builder withCluster(MiniSolrCloudCluster cluster) {
-      if (random().nextBoolean()) {
-        return withZkHost(cluster.getZkServer().getZkAddress());
-      } else {
-        return withSolrUrl(cluster.getRandomJetty(random()).getBaseUrl().toString());
-      }
-    }
-
   }
 
   /**
@@ -2258,9 +2283,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
-        .build();
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty()).build();
   }
 
   /**
@@ -2269,9 +2292,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
-    return new CloudSolrClientBuilder()
-        .withCluster(cluster)
-        .build();
+    return new CloudSolrClientBuilder(cluster).build();
   }
 
   /**
@@ -2280,8 +2301,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
         .build();
   }
@@ -2293,19 +2313,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder()
-          .withZkHost(zkHost)
+      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .sendUpdatesToAllReplicasInShard()
         .build();
   }
 
   public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
-    return (CloudSolrClientBuilder) new CloudSolrClientBuilder().withZkHost(zkHost);
+    return (CloudSolrClientBuilder) new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
   }
 
   /**
@@ -2315,14 +2333,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder()
-          .withZkHost(zkHost)
+      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .sendUpdatesToAllReplicasInShard()
         .withSocketTimeout(socketTimeoutMillis)
         .build();
@@ -2335,15 +2351,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int connectionTimeoutMillis, int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder()
-          .withZkHost(zkHost)
+      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .withConnectionTimeout(connectionTimeoutMillis)
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .sendUpdatesToAllReplicasInShard()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
@@ -2359,14 +2373,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder()
-          .withZkHost(zkHost)
+      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
         .sendUpdatesToAllReplicasInShard()
         .build();
@@ -2380,16 +2392,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient,
       int connectionTimeoutMillis, int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder()
-          .withZkHost(zkHost)
+      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .withConnectionTimeout(connectionTimeoutMillis)
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder()
-        .withZkHost(zkHost)
+    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
         .sendUpdatesToAllReplicasInShard()
         .withConnectionTimeout(connectionTimeoutMillis)

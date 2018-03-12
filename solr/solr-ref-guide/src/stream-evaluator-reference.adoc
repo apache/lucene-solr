@@ -92,8 +92,6 @@ add(fieldA,div(fieldA,fieldB)) // value of fieldA + (value of fieldA / value of 
 add(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA + fieldA, else fieldA + fieldB
 ----
 
-== akima (TODO)
-
 == analyze
 
 The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens
@@ -293,9 +291,6 @@ ceil(100.4) // returns 101.
 ceil(fieldA) // returns the next highest whole number for fieldA.
 if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
 ----
-
-
-== chiSquareDataSet (TODO)
 
 == col
 
@@ -523,10 +518,6 @@ A double: the cumulative probability.
 
 [source,text]
 cumulativeProbability(normalDistribution(500, 25), 502) // Returns the cumulative probability of the random sample 502 in a normal distribution with a mean of 500 and standard deviation of 25.
-
-
-== density (TODO)
-
 
 == derivative
 
@@ -860,9 +851,6 @@ A double.
 factorial(100) //Computes the factorial of 100
 ----
 
-== featureSelect (TODO)
-
-
 == finddelay
 
 The `finddelay` function performs a cross-correlation between two numeric arrays and returns the delay.
@@ -917,8 +905,6 @@ A list of tuples containing the frequency information for each discrete value.
 ----
 freqTable(integerArray)
 ----
-
-== fuzzyKmeans (TODO)
 
 == gammaDistribution
 
@@ -998,10 +984,6 @@ getAttributes(matrix)
 
 map: The map of attributes.
 
-== getCentroids (TODO)
-
-== getClusters (TODO)
-
 == getColumnLabels
 
 The `getColumnLabels` function returns the columns labels of a matrix. The column labels can be optionally
@@ -1018,8 +1000,6 @@ getColumnLabels(matrix)
 === getColumnLabels Returns
 
 string array: The labels for each column in the matrix
-
-== getMembershipMatrix (TODO)
 
 == getRowLabels
 
@@ -1270,10 +1250,6 @@ A probability distribution function.
 [source,text]
 logNormalDistribution(.3, .0)
 
-== kmeans (TODO)
-
-== knn (TODO)
-
 == kolmogorovSmirnov
 
 The `kolmogorovSmirnov` function performs a https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test[Kolmogorov Smirnov test],
@@ -1336,9 +1312,6 @@ lteq(1,fieldA) // 1 <= fieldA
 lteq(fieldA,val(foo)) fieldA <= "foo"
 lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 ----
-
-
-== mannWhitney (TODO)
 
 == markovChain
 
@@ -1534,11 +1507,6 @@ mult(fieldA,div(fieldA,fieldB)) // value of fieldA * (value of fieldA / value of
 mult(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA * fieldA, else fieldA * fieldB
 ----
 
-
-== multiKmeans (TODO)
-
-== multiVariateNormalDistribution (TODO)
-
 == normalDistribution
 
 The `normalDistribution` function returns a https://en.wikipedia.org/wiki/Normal_distribution[normal probability distribution]
@@ -1644,8 +1612,6 @@ or(fieldA,fieldB) // fieldA || fieldB
 or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
 or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 ----
-
-== pairedTtest (TODO)
 
 == poissonDistribution
 
@@ -2268,10 +2234,6 @@ sumSq(numericArray)
 
 numeric: result of the sumSq calculation
 
-== termVectors (TODO)
-
-== topFeatures (TODO)
-
 == transpose
 
 The `transpose` function https://en.wikipedia.org/wiki/Transpose[transposes] a matrix .
@@ -2309,8 +2271,6 @@ triangularDistribution(10, 15, 20) // A triangular distribution with a low value
 === triangularDistribution Returns
 
 Probability distribution function
-
-== ttest (TODO)
 
 == uniformDistribution
 
