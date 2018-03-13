@@ -2225,7 +2225,7 @@ The `sumSq` function returns the sum-of-squares of the values in a numeric array
 
 * `numeric array`: The numeric array to compute the sumSq of.
 
-=== sumSq Syntac
+=== sumSq Syntax
 
 [source,text]
 sumSq(numericArray)
