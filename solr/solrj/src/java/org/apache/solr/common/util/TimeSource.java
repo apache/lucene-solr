@@ -136,6 +136,11 @@ public abstract class TimeSource {
       long nano = Math.round((double)TimeUnit.NANOSECONDS.convert(value, fromUnit) / multiplier);
       return toUnit.convert(nano, TimeUnit.NANOSECONDS);
     }
+
+    @Override
+    public String toString() {
+      return super.toString() + ":" + multiplier;
+    }
   }
 
   /** This instance uses {@link CurrentTimeSource} for generating timestamps. */
@@ -196,4 +201,8 @@ public abstract class TimeSource {
   public abstract void sleep(long ms) throws InterruptedException;
 
   public abstract long convertDelay(TimeUnit fromUnit, long value, TimeUnit toUnit);
+
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 }
