@@ -44,7 +44,7 @@ import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";
@@ -53,6 +53,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
   }
 
