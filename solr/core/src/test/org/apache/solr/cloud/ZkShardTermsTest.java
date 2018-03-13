@@ -52,7 +52,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
@@ -66,11 +65,14 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
         .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
-    ZkController zkController = cluster.getJettySolrRunners().get(0).getCoreContainer().getZkController();
-    waitFor(2, () -> zkController.getShardTerms(collection, "shard1").getTerms().size());
-    assertArrayEquals(new Long[]{0L, 0L}, zkController.getShardTerms(collection, "shard1").getTerms().values().toArray(new Long[2]));
-    waitFor(2, () -> zkController.getShardTerms(collection, "shard2").getTerms().size());
-    assertArrayEquals(new Long[]{0L, 0L}, zkController.getShardTerms(collection, "shard2").getTerms().values().toArray(new Long[2]));
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      waitFor(2, () -> zkShardTerms.getTerms().size());
+      assertArrayEquals(new Long[]{0L, 0L}, zkShardTerms.getTerms().values().toArray(new Long[2]));
+    }
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
+      waitFor(2, () -> zkShardTerms.getTerms().size());
+      assertArrayEquals(new Long[]{0L, 0L}, zkShardTerms.getTerms().values().toArray(new Long[2]));
+    }
   }
 
   public void testRegisterTerm() throws InterruptedException {
