@@ -310,6 +310,10 @@ Bug Fixes
 * SOLR-12072: Invalid path string using ZkConfigManager.copyConfigDir(String fromConfig, String toConfig)
   (Alessandro Hoss via Erick Erickson)
 
+* SOLR-12064: JSON Facet API: fix bug where a limit of -1 in conjunction with multiple facets or
+  missing=true caused an NPE or AIOOBE. (Karthik Ramachandran via yonik)
+
+
 Optimizations
 ----------------------
 
