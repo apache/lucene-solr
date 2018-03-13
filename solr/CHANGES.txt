@@ -432,7 +432,7 @@ Upgrade Notes
 * SOLR-11501: The edismax parser by default no longer allows subqueries that specify a Solr parser using either
   local-params, or the older _query_ magic field trick.  For example
   {!prefix f=myfield v=enterp}  or  _query_:"{!prefix f=myfield v=enterp}"   are not supported by default anymore.
-  If you want to allow power-users to do this, set uf=*,_query_ or some other value that includes _query_.
+  If you want to allow power-users to do this, set uf=* _query_ or some other value that includes _query_.
   If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
 
 New Features

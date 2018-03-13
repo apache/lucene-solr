@@ -71,7 +71,7 @@ If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or
 
 * The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local parameters, or the older `\_query_` magic field trick.
 +
-For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=*,\_query_` or some other value that includes `\_query_`.
+For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=* _query_` or some other value that includes `\_query_`.
 +
 If you need full backwards compatibility for the time being, use `luceneMatchVersion=7.1.0` or something earlier.
 
