@@ -29,6 +29,6 @@ The following sections describe the autoscaling features of SolrCloud:
 * <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Autoscaling Triggers>>
 * <<solrcloud-autoscaling-trigger-actions.adoc#solrcloud-autoscaling-trigger-actions,Autoscaling Trigger Actions>>
 * <<solrcloud-autoscaling-listeners.adoc#solrcloud-autoscaling-listeners,Autoscaling Listeners>>
-* <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,Autoscaling - Automatically Adding Replicas>>
+* <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,Automatically Adding Replicas>>
 * <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,Autoscaling Fault Tolerance>>
 * <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>

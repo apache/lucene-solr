@@ -487,17 +487,17 @@ distributing documents among the referenced collections so all updates will go t
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
 
 Routed aliases are more complex to configure, but include logic for automatically inspecting a field on the document
-and using the value in that field to select a destination collection. Additionally the routed alias automates the
+and using the value in that field to select a destination collection. Additionally, the routed alias automates the
 partitioning of data across a series of collections by creating new collections periodically. This feature allows for
 indefinite indexing of data without degradation of performance otherwise experienced due to the continuous growth of
 an index. As new data arrives, a field on the document is inspected and the document is then potentially re-routed to
 another collection. The underlying collections can can be queried independently but usually the alias will be used.
 These collections are created automatically on the fly as new data arrives based on the parameters supplied in this
-command. Also for very high volume use cases or for use cases requiring only a limited span of data to be retained,
+command. For very high volume use cases or for use cases requiring only a limited span of data to be retained,
 collections older than a given age can be deleted. This delete of old collections only occurs if new documents are
 sent to the alias.
 
-*NOTE:* Presently this is only supported for temporal fields stored as a
+NOTE: Presently this is only supported for temporal fields stored as a
 <<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
 well ordered field types may be added in future versions.
 
@@ -506,24 +506,24 @@ well ordered field types may be added in future versions.
 localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
-If run on Jan 15, 2018 The above will create an alias named timedata, that contains collections with names prefixed with
-`timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
+If run on Jan 15, 2018, the above will create an alias named timedata, that contains collections with names prefixed
+with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
 alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
 minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
 As soon as the system receives a document for an allowable time window for which there is no collection it will
-automatically create the next required collection (and potentially any intervening collections if router.interval is
-smaller than router.maxFutureMs). Both the initial collection and any subsequent collections will be created using
-the specified configset. All Collection creation parameters other than `name` are allowed, prefixed
+automatically create the next required collection (and potentially any intervening collections if `router.interval` is
+smaller than `router.maxFutureMs`). Both the initial collection and any subsequent collections will be created using
+the specified configset. All collection creation parameters other than `name` are allowed, prefixed
 by `create-collection.`
 
 This means that one could, for example, partition their collections by day, and within each daily collection route
-the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule based replica
+the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
 placement strategies may also be used.
 
 The values supplied in this command for collection creation will be retained
 in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
 
-*NOTE:* Presently only updates are routed and queries are distributed to all collections in the alias, but future
+NOTE: Presently only updates are routed and queries are distributed to all collections in the alias, but future
 features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
 a filter on the routed field.
 
