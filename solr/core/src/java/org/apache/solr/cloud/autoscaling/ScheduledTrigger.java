@@ -76,9 +76,11 @@ public class ScheduledTrigger extends TriggerBase {
     preferredOp = (String) properties.get(PREFERRED_OP);
 
     // attempt parsing to validate date math strings
-    Instant startTime = parseStartTime(startTimeStr, timeZoneStr);
-    DateMathParser.parseMath(null, startTime + everyStr, timeZone);
-    DateMathParser.parseMath(null, startTime + graceDurationStr, timeZone);
+    // explicitly set NOW because it may be different for simulated time
+    Date now = new Date(TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getEpochTime()));
+    Instant startTime = parseStartTime(now, startTimeStr, timeZoneStr);
+    DateMathParser.parseMath(now, startTime + everyStr, timeZone);
+    DateMathParser.parseMath(now, startTime + graceDurationStr, timeZone);
 
     // We set lastRunAt to be the startTime (which could be a date math expression such as 'NOW')
     // Ordinarily, NOW will always be evaluated in this constructor so it may seem that
@@ -88,13 +90,13 @@ public class ScheduledTrigger extends TriggerBase {
     this.lastRunAt = startTime;
   }
 
-  private Instant parseStartTime(String startTimeStr, String timeZoneStr) {
+  private Instant parseStartTime(Date now, String startTimeStr, String timeZoneStr) {
     if (startTimeStr == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'startTime' cannot be null");
     }
     try {
       // try parsing startTime as an ISO-8601 date time string
-      return DateMathParser.parseMath(null, startTimeStr).toInstant();
+      return DateMathParser.parseMath(now, startTimeStr).toInstant();
     } catch (SolrException e) {
       if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code)  throw e;
     }
@@ -174,7 +176,7 @@ public class ScheduledTrigger extends TriggerBase {
       }
       // Even though we are skipping the event, we need to notify any listeners of the IGNORED stage
       // so we create a dummy event with the ignored=true flag and ScheduledTriggers will do the rest
-      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), nextRunTime.toEpochMilli(),
+      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTime(),
           preferredOp, now.toEpochMilli(), true))) {
         lastRunAt = nextRunTime;
         return;
