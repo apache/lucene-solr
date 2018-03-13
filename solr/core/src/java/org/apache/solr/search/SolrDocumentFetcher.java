@@ -56,6 +56,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -491,6 +492,8 @@ public class SolrDocumentFetcher {
             Object value = decodeNumberFromDV(schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) return null;
+            // return the value as "lat, lon" if its not multi-valued
+            else if (schemaField.getType() instanceof LatLonPointSpatialField && numericDv.docValueCount() == 1) return value;
             else outValues.add(value);
           }
           assert outValues.size() > 0;
@@ -515,6 +518,10 @@ public class SolrDocumentFetcher {
   }
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
+    if (schemaField.getType() instanceof LatLonPointSpatialField) {
+      return LatLonPointSpatialField.decodeDocValueToString(value);
+    }
+    
     if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);

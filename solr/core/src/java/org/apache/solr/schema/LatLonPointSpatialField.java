@@ -17,7 +17,12 @@
 
 package org.apache.solr.schema;
 
+import static java.math.RoundingMode.HALF_UP;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
@@ -70,6 +75,19 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   protected SpatialStrategy newSpatialStrategy(String fieldName) {
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
+  }
+  
+  /**
+   * Each value stores a 64-bit long where the upper 32 bits are the encoded latitude,
+   * and the lower 32 bits are the encoded longitude.
+   * Converts to "lat, lon", decoded using {@link LatLonDocValuesField#setLocationValue(double, double)}
+   * @param value Non-null; stored location field data
+   * @return Non-null; "lat, lon" with 6 decimal point precision
+   */
+  public static String decodeDocValueToString(long value) {
+    BigDecimal latitudeDecoded = BigDecimal.valueOf(decodeLatitude((int) (value >> 32))).setScale(6, HALF_UP);
+    BigDecimal longitudeDecoded = BigDecimal.valueOf(decodeLongitude((int) (value & 0xFFFFFFFFL))).setScale(6, HALF_UP);
+    return new String(latitudeDecoded.stripTrailingZeros().toPlainString() + "," + longitudeDecoded.stripTrailingZeros().toPlainString());
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox

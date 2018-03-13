@@ -120,21 +120,37 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   
   @Test
   public void testLatLonRetrieval() throws Exception {
-    assertU(adoc("id", "0",
-        "llp_1_dv_st", "-75,41",
-        "llp_1_dv", "-80,20",
-        "llp_1_dv_dvasst", "10,-30"));
+    assertU(adoc("id", "0", "llp_1_dv_st", "-75,41")); // stored
+    assertU(adoc("id", "1", "llp_N_dv_st", "-40,40", "llp_N_dv_st", "-45,45")); // stored, multi-value
+    assertU(adoc("id", "2", "llp_1_dv", "-80,20")); // only docValues
+    assertU(adoc("id", "3", "llp_1_dv_dvasst", "40.299599,-74.082728")); // stored and docValues 
+    assertU(adoc("id", "4", "llp_N_dv_dvasst", "-11,77", "llp_N_dv_dvasst", "3,85")); // stored, docValues and multiValued 
+    assertU(adoc("id", "5", "llp_1_dv", "40.2996543270,-74.0824956673")); // only docValues, to show precision level
+    assertU(adoc("id", "6", "llp_N_dv", "90,180",  "llp_N_dv", "90,-180", 
+                            "llp_N_dv", "-90,180", "llp_N_dv", "-90,-180",
+                            "llp_N_dv", "0,180",   "llp_N_dv", "0,-180",
+                            "llp_N_dv", "90,0",    "llp_N_dv", "-90,0",
+                            "llp_N_dv", "0,0")); // edges
     assertU(commit());
     assertJQ(req("q","*:*", "fl","*"),
         "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Right now we do not support decoding point value from dv field
-        "!response/docs/[0]/llp_1_dv=='-80,20'",
-        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
-    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_1_dv, llp_1_dv_dvasst"),
+        "response/docs/[1]/llp_N_dv_st==['-40,40', '-45,45']",
+        // We are decoding point value from dv field
+        "!response/docs/21]/llp_1_dv==''",
+        "response/docs/[3]/llp_1_dv_dvasst=='40.299599,-74.082728'",
+        "response/docs/[4]/llp_N_dv_dvasst==['-11,77', '3,85']",
+        "!response/docs/[5]/llp_1_dv==''",
+        "!response/docs/[6]/llp_N_dv==''");
+    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_N_dv_st, llp_1_dv, llp_N_dv, llp_1_dv_dvasst, llp_N_dv_dvasst"),
         "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Even when these fields are specified, we won't return them
-        "!response/docs/[0]/llp_1_dv=='-80,20'",
-        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
+        "response/docs/[1]/llp_N_dv_st==['-40,40', '-45,45']",
+        // We are decoding point value from dv field
+        "response/docs/[2]/llp_1_dv=='-80,20'",
+        "response/docs/[3]/llp_1_dv_dvasst=='40.299599,-74.082728'",
+        "response/docs/[4]/llp_N_dv_dvasst==['-11,77', '3,85']",
+        // decoding from dv field will give value rounded to 6 decimal
+        "response/docs/[5]/llp_1_dv=='40.299654,-74.082496'",
+        "response/docs/[6]/llp_N_dv==['-90,0', '-90,180', '-90,-180', '0,0', '0,180', '0,-180', '90,0', '90,180', '90,-180']");
   }
 
   private void testRptWithGeometryField(String fieldName) throws Exception {
