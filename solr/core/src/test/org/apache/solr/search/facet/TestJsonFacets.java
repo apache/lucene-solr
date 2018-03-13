@@ -524,8 +524,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (terms == null) terms="";
     int limit=0;
     switch (random().nextInt(4)) {
-      case 0: limit=-1;
-      case 1: limit=1000000;
+      case 0: limit=-1; break;
+      case 1: limit=1000000; break;
       case 2: // fallthrough
       case 3: // fallthrough
     }
@@ -684,6 +684,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 }, { val:'B', count:3, n1:-3.0}]}" +
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
+    );
+
+    // test sorting by other stats and more than one facet
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'sum(${num_d})', n2:'avg(${num_d})'}  }}" +
+                          " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc' , facet:{n1:'sum(${num_d})', n2:'avg(${num_d})'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 , n2:3.0 }, { val:'B', count:3, n1:-3.0, n2:-1.0}]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0, n2:-1.0}, { val:'A', count:2, n1:6.0 , n2:3.0 }]} }"
     );
 
     // test sorting by other stats

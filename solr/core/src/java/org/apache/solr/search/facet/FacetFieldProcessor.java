@@ -83,9 +83,20 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     if (accs != null) {
-      // reuse these accs, but reset them first
+      // reuse these accs, but reset them first and resize since size could be different
       for (SlotAcc acc : accs) {
         acc.reset();
+        acc.resize(new SlotAcc.Resizer() {
+          @Override
+          public int getNewSize() {
+            return slotCount;
+          }
+
+          @Override
+          public int getNewSlot(int oldSlot) {
+            return 0;
+          }
+        });
       }
       return;
     } else {
@@ -339,11 +350,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       res.add("allBuckets", allBuckets);
     }
 
+    SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
     if (freq.missing) {
-      // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
-      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
       res.add("missing", missingBucket);
+      // moved missing fillBucket after we fill facet since it will reset all the accumulators.
     }
 
     // if we are deep paging, we don't have to order the highest "offset" counts.
@@ -369,6 +379,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);
+    }
+
+    if (freq.missing) {
+      // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
     }
 
     return res;
@@ -475,6 +490,13 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
       super(fcontext);
       this.subAccs = subAccs;
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext ctx) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.setNextReader(ctx);
+      }
     }
 
     @Override
