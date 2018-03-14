@@ -80,6 +80,7 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
@@ -255,7 +256,11 @@ public class RealTimeGetComponent extends SearchComponent
                if (oper == UpdateLog.ADD) {
                  doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                } else if (oper == UpdateLog.UPDATE_INPLACE) {
-                 assert entry.size() == 5;
+                 if (ulog instanceof CdcrUpdateLog) {
+                   assert entry.size() == 6;
+                 } else {
+                   assert entry.size() == 5;
+                 }
                  // For in-place update case, we have obtained the partial document till now. We need to
                  // resolve it to a full document to be returned to the user.
                  doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry, null);
@@ -395,7 +400,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
                                            ReturnFields returnFields, SolrInputDocument partialDoc, List logEntry, Set<String> onlyTheseFields) throws IOException {
-    if (idBytes == null || logEntry.size() != 5) {
+    if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
     }
     long prevPointer = (long) logEntry.get(UpdateLog.PREV_POINTER_IDX);
@@ -541,7 +546,11 @@ public class RealTimeGetComponent extends SearchComponent
         }
         switch (oper) {
           case UpdateLog.UPDATE_INPLACE:
-            assert entry.size() == 5;
+            if (ulog instanceof CdcrUpdateLog) {
+              assert entry.size() == 6;
+            } else {
+              assert entry.size() == 5;
+            }
 
             if (resolveFullDocument) {
               SolrInputDocument doc = (SolrInputDocument)entry.get(entry.size()-1);
