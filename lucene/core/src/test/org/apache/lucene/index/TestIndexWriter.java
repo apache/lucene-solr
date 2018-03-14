@@ -3100,6 +3100,7 @@ public class TestIndexWriter extends LuceneTestCase {
     oldReader = reader;
     reader = DirectoryReader.openIfChanged(reader, writer);
     assertNotSame(reader, oldReader);
+    assertNotNull(reader);
     oldReader.close();
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
@@ -3202,8 +3203,12 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.forceMerge(1);
     DirectoryReader oldReader = reader;
     reader = DirectoryReader.openIfChanged(reader, writer);
-    assertNotSame(oldReader, reader);
-    oldReader.close();
+    if (reader != null) {
+      oldReader.close();
+      assertNotSame(oldReader, reader);
+    } else {
+      reader = oldReader;
+    }
     for (String id : ids) {
       if (updateSeveralDocs) {
         assertEquals(2, reader.docFreq(new Term("id", id)));
