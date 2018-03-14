@@ -258,6 +258,8 @@ Bug Fixes
 * SOLR-12064: JSON Facet API: fix bug where a limit of -1 in conjunction with multiple facets or
   missing=true caused an NPE or AIOOBE. (Karthik Ramachandran via yonik)
 
+* SOLR-12083: Fix RealTime GET to work on a cluster running CDCR when using Solr's in-place updates
+  (Amrit Sarkar, Varun Thacker)
 
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
 

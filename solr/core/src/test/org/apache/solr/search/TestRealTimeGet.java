@@ -42,6 +42,7 @@ public class TestRealTimeGet extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 

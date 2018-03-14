@@ -81,6 +81,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
+    randomizeUpdateLogImpl();
+
     initCore(configString, schemaString);
     
     // sanity check that autocommits are disabled

@@ -801,6 +801,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (factoryProp == null) {
       System.clearProperty("solr.directoryFactory");
     }
+
+    if (System.getProperty(UPDATELOG_SYSPROP) != null) {
+      // clears the updatelog sysprop at the end of the test run
+      System.clearProperty(UPDATELOG_SYSPROP);
+    }
     
     solrConfig = null;
     h = null;
@@ -2703,7 +2708,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see #randomizeNumericTypesProperties
    */
   public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
-  
+
+  public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
+
+  /**
+   * randomizes the updateLog between different update log implementations for better test coverage
+   */
+  public static void randomizeUpdateLogImpl() {
+    if (random().nextBoolean()) {
+      System.setProperty(UPDATELOG_SYSPROP, "solr.CdcrUpdateLog");
+    } else {
+      System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
+    }
+    log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
+  }
+
   /**
    * Sets various sys props related to user specified or randomized choices regarding the types 
    * of numerics that should be used in tests.
