@@ -755,6 +755,9 @@ public class TestGrouping extends LuceneTestCase {
       Directory dirBlocks = null;
 
       final IndexSearcher s = newSearcher(r);
+      // This test relies on the fact that longer fields produce lower scores
+      s.setSimilarity(new BM25Similarity());
+
       if (VERBOSE) {
         System.out.println("\nTEST: searcher=" + s);
       }
@@ -790,6 +793,9 @@ public class TestGrouping extends LuceneTestCase {
       final Query lastDocInBlock = new TermQuery(new Term("groupend", "x"));
       
       final IndexSearcher sBlocks = newSearcher(rBlocks);
+      // This test relies on the fact that longer fields produce lower scores
+      sBlocks.setSimilarity(new BM25Similarity());
+
       final ShardState shardsBlocks = new ShardState(sBlocks);
       
       // ReaderBlocks only increases maxDoc() vs reader, which
