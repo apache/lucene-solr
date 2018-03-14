@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.lucene.util.PriorityQueue;
 
@@ -69,20 +68,20 @@ abstract class IntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
-        return NO_MORE_INTERVALS;
+      if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+        return IntervalIterator.NO_MORE_INTERVALS;
       int i = 1;
       while (i < subIterators.size()) {
         while (subIterators.get(i).start() <= subIterators.get(i - 1).end()) {
-          if (subIterators.get(i).nextInterval() == NO_MORE_INTERVALS)
-            return NO_MORE_INTERVALS;
+          if (subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+            return IntervalIterator.NO_MORE_INTERVALS;
         }
         if (subIterators.get(i).start() == subIterators.get(i - 1).end() + 1) {
           i = i + 1;
         }
         else {
-          if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
-            return NO_MORE_INTERVALS;
+          if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+            return IntervalIterator.NO_MORE_INTERVALS;
           i = 1;
         }
       }
@@ -127,7 +126,7 @@ abstract class IntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
-      start = end = NO_MORE_INTERVALS;
+      start = end = IntervalIterator.NO_MORE_INTERVALS;
       int b = Integer.MAX_VALUE;
       i = 1;
       while (true) {
@@ -137,7 +136,7 @@ abstract class IntervalFunction {
           if (i == subIterators.size() || subIterators.get(i).start() > subIterators.get(i - 1).end())
             break;
           do {
-            if (subIterators.get(i).end() >= b || subIterators.get(i).nextInterval() == NO_MORE_INTERVALS)
+            if (subIterators.get(i).end() >= b || subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
               return start;
           }
           while (subIterators.get(i).start() <= subIterators.get(i - 1).end());
@@ -147,7 +146,7 @@ abstract class IntervalFunction {
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
         i = 1;
-        if (subIterators.get(0).nextInterval() == NO_MORE_INTERVALS)
+        if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
           return start;
       }
     }
@@ -213,20 +212,20 @@ abstract class IntervalFunction {
     public int nextInterval() throws IOException {
       while (this.queue.size() == subIterators.length && queue.top().start() == start) {
         IntervalIterator it = queue.pop();
-        if (it != null && it.nextInterval() != NO_MORE_INTERVALS) {
+        if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
           queue.add(it);
           updateRightExtreme(it);
         }
       }
       if (this.queue.size() < subIterators.length)
-        return NO_MORE_INTERVALS;
+        return IntervalIterator.NO_MORE_INTERVALS;
       do {
         start = queue.top().start();
         end = queueEnd;
         if (queue.top().end() == end)
           return start;
         IntervalIterator it = queue.pop();
-        if (it != null && it.nextInterval() != NO_MORE_INTERVALS) {
+        if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
           queue.add(it);
           updateRightExtreme(it);
         }
@@ -274,16 +273,16 @@ abstract class IntervalFunction {
         @Override
         public int nextInterval() throws IOException {
           if (bpos == false)
-            return NO_MORE_INTERVALS;
-          while (a.nextInterval() != NO_MORE_INTERVALS) {
+            return IntervalIterator.NO_MORE_INTERVALS;
+          while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
             while (b.start() < a.start() && b.end() < a.end()) {
-              if (b.nextInterval() == NO_MORE_INTERVALS)
-                return NO_MORE_INTERVALS;
+              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+                return IntervalIterator.NO_MORE_INTERVALS;
             }
             if (a.start() <= b.start() && a.end() >= b.end())
               return a.start();
           }
-          return NO_MORE_INTERVALS;
+          return IntervalIterator.NO_MORE_INTERVALS;
         }
 
         @Override
@@ -321,16 +320,16 @@ abstract class IntervalFunction {
         @Override
         public int nextInterval() throws IOException {
           if (bpos == false)
-            return NO_MORE_INTERVALS;
-          while (a.nextInterval() != NO_MORE_INTERVALS) {
+            return IntervalIterator.NO_MORE_INTERVALS;
+          while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
             while (b.end() < a.end()) {
-              if (b.nextInterval() == NO_MORE_INTERVALS)
-                return NO_MORE_INTERVALS;
+              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+                return IntervalIterator.NO_MORE_INTERVALS;
             }
             if (b.start() <= a.start())
               return a.start();
           }
-          return NO_MORE_INTERVALS;
+          return IntervalIterator.NO_MORE_INTERVALS;
         }
 
         @Override

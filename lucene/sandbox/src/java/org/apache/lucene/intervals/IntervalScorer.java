@@ -15,9 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
+
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 class IntervalScorer extends Scorer {
 

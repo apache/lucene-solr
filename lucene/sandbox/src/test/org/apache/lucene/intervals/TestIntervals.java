@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
 
@@ -31,10 +31,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -88,7 +85,7 @@ public class TestIntervals extends LuceneTestCase {
 
   private void checkIntervals(IntervalsSource source, String field, int expectedMatchCount, int[][] expected) throws IOException {
     int matchedDocs = 0;
-    for (LeafReaderContext ctx : searcher.leafContexts) {
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
       assertNull(source.intervals(field + "fake", ctx));
       NumericDocValues ids = DocValues.getNumeric(ctx.reader(), "id");
       IntervalIterator intervals = source.intervals(field, ctx);
@@ -123,7 +120,7 @@ public class TestIntervals extends LuceneTestCase {
 
   public void testIntervalsOnFieldWithNoPositions() throws IOException {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      Intervals.term("wibble").intervals("id", searcher.leafContexts.get(0));
+      Intervals.term("wibble").intervals("id", searcher.getIndexReader().leaves().get(0));
     });
     assertEquals("Cannot create an IntervalIterator over field id because it has no indexed positions", e.getMessage());
   }

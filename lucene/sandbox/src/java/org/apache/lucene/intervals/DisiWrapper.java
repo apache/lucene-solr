@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
 
+package org.apache.lucene.intervals;
 
-import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TwoPhaseIterator;
 
-/**
- * Wrapper used in {@link DisiPriorityQueue}.
- * @lucene.internal
- */
 public class DisiWrapper {
+
   public final DocIdSetIterator iterator;
-  public final Scorer scorer;
+  public final IntervalIterator intervals;
   public final long cost;
   public final float matchCost; // the match cost for two-phase iterators, 0 otherwise
   public int doc; // the current doc, used for comparison
@@ -38,50 +36,14 @@ public class DisiWrapper {
   // two-phase iteration
   public final TwoPhaseIterator twoPhaseView;
 
-  // For WANDScorer
-  long maxScore;
-
-  // FOR SPANS
-  public final Spans spans;
-  public int lastApproxMatchDoc; // last doc of approximation that did match
-  public int lastApproxNonMatchDoc; // last doc of approximation that did not match
-
-  public DisiWrapper(Scorer scorer) {
-    this.scorer = scorer;
-    this.spans = null;
-    this.iterator = scorer.iterator();
+  public DisiWrapper(IntervalIterator iterator) {
+    this.intervals = iterator;
+    this.iterator = iterator;
     this.cost = iterator.cost();
     this.doc = -1;
-    this.twoPhaseView = scorer.twoPhaseIterator();
-      
-    if (twoPhaseView != null) {
-      approximation = twoPhaseView.approximation();
-      matchCost = twoPhaseView.matchCost();
-    } else {
-      approximation = iterator;
-      matchCost = 0f;
-    }
+    this.twoPhaseView = null;
+    this.approximation = iterator;
+    this.matchCost = iterator.matchCost();
   }
-
-  public DisiWrapper(Spans spans) {
-    this.scorer = null;
-    this.spans = spans;
-    this.iterator = spans;
-    this.cost = iterator.cost();
-    this.doc = -1;
-    this.twoPhaseView = spans.asTwoPhaseIterator();
-      
-    if (twoPhaseView != null) {
-      approximation = twoPhaseView.approximation();
-      matchCost = twoPhaseView.matchCost();
-    } else {
-      approximation = iterator;
-      matchCost = 0f;
-    }
-    this.lastApproxNonMatchDoc = -2;
-    this.lastApproxMatchDoc = -2;
-  }
-
 
 }
-

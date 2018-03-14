@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
+
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TwoPhaseIterator;
 
 /**
  * A {@link DocIdSetIterator} that also allows iteration over matching
