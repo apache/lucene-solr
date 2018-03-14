@@ -413,6 +413,9 @@ Other Changes
 * SOLR-12067: Increase autoAddReplicas default 30 second wait time to 120 seconds.
   (Varun Thacker, Mark Miller via shalin)
 
+* SOLR-12078: Fixed reproducable Failure in TestReplicationHandler.doTestIndexFetchOnMasterRestart that happened
+  due to using stale http connections. (Gus Heck, shalin)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
