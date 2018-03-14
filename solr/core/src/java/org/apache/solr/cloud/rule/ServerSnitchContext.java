@@ -22,7 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;

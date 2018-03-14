@@ -35,6 +35,8 @@ import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;

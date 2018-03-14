@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrException;

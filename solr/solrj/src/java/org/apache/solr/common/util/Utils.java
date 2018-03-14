@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;

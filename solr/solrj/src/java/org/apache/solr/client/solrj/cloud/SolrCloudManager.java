@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.util.ObjectCache;

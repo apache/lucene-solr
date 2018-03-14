@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;

@@ -27,8 +27,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;

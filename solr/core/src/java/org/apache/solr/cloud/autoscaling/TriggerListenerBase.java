@@ -19,7 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 
 /**
  * Base class for implementations of {@link TriggerListener}.

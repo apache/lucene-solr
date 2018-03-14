@@ -26,7 +26,7 @@
  *  </ul>
  *
  *  <h2>Simulated SolrCloudManager - {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager}</h2>
- *  This implementation of {@link org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager}
+ *  This implementation of {@link org.apache.solr.client.solrj.cloud.SolrCloudManager}
  *  uses the following simulated components:
  *  <ul>
  *     <li>{@link org.apache.solr.cloud.autoscaling.sim.SimDistribStateManager} - in-memory ZK look-alike, with support for Watcher-s, ephemeral and sequential nodes.</li>

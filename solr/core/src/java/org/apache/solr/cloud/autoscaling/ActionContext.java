@@ -20,7 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.MapWriter;
 
 /**

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;

@@ -50,6 +50,8 @@ Other Changes
 * SOLR-12086: Fix format problem in FastLRUCache description string shown on Cache Statistics page.
   (Sathiya N Sundararajan via shalin)
 
+* SOLR-12090: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces out of the
+  autoscaling package. (shalin)
 
 ==================  7.3.0 ==================
 
