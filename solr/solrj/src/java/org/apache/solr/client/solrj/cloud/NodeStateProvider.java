@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.common.SolrCloseable;
 
 /**

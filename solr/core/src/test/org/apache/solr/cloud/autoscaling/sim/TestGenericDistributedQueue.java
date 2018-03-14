@@ -18,7 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 
 /**
  *
