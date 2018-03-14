@@ -67,6 +67,9 @@ Other Changes
 
 * SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
 
+* SOLR-12086: Fix format problem in FastLRUCache description string shown on Cache Statistics page.
+  (Sathiya N Sundararajan via shalin)
+
 
 ==================  7.3.0 ==================
 
