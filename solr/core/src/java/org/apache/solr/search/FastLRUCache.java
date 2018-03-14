@@ -137,7 +137,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   }
 
   protected String generateDescription(long maxRamBytes, long ramLowerWatermark, boolean newThread) {
-    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize" + maxRamBytes
+    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize=" + maxRamBytes
         + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
