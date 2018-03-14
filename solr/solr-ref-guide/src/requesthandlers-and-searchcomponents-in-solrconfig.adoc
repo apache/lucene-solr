@@ -26,7 +26,7 @@ These are often referred to as "requestHandler" and "searchComponent", which is 
 
 == Request Handlers
 
-Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path. For example, if Solr is installed at ` http://localhost:8983/solr/ `and you have a collection named "```gettingstarted```", you can make a request using URLs like this:
+Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path. For example, if Solr is installed at `\http://localhost:8983/solr/` and you have a collection named "gettingstarted", you can make a request that looks like this:
 
 [source,text]
 ----
