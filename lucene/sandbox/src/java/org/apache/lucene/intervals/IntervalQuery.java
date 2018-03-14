@@ -15,20 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
@@ -74,7 +80,7 @@ public final class IntervalQuery extends Query {
     TermStatistics[] termStats = new TermStatistics[terms.size()];
     int termUpTo = 0;
     for (Term term : terms) {
-      TermStatistics termStatistics = searcher.termStatistics(term, TermStates.build(searcher.readerContext, term, true));
+      TermStatistics termStatistics = searcher.termStatistics(term, TermStates.build(searcher.getTopReaderContext(), term, true));
       if (termStatistics != null) {
         termStats[termUpTo++] = termStatistics;
       }

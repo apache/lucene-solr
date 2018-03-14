@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
 /**

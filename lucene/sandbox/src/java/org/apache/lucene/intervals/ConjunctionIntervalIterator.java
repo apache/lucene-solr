@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.search.ConjunctionDISI;
 
 abstract class ConjunctionIntervalIterator extends IntervalIterator {
 

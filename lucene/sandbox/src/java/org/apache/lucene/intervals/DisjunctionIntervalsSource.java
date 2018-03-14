@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.PriorityQueue;
 
 class DisjunctionIntervalsSource extends IntervalsSource {
@@ -148,13 +149,13 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       int start = current.start(), end = current.end();
       while (intervalQueue.size() > 0 && contains(intervalQueue.top(), start, end)) {
         IntervalIterator it = intervalQueue.pop();
-        if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
+        if (it != null && it.nextInterval() != NO_MORE_INTERVALS) {
           intervalQueue.add(it);
         }
       }
       if (intervalQueue.size() == 0) {
         current = EMPTY;
-        return IntervalIterator.NO_MORE_INTERVALS;
+        return NO_MORE_INTERVALS;
       }
       current = intervalQueue.top();
       return current.start();
