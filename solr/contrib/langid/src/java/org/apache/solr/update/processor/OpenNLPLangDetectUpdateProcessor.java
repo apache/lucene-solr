@@ -54,9 +54,9 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
   }
 
   @Override
-  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc) {
+  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields) {
     List<DetectedLanguage> languages = new ArrayList<>();
-    String content = concatFields(doc);
+    String content = concatFields(doc, fields);
     if (content.length() != 0) {
       LanguageDetectorME ldme = new LanguageDetectorME(model);
       Language[] langs = ldme.predictLanguages(content);
