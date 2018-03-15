@@ -27,7 +27,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class PlaneTest {
 
-
   @Test
   public void testIdenticalPlanes() {
     final GeoPoint p = new GeoPoint(PlanetModel.SPHERE, 0.123, -0.456);
@@ -42,6 +41,15 @@ public class PlaneTest {
     final Plane p1 = new Plane(v1, 0.2);
     final Plane p2 = new Plane(v2, 0.2 * constant);
     assertTrue(p1.isNumericallyIdentical(p2));
+  }
+
+  @Test
+  public void testIdenticalVector() {
+    final Vector v1  = new Vector(1, 0 , 0);
+    final Vector v2  = new Vector(1, 0 , 0);
+    final Vector v3  = new Vector(-1, 0 , 0);
+    assertTrue(v1.isNumericallyIdentical(v2));
+    assertFalse(v1.isNumericallyIdentical(v3));
   }
 
   @Test
