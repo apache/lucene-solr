@@ -13,6 +13,10 @@ New Features
   deleted documents around for later reuse. See "IW.softUpdateDocument(...)"
   for reference. (Simon Willnauer)
 
+Other
+
+* SOLR-10912: Add automatic patch validation. (Mano Kovacs, Steve Rowe)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
