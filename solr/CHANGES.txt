@@ -62,6 +62,10 @@ Bug Fixes
 Optimizations
 ----------------------
 
+* SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
+  differential fetching now speeds up recovery times when full index replication is needed, but only
+  a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
+
 Other Changes
 ----------------------
 
