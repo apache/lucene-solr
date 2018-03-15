@@ -378,6 +378,8 @@ Other Changes
 * SOLR-12078: Fixed reproducable Failure in TestReplicationHandler.doTestIndexFetchOnMasterRestart that happened
   due to using stale http connections. (Gus Heck, shalin)
 
+* SOLR-12099: Remove reopenReaders attribute from 'IndexConfig in SolrConfig' page in ref guide. (shalin)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
