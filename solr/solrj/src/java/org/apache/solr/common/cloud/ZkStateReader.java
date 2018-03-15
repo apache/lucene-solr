@@ -451,6 +451,10 @@ public class ZkStateReader implements Closeable {
       });
       securityData = getSecurityProps(true);
     }
+
+    collectionPropsWatches.forEach((k,v) -> {
+      new PropsWatcher(k).refreshAndWatch(true);
+    });
   }
 
   private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)
@@ -1295,20 +1299,6 @@ public class ZkStateReader implements Closeable {
     if (reconstructState.get()) {
       new StateWatcher(collection).refreshAndWatch();
     }
-
-    AtomicBoolean addPropsWatch = new AtomicBoolean(false);
-    collectionPropsWatches.compute(collection, (k, v) -> {
-      if (v == null) {
-        addPropsWatch.set(true);
-        v = new CollectionWatch<>();
-      }
-      v.coreRefCount++;
-      return v;
-    });
-
-    if (addPropsWatch.get()) {
-      new PropsWatcher(collection).refreshAndWatch(false);
-    }
   }
 
   /**
@@ -1341,18 +1331,6 @@ public class ZkStateReader implements Closeable {
         constructState(Collections.emptySet());
       }
     }
-
-    collectionPropsWatches.compute(collection, (k, v) -> {
-      if (v == null)
-        return null;
-      if (v.coreRefCount > 0)
-        v.coreRefCount--;
-      if (v.canBeRemoved()) {
-        watchedCollectionProps.remove(collection);
-        return null;
-      }
-      return v;
-    });
   }
 
   /**
