@@ -77,7 +77,7 @@ public class ScheduledTrigger extends TriggerBase {
 
     // attempt parsing to validate date math strings
     // explicitly set NOW because it may be different for simulated time
-    Date now = new Date(TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getEpochTime()));
+    Date now = new Date(TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getEpochTimeNs()));
     Instant startTime = parseStartTime(now, startTimeStr, timeZoneStr);
     DateMathParser.parseMath(now, startTime + everyStr, timeZone);
     DateMathParser.parseMath(now, startTime + graceDurationStr, timeZone);
@@ -162,7 +162,7 @@ public class ScheduledTrigger extends TriggerBase {
     }
 
     Instant now = Instant.ofEpochMilli(
-        TimeUnit.NANOSECONDS.toMillis(timeSource.getEpochTime()));
+        TimeUnit.NANOSECONDS.toMillis(timeSource.getEpochTimeNs()));
     AutoScaling.TriggerEventProcessor processor = processorRef.get();
 
     if (now.isBefore(nextRunTime)) {
@@ -176,7 +176,7 @@ public class ScheduledTrigger extends TriggerBase {
       }
       // Even though we are skipping the event, we need to notify any listeners of the IGNORED stage
       // so we create a dummy event with the ignored=true flag and ScheduledTriggers will do the rest
-      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTime(),
+      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTimeNs(),
           preferredOp, now.toEpochMilli(), true))) {
         lastRunAt = nextRunTime;
         return;
@@ -188,7 +188,7 @@ public class ScheduledTrigger extends TriggerBase {
         log.debug("ScheduledTrigger {} firing registered processor for scheduled time {}, now={}", name,
             nextRunTime, now);
       }
-      if (processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTime(),
+      if (processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTimeNs(),
           preferredOp, now.toEpochMilli()))) {
         lastRunAt = nextRunTime; // set to nextRunTime instead of now to avoid drift
       }

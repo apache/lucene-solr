@@ -136,7 +136,7 @@ public class ScheduledTriggers implements Closeable {
     queueStats = new Stats();
     listeners = new TriggerListeners();
     // initialize cooldown timer
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -186,7 +186,7 @@ public class ScheduledTriggers implements Closeable {
 
     this.autoScalingConfig = autoScalingConfig;
     // reset cooldown
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -260,7 +260,7 @@ public class ScheduledTriggers implements Closeable {
       }
       // even though we pause all triggers during action execution there is a possibility that a trigger was already
       // running at the time and would have already created an event so we reject such events during cooldown period
-      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTime()) {
+      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTimeNs()) {
         log.debug("-------- Cooldown period - rejecting event: " + event);
         event.getProperties().put(TriggerEvent.COOLDOWN, true);
         triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "In cooldown period.");
@@ -291,7 +291,7 @@ public class ScheduledTriggers implements Closeable {
           }
           actionExecutor.submit(() -> {
             assert hasPendingActions.get();
-            long eventProcessingStart = cloudManager.getTimeSource().getTime();
+            long eventProcessingStart = cloudManager.getTimeSource().getTimeNs();
             TriggerListeners triggerListeners1 = triggerListeners.copy();
             log.debug("-- processing actions for " + event);
             try {
@@ -322,13 +322,13 @@ public class ScheduledTriggers implements Closeable {
             } catch (Exception e) {
               log.warn("Exception executing actions", e);
             } finally {
-              cooldownStart.set(cloudManager.getTimeSource().getTime());
+              cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
               hasPendingActions.set(false);
               // resume triggers after cool down period
               resumeTriggers(cloudManager.getTimeSource().convertDelay(TimeUnit.NANOSECONDS, cooldownPeriod.get(), TimeUnit.MILLISECONDS));
             }
             log.debug("-- processing took {} ms for event id={}",
-                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTime() - eventProcessingStart), event.id);
+                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTimeNs() - eventProcessingStart), event.id);
           });
         } else {
           if (enqueued) {

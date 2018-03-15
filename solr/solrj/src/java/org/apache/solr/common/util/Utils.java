@@ -471,10 +471,10 @@ public class Utils {
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
-    return unit.convert(timeSource.getTime(), TimeUnit.NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS);
   }
 
   public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
-    return unit.convert(timeSource.getTime() - NANOSECONDS.convert(start, unit), NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
   }
 }
