@@ -28,8 +28,9 @@
 #   4) Add a "<plugin>_rebuild" function to call out to ant to perform the validation method.
 # See examples of the above-described function types ^^ below.
    
-PLUGIN_LIST="ant,testoutput,jira,compile,javac,junit,unit,test4tests,checkluceneversion"
-PLUGIN_LIST+=",ratsources,checkforbiddenapis,checklicenses,validatesourcepatterns,validaterefguide"
+PLUGIN_LIST="ant,jira,compile,unit,test4tests"
+PLUGIN_LIST+=",testoutput,checkluceneversion,ratsources,checkforbiddenapis,checklicenses"
+PLUGIN_LIST+=",validatesourcepatterns,validaterefguide"
 personality_plugins "${PLUGIN_LIST}"
 
 add_test_type "checkluceneversion"
