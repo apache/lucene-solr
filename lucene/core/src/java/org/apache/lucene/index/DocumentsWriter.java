@@ -19,10 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -261,16 +264,30 @@ final class DocumentsWriter implements Closeable, Accountable {
     return false; // we didn't flush anything here
   }
 
-  /** Returns how many documents were aborted. */
-  synchronized long lockAndAbortAll(IndexWriter indexWriter) throws IOException {
+  /** Locks all currently active DWPT and aborts them.
+   *  The returned Closeable should be closed once the locks for the aborted
+   *  DWPTs can be released. */
+  synchronized Closeable lockAndAbortAll(IndexWriter indexWriter) throws IOException {
     assert indexWriter.holdsFullFlushLock();
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "lockAndAbortAll");
     }
     // Make sure we move all pending tickets into the flush queue:
     ticketQueue.forcePurge(indexWriter);
-    long abortedDocCount = 0;
-    boolean success = false;
+    List<ThreadState> threadStates = new ArrayList<>();
+    AtomicBoolean released = new AtomicBoolean(false);
+    final Closeable release = () -> {
+      assert indexWriter.holdsFullFlushLock();
+      if (released.compareAndSet(false, true)) { // only once
+        if (infoStream.isEnabled("DW")) {
+          infoStream.message("DW", "unlockAllAbortedThread");
+        }
+        perThreadPool.clearAbort();
+        for (ThreadState state : threadStates) {
+          state.unlock();
+        }
+      }
+    };
     try {
       deleteQueue.clear();
       final int limit = perThreadPool.getMaxThreadStates();
@@ -278,25 +295,31 @@ final class DocumentsWriter implements Closeable, Accountable {
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
-        abortedDocCount += abortThreadState(perThread);
+        threadStates.add(perThread);
+        abortThreadState(perThread);
       }
       deleteQueue.clear();
 
       // jump over any possible in flight ops:
-      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount()+1);
+      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount() + 1);
 
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
-      success = true;
-      return abortedDocCount;
-    } finally {
       if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "finished lockAndAbortAll success=" + success);
+        infoStream.message("DW", "finished lockAndAbortAll success=true");
       }
-      if (success == false) {
+      return release;
+    } catch (Throwable t) {
+      if (infoStream.isEnabled("DW")) {
+        infoStream.message("DW", "finished lockAndAbortAll success=false");
+      }
+      try {
         // if something happens here we unlock all states again
-        unlockAllAfterAbortAll(indexWriter);
+        release.close();
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
+      throw t;
     }
   }
   
@@ -316,28 +339,6 @@ final class DocumentsWriter implements Closeable, Accountable {
       flushControl.doOnAbort(perThread);
       // This DWPT was never initialized so it has no indexed documents:
       return 0;
-    }
-  }
-  
-  synchronized void unlockAllAfterAbortAll(IndexWriter indexWriter) {
-    assert indexWriter.holdsFullFlushLock();
-    if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "unlockAll");
-    }
-    final int limit = perThreadPool.getMaxThreadStates();
-    perThreadPool.clearAbort();
-    for (int i = 0; i < limit; i++) {
-      try {
-        final ThreadState perThread = perThreadPool.getThreadState(i);
-        if (perThread.isHeldByCurrentThread()) {
-          perThread.unlock();
-        }
-      } catch (Throwable e) {
-        if (infoStream.isEnabled("DW")) {
-          infoStream.message("DW", "unlockAll: could not unlock state: " + i + " msg:" + e.getMessage());
-        }
-        // ignore & keep on unlocking
-      }
     }
   }
 

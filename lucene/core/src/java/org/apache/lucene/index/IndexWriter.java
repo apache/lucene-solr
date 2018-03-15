@@ -746,10 +746,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             checkpointNoSIS();
           }
         } catch (Throwable t) {
+          priorE = IOUtils.useOrSuppress(priorE, t);
           if (doSave) {
-            throw IOUtils.rethrowAlways(t);
-          } else if (priorE == null) {
-            priorE = t;
+            throw t;
           }
         }
 
@@ -766,10 +765,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           rld.dropReaders();
         } catch (Throwable t) {
+          priorE = IOUtils.useOrSuppress(priorE, t);
           if (doSave) {
-            throw IOUtils.rethrowAlways(t);
-          } else if (priorE == null) {
-            priorE = t;
+            throw t;
           }
         }
       }
@@ -2449,8 +2447,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   private void rollbackInternalNoCommit() throws IOException {
-    boolean success = false;
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "rollback");
     }
@@ -2469,7 +2465,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       docWriter.abort(this); // don't sync on IW here
       docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
       purge(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
-      synchronized(this) {
+      synchronized (this) {
 
         if (pendingCommit != null) {
           pendingCommit.rollbackCommit(directory);
@@ -2490,8 +2486,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         int rollbackMaxDoc = segmentInfos.totalMaxDoc();
         // now we need to adjust this back to the rolled back SI but don't set it to the absolute value
         // otherwise we might hide internal bugsf
-        adjustPendingNumDocs(-(totalMaxDoc-rollbackMaxDoc));
-        if (infoStream.isEnabled("IW") ) {
+        adjustPendingNumDocs(-(totalMaxDoc - rollbackMaxDoc));
+        if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
 
@@ -2512,45 +2508,53 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
         closed = true;
 
-        IOUtils.close(writeLock);                     // release write lock
+        IOUtils.close(writeLock); // release write lock
         writeLock = null;
+        closed = true;
+        closing = false;
+        // So any "concurrently closing" threads wake up and see that the close has now completed:
+        notifyAll();
       }
-
-      success = true;
-    } catch (VirtualMachineError tragedy) {
-      tragicEvent(tragedy, "rollbackInternal");
-      throw tragedy;
-    } finally {
-      if (success == false) {
+    } catch (Throwable throwable) {
+      try {
         // Must not hold IW's lock while closing
         // mergeScheduler: this can lead to deadlock,
         // e.g. TestIW.testThreadInterruptDeadlock
         IOUtils.closeWhileHandlingException(mergeScheduler);
-      }
-      synchronized(this) {
-        if (success == false) {
+        synchronized (this) {
           // we tried to be nice about it: do the minimum
-          
           // don't leak a segments_N file if there is a pending commit
           if (pendingCommit != null) {
             try {
               pendingCommit.rollbackCommit(directory);
               deleter.decRef(pendingCommit);
             } catch (Throwable t) {
+              throwable.addSuppressed(t);
             }
             pendingCommit = null;
           }
-          
+
           // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
           IOUtils.closeWhileHandlingException(readerPool, deleter, writeLock);
           writeLock = null;
-        }
-        closed = true;
-        closing = false;
+          closed = true;
+          closing = false;
 
-        // So any "concurrently closing" threads wake up and see that the close has now completed:
-        notifyAll();
+          // So any "concurrently closing" threads wake up and see that the close has now completed:
+          notifyAll();
+        }
+      } catch (Throwable t) {
+        throwable.addSuppressed(t);
+      } finally {
+        if (throwable instanceof VirtualMachineError) {
+          try {
+            tragicEvent(throwable, "rollbackInternal");
+          } catch (Throwable t1){
+            throwable.addSuppressed(t1);
+          }
+        }
       }
+      throw throwable;
     }
   }
 
@@ -2601,42 +2605,42 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      * sure it's just like a fresh index.
      */
     try {
-      synchronized (fullFlushLock) { 
-        docWriter.lockAndAbortAll(this);
-        processEvents(false);
-        synchronized (this) {
-          try {
-            // Abort any running merges
-            abortMerges();
-            // Let merges run again
-            stopMerges = false;
-            adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
-            // Remove all segments
-            segmentInfos.clear();
-            // Ask deleter to locate unreferenced files & remove them:
-            deleter.checkpoint(segmentInfos, false);
+      synchronized (fullFlushLock) {
+        try (Closeable release = docWriter.lockAndAbortAll(this)) {
+          processEvents(false);
+          synchronized (this) {
+            try {
+              // Abort any running merges
+              abortMerges();
+              // Let merges run again
+              stopMerges = false;
+              adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
+              // Remove all segments
+              segmentInfos.clear();
+              // Ask deleter to locate unreferenced files & remove them:
+              deleter.checkpoint(segmentInfos, false);
 
-            /* don't refresh the deleter here since there might
-             * be concurrent indexing requests coming in opening
-             * files on the directory after we called DW#abort()
-             * if we do so these indexing requests might hit FNF exceptions.
-             * We will remove the files incrementally as we go...
-             */
-            // Don't bother saving any changes in our segmentInfos
-            readerPool.dropAll(false);
-            // Mark that the index has changed
-            changeCount.incrementAndGet();
-            segmentInfos.changed();
-            globalFieldNumberMap.clear();
-            success = true;
-            long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
-            docWriter.setLastSeqNo(seqNo);
-            return seqNo;
-          } finally {
-            docWriter.unlockAllAfterAbortAll(this);
-            if (!success) {
-              if (infoStream.isEnabled("IW")) {
-                infoStream.message("IW", "hit exception during deleteAll");
+              /* don't refresh the deleter here since there might
+               * be concurrent indexing requests coming in opening
+               * files on the directory after we called DW#abort()
+               * if we do so these indexing requests might hit FNF exceptions.
+               * We will remove the files incrementally as we go...
+               */
+              // Don't bother saving any changes in our segmentInfos
+              readerPool.dropAll(false);
+              // Mark that the index has changed
+              changeCount.incrementAndGet();
+              segmentInfos.changed();
+              globalFieldNumberMap.clear();
+              success = true;
+              long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
+              docWriter.setLastSeqNo(seqNo);
+              return seqNo;
+            } finally {
+              if (success == false) {
+                if (infoStream.isEnabled("IW")) {
+                  infoStream.message("IW", "hit exception during deleteAll");
+                }
               }
             }
           }
@@ -4067,26 +4071,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       deleteNewFiles(merge.info.files());
     }
 
-    boolean success = false;
     try {
       // Must close before checkpoint, otherwise IFD won't be
       // able to delete the held-open files from the merge
       // readers:
       closeMergeReaders(merge, false);
-      success = true;
-    } finally {
+      checkpoint();
+    } catch (Throwable t) {
       // Must note the change to segmentInfos so any commits
       // in-flight don't lose it (IFD will incRef/protect the
       // new files we created):
-      if (success) {
+      try {
         checkpoint();
-      } else {
-        try {
-          checkpoint();
-        } catch (Throwable t) {
-          // Ignore so we keep throwing original exception.
-        }
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
+      throw t;
     }
 
     if (infoStream.isEnabled("IW")) {
@@ -4122,7 +4122,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // in which case we must throw it so, for example, the
       // rollbackTransaction code in addIndexes* is
       // executed.
-      if (merge.isExternal) {
+      if (merge.isExternal) { // TODO can we simplify this and just throw all the time? this would simplify this a lot
         throw (MergePolicy.MergeAbortedException) t;
       }
     } else {
@@ -4429,9 +4429,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             readerPool.drop(rld.info);
           }
         } catch (Throwable t) {
-          if (th == null) {
-            th = t;
-          }
+          th = IOUtils.useOrSuppress(th, t);
         }
         merge.readers.set(i, null);
       }
@@ -4440,9 +4438,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       merge.mergeFinished();
     } catch (Throwable t) {
-      if (th == null) {
-        th = t;
-      }
+      th = IOUtils.useOrSuppress(th, t);
     }
     
     // If any error occurred, throw it.
