@@ -272,6 +272,60 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));    
   }
   
+  @Test
+  public void testKeepOrig() throws Exception {
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.set("langid.enforceSchema", "false");
+    parameters.set("langid.langField", "language");
+    parameters.set("langid.langsField", "languages");
+    parameters.set("langid.fl", "text");
+    parameters.set("langid.map", "true");
+    parameters.set("langid.map.keepOrig", "false");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedNoOrig = liProcessor.process(englishDoc());
+    assertEquals("text_en", liProcessor.getMappedField("text", "en"));
+    assertEquals("en", mappedNoOrig.getFieldValue("language"));
+    assertTrue(mappedNoOrig.containsKey("text_en"));
+    assertFalse(mappedNoOrig.containsKey("text"));
+    
+    // keepOrig true
+    parameters.set("langid.map.keepOrig", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedKeepOrig = liProcessor.process(englishDoc());
+    assertTrue(mappedKeepOrig.containsKey("text_en"));
+    assertTrue(mappedKeepOrig.containsKey("text"));
+    assertEquals(englishDoc().getFieldValue("text"), mappedKeepOrig.getFieldValue("text_en"));
+    
+    // keepOrig and map individual
+    parameters.set("langid.map.individual", "true");
+    parameters.set("langid.fl", "text,text2");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedIndividual = liProcessor.process(languagePerFieldDoc());
+    assertTrue(mappedIndividual.containsKey("text_en"));
+    assertTrue(mappedIndividual.containsKey("text"));
+    assertTrue(mappedIndividual.containsKey("text2_no"));
+    assertTrue(mappedIndividual.containsKey("text2"));
+    assertEquals(englishDoc().getFieldValue("text"), mappedIndividual.getFieldValue("text_en"));
+  }
+
+  @Test
+  public void testMapIndividual() throws Exception {
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.set("langid.enforceSchema", "false");
+    parameters.set("langid.langField", "language");
+    parameters.set("langid.langsField", "languages");
+    parameters.set("langid.fl", "text,text2");
+    parameters.set("langid.map", "true");
+    parameters.set("langid.map.individual", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedIndividual = liProcessor.process(languagePerFieldDoc());
+    assertTrue(mappedIndividual.containsKey("text_en"));
+    assertTrue(mappedIndividual.containsKey("text2_no"));
+  }
   
   // Various utility methods
   
@@ -279,6 +333,12 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("text", "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.");
     doc.addField("text_multivalue", new String[]{"", "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License."});
+    return doc;
+  }
+
+  private SolrInputDocument languagePerFieldDoc() {
+    SolrInputDocument doc = englishDoc();
+    doc.addField("text2", "Apache Lucene er en fri/åpen kildekode informasjons-prosesserings bibliotek, opprinnelig laget i java av Doug Cutting. Det er støttet av Apache Software Foundation og er utgitt under Apache-lisensen.");
     return doc;
   }
 
