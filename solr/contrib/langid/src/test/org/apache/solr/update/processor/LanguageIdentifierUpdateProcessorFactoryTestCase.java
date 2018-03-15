@@ -140,14 +140,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = englishDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
     
     doc = englishDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_no"));
   }
 
   /**
@@ -166,14 +166,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = englishDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
     
     doc = englishDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
   }
 
   /**
@@ -192,14 +192,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
 
     doc = mixedEnglishRussianDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
 
     doc = mixedEnglishRussianDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
   }
 
   @Test
@@ -212,7 +212,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = tooShortDoc();
-    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("", process(doc).getFieldValue("language"));
   }
 
   @Test
@@ -225,7 +225,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
 
     doc = new SolrInputDocument();
-    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("", process(doc).getFieldValue("language"));
   }
 
   @Test
@@ -242,11 +242,11 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     // Verify fallback to field fb (noop field does not exist and is skipped)
     doc = tooShortDoc();
     doc.addField("fb", "fbField");
-    assertEquals("fbField", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("fbField", process(doc).getFieldValue("language"));
 
     // Verify fallback to fallback value since no fallback fields exist
     doc = tooShortDoc();
-    assertEquals("fbVal", liProcessor.process(doc).getFieldValue("language"));  
+    assertEquals("fbVal", process(doc).getFieldValue("language"));  
   }
   
   @Test
@@ -342,6 +342,12 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     return doc;
   }
 
+  private SolrInputDocument languagePerFieldDoc() {
+    SolrInputDocument doc = englishDoc();
+    doc.addField("text2", "Apache Lucene er en fri/åpen kildekode informasjons-prosesserings bibliotek, opprinnelig laget i java av Doug Cutting. Det er støttet av Apache Software Foundation og er utgitt under Apache-lisensen.");
+    return doc;
+  }
+  
   /**
    * Construct document containing multi-value fields in different languages.
    * @return solr input document
@@ -367,7 +373,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     if(liProcessor == null)
       throw new Exception("Processor must be initialized before calling assertLang()");
     SolrInputDocument doc = sid(fieldsAndValues);
-    assertEquals(langCode, liProcessor.process(doc).getFieldValue(liProcessor.langField));
+    assertEquals(langCode, process(doc).getFieldValue(liProcessor.langField));
   }
   
   private SolrInputDocument sid(String... fieldsAndValues) {
@@ -376,5 +382,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
       doc.addField(fieldsAndValues[i], fieldsAndValues[i+1]);
     }
     return doc;
+  }
+  
+  /*
+  Utility test method to process a clone of a document
+   */
+  private SolrInputDocument process(SolrInputDocument origDoc) {
+    SolrInputDocument modifiedDoc = origDoc.deepCopy();
+    liProcessor.process(modifiedDoc);
+    return modifiedDoc;
   }
 }

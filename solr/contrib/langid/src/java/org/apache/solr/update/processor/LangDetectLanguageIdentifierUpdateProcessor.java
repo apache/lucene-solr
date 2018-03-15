@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,12 +51,14 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
   }
 
   @Override
-  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc) {
+  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields) {
     try {
       Detector detector = DetectorFactory.create();
       detector.setMaxTextLength(maxTotalChars);
 
-      for (String fieldName : inputFields) {
+      Reader solrFieldsReader = concatFieldsReader(doc, fields);
+      detector.append(solrFieldsReader);
+      for (String fieldName : fields) {
         log.debug("Appending field " + fieldName);
         if (doc.containsKey(fieldName)) {
           Collection<Object> fieldValues = doc.getFieldValues(fieldName);
@@ -83,6 +87,9 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
       return solrLangList;
     } catch (LangDetectException e) {
       log.debug("Could not determine language, returning empty list: ", e);
+      return Collections.emptyList();
+    } catch (IOException e) {
+      log.warn("Could not determine language.", e);
       return Collections.emptyList();
     }
   }

@@ -46,9 +46,9 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
   }
   
   @Override
-  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc) {
+  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields) {
     List<DetectedLanguage> languages = new ArrayList<>();
-    String content = concatFields(doc);
+    String content = concatFields(doc, fields);
     if (content.length() != 0) {
       LanguageIdentifier identifier = new LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score

@@ -30,13 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Pattern;
 
 
@@ -207,11 +210,10 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   }
 
   /**
-   * This is the main, testable process method called from processAdd()
-   * @param doc the SolrInputDocument to work on
-   * @return the modified SolrInputDocument
+   * This is the main process method called from processAdd()
+   * @param doc the SolrInputDocument to modify
    */
-  protected SolrInputDocument process(SolrInputDocument doc) {
+  protected void process(SolrInputDocument doc) {
     String docLang = null;
     HashSet<String> docLangs = new HashSet<>();
     String fallbackLang = getFallbackLang(doc, fallbackFields, fallbackValue);
@@ -240,7 +242,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         if(doc.containsKey(fieldName)) {
           String fieldLang;
           if(mapIndividual && mapIndividualFieldsSet.contains(fieldName)) {
-            List<DetectedLanguage> languagelist = detectLanguage(doc);
+            List<DetectedLanguage> languagelist = detectLanguage(doc, new String[]{fieldName});
             fieldLang = resolveLanguage(languagelist, docLang);
             docLangs.add(fieldLang);
             log.debug("Mapping field "+fieldName+" using individually detected language "+fieldLang);
@@ -270,8 +272,6 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     if(langsField != null && langsField.length() != 0) {
       doc.setField(langsField, docLangs.toArray());
     }
-
-    return doc;
   }
 
   /**
@@ -297,12 +297,22 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   }
 
   /**
-   * Detects language(s) from a string.
-   * Classes wishing to implement their own language detection module should override this method.
-   * @param content The content to identify
+   * Detects language(s) from all configured fields
+   * @param doc The solr document
    * @return List of detected language(s) according to RFC-3066
    */
-  protected abstract List<DetectedLanguage> detectLanguage(SolrInputDocument content);
+  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc) {
+    return detectLanguage(doc, inputFields);
+  }
+
+  /**
+   * Detects language(s) from one or more fields in a document.
+   * Classes wishing to implement their own language detection module should override this method.
+   * @param doc The solr document
+   * @param fields the field name(s) to use for detection, typically langid.fl
+   * @return List of detected language(s) according to RFC-3066
+   */
+  protected abstract List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields);
 
   /**
    * Chooses a language based on the list of candidates detected
@@ -405,36 +415,96 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   /**
    * Concatenates content from multiple fields
    */
-  protected String concatFields(SolrInputDocument doc) {
+  protected String concatFields(SolrInputDocument doc, String[] fields) {
     StringBuilder sb = new StringBuilder(getExpectedSize(doc, inputFields));
-    for (String fieldName : inputFields) {
+    for (String fieldName : fields) {
       log.debug("Appending field " + fieldName);
-      if (doc.containsKey(fieldName)) {
-        Collection<Object> fieldValues = doc.getFieldValues(fieldName);
-        if (fieldValues != null) {
-          for (Object content : fieldValues) {
-            if (content instanceof String) {
-              String stringContent = (String) content;
-              if (stringContent.length() > maxFieldValueChars) {
-                sb.append(stringContent.substring(0, maxFieldValueChars));
-              } else {
-                sb.append(stringContent);
-              }
-              sb.append(" ");
-              if (sb.length() > maxTotalChars) {
-                sb.setLength(maxTotalChars);
-                break;
-              }
+      sb.append(getFieldContent(doc, fieldName));
+    }
+    return sb.toString();
+  }
+  
+  /**
+   * Concatenates content from input fields defined in langid.fl
+   */
+  protected String concatFields(SolrInputDocument doc) {
+    return concatFields(doc, inputFields);
+  }
+
+  protected StringBuffer getFieldContent(SolrInputDocument doc, String fieldName) {
+    StringBuffer sb = new StringBuffer();
+    if (doc.containsKey(fieldName)) {
+      Collection<Object> fieldValues = doc.getFieldValues(fieldName);
+      if (fieldValues != null) {
+        for (Object content : fieldValues) {
+          if (content instanceof String) {
+            String stringContent = (String) content;
+            if (stringContent.length() > maxFieldValueChars) {
+              sb.append(stringContent.substring(0, maxFieldValueChars));
             } else {
-              log.warn("Field " + fieldName + " not a String value, not including in detection");
+              sb.append(stringContent);
             }
+            sb.append(" ");
+            if (sb.length() > maxTotalChars) {
+              sb.setLength(maxTotalChars);
+              break;
+            }
+          } else {
+            log.warn("Field " + fieldName + " not a String value, not including in detection");
           }
         }
       }
     }
-    return sb.toString();
+    return sb;
   }
+  
+  /**
+   * Returns a reader that streams String content from fields.
+   * This is more memory efficient than building a full string buffer
+   * @param doc the solr document
+   * @param fields the fields to read
+   * @return a reader over the fields
+   */
+  protected Reader concatFieldsReader(SolrInputDocument doc, String[] fields) {
+    Stack<String> remainingFields = new Stack<>();
+    Collections.addAll(remainingFields, fields);
 
+    return new Reader() {
+      public int charsConsumed;
+      private StringBuffer sb = new StringBuffer();
+      
+      @Override
+      public int read(char[] cbuf, int off, int len) throws IOException {
+        if (charsConsumed + len > maxTotalChars) {
+          len = maxTotalChars - charsConsumed;
+        }
+          
+        while (sb.length() < len && hasMore()) {
+          addNext();
+        }
+        if (sb.length() == 0 || charsConsumed > maxTotalChars) {
+          return -1; // End of content
+        }
+        int lenToCopy = (sb.length() >= len) ? len : sb.length();
+        sb.getChars(0, lenToCopy, cbuf, off);
+        sb.delete(0, lenToCopy);
+        charsConsumed += lenToCopy;
+        return lenToCopy;
+      }
+
+      private void addNext() {
+        sb.append(getFieldContent(doc, remainingFields.pop()));
+      }
+
+      private boolean hasMore() {
+        return !remainingFields.isEmpty();
+      }
+
+      @Override
+      public void close() throws IOException { /* ignored */ }
+    };
+  }
+  
   /**
    * Calculate expected string size.
    *
