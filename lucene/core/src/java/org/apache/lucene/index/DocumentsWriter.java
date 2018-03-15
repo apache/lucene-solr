@@ -737,8 +737,8 @@ final class DocumentsWriter implements Closeable, Accountable {
           writer.onTragicEvent(t, "applyUpdatesPacket");
         } catch (Throwable t1) {
           t.addSuppressed(t1);
-          throw t;
         }
+        throw t;
       }
       writer.flushDeletesCount.incrementAndGet();
     }
