@@ -318,7 +318,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         return;
       }
       try {
-        long currentTime = timeSource.getTime();
+        long currentTime = timeSource.getTimeNs();
         if (lastActionExecutedAt.get() != 0)  {
           long minDiff = TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS);
           log.info("last action at " + lastActionExecutedAt.get() + " current time = " + currentTime +
@@ -646,7 +646,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          long currentTimeNanos = timeSource.getTime();
+          long currentTimeNanos = timeSource.getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -1017,7 +1017,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(timeSource.getTime(), context, config, stage, actionName, event, message));
+      lst.add(new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message));
     }
   }
 
@@ -1315,7 +1315,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         public void run() {
           if (getTriggerFiredLatch().getCount() == 0)  return;
           long l = diff.get();
-          diff.set(timeSource.getTime() - l);
+          diff.set(timeSource.getTimeNs() - l);
           getTriggerFiredLatch().countDown();
         }
       });
@@ -1414,7 +1414,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
         events.add(event);
-        long currentTimeNanos = timeSource.getTime();
+        long currentTimeNanos = timeSource.getTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -1490,7 +1490,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNull(events.get(3).actionName);
 
     CapturedEvent ev = events.get(0);
-    long now = timeSource.getTime();
+    long now = timeSource.getTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get("node");
@@ -1608,7 +1608,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     Thread.sleep(2000);
     assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
-    long now = timeSource.getTime();
+    long now = timeSource.getTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
@@ -1651,7 +1651,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     Thread.sleep(2000);
     assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
     ev = listenerEvents.get("srt").get(0);
-    now = timeSource.getTime();
+    now = timeSource.getTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));

@@ -35,20 +35,20 @@ public abstract class TimeSource {
 
   /**
    * Implementation that uses {@link System#currentTimeMillis()}.
-   * This implementation's {@link #getTime()} returns the same values as
-   * {@link #getEpochTime()}.
+   * This implementation's {@link #getTimeNs()} returns the same values as
+   * {@link #getEpochTimeNs()}.
    */
   public static final class CurrentTimeSource extends TimeSource {
 
     @Override
     @SuppressForbidden(reason = "Needed to provide timestamps based on currentTimeMillis.")
-    public long getTime() {
+    public long getTimeNs() {
       return TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public long getEpochTime() {
-      return getTime();
+    public long getEpochTimeNs() {
+      return getTimeNs();
     }
 
     @Override
@@ -73,18 +73,18 @@ public abstract class TimeSource {
     private final long nanoStart;
 
     public NanoTimeSource() {
-      epochStart = CURRENT_TIME.getTime();
+      epochStart = CURRENT_TIME.getTimeNs();
       nanoStart = System.nanoTime();
     }
 
     @Override
-    public long getTime() {
+    public long getTimeNs() {
       return System.nanoTime();
     }
 
     @Override
-    public long getEpochTime() {
-      return epochStart + getTime() - nanoStart;
+    public long getEpochTimeNs() {
+      return epochStart + getTimeNs() - nanoStart;
     }
 
     @Override
@@ -111,18 +111,18 @@ public abstract class TimeSource {
      */
     public SimTimeSource(double multiplier) {
       this.multiplier = multiplier;
-      epochStart = CURRENT_TIME.getTime();
-      nanoStart = NANO_TIME.getTime();
+      epochStart = CURRENT_TIME.getTimeNs();
+      nanoStart = NANO_TIME.getTimeNs();
     }
 
     @Override
-    public long getTime() {
-      return nanoStart + Math.round((double)(NANO_TIME.getTime() - nanoStart) * multiplier);
+    public long getTimeNs() {
+      return nanoStart + Math.round((double)(NANO_TIME.getTimeNs() - nanoStart) * multiplier);
     }
 
     @Override
-    public long getEpochTime() {
-      return epochStart + getTime() - nanoStart;
+    public long getEpochTimeNs() {
+      return epochStart + getTimeNs() - nanoStart;
     }
 
     @Override
@@ -189,17 +189,38 @@ public abstract class TimeSource {
    * Return a time value, in nanosecond units. Depending on implementation this value may or
    * may not be related to Epoch time.
    */
-  public abstract long getTime();
+  public abstract long getTimeNs();
 
   /**
    * Return Epoch time. Implementations that are not natively based on epoch time may
    * return values that are consistently off by a (small) fixed number of milliseconds from
    * the actual epoch time.
    */
-  public abstract long getEpochTime();
+  public abstract long getEpochTimeNs();
 
+  /**
+   * Sleep according to this source's notion of time. Eg. accelerated time source such as
+   * {@link SimTimeSource} will sleep proportionally shorter, according to its multiplier.
+   * @param ms number of milliseconds to sleep
+   * @throws InterruptedException when the current thread is interrupted
+   */
   public abstract void sleep(long ms) throws InterruptedException;
 
+  /**
+   * This method allows using TimeSource with APIs that require providing just plain time intervals,
+   * eg. {@link Object#wait(long)}. Values returned by this method are adjusted according to the
+   * time source's notion of time - eg. accelerated time source provided by {@link SimTimeSource}
+   * will return intervals that are proportionally shortened by the multiplier.
+   * <p>NOTE: converting small values may significantly affect precision of the returned values
+   * due to rounding, especially for accelerated time source, so care should be taken to use time
+   * units that result in relatively large values. For example, converting a value of 1 expressed
+   * in seconds would result in less precision than converting a value of 1000 expressed in milliseconds.</p>
+   * @param fromUnit source unit
+   * @param value original value
+   * @param toUnit target unit
+   * @return converted value, possibly scaled by the source's notion of accelerated time
+   * (see {@link SimTimeSource})
+   */
   public abstract long convertDelay(TimeUnit fromUnit, long value, TimeUnit toUnit);
 
   public String toString() {

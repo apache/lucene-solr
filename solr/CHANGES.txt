@@ -77,6 +77,8 @@ Other Changes
 * SOLR-12090: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces out of the
   autoscaling package. (shalin)
 
+* SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

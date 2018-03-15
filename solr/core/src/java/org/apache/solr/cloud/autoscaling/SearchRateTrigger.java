@@ -189,7 +189,7 @@ public class SearchRateTrigger extends TriggerBase {
       });
     }
 
-    long now = cloudManager.getTimeSource().getTime();
+    long now = cloudManager.getTimeSource().getTimeNs();
     // check for exceeded rates and filter out those with less than waitFor from previous events
     Map<String, Double> hotNodes = nodeRates.entrySet().stream()
         .filter(entry -> node.equals(Policy.ANY) || node.equals(entry.getKey()))

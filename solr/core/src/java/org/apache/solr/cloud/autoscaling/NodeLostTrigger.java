@@ -65,7 +65,7 @@ public class NodeLostTrigger extends TriggerBase {
         // don't add nodes that have since came back
         if (!lastLiveNodes.contains(n)) {
           log.debug("Adding lost node from marker path: {}", n);
-          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
+          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
         removeMarker(n);
       });
@@ -135,7 +135,7 @@ public class NodeLostTrigger extends TriggerBase {
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
         log.debug("Tracking lost node: {}", n);
-        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
+        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
       });
 
       // has enough time expired to trigger events for a node?
@@ -145,7 +145,7 @@ public class NodeLostTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
-        long now = cloudManager.getTimeSource().getTime();
+        long now = cloudManager.getTimeSource().getTimeNs();
         if (TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeRemoved);

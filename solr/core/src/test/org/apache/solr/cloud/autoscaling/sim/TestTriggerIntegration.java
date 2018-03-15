@@ -242,8 +242,8 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
       }
       try {
         if (lastActionExecutedAt.get() != 0)  {
-          log.info("last action at " + lastActionExecutedAt.get() + " time = " + cluster.getTimeSource().getTime());
-          if (TimeUnit.NANOSECONDS.toMillis(cluster.getTimeSource().getTime() - lastActionExecutedAt.get()) <
+          log.info("last action at " + lastActionExecutedAt.get() + " time = " + cluster.getTimeSource().getTimeNs());
+          if (TimeUnit.NANOSECONDS.toMillis(cluster.getTimeSource().getTimeNs() - lastActionExecutedAt.get()) <
               TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS) - DELTA_MS) {
             log.info("action executed again before minimum wait time from {}", event.getSource());
             fail("TriggerListener was fired before the throttling period");
@@ -251,7 +251,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
         }
         if (onlyOnce.compareAndSet(false, true)) {
           log.info("action executed from {}", event.getSource());
-          lastActionExecutedAt.set(cluster.getTimeSource().getTime());
+          lastActionExecutedAt.set(cluster.getTimeSource().getTimeNs());
           getTriggerFiredLatch().countDown();
         } else  {
           log.info("action executed more than once from {}", event.getSource());
@@ -552,7 +552,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          long currentTimeNanos = cluster.getTimeSource().getTime();
+          long currentTimeNanos = cluster.getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -892,7 +892,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(cluster.getTimeSource().getTime(), context, config, stage, actionName, event, message));
+      lst.add(new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message));
     }
   }
 
@@ -1128,7 +1128,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
         events.add(event);
-        long currentTimeNanos = cluster.getTimeSource().getTime();
+        long currentTimeNanos = cluster.getTimeSource().getTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -1207,7 +1207,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertNull(events.get(3).actionName);
 
     CapturedEvent ev = events.get(0);
-    long now = cluster.getTimeSource().getTime();
+    long now = cluster.getTimeSource().getTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get("node");

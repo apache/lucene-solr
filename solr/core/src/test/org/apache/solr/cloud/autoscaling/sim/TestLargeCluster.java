@@ -116,7 +116,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(cluster.getTimeSource().getTime(), context, config, stage, actionName, event, message));
+      lst.add(new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message));
     }
   }
 

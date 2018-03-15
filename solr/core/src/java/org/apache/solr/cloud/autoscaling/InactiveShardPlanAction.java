@@ -80,7 +80,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
           }
           long timestamp = Long.parseLong(tstampStr);
           // this timestamp uses epoch time
-          long currentTime = cloudManager.getTimeSource().getEpochTime();
+          long currentTime = cloudManager.getTimeSource().getEpochTimeNs();
           long delta = TimeUnit.NANOSECONDS.toSeconds(currentTime - timestamp);
           log.debug("{}/{}: tstamp={}, time={}, delta={}", coll.getName(), s.getName(), timestamp, currentTime, delta);
           if (delta > cleanupTTL) {
