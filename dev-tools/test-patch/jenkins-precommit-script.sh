@@ -31,45 +31,26 @@
 
 YETUSDIR=${WORKSPACE}/yetus
 TESTPATCHBIN=${YETUSDIR}/precommit/test-patch.sh
-ARTIFACTS=${WORKSPACE}/out
+ARTIFACTS_SUBDIR=out
+ARTIFACTS=${WORKSPACE}/${ARTIFACTS_SUBDIR}
 BASEDIR=${WORKSPACE}/sourcedir
 rm -rf "${ARTIFACTS}"
 mkdir -p "${ARTIFACTS}"
 
-if [[ -d /sys/fs/cgroup/pids/user.slice ]]; then
-  pids=$(cat /sys/fs/cgroup/pids/user.slice/user-910.slice/pids.max)
-  
-  if [[ ${pids} -gt 13000 ]]; then
-    echo "passed: ${pids}"
-    PIDMAX=10000
-  else
-    echo "failed: ${pids}"
-    PIDMAX=5500
-  fi
-else
-  systemctl status $$ 2>/dev/null
-  echo "passed? no limit on trusty?"
-  PIDMAX=10000
-fi
+PIDMAX=10000 # Arbitrary limit; may need to revisit
 
-# One-time operation: download and expand Yetus source release
-# TODO: when upgrading the Yetus release, remove the old tarball
 YETUS_RELEASE=0.7.0
 YETUS_TARBALL="yetus-${YETUS_RELEASE}.tar.gz"
-if [[ ! -f "${YETUS_TARBALL}" || ! -d "$YETUSDIR}}" ]]; then
-  echo "Downloading Yetus ${YETUS_RELEASE}"
-  curl -L "https://api.github.com/repos/apache/yetus/tarball/rel/${YETUS_RELEASE}" -o "${YETUS_TARBALL}"
-  if [[ -d "${YETUSDIR}" ]]; then
-    rm -rf "${YETUSDIR}"
-    mkdir -p "${YETUSDIR}"
-  fi
-  gunzip -c "${YETUS_TARBALL}" | tar xpf - -C "${YETUSDIR}" --strip-components 1
-fi
-
+echo "Downloading Yetus ${YETUS_RELEASE}"
+curl -L "https://api.github.com/repos/apache/yetus/tarball/rel/${YETUS_RELEASE}" -o "${YETUS_TARBALL}"
+rm -rf "${YETUSDIR}"
+mkdir -p "${YETUSDIR}"
+gunzip -c "${YETUS_TARBALL}" | tar xpf - -C "${YETUSDIR}" --strip-components 1
 
 YETUS_ARGS+=("--project=LUCENE")
 YETUS_ARGS+=("--basedir=${BASEDIR}")
 YETUS_ARGS+=("--patch-dir=${ARTIFACTS}")
+YETUS_ARGS+=("--build-url-artifacts=artifact/${ARTIFACTS_SUBDIR}")
 YETUS_ARGS+=("--personality=${BASEDIR}/dev-tools/test-patch/lucene-solr-yetus-personality.sh")
 YETUS_ARGS+=("--jira-user=lucenesolrqa")
 YETUS_ARGS+=("--jira-password=$JIRA_PASSWORD")
