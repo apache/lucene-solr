@@ -3138,7 +3138,6 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
     AtomicBoolean mergeAwaySoftDeletes = new AtomicBoolean(random().nextBoolean());
-
     indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
       new MergePolicy.OneMerge(towrap.segments) {
         @Override
@@ -3223,6 +3222,8 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
     mergeAwaySoftDeletes.set(true);
+    writer.addDocument(new Document()); // add a dummy doc to trigger a segment here
+    writer.flush();
     writer.forceMerge(1);
     DirectoryReader oldReader = reader;
     reader = DirectoryReader.openIfChanged(reader, writer);
