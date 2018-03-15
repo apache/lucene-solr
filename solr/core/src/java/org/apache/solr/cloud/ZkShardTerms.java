@@ -296,15 +296,15 @@ public class ZkShardTerms implements AutoCloseable{
     try {
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.version, true);
       setNewTerms(new Terms(newTerms.values, stat.getVersion()));
-      log.info("Successful update terms at {} to {}", znodePath, newTerms);
+      log.info("Successful update of terms at {} to {}", znodePath, newTerms);
       return true;
     } catch (KeeperException.BadVersionException e) {
-      log.info("Failed to save terms, version is not match, retrying");
+      log.info("Failed to save terms, version is not a match, retrying");
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error save shard term for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while saving shard term for collection: " + collection, e);
     }
     return false;
   }
@@ -333,9 +333,9 @@ public class ZkShardTerms implements AutoCloseable{
       }
     }  catch (InterruptedException e) {
       Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection: " + collection, e);
     } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection: " + collection, e);
     }
   }
 
@@ -350,9 +350,9 @@ public class ZkShardTerms implements AutoCloseable{
       newTerms = new Terms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (KeeperException e) {
       Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     } catch (InterruptedException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     }
 
     setNewTerms(newTerms);
@@ -371,12 +371,12 @@ public class ZkShardTerms implements AutoCloseable{
         log.error("Failed watching shard term for collection: {} due to unrecoverable exception", collection, e);
         return;
       } catch (KeeperException e) {
-        log.warn("Failed watching shard term for collection:{}, retrying!", collection, e);
+        log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
         try {
           zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
         } catch (TimeoutException te) {
           if (Thread.interrupted()) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection:" + collection, te);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, te);
           }
         }
       }
@@ -401,7 +401,7 @@ public class ZkShardTerms implements AutoCloseable{
       zkClient.exists(znodePath, watcher, true);
     } catch (InterruptedException e) {
       Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection:" + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, e);
     }
   }
 
