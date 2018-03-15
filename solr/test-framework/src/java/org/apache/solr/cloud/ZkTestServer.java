@@ -646,4 +646,12 @@ public class ZkTestServer {
   public int getMinSessionTimeout() {
     return minSessionTimeout;
   }
+
+  public void setMaxSessionTimeout(int maxSessionTimeout) {
+    this.maxSessionTimeout = maxSessionTimeout;
+  }
+
+  public void setMinSessionTimeout(int minSessionTimeout) {
+    this.minSessionTimeout = minSessionTimeout;
+  }
 }
