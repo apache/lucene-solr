@@ -293,12 +293,12 @@
         <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
       </filterset>
     </copy>
-	<copy overwrite="false" todir="eclipse-build" encoding="UTF-8">
+    <copy overwrite="false" todir="eclipse-build" encoding="UTF-8">
       <fileset dir="dev-tools/eclipse" includes="*.launch"/>
       <filterset>
         <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
       </filterset>
-	</copy>	
+    </copy> 
     <mkdir dir=".settings"/>
     <copy todir=".settings/" overwrite="true">
       <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />
@@ -315,12 +315,12 @@
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <pathconvert property="eclipse.fileset.webfolders" pathsep="|" dirsep="/">
-    	<dirset dir="${basedir}/solr/server/contexts" excludes="**/*" />
-    	<dirset dir="${basedir}/solr/server/etc" excludes="**/*" />
-    	<dirset dir="${basedir}/solr/server/modules" excludes="**/*" />
-    	<dirset dir="${basedir}/solr/server/solr" excludes="**/*" />
-    	<dirset dir="${basedir}/solr/webapp/web" excludes="**/*" />
-    	<map from="${basedir}/" to=""/>
+        <dirset dir="${basedir}/solr/server/contexts" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/etc" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/modules" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/solr" excludes="**/*" />
+        <dirset dir="${basedir}/solr/webapp/web" excludes="**/*" />
+        <map from="${basedir}/" to=""/>
     </pathconvert>
     <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">
       <outputproperty name="indent" value="yes"/>

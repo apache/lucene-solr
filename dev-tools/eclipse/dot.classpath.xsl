@@ -55,21 +55,21 @@
           <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/benchmark"/>
         </xsl:if>
       </xsl:for-each>
-	  
-	  <xsl:for-each select="str:split($eclipse.fileset.webfolders,'|')">
+      
+      <xsl:for-each select="str:split($eclipse.fileset.webfolders,'|')">
         <xsl:sort select="text()" order="ascending" lang="en"/>
         <classpathentry kind="src" path="{.}">
             <xsl:attribute name="output">
               <xsl:choose>
                 <xsl:when test="contains(.,'solr/webapp/web')">
-				  <xsl:text>eclipse-build/solr-server/solr-webapp/webapp</xsl:text>
-			    </xsl:when>
-			    <xsl:otherwise>
-				  <xsl:text>eclipse-build/solr-server/</xsl:text><xsl:value-of select="substring(text(), 13)"/>
-			    </xsl:otherwise>
-			  </xsl:choose>
+                  <xsl:text>eclipse-build/solr-server/solr-webapp/webapp</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:text>eclipse-build/solr-server/</xsl:text><xsl:value-of select="substring(text(), 13)"/>
+                </xsl:otherwise>
+              </xsl:choose>
             </xsl:attribute>
-		</classpathentry>		
+        </classpathentry>       
       </xsl:for-each>
 
       <!-- the main resources folder is here (see above), so it's listed after the test-framework resources, making preflex-override work: -->
