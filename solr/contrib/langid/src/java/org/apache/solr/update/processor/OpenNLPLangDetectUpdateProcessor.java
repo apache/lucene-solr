@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SolrInputDocumentReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -54,9 +55,9 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
   }
 
   @Override
-  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields) {
+  protected List<DetectedLanguage> detectLanguage(Reader solrDocReader) {
     List<DetectedLanguage> languages = new ArrayList<>();
-    String content = concatFields(doc, fields);
+    String content = SolrInputDocumentReader.asString(solrDocReader);
     if (content.length() != 0) {
       LanguageDetectorME ldme = new LanguageDetectorME(model);
       Language[] langs = ldme.predictLanguages(content);

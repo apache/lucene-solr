@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.solr.common.util.SolrInputDocumentReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -50,35 +50,26 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
     super(req, rsp, next);
   }
 
+  /**
+   * Detects language(s) from a reader, typically based on some fields in SolrInputDocument
+   * Classes wishing to implement their own language detection module should override this method.
+   *
+   * @param solrDocReader A reader serving the text from the document to detect
+   * @return List of detected language(s) according to RFC-3066
+   */
   @Override
-  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc, String[] fields) {
+  protected List<DetectedLanguage> detectLanguage(Reader solrDocReader) {
     try {
       Detector detector = DetectorFactory.create();
       detector.setMaxTextLength(maxTotalChars);
 
-      Reader solrFieldsReader = concatFieldsReader(doc, fields);
-      detector.append(solrFieldsReader);
-      for (String fieldName : fields) {
-        log.debug("Appending field " + fieldName);
-        if (doc.containsKey(fieldName)) {
-          Collection<Object> fieldValues = doc.getFieldValues(fieldName);
-          if (fieldValues != null) {
-            for (Object content : fieldValues) {
-              if (content instanceof String) {
-                String stringContent = (String) content;
-                if (stringContent.length() > maxFieldValueChars) {
-                  detector.append(stringContent.substring(0, maxFieldValueChars));
-                } else {
-                  detector.append(stringContent);
-                }
-                detector.append(" ");
-              } else {
-                log.warn("Field " + fieldName + " not a String value, not including in detection");
-              }
-            }
-          }
-        }
+      // TODO Work around bug in LangDetect 1.1 which does not expect a -1 return value at end of stream,
+      // but instead only looks at ready()
+      if (solrDocReader instanceof SolrInputDocumentReader) {
+        ((SolrInputDocumentReader)solrDocReader).setEodReturnValue(0);
       }
+      detector.append(solrDocReader);
+
       ArrayList<Language> langlist = detector.getProbabilities();
       ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
       for (Language l: langlist) {

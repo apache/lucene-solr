@@ -283,7 +283,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.set("langid.map.keepOrig", "false");
     liProcessor = createLangIdProcessor(parameters);
 
-    SolrInputDocument mappedNoOrig = liProcessor.process(englishDoc());
+    SolrInputDocument mappedNoOrig = process(englishDoc());
     assertEquals("text_en", liProcessor.getMappedField("text", "en"));
     assertEquals("en", mappedNoOrig.getFieldValue("language"));
     assertTrue(mappedNoOrig.containsKey("text_en"));
@@ -293,7 +293,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.set("langid.map.keepOrig", "true");
     liProcessor = createLangIdProcessor(parameters);
 
-    SolrInputDocument mappedKeepOrig = liProcessor.process(englishDoc());
+    SolrInputDocument mappedKeepOrig = process(englishDoc());
     assertTrue(mappedKeepOrig.containsKey("text_en"));
     assertTrue(mappedKeepOrig.containsKey("text"));
     assertEquals(englishDoc().getFieldValue("text"), mappedKeepOrig.getFieldValue("text_en"));
@@ -303,12 +303,12 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.set("langid.fl", "text,text2");
     liProcessor = createLangIdProcessor(parameters);
 
-    SolrInputDocument mappedIndividual = liProcessor.process(languagePerFieldDoc());
+    SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
     assertTrue(mappedIndividual.containsKey("text_en"));
     assertTrue(mappedIndividual.containsKey("text"));
-    assertTrue(mappedIndividual.containsKey("text2_no"));
+    assertTrue(mappedIndividual.containsKey("text2_ru"));
     assertTrue(mappedIndividual.containsKey("text2"));
-    assertEquals(englishDoc().getFieldValue("text"), mappedIndividual.getFieldValue("text_en"));
+    assertEquals(languagePerFieldDoc().getFieldValue("text"), mappedIndividual.getFieldValue("text_en"));
   }
 
   @Test
@@ -322,9 +322,9 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.set("langid.map.individual", "true");
     liProcessor = createLangIdProcessor(parameters);
 
-    SolrInputDocument mappedIndividual = liProcessor.process(languagePerFieldDoc());
+    SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
     assertTrue(mappedIndividual.containsKey("text_en"));
-    assertTrue(mappedIndividual.containsKey("text2_no"));
+    assertTrue(mappedIndividual.containsKey("text2_ru"));
   }
   
   // Various utility methods
@@ -338,13 +338,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
   private SolrInputDocument languagePerFieldDoc() {
     SolrInputDocument doc = englishDoc();
-    doc.addField("text2", "Apache Lucene er en fri/åpen kildekode informasjons-prosesserings bibliotek, opprinnelig laget i java av Doug Cutting. Det er støttet av Apache Software Foundation og er utgitt under Apache-lisensen.");
-    return doc;
-  }
-
-  private SolrInputDocument languagePerFieldDoc() {
-    SolrInputDocument doc = englishDoc();
-    doc.addField("text2", "Apache Lucene er en fri/åpen kildekode informasjons-prosesserings bibliotek, opprinnelig laget i java av Doug Cutting. Det er støttet av Apache Software Foundation og er utgitt under Apache-lisensen.");
+    doc.addField("text2", "The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java. Может быть использована для поиска в интернете и других областях компьютерной лингвистики (аналитическая философия).");
     return doc;
   }
   
