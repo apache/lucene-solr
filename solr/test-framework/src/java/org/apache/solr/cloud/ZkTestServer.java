@@ -73,6 +73,9 @@ public class ZkTestServer {
   private volatile Thread zooThread;
   
   private int theTickTime = TICK_TIME;
+  // SOLR-12101 - provide defaults to avoid max timeout 20 enforced by our server instance when tick time is 1000
+  private int maxSessionTimeout = 60000;
+  private int minSessionTimeout = 3000;
 
   static public enum LimitViolationAction {
     IGNORE,
@@ -94,14 +97,14 @@ public class ZkTestServer {
       } catch (JMException e) {
         log.warn("Unable to register log4j JMX control", e);
       }
-      
+
       ServerConfig config = new ServerConfig();
       if (args.length == 1) {
         config.parse(args[0]);
       } else {
         config.parse(args);
       }
-      
+
       runFromConfig(config);
     }
 
@@ -470,6 +473,8 @@ public class ZkTestServer {
             this.dataDir = zkDir;
             this.dataLogDir = zkDir;
             this.tickTime = theTickTime;
+            this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
+            this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
           }
           
           public void setClientPort(int clientPort) {
@@ -555,13 +560,13 @@ public class ZkTestServer {
   public static class HostPort {
     String host;
     int port;
-    
+
     HostPort(String host, int port) {
       this.host = host;
       this.port = port;
     }
   }
-  
+
   /**
    * Send the 4letterword
    * @param host the destination host
@@ -632,5 +637,21 @@ public class ZkTestServer {
 
   public ZKServerMain.WatchLimiter getLimiter() {
     return zkServer.getLimiter();
+  }
+
+  public int getMaxSessionTimeout() {
+    return maxSessionTimeout;
+  }
+
+  public int getMinSessionTimeout() {
+    return minSessionTimeout;
+  }
+
+  public void setMaxSessionTimeout(int maxSessionTimeout) {
+    this.maxSessionTimeout = maxSessionTimeout;
+  }
+
+  public void setMinSessionTimeout(int minSessionTimeout) {
+    this.minSessionTimeout = minSessionTimeout;
   }
 }

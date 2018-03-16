@@ -84,6 +84,8 @@ Other Changes
 
 * SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
 
+* SOLR-12101: ZkTestServer was not handling connection timeout settings properly. (Gus Heck via Mark Miller)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
