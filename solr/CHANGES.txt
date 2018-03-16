@@ -39,6 +39,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
+
 Optimizations
 ----------------------
 
