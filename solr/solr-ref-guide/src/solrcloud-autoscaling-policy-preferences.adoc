@@ -139,6 +139,11 @@ Any arbitrary system property set on the node on startup.
 `metrics:<full-path-to-the metric>`::
 Any arbitrary metric. For example, `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in the  <<metrics-reporting.adoc#metrics-reporting, Metrics API>> section.
 
+`diskType`::
+The type of disk drive being used for Solr's `coreRootDirectory`. The only two supported values are `rotational` and `ssd`. Refer to `coreRootDirectory` parameter in the <<format-of-solr-xml.adoc#solr-xml-parameters, Solr.xml Parameters>> section.
++
+It's value is fetched from the Metrics API with the key named `solr.node:CONTAINER.fs.coreRoot.spins`. The disk type is auto-detected by Lucene using various heuristics and it is not guaranteed to be correct across all platforms or operating systems. Refer to the <<taking-solr-to-production.adoc#dynamic-defaults-for-concurrentmergescheduler, Dynamic defaults for ConcurrentMergeScheduler>> section for more details.
+
 === Policy Operators
 
 Each attribute in the policy may specify one of the following operators along with the value.
@@ -192,12 +197,15 @@ Place all replicas in nodes with freedisk more than 500GB when possible. Here we
 [source,json]
 {"replica": 0, "freedisk": "<500", "strict" : false}
 
-==== Try to Place all Replicas of type TLOG in SSD type file system
+==== Try to Place all Replicas of type TLOG in nodes with SSD drives
 
 [source,json]
-{ "replica": 0,  "sysprop.file_system" : "!ssd",  "type" : "TLOG" }
+{ "replica": 0,  "diskType" : "!ssd",  "type" : "TLOG" }
 
-Please note that to use the `sysprop.fs` attribute all your ssd nodes must be started with a system property `-Dfile_system=ssd`.
+==== Try to Place all Replicas of type PULL on nodes with rotational disk drives
+
+[source,json]
+{ "replica": 0,  "diskType" : "!rotational",  "type" : "PULL" }
 
 [[collection-specific-policy]]
 == Defining Collection-Specific Policies
