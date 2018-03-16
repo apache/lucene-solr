@@ -113,48 +113,51 @@ function personality_modules
   case ${moduleType} in
     submodules)
       for module in "${CHANGED_MODULES[@]}"; do
-        if [[ ! "$module" =~ ^lucene/(licenses|site) ]]; then # blacklist lucene/ dirs that aren't modules
-          if [[ "$module" =~ ^(lucene/(analysis/[^/]+|[^/]+)) ]]; then
-            lucene_module=${BASH_REMATCH[0]}
-            personality_enqueue_module "${lucene_module}" "$extra"
-          elif [[ "$module" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|contrib/[^.]+) ]]; then # whitelist solr/ modules
-            solr_module=${BASH_REMATCH[0]}
-            personality_enqueue_module "${solr_module}" "$extra"
+        if [[ ! "${module}" =~ ^lucene/(licenses|site) ]]; then # blacklist lucene/ dirs that aren't modules
+          if [[ "${module}" =~ ^(lucene/(analysis/[^/]+|[^/]+)) ]]; then
+            local lucene_module=${BASH_REMATCH[0]}
+            personality_enqueue_module "${lucene_module}" "${extra}"
+          elif [[ "${module}" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|contrib/[^.]+) ]]; then # whitelist solr/ modules
+            local solr_module=${BASH_REMATCH[0]}
+            # In solr-ref-guide module, do not execute "compile" or "unit" plugins
+            if [[ ! "${solr_module}" == solr/solr-ref-guide || ! ${testtype} =~ ^(compile|unit)$ ]]; then
+              personality_enqueue_module "${solr_module}" "${extra}"
+            fi
           fi
         fi
       done
       ;;
     lucene|solr)
-      personality_enqueue_module "${moduleType}" "$extra"
+      personality_enqueue_module "${moduleType}" "${extra}"
       ;;
     top)
-      personality_enqueue_module . "$extra"
+      personality_enqueue_module . "${extra}"
       ;;
     mains)
-      personality_enqueue_module "lucene" "$extra"
-      personality_enqueue_module "solr" "$extra"
+      personality_enqueue_module "lucene" "${extra}"
+      personality_enqueue_module "solr" "${extra}"
       ;;
     both) # solr, lucene, or both
       # personality_enqueue_module KEEPS duplicates, so de-dupe first
       local doSolr=0,doLucene=0 
       for module in "${CHANGED_MODULES[@]}"; do
-        if [[ "$module" =~ ^solr/ ]]; then doSolr=1; fi
-        if [[ "$module" =~ ^lucene/ ]]; then doLucene=1; fi
+        if [[ "${module}" =~ ^solr/ ]]; then doSolr=1; fi
+        if [[ "${module}" =~ ^lucene/ ]]; then doLucene=1; fi
       done
-      if [[ $doLucene == 1 ]]; then
-        if [[ $doSolr == 1 ]]; then 
-          personality_enqueue_module . "$extra"
+      if [[ ${doLucene} == 1 ]]; then
+        if [[ ${doSolr} == 1 ]]; then 
+          personality_enqueue_module . "${extra}"
         else
-          personality_enqueue_module "lucene" "$extra"
+          personality_enqueue_module "lucene" "${extra}"
         fi          
-      elif [[ $doSolr == 1 ]]; then 
-        personality_enqueue_module "solr" "$extra"
+      elif [[ ${doSolr} == 1 ]]; then 
+        personality_enqueue_module "solr" "${extra}"
       fi
       ;;
     solr-ref-guide)
       for module in "${CHANGED_MODULES[@]}"; do
-        if [[ "$module" =~ ^solr/solr-ref-guide ]]; then
-          personality_enqueue_module "solr/solr-ref-guide" "$extra"
+        if [[ "${module}" =~ ^solr/solr-ref-guide ]]; then
+          personality_enqueue_module "solr/solr-ref-guide" "${extra}"
         fi
       done 
       ;;     
@@ -173,11 +176,13 @@ function personality_file_tests
 
   yetus_debug "Using Lucene/Solr-specific personality_file_tests"
 
-  if [[ ${filename} =~ build\.xml$ || ${filename} =~ /src/(java|resources|test|test-files|tools) ]]; then
-    yetus_debug "tests/unit: ${filename}"
-    add_test compile
-    add_test javac
-    add_test unit
+  if [[ ! ${filename} =~ solr-ref-guide ]]; then
+    if [[ ${filename} =~ build\.xml$ || ${filename} =~ /src/(java|resources|test|test-files|tools) ]]; then
+      yetus_debug "tests/unit: ${filename}"
+      add_test compile
+      add_test javac
+      add_test unit
+    fi
   fi
 }
 
@@ -364,7 +369,7 @@ function lucene_ant_command
   fi
 
   big_console_header "${title}"
-  personality_modules $repostatus $testname
+  personality_modules ${repostatus} ${testname}
   until [[ ${i} -eq ${#MODULE[@]} ]]; do
     if [[ ${MODULE_STATUS[${i}]} == -1 ]]; then
       ((result=result+1))
@@ -374,7 +379,7 @@ function lucene_ant_command
     ANT_ARGS=${antcommand}
 
     start_clock
-    module=${MODULE[$i]}
+    module=${MODULE[${i}]}
     fn=$(module_file_fragment "${module}")
     logfilename="${repostatus}-${antcommand}-${fn}.txt";
     logfile="${PATCH_DIR}/${logfilename}"
