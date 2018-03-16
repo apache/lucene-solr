@@ -62,6 +62,8 @@ Other Changes
 * SOLR-12090: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces out of the
   autoscaling package. (shalin)
 
+* SOLR-12101: ZkTestServer was not handling connection timeout settings properly. (Gus Heck via Mark Miller)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
