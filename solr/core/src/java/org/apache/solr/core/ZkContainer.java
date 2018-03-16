@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
@@ -173,11 +174,16 @@ public class ZkContainer {
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
+  public static Predicate<CoreDescriptor> testing_beforeRegisterInZk;
+
   public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
       try {
         try {
+          if (testing_beforeRegisterInZk != null) {
+            testing_beforeRegisterInZk.test(core.getCoreDescriptor());
+          }
           zkController.register(core.getName(), core.getCoreDescriptor(), skipRecovery);
         } catch (InterruptedException e) {
           // Restore the interrupted status

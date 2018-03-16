@@ -259,6 +259,8 @@ Bug Fixes
   missing=true caused an NPE or AIOOBE. (Karthik Ramachandran via yonik)
 
 
+* SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
