@@ -307,6 +307,8 @@ Bug Fixes
 * SOLR-12083: Fix RealTime GET to work on a cluster running CDCR when using Solr's in-place updates
   (Amrit Sarkar, Varun Thacker)
 
+* SOLR-12083: Fix PeerSync, Leader Election failures and CDCR checkpoint inconsistencies on a cluster running CDCR
+  (Amrit Sarkar, Varun Thacker)
 
 Optimizations
 ----------------------

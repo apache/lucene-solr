@@ -16,7 +16,10 @@
  */
 package org.apache.solr.cloud.cdcr;
 
+import java.util.Arrays;
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
 import org.junit.Test;
@@ -69,7 +72,7 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
     NamedList rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
     assertEquals(-1l, rsp.get(CdcrParams.CHECKPOINT));
 
-    index(SOURCE_COLLECTION, getDoc(id, "a")); // shard 2
+    index(SOURCE_COLLECTION, getDoc(id, "a","test_i_dvo",10)); // shard 2
 
     // only one document indexed in shard 2, the checkpoint must be still -1
     rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
@@ -97,17 +100,39 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
     expected = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
     assertEquals(expected, checkpoint2);
 
+    // send a delete by id
+    long pre_op = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
+    deleteById(SOURCE_COLLECTION, Arrays.asList(new String[]{"c"})); //shard1
+    // document deleted in shard1, checkpoint should come from shard2
+    rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
+    long checkpoint3 = (Long) rsp.get(CdcrParams.CHECKPOINT);
+    expected = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
+    assertEquals(pre_op, expected);
+    assertEquals(expected, checkpoint3);
+
+    // send a in-place update
+    SolrInputDocument in_place_doc = new SolrInputDocument();
+    in_place_doc.setField(id, "a");
+    in_place_doc.setField("test_i_dvo", ImmutableMap.of("inc", 10)); //shard2
+    index(SOURCE_COLLECTION, in_place_doc);
+    // document updated in shard2, checkpoint should come from shard1
+    rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
+    long checkpoint4 = (Long) rsp.get(CdcrParams.CHECKPOINT);
+    expected = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
+    assertEquals(expected, checkpoint4);
+
     // send a delete by query
     deleteByQuery(SOURCE_COLLECTION, "*:*");
 
     // all the checkpoints must come from the DBQ
     rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
-    long checkpoint3 = (Long) rsp.get(CdcrParams.CHECKPOINT);
-    assertTrue(checkpoint3 > 0); // ensure that checkpoints from deletes are in absolute form
-    checkpoint3 = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
-    assertTrue(checkpoint3 > 0); // ensure that checkpoints from deletes are in absolute form
-    checkpoint3 = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
-    assertTrue(checkpoint3 > 0); // ensure that checkpoints from deletes are in absolute form
+    long checkpoint5= (Long) rsp.get(CdcrParams.CHECKPOINT);
+    assertTrue(checkpoint5 > 0); // ensure that checkpoints from deletes are in absolute form
+    checkpoint5 = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
+    assertTrue(checkpoint5 > 0); // ensure that checkpoints from deletes are in absolute form
+    checkpoint5 = (Long) invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD2), CdcrParams.CdcrAction.SHARDCHECKPOINT).get(CdcrParams.CHECKPOINT);
+    assertTrue(checkpoint5 > 0); // ensure that checkpoints from deletes are in absolute form
+
 
     // replication never started, lastProcessedVersion should be -1 for both shards
     rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.LASTPROCESSEDVERSION);
