@@ -415,7 +415,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @return a reader over the fields
    */
   protected SolrInputDocumentReader solrDocReader(SolrInputDocument doc, String[] fields) {
-    return new SolrInputDocumentReader(doc, fields, maxTotalChars, maxFieldValueChars, " ", " ");
+    return new SolrInputDocumentReader(doc, fields, maxTotalChars, maxFieldValueChars, " ");
   }
   
   /**

@@ -38,7 +38,6 @@ public class SolrInputDocumentReader extends Reader {
   private SolrInputDocument doc;
   private final String[] fields;
   private final String fieldValueSep;
-  private final String fieldSep;
   private final int maxTotalChars;
   private final int maxCharsPerFieldValue;
   private int totalCharsConsumed;
@@ -57,17 +56,15 @@ public class SolrInputDocumentReader extends Reader {
    *
    * @param doc Solr input document
    * @param fields list of fields to read
-   * @param fieldSep separator to insert between fields
    * @param fieldValueSep separator to insert between field values
    * @param maxCharsPerFieldValue max chars to consume per field value
    * @param maxTotalChars max chars to consume total
    */
   public SolrInputDocumentReader(SolrInputDocument doc, String[] fields, int maxTotalChars,
-                                 int maxCharsPerFieldValue, String fieldValueSep, String fieldSep) {
+                                 int maxCharsPerFieldValue, String fieldValueSep) {
     this.doc = doc;
     this.fields = fields;
     this.fieldValueSep = fieldValueSep;
-    this.fieldSep = fieldSep;
     if (fields == null || fields.length == 0) throw new IllegalArgumentException("fields cannot be empty");
     this.maxTotalChars = maxTotalChars;
     this.maxCharsPerFieldValue = maxCharsPerFieldValue;
@@ -108,6 +105,9 @@ public class SolrInputDocumentReader extends Reader {
       return returnEod();
     }
 
+    int startFieldValueIdx = currentFieldValueIdx;
+    int startFieldValueOffset = currentFieldValueOffset;
+    
     do {
       SolrInputField f = doc.getField(fields[currentFieldIdx]);
       if (f == null) {
@@ -116,23 +116,22 @@ public class SolrInputDocumentReader extends Reader {
         continue;
       }
       Iterator<Object> fvIt = f.iterator();
-      int startFieldValueIdx = currentFieldValueIdx;
-      int startFieldValueOffset = currentFieldValueOffset;
-      currentFieldValueIdx = 0;
-      while (fvIt.hasNext() && sb.length() <= maxChunkLength) {
-        if (currentFieldValueIdx < startFieldValueIdx) {
-          // Skip until correct state
-          fvIt.next();
-          currentFieldValueIdx++;
-          continue;
-        }
-        if (currentFieldValueOffset == 0) {
-          if (currentFieldValueIdx > 0) sb.append(fieldValueSep);
-        }
-        int charsNeeded = maxChunkLength - sb.length();
+      currentFieldValueIdx = -1;
+      while (fvIt.hasNext() && sb.length() < maxChunkLength) {
+        currentFieldValueIdx++;
         String fvStr = String.valueOf(fvIt.next());
+        if (currentFieldValueIdx < startFieldValueIdx) continue;
+        startFieldValueIdx = 0;
+        if (sb.length() > 0) {
+          if (maxChunkLength - sb.length() < fieldValueSep.length()) {
+            sb.append(fieldValueSep.substring(0,maxChunkLength - sb.length()));
+          } else {
+            sb.append(fieldValueSep);
+          }
+        }
         currentFieldValueOffset = startFieldValueOffset;
         startFieldValueOffset = 0;
+        int charsNeeded = maxChunkLength - sb.length();
         int endOffset = fvStr.length();
         if (fvStr.length() - currentFieldValueOffset > charsNeeded) {
           endOffset = currentFieldValueOffset + charsNeeded;
@@ -140,18 +139,15 @@ public class SolrInputDocumentReader extends Reader {
         if (endOffset - currentFieldValueOffset > maxCharsPerFieldValue) {
           endOffset = maxCharsPerFieldValue - currentFieldValueOffset;
         }
-        if (sb.length() > 0) {
-          sb.append(fieldSep);
-        }
         sb.append(fvStr.substring(currentFieldValueOffset, endOffset));
-        currentFieldValueOffset = endOffset;
+        currentFieldValueOffset = endOffset == fvStr.length() ? 0 : endOffset;
       }
       if (sb.length() >= maxChunkLength) {
         return returnValue(sb);
       } else {
         incField(sb);
       }
-    } while (currentFieldIdx <= fields.length-1 && sb.length() <= maxChunkLength);
+    } while (currentFieldIdx <= fields.length-1 && sb.length() < maxChunkLength);
     return sb.length() == 0 ? eodReturnValue : sb.length();
   }
 
