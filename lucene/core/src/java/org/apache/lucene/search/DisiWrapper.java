@@ -81,7 +81,5 @@ public class DisiWrapper {
     this.lastApproxNonMatchDoc = -2;
     this.lastApproxMatchDoc = -2;
   }
-
-
 }
 
