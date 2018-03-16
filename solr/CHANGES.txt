@@ -449,6 +449,9 @@ Other Changes
 
 * SOLR-12099: Remove reopenReaders attribute from 'IndexConfig in SolrConfig' page in ref guide. (shalin)
 
+* SOLR-12098: Document the Lucene spins auto-detection and its effect on CMS dynamic defaults.
+  (Cassandra Targett, shalin)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
