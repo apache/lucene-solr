@@ -383,6 +383,9 @@ Other Changes
 * SOLR-12098: Document the Lucene spins auto-detection and its effect on CMS dynamic defaults.
   (Cassandra Targett, shalin)
 
+* SOLR-12097: Document the diskType policy attribute and usage of disk space in Collection APIs.
+  (Cassandra Targett, shalin)
+
 ==================  7.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
