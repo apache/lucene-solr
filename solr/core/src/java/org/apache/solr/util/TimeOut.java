@@ -29,12 +29,12 @@ public class TimeOut {
 
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
     this.timeSource = timeSource;
-    startTime = timeSource.getTime();
+    startTime = timeSource.getTimeNs();
     this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
   }
 
   public boolean hasTimedOut() {
-    return timeSource.getTime() > timeoutAt;
+    return timeSource.getTimeNs() > timeoutAt;
   }
 
   public void sleep(long ms) throws InterruptedException {
@@ -42,10 +42,10 @@ public class TimeOut {
   }
 
   public long timeLeft(TimeUnit unit) {
-    return unit.convert(timeoutAt - timeSource.getTime(), NANOSECONDS);
+    return unit.convert(timeoutAt - timeSource.getTimeNs(), NANOSECONDS);
   }
 
   public long timeElapsed(TimeUnit unit) {
-    return unit.convert(timeSource.getTime() - startTime, NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs() - startTime, NANOSECONDS);
   }
 }

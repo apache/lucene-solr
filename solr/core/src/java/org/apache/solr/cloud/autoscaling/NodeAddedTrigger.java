@@ -67,7 +67,7 @@ public class NodeAddedTrigger extends TriggerBase {
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n)) {
           log.debug("Adding node from marker path: {}", n);
-          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTime());
+          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTimeNs());
         }
         removeMarker(n);
       });
@@ -138,7 +138,7 @@ public class NodeAddedTrigger extends TriggerBase {
       Set<String> copyOfNew = new HashSet<>(newLiveNodes);
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
-        long eventTime = cloudManager.getTimeSource().getTime();
+        long eventTime = cloudManager.getTimeSource().getTimeNs();
         log.debug("Tracking new node: {} at time {}", n, eventTime);
         nodeNameVsTimeAdded.put(n, eventTime);
       });
@@ -150,7 +150,7 @@ public class NodeAddedTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
-        long now = cloudManager.getTimeSource().getTime();
+        long now = cloudManager.getTimeSource().getTimeNs();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeAdded);
@@ -160,7 +160,7 @@ public class NodeAddedTrigger extends TriggerBase {
       if (!nodeNames.isEmpty()) {
         if (processor != null) {
           log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
-              nodeNames, times, cloudManager.getTimeSource().getTime());
+              nodeNames, times, cloudManager.getTimeSource().getTimeNs());
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {

@@ -112,9 +112,29 @@ The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/S
 
 The merge scheduler controls how merges are performed. The default `ConcurrentMergeScheduler` performs merges in the background using separate threads. The alternative, `SerialMergeScheduler`, does not perform merges with separate threads.
 
+The `ConcurrentMergeScheduler` has two configurable attributes:
+
+`maxMergeCount`::
+The maximum number of simultaneous merges that are allowed. If a merge is necessary yet we already have this many threads running, the indexing thread will block until a merge thread has completed. Note that Solr will only run the smallest `maxThreadCount` merges at a time.
+
+`maxThreadCount`::
+The maximum number of simultaneous merge threads that should be running at once. This must be less than `maxMergeCount`.
+
+The defaults for the above attributes are dynamically set based on whether the underlying disk drive is rotational disk or not. Refer to the <<taking-solr-to-production.adoc#dynamic-defaults-for-concurrentmergescheduler, Dynamic defaults for ConcurrentMergeScheduler>> section for more details.
+
+.Example: Dynamic defaults
 [source,xml]
 ----
 <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
+----
+
+.Example: Explicit defaults
+[source,xml]
+----
+<mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
+  <int name="maxMergeCount">9</int>
+  <int name="maxThreadCount">4</int>
+</mergeScheduler>
 ----
 
 === mergedSegmentWarmer
@@ -176,8 +196,6 @@ The maximum time to wait for a write lock on an IndexWriter. The default is 1000
 
 There are a few other parameters that may be important to configure for your implementation. These settings affect how or when updates are made to an index.
 
-`reopenReaders`:: Controls if IndexReaders will be re-opened, instead of closed and then opened, which is often less efficient. The default is true.
-
 `deletionPolicy`:: Controls how commits are retained in case of rollback. The default is `SolrDeletionPolicy`, which has sub-parameters for the maximum number of commits to keep (`maxCommitsToKeep`), the maximum number of optimized commits to keep (`maxOptimizedCommitsToKeep`), and the maximum age of any commit to keep (`maxCommitAge`), which supports `DateMathParser` syntax.
 
 `infoStream`:: The InfoStream setting instructs the underlying Lucene classes to write detailed debug information from the indexing process as Solr log messages.
@@ -185,7 +203,6 @@ There are a few other parameters that may be important to configure for your imp
 
 [source,xml]
 ----
-<reopenReaders>true</reopenReaders>
 <deletionPolicy class="solr.SolrDeletionPolicy">
   <str name="maxCommitsToKeep">1</str>
   <str name="maxOptimizedCommitsToKeep">0</str>

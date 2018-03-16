@@ -59,8 +59,14 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
+
 Optimizations
 ----------------------
+
+* SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
+  differential fetching now speeds up recovery times when full index replication is needed, but only
+  a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
 Other Changes
 ----------------------
@@ -72,6 +78,8 @@ Other Changes
 
 * SOLR-12090: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces out of the
   autoscaling package. (shalin)
+
+* SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
 
 ==================  7.3.0 ==================
 
@@ -318,6 +326,9 @@ Bug Fixes
 * SOLR-12064: JSON Facet API: fix bug where a limit of -1 in conjunction with multiple facets or
   missing=true caused an NPE or AIOOBE. (Karthik Ramachandran via yonik)
 
+* SOLR-12083: Fix RealTime GET to work on a cluster running CDCR when using Solr's in-place updates
+  (Amrit Sarkar, Varun Thacker)
+
 
 Optimizations
 ----------------------
@@ -434,6 +445,14 @@ Other Changes
 
 * SOLR-12067: Increase autoAddReplicas default 30 second wait time to 120 seconds.
   (Varun Thacker, Mark Miller via shalin)
+
+* SOLR-12078: Fixed reproducable Failure in TestReplicationHandler.doTestIndexFetchOnMasterRestart that happened
+  due to using stale http connections. (Gus Heck, shalin)
+
+* SOLR-12099: Remove reopenReaders attribute from 'IndexConfig in SolrConfig' page in ref guide. (shalin)
+
+* SOLR-12098: Document the Lucene spins auto-detection and its effect on CMS dynamic defaults.
+  (Cassandra Targett, shalin)
 
 ==================  7.2.1 ==================
 

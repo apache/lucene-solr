@@ -246,7 +246,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  final boolean flushOneDWPT() throws IOException, AbortingException {
+  final boolean flushOneDWPT() throws IOException {
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "startFlushOneDWPT");
     }
@@ -389,7 +389,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushControl.setClosed();
   }
 
-  private boolean preUpdate() throws IOException, AbortingException {
+  private boolean preUpdate() throws IOException {
     ensureOpen();
     boolean hasEvents = false;
 
@@ -409,7 +409,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return hasEvents;
   }
 
-  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException, AbortingException {
+  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
     hasEvents |= applyAllDeletes(deleteQueue);
     if (flushingDWPT != null) {
       hasEvents |= doFlush(flushingDWPT);
@@ -433,7 +433,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException, AbortingException {
+                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
@@ -450,11 +450,10 @@ final class DocumentsWriter implements Closeable, Accountable {
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         seqNo = dwpt.updateDocuments(docs, analyzer, delNode);
-      } catch (AbortingException ae) {
-        flushControl.doOnAbort(perThread);
-        dwpt.abort();
-        throw ae;
       } finally {
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        }
         // We don't know how many documents were actually
         // counted as indexed, so we must subtract here to
         // accumulate our separate counter:
@@ -477,7 +476,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException, AbortingException {
+      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
 
     boolean hasEvents = preUpdate();
 
@@ -495,11 +494,10 @@ final class DocumentsWriter implements Closeable, Accountable {
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         seqNo = dwpt.updateDocument(doc, analyzer, delNode);
-      } catch (AbortingException ae) {
-        flushControl.doOnAbort(perThread);
-        dwpt.abort();
-        throw ae;
       } finally {
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        }
         // We don't know whether the document actually
         // counted as being indexed, so we must subtract here to
         // accumulate our separate counter:
@@ -522,7 +520,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
-  private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException, AbortingException {
+  private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {
       hasEvents = true;
@@ -645,7 +643,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    * is called after this method, to release the flush lock in DWFlushControl
    */
   long flushAllThreads()
-    throws IOException, AbortingException {
+    throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "startFullFlush");
@@ -713,10 +711,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  public LiveIndexWriterConfig getIndexWriterConfig() {
-    return config;
-  }
-  
   void putEvent(Event event) {
     events.add(event);
   }
@@ -735,11 +729,16 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
 
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       try {
         packet.apply(writer);
       } catch (Throwable t) {
-        writer.tragicEvent(t, "applyUpdatesPacket");
+        try {
+          writer.onTragicEvent(t, "applyUpdatesPacket");
+        } catch (Throwable t1) {
+          t.addSuppressed(t1);
+        }
+        throw t;
       }
       writer.flushDeletesCount.incrementAndGet();
     }
@@ -753,7 +752,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.applyDeletesAndPurge(true); // we always purge!
     }
   }
@@ -766,7 +765,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.purge(true);
     }
   }
@@ -779,7 +778,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.flushFailed(info);
     }
   }
@@ -792,7 +791,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.deleteNewFiles(files);
     }
   }

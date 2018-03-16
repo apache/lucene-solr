@@ -638,6 +638,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       masterJetty.stop();
       masterJetty.start();
 
+      // close and re-create master client because its connection pool has stale connections
+      masterClient.close();
+      masterClient = createNewSolrClient(masterJetty.getLocalPort());
+
       nDocs--;
       for (int i = 0; i < nDocs; i++)
         index(masterClient, "id", i, "name", "name = " + i);

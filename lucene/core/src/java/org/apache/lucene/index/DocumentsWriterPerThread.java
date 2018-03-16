@@ -56,6 +56,21 @@ class DocumentsWriterPerThread {
   abstract static class IndexingChain {
     abstract DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException;
   }
+
+  private Throwable abortingException;
+
+  final void onAbortingException(Throwable throwable) {
+    assert abortingException == null: "aborting excpetion has already been set";
+    abortingException = throwable;
+  }
+
+  final boolean hasHitAbortingException() {
+    return abortingException != null;
+  }
+
+  final boolean isAborted() {
+    return aborted;
+  }
   
 
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
@@ -77,10 +92,6 @@ class DocumentsWriterPerThread {
     DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
       this.docWriter = docWriter;
       this.infoStream = infoStream;
-    }
-
-    public void testPoint(String name) {
-      docWriter.testPoint(name);
     }
 
     public void clear() {
@@ -125,10 +136,9 @@ class DocumentsWriterPerThread {
       }
       try {
         consumer.abort();
-      } catch (Throwable t) {
+      } finally {
+        pendingUpdates.clear();
       }
-
-      pendingUpdates.clear();
     } finally {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "done abort");
@@ -147,7 +157,7 @@ class DocumentsWriterPerThread {
   // Updates for our still-in-RAM (to be flushed next) segment
   final BufferedUpdates pendingUpdates;
   final SegmentInfo segmentInfo;     // Current segment we are working on
-  boolean aborted = false;   // True if we aborted
+  private boolean aborted = false;   // True if we aborted
 
   private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
@@ -218,113 +228,123 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException, AbortingException {
-    testPoint("DocumentsWriterPerThread addDocument start");
-    assert deleteQueue != null;
-    reserveOneDoc();
-    docState.doc = doc;
-    docState.analyzer = analyzer;
-    docState.docID = numDocsInRAM;
-    if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", Thread.currentThread().getName() + " update delNode=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
-    }
-    // Even on exception, the document is still added (but marked
-    // deleted), so we don't need to un-reserve at that point.
-    // Aborting exceptions will actually "lose" more than one
-    // document, so the counter will be "wrong" in that case, but
-    // it's very hard to fix (we can't easily distinguish aborting
-    // vs non-aborting exceptions):
-    boolean success = false;
+  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException {
     try {
+      assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
+      testPoint("DocumentsWriterPerThread addDocument start");
+      assert deleteQueue != null;
+      reserveOneDoc();
+      docState.doc = doc;
+      docState.analyzer = analyzer;
+      docState.docID = numDocsInRAM;
+      if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
+        infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
+      }
+      // Even on exception, the document is still added (but marked
+      // deleted), so we don't need to un-reserve at that point.
+      // Aborting exceptions will actually "lose" more than one
+      // document, so the counter will be "wrong" in that case, but
+      // it's very hard to fix (we can't easily distinguish aborting
+      // vs non-aborting exceptions):
+      boolean success = false;
       try {
-        consumer.processDocument();
-      } finally {
-        docState.clear();
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        // mark document as deleted
-        deleteDocID(docState.docID);
-        numDocsInRAM++;
-      }
-    }
-
-    return finishDocument(deleteNode);
-  }
-
-  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException, AbortingException {
-    testPoint("DocumentsWriterPerThread addDocuments start");
-    assert deleteQueue != null;
-    docState.analyzer = analyzer;
-    if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", Thread.currentThread().getName() + " update delNode=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
-    }
-    int docCount = 0;
-    boolean allDocsIndexed = false;
-    try {
-      
-      for(Iterable<? extends IndexableField> doc : docs) {
-        // Even on exception, the document is still added (but marked
-        // deleted), so we don't need to un-reserve at that point.
-        // Aborting exceptions will actually "lose" more than one
-        // document, so the counter will be "wrong" in that case, but
-        // it's very hard to fix (we can't easily distinguish aborting
-        // vs non-aborting exceptions):
-        reserveOneDoc();
-        docState.doc = doc;
-        docState.docID = numDocsInRAM;
-        docCount++;
-
-        boolean success = false;
         try {
           consumer.processDocument();
-          success = true;
         } finally {
-          if (!success) {
-            // Incr here because finishDocument will not
-            // be called (because an exc is being thrown):
-            numDocsInRAM++;
+          docState.clear();
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          // mark document as deleted
+          deleteDocID(docState.docID);
+          numDocsInRAM++;
+        }
+      }
+
+      return finishDocument(deleteNode);
+    } finally {
+      maybeAbort("updateDocument");
+    }
+  }
+
+  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException {
+    try {
+      testPoint("DocumentsWriterPerThread addDocuments start");
+      assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
+      assert deleteQueue != null;
+      docState.analyzer = analyzer;
+      if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
+        infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
+      }
+      int docCount = 0;
+      boolean allDocsIndexed = false;
+      try {
+
+        for (Iterable<? extends IndexableField> doc : docs) {
+          // Even on exception, the document is still added (but marked
+          // deleted), so we don't need to un-reserve at that point.
+          // Aborting exceptions will actually "lose" more than one
+          // document, so the counter will be "wrong" in that case, but
+          // it's very hard to fix (we can't easily distinguish aborting
+          // vs non-aborting exceptions):
+          reserveOneDoc();
+          docState.doc = doc;
+          docState.docID = numDocsInRAM;
+          docCount++;
+
+          boolean success = false;
+          try {
+            consumer.processDocument();
+            success = true;
+          } finally {
+            if (!success) {
+              // Incr here because finishDocument will not
+              // be called (because an exc is being thrown):
+              numDocsInRAM++;
+            }
+          }
+
+          numDocsInRAM++;
+        }
+        allDocsIndexed = true;
+
+        // Apply delTerm only after all indexing has
+        // succeeded, but apply it only to docs prior to when
+        // this batch started:
+        long seqNo;
+        if (deleteNode != null) {
+          seqNo = deleteQueue.add(deleteNode, deleteSlice);
+          assert deleteSlice.isTail(deleteNode) : "expected the delete term as the tail item";
+          deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
+          return seqNo;
+        } else {
+          seqNo = deleteQueue.updateSlice(deleteSlice);
+          if (seqNo < 0) {
+            seqNo = -seqNo;
+            deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
+          } else {
+            deleteSlice.reset();
           }
         }
 
-        numDocsInRAM++;
-      }
-      allDocsIndexed = true;
-
-      // Apply delTerm only after all indexing has
-      // succeeded, but apply it only to docs prior to when
-      // this batch started:
-      long seqNo;
-      if (deleteNode != null) {
-        seqNo = deleteQueue.add(deleteNode, deleteSlice);
-        assert deleteSlice.isTail(deleteNode) : "expected the delete node as the tail";
-        deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
         return seqNo;
-      } else {
-        seqNo = deleteQueue.updateSlice(deleteSlice);
-        if (seqNo < 0) {
-          seqNo = -seqNo;
-          deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
-        } else {
-          deleteSlice.reset();
+
+      } finally {
+        if (!allDocsIndexed && !aborted) {
+          // the iterator threw an exception that is not aborting
+          // go and mark all docs from this block as deleted
+          int docID = numDocsInRAM - 1;
+          final int endDocID = docID - docCount;
+          while (docID > endDocID) {
+            deleteDocID(docID);
+            docID--;
+          }
         }
+        docState.clear();
       }
-
-      return seqNo;
-
     } finally {
-      if (!allDocsIndexed && !aborted) {
-        // the iterator threw an exception that is not aborting 
-        // go and mark all docs from this block as deleted
-        int docID = numDocsInRAM-1;
-        final int endDocID = docID - docCount;
-        while (docID > endDocID) {
-          deleteDocID(docID);
-          docID--;
-        }
-      }
-      docState.clear();
+      maybeAbort("updateDocuments");
     }
   }
   
@@ -378,14 +398,6 @@ class DocumentsWriterPerThread {
   }
 
   /**
-   * Returns the number of delete terms in this {@link DocumentsWriterPerThread}
-   */
-  public int numDeleteTerms() {
-    // public for FlushPolicy
-    return pendingUpdates.numTermDeletes.get();
-  }
-
-  /**
    * Returns the number of RAM resident documents in this {@link DocumentsWriterPerThread}
    */
   public int getNumDocsInRAM() {
@@ -414,7 +426,7 @@ class DocumentsWriterPerThread {
   }
 
   /** Flush all pending docs to a new segment */
-  FlushedSegment flush() throws IOException, AbortingException {
+  FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -458,11 +470,11 @@ class DocumentsWriterPerThread {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
-                           (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                           (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                           (flushState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (flushState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
-                           (flushState.fieldInfos.hasFreq() ? "freqs" : "no freqs"));
+            (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+            (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " +
+            (flushState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " +
+            (flushState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " +
+            (flushState.fieldInfos.hasFreq() ? "freqs" : "no freqs"));
         infoStream.message("DWPT", "flushedFiles=" + segmentInfoPerCommit.files());
         infoStream.message("DWPT", "flushed codec=" + codec);
       }
@@ -476,27 +488,40 @@ class DocumentsWriterPerThread {
       }
 
       if (infoStream.isEnabled("DWPT")) {
-        final double newSegmentSize = segmentInfoPerCommit.sizeInBytes()/1024./1024.;
-        infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name + 
-                " ramUsed=" + nf.format(startMBUsed) + " MB" +
-                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
-                " docs/MB=" + nf.format(flushState.segmentInfo.maxDoc() / newSegmentSize));
+        final double newSegmentSize = segmentInfoPerCommit.sizeInBytes() / 1024. / 1024.;
+        infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name +
+            " ramUsed=" + nf.format(startMBUsed) + " MB" +
+            " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
+            " docs/MB=" + nf.format(flushState.segmentInfo.maxDoc() / newSegmentSize));
       }
 
       assert segmentInfo != null;
 
       FlushedSegment fs = new FlushedSegment(infoStream, segmentInfoPerCommit, flushState.fieldInfos,
-                                             segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
-                                             sortMap);
+          segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
+          sortMap);
       sealFlushedSegment(fs, sortMap);
       if (infoStream.isEnabled("DWPT")) {
-        infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
+        infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0) / 1000000.0) + " msec");
       }
-
       return fs;
-    } catch (Throwable th) {
-      abort();
-      throw AbortingException.wrap(th);
+    } catch (Throwable t) {
+      onAbortingException(t);
+      throw t;
+    } finally {
+      maybeAbort("flush");
+    }
+  }
+
+  private void maybeAbort(String location) {
+    if (hasHitAbortingException() && aborted == false) {
+      // if we are already aborted don't do anything here
+      try {
+        abort();
+      } finally {
+        // whatever we do here we have to fire this tragic event up.
+        indexWriter.onTragicEvent(abortingException, location);
+      }
     }
   }
   

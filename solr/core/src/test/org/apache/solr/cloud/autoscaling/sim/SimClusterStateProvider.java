@@ -904,7 +904,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
         .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
     props.put(ZkStateReader.STATE_PROP, Slice.State.INACTIVE.toString());
-    props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTime()));
+    props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
     // add slice props
     for (int i = 0; i < subRanges.size(); i++) {
       String subSlice = subSlices.get(i);
@@ -914,7 +914,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       sliceProps.put(Slice.RANGE, range);
       sliceProps.put(Slice.PARENT, sliceName.get());
       sliceProps.put(ZkStateReader.STATE_PROP, Slice.State.ACTIVE.toString());
-      props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTime()));
+      props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
     }
     simRunLeaderElection(Collections.singleton(collectionName), true);
     results.add("success", "");

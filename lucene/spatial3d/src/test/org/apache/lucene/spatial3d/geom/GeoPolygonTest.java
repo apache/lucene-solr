@@ -1079,4 +1079,24 @@ shape:
   }
 
 
+  @Test
+  public void testLUCENE8211() {
+    //We need to handle the situation where the check point is parallel to
+    //the test point.
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0, 0));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0, 1));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1, 1));
+    points.add(new GeoPoint(PlanetModel.SPHERE,1, 0));
+    GeoPoint testPoint = new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5);
+    final List<List<GeoPoint>> pointsList = new ArrayList<>();
+    pointsList.add(points);
+    GeoPolygon polygon = new GeoComplexPolygon(PlanetModel.SPHERE, pointsList, testPoint, true);
+    assertTrue(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(testPoint.x, testPoint.y, testPoint.z)));
+    assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(-testPoint.x, -testPoint.y, -testPoint.z)));
+    //special cases
+    assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(testPoint.x, -testPoint.y, -testPoint.z)));
+    assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(-testPoint.x, testPoint.y, -testPoint.z)));
+    assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(-testPoint.x, -testPoint.y, testPoint.z)));
+  }
 }
