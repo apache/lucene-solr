@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.intervals;
+package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.Objects;

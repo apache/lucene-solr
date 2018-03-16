@@ -15,63 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.intervals;
+package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
-class ConjunctionIntervalsSource extends IntervalsSource {
+class LowpassIntervalsSource extends IntervalsSource {
 
-  final List<IntervalsSource> subSources;
-  final IntervalFunction function;
+  final IntervalsSource in;
+  final int maxWidth;
 
-  ConjunctionIntervalsSource(List<IntervalsSource> subSources, IntervalFunction function) {
-    this.subSources = subSources;
-    this.function = function;
+  LowpassIntervalsSource(IntervalsSource in, int maxWidth) {
+    this.in = in;
+    this.maxWidth = maxWidth;
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    ConjunctionIntervalsSource that = (ConjunctionIntervalsSource) o;
-    return Objects.equals(subSources, that.subSources) &&
-        Objects.equals(function, that.function);
+    LowpassIntervalsSource that = (LowpassIntervalsSource) o;
+    return maxWidth == that.maxWidth &&
+        Objects.equals(in, that.in);
   }
 
   @Override
   public String toString() {
-    return function + subSources.stream().map(Object::toString).collect(Collectors.joining(",", "(", ")"));
+    return "MAXWIDTH/" + maxWidth + "(" + in + ")";
   }
 
   @Override
   public void extractTerms(String field, Set<Term> terms) {
-    for (IntervalsSource source : subSources) {
-      source.extractTerms(field, terms);
-    }
+    in.extractTerms(field, terms);
   }
 
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
-    List<IntervalIterator> subIntervals = new ArrayList<>();
-    for (IntervalsSource source : subSources) {
-      IntervalIterator it = source.intervals(field, ctx);
-      if (it == null)
-        return null;
-      subIntervals.add(it);
-    }
-    return function.apply(subIntervals);
+    IntervalIterator i = in.intervals(field, ctx);
+    return new IntervalFilter(i) {
+      @Override
+      protected boolean accept() {
+        return (i.end() - i.start()) + 1 <= maxWidth;
+      }
+    };
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(subSources, function);
+    return Objects.hash(in, maxWidth);
   }
 }

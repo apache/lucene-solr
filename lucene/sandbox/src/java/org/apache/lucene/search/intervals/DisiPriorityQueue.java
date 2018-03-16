@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.intervals;
+package org.apache.lucene.search.intervals;
 
 
 import java.util.Arrays;
