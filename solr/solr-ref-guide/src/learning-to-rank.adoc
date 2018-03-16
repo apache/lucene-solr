@@ -371,7 +371,7 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo 'train and upload model' script can be found in the `solr/contrib/ltr/example` folder in the https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git[Apache lucene-solr git repository] which is mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/6.4.0/solr/contrib/ltr/example[github.com] (the `solr/contrib/ltr/example` folder is not shipped in the Solr binary release).
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
