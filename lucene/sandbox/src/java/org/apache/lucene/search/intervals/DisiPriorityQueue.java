@@ -28,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * pluggable comparison function makes the rebalancing quite slow.
  * @lucene.internal
  */
-public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
+final class DisiPriorityQueue implements Iterable<DisiWrapper> {
 
   static int leftNode(int node) {
     return ((node + 1) << 1) - 1;

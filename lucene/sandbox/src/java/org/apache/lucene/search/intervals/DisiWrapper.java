@@ -20,7 +20,7 @@ package org.apache.lucene.search.intervals;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
 
-public class DisiWrapper {
+class DisiWrapper {
 
   public final DocIdSetIterator iterator;
   public final IntervalIterator intervals;
