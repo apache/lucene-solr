@@ -39,41 +39,11 @@ import org.apache.lucene.search.TwoPhaseIterator;
  */
 public abstract class IntervalIterator extends DocIdSetIterator {
 
-  protected final DocIdSetIterator approximation;
-
-  protected IntervalIterator(DocIdSetIterator approximation) {
-    this.approximation = approximation;
-  }
-
   /**
    * When returned from {@link #nextInterval()}, indicates that there are no more
    * matching intervals on the current document
    */
   public static final int NO_MORE_INTERVALS = Integer.MAX_VALUE;
-
-  @Override
-  public final int docID() {
-    return approximation.docID();
-  }
-
-  @Override
-  public final int nextDoc() throws IOException {
-    int doc = approximation.nextDoc();
-    reset();
-    return doc;
-  }
-
-  @Override
-  public final int advance(int target) throws IOException {
-    int doc = approximation.advance(target);
-    reset();
-    return doc;
-  }
-
-  @Override
-  public final long cost() {
-    return approximation.cost();
-  }
 
   /**
    * The start of the current interval
@@ -103,15 +73,5 @@ public abstract class IntervalIterator extends DocIdSetIterator {
    * @see TwoPhaseIterator#matchCost()
    */
   public abstract float matchCost();
-
-  /**
-   * Called when the underlying iterator has been advanced.
-   */
-  protected abstract void reset() throws IOException;
-
-  @Override
-  public String toString() {
-    return approximation.docID() + ":[" + start() + "->" + end() + "]";
-  }
 
 }

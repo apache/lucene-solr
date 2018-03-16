@@ -27,7 +27,7 @@ import org.apache.lucene.index.Term;
 class LowpassIntervalsSource extends IntervalsSource {
 
   final IntervalsSource in;
-  final int maxWidth;
+  private final int maxWidth;
 
   LowpassIntervalsSource(IntervalsSource in, int maxWidth) {
     this.in = in;

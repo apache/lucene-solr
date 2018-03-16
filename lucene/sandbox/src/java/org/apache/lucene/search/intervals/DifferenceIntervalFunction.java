@@ -81,12 +81,34 @@ abstract class DifferenceIntervalFunction {
     boolean bpos;
 
     RelativeIterator(IntervalIterator a, IntervalIterator b) {
-      super(a);
       this.a = a;
       this.b = b;
     }
 
     @Override
+    public int docID() {
+      return a.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int doc = a.nextDoc();
+      reset();
+      return doc;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int doc = a.advance(target);
+      reset();
+      return doc;
+    }
+
+    @Override
+    public long cost() {
+      return a.cost();
+    }
+
     protected void reset() throws IOException {
       int doc = a.docID();
       bpos = b.docID() == doc ||
@@ -165,7 +187,29 @@ abstract class DifferenceIntervalFunction {
 
     @Override
     public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      IntervalIterator notWithin = new IntervalIterator(subtrahend) {
+      IntervalIterator notWithin = new IntervalIterator() {
+
+        @Override
+        public int docID() {
+          return subtrahend.docID();
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          positioned = false;
+          return subtrahend.nextDoc();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          positioned = false;
+          return subtrahend.advance(target);
+        }
+
+        @Override
+        public long cost() {
+          return subtrahend.cost();
+        }
 
         boolean positioned = false;
 
@@ -199,12 +243,6 @@ abstract class DifferenceIntervalFunction {
         @Override
         public float matchCost() {
           return subtrahend.matchCost();
-        }
-
-        @Override
-        protected void reset() throws IOException {
-          // already called when the subtrahend approximation is advanced
-          positioned = false;
         }
 
       };

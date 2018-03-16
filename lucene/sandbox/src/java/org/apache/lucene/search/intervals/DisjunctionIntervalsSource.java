@@ -78,6 +78,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
   private static class DisjunctionIntervalIterator extends IntervalIterator {
 
+    final DocIdSetIterator approximation;
     final PriorityQueue<IntervalIterator> intervalQueue;
     final DisiPriorityQueue disiQueue;
     final List<IntervalIterator> iterators;
@@ -86,8 +87,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     IntervalIterator current = EMPTY;
 
     DisjunctionIntervalIterator(List<IntervalIterator> iterators) {
-      super(buildApproximation(iterators));
-      this.disiQueue = ((DisjunctionDISIApproximation)approximation).subIterators;
+      this.disiQueue = new DisiPriorityQueue(iterators.size());
+      for (IntervalIterator it : iterators) {
+        disiQueue.add(new DisiWrapper(it));
+      }
+      this.approximation = new DisjunctionDISIApproximation(disiQueue);
       this.iterators = iterators;
       this.intervalQueue = new PriorityQueue<IntervalIterator>(iterators.size()) {
         @Override
@@ -105,14 +109,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       this.matchCost = costsum;
     }
 
-    private static DocIdSetIterator buildApproximation(List<IntervalIterator> iterators) {
-      DisiPriorityQueue disiQueue = new DisiPriorityQueue(iterators.size());
-      for (IntervalIterator it : iterators) {
-        disiQueue.add(new DisiWrapper(it));
-      }
-      return new DisjunctionDISIApproximation(disiQueue);
-    }
-
     @Override
     public float matchCost() {
       return matchCost;
@@ -128,8 +124,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return current.end();
     }
 
-    @Override
-    protected void reset() throws IOException {
+    private void reset() throws IOException {
       intervalQueue.clear();
       for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
         dw.intervals.nextInterval();
@@ -165,9 +160,52 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return start >= it.start() && start <= it.end() && end >= it.start() && end <= it.end();
     }
 
+    @Override
+    public int docID() {
+      return approximation.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int doc = approximation.nextDoc();
+      reset();
+      return doc;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int doc = approximation.advance(target);
+      reset();
+      return doc;
+    }
+
+    @Override
+    public long cost() {
+      return approximation.cost();
+    }
   }
 
-  private static final IntervalIterator EMPTY = new IntervalIterator(DocIdSetIterator.empty()) {
+  private static final IntervalIterator EMPTY = new IntervalIterator() {
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
     public int start() {
@@ -187,11 +225,6 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public float matchCost() {
       return 0;
-    }
-
-    @Override
-    protected void reset() throws IOException {
-
     }
   };
 

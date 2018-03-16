@@ -54,7 +54,31 @@ class TermIntervalsSource extends IntervalsSource {
     te.seekExact(term);
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);
     float cost = termPositionsCost(te);
-    return new IntervalIterator(pe) {
+    return new IntervalIterator() {
+
+      @Override
+      public int docID() {
+        return pe.docID();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        int doc = pe.nextDoc();
+        reset();
+        return doc;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        int doc = pe.advance(target);
+        reset();
+        return doc;
+      }
+
+      @Override
+      public long cost() {
+        return pe.cost();
+      }
 
       int pos = -1, upto;
 
@@ -81,8 +105,7 @@ class TermIntervalsSource extends IntervalsSource {
         return cost;
       }
 
-      @Override
-      protected void reset() throws IOException {
+      private void reset() throws IOException {
         if (pe.docID() == NO_MORE_DOCS) {
           upto = -1;
           pos = NO_MORE_INTERVALS;

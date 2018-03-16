@@ -30,8 +30,27 @@ public abstract class IntervalFilter extends IntervalIterator {
    * Create a new filter
    */
   public IntervalFilter(IntervalIterator in) {
-    super(in.approximation);
     this.in = in;
+  }
+
+  @Override
+  public int docID() {
+    return in.docID();
+  }
+
+  @Override
+  public int nextDoc() throws IOException {
+    return in.nextDoc();
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    return in.advance(target);
+  }
+
+  @Override
+  public long cost() {
+    return in.cost();
   }
 
   @Override
@@ -47,11 +66,6 @@ public abstract class IntervalFilter extends IntervalIterator {
   @Override
   public float matchCost() {
     return in.matchCost();
-  }
-
-  @Override
-  protected void reset() throws IOException {
-    in.reset();
   }
 
   /**
