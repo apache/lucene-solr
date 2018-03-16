@@ -49,6 +49,9 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.8.v20171121
 
+* SOLR-11331: Ability to run and debug standalone Solr and a single node SolrCloud server from Eclipse.
+  Also being able to run all lucene and solr tests as a configuration (Karthik Ramachandran via Varun Thacker)
+
 
 Upgrade Notes
 ----------------------

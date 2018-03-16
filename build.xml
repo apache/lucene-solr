@@ -288,16 +288,21 @@
 
   <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
     <basename file="${basedir}" property="eclipseprojectname"/>
-      <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false" encoding="UTF-8">
+    <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false" encoding="UTF-8">
       <filterset>
         <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
       </filterset>
     </copy>
+    <copy overwrite="false" todir="eclipse-build" encoding="UTF-8">
+      <fileset dir="dev-tools/eclipse" includes="*.launch"/>
+      <filterset>
+        <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
+      </filterset>
+    </copy> 
     <mkdir dir=".settings"/>
     <copy todir=".settings/" overwrite="true">
       <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />
     </copy>
-    
     <pathconvert property="eclipse.fileset.sourcefolders" pathsep="|" dirsep="/">
       <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="tools/**, build/**" />
       <dirset dir="${basedir}/solr" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="build/**" />
@@ -309,10 +314,19 @@
       <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
+    <pathconvert property="eclipse.fileset.webfolders" pathsep="|" dirsep="/">
+        <dirset dir="${basedir}/solr/server/contexts" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/etc" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/modules" excludes="**/*" />
+        <dirset dir="${basedir}/solr/server/solr" excludes="**/*" />
+        <dirset dir="${basedir}/solr/webapp/web" excludes="**/*" />
+        <map from="${basedir}/" to=""/>
+    </pathconvert>
     <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">
       <outputproperty name="indent" value="yes"/>
       <param name="eclipse.fileset.libs" expression="${eclipse.fileset.libs}"/>
       <param name="eclipse.fileset.sourcefolders" expression="${eclipse.fileset.sourcefolders}"/>
+      <param name="eclipse.fileset.webfolders" expression="${eclipse.fileset.webfolders}"/>
     </xslt>
 
     <echo>
