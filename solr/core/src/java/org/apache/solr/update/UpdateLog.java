@@ -1431,8 +1431,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   update.pointer = reader.position();
                   update.version = version;
 
-                  if (oper == UpdateLog.UPDATE_INPLACE && entry.size() == 5) {
-                    update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                  if (oper == UpdateLog.UPDATE_INPLACE) {
+                    if ((update.log instanceof CdcrTransactionLog && entry.size() == 6) ||
+                        (!(update.log instanceof CdcrTransactionLog) && entry.size() == 5)) {
+                      update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                    }
                   }
                   updatesForLog.add(update);
                   updates.put(version, update);
@@ -1440,7 +1443,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   if (oper == UpdateLog.DELETE_BY_QUERY) {
                     deleteByQueryList.add(update);
                   } else if (oper == UpdateLog.DELETE) {
-                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(entry.size()-1)));
+                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(2)));
                   }
 
                   break;
