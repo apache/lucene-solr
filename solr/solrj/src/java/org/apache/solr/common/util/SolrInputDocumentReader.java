@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -51,6 +54,17 @@ public class SolrInputDocumentReader extends Reader {
   private int eodReturnValue = -1;
 
   /**
+   * Creates a character-stream reader that streams all String fields in the document with space as separator 
+   *
+   * @param doc Solr input document
+   * @param maxCharsPerFieldValue max chars to consume per field value
+   * @param maxTotalChars max chars to consume total
+   */
+  public SolrInputDocumentReader(SolrInputDocument doc, int maxTotalChars, int maxCharsPerFieldValue) {
+    this(doc, getStringFields(doc), maxTotalChars, maxCharsPerFieldValue, " ");
+  }
+  
+  /**
    * Creates a character-stream reader that reads the listed fields in order, with
    * max lengths as specified.
    *
@@ -72,7 +86,7 @@ public class SolrInputDocumentReader extends Reader {
 
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(len);
     int numChars = fillBuffer(sb, len);
 
     if (numChars > -1) {
@@ -197,5 +211,13 @@ public class SolrInputDocumentReader extends Reader {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed reading doc content from reader", e);
     }
+  }
+  
+  protected static String[] getStringFields(SolrInputDocument doc) {
+    Iterable<SolrInputField> iterable = () -> doc.iterator();
+        List<String> strFields = StreamSupport.stream(iterable.spliterator(), false)
+            .filter(f -> f.getFirstValue() instanceof String)
+            .map(SolrInputField::getName).collect(Collectors.toList());
+        return strFields.toArray(new String[0]);
   }
 }
