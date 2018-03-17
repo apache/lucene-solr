@@ -86,8 +86,11 @@
   <field name="llp_idx" type="llp" indexed="true" docValues="false" />
   <field name="llp_dv" type="llp" indexed="false" docValues="true" />
   <field name="llp_1_dv_st" type="llp" indexed="false" docValues="true" stored="true" multiValued="false"/>
+  <field name="llp_N_dv_st" type="llp" indexed="false" docValues="true" stored="true" multiValued="true"/>
   <field name="llp_1_dv" type="llp" indexed="false" docValues="true" stored="false" multiValued="false" useDocValuesAsStored="false"/>
+  <field name="llp_N_dv" type="llp" indexed="false" docValues="true" stored="false" multiValued="true" useDocValuesAsStored="false"/>
   <field name="llp_1_dv_dvasst" type="llp" indexed="false" docValues="true" stored="false" multiValued="false"  useDocValuesAsStored="true"/>
+  <field name="llp_N_dv_dvasst" type="llp" indexed="false" docValues="true" stored="false" multiValued="true"  useDocValuesAsStored="true"/>
 
   <dynamicField name="bboxD_*" type="bbox" indexed="true"/>
   <dynamicField name="str_*" type="string" indexed="true" stored="true"/>
