@@ -68,6 +68,9 @@ Optimizations
   differential fetching now speeds up recovery times when full index replication is needed, but only
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
+* SOLR-11731: LatLonPointSpatialField can now decode points from docValues when stored=false docValues=true,
+  albeit with maximum precision of 1.33cm (Karthik Ramachandran, David Smiley)
+
 Other Changes
 ----------------------
 

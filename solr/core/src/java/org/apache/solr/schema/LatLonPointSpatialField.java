@@ -18,11 +18,13 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -45,6 +47,8 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
+
+import static java.math.RoundingMode.CEILING;
 
 /**
  * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}. The
@@ -70,6 +74,26 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   protected SpatialStrategy newSpatialStrategy(String fieldName) {
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
+  }
+  
+  /**
+   * Decodes the docValues number into latitude and longitude components, formatting as "lat,lon".
+   * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective
+   * of the available precision.
+   * @param value Non-null; stored location field data
+   * @return Non-null; "lat, lon" with 6 decimal point precision
+   */
+  public static String decodeDocValueToString(long value) {
+    final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
+    final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
+    // 7 decimal places maximizes our available precision to just over a centimeter; we have a test for it.
+    // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
+    //   reverses the "floor" that occurs when we encode.
+    BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(7, CEILING);
+    BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(7, CEILING);
+    return latitudeDecoded.stripTrailingZeros().toPlainString() + ","
+        + longitudeDecoded.stripTrailingZeros().toPlainString();
+    // return ((float)latDouble) + "," + ((float)lonDouble);  crude but not quite as accurate
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox
