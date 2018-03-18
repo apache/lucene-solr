@@ -165,7 +165,7 @@ public class GeoPolygonFactory {
     }
 
     //First approximation to find a point
-    final GeoPoint centerOfMass = getCenterOfMass(filteredPointList);
+    final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
     final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
     if (isCenterOfMassInside != null) {
       return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
@@ -192,7 +192,7 @@ public class GeoPolygonFactory {
     throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
 
-  private static GeoPoint getCenterOfMass(List<GeoPoint> points) {
+  private static GeoPoint getCenterOfMass(PlanetModel planetModel, List<GeoPoint> points) {
     double x = 0;
     double y = 0;
     double z = 0;
@@ -202,7 +202,7 @@ public class GeoPolygonFactory {
       y += point.y;
       z += point.z;
     }
-    return new GeoPoint(x / points.size(), y / points.size(), z / points.size());
+    return planetModel.createSurfacePoint(x / points.size(), y / points.size(), z / points.size());
   }
   
   /** Use this class to specify a polygon with associated holes.
@@ -267,6 +267,16 @@ public class GeoPolygonFactory {
     // If there's no polygon we can use to determine a test point, we throw up.
     if (testPointShape == null) {
       throw new IllegalArgumentException("couldn't find a non-degenerate polygon for in-set determination");
+    }
+
+    final GeoPoint centerOfMass = getCenterOfMass(planetModel, testPointShape.points);
+    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, testPointShape.points);
+    if (isCenterOfMassInside != null) {
+      if (isCenterOfMassInside == testPointShape.poleMustBeInside) {
+        return new GeoComplexPolygon(planetModel, pointsList, centerOfMass, isCenterOfMassInside);
+      } else {
+        return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-centerOfMass.x, -centerOfMass.y, -centerOfMass.z), !isCenterOfMassInside);
+      }
     }
     
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
