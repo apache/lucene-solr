@@ -54,6 +54,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void test() throws Exception {
     //Migrate from HTTP -> HTTPS -> HTTP
     assertReplicaInformation("http");

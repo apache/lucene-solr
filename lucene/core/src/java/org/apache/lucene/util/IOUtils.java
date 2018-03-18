@@ -122,6 +122,8 @@ public final class IOUtils {
         if (object != null) {
           object.close();
         }
+      } catch (VirtualMachineError e) {
+        throw e;
       } catch (Throwable t) {
       }
     }
@@ -622,5 +624,18 @@ public final class IOUtils {
     } else {
       return desc;
     }
+  }
+
+  /**
+   * Returns the second throwable if the first is null otherwise adds the second as suppressed to the first
+   * and returns it.
+   */
+  public static <T extends Throwable> T useOrSuppress(T first, T second) {
+    if (first == null) {
+      return second;
+    } else {
+      first.addSuppressed(second);
+    }
+    return first;
   }
 }

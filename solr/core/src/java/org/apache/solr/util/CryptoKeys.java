@@ -287,8 +287,8 @@ public final class CryptoKeys {
 
     // If this ever comes back to haunt us see the discussion at
     // SOLR-9609 for background and code allowing this to go
-    // into security.json
-    private static final int DEFAULT_KEYPAIR_LENGTH = 1024;
+    // into security.json. Also see SOLR-12103.
+    private static final int DEFAULT_KEYPAIR_LENGTH = 2048;
 
     public RSAKeyPair() {
       KeyPairGenerator keyGen = null;

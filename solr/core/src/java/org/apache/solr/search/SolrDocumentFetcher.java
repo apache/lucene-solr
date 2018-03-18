@@ -56,6 +56,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -490,8 +491,16 @@ public class SolrDocumentFetcher {
             long number = numericDv.nextValue();
             Object value = decodeNumberFromDV(schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
-            if (value == null) return null;
-            else outValues.add(value);
+            if (value == null) {
+              return null;
+            }
+            // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single valued
+            else if (schemaField.multiValued() == false) {
+              return value;
+            }
+            else {
+              outValues.add(value);
+            }
           }
           assert outValues.size() > 0;
           return outValues;
@@ -515,6 +524,12 @@ public class SolrDocumentFetcher {
   }
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
+    // note: This special-case is unfortunate; if we have to add any more than perhaps the fieldType should
+    //  have this method so that specific field types can customize it.
+    if (schemaField.getType() instanceof LatLonPointSpatialField) {
+      return LatLonPointSpatialField.decodeDocValueToString(value);
+    }
+    
     if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);

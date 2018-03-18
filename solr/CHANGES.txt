@@ -49,7 +49,6 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.8.v20171121
 
-
 Upgrade Notes
 ----------------------
 
@@ -59,12 +58,17 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
+
 Optimizations
 ----------------------
 
 * SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
   differential fetching now speeds up recovery times when full index replication is needed, but only
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
+
+* SOLR-11731: LatLonPointSpatialField can now decode points from docValues when stored=false docValues=true,
+  albeit with maximum precision of 1.33cm (Karthik Ramachandran, David Smiley)
 
 Other Changes
 ----------------------
@@ -78,6 +82,12 @@ Other Changes
   autoscaling package. (shalin)
 
 * SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
+
+* SOLR-12101: ZkTestServer was not handling connection timeout settings properly. (Gus Heck via Mark Miller)
+
+* SOLR-11331: Ability to run and debug standalone Solr and a single node SolrCloud server from Eclipse.
+  Also being able to run all Lucene and Solr tests as a configuration (Karthik Ramachandran via
+  Varun Thacker, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
@@ -327,6 +337,10 @@ Bug Fixes
 * SOLR-12083: Fix RealTime GET to work on a cluster running CDCR when using Solr's in-place updates
   (Amrit Sarkar, Varun Thacker)
 
+* SOLR-12063: Fix PeerSync, Leader Election failures and CDCR checkpoint inconsistencies on a cluster running CDCR
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -450,6 +464,9 @@ Other Changes
 * SOLR-12099: Remove reopenReaders attribute from 'IndexConfig in SolrConfig' page in ref guide. (shalin)
 
 * SOLR-12098: Document the Lucene spins auto-detection and its effect on CMS dynamic defaults.
+  (Cassandra Targett, shalin)
+
+* SOLR-12097: Document the diskType policy attribute and usage of disk space in Collection APIs.
   (Cassandra Targett, shalin)
 
 ==================  7.2.1 ==================
