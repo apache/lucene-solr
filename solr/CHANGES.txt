@@ -49,11 +49,6 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.8.v20171121
 
-* SOLR-11331: Ability to run and debug standalone Solr and a single node SolrCloud server from Eclipse.
-  Also being able to run all Lucene and Solr tests as a configuration (Karthik Ramachandran via
-  Varun Thacker, Uwe Schindler)
-
-
 Upgrade Notes
 ----------------------
 
@@ -89,6 +84,10 @@ Other Changes
 * SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
 
 * SOLR-12101: ZkTestServer was not handling connection timeout settings properly. (Gus Heck via Mark Miller)
+
+* SOLR-11331: Ability to run and debug standalone Solr and a single node SolrCloud server from Eclipse.
+  Also being able to run all Lucene and Solr tests as a configuration (Karthik Ramachandran via
+  Varun Thacker, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
