@@ -641,17 +641,20 @@
   <target name="resolve" depends="resolve-example,resolve-server">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
      <ant dir="solrj" target="resolve" inheritall="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
+        <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
      <ant dir="test-framework" target="resolve" inheritall="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
+     <ant dir="server" target="resolve" inheritall="false">
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
      <ant dir="solr-ref-guide" target="resolve" inheritall="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
      <contrib-crawl target="resolve"/>
     </sequential>
   </target>
