@@ -76,6 +76,9 @@ Bug Fixes
 
 Other
 
+* LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
+  (Ignacio Vera)
+  
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss) 
