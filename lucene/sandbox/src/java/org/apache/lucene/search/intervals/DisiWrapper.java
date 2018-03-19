@@ -32,16 +32,12 @@ class DisiWrapper {
   // An approximation of the iterator, or the iterator itself if it does not
   // support two-phase iteration
   public final DocIdSetIterator approximation;
-  // A two-phase view of the iterator, or null if the iterator does not support
-  // two-phase iteration
-  public final TwoPhaseIterator twoPhaseView;
 
   public DisiWrapper(IntervalIterator iterator) {
     this.intervals = iterator;
     this.iterator = iterator;
     this.cost = iterator.cost();
     this.doc = -1;
-    this.twoPhaseView = null;
     this.approximation = iterator;
     this.matchCost = iterator.matchCost();
   }

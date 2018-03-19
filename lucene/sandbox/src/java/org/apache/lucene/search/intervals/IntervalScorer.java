@@ -91,7 +91,7 @@ class IntervalScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        return intervals.cost();
+        return intervals.matchCost();
       }
     };
   }
