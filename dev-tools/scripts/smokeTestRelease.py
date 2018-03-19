@@ -760,7 +760,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
         #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
         print('    test solr example w/ Java 9...')
-        java.run_java9('ant clean example', '%s/antexample.log' % unpackPath)
+        java.run_java9('ant clean server', '%s/antexample.log' % unpackPath)
         testSolrExample(unpackPath, java.java9_home, True)
 
       os.chdir('..')
