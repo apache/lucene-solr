@@ -15,6 +15,9 @@ New Features
 
 Other
 
+* LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
+  (Ignacio Vera)
+  
 * SOLR-10912: Add automatic patch validation. (Mano Kovacs, Steve Rowe)
 
 ======================= Lucene 7.3.0 =======================
