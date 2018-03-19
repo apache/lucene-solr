@@ -126,8 +126,7 @@ class DocumentsWriterPerThread {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  void abort() {
-    //System.out.println(Thread.currentThread().getName() + ": now abort seg=" + segmentInfo.name);
+  void abort() throws IOException{
     aborted = true;
     pendingNumDocs.addAndGet(-numDocsInRAM);
     try {
@@ -513,7 +512,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  private void maybeAbort(String location) {
+  private void maybeAbort(String location) throws IOException {
     if (hasHitAbortingException() && aborted == false) {
       // if we are already aborted don't do anything here
       try {
