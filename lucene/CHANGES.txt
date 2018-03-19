@@ -63,9 +63,6 @@ Changes in Runtime Behavior
 
 Improvements
 
-* LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
-  (Ignacio Vera)
-  
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
   SimilarityBase switches to 64-bit doubles internally to help avoid common numeric issues.
   Add missing range checks for similarity parameters.
@@ -108,6 +105,9 @@ New Features
 
 Other
 
+* LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
+  (Ignacio Vera)
+  
 * SOLR-10912: Add automatic patch validation. (Mano Kovacs, Steve Rowe)
 
 ======================= Lucene 7.3.0 =======================
