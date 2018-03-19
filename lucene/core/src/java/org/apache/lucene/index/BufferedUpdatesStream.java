@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -302,7 +303,6 @@ class BufferedUpdatesStream implements Accountable {
     ensureOpen();
 
     List<SegmentState> segStates = new ArrayList<>();
-    boolean success = false;
     try {
       for (SegmentCommitInfo info : infos) {
         if (info.getBufferedDeletesGen() <= delGen && alreadySeenSegments.contains(info) == false) {
@@ -310,17 +310,15 @@ class BufferedUpdatesStream implements Accountable {
           alreadySeenSegments.add(info);
         }
       }
-      success = true;
-    } finally {
-      if (success == false) {
-        for(SegmentState segState : segStates) {
-            try {
-              segState.finish(pool);
-            } catch (Throwable th) {
-              // suppress so we keep throwing original exc
-            }
+    } catch (Throwable t) {
+      for(SegmentState segState : segStates) {
+        try {
+          segState.finish(pool);
+        } catch (Throwable th) {
+          t.addSuppressed(th);
         }
       }
+      throw t;
     }
     
     return segStates.toArray(new SegmentState[0]);
@@ -328,13 +326,10 @@ class BufferedUpdatesStream implements Accountable {
 
   /** Close segment states previously opened with openSegmentStates. */
   public ApplyDeletesResult closeSegmentStates(IndexWriter.ReaderPool pool, SegmentState[] segStates, boolean success) throws IOException {
-    int count = segStates.length;
-    Throwable firstExc = null;
     List<SegmentCommitInfo> allDeleted = null;
     long totDelCount = 0;
-
-    for (int j=0;j<count;j++) {
-      SegmentState segState = segStates[j];
+    final List<SegmentState> segmentStates = Arrays.asList(segStates);
+    for (SegmentState segState : segmentStates) {
       if (success) {
         totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
         int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
@@ -346,21 +341,8 @@ class BufferedUpdatesStream implements Accountable {
           allDeleted.add(segState.reader.getSegmentInfo());
         }
       }
-      try {
-        segStates[j].finish(pool);
-      } catch (Throwable th) {
-        if (firstExc == null) {
-          firstExc = th;
-        }
-      }
     }
-
-    if (success) {
-      if (firstExc != null) {
-        throw IOUtils.rethrowAlways(firstExc);
-      }
-    }
-
+    IOUtils.applyToAll(segmentStates, s -> s.finish(pool));
     if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + updates.size() + " packets; bytesUsed=" + pool.ramBytesUsed());
     }

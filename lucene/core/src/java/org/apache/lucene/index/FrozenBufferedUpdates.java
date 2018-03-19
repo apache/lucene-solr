@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -40,7 +42,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -247,7 +248,7 @@ class FrozenBufferedUpdates {
   /** Translates a frozen packet of delete term/query, or doc values
    *  updates, into their actual docIDs in the index, and applies the change.  This is a heavy
    *  operation and is done concurrently by incoming indexing threads. */
-
+  @SuppressWarnings("try")
   public synchronized void apply(IndexWriter writer) throws IOException {
     if (applied.getCount() == 0) {
       // already done
@@ -319,14 +320,12 @@ class FrozenBufferedUpdates {
         writer.deleter.incRef(delFiles);
       }
 
-      boolean success = false;
+      AtomicBoolean success = new AtomicBoolean();
       long delCount;
-      try {
+      try (Closeable finalizer = () -> finishApply(writer, segStates, success.get(), delFiles)) {
         // don't hold IW monitor lock here so threads are free concurrently resolve deletes/updates:
         delCount = apply(segStates);
-        success = true;
-      } finally {
-        finishApply(writer, segStates, success, delFiles);
+        success.set(true);
       }
 
       // Since we jus resolved some more deletes/updates, now is a good time to write them:
@@ -722,103 +721,98 @@ class FrozenBufferedUpdates {
     // We apply segment-private deletes on flush:
     assert privateSegment == null;
 
-    try {
-      long startNS = System.nanoTime();
+    long startNS = System.nanoTime();
 
-      long delCount = 0;
+    long delCount = 0;
 
-      for (BufferedUpdatesStream.SegmentState segState : segStates) {
-        assert segState.delGen != delGen: "segState.delGen=" + segState.delGen + " vs this.gen=" + delGen;
-        if (segState.delGen > delGen) {
-          // our deletes don't apply to this segment
-          continue;
-        }
-        if (segState.rld.refCount() == 1) {
-          // This means we are the only remaining reference to this segment, meaning
-          // it was merged away while we were running, so we can safely skip running
-          // because we will run on the newly merged segment next:
-          continue;
-        }
+    for (BufferedUpdatesStream.SegmentState segState : segStates) {
+      assert segState.delGen != delGen: "segState.delGen=" + segState.delGen + " vs this.gen=" + delGen;
+      if (segState.delGen > delGen) {
+        // our deletes don't apply to this segment
+        continue;
+      }
+      if (segState.rld.refCount() == 1) {
+        // This means we are the only remaining reference to this segment, meaning
+        // it was merged away while we were running, so we can safely skip running
+        // because we will run on the newly merged segment next:
+        continue;
+      }
 
-        FieldTermIterator iter = deleteTerms.iterator();
+      FieldTermIterator iter = deleteTerms.iterator();
 
-        BytesRef delTerm;
-        String field = null;
-        TermsEnum termsEnum = null;
-        BytesRef readerTerm = null;
-        PostingsEnum postingsEnum = null;
-        while ((delTerm = iter.next()) != null) {
+      BytesRef delTerm;
+      String field = null;
+      TermsEnum termsEnum = null;
+      BytesRef readerTerm = null;
+      PostingsEnum postingsEnum = null;
+      while ((delTerm = iter.next()) != null) {
 
-          if (iter.field() != field) {
-            // field changed
-            field = iter.field();
-            Terms terms = segState.reader.terms(field);
-            if (terms != null) {
-              termsEnum = terms.iterator();
-              readerTerm = termsEnum.next();
-            } else {
-              termsEnum = null;
-            }
+        if (iter.field() != field) {
+          // field changed
+          field = iter.field();
+          Terms terms = segState.reader.terms(field);
+          if (terms != null) {
+            termsEnum = terms.iterator();
+            readerTerm = termsEnum.next();
+          } else {
+            termsEnum = null;
           }
+        }
 
-          if (termsEnum != null) {
-            int cmp = delTerm.compareTo(readerTerm);
-            if (cmp < 0) {
-              // TODO: can we advance across del terms here?
-              // move to next del term
-              continue;
-            } else if (cmp == 0) {
+        if (termsEnum != null) {
+          int cmp = delTerm.compareTo(readerTerm);
+          if (cmp < 0) {
+            // TODO: can we advance across del terms here?
+            // move to next del term
+            continue;
+          } else if (cmp == 0) {
+            // fall through
+          } else if (cmp > 0) {
+            TermsEnum.SeekStatus status = termsEnum.seekCeil(delTerm);
+            if (status == TermsEnum.SeekStatus.FOUND) {
               // fall through
-            } else if (cmp > 0) {
-              TermsEnum.SeekStatus status = termsEnum.seekCeil(delTerm);
-              if (status == TermsEnum.SeekStatus.FOUND) {
-                // fall through
-              } else if (status == TermsEnum.SeekStatus.NOT_FOUND) {
-                readerTerm = termsEnum.term();
-                continue;
-              } else {
-                // TODO: can we advance to next field in deleted terms?
-                // no more terms in this segment
-                termsEnum = null;
-                continue;
-              }
+            } else if (status == TermsEnum.SeekStatus.NOT_FOUND) {
+              readerTerm = termsEnum.term();
+              continue;
+            } else {
+              // TODO: can we advance to next field in deleted terms?
+              // no more terms in this segment
+              termsEnum = null;
+              continue;
             }
+          }
 
-            // we don't need term frequencies for this
-            postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
+          // we don't need term frequencies for this
+          postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
 
-            assert postingsEnum != null;
+          assert postingsEnum != null;
 
-            int docID;
-            while ((docID = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          int docID;
+          while ((docID = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
 
-              // NOTE: there is no limit check on the docID
-              // when deleting by Term (unlike by Query)
-              // because on flush we apply all Term deletes to
-              // each segment.  So all Term deleting here is
-              // against prior segments:
-              if (segState.rld.delete(docID)) {
-                delCount++;
-              }
+            // NOTE: there is no limit check on the docID
+            // when deleting by Term (unlike by Query)
+            // because on flush we apply all Term deletes to
+            // each segment.  So all Term deleting here is
+            // against prior segments:
+            if (segState.rld.delete(docID)) {
+              delCount++;
             }
           }
         }
       }
-
-      if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD",
-                           String.format(Locale.ROOT, "applyTermDeletes took %.2f msec for %d segments and %d del terms; %d new deletions",
-                                         (System.nanoTime()-startNS)/1000000.,
-                                         segStates.length,
-                                         deleteTerms.size(),
-                                         delCount));
-      }
-
-      return delCount;
-
-    } catch (Throwable t) {
-      throw IOUtils.rethrowAlways(t);
     }
+
+    if (infoStream.isEnabled("BD")) {
+      infoStream.message("BD",
+                         String.format(Locale.ROOT, "applyTermDeletes took %.2f msec for %d segments and %d del terms; %d new deletions",
+                                       (System.nanoTime()-startNS)/1000000.,
+                                       segStates.length,
+                                       deleteTerms.size(),
+                                       delCount));
+    }
+
+    return delCount;
   }
   
   public void setDelGen(long delGen) {

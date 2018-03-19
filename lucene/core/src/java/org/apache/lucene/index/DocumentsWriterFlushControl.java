@@ -636,8 +636,8 @@ final class DocumentsWriterFlushControl implements Accountable {
         try {
           documentsWriter.subtractFlushedNumDocs(dwpt.getNumDocsInRAM());
           dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the flush queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(dwpt);
         }
@@ -647,8 +647,8 @@ final class DocumentsWriterFlushControl implements Accountable {
           flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
           blockedFlush.dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the blocked queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(blockedFlush.dwpt);
         }
