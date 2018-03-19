@@ -63,6 +63,11 @@ Bug Fixes
 
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
 
+* SOLR-12107: Fixed a error in [child] transformer that could ocur if documentCache was not used (hossman)
+
+* SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
+  specified, the field value was lost if documentCache was not used.  (hossman)
+
 Optimizations
 ----------------------
 
@@ -72,6 +77,9 @@ Optimizations
 
 * SOLR-11731: LatLonPointSpatialField can now decode points from docValues when stored=false docValues=true,
   albeit with maximum precision of 1.33cm (Karthik Ramachandran, David Smiley)
+
+* SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
+  number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
 
 Other Changes
 ----------------------
