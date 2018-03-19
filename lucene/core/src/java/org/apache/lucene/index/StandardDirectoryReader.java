@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,7 +92,6 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
     final SegmentInfos segmentInfos = infos.clone();
     int infosUpto = 0;
-    boolean success = false;
     try {
       for (int i = 0; i < numSegments; i++) {
         // NOTE: important that we use infos not
@@ -115,25 +115,20 @@ public final class StandardDirectoryReader extends DirectoryReader {
           writer.readerPool.release(rld);
         }
       }
-      
+
       writer.incRefDeleter(segmentInfos);
-      
+
       StandardDirectoryReader result = new StandardDirectoryReader(dir,
-                                                                   readers.toArray(new SegmentReader[readers.size()]), writer,
-                                                                   segmentInfos, applyAllDeletes, writeAllDeletes);
-      success = true;
+          readers.toArray(new SegmentReader[readers.size()]), writer,
+          segmentInfos, applyAllDeletes, writeAllDeletes);
       return result;
-    } finally {
-      if (!success) {
-        for (SegmentReader r : readers) {
-          try {
-            r.decRef();
-          } catch (Throwable th) {
-            // ignore any exception that is thrown here to not mask any original
-            // exception. 
-          }
-        }
+    } catch (Throwable t) {
+      try {
+        IOUtils.applyToAll(readers, SegmentReader::decRef);
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
+      throw t;
     }
   }
 
@@ -365,34 +360,25 @@ public final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
+  @SuppressWarnings("try")
   protected void doClose() throws IOException {
-    Throwable firstExc = null;
-    for (final LeafReader r : getSequentialSubReaders()) {
-      // try to close each reader, even if an exception is thrown
-      try {
-        r.decRef();
-      } catch (Throwable t) {
-        if (firstExc == null) {
-          firstExc = t;
+    Closeable decRefDeleter = () -> {
+      if (writer != null) {
+        try {
+          writer.decRefDeleter(segmentInfos);
+        } catch (AlreadyClosedException ex) {
+          // This is OK, it just means our original writer was
+          // closed before we were, and this may leave some
+          // un-referenced files in the index, which is
+          // harmless.  The next time IW is opened on the
+          // index, it will delete them.
         }
       }
-    }
-
-    if (writer != null) {
-      try {
-        writer.decRefDeleter(segmentInfos);
-      } catch (AlreadyClosedException ex) {
-        // This is OK, it just means our original writer was
-        // closed before we were, and this may leave some
-        // un-referenced files in the index, which is
-        // harmless.  The next time IW is opened on the
-        // index, it will delete them.
-      }
-    }
-
-    // throw the first exception
-    if (firstExc != null) {
-      throw IOUtils.rethrowAlways(firstExc);
+    };
+    try (Closeable finalizer = decRefDeleter) {
+      // try to close each reader, even if an exception is thrown
+      final List<? extends LeafReader> sequentialSubReaders = getSequentialSubReaders();
+      IOUtils.applyToAll(sequentialSubReaders, LeafReader::decRef);
     }
   }
 
@@ -493,23 +479,9 @@ public final class StandardDirectoryReader extends DirectoryReader {
   };
 
   @Override
-  void notifyReaderClosedListeners(Throwable th) throws IOException {
+  void notifyReaderClosedListeners() throws IOException {
     synchronized(readerClosedListeners) {
-      for(ClosedListener listener : readerClosedListeners) {
-        try {
-          listener.onClose(cacheHelper.getKey());
-        } catch (Throwable t) {
-          if (th == null) {
-            th = t;
-          } else {
-            th.addSuppressed(t);
-          }
-        }
-      }
-      
-      if (th != null) {
-        throw IOUtils.rethrowAlways(th);
-      }
+      IOUtils.applyToAll(readerClosedListeners, l -> l.onClose(cacheHelper.getKey()));
     }
   }
 

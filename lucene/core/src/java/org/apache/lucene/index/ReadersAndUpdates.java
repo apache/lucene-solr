@@ -845,7 +845,7 @@ class ReadersAndUpdates {
         success = true;
       } finally {
         if (success == false) {
-          newReader.decRef();
+          newReader.close();
         }
       }
       reader = newReader;

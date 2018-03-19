@@ -356,10 +356,6 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
-  public SegmentInfos getLastSegmentInfos() {
-    return lastSegmentInfos;
-  }
-
   /**
    * Remove the CommitPoints in the commitsToDelete List by
    * DecRef'ing all files from each SegmentInfos.
@@ -381,9 +377,7 @@ final class IndexFileDeleter implements Closeable {
         try {
           decRef(commit.files);
         } catch (Throwable t) {
-          if (firstThrowable == null) {
-            firstThrowable = t;
-          }
+          firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
         }
       }
       commitsToDelete.clear();
@@ -583,20 +577,14 @@ final class IndexFileDeleter implements Closeable {
           toDelete.add(file);
         }
       } catch (Throwable t) {
-        if (firstThrowable == null) {
-          // Save first exception and throw it in the end, but be sure to finish decRef all files
-          firstThrowable = t;
-        }
+        firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
       }
     }
 
     try {
       deleteFiles(toDelete);
     } catch (Throwable t) {
-      if (firstThrowable == null) {
-        // Save first exception and throw it in the end, but be sure to finish decRef all files
-        firstThrowable = t;
-      }
+      firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
     }
 
     if (firstThrowable != null) {

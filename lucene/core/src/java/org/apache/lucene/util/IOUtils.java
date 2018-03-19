@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -637,5 +637,25 @@ public final class IOUtils {
       first.addSuppressed(second);
     }
     return first;
+  }
+
+  /**
+   * Applies the consumer to all non-null elements in the collection even if an exception is thrown. The first exception
+   * thrown by the consumer is re-thrown and subsequent exceptions are suppressed.
+   */
+  public static <T> void applyToAll(Collection<T> collection, IOConsumer<T> consumer) throws IOException {
+    IOUtils.close(collection.stream().filter(Objects::nonNull).map(t -> (Closeable) () -> consumer.accept(t))::iterator);
+  }
+
+  /**
+   * An IO operation with a single input.
+   * @see java.util.function.Consumer
+   */
+  @FunctionalInterface
+  public interface IOConsumer<T> {
+    /**
+     * Performs this operation on the given argument.
+     */
+    void accept(T input) throws IOException;
   }
 }

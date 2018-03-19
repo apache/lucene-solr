@@ -29,7 +29,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;  // javadocs
-import org.apache.lucene.util.IOUtils;
 
 /**
  IndexReader is an abstract class, providing an interface for accessing a
@@ -142,16 +141,13 @@ public abstract class IndexReader implements Closeable {
   }
 
   // overridden by StandardDirectoryReader and SegmentReader
-  void notifyReaderClosedListeners(Throwable th) throws IOException {
-    // nothing to notify in the base impl, just rethrow
-    if (th != null) {
-      throw IOUtils.rethrowAlways(th);
-    }
+  void notifyReaderClosedListeners() throws IOException {
+    // nothing to notify in the base impl
   }
 
-  private void reportCloseToParentReaders() {
-    synchronized(parentReaders) {
-      for(IndexReader parent : parentReaders) {
+  private void reportCloseToParentReaders() throws IOException {
+    synchronized (parentReaders) {
+      for (IndexReader parent : parentReaders) {
         parent.closedByChild = true;
         // cross memory barrier by a fake write:
         parent.refCount.addAndGet(0);
@@ -232,6 +228,7 @@ public abstract class IndexReader implements Closeable {
    *
    * @see #incRef
    */
+  @SuppressWarnings("try")
   public final void decRef() throws IOException {
     // only check refcount here (don't call ensureOpen()), so we can
     // still close the reader if it was made invalid by a child:
@@ -242,17 +239,9 @@ public abstract class IndexReader implements Closeable {
     final int rc = refCount.decrementAndGet();
     if (rc == 0) {
       closed = true;
-      Throwable throwable = null;
-      try {
+      try (Closeable finalizer = this::reportCloseToParentReaders;
+            Closeable finalizer1 = this::notifyReaderClosedListeners) {
         doClose();
-      } catch (Throwable th) {
-        throwable = th;
-      } finally {
-        try {
-          reportCloseToParentReaders();
-        } finally {
-          notifyReaderClosedListeners(throwable);
-        }
       }
     } else if (rc < 0) {
       throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
