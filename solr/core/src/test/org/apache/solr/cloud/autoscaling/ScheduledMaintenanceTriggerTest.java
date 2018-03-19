@@ -68,6 +68,10 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       solrClient = cluster.getSolrClient();
     } else {
       cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));
+      // wait for defaults to be applied - due to accelerated time sometimes we may miss this
+      cloudManager.getTimeSource().sleep(10000);
+      AutoScalingConfig cfg = cloudManager.getDistribStateManager().getAutoScalingConfig();
+      assertFalse("autoscaling config is empty", cfg.isEmpty());
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
     }
     timeSource = cloudManager.getTimeSource();
