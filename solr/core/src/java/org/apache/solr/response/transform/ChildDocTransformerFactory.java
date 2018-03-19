@@ -41,6 +41,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.SolrDocumentFetcher;
+import org.apache.solr.search.SolrReturnFields;
 
 /**
  *
@@ -121,6 +122,12 @@ class ChildDocTransformer extends DocTransformer {
   public String getName()  {
     return name;
   }
+  
+  @Override
+  public String[] getExtraRequestFields() {
+    // we always need the idField (of the parent) in order to fill out it's children
+    return new String[] { idField.getName() };
+  }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
@@ -146,16 +153,16 @@ class ChildDocTransformer extends DocTransformer {
         while(i.hasNext()) {
           Integer childDocNum = i.next();
           Document childDoc = context.getSearcher().doc(childDocNum);
-          SolrDocument solrChildDoc = DocsStreamer.convertLuceneDocToSolrDoc(childDoc, schema);
-
-          if (shouldDecorateWithDVs) {
-            docFetcher.decorateDocValueFields(solrChildDoc, childDocNum, dvFieldsToReturn);
-          }
-
           // TODO: future enhancement...
           // support an fl local param in the transformer, which is used to build
           // a private ReturnFields instance that we use to prune unwanted field 
           // names from solrChildDoc
+          SolrDocument solrChildDoc = DocsStreamer.convertLuceneDocToSolrDoc(childDoc, schema,
+                                                                             new SolrReturnFields());
+
+          if (shouldDecorateWithDVs) {
+            docFetcher.decorateDocValueFields(solrChildDoc, childDocNum, dvFieldsToReturn);
+          }
           doc.addChildDocument(solrChildDoc);
         }
       }

@@ -17,13 +17,25 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.document.Document;
+import static org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
+
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.transform.*;
+import static org.apache.solr.response.DocsStreamer.convertLuceneDocToSolrDoc;
+import org.apache.solr.schema.IndexSchema;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.List;
 import java.util.Random;
 
 public class ReturnFieldsTest extends SolrTestCaseJ4 {
@@ -363,6 +375,93 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   }
 
+  /**
+   * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument} respects
+   * the {@link ReturnFields} and doesn't unneccessarily convert Fields that aren't needed.
+   * <p>
+   * This is important because {@link SolrDocumentFetcher} may return additional fields 
+   * (lazy or otherwise) if the document has been cached.
+   * </p>
+   */
+  public void testWhiteboxSolrDocumentConversion() {
+    final IndexSchema schema = h.getCore().getLatestSchema();
+    SolrDocument docOut = null;
+
+    // a "mock" Document with a bunch of fields...
+    //
+    // (we can mock this with all StringField instances because convertLuceneDocToSolrDoc only
+    // uses the schema for multivalued-ness)
+    final Document docIn = new Document();
+    final StringBuilder allFieldNames = new StringBuilder();
+    docIn.add(new StringField("id","bar",Store.YES));
+    allFieldNames.append("id");
+    docIn.add(new StringField("store_rpt","42",Store.YES));
+    allFieldNames.append(",store_rpt");
+    docIn.add(new StringField("subword","bar",Store.YES)); // single value in multi-value field
+    allFieldNames.append(",subword");
+    docIn.add(new StringField("uniq","xxx",Store.YES)); 
+    docIn.add(new StringField("uniq","yyy",Store.YES)); // multi-value in multi-valued field
+    allFieldNames.append(",uniq");
+    for (int i = 0; i < 20; i++) {
+      final String foo = "foo_" + i + "_s1";
+      allFieldNames.append(",").append(foo);
+      docIn.add(new StringField(foo, "bar"+i, Store.YES));
+    }
+
+    // output should only have a single field
+    docOut = convertLuceneDocToSolrDoc(docIn, schema, new SolrReturnFields(req("fl","id")));
+    assertEquals(docOut.toString(), 1, docOut.size());
+    assertEquals(docOut.toString(),
+                 Collections.singleton("id"),
+                 docOut.getFieldNames());
+    assertTrue(docOut.toString(), docOut.get("id") instanceof StringField);
+
+    // output should only have the few specified fields
+    // behavior should be ultimately be consistent for all of these ReturnField instances
+    // (aliasing, extra requested by transformer, or otherwise)
+    for (ReturnFields rf : Arrays.asList
+           (new SolrReturnFields(req("fl","id,subword,store_rpt,uniq,foo_2_s1")),
+            new SolrReturnFields(req("fl","id,xxx:[geo f=store_rpt],uniq,foo_2_s1,subword")),
+            new SolrReturnFields(req("fl","id,xxx:subword,uniq,yyy:foo_2_s1,[geo f=store_rpt]")))) {
+      docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
+      final String debug = rf.toString() + " => " +docOut.toString();
+      assertEquals(debug, 5, docOut.size());
+      assertEquals(debug,
+                   new HashSet<String>(Arrays.asList("id","subword","uniq","foo_2_s1","store_rpt")),
+                   docOut.getFieldNames());
+      assertTrue(debug, docOut.get("id") instanceof StringField);
+      assertTrue(debug, docOut.get("store_rpt") instanceof StringField);
+      assertTrue(debug, docOut.get("foo_2_s1") instanceof StringField);
+      assertTrue(debug, docOut.get("subword") instanceof List);
+      assertTrue(debug, docOut.get("uniq") instanceof List);
+    }
+    
+    // all source fields should be in the output
+    // behavior should be ultimately be consistent for all of these ReturnField instances
+    // (globbing or requesting more fields then doc has)
+    for (ReturnFields rf : Arrays.asList
+           (new SolrReturnFields(),
+            new SolrReturnFields(req()),
+            new SolrReturnFields(req("fl","*")),
+            new SolrReturnFields(req("fl","*,score")),
+            new SolrReturnFields(req("fl","id,subword,uniq,foo_*,store_*")),
+            new SolrReturnFields(req("fl",allFieldNames+",bogus1,bogus2,bogus3")))) {
+      
+      docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
+      final String debug = rf.toString() + " => " +docOut.toString();
+      assertEquals(debug, 24, docOut.size());
+      assertTrue(debug, docOut.get("id") instanceof StringField);
+      assertTrue(debug, docOut.get("store_rpt") instanceof StringField);
+      assertTrue(debug, docOut.get("subword") instanceof List);
+      assertTrue(debug, docOut.get("uniq") instanceof List);
+      for (int i = 0; i < 20; i++) {
+        assertTrue(debug, docOut.get("foo_" + i + "_s1") instanceof StringField);
+      }
+    }
+    
+  }
+
+  
   public void testWhitespace() {
     Random r = random();
     final int iters = atLeast(30);
