@@ -89,6 +89,8 @@
   <property name="build.content.dir" location="${build.dir}/content" />
   <property name="main-page" value="index" />
   <property name="pdf-filename" value="apache-solr-ref-guide-${solr-guide-version}.pdf" />
+  <!-- for pulling in versions of major deps -->
+  <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/>
 
   <!-- ====== TOOLS FOR GENERATING/VALIDATING BITS OF THE SITE / PDF ======= -->
   <property name="tools-jar-name" value="solr-ref-guide-tools.jar" />
@@ -214,6 +216,13 @@
         <attribute key="lucene-javadocs" value="${lucene-javadocs}" />
         <attribute key="build-date" value="${DSTAMP}" />
         <attribute key="build-year" value="${current.year}" />
+        <attribute key="ivy-commons-codec-version" value="${ivyversions./commons-codec/commons-codec}" />
+        <attribute key="ivy-dropwizard-version" value="${ivyversions.io.dropwizard.metrics.version}" />
+        <attribute key="ivy-log4j-version" value="${ivyversions.org.log4j.major.version}" />
+        <attribute key="ivy-opennlp-version" value="${ivyversions./org.apache.opennlp/opennlp-tools}" />
+        <attribute key="ivy-tika-version" value="${ivyversions.org.apache.tika.version}" />
+        <attribute key="ivy-velocity-tools-version" value="${ivyversions./org.apache.velocity/velocity-tools}" />
+        <attribute key="ivy-zookeeper-version" value="${ivyversions./org.apache.zookeeper/zookeeper}" />
       </asciidoctor:convert>
     </sequential>
   </macrodef>

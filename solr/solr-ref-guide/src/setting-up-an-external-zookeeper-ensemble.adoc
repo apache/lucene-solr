@@ -23,7 +23,7 @@ Shutting down a redundant Solr instance will also shut down its ZooKeeper server
 The solution to this problem is to set up an external ZooKeeper ensemble. Fortunately, while this process can seem intimidating due to the number of powerful options, setting up a simple ensemble is actually quite straightforward, as described below.
 
 .How Many ZooKeepers?
-[quote,ZooKeeper Administrator's Guide,http://zookeeper.apache.org/doc/r3.4.11/zookeeperAdmin.html]
+[quote,ZooKeeper Administrator's Guide,http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html]
 ____
 "For a ZooKeeper service to be active, there must be a majority of non-failing machines that can communicate with each other. *To create a deployment that can tolerate the failure of F machines, you should count on deploying 2xF+1 machines*. Thus, a deployment that consists of three machines can handle one failure, and a deployment of five machines can handle two failures. Note that a deployment of six machines can only handle two failures since three machines is not a majority.
 
@@ -36,7 +36,7 @@ It is generally recommended to have an odd number of ZooKeeper servers in your e
 
 For example, if you only have two ZooKeeper nodes and one goes down, 50% of available servers is not a majority, so ZooKeeper will no longer serve requests. However, if you have three ZooKeeper nodes and one goes down, you have 66% of available servers available, and ZooKeeper will continue normally while you repair the one down node. If you have 5 nodes, you could continue operating with two down nodes if necessary.
 
-More information on ZooKeeper clusters is available from the ZooKeeper documentation at http://zookeeper.apache.org/doc/r3.4.11/zookeeperAdmin.html#sc_zkMulitServerSetup.
+More information on ZooKeeper clusters is available from the ZooKeeper documentation at http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#sc_zkMulitServerSetup.
 
 == Download Apache ZooKeeper
 
@@ -46,7 +46,7 @@ The first step in setting up Apache ZooKeeper is, of course, to download the sof
 ====
 When using stand-alone ZooKeeper, you need to take care to keep your version of ZooKeeper updated with the latest version distributed with Solr. Since you are using it as a stand-alone application, it does not get upgraded when you upgrade Solr.
 
-Solr currently uses Apache ZooKeeper v3.4.11.
+Solr currently uses Apache ZooKeeper v{ivy-zookeeper-version}.
 ====
 
 == Setting Up a Single ZooKeeper
@@ -78,7 +78,7 @@ Once this file is in place, you're ready to start the ZooKeeper instance.
 
 To run the instance, you can simply use the `ZOOKEEPER_HOME/bin/zkServer.sh` script provided, as with this command: `zkServer.sh start`
 
-Again, ZooKeeper provides a great deal of power through additional configurations, but delving into them is beyond the scope of this tutorial. For more information, see the ZooKeeper http://zookeeper.apache.org/doc/r3.4.5/zookeeperStarted.html[Getting Started] page. For this example, however, the defaults are fine.
+Again, ZooKeeper provides a great deal of power through additional configurations, but delving into them is beyond the scope of this tutorial. For more information, see the ZooKeeper http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperStarted.html[Getting Started] page. For this example, however, the defaults are fine.
 
 === Point Solr at the Instance
 
@@ -184,4 +184,4 @@ You may also want to secure the communication between ZooKeeper and Solr.
 
 To setup ACL protection of znodes, see <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
 
-For more information on getting the most power from your ZooKeeper installation, check out the http://zookeeper.apache.org/doc/r3.4.5/zookeeperAdmin.html[ZooKeeper Administrator's Guide].
+For more information on getting the most power from your ZooKeeper installation, check out the http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html[ZooKeeper Administrator's Guide].

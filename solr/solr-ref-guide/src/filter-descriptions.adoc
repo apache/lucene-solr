@@ -201,7 +201,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -1026,7 +1026,7 @@ This filter creates tokens using one of the phonetic encoding algorithms in the 
 
 *Arguments:*
 
-`encoder`:: (required) The name of the encoder to use. The encoder name must be one of the following (case insensitive): `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
+`encoder`:: (required) The name of the encoder to use. The encoder name must be one of the following (case insensitive): `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
 
 `inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
