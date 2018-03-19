@@ -160,7 +160,7 @@ limitations under the License.
             <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
 
             <li id="threads" class="global" ng-class="{active:page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
-            <li id="cluster-suggestions" class="global" ng-class="{active:page=='cluster-suggestions'}"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
+            <li ng-show="isCloudEnabled" id="cluster-suggestions" class="global" ng-class="{active:page=='cluster-suggestions'}"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
 
           </ul>
 
