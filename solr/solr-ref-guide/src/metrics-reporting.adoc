@@ -124,7 +124,7 @@ Implementation of a custom metrics supplier is beyond the scope of this guide, b
 * `cpu`, which uses the current thread's CPU time
 
 <histogram>:: This element defines the implementation of a `Histogram` supplier. This element also supports the `clock` parameter shown above with the `meter` element, and also:
-`<str name="reservoir">`::: The fully-qualified class name of the `Reservoir` implementation to use. The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/3.1.0/manual/core/#histograms[Codahale Metrics library] that Solr uses. The following parameters are supported, within the mentioned limitations:
+`<str name="reservoir">`::: The fully-qualified class name of the `Reservoir` implementation to use. The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/{ivy-dropwizard-version}/manual/core.html#histograms[Codahale Metrics library] that Solr uses. The following parameters are supported, within the mentioned limitations:
 * `size`, the reservoir size. The default is 1028.
 * `alpha`, the decay parameter. The default is 0.015. This is only valid for the `ExponentiallyDecayingReservoir`.
 * `window`, the window size, in seconds, and only valid for the `SlidingTimeWindowReservoir`. The default is 300 (5 minutes).

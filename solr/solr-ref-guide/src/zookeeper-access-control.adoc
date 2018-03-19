@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section describes using ZooKeeper access control lists (ACLs) with Solr. For information about ZooKeeper ACLs, see the ZooKeeper documentation at http://zookeeper.apache.org/doc/r3.4.11/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
+This section describes using ZooKeeper access control lists (ACLs) with Solr. For information about ZooKeeper ACLs, see the ZooKeeper documentation at http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
 
 == About ZooKeeper ACLs
 

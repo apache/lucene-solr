@@ -78,7 +78,14 @@ solr-attributes: &solr-attributes-ref
   lucene-javadocs: "${lucene-javadocs}"
   build-date: "${DSTAMP}"
   build-year: "${current.year}"
-
+  ivy-commons-codec-version: "${ivyversions./commons-codec/commons-codec}"
+  ivy-dropwizard-version: "${ivyversions.io.dropwizard.metrics.version}"
+  ivy-log4j-version: "${ivyversions.org.log4j.major.version}"
+  ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
+  ivy-tika-version: "${ivyversions.org.apache.tika.version}"
+  ivy-velocity-tools-version: "${ivyversions./org.apache.velocity/velocity-tools}"
+  ivy-zookeeper-version: "${ivyversions./org.apache.zookeeper/zookeeper}"
+  
 asciidoctor:
   safe: 0
   attributes:

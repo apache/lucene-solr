@@ -92,6 +92,8 @@ Other Changes
   Also being able to run all Lucene and Solr tests as a configuration (Karthik Ramachandran via
   Varun Thacker, Uwe Schindler)
 
+* SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
