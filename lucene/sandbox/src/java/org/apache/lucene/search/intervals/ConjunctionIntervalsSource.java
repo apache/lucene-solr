@@ -59,14 +59,18 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
+  public IntervalIterator intervals(String field, LeafReaderContext ctx, boolean minimize) throws IOException {
     List<IntervalIterator> subIntervals = new ArrayList<>();
-    for (IntervalsSource source : subSources) {
-      IntervalIterator it = source.intervals(field, ctx);
+    for (int i = 0; i < subSources.size() - 1; i++) {
+      IntervalIterator it = subSources.get(i).intervals(field, ctx, function.minimizeInternalIntervals());
       if (it == null)
         return null;
       subIntervals.add(it);
     }
+    IntervalIterator it = subSources.get(subSources.size() - 1).intervals(field, ctx, true);
+    if (it == null)
+      return null;
+    subIntervals.add(it);
     return function.apply(subIntervals);
   }
 

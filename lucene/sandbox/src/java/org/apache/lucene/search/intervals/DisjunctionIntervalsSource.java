@@ -38,17 +38,17 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
+  public IntervalIterator intervals(String field, LeafReaderContext ctx, boolean minimize) throws IOException {
     List<IntervalIterator> subIterators = new ArrayList<>();
     for (IntervalsSource subSource : subSources) {
-      IntervalIterator it = subSource.intervals(field, ctx);
+      IntervalIterator it = subSource.intervals(field, ctx, minimize);
       if (it != null) {
         subIterators.add(it);
       }
     }
     if (subIterators.size() == 0)
       return null;
-    return new DisjunctionIntervalIterator(subIterators);
+    return new DisjunctionIntervalIterator(subIterators, minimize);
   }
 
   @Override
@@ -76,6 +76,25 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
   }
 
+  private static PriorityQueue<IntervalIterator> buildQueue(int size, boolean minimize) {
+    if (minimize) {
+      return new PriorityQueue<IntervalIterator>(size) {
+        @Override
+        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
+          return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
+        }
+      };
+    }
+    else {
+      return new PriorityQueue<IntervalIterator>(size) {
+        @Override
+        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
+          return a.start() < b.start() || (a.start() == b.start() && a.end() > b.end());
+        }
+      };
+    }
+  }
+
   private static class DisjunctionIntervalIterator extends IntervalIterator {
 
     final DocIdSetIterator approximation;
@@ -86,22 +105,14 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
     IntervalIterator current = EMPTY;
 
-    DisjunctionIntervalIterator(List<IntervalIterator> iterators) {
+    DisjunctionIntervalIterator(List<IntervalIterator> iterators, boolean trailing) {
       this.disiQueue = new DisiPriorityQueue(iterators.size());
       for (IntervalIterator it : iterators) {
         disiQueue.add(new DisiWrapper(it));
       }
       this.approximation = new DisjunctionDISIApproximation(disiQueue);
       this.iterators = iterators;
-      this.intervalQueue = new PriorityQueue<IntervalIterator>(iterators.size()) {
-        @Override
-        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
-          // This is different to the Vigna paper, because we're interested in matching rather
-          // than in minimizing intervals, so a wider interval should sort before its prefixes
-          return a.start() < b.start() || (a.start() == b.start() && a.end() > b.end());
-          //return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
-        }
-      };
+      this.intervalQueue = buildQueue(iterators.size(), trailing);
       float costsum = 0;
       for (IntervalIterator it : iterators) {
         costsum += it.cost();

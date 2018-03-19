@@ -36,15 +36,25 @@ abstract class IntervalFunction {
   @Override
   public abstract String toString();
 
+  boolean minimizeInternalIntervals() {
+    return true;
+  }
+
   /**
    * Combine the iterators into another iterator
    */
   public abstract IntervalIterator apply(List<IntervalIterator> iterators);
 
   static final IntervalFunction BLOCK = new SingletonFunction("BLOCK") {
+
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       return new BlockIntervalIterator(iterators);
+    }
+
+    @Override
+    boolean minimizeInternalIntervals() {
+      return false;
     }
   };
 

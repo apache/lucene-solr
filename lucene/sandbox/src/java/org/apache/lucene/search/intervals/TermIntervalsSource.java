@@ -43,7 +43,7 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
+  public IntervalIterator intervals(String field, LeafReaderContext ctx, boolean minimize) throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null)
       return null;

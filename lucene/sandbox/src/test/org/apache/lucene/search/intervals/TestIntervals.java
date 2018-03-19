@@ -194,4 +194,29 @@ public class TestIntervals extends LuceneTestCase {
     });
   }
 
+
+  public void testDisjunctionMinimization() throws IOException {
+    checkIntervals(Intervals.or(Intervals.phrase("pease", "porridge"), Intervals.term("pease")), "field1", 4, new int[][]{
+        {},
+        { 0, 0, 3, 3, 6, 6 },
+        { 0, 0, 3, 3, 6, 6 },
+        { 7, 7 },
+        { 0, 0, 3, 3, 6, 6 },
+        {}
+    });
+  }
+
+  public void testNestedDisjunctionMaximization() throws IOException {
+    // phrase(or(phrase("pease porridge"), "pease"), "hot")
+    IntervalsSource source = Intervals.phrase(Intervals.or(Intervals.term("pease"), Intervals.phrase("pease", "porridge")), Intervals.term("hot"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 0, 2 },
+        { 3, 5 },
+        {},
+        { 0, 2 },
+        {}
+    });
+  }
+
 }

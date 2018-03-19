@@ -33,14 +33,27 @@ import org.apache.lucene.index.Term;
 public abstract class IntervalsSource {
 
   /**
+   * Create an {@link IntervalIterator} exposing intervals defined by this {@link IntervalsSource}
+   *
+   * Returns {@code null} if no intervals for this field exist in this segment
+   *
+   * @param field     the field to read positions from
+   * @param ctx       the context for which to return the iterator
+   * @param minimize  true if all intervals should be minimized
+   */
+  protected abstract IntervalIterator intervals(String field, LeafReaderContext ctx, boolean minimize) throws IOException;
+
+  /**
    * Create an {@link IntervalIterator} exposing the minimum intervals defined by this {@link IntervalsSource}
    *
    * Returns {@code null} if no intervals for this field exist in this segment
    *
-   * @param field the field to read positions from
-   * @param ctx   the context for which to return the iterator
+   * @param field     the field to read positions from
+   * @param ctx       the context for which to return the iterator
    */
-  public abstract IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException;
+  public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
+    return this.intervals(field, ctx, true);
+  }
 
   /**
    * Expert: collect {@link Term} objects from this source, to be used for top-level term scoring

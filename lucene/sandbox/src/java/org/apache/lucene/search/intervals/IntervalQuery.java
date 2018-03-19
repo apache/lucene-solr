@@ -138,7 +138,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      IntervalIterator intervals = intervalsSource.intervals(field, context);
+      IntervalIterator intervals = intervalsSource.intervals(field, context, true);
       if (intervals == null)
         return null;
       LeafSimScorer leafScorer = simScorer == null ? null

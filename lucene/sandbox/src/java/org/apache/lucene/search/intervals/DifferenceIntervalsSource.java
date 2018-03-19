@@ -37,11 +37,11 @@ class DifferenceIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
-    IntervalIterator minIt = minuend.intervals(field, ctx);
+  public IntervalIterator intervals(String field, LeafReaderContext ctx, boolean minimize) throws IOException {
+    IntervalIterator minIt = minuend.intervals(field, ctx, minimize);
     if (minIt == null)
       return null;
-    IntervalIterator subIt = subtrahend.intervals(field, ctx);
+    IntervalIterator subIt = subtrahend.intervals(field, ctx, false);
     if (subIt == null)
       return minIt;
     return function.apply(minIt, subIt);
