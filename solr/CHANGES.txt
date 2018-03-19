@@ -55,6 +55,9 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
+  currently performs cleanup of old inactive shards. (ab, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -247,9 +250,6 @@ New Features
 * SOLR-11267: Add support for "add-distinct" atomic update operation (Amrit Sarkar via noble )
 
 * SOLR-11960: Add collection level properties similar to cluster properties (Peter Rusko, Tomás Fernández Löbbe)
-
-* SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
-  currently performs cleanup of old inactive shards. (ab, shalin)
 
 * SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
 
