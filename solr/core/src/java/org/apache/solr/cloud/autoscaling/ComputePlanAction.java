@@ -95,6 +95,10 @@ public class ComputePlanAction extends TriggerActionBase {
           opLimit = requestedOperations;
         }
         do {
+          // computing changes in large clusters may take a long time
+          if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("stopping - thread was interrupted");
+          }
           SolrRequest operation = suggester.getSuggestion();
           opCount++;
           // prepare suggester for the next iteration
