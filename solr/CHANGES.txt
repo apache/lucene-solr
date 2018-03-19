@@ -64,16 +64,15 @@ Other Changes
 * SOLR-12090: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces out of the
   autoscaling package. (shalin)
 
+* SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
+
 * SOLR-12101: ZkTestServer was not handling connection timeout settings properly. (Gus Heck via Mark Miller)
 
 * SOLR-11331: Ability to run and debug standalone Solr and a single node SolrCloud server from Eclipse.
   Also being able to run all Lucene and Solr tests as a configuration (Karthik Ramachandran via
   Varun Thacker, Uwe Schindler)
 
-* SOLR-12091: Rename TimeSource.getTime to getTimeNs. (ab)
-
 * SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
-
 
 ==================  7.3.0 ==================
 
