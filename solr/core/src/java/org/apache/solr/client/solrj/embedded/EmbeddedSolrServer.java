@@ -109,7 +109,7 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
     this.coreName = coreName;
-    _parser = new SolrRequestParsers(null);
+    _parser = new SolrRequestParsers(coreContainer.getCores().getCore(coreName).getSolrConfig());
   }
 
   // TODO-- this implementation sends the response to XML and then parses it.
