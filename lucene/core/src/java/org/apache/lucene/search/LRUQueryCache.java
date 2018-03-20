@@ -102,7 +102,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private final int maxSize;
   private final long maxRamBytesUsed;
   private final Predicate<LeafReaderContext> leavesToCache;
-  private final float maxCostFactor;
   // maps queries that are contained in the cache to a singleton so that this
   // cache does not store several copies of the same query
   private final Map<Query, Query> uniqueQueries;
@@ -124,14 +123,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
   /**
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
    * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
-   * leaves that satisfy {@code leavesToCache}. Also, only clauses whose cost is
-   * no more than {@code maxCostFactor} times the cost of the top-level query
-   * will be cached in order to not slow down queries too much due to caching.
-   * Pass {@link Float#POSITIVE_INFINITY} to cache regardless of costs.
+   * leaves that satisfy {@code leavesToCache}.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
-      Predicate<LeafReaderContext> leavesToCache,
-      float maxCostFactor) {
+      Predicate<LeafReaderContext> leavesToCache) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
     this.leavesToCache = leavesToCache;
@@ -140,10 +135,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     cache = new IdentityHashMap<>();
     lock = new ReentrantLock();
     ramBytesUsed = 0;
-    if (maxCostFactor < 1) {
-      throw new IllegalArgumentException("maxCostFactor must be no less than 1, got " + maxCostFactor);
-    }
-    this.maxCostFactor = maxCostFactor;
   }
 
   /**
@@ -160,7 +151,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
-    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 100);
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f));
   }
 
   // pkg-private for testing
@@ -749,39 +740,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
 
       if (docIdSet == null) {
-        ScorerSupplier inSupplier = in.scorerSupplier(context);
-        if (inSupplier == null) {
-          putIfAbsent(in.getQuery(), context, DocIdSet.EMPTY, cacheHelper);
-          return null;
-        }
-        
         if (policy.shouldCache(in.getQuery())) {
-          return new ScorerSupplier() {
-
-            @Override
-            public Scorer get(long leadCost) throws IOException {
-              double costFactor = (double) inSupplier.cost() / leadCost;
-              if (costFactor >= maxCostFactor) {
-                // too costly, caching might make the query much slower
-                return inSupplier.get(leadCost);
-              }
-              DocIdSet cached = cacheImpl(new DefaultBulkScorer(inSupplier.get(Long.MAX_VALUE)), context.reader().maxDoc());
-              putIfAbsent(in.getQuery(), context, cached, cacheHelper);
-              DocIdSetIterator iterator = cached.iterator();
-              if (iterator == null) {
-                // DIS.iterator() is allowed to return null when empty but we want a non-null iterator here
-                iterator = DocIdSetIterator.empty();
-              }
-              return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, iterator);
-            }
-
-            @Override
-            public long cost() {
-              return inSupplier.cost();
-            }
-          };
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
         } else {
-          return inSupplier;
+          return in.scorerSupplier(context);
         }
       }
 
