@@ -82,17 +82,13 @@ public final class IOUtils {
    */
   public static void close(Iterable<? extends Closeable> objects) throws IOException {
     Throwable th = null;
-
     for (Closeable object : objects) {
       try {
         if (object != null) {
           object.close();
         }
       } catch (Throwable t) {
-        addSuppressed(th, t);
-        if (th == null) {
-          th = t;
-        }
+        th = useOrSuppress(th, t);
       }
     }
 
@@ -138,16 +134,6 @@ public final class IOUtils {
         firstError.addSuppressed(firstThrowable);
       }
       throw firstError;
-    }
-  }
-  
-  /** adds a Throwable to the list of suppressed Exceptions of the first Throwable
-   * @param exception this exception should get the suppressed one added
-   * @param suppressed the suppressed exception
-   */
-  private static void addSuppressed(Throwable exception, Throwable suppressed) {
-    if (exception != null && suppressed != null) {
-      exception.addSuppressed(suppressed);
     }
   }
   
@@ -237,10 +223,7 @@ public final class IOUtils {
         try {
           dir.deleteFile(name);
         } catch (Throwable t) {
-          addSuppressed(th, t);
-          if (th == null) {
-            th = t;
-          }
+          th = useOrSuppress(th, t);
         }
       }
     }
@@ -250,10 +233,6 @@ public final class IOUtils {
     }
   }
 
-  public static void deleteFiles(Directory dir, String... files) throws IOException {
-    deleteFiles(dir, Arrays.asList(files));
-  }
-  
   /**
    * Deletes all given files, suppressing all thrown IOExceptions.
    * <p>
@@ -304,17 +283,13 @@ public final class IOUtils {
    */
   public static void deleteFilesIfExist(Collection<? extends Path> files) throws IOException {
     Throwable th = null;
-
     for (Path file : files) {
       try {
         if (file != null) {
           Files.deleteIfExists(file);
         }
       } catch (Throwable t) {
-        addSuppressed(th, t);
-        if (th == null) {
-          th = t;
-        }
+        th = useOrSuppress(th, t);
       }
     }
 

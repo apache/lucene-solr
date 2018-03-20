@@ -592,26 +592,6 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
-  /** Decrefs all provided files, ignoring any exceptions hit; call this if
-   *  you are already handling an exception. */
-  void decRefWhileHandlingException(Collection<String> files) {
-    assert locked();
-    Set<String> toDelete = new HashSet<>();
-    for(final String file : files) {
-      try {
-        if (decRef(file)) {
-          toDelete.add(file);
-        }
-      } catch (Throwable t) {
-      }
-    }
-
-    try {
-      deleteFiles(toDelete);
-    } catch (Throwable t) {
-    }
-  }
-
   /** Returns true if the file should now be deleted. */
   private boolean decRef(String fileName) {
     assert locked();
