@@ -20,9 +20,10 @@ Solr allows configuring roles to control user access to the system.
 
 This is accomplished through rule-based permission definitions which are assigned to users. The roles are fully customizable, and provide the ability to limit access to specific collections, request handlers, request parameters, and request methods.
 
-The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that you configure the role-to-user mappings with the proper user IDs that your authentication system provides.
+The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are two implementaions of the plugin, which only differs in how the user's roles are obtained:
 
-Once defined through the API, roles are stored in `security.json`.
+* `RuleBasedAuthorizationPlugin`: The role-to-user mappings must be defined explicitly in `security.json` for every possible authenticated user.
+* `ExternalRoleRuleBasedAuthorizationPlugin`: The role-to-user mappings are managed externally. This plugin expects the user's roles to be present on the `Principal` object which is part of the request.
 
 == Enable the Authorization Plugin
 
@@ -32,7 +33,8 @@ This file has two parts, the `authentication` part and the `authorization` part.
 
 The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. When creating `security.json` you can add the permissions to the file, or you can use the Authorization API described below to add them as needed.
 
-This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with this authorization plugin:
+=== Example for RuleBasedAuthorizationPlugin
+This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with the `RuleBasedAuthorizationPlugin` plugin:
 
 [source,json]
 ----
@@ -58,6 +60,34 @@ There are several things defined in this example:
 <4> Rule-based authorization plugin is enabled.
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 <6> The 'solr' user has been defined to the 'admin' role.
+
+=== Example for ExternalRoleRuleBasedAuthorizationPlugin
+This example `security.json` shows how an imagined `JWTAuthPlugin`, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
+
+[source,json]
+----
+{
+"authentication":{
+   "class": "solr.JWTAuthPlugin", <1>
+   "jwk_url": "https://my.identity.provider/my.wks", <2>
+   "roles_claim": "groups" <3>
+},
+"authorization":{
+   "class":"solr.ExternalRoleRuleBasedAuthorizationPlugin", <4>
+   "permissions":[{"name":"security-edit",
+      "role":"admin"}] <5>
+}}
+----
+
+Let's walk through this example:
+
+<1> JWT Authentication plugin is enabled
+<2> Public key to Identity server is pulled over https
+<3> We expect each JWT token to contain a "groups" claim, which will be passed on to Authorization
+<4> External Role Rule-based authorization plugin is enabled.
+<5> The 'admin' role has been defined, and it has permission to edit security settings.
+
+Only requests from users having a JWT token with role "admin" will be granted the `security-edit` permission.
 
 == Permission Attributes
 

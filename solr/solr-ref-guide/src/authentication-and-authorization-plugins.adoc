@@ -153,9 +153,10 @@ The authorization plugin is only supported in SolrCloud mode. Also, reloading th
 
 === Available Authorization Plugins
 
-Solr has one implementation of an authorization plugin:
+Solr has two implementations of authorization plugin:
 
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,External Role Rule-Based Authorization Plugin>>
 
 == Securing Inter-Node Requests
 

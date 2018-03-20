@@ -18,43 +18,39 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
-
 /**
- * Original implementation of Rule Based Authz plugin which configures user/role
- * mapping in the security.json configuration 
+ * Rule Based Authz plugin implementation which reads user roles from the request. This requires
+ * a Principal implementing VerifiedUserRoles interface, e.g. JWTAuthenticationPlugin
  */
-public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
+public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
 
   @Override
   public void init(Map<String, Object> initInfo) {
     super.init(initInfo);
-    Map<String, Object> map = getMapValue(initInfo, "user-role");
-    for (Object o : map.entrySet()) {
-      Map.Entry e = (Map.Entry) o;
-      String roleName = (String) e.getKey();
-      usersVsRoles.put(roleName, Permission.readValueAsSet(map, roleName));
+    if (initInfo.containsKey("user-role")) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration should not contain 'user-role' mappings");
     }
   }
 
   /**
-   * Implementers should calculate the users roles
-   *
-   * @param principal the user Principal from the request
+   * Pulls roles from the Principal
+   * @param principal the user Principal from the request, typically from an Authentication Plugin
    * @return set of roles as strings
    */
   @Override
   protected Set<String> getUserRoles(Principal principal) {
-    return usersVsRoles.get(principal.getName());
+    if(principal instanceof VerifiedUserRoles) {
+      return ((VerifiedUserRoles)principal).getVerifiedRoles();
+    } else {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request does not contain a Principal with roles");
+    }
   }
 }

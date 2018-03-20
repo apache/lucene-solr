@@ -58,6 +58,8 @@ New Features
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy) 
+
 Bug Fixes
 ----------------------
 
