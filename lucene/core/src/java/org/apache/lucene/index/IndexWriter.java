@@ -3409,27 +3409,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         maybeCloseOnTragicEvent();
       }
      
-      boolean success = false;
       try {
         if (anyChanges) {
           maybeMerge.set(true);
         }
         startCommit(toCommit);
-        success = true;
         if (pendingCommit == null) {
           return -1;
         } else {
           return seqNo;
         }
-      } finally {
-        if (!success) {
-          synchronized (this) {
-            if (filesToCommit != null) {
-              deleter.decRefWhileHandlingException(filesToCommit);
+      } catch (Throwable t) {
+        synchronized (this) {
+          if (filesToCommit != null) {
+            try {
+              deleter.decRef(filesToCommit);
+            } catch (Throwable t1) {
+              t.addSuppressed(t1);
+            } finally {
               filesToCommit = null;
             }
           }
         }
+        throw t;
       }
     }
   }
@@ -3568,7 +3570,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private final void finishCommit() throws IOException {
 
     boolean commitCompleted = false;
-    boolean finished = false;
     String committedSegmentsFileName = null;
 
     try {
@@ -3580,7 +3581,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         if (pendingCommit != null) {
-          try {
+          final Collection<String> commitFiles = this.filesToCommit;
+          try (Closeable finalizer = () -> deleter.decRef(commitFiles)) {
 
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "commit: pendingCommit != null");
@@ -3605,21 +3607,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             lastCommitChangeCount = pendingCommitChangeCount;
             rollbackSegments = pendingCommit.createBackupSegmentInfos();
 
-            finished = true;
           } finally {
             notifyAll();
-            try {
-              if (finished) {
-                // all is good
-                deleter.decRef(filesToCommit);
-              } else if (commitCompleted == false) {
-                // exc happened in finishCommit: not a tragedy
-                deleter.decRefWhileHandlingException(filesToCommit);
-              }
-            } finally {
-              pendingCommit = null;
-              filesToCommit = null;
-            }
+            pendingCommit = null;
+            this.filesToCommit = null;
           }
         } else {
           assert filesToCommit == null;
@@ -4824,7 +4815,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         testPoint("midStartCommit2");
 
-        synchronized(this) {
+        synchronized (this) {
 
           assert pendingCommit == null;
 
@@ -4863,7 +4854,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         testPoint("midStartCommitSuccess");
-
+      } catch (Throwable t) {
+        synchronized(this) {
+          if (!pendingCommitSet) {
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception committing segments file");
+            }
+            try {
+              // Hit exception
+              deleter.decRef(filesToCommit);
+            } catch (Throwable t1) {
+              t.addSuppressed(t1);
+            } finally {
+              filesToCommit = null;
+            }
+          }
+        }
+        throw t;
       } finally {
         synchronized(this) {
           // Have our master segmentInfos record the
@@ -4871,16 +4878,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // on error or success so we don't
           // double-write a segments_N file.
           segmentInfos.updateGeneration(toSync);
-
-          if (!pendingCommitSet) {
-            if (infoStream.isEnabled("IW")) {
-              infoStream.message("IW", "hit exception committing segments file");
-            }
-
-            // Hit exception
-            deleter.decRefWhileHandlingException(filesToCommit);
-            filesToCommit = null;
-          }
         }
       }
     } catch (VirtualMachineError tragedy) {
