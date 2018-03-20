@@ -103,7 +103,7 @@ New Features
   deleted documents around for later reuse. See "IW.softUpdateDocument(...)"
   for reference. (Simon Willnauer)
 
-* LUCENE-8097: A new FeatureField makes it easy and efficient to integrate
+* LUCENE-8197: A new FeatureField makes it easy and efficient to integrate
   static relevance signals into the final score. (Adrien Grand, Robert Muir)
 
 Other
