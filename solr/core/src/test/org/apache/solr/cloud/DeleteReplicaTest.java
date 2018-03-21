@@ -204,7 +204,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               ZkStateReader stateReader = replica1Jetty.getCoreContainer().getZkController().getZkStateReader();
               stateReader.forceUpdateCollection(collectionName);
               Slice shard = stateReader.getClusterState().getCollection(collectionName).getSlice("shard1");
-              LOG.error("Datcm get slice on 211 {}", shard);
               if (shard.getReplicas().size() == 1) {
                 replicaDeleted = true;
                 waitingForReplicaGetDeleted.release();
