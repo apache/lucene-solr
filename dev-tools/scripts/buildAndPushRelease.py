@@ -286,9 +286,18 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
+  check_ant()
+
+def check_ant(): # allow 1.8, 1.9, 1.10
   antVersion = os.popen('ant -version').read().strip()
-  if not antVersion.startswith('Apache Ant(TM) version 1.8') and not antVersion.startswith('Apache Ant(TM) version 1.9'):
-    raise RuntimeError('ant version is not 1.8.X: "%s"' % antVersion)
+  if antVersion.startswith('Apache Ant(TM) version 1.8'):
+    return
+  if antVersion.startswith('Apache Ant(TM) version 1.9'):
+    return
+  if antVersion.startswith('Apache Ant(TM) version 1.10'):
+    return
+  raise RuntimeError('Unsupported ant version (expecting 1.8 - 1.10) :' + antVersion)
+
   
 def main():
   check_cmdline_tools()
