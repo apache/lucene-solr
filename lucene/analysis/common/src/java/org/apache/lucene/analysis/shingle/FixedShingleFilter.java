@@ -66,17 +66,30 @@ public final class FixedShingleFilter extends TokenFilter {
   private Token[] currentShingleTokens;
   private boolean inputStreamExhausted = false;
 
+  /**
+   * Creates a FixedShingleFilter over an input token stream
+   * @param input       the input stream
+   * @param shingleSize the shingle size
+   */
   public FixedShingleFilter(TokenStream input, int shingleSize) {
     this(input, shingleSize, " ", "_");
   }
 
+  /**
+   * Creates a FixedShingleFilter over an input token stream
+   * @param input           the input tokenstream
+   * @param shingleSize     the shingle size
+   * @param tokenSeparator  a String to use as a token separator
+   * @param fillerToken     a String to use to represent gaps in the input stream (due to eg stopwords)
+   */
   public FixedShingleFilter(TokenStream input, int shingleSize, String tokenSeparator, String fillerToken) {
     super(input);
+    if (shingleSize <= 1) {
+      throw new IllegalArgumentException("shingleSize must be two or greater");
+    }
     this.shingleSize = shingleSize;
     this.tokenSeparator = tokenSeparator;
-
     this.gapToken.termAtt.setEmpty().append(fillerToken);
-
     this.currentShingleTokens = new Token[shingleSize];
   }
 
