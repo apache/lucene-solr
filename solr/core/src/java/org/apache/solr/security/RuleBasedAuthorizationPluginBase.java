@@ -171,7 +171,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
 
       for (String role : permission.role) {
         try {
-          Set<String> userRoles = getUserRoles(principal);
+          Set<String> userRoles = getUserRoles(context);
           if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
         } catch (SolrException se) {
           log.warn("Problems finding user roles for principal " + principal.getName(), se);
@@ -186,11 +186,11 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   }
 
   /**
-   * Implementers should calculate the users roles
-   * @param principal the user Principal from the request
+   * Finds users roles
+   * @param authorizationContext the authorization context, which contains the Principal mm
    * @return set of roles as strings
    */
-  protected abstract Set<String> getUserRoles(Principal principal);
+  protected abstract Set<String> getUserRoles(AuthorizationContext authorizationContext);
 
   //this is to do optimized lookup of permissions for a given collection/path
   void add2Mapping(Permission permission) {

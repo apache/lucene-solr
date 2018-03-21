@@ -48,13 +48,12 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
   }
 
   /**
-   * Implementers should calculate the users roles
-   *
-   * @param principal the user Principal from the request
+   * Returns roles of the user based on the configured user-role map
+   * @param context the Authorization context from which to pull username
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(Principal principal) {
-    return usersVsRoles.get(principal.getName());
+  protected Set<String> getUserRoles(AuthorizationContext context) {
+    return usersVsRoles.get(context.getUserPrincipal().getName());
   }
 }

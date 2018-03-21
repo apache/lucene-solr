@@ -42,13 +42,13 @@ public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthoriza
 
   /**
    * Pulls roles from the Principal
-   * @param principal the user Principal from the request, typically from an Authentication Plugin
+   * @param context the Authorization context from which to find the user Principal
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(Principal principal) {
-    if(principal instanceof VerifiedUserRoles) {
-      return ((VerifiedUserRoles)principal).getVerifiedRoles();
+  protected Set<String> getUserRoles(AuthorizationContext context) {
+    if(context.getUserPrincipal() instanceof VerifiedUserRoles) {
+      return ((VerifiedUserRoles)context.getUserPrincipal()).getVerifiedRoles();
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request does not contain a Principal with roles");
     }
