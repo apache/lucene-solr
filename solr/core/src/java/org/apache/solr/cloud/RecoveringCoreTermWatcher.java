@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,30 +31,38 @@ import org.slf4j.LoggerFactory;
  */
 public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final SolrCore solrCore;
+  private final CoreDescriptor coreDescriptor;
+  private final CoreContainer coreContainer;
   // used to prevent the case when term of other replicas get changed, we redo recovery
   // the idea here is with a specific term of a replica, we only do recovery one
   private final AtomicLong lastTermDoRecovery;
 
-  RecoveringCoreTermWatcher(SolrCore solrCore) {
-    this.solrCore = solrCore;
+  RecoveringCoreTermWatcher(CoreDescriptor coreDescriptor, CoreContainer coreContainer) {
+    this.coreDescriptor = coreDescriptor;
+    this.coreContainer = coreContainer;
     this.lastTermDoRecovery = new AtomicLong(-1);
   }
 
   @Override
   public boolean onTermChanged(ZkShardTerms.Terms terms) {
-    if (solrCore.isClosed()) {
+    if (coreContainer.isShutDown()) return false;
+
+    try (SolrCore solrCore = coreContainer.getCore(coreDescriptor.getName())) {
+      if (solrCore == null || solrCore.isClosed()) {
+        return false;
+      }
+
+      if (solrCore.getCoreDescriptor() == null || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
+      String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+      if (terms.haveHighestTermValue(coreNodeName)) return true;
+      if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
+        log.info("Start recovery on {} because core's term is less than leader's term", coreNodeName);
+        lastTermDoRecovery.set(terms.getTerm(coreNodeName));
+        solrCore.getUpdateHandler().getSolrCoreState().doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
+      }
+    } catch (Exception e) {
+      log.info("Failed to watch term of core {}", coreDescriptor.getName(), e);
       return false;
-    }
-
-    if (solrCore.getCoreDescriptor() == null || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
-
-    String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-    if (terms.haveHighestTermValue(coreNodeName)) return true;
-    if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
-      log.info("Start recovery on {} because core's term is less than leader's term", coreNodeName);
-      lastTermDoRecovery.set(terms.getTerm(coreNodeName));
-      solrCore.getUpdateHandler().getSolrCoreState().doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
     }
 
     return true;
@@ -65,11 +75,11 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
 
     RecoveringCoreTermWatcher that = (RecoveringCoreTermWatcher) o;
 
-    return solrCore.equals(that.solrCore);
+    return coreDescriptor.getName().equals(that.coreDescriptor.getName());
   }
 
   @Override
   public int hashCode() {
-    return solrCore.hashCode();
+    return coreDescriptor.getName().hashCode();
   }
 }

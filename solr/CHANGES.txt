@@ -332,6 +332,8 @@ Bug Fixes
 
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
 
+* SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
