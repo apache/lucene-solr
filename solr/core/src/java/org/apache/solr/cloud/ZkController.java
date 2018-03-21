@@ -1138,7 +1138,7 @@ public class ZkController {
         }
 
         if (isRunningInNewLIR && replicaType != Type.PULL) {
-          shardTerms.addListener(new RecoveringCoreTermWatcher(core));
+          shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
         }
         core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
       }
