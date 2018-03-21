@@ -106,6 +106,9 @@ New Features
 * LUCENE-8197: A new FeatureField makes it easy and efficient to integrate
   static relevance signals into the final score. (Adrien Grand, Robert Muir)
 
+* LUCENE-8202: Add a FixedShingleFilter (Alan Woodward, Adrien Grand, Jim
+  Ferenczi)
+
 Other
 
 * LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
