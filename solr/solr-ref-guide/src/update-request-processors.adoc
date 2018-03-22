@@ -355,7 +355,7 @@ The {solr-javadocs}/solr-uima/index.html[`uima`] contrib provides::
 
 The {solr-javadocs}/solr-analysis-extras/index.html[`analysis-extras`] contrib provides::
 
-{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesProcessorFactory.html[OpenNLPExtractNamedEntitiesProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

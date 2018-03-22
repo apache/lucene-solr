@@ -221,7 +221,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  synchronized void abort(IndexWriter writer) {
+  synchronized void abort(IndexWriter writer) throws IOException {
     assert !Thread.holdsLock(writer) : "IndexWriter lock should never be hold when aborting";
     boolean success = false;
     try {
@@ -324,7 +324,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
   
   /** Returns how many documents were aborted. */
-  private int abortThreadState(final ThreadState perThread) {
+  private int abortThreadState(final ThreadState perThread) throws IOException {
     assert perThread.isHeldByCurrentThread();
     if (perThread.isInitialized()) { 
       try {

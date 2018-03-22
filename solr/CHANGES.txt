@@ -68,6 +68,9 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
@@ -351,6 +354,8 @@ Bug Fixes
   (Amrit Sarkar, Varun Thacker)
 
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
+
+* SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
 
 Optimizations
 ----------------------

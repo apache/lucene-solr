@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -322,11 +323,11 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   @Override
-  public void abort() {
-    storedFieldsConsumer.abort();
-    try {
-      // E.g. close any open files in the term vectors writer:
-      termsHash.abort();
+  @SuppressWarnings("try")
+  public void abort() throws IOException{
+    // finalizer will e.g. close any open files in the term vectors writer:
+    try (Closeable finalizer = termsHash::abort){
+      storedFieldsConsumer.abort();
     } finally {
       Arrays.fill(fieldHash, null);
     }

@@ -2586,6 +2586,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @return The <a href="#sequence_number">sequence number</a>
    * for this operation
    */
+  @SuppressWarnings("try")
   public long deleteAll() throws IOException {
     ensureOpen();
     // Remove any buffered docs
@@ -2604,7 +2605,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     try {
       synchronized (fullFlushLock) {
-        try (Closeable release = docWriter.lockAndAbortAll(this)) {
+        try (Closeable finalizer = docWriter.lockAndAbortAll(this)) {
           processEvents(false);
           synchronized (this) {
             try {
@@ -3406,27 +3407,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         maybeCloseOnTragicEvent();
       }
      
-      boolean success = false;
       try {
         if (anyChanges) {
           maybeMerge.set(true);
         }
         startCommit(toCommit);
-        success = true;
         if (pendingCommit == null) {
           return -1;
         } else {
           return seqNo;
         }
-      } finally {
-        if (!success) {
-          synchronized (this) {
-            if (filesToCommit != null) {
-              deleter.decRefWhileHandlingException(filesToCommit);
+      } catch (Throwable t) {
+        synchronized (this) {
+          if (filesToCommit != null) {
+            try {
+              deleter.decRef(filesToCommit);
+            } catch (Throwable t1) {
+              t.addSuppressed(t1);
+            } finally {
               filesToCommit = null;
             }
           }
         }
+        throw t;
       }
     }
   }
@@ -3565,7 +3568,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private final void finishCommit() throws IOException {
 
     boolean commitCompleted = false;
-    boolean finished = false;
     String committedSegmentsFileName = null;
 
     try {
@@ -3577,7 +3579,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         if (pendingCommit != null) {
-          try {
+          final Collection<String> commitFiles = this.filesToCommit;
+          try (Closeable finalizer = () -> deleter.decRef(commitFiles)) {
 
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "commit: pendingCommit != null");
@@ -3602,21 +3605,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             lastCommitChangeCount = pendingCommitChangeCount;
             rollbackSegments = pendingCommit.createBackupSegmentInfos();
 
-            finished = true;
           } finally {
             notifyAll();
-            try {
-              if (finished) {
-                // all is good
-                deleter.decRef(filesToCommit);
-              } else if (commitCompleted == false) {
-                // exc happened in finishCommit: not a tragedy
-                deleter.decRefWhileHandlingException(filesToCommit);
-              }
-            } finally {
-              pendingCommit = null;
-              filesToCommit = null;
-            }
+            pendingCommit = null;
+            this.filesToCommit = null;
           }
         } else {
           assert filesToCommit == null;
@@ -3957,6 +3949,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return mergedDeletesAndUpdates;
   }
 
+  @SuppressWarnings("try")
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
     testPoint("startCommitMerge");
@@ -4069,22 +4062,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       deleteNewFiles(merge.info.files());
     }
 
-    try {
+    try (Closeable finalizer = this::checkpoint) {
       // Must close before checkpoint, otherwise IFD won't be
       // able to delete the held-open files from the merge
       // readers:
       closeMergeReaders(merge, false);
-      checkpoint();
-    } catch (Throwable t) {
-      // Must note the change to segmentInfos so any commits
-      // in-flight don't lose it (IFD will incRef/protect the
-      // new files we created):
-      try {
-        checkpoint();
-      } catch (Throwable t1) {
-        t.addSuppressed(t1);
-      }
-      throw t;
     }
 
     if (infoStream.isEnabled("IW")) {
@@ -4403,45 +4385,27 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     runningMerges.remove(merge);
   }
 
-  private final synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
-    final int numSegments = merge.readers.size();
-    Throwable th = null;
-
-    boolean drop = suppressExceptions == false;
-    
-    for (int i = 0; i < numSegments; i++) {
-      final SegmentReader sr = merge.readers.get(i);
-      if (sr != null) {
-        try {
-          final ReadersAndUpdates rld = readerPool.get(sr.getSegmentInfo(), false);
-          // We still hold a ref so it should not have been removed:
-          assert rld != null;
-          if (drop) {
-            rld.dropChanges();
-          } else {
-            rld.dropMergingUpdates();
-          }
-          rld.release(sr);
-          readerPool.release(rld);
-          if (drop) {
-            readerPool.drop(rld.info);
-          }
-        } catch (Throwable t) {
-          th = IOUtils.useOrSuppress(th, t);
+  @SuppressWarnings("try")
+  private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
+    final boolean drop = suppressExceptions == false;
+    try (Closeable finalizer = merge::mergeFinished) {
+      IOUtils.applyToAll(merge.readers, sr -> {
+        final ReadersAndUpdates rld = readerPool.get(sr.getSegmentInfo(), false);
+        // We still hold a ref so it should not have been removed:
+        assert rld != null;
+        if (drop) {
+          rld.dropChanges();
+        } else {
+          rld.dropMergingUpdates();
         }
-        merge.readers.set(i, null);
-      }
-    }
-
-    try {
-      merge.mergeFinished();
-    } catch (Throwable t) {
-      th = IOUtils.useOrSuppress(th, t);
-    }
-    
-    // If any error occurred, throw it.
-    if (!suppressExceptions && th != null) {
-      throw IOUtils.rethrowAlways(th);
+        rld.release(sr);
+        readerPool.release(rld);
+        if (drop) {
+          readerPool.drop(rld.info);
+        }
+      });
+    } finally {
+      Collections.fill(merge.readers, null);
     }
   }
 
@@ -4849,7 +4813,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         testPoint("midStartCommit2");
 
-        synchronized(this) {
+        synchronized (this) {
 
           assert pendingCommit == null;
 
@@ -4888,7 +4852,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         testPoint("midStartCommitSuccess");
-
+      } catch (Throwable t) {
+        synchronized(this) {
+          if (!pendingCommitSet) {
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception committing segments file");
+            }
+            try {
+              // Hit exception
+              deleter.decRef(filesToCommit);
+            } catch (Throwable t1) {
+              t.addSuppressed(t1);
+            } finally {
+              filesToCommit = null;
+            }
+          }
+        }
+        throw t;
       } finally {
         synchronized(this) {
           // Have our master segmentInfos record the
@@ -4896,16 +4876,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // on error or success so we don't
           // double-write a segments_N file.
           segmentInfos.updateGeneration(toSync);
-
-          if (!pendingCommitSet) {
-            if (infoStream.isEnabled("IW")) {
-              infoStream.message("IW", "hit exception committing segments file");
-            }
-
-            // Hit exception
-            deleter.decRefWhileHandlingException(filesToCommit);
-            filesToCommit = null;
-          }
         }
       }
     } catch (VirtualMachineError tragedy) {

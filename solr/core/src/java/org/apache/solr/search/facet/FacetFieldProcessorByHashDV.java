@@ -43,7 +43,6 @@ import org.apache.solr.search.DocSetUtil;
  * a term global ordinal integer.
  * Limitations:
  * <ul>
- *   <li>doesn't handle multiValued, but could easily be added</li>
  *   <li>doesn't handle prefix, but could easily be added</li>
  *   <li>doesn't handle mincount==0 -- you're better off with an array alg</li>
  * </ul>
