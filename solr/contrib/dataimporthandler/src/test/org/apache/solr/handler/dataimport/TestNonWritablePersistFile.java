@@ -70,10 +70,24 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
 
     try {
       // execute the test only if we are able to set file to read only mode
-      assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
-      assumeTrue("dataimport.properties can't be set read only", f.setReadOnly());
-      assumeFalse("dataimport.properties is still writable even though " + 
-                  "marked readonly - test running as superuser?", f.canWrite());
+      // we don't use assume because if no tests executes when you run a single test
+      // it's considered a fail
+      
+      if (!(f.exists() || f.createNewFile()))  {
+        System.err.println("No dataimport.properties file, skipping rest of test ...");
+        return;
+      }
+      
+      if (!f.setReadOnly())  {
+        System.err.println("dataimport.properties can't be set read only, skipping rest of test ...");
+        return;
+      }
+      
+      if (f.canWrite())  {
+        System.err.println("dataimport.properties is still writable even though \" + \n" + 
+            "                  \"marked readonly - test running as superuser?, skipping rest of test ...");
+        return;
+      }
 
       ignoreException("Properties is not writable");
 
