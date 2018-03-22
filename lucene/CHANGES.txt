@@ -105,6 +105,10 @@ New Features
 
 Other
 
+* LUCENE-8219: Use a realistic estimate of the number of nodes and links in
+   LevensteinAutomaton.java, to save reallocation of arrays.
+   (Christian Ziech)
+
 * LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
   (Ignacio Vera)
   

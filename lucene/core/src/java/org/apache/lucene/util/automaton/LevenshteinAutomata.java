@@ -152,9 +152,11 @@ public class LevenshteinAutomata {
     final int range = 2*n+1;
     ParametricDescription description = descriptions[n];
     // the number of states is based on the length of the word and n
-    int numStates = description.size();
+    final int numStates = description.size();
+    final int numTransitions = numStates * Math.min(1 + 2 * n, alphabet.length);
+    final int prefixStates = prefix != null ? prefix.codePointCount(0, prefix.length()) : 0;
 
-    Automaton a = new Automaton();
+    final Automaton a = new Automaton(numStates + prefixStates, numTransitions);
     int lastState;
     if (prefix != null) {
       // Insert prefix
