@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -92,6 +93,17 @@ public class CloudUtil {
         }
       }
     }
+  }
+
+  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (docCollection != null) {
+      Slice slice = docCollection.getSlice(shard);
+      if (slice != null) {
+        return slice.getReplica(coreNodeName) != null;
+      }
+    }
+    return false;
   }
 
   /**

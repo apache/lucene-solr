@@ -17,6 +17,8 @@
 package org.apache.solr.util;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.apache.solr.common.util.TimeSource;
 
@@ -47,5 +49,13 @@ public class TimeOut {
 
   public long timeElapsed(TimeUnit unit) {
     return unit.convert(timeSource.getTimeNs() - startTime, NANOSECONDS);
+  }
+
+  public void waitFor(String messageOnTimeOut, Supplier<Boolean> supplier)
+      throws InterruptedException, TimeoutException {
+    while (!supplier.get() && hasTimedOut()) {
+      Thread.sleep(500);
+    }
+    if (hasTimedOut()) throw new TimeoutException(messageOnTimeOut);
   }
 }
