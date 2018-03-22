@@ -48,6 +48,9 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
+
 Optimizations
 ----------------------
 

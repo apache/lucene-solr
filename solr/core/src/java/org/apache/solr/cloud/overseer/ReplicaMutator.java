@@ -30,6 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
@@ -233,15 +234,25 @@ public class ReplicaMutator {
 
   private ZkWriteCommand updateState(final ClusterState prevState, ZkNodeProps message, String collectionName, Integer numShards, boolean collectionExists) {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
-
     String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+    boolean forceSetState = message.getBool(ZkStateReader.FORCE_SET_STATE_PROP, true);
+
     DocCollection collection = prevState.getCollectionOrNull(collectionName);
+    if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, coreNodeName)) {
+      log.info("Failed to update state because the replica does not exist, {}", message);
+      return ZkStateWriter.NO_OP;
+    }
+
     if (coreNodeName == null) {
       coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
           message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
       if (coreNodeName != null) {
         log.debug("node=" + coreNodeName + " is already registered");
       } else {
+        if (!forceSetState) {
+          log.info("Failed to update state because the replica does not exist, {}", message);
+          return ZkStateWriter.NO_OP;
+        }
         // if coreNodeName is null, auto assign one
         coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
       }
