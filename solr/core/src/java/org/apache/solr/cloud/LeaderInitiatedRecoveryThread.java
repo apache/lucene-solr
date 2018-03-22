@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -88,7 +89,9 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     if (!zkController.isReplicaInRecoveryHandling(replicaUrl)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Replica: " + replicaUrl + " should have been marked under leader initiated recovery in ZkController but wasn't.");
     }
-
+    if (!CloudUtil.replicaExists(zkController.getClusterState(), collection, shardId, replicaCoreNodeName)) {
+      log.info("Replica does not exist, skip doing LIR");
+    }
     boolean sendRecoveryCommand = publishDownState(replicaCoreName, replicaCoreNodeName, replicaNodeName, replicaUrl, false);
 
     if (sendRecoveryCommand)  {
@@ -152,9 +155,11 @@ public class LeaderInitiatedRecoveryThread extends Thread {
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.BASE_URL_PROP, nodeProps.getBaseUrl(),
             ZkStateReader.CORE_NAME_PROP, nodeProps.getCoreName(),
+            ZkStateReader.CORE_NODE_NAME_PROP, replicaCoreNodeName,
             ZkStateReader.NODE_NAME_PROP, nodeProps.getNodeName(),
             ZkStateReader.SHARD_ID_PROP, shardId,
-            ZkStateReader.COLLECTION_PROP, collection);
+            ZkStateReader.COLLECTION_PROP, collection,
+            ZkStateReader.FORCE_SET_STATE_PROP, "false");
         log.warn("Leader is publishing core={} coreNodeName ={} state={} on behalf of un-reachable replica {}",
             replicaCoreName, replicaCoreNodeName, Replica.State.DOWN.toString(), replicaUrl);
         zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
@@ -164,6 +169,12 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     }
 
     return sendRecoveryCommand;
+  }
+
+  private void removeLIRState(String replicaCoreNodeName) {
+    zkController.updateLeaderInitiatedRecoveryState(collection,
+        shardId,
+        replicaCoreNodeName, Replica.State.ACTIVE, leaderCd, true);
   }
 
   /*
@@ -219,13 +230,20 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               (rootCause instanceof ConnectException ||
                   rootCause instanceof ConnectTimeoutException ||
                   rootCause instanceof NoHttpResponseException ||
-                  rootCause instanceof SocketException);
+                  rootCause instanceof SocketException ||
+                  rootCause instanceof UnknownHostException);
 
-          SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover", t);
-          
           if (!wasCommError) {
             continueTrying = false;
-          }                                                
+          }
+
+          if (rootCause.getMessage().contains("Unable to locate core")) {
+            log.info("Replica {} is removed, hence remove its lir state", replicaCoreNodeName);
+            removeLIRState(replicaCoreNodeName);
+            break;
+          } else {
+            SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover, wasCommError:"+wasCommError, t);
+          }
         }
       }
       

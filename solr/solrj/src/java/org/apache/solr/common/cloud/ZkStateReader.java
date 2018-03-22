@@ -78,6 +78,8 @@ public class ZkStateReader implements Closeable {
   public static final String CORE_NODE_NAME_PROP = "core_node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
+  // if this flag equals to false and the replica does not exist in cluster state, set state op become no op (default is true)
+  public static final String FORCE_SET_STATE_PROP = "force_set_state";
   /**  SolrCore name. */
   public static final String CORE_NAME_PROP = "core";
   public static final String COLLECTION_PROP = "collection";
