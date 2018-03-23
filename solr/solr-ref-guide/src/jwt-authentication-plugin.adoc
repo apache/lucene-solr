@@ -45,12 +45,48 @@ To start enforcing authentication for all users, requiring a valid JWT token in 
 ----
 {
   "authentication": {
-    "class": "org.apache.solr.security.JWTAuthPlugin",
+    "class": "solr.JWTAuthPlugin",
     "block_unknown": true,
     "jwk_url": "https://my.key.server/jwk.json"
   }
 }
 ----
+
+A more complex configuration:
+
+[source,json]
+----
+{
+  "authentication": {
+    "class": "solr.JWTAuthenticationPlugin", <1>
+    "block_unknown": true, <2>
+    "jwk": { <3>
+      "e": "AQAB",
+      "kid": "k1",
+      "kty": "RSA",
+      "n": "3ZF6wBGPMsLzsS1KLghxaVpZtXD3nTLzDm0c974i9-KNU_1rhhBeiVfS64VfEQmP8SA470jEy7yWcvnz9GvG-YAlm9iOwVF7jLl2awdws0ocFjdSPT3SjPQKzOeMO7G9XqNTkrvoFCn1YAi26fbhhcqkwZDoeTcHQdRN32frzccuPhZrwImApIedroKLlKWv2IvPDnz2Bpe2WWVc2HdoWYqEVD3p_BEy8f-RTSHK3_8kDDF9yAwI9jx7CK1_C-eYxXltm-6rpS5NGyFm0UNTZMxVU28Tl7LX8Vb6CikyCQ9YRCtk_CvpKWmEuKEp9I28KHQNmGkDYT90nt3vjbCXxw"
+    },
+    "iss": "acme", <4>
+    "aud": "solr", <5>
+    "principal_claim": "solruid", <6>
+    "claims_match": { "roles" : "admin|search", "dept" : "IT" }, <7>
+    "roles_claim": "roles", <8>
+    "alg_whitelist" : [ "RS256", "RS384", "RS512" ] <9>
+  }
+}
+----
+
+Let's comment on the config:
+
+<1> Plugin class
+<2> Make sure to block anyone without a valid token
+<3> Here we pass the JWK inline instead of referring to a URL with `jwk_url`
+<4> The issuer claim must match "acme"
+<5> The audience claim must match "solr"
+<6> Fetch the user id from another claim than the default `sub`
+<7> Require that the `roles` claim is one of "admin" or "search" and that the `dept` claim is "IT"
+<8> Fetch user's roles from the "roles" claim and pass this on the request for use in Authorization
+<9> Only accept RSA algorithms for signatures
 
 == Configuration parameters
 
