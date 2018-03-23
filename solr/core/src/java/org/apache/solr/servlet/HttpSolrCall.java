@@ -100,6 +100,8 @@ import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -464,6 +466,9 @@ public class HttpSolrCall {
 
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
+      if (cores.getAuditLoggerPlugin() != null) {
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ERROR, getReq()));
+      }
       return RETURN;
     }
 
@@ -483,12 +488,21 @@ public class HttpSolrCall {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+          if (cores.getAuditLoggerPlugin() != null) {
+            cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.REJECTED, req, context, authResponse));
+          }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
+          if (cores.getAuditLoggerPlugin() != null) {
+            cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.UNAUTHORIZED, req, context, authResponse));
+          }
           return RETURN;
+        }
+        if (cores.getAuditLoggerPlugin() != null) {
+          cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.AUTHORIZED, req, context, authResponse));
         }
       }
 

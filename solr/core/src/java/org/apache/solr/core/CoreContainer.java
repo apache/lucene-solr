@@ -99,6 +99,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientBuilderPlugin;
@@ -182,6 +183,8 @@ public class CoreContainer {
 
   private SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
+  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  
   private BackupRepositoryFactory backupRepoFactory;
 
   protected SolrMetricManager metricManager;
@@ -328,6 +331,38 @@ public class CoreContainer {
     }
   }
 
+  private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
+    auditConf = Utils.getDeepCopy(auditConf, 4);
+    //Initialize the Auditlog module
+    SecurityPluginHolder<AuditLoggerPlugin> old = auditloggerPlugin;
+    SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin = null;
+    if (auditConf != null) {
+      String klas = (String) auditConf.get("class");
+      if (klas == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for auditlogger plugin");
+      }
+      if (old != null && old.getZnodeVersion() == readVersion(auditConf)) {
+        return;
+      }
+      log.info("Initializing auditlogger plugin: " + klas);
+      auditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
+          getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
+
+      // Read and pass the authorization context to the plugin
+      auditloggerPlugin.plugin.init(auditConf);
+    } else {
+      log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
+    }
+    this.auditloggerPlugin = auditloggerPlugin;
+    if (old != null) {
+      try {
+        old.plugin.close();
+      } catch (Exception e) {
+      }
+    }    
+  }
+
+  
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     String pluginClassName = null;
@@ -710,6 +745,7 @@ public class CoreContainer {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
+    initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
@@ -1652,6 +1688,10 @@ public class CoreContainer {
 
   public AuthenticationPlugin getAuthenticationPlugin() {
     return authenticationPlugin == null ? null : authenticationPlugin.plugin;
+  }
+
+  public AuditLoggerPlugin getAuditLoggerPlugin() {
+    return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
   }
 
   public NodeConfig getNodeConfig() {

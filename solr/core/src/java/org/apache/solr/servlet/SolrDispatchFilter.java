@@ -72,6 +72,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -82,6 +83,8 @@ import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+
+import static org.apache.solr.security.AuditEvent.EventType;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -442,6 +445,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
+      if (cores.getAuditLoggerPlugin() != null) {
+        cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.ANONYMOUS, request));
+      }
       return true;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
@@ -472,7 +478,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // multiple code paths.
     if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
+      if (cores.getAuditLoggerPlugin() != null) {
+        cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.REJECTED, request));
+      }
       return false;
+    }
+    if (cores.getAuditLoggerPlugin() != null) {
+      cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.AUTHENTICATED, request));
     }
     return true;
   }

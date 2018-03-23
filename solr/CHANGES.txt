@@ -68,6 +68,8 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
+* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
+
 Optimizations
 ----------------------
 
