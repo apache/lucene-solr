@@ -16,9 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -40,6 +37,9 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 /**
  * An update processor that will convert conventional field-value document to atomic update document
  * <p>
@@ -59,7 +59,8 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private final static String REMOVE = "remove";
   private final static String SET = "set";
   private final static String REMOVEREGEX = "removeregex";
-  private final static Set<String> VALID_OPS = new HashSet<>(Arrays.asList(ADD, INC, REMOVE, SET, REMOVEREGEX));
+  private final static String ADDDISTINCT = "add-distinct";
+  private final static Set<String> VALID_OPS = new HashSet<>(Arrays.asList(ADD, INC, REMOVE, SET, REMOVEREGEX, ADDDISTINCT));
 
   private final static String VERSION = "_version_";
   public static final String NAME = "atomic";
