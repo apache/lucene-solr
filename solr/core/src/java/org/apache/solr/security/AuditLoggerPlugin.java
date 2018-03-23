@@ -74,17 +74,20 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable {
 
   /**
    * Initialize the plugin from security.json.
+   * This method removes parameters from config object after consuming, so subclasses can check for config errors.
    * @param pluginConfig the config for the plugin
    */
   public void init(Map<String, Object> pluginConfig) {
     blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
     blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, 1024)));
+    pluginConfig.remove(PARAM_BLOCKASYNC);
+    pluginConfig.remove(PARAM_QUEUE_SIZE);
     queue = new ArrayBlockingQueue<>(blockingQueueSize);
     formatter = new JSONAuditEventFormatter();
     ExecutorService executorService = Executors.newSingleThreadExecutor(new SolrjNamedThreadFactory("audit"));
     executorService.submit(this);
   }
-  
+
   public void setFormatter(AuditEventFormatter formatter) {
     this.formatter = formatter;
   }

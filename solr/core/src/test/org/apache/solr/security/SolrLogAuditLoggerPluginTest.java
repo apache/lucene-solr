@@ -36,6 +36,8 @@ public class SolrLogAuditLoggerPluginTest {
   @Test
   public void init() throws Exception {
     HashMap<String, Object> config = new HashMap<>();
+    config.put("blockAsync", true);
+    config.put("queueSize", 1);
     plugin.init(config);
     plugin.audit(new AuditEvent(AuditEvent.EventType.REJECTED)
         .setUsername("Jan")
@@ -47,6 +49,7 @@ public class SolrLogAuditLoggerPluginTest {
         .setHttpMethod("GET")
         .setMessage("Async")
         .setResource("/collection1"));
+    assertEquals(0, config.size());
   }
 
 }

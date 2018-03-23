@@ -65,14 +65,21 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
    */
   @Override
   public void init(Map<String, Object> pluginConfig) {
+    super.init(pluginConfig);
     if (!pluginConfig.containsKey(PARAM_PLUGINS)) {
       log.warn("No plugins configured");
+    } else {
+      List<Map<String, Object>> pluginList = (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
+      pluginList.forEach(pluginConf -> {
+        plugins.add(createPlugin(pluginConf));
+      });
+      pluginConfig.remove(PARAM_PLUGINS);
     }
-    List<Map<String,Object>> pluginList = (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
-    pluginList.forEach(pluginConf -> {
-      plugins.add(createPlugin(pluginConf));
-    });
-    log.info("Initialized {} audit plugins", pluginList.size());
+    pluginConfig.remove("class");
+    if (pluginConfig.size() > 0) {
+      log.error("Plugin config was not fully consumed. Remaining parameters are {}", pluginConfig);
+    }
+    log.info("Initialized {} audit plugins", plugins.size());
   }
 
   private AuditLoggerPlugin createPlugin(Map<String, Object> auditConf) {

@@ -42,7 +42,18 @@ public class MultiDestinationAuditLoggerTest {
     al.inform(new SolrResourceLoader());
     al.init(config);
 
-    al.audit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
+    al.auditAsync(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
+
+    assertEquals(0, config.size());
   }
 
+  @Test
+  public void wrongConfigParam() throws Exception {
+    MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
+    Map<String,Object> config = new HashMap<>();
+    config.put("class", "solr.MultiDestinationAuditLogger");
+    config.put("foo", "Should complain");
+    al.init(config);
+    assertEquals(1, config.size());
+  }
 }
