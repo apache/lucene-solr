@@ -1,0 +1,11 @@
+{
+  "authentication": {
+    "class": "solr.JWTAuthPlugin",
+    "jwk": {
+      "e": "AQAB",
+      "kid": "k1",
+      "kty": "RSA",
+      "n": "3ZF6wBGPMsLzsS1KLghxaVpZtXD3nTLzDm0c974i9-KNU_1rhhBeiVfS64VfEQmP8SA470jEy7yWcvnz9GvG-YAlm9iOwVF7jLl2awdws0ocFjdSPT3SjPQKzOeMO7G9XqNTkrvoFCn1YAi26fbhhcqkwZDoeTcHQdRN32frzccuPhZrwImApIedroKLlKWv2IvPDnz2Bpe2WWVc2HdoWYqEVD3p_BEy8f-RTSHK3_8kDDF9yAwI9jx7CK1_C-eYxXltm-6rpS5NGyFm0UNTZMxVU28Tl7LX8Vb6CikyCQ9YRCtk_CvpKWmEuKEp9I28KHQNmGkDYT90nt3vjbCXxw"
+    }
+  }
+}

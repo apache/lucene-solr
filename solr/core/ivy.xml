@@ -151,6 +151,9 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
+    <!-- JWT Auth plugin -->
+    <dependency org="org.bitbucket.b_c" name="jose4j" rev="${/org.bitbucket.b_c/jose4j}" conf="compile"/>
+
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>

@@ -1,0 +1,87 @@
+= JWT Authentication Plugin
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token]] (JWT) based Bearer authentication for users with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external service by validating that the JWT  is digitally signed by the Identity service. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect].
+
+Authorization plugins are also available to configure Solr with permissions to perform various activities in the system. The authorization plugins are described in the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+
+== Enable JWT Authentication
+
+To use JWT authentication, you must first create a `security.json` file. This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
+
+The `security.json` file must have an `authentication` part which defines the class being used for authentication along with configuration parameters.
+
+The simplest possible `security.json` for registering the plugin without configuration is:
+
+[source,json]
+----
+{
+  "authentication": {
+    "class":"solr.JWTAuthPlugin"
+  }
+}
+----
+
+The plugin will NOT block anonymous traffic in this mode, since the default for `block_unknown` is false. It is then possible to start configuring the plugin using REST calls.
+
+To start enforcing authentication for all users, requiring a valid JWT token in the `Authorization` header, you need to configure the plugin with one or more https://tools.ietf.org/html/rfc7517[JSON Web Key]s (JWK). This is a JSON document containing the key used to sign/encrypt the JWT. It could be a symmetric or asymmetric key. The JWK can either be fetched (and cached) from an external HTTPS endpoint or specified directly in `security.json`. Below is an example of the former:
+
+[source,json]
+----
+{
+  "authentication": {
+    "class": "org.apache.solr.security.JWTAuthPlugin",
+    "block_unknown": true,
+    "jwk_url": "https://my.key.server/jwk.json"
+  }
+}
+----
+
+== Configuration parameters
+
+[%header,format=csv,separator=;]
+|===
+Key              ; Description                                             ; Default
+block_unknown    ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
+jwk_url          ; An https URL to a https://mkjwk.org[JWK] keys file      ;
+jwk              ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer. See https://mkjwk.org for an online JWK generator ;
+iss              ; Validates that `iss` (issuer) equals this string        ; (`iss` not required)
+aud              ; Validates that `aud` (audience) equals this string      ; (`aud` not required)
+require_sub      ; Makes `sub` (subject) mandatory                         ; `true`
+require_exp      ; Makes `exp` (expiry time) mandatory                     ; `true`
+alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; (any)
+jwk_cache_dur    ; Duration of JWK cache in seconds                        ; 3600 (1h)
+principal_claim  ; What claim id to pull principal from                    ; `sub`
+roles_claim      ; What claim id to pull roles from. If specified, all request MUST supply this claim ;
+claims_match     ; JSON object of claims (key) that must match a regular expression (value).  ; (none)
+|===
+
+
+== Editing Authentication Plugin Configuration
+
+**TODO: This plugin currently does not support edit API.**
+
+=== Using JWT Auth with SolrJ
+
+To use JWT Auth with SolrJ you must configure a `SolrHttpClientBuilder` that sets the `Authorization: Bearer` header. How to obtain a valid JWT token is up to the client application to choose.
+
+**TODO: Describe this **
+
+=== Using the Solr Control Script with Basic Auth
+
+The control scripts (`bin/solr`) do not currently support JWT Auth.

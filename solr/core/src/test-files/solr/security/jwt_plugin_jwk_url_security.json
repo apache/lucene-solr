@@ -1,0 +1,6 @@
+{
+  "authentication" : {
+    "class": "solr.JWTAuthPlugin",
+    "jwk_url": "https://127.0.0.1:8999/this-will-fail.wks"
+  }
+}

@@ -61,6 +61,8 @@ New Features
 * SOLR-12015: Add support "add-distinct" in AtomicURP so that we can use the 'add-distict' as a request parameter e.g:
   atomic.<multival-field-name>=add-distict (Amrit Sarkar via noble)
 
+* SOLR-12121: JWT Token authentication plugin (janhoy)
+
 Bug Fixes
 ----------------------
 

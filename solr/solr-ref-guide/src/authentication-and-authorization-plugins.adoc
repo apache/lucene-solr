@@ -125,6 +125,7 @@ Solr has the following implementations of authentication plugins:
 * <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
+* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
 
 == Authorization
 
