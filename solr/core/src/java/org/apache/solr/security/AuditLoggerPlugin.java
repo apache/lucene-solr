@@ -23,10 +23,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +81,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable {
     blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, 1024)));
     queue = new ArrayBlockingQueue<>(blockingQueueSize);
     formatter = new JSONAuditEventFormatter();
+    ExecutorService executorService = Executors.newSingleThreadExecutor(new SolrjNamedThreadFactory("audit"));
+    executorService.submit(this);
   }
   
   public void setFormatter(AuditEventFormatter formatter) {

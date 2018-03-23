@@ -37,7 +37,16 @@ public class SolrLogAuditLoggerPluginTest {
   public void init() throws Exception {
     HashMap<String, Object> config = new HashMap<>();
     plugin.init(config);
-    plugin.audit(new AuditEvent(AuditEvent.EventType.AUTHENTICATED));
+    plugin.audit(new AuditEvent(AuditEvent.EventType.REJECTED)
+        .setUsername("Jan")
+        .setHttpMethod("POST")
+        .setMessage("Wrong password")
+        .setResource("/collection1"));
+    plugin.auditAsync(new AuditEvent(AuditEvent.EventType.AUTHORIZED)
+        .setUsername("Per")
+        .setHttpMethod("GET")
+        .setMessage("Async")
+        .setResource("/collection1"));
   }
 
 }
