@@ -71,7 +71,6 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
     assumeTrue("dataimport.properties can't be set read only", f.setReadOnly());
     assumeFalse("dataimport.properties is still writable even though " + 
                 "marked readonly - test running as superuser?", f.canWrite());
-    assumeTrue("", false);
   }
   
   @AfterClass
