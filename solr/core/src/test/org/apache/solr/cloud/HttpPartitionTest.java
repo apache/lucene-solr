@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -269,6 +270,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "collMinRf_1x3";
     createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
+
+    // term of the core still be watched even when the core is reloaded
+    CollectionAdminRequest.reloadCollection(testCollectionName).process(cloudClient);
 
     sendDoc(1, 2);
 

@@ -21,8 +21,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -30,6 +33,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -39,6 +43,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -204,7 +209,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               ZkStateReader stateReader = replica1Jetty.getCoreContainer().getZkController().getZkStateReader();
               stateReader.forceUpdateCollection(collectionName);
               Slice shard = stateReader.getClusterState().getCollection(collectionName).getSlice("shard1");
-              LOG.error("Datcm get slice on 211 {}", shard);
               if (shard.getReplicas().size() == 1) {
                 replicaDeleted = true;
                 waitingForReplicaGetDeleted.release();
@@ -283,6 +287,58 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       Thread.sleep(100);
       if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
     }
+  }
+
+  @Test
+  public void deleteReplicaOnIndexing() throws Exception {
+    final String collectionName = "deleteReplicaOnIndexing";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
+        .process(cluster.getSolrClient());
+    waitForState("", collectionName, clusterShape(1, 2));
+    AtomicBoolean closed = new AtomicBoolean(false);
+    Thread[] threads = new Thread[100];
+    for (int i = 0; i < threads.length; i++) {
+      int finalI = i;
+      threads[i] = new Thread(() -> {
+        int doc = finalI * 10000;
+        while (!closed.get()) {
+          try {
+            cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(doc++)));
+          } catch (Exception e) {
+            LOG.error("Failed on adding document to {}", collectionName, e);
+          }
+        }
+      });
+      threads[i].start();
+    }
+
+    Slice shard1 = getCollectionState(collectionName).getSlice("shard1");
+    Replica nonLeader = shard1.getReplicas(rep -> !rep.getName().equals(shard1.getLeader().getName())).get(0);
+    CollectionAdminRequest.deleteReplica(collectionName, "shard1", nonLeader.getName()).process(cluster.getSolrClient());
+    closed.set(true);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+    }
+
+    try {
+      cluster.getSolrClient().waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
+    } catch (TimeoutException e) {
+      LOG.info("Timeout wait for state {}", getCollectionState(collectionName));
+      throw e;
+    }
+
+    TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut.waitFor("Time out waiting for LIR state get removed", () -> {
+      String lirPath = ZkController.getLeaderInitiatedRecoveryZnodePath(collectionName, "shard1");
+      try {
+        List<String> children = zkClient().getChildren(lirPath, null, true);
+        return children.size() == 0;
+      } catch (KeeperException.NoNodeException e) {
+        return true;
+      } catch (Exception e) {
+        throw new AssertionError(e);
+      }
+    });
   }
 }
 

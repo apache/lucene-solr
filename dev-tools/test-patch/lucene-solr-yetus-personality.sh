@@ -198,12 +198,14 @@ function testoutput_process_tests
   declare buildlogfile=$2
   if [[ "${module}" =~ ^lucene/analysis/ ]]; then
     JUNIT_TEST_OUTPUT_DIR="../../build/${module#*/}"
+  elif [[ "${module}" =~ ^lucene/ ]]; then
+    JUNIT_TEST_OUTPUT_DIR="../build/${module#*/}"
   elif [[ "${module}" =~ ^solr/contrib/extraction ]]; then
     JUNIT_TEST_OUTPUT_DIR="../../build/contrib/solr-cell"
   elif [[ "${module}" =~ ^solr/contrib/(.*) ]]; then
     JUNIT_TEST_OUTPUT_DIR="../../build/contrib/solr-${BASH_REMATCH[1]}"
-  elif [[ "${module}" =~ ^(lucene|solr)/ ]]; then
-    JUNIT_TEST_OUTPUT_DIR="../build/${module#*/}"
+  elif [[ "${module}" =~ ^solr/(.*) ]]; then
+    JUNIT_TEST_OUTPUT_DIR="../build/solr-${BASH_REMATCH[1]}"
   fi
   yetus_debug "Rerouting build dir for junit to ${JUNIT_TEST_OUTPUT_DIR}"
 }

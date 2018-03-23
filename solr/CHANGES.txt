@@ -58,6 +58,11 @@ New Features
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
+* SOLR-12015: Add support "add-distinct" in AtomicURP so that we can use the 'add-distict' as a request parameter e.g:
+  atomic.<multival-field-name>=add-distict (Amrit Sarkar via noble)
+
+* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
+
 Bug Fixes
 ----------------------
 
@@ -68,7 +73,8 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
-* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down
+  state (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -353,6 +359,8 @@ Bug Fixes
   (Amrit Sarkar, Varun Thacker)
 
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
+
+* SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
 
 Optimizations
 ----------------------

@@ -75,6 +75,13 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     setOffset(start, end);
   }
 
+  /** Constructs a Token with the given term text, position increment, start and end offsets */
+  public Token(CharSequence text, int posInc, int start, int end) {
+    append(text);
+    setOffset(start, end);
+    setPositionIncrement(posInc);
+  }
+
   /**
    * {@inheritDoc}
    * @see FlagsAttribute
