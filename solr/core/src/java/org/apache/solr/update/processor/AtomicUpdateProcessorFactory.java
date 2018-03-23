@@ -45,7 +45,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * <p>
  * sample request:
  * curl -X POST -H Content-Type: application/json
- * http://localhost:8983/solr/test/update/json/docs?processor=atomic;ampersand;Atomic.my_newfield=add;ampersand;Atomic.subject=set;ampersand;Atomic.count_i=inc;ampersand;commit=true
+ * http://localhost:8983/solr/test/update/json/docs?processor=atomic;ampersand;atomic.my_newfield=add;ampersand;atomic.subject=set;ampersand;atomic.count_i=inc;ampersand;commit=true
  * --data-binary {"id": 1,"title": "titleA"}
  * </p>
  * currently supports all types of atomic updates
