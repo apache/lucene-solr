@@ -49,6 +49,7 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
         queue.put(event);
       } catch (InterruptedException e) {
         log.warn("Interrupted while waiting to insert AuditEvent into blocking queue");
+        Thread.currentThread().interrupt();
       }
     } else {
       if (!queue.offer(event)) {

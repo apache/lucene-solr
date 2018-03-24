@@ -445,9 +445,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
-      if (cores.getAuditLoggerPlugin() != null) {
-        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ANONYMOUS, request));
-      }
+      auditIfConfigured(new AuditEvent(EventType.ANONYMOUS, request));
       return true;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
@@ -478,17 +476,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // multiple code paths.
     if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
-      if (cores.getAuditLoggerPlugin() != null) {
-        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, request));
-      }
+      auditIfConfigured(new AuditEvent(EventType.REJECTED, request));
       return false;
     }
-    if (cores.getAuditLoggerPlugin() != null) {
-      cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHENTICATED, request));
-    }
+    auditIfConfigured(new AuditEvent(EventType.AUTHENTICATED, request));
     return true;
   }
-  
+
+  /**
+   * Calls auditIfConfigured logging API if enabled
+   * @param auditEvent
+   */
+  private void auditIfConfigured(AuditEvent auditEvent) {
+    if (cores.getAuditLoggerPlugin() != null) {
+      cores.getAuditLoggerPlugin().audit(auditEvent);
+    }
+  }
+
   /**
    * Wrap the request's input stream with a close shield, as if by a {@link CloseShieldInputStream}. If this is a
    * retry, we will assume that the stream has already been wrapped and do nothing.
