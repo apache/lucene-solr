@@ -38,16 +38,17 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
   public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
     setFormatter(event ->
-        "type='" + event.getEventType().name() + '\'' +
-        ", message='" + event.getMessage() + '\'' +
-        ", method='" + event.getHttpMethod() + '\'' +
-        ", username='" + event.getUsername() + '\'' +
-        ", resource='" + event.getResource() + '\'' +
-        ", collections=" + event.getCollections());
+        new StringBuilder()
+            .append("type=\"").append(event.getEventType().name()).append("\"")
+            .append(" message=\"").append(event.getMessage()).append("\"")
+            .append(" method=\"").append(event.getHttpMethod()).append("\"")
+            .append(" username=\"").append(event.getUsername()).append("\"")
+            .append(" resource=\"").append(event.getResource()).append("\"")
+            .append(" collections=").append(event.getCollections()).toString());
   }
 
   /**
-   * Audit logs an event. The event should be a {@link AuditEvent} to be able to pull context info
+   * Audit logs an event to Solr log. The event should be a {@link AuditEvent} to be able to pull context info
    * @param event the event to log
    */
   @Override

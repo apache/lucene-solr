@@ -489,7 +489,7 @@ public class HttpSolrCall {
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
           if (cores.getAuditLoggerPlugin() != null) {
-            cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.REJECTED, req, context, authResponse));
+            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, req, context, authResponse));
           }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
@@ -497,12 +497,12 @@ public class HttpSolrCall {
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
           if (cores.getAuditLoggerPlugin() != null) {
-            cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.UNAUTHORIZED, req, context, authResponse));
+            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.UNAUTHORIZED, req, context, authResponse));
           }
           return RETURN;
         }
         if (cores.getAuditLoggerPlugin() != null) {
-          cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.AUTHORIZED, req, context, authResponse));
+          cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHORIZED, req, context, authResponse));
         }
       }
 

@@ -44,12 +44,12 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_PLUGINS = "plugins";
-  private List<AuditLoggerPlugin> plugins = new ArrayList<>();;
   private ResourceLoader loader;
+  List<AuditLoggerPlugin> plugins = new ArrayList<>();
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
-   * @param event
+   * @param event the audit event
    */
   @Override
   public void audit(AuditEvent event) {
@@ -69,10 +69,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     if (!pluginConfig.containsKey(PARAM_PLUGINS)) {
       log.warn("No plugins configured");
     } else {
+      @SuppressWarnings("unchecked")
       List<Map<String, Object>> pluginList = (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
-      pluginList.forEach(pluginConf -> {
-        plugins.add(createPlugin(pluginConf));
-      });
+      pluginList.forEach(pluginConf -> plugins.add(createPlugin(pluginConf)));
       pluginConfig.remove(PARAM_PLUGINS);
     }
     pluginConfig.remove("class");
@@ -98,10 +97,10 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   }
 
   @Override
-  public void close() throws IOException {}
+  public void close() {}
 
   @Override
-  public void inform(ResourceLoader loader) throws IOException {
+  public void inform(ResourceLoader loader) {
     this.loader = loader;
   }
 }

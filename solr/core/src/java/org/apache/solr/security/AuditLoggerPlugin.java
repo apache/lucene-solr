@@ -21,54 +21,24 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Base class for Audit logger plugins
  */
-public abstract class AuditLoggerPlugin implements Closeable, Runnable {
+public abstract class AuditLoggerPlugin implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String PARAM_BLOCKASYNC = "blockAsync";
-  private static final String PARAM_QUEUE_SIZE = "queueSize";
   protected AuditEventFormatter formatter;
-  private BlockingQueue<AuditEvent> queue;
-  private boolean blockAsync;
-  private int blockingQueueSize;
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
-   * @param event
-   */
-  public final void auditAsync(AuditEvent event) {
-    if (blockAsync) {
-      try {
-        queue.put(event);
-      } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting to insert AuditEvent into blocking queue");
-      }
-    } else {
-      if (!queue.offer(event)) {
-        log.warn("Audit log async queue is full, not blocking since " + PARAM_BLOCKASYNC + "==false");
-      }
-    }
-  }
-
-  /**
-   * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
-   * If an event was submitted asynchronously with {@link #auditAsync(AuditEvent)} then this
-   * method will be called by the framework by the background thread.
-   * @param event
+   * @param event the audit event
    */
   public abstract void audit(AuditEvent event);
 
@@ -78,14 +48,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable {
    * @param pluginConfig the config for the plugin
    */
   public void init(Map<String, Object> pluginConfig) {
-    blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
-    blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, 1024)));
-    pluginConfig.remove(PARAM_BLOCKASYNC);
-    pluginConfig.remove(PARAM_QUEUE_SIZE);
-    queue = new ArrayBlockingQueue<>(blockingQueueSize);
     formatter = new JSONAuditEventFormatter();
-    ExecutorService executorService = Executors.newSingleThreadExecutor(new SolrjNamedThreadFactory("audit"));
-    executorService.submit(this);
   }
 
   public void setFormatter(AuditEventFormatter formatter) {
@@ -118,18 +81,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable {
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error converting Event to JSON", e);
       }
-    }
-  }
-
-  /**
-   * Pick next event from async queue and call {@link #audit(AuditEvent)}
-   */
-  @Override
-  public void run() {
-    try {
-      audit(queue.take());
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while waiting for next audit log event");
     }
   }
 }

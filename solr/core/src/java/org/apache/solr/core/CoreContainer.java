@@ -327,6 +327,7 @@ public class CoreContainer {
       try {
         old.plugin.close();
       } catch (Exception e) {
+        log.error("Exception while attempting to close old authorization plugin", e);
       }
     }
   }
@@ -358,6 +359,7 @@ public class CoreContainer {
       try {
         old.plugin.close();
       } catch (Exception e) {
+        log.error("Exception while attempting to close old auditlogger plugin", e);
       }
     }    
   }
@@ -403,7 +405,9 @@ public class CoreContainer {
     this.authenticationPlugin = authenticationPlugin;
     try {
       if (old != null) old.plugin.close();
-    } catch (Exception e) {/*do nothing*/ }
+    } catch (Exception e) {
+      log.error("Exception while attempting to close old authentication plugin", e);
+    }
 
   }
 

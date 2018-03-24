@@ -446,7 +446,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
       if (cores.getAuditLoggerPlugin() != null) {
-        cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.ANONYMOUS, request));
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ANONYMOUS, request));
       }
       return true;
     } else {
@@ -479,12 +479,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
       if (cores.getAuditLoggerPlugin() != null) {
-        cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.REJECTED, request));
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, request));
       }
       return false;
     }
     if (cores.getAuditLoggerPlugin() != null) {
-      cores.getAuditLoggerPlugin().auditAsync(new AuditEvent(EventType.AUTHENTICATED, request));
+      cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHENTICATED, request));
     }
     return true;
   }

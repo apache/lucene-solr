@@ -17,34 +17,31 @@
 
 package org.apache.solr.security;
 
-import java.util.Arrays;
 import java.util.HashMap;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-public class SolrLogAuditLoggerPluginTest {
+public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
   private SolrLogAuditLoggerPlugin plugin;
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     plugin = new SolrLogAuditLoggerPlugin();
   }
 
   @Test
-  public void init() throws Exception {
+  public void init() {
     HashMap<String, Object> config = new HashMap<>();
-    config.put("blockAsync", true);
-    config.put("queueSize", 1);
     plugin.init(config);
     plugin.audit(new AuditEvent(AuditEvent.EventType.REJECTED)
         .setUsername("Jan")
         .setHttpMethod("POST")
         .setMessage("Wrong password")
         .setResource("/collection1"));
-    plugin.auditAsync(new AuditEvent(AuditEvent.EventType.AUTHORIZED)
+    plugin.audit(new AuditEvent(AuditEvent.EventType.AUTHORIZED)
         .setUsername("Per")
         .setHttpMethod("GET")
         .setMessage("Async")

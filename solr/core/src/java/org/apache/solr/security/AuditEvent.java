@@ -136,7 +136,6 @@ public class AuditEvent {
     this.autResponse = authResponse;
   }
 
-
   private HashMap<String, String> getHeadersFromRequest(HttpServletRequest httpRequest) {
     HashMap<String, String> h = new HashMap<>();
     Enumeration<String> headersEnum = httpRequest.getHeaderNames();

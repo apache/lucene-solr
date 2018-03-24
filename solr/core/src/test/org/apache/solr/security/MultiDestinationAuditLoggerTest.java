@@ -17,38 +17,38 @@
 package org.apache.solr.security;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-public class MultiDestinationAuditLoggerTest {
+public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
   @Test
-  public void init() throws Exception {
+  public void init() {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
     ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
 
-    Map<String, Object> myPlugin = new HashMap<>();
-    myPlugin.put("class", "solr.SolrLogAuditLoggerPlugin");
-    plugins.add(myPlugin);
+    plugins.add(Collections.singletonMap("class", "solr.SolrLogAuditLoggerPlugin"));
+    plugins.add(Collections.singletonMap("class", "solr.MockAuditLoggerPlugin"));
     config.put("plugins", plugins);
 
     al.inform(new SolrResourceLoader());
     al.init(config);
 
-    al.auditAsync(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
+    al.audit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
+    assertEquals(1, ((MockAuditLoggerPlugin)al.plugins.get(1)).events.size());
 
     assertEquals(0, config.size());
+    al.close();
   }
 
   @Test
-  public void wrongConfigParam() throws Exception {
+  public void wrongConfigParam() {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
