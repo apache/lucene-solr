@@ -31,11 +31,12 @@ import org.apache.solr.util.RefCounted;
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
-    CoreContainer cc = it.handler.getCoreContainer();
     final SolrParams params = it.req.getParams();
-
     String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
     String cname = params.required().get(CoreAdminParams.CORE);
+
+    CoreContainer cc = it.handler.getCoreContainer();
+
     try (SolrCore core = cc.getCore(cname)) {
       if (core == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
