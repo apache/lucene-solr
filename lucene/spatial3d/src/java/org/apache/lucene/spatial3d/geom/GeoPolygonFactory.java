@@ -867,11 +867,19 @@ public class GeoPolygonFactory {
     
     // If what is left has any plane/point pair that is on the wrong side, we have to split using one of the plane endpoints and the 
     // point in question.  This is best structured as a recursion, if detected.
+    
+    // Note: Any edge that fails means (I think!!) that there's another edge that will also fail.
+    // This is because each point is included in two edges.
+    // So, when we look for a non-conforming edge, and we can find one (but can't use it), we
+    // also can find another edge that we might be able to use instead.
+    // If this is true, it means we should continue when we find a bad edge we can't use --
+    // but we need to keep track of this, and fail hard if we don't find a place to split.
+    boolean foundBadEdge = false;
     final Iterator<Edge> checkIterator = edgeBuffer.iterator();
     while (checkIterator.hasNext()) {
       final Edge checkEdge = checkIterator.next();
       final SidedPlane flippedPlane = new SidedPlane(checkEdge.plane);
-      // Now walk around again looking for points that fail
+      // Now walk around again looking for points that fail.
       final Iterator<Edge> confirmIterator = edgeBuffer.iterator();
       while (confirmIterator.hasNext()) {
         final Edge confirmEdge = confirmIterator.next();
@@ -888,6 +896,8 @@ public class GeoPolygonFactory {
           thePoint = null;
         }
         if (thePoint != null) {
+          // Note that we found a problem.
+          foundBadEdge = true;
           // thePoint is on the wrong side of the complementary plane.  That means we cannot build a concave polygon, because the complement would not
           // be a legal convex polygon.
           // But we can take advantage of the fact that the distance between the edge and thePoint is less than 180 degrees, and so we can split the
@@ -897,6 +907,9 @@ public class GeoPolygonFactory {
           // This should be the only problematic part of the polygon.
           // We know that thePoint is on the "wrong" side of the edge -- that is, it's on the side that the
           // edge is pointing at.
+          
+          // The proposed tiling generates two new edges -- one from thePoint to the start point of the edge we found, and the other from thePoint
+          // to the end point of the edge.  We generate that as a triangle convex polygon, and tile the two remaining pieces.
           final List<GeoPoint> thirdPartPoints = new ArrayList<>(3);
           final BitSet thirdPartInternal = new BitSet();
           thirdPartPoints.add(checkEdge.startPoint);
@@ -905,9 +918,16 @@ public class GeoPolygonFactory {
           thirdPartInternal.set(1, true);
           thirdPartPoints.add(thePoint);
           assert checkEdge.plane.isWithin(thePoint) : "Point was on wrong side of complementary plane, so must be on the right side of the non-complementary plane!";
-          final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
-          //System.out.println("convex part = "+convexPart);
-          rval.addShape(convexPart);
+          // Check for illegal argument using try/catch rather than pre-emptive check, since it cuts down on building objects for a rare case
+          try {
+            final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
+            //System.out.println("convex part = "+convexPart);
+            rval.addShape(convexPart);
+          } catch (IllegalArgumentException e) {
+            // Eat this exception, assuming that it means the triangle is coplanar, and look for
+            // other edges that will work instead.
+            break;
+          }
 
           // The part preceding the bad edge, back to thePoint, needs to be recursively
           // processed.  So, assemble what we need, which is basically a list of edges.
@@ -979,7 +999,10 @@ public class GeoPolygonFactory {
     if (makeConcavePolygon(planetModel, rval, seenConcave, edgeBuffer, holes, testPoint) == false) {
       return false;
     }
-    
+    if (foundBadEdge) {
+      // Unaddressed bad edge
+      throw new IllegalArgumentException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
+    }
     return true;
   }
   
@@ -1036,23 +1059,33 @@ public class GeoPolygonFactory {
       edge = edgeBuffer.getNext(edge);
     }
     
-    if (testPoint != null && holes != null && holes.size() > 0) {
-      // No holes, for test
-      final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
-      if (testPolygon.isWithin(testPoint)) {
-        return false;
+    // It is possible that the polygon is degenerate and all points are colinear.  If that's the case, a concave polygon cannot be produced,
+    // in which case trying to construct it will generate IllegalArgumentExceptions here. 
+    try {
+      if (testPoint != null && holes != null && holes.size() > 0) {
+        // No holes, for test
+        final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
+        if (testPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
-    }
-    
-    final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
-    if (testPoint != null && (holes == null || holes.size() == 0)) {
-      if (realPolygon.isWithin(testPoint)) {
-        return false;
+      
+      final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
+      if (testPoint != null && (holes == null || holes.size() == 0)) {
+        if (realPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
+      
+      rval.addShape(realPolygon);
+      return true;
+    } catch (IllegalArgumentException e) {
+      final StringBuilder sb = new StringBuilder("Could not construct GeoConcavePolygon due to colinearity of points: ");
+      for (final GeoPoint point : points) {
+        sb.append(" ").append(point.toString());
+      }
+      throw new IllegalArgumentException(sb.toString(), e);
     }
-    
-    rval.addShape(realPolygon);
-    return true;
   }
   
   /** Look for a convex polygon at the specified edge.  If we find it, create one and adjust the edge buffer.
