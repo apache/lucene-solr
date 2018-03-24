@@ -74,6 +74,8 @@ Bug Fixes
 * SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
   state (Cao Manh Dat)
 
+* SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
+
 Optimizations
 ----------------------
 

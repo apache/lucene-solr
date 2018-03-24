@@ -44,14 +44,12 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
     final SolrParams params = it.req.getParams();
 
     log.info("I have been requested to sync up my shard");
+
+    String cname = params.required().get(CoreAdminParams.CORE);
+
     ZkController zkController = it.handler.coreContainer.getZkController();
     if (zkController == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
-    }
-
-    String cname = params.get(CoreAdminParams.CORE);
-    if (cname == null) {
-      throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
     }
 
     SyncStrategy syncStrategy = null;
