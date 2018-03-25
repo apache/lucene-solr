@@ -912,7 +912,7 @@ public class GeoPolygonFactory {
           // to the end point of the edge.  We generate that as a triangle convex polygon, and tile the two remaining pieces.
           if (Plane.arePointsCoplanar(checkEdge.startPoint, checkEdge.endPoint, thePoint)) {
             // Can't build this particular tile because of colinearity, so advance to another that maybe we can build.
-            break;
+            continue;
           }
           final List<GeoPoint> thirdPartPoints = new ArrayList<>(3);
           final BitSet thirdPartInternal = new BitSet();
