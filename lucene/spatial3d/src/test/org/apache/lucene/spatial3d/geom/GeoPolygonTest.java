@@ -22,7 +22,6 @@ import java.util.BitSet;
 import java.util.Collections;
 
 import org.junit.Test;
-import org.junit.Ignore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -623,7 +622,7 @@ shape:
   }
   
   @Test
-  public void testPolygonFactoryCase3() {
+  public void testPolygonFactoryCase3() throws Exception {
     /*
     This one failed to be detected as convex:
 
@@ -1102,7 +1101,6 @@ shape:
   }
 
   @Test
-  @Ignore
   public void testCoplanarityTileConvex() throws Exception {
     // This test has been disabled because it is possible that the polygon specified actually intersects itself.
     //POLYGON((24.39398 65.77519,24.3941 65.77498,24.394024 65.77497,24.393976 65.77495,24.393963 65.77493,24.394068 65.774925,24.394156 65.77495,24.394201 65.77495,24.394234 65.77496,24.394266 65.77498,24.394318 65.77498,24.39434 65.774956,24.394377 65.77495,24.394451 65.77494,24.394476 65.77495,24.394457 65.77498,24.39398 65.77519))"
@@ -1123,12 +1121,11 @@ shape:
     points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77494), Geo3DUtil.fromDegrees(24.394451)));
     points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.394476)));
     points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77498), Geo3DUtil.fromDegrees(24.394457)));
-    GeoCompositePolygon polygon = (GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     assertTrue(polygon != null);
   }
 
   @Test
-  @Ignore
   public void testCoplanarityConcave() throws Exception {
     //POLYGON((-52.18851 64.53777,-52.18853 64.53828,-52.18675 64.53829,-52.18676 64.53855,-52.18736 64.53855,-52.18737 64.53881,-52.18677 64.53881,-52.18683 64.54009,-52.18919 64.53981,-52.18916 64.53905,-52.19093 64.53878,-52.19148 64.53775,-52.18851 64.53777))
     List<GeoPoint> points = new ArrayList<>();

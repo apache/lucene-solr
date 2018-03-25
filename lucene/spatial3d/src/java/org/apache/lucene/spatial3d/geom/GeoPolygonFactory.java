@@ -164,32 +164,44 @@ public class GeoPolygonFactory {
       return null;
     }
 
-    //First approximation to find a point
-    final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
-    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
-    if (isCenterOfMassInside != null) {
-      return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
-    }
-    
-    //System.err.println("points="+pointList);
-    // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
-    // of points to use for poles.
-    final Random generator = new Random(1234);
-    for (int counter = 0; counter < 1000000; counter++) {
-      //counter++;
-      // Pick the next random pole
-      final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
-      // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
-      if (isPoleInside != null) {
-        // Legal pole
-        //System.out.println("Took "+counter+" iterations to find pole");
-        //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
-        return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
+    try {
+      //First approximation to find a point
+      final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
+      final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
+      if (isCenterOfMassInside != null) {
+        return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
       }
-      // If pole choice was illegal, try another one
+      
+      //System.err.println("points="+pointList);
+      // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
+      // of points to use for poles.
+      final Random generator = new Random(1234);
+      for (int counter = 0; counter < 1000000; counter++) {
+        //counter++;
+        // Pick the next random pole
+        final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
+        // Is it inside or outside?
+        final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
+        if (isPoleInside != null) {
+          // Legal pole
+          //System.out.println("Took "+counter+" iterations to find pole");
+          //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
+          return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
+        }
+        // If pole choice was illegal, try another one
+      }
+      throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
+    } catch (TileException e) {
+      // Couldn't tile the polygon; use GeoComplexPolygon instead, if we can.
+      if (holes != null && holes.size() > 0) {
+        // We currently cannot get the list of points that went into making a hole back out, so don't allow this case.
+        // In order to support it, we really need to change the API contract, which is a bigger deal.
+        throw new IllegalArgumentException(e.getMessage());
+      }
+      final List<PolygonDescription> description = new ArrayList<>(1);
+      description.add(new PolygonDescription(pointList));
+      return makeLargeGeoPolygon(planetModel, description);
     }
-    throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
 
   /** Generate a point at the center of mass of a list of points.
@@ -372,7 +384,7 @@ public class GeoPolygonFactory {
     final List<GeoPoint> filteredPointList,
     final List<GeoPolygon> holes,
     final GeoPoint testPoint, 
-    final boolean testPointInside) {
+    final boolean testPointInside) throws TileException {
     // We will be trying twice to find the right GeoPolygon, using alternate siding choices for the first polygon
     // side.  While this looks like it might be 2x as expensive as it could be, there's really no other choice I can
     // find.
@@ -750,7 +762,7 @@ public class GeoPolygonFactory {
     final int endPointIndex,
     final SidedPlane startingEdge,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
 
     // It could be the case that we need a concave polygon.  So we need to try and look for that case
     // as part of the general code for constructing complex polygons.
@@ -1003,7 +1015,7 @@ public class GeoPolygonFactory {
 
     if (foundBadEdge) {
       // Unaddressed bad edge
-      throw new IllegalArgumentException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
+      throw new TileException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
     }
     
     // No violations found: we know it's a legal concave polygon.
@@ -1686,4 +1698,11 @@ public class GeoPolygonFactory {
     public boolean value = false;
   }
   
+  /** Exception we throw when we can't tile a polygon due to numerical precision issues.
+   */
+  private static class TileException extends Exception {
+    public TileException(final String msg) {
+      super(msg);
+    }
+  }
 }
