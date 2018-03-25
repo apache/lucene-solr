@@ -910,6 +910,10 @@ public class GeoPolygonFactory {
           
           // The proposed tiling generates two new edges -- one from thePoint to the start point of the edge we found, and the other from thePoint
           // to the end point of the edge.  We generate that as a triangle convex polygon, and tile the two remaining pieces.
+          if (Plane.arePointsCoplanar(checkEdge.startPoint, checkEdge.endPoint, thePoint)) {
+            // Can't build this particular tile because of colinearity, so advance to another that maybe we can build.
+            break;
+          }
           final List<GeoPoint> thirdPartPoints = new ArrayList<>(3);
           final BitSet thirdPartInternal = new BitSet();
           thirdPartPoints.add(checkEdge.startPoint);
@@ -919,15 +923,9 @@ public class GeoPolygonFactory {
           thirdPartPoints.add(thePoint);
           assert checkEdge.plane.isWithin(thePoint) : "Point was on wrong side of complementary plane, so must be on the right side of the non-complementary plane!";
           // Check for illegal argument using try/catch rather than pre-emptive check, since it cuts down on building objects for a rare case
-          try {
-            final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
-            //System.out.println("convex part = "+convexPart);
-            rval.addShape(convexPart);
-          } catch (IllegalArgumentException e) {
-            // Eat this exception, assuming that it means the triangle is coplanar, and look for
-            // other edges that will work instead.
-            break;
-          }
+          final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
+          //System.out.println("convex part = "+convexPart);
+          rval.addShape(convexPart);
 
           // The part preceding the bad edge, back to thePoint, needs to be recursively
           // processed.  So, assemble what we need, which is basically a list of edges.
@@ -991,6 +989,11 @@ public class GeoPolygonFactory {
         }
       }
     }
+
+    if (foundBadEdge) {
+      // Unaddressed bad edge
+      throw new IllegalArgumentException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
+    }
     
     // No violations found: we know it's a legal concave polygon.
     
@@ -998,10 +1001,6 @@ public class GeoPolygonFactory {
     //System.out.println("adding concave part");
     if (makeConcavePolygon(planetModel, rval, seenConcave, edgeBuffer, holes, testPoint) == false) {
       return false;
-    }
-    if (foundBadEdge) {
-      // Unaddressed bad edge
-      throw new IllegalArgumentException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
     }
     return true;
   }
@@ -1059,33 +1058,25 @@ public class GeoPolygonFactory {
       edge = edgeBuffer.getNext(edge);
     }
     
-    // It is possible that the polygon is degenerate and all points are colinear.  If that's the case, a concave polygon cannot be produced,
-    // in which case trying to construct it will generate IllegalArgumentExceptions here. 
-    try {
-      if (testPoint != null && holes != null && holes.size() > 0) {
-        // No holes, for test
-        final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
-        if (testPolygon.isWithin(testPoint)) {
-          return false;
-        }
+    // Since we attempt to prevent the addition of any edge that shows up as colinear, and we filter out colinear edge parts
+    // beforehand, it isn't possible to have a colinear edge at this point.
+    if (testPoint != null && holes != null && holes.size() > 0) {
+      // No holes, for test
+      final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
+      if (testPolygon.isWithin(testPoint)) {
+        return false;
       }
-      
-      final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
-      if (testPoint != null && (holes == null || holes.size() == 0)) {
-        if (realPolygon.isWithin(testPoint)) {
-          return false;
-        }
-      }
-      
-      rval.addShape(realPolygon);
-      return true;
-    } catch (IllegalArgumentException e) {
-      final StringBuilder sb = new StringBuilder("Could not construct GeoConcavePolygon due to colinearity of points: ");
-      for (final GeoPoint point : points) {
-        sb.append(" ").append(point.toString());
-      }
-      throw new IllegalArgumentException(sb.toString(), e);
     }
+      
+    final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
+    if (testPoint != null && (holes == null || holes.size() == 0)) {
+      if (realPolygon.isWithin(testPoint)) {
+        return false;
+      }
+    }
+      
+    rval.addShape(realPolygon);
+    return true;
   }
   
   /** Look for a convex polygon at the specified edge.  If we find it, create one and adjust the edge buffer.
