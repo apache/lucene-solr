@@ -121,7 +121,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     //System.out.println(c);
     
     // Middle point should NOT be within!!
@@ -129,7 +130,7 @@ public class GeoPolygonTest {
     assertTrue(!c.isWithin(gp));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     assertTrue(!c.isWithin(gp));
@@ -141,7 +142,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));    
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    pd = new GeoPolygonFactory.PolygonDescription(points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     //System.out.println(c);
     
     // Middle point should be within!!
@@ -149,7 +151,7 @@ public class GeoPolygonTest {
     assertTrue(c.isWithin(gp));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     assertTrue(c.isWithin(gp));
@@ -170,7 +172,9 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
 
     xyzBounds = new XYZBounds();
     c.getBounds(xyzBounds);
@@ -180,7 +184,7 @@ public class GeoPolygonTest {
     assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
 
@@ -242,9 +246,10 @@ public class GeoPolygonTest {
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
 
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
     // Now, same thing for large polygon
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     
@@ -286,7 +291,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.7));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.01, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
-        
+    
+    pd = new GeoPolygonFactory.PolygonDescription(points);
         /*
         System.out.println("Points: ");
         for (GeoPoint p : points) {
@@ -294,7 +300,7 @@ public class GeoPolygonTest {
         }
         */
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
@@ -325,7 +331,7 @@ public class GeoPolygonTest {
 
     // Now, same thing for large polygon
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     // Sample some points within
@@ -996,7 +1002,7 @@ shape:
   }
 
   @Test
-  public void testConcavePolygonWithHole() {
+  public void testPolygonWithHole() {
     ArrayList<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -1.1, -1.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 1.0, -1.6));
@@ -1007,11 +1013,36 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
-    GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
+    
+    GeoPolygonFactory.PolygonDescription holeDescription = new GeoPolygonFactory.PolygonDescription(hole_points);
+    List<GeoPolygonFactory.PolygonDescription> holes = new ArrayList<>(1);
+    holes.add(holeDescription);
+    GeoPolygonFactory.PolygonDescription polygonDescription = new GeoPolygonFactory.PolygonDescription(points, holes);
+    
+    // Create two polygons -- one simple, the other complex.  Both have holes.  Compare their behavior.
+    GeoPolygon holeSimplePolygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,polygonDescription);
+    List<GeoPolygonFactory.PolygonDescription> polys = new ArrayList<>(1);
+    polys.add(polygonDescription);
+    GeoPolygon holeComplexPolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE,polys);
 
-    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
-    GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
-    assertEquals(polygon,polygon2);
+    // Sample some nearby points outside
+    GeoPoint gp;
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    // Random points outside
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+
   }
 
   @Test
