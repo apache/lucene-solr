@@ -192,17 +192,20 @@ public class GeoPolygonFactory {
     throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
 
-  private static GeoPoint getCenterOfMass(PlanetModel planetModel, List<GeoPoint> points) {
+  /** Generate a point at the center of mass of a list of points.
+   */
+  private static GeoPoint getCenterOfMass(final PlanetModel planetModel, final List<GeoPoint> points) {
     double x = 0;
     double y = 0;
     double z = 0;
     //get center of mass
-    for (GeoPoint point : points) {
+    for (final GeoPoint point : points) {
       x += point.x;
       y += point.y;
       z += point.z;
     }
-    return planetModel.createSurfacePoint(x / points.size(), y / points.size(), z / points.size());
+    // Normalization is not needed because createSurfacePoint does the scaling anyway.
+    return planetModel.createSurfacePoint(x, y, z);
   }
   
   /** Use this class to specify a polygon with associated holes.
@@ -270,30 +273,21 @@ public class GeoPolygonFactory {
     }
 
     final GeoPoint centerOfMass = getCenterOfMass(planetModel, testPointShape.points);
-    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, testPointShape.points);
-    if (isCenterOfMassInside != null) {
-      if (isCenterOfMassInside == testPointShape.poleMustBeInside) {
-        return new GeoComplexPolygon(planetModel, pointsList, centerOfMass, isCenterOfMassInside);
-      } else {
-        return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-centerOfMass.x, -centerOfMass.y, -centerOfMass.z), !isCenterOfMassInside);
-      }
+    final GeoComplexPolygon comRval = testPointShape.createGeoComplexPolygon(planetModel, pointsList, centerOfMass);
+    if (comRval != null) {
+      return comRval;
     }
-    
+
+    // Center of mass didn't work.
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
     for (int counter = 0; counter < 1000000; counter++) {
       // Pick the next random pole
       final GeoPoint pole = pickPole(generator, planetModel, testPointShape.points);
-      // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, testPointShape.points);
-      if (isPoleInside != null) {
-        // Legal pole
-        if (isPoleInside == testPointShape.poleMustBeInside) {
-          return new GeoComplexPolygon(planetModel, pointsList, pole, isPoleInside);
-        } else {
-          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-pole.x, -pole.y, -pole.z), !isPoleInside);
-        }
+      final GeoComplexPolygon rval = testPointShape.createGeoComplexPolygon(planetModel, pointsList, pole);
+      if (rval != null) {
+          return rval;
       }
       // If pole choice was illegal, try another one
     }
@@ -345,6 +339,23 @@ public class GeoPolygonFactory {
       this.points = points;
       this.poleMustBeInside = poleMustBeInside;
     }
+    
+    public GeoComplexPolygon createGeoComplexPolygon(final PlanetModel planetModel,
+      final List<List<GeoPoint>> pointsList, final GeoPoint testPoint) {
+      // Is it inside or outside?
+      final Boolean isTestPointInside = isInsidePolygon(testPoint, points);
+      if (isTestPointInside != null) {
+        // Legal pole
+        if (isTestPointInside == poleMustBeInside) {
+          return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
+        } else {
+          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+        }
+      }
+      // If pole choice was illegal, try another one
+      return null;
+    }
+
   }
   
   /**
