@@ -283,7 +283,7 @@
     </condition>
   </fail>
 
-  <fail message="Cannot run with ANT version 1.0.2 - see https://issues.apache.org/jira/browse/LUCENE-8189">
+  <fail message="Cannot run with ANT version 1.10.2 - see https://issues.apache.org/jira/browse/LUCENE-8189">
     <condition>
       <antversion exactly="1.10.2"/>
     </condition>
