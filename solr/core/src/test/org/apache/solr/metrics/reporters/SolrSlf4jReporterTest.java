@@ -47,9 +47,6 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
     ensureLoggingConfiguredAppropriately();
-    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
-    watcher.setThreshold("INFO");
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -69,6 +66,10 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     SolrMetricReporter reporter2 = reporters.get("test2");
     assertNotNull(reporter2);
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
+
+    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
+    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    watcher.setThreshold("INFO");
 
     watcher.reset();
     int cnt = 20;
