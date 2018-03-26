@@ -52,7 +52,9 @@ Jetty 9.4.8.v20171121
 Upgrade Notes
 ----------------------
 
-* SOLR-7887: Solr now uses Log4J 2.11. The log4j configuration is now in log4j2.xml rather than lo4j.properties files
+* SOLR-7887: Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files.
+  This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging
+  implementation which is compatible with SLF4J.
 
 New Features
 ----------------------
