@@ -24,7 +24,7 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,indexed as nested documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,indexed as nested documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
 
@@ -74,17 +74,33 @@ Using the example documents above, we can construct a query such as `q={!child o
 </result>
 ----
 
-Note that the query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
+[CAUTION]
+====
+The query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
 
 [literal]
 Parent query must not match any docs besides parent filter. Combine them as must (+) and must-not (-) clauses to find a problem doc.
 
-In older version the error is:
+You can search for `q=+(someParents) -(allParents)` to find a cause if you encounter this error.
+====
 
-[literal]
-Parent query yields document which is not matched by parents filter.
+==== Filtering and Tagging
 
-You can search for `q=+(someParents) -(allParents)` to find a cause.
+`{!child}` also supports `filters` and `excludeTags` local parameters like the following:
+
+[source,text]
+{!child of=<allParents> filters=$parentfq excludeTags=certain}<someParents>&parentfq=BRAND:Foo&parentfq=NAME:Bar&parentfq={!tag=certain}CATEGORY:Baz
+
+This is equivalent to:
+
+[source,text]
+{!child of=<allParents>}+<someParents> +BRAND:Foo +NAME:Bar
+
+Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
+
+==== All Children Syntax
+
+When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<allParents>}` is equivalent to `q=\*:* -<allParents>`.
 
 === Block Join Parent Query Parser
 
@@ -96,17 +112,15 @@ The parameter `allParents` is a filter that matches *only parent documents*; her
 
 The parameter `someChildren` is a query that matches some or all of the child documents.
 
-Note that the query for `someChildren` should match only child documents or you may get an exception:
+[CAUTION]
+====
+The query for `someChildren` should match only child documents or you may get an exception:
 
 [literal]
 Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
 
-In older version the error is:
-
-[literal]
-child query must only match non-parent docs.
-
 You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
+====
 
 Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
 
@@ -133,9 +147,30 @@ Instead, you should use a sibling mandatory clause as a filter:
 `q= *+title:join* +{!parent which="*content_type:parentDocument*"}comments:SolrCloud`
 ====
 
-=== Scoring with the Block Join Parent Query Parser
+==== Filtering and Tagging
+
+The `{!parent}` query supports `filters` and `excludeTags` local parameters like the following:
+
+[source,text]
+{!parent which=<allParents> filters=$childfq excludeTags=certain}<someChildren>&
+childfq=COLOR:Red&
+childfq=SIZE:XL&
+childfq={!tag=certain}PRINT:Hatched
+
+This is equivalent to:
+
+[source,text]
+{!parent which=<allParents>}+<someChildren> +COLOR:Red +SIZE:XL
+
+Notice the "$" syntax in `filters` for referencing queries. Comma-separated tags in `excludeTags` allow excluding certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
+
+==== Scoring with the Block Join Parent Query Parser
 
 You can optionally use the `score` local parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`. Implicit default is `none` which returns `0.0`.
+
+==== All Parents Syntax
+
+When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<allParents>}` is equivalent to `q=<allParents>`.
 
 == Boolean Query Parser
 
@@ -283,6 +318,23 @@ Example:
 ----
 
 This example creates a phrase query with "foo" followed by "bar" (assuming the analyzer for `myfield` is a text field with an analyzer that splits on whitespace and lowercase terms). This is generally equivalent to the Lucene query parser expression `myfield:"Foo Bar"`.
+
+== Filters Query Parser
+
+The syntax is:
+
+[literal]
+q={!filters param=$fqs excludeTags=sample}field:text&
+fqs=COLOR:Red&
+fqs=SIZE:XL&
+fqs={!tag=sample}BRAND:Foo
+
+which is equivalent to:
+
+[literal]
+q=+field:text +COLOR:Red +SIZE:XL
+
+`param` local parameter uses "$" syntax to refer to a few queries, where `excludeTags` may omit some of them.
 
 == Function Query Parser
 
