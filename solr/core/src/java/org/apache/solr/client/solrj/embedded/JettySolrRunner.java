@@ -363,7 +363,7 @@ public class JettySolrRunner {
    *
    * If the server has been started before, it will restart using the same port
    *
-   * @throws java.lang.Exception if an error occurs on startup
+   * @throws Exception if an error occurs on startup
    */
   public void start() throws Exception {
     start(true);

@@ -28,7 +28,7 @@
   </Appenders>
   <Loggers>
     <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="log4j.logger.org.apache.solr.common.cloud" level="WARN"/>
+    <Logger name="org.apache.solr.common.cloud" level="WARN"/>
 
     <Root level="INFO">
       <AppenderRef ref="STDERR"/>

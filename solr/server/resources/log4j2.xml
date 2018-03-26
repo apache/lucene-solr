@@ -27,8 +27,8 @@
     </Console>
     <RollingFile
         name="RollingFile"
-        fileName="${sys:solr.solr.home}/../logs/solr.log"
-        filePattern="${sys:solr.solr.home}/../logs/solr.%i.log.gz" >
+        fileName="${sys:solr.log.dir}/solr.log"
+        filePattern="${sys:solr.log.dir}/solr.%i.log" >
       <PatternLayout>
         <Pattern>
           %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
@@ -36,8 +36,9 @@
       </PatternLayout>
       <Policies>
         <OnStartupTriggeringPolicy />
-        <SizeBasedTriggeringPolicy size="4 MB"/>
+        <SizeBasedTriggeringPolicy size="32 MB"/>
       </Policies>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
   </Appenders>
   <Loggers>
