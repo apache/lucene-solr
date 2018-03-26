@@ -1,0 +1,59 @@
+= Math Expressions
+:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability, montecarlo, time-series, regression, numerical-analysis, curve-fitting, machine-learning
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Streaming Expression library includes a powerful
+mathematical programing syntax with many of the features of a
+functional programming language. The syntax includes variables,
+data structures and a growing set of mathematical functions.
+
+This user guide provides an overview of the different areas of
+mathematical coverage starting with basic scalar math and
+ending with machine learning. Along the way the guide covers variables
+and data structures and techniques for combining Solr's
+powerful streams with mathematical functions to make every
+record in your Solr Cloud cluster computable.
+
+== link:scalar-math.adoc[Scalar Math]
+
+== link:vector-math.adoc[Vector Math]
+
+== link:variables.adoc[Variables]
+
+== link:matrix-math.adoc[Matrix Math]
+
+== link:vectorization.adoc[Streams and Vectorization]
+
+== link:term-vectors.adoc[Text Analysis and Term Vectors]
+
+== link:statistics.adoc[Statistics]
+
+== link:probability.adoc[Probability]
+
+== link:montecarlo.adoc[Monte Carlo Simulations]
+
+== link:time-series.adoc[Time Series]
+
+== link:regression.adoc[Linear Regression]
+
+== link:numerical-analysis.adoc[Interpolation, Derivatives and Integrals]
+
+== link:curve-fitting.adoc[Curve Fitting]
+
+== link:machine-learning.adoc[Machine Learning]

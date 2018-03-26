@@ -31,10 +31,12 @@ public class FieldValueEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
   
   private String fieldName;
+  private boolean literal;
   
   public FieldValueEvaluator(String fieldName) {
-    if(fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
+    if(fieldName.startsWith("\"") && fieldName.endsWith("\"") && fieldName.length() > 1){
       fieldName = fieldName.substring(1, fieldName.length() - 1);
+      literal = true;
     }
     
     this.fieldName = fieldName;
@@ -42,6 +44,10 @@ public class FieldValueEvaluator extends SourceEvaluator {
   
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
+    if(literal) {
+      return fieldName;
+    }
+
     Object value = tuple.get(fieldName);
     
     // This is somewhat radical.
@@ -82,10 +88,6 @@ public class FieldValueEvaluator extends SourceEvaluator {
         }
         return list;
       }
-    }
-
-    if(value == null) {
-      return fieldName;
     }
 
     return value;
