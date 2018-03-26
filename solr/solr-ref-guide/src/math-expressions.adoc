@@ -30,30 +30,30 @@ and data structures and techniques for combining Solr's
 powerful streams with mathematical functions to make every
 record in your Solr Cloud cluster computable.
 
-== link:scalar-math.adoc#scalar-math[Scalar Math]
+== <<scalar-math.adoc#scalar-math,Scalar Math>>
 
-== link:vector-math.adoc#vector-math[Vector Math]
+== <<vector-math.adoc#vector-math,Vector Math>>
 
-== link:variables.adoc#variables.adoc[Variables]
+== <<variables.adoc#variables.adoc,Variables>>
 
-== link:matrix-math.adoc#matrix-math[Matrix Math]
+== <<matrix-math.adoc#matrix-math,Matrix Math>>
 
-== link:vectorization.adoc#vectorization[Streams and Vectorization]
+== <<vectorization.adoc#vectorization,Streams and Vectorization>>
 
-== link:term-vectors.adoc#term-vectors[Text Analysis and Term Vectors]
+== <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>
 
-== link:statistics.adoc#statistics[Statistics]
+== <<statistics.adoc#statistics,Statistics>>
 
-== link:probability-distributions.adoc#probability-distributions[Probability]
+== <<probability-distributions.adoc#probability-distributions,Probability>>
 
-== link:simulations.adoc#simulations[Monte Carlo Simulations]
+== <<simulations.adoc#simulations,Monte Carlo Simulations>>
 
-== link:time-series.adoc#time-series[Time Series]
+== <<time-series.adoc#time-series,Time Series>>
 
-== link:regression.adoc#regression[Linear Regression]
+== <<regression.adoc#regression,Linear Regression>>
 
-== link:numerical-analysis.adoc#numerical-analysis[Interpolation, Derivatives and Integrals]
+== <<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>
 
-== link:curve-fitting.adoc#curve-fitting[Curve Fitting]
+== <<curve-fitting.adoc#curve-fitting,Curve Fitting>>
 
-== link:machine-learning.adoc#machine-learning[Machine Learning]
+== <<machine-learning.adoc#machine-learning,Machine Learning>>
