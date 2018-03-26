@@ -78,6 +78,15 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
     );
   }
   
+  /**
+   * dictionary segmentation with emoji
+   */
+  public void testSimpleJapaneseWithEmoji() throws Exception {
+    assertAnalyzesTo(a, "それはまだ実験段階にあります💩",
+        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます", "💩"  }
+    );
+  }
+  
   public void testJapaneseTypes() throws Exception {
     assertAnalyzesTo(a, "仮名遣い カタカナ",
         new String[] { "仮名遣い", "カタカナ" },
