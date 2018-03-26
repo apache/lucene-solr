@@ -146,6 +146,9 @@ Upgrade Notes
   from the earlier default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas
   on nodes which have either crashed or shutdown.
 
+* SOLR-7887: Solr now uses Log4J 2.10. The log4j configuration is now in log4j2.xml rather than lo4j.properties
+  files (Shawn Heisey, Keith Laban, Timothy Potter, Varun Thacker, Erick Erickson,
+
 New Features
 ----------------------
 * SOLR-11285: Simulation framework for autoscaling. (ab)
@@ -468,6 +471,8 @@ Other Changes
 
 * SOLR-12097: Document the diskType policy attribute and usage of disk space in Collection APIs.
   (Cassandra Targett, shalin)
+
+* SOLR-7887: Upgrade Solr to Log4J 2.10 (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Varun Thacker)
 
 ==================  7.2.1 ==================
 
