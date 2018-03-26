@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability, montecarlo, time-series, regression, numerical-analysis, curve-fitting, machine-learning
+:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, machine-learning
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -30,30 +30,30 @@ and data structures and techniques for combining Solr's
 powerful streams with mathematical functions to make every
 record in your Solr Cloud cluster computable.
 
-== link:scalar-math.adoc[Scalar Math]
+== link:scalar-math.adoc#scalar-math[Scalar Math]
 
-== link:vector-math.adoc[Vector Math]
+== link:vector-math.adoc#vector-math[Vector Math]
 
-== link:variables.adoc[Variables]
+== link:variables.adoc#variables.adoc[Variables]
 
-== link:matrix-math.adoc[Matrix Math]
+== link:matrix-math.adoc#matrix-math[Matrix Math]
 
-== link:vectorization.adoc[Streams and Vectorization]
+== link:vectorization.adoc#vectorization[Streams and Vectorization]
 
-== link:term-vectors.adoc[Text Analysis and Term Vectors]
+== link:term-vectors.adoc#term-vectors[Text Analysis and Term Vectors]
 
-== link:statistics.adoc[Statistics]
+== link:statistics.adoc#statistics[Statistics]
 
-== link:probability.adoc[Probability]
+== link:probability-distributions.adoc#probability-distributions[Probability]
 
-== link:montecarlo.adoc[Monte Carlo Simulations]
+== link:simulations.adoc#simulations[Monte Carlo Simulations]
 
-== link:time-series.adoc[Time Series]
+== link:time-series.adoc#time-series[Time Series]
 
-== link:regression.adoc[Linear Regression]
+== link:regression.adoc#regression[Linear Regression]
 
-== link:numerical-analysis.adoc[Interpolation, Derivatives and Integrals]
+== link:numerical-analysis.adoc#numerical-analysis[Interpolation, Derivatives and Integrals]
 
-== link:curve-fitting.adoc[Curve Fitting]
+== link:curve-fitting.adoc#curve-fitting[Curve Fitting]
 
-== link:machine-learning.adoc[Machine Learning]
+== link:machine-learning.adoc#machine-learning[Machine Learning]
