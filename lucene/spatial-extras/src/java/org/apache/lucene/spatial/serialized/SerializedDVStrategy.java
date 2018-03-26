@@ -33,6 +33,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -113,7 +114,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   public Query makeQuery(SpatialArgs args) {
     ShapeValuesSource shapeValueSource = makeShapeValueSource();
     ShapeValuesPredicate predicateValueSource = new ShapeValuesPredicate(shapeValueSource, args.getOperation(), args.getShape());
-    return new PredicateValueSourceQuery(predicateValueSource);
+    return new PredicateValueSourceQuery(getFieldName(), predicateValueSource);
   }
 
   /**
@@ -128,14 +129,22 @@ public class SerializedDVStrategy extends SpatialStrategy {
    */
   static class PredicateValueSourceQuery extends Query {
     private final ShapeValuesPredicate predicateValueSource;
+    private final String field;
 
-    public PredicateValueSourceQuery(ShapeValuesPredicate predicateValueSource) {
+    public PredicateValueSourceQuery(String field, ShapeValuesPredicate predicateValueSource) {
       this.predicateValueSource = predicateValueSource;
+      this.field = field;
     }
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
+
+        @Override
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
+        }
+
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());

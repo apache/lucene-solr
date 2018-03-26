@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -69,6 +70,11 @@ public class FunctionQuery extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {}
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, func.toString());  // TODO is there a way of reporting matches that makes sense here?
+    }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {

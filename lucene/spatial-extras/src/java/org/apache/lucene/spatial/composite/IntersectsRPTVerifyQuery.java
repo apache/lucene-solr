@@ -24,6 +24,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -48,12 +49,14 @@ public class IntersectsRPTVerifyQuery extends Query {
 
   private final IntersectsDifferentiatingQuery intersectsDiffQuery;
   private final ShapeValuesPredicate predicateValueSource;
+  private final String field;
 
   public IntersectsRPTVerifyQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel,
                                   int prefixGridScanLevel, ShapeValuesPredicate predicateValueSource) {
     this.predicateValueSource = predicateValueSource;
     this.intersectsDiffQuery = new IntersectsDifferentiatingQuery(queryShape, fieldName, grid, detailLevel,
         prefixGridScanLevel);
+    this.field = fieldName;
   }
 
   @Override
@@ -84,6 +87,12 @@ public class IntersectsRPTVerifyQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     return new ConstantScoreWeight(this, boost) {
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
+      }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         // Compute approx & exact

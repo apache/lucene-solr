@@ -32,6 +32,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -90,6 +91,11 @@ class DrillSidewaysQuery extends Query {
     return new Weight(DrillSidewaysQuery.this) {
       @Override
       public void extractTerms(Set<Term> terms) {}
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return null;
+      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

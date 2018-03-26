@@ -32,6 +32,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -97,6 +98,11 @@ final class LatLonPointInPolygonQuery extends Query {
     final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createPolygonPredicate(polygons, tree);
 
     return new ConstantScoreWeight(this, boost) {
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
+      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

@@ -26,6 +26,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -98,6 +99,12 @@ final class LatLonDocValuesBoxQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
+      }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = context.reader().getSortedNumericDocValues(field);

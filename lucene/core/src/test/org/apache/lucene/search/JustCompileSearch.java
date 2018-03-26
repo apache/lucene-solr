@@ -248,6 +248,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return null;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

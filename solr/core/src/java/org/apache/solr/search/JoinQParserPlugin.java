@@ -35,6 +35,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -238,6 +239,11 @@ class JoinQuery extends Query {
     DocSet resultSet;
     Filter filter;
 
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, "*");  // TODO is there a way of reporting matches that makes sense here?
+    }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {

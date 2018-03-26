@@ -236,6 +236,11 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, field); // TODO
+    }
+
+    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       assert termArrays.length != 0;
       final LeafReader reader = context.reader();

@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -227,6 +228,11 @@ public abstract class Feature extends Query {
     @Override
     public abstract FeatureScorer scorer(LeafReaderContext context)
         throws IOException;
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, name);  // TODO is there a way of reporting matches that makes sense here?
+    }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {

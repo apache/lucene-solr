@@ -39,6 +39,7 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -448,6 +449,11 @@ public class LTRScoringQuery extends Query {
       for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
         feature.extractTerms(terms);
       }
+    }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, "*");  // TODO is there a way of reporting matches that makes sense here?
     }
 
     protected void reset() {

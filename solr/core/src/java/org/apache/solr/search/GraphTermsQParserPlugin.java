@@ -37,8 +37,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BulkScorer;
@@ -49,6 +49,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -273,6 +274,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           // This query is for abuse cases when the number of terms is too high to
           // run efficiently as a BooleanQuery. So likewise we hide its terms in
           // order to protect highlighters
+        }
+
+        @Override
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
         }
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
@@ -612,6 +618,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       Filter filter;
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
+      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
