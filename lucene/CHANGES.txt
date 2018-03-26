@@ -32,7 +32,8 @@ Other
   
 * SOLR-10912: Add automatic patch validation. (Mano Kovacs, Steve Rowe)
 
-* LUCENE-8122: Upgrade analysis/icu to ICU 60.2. (Robert Muir)
+* LUCENE-8122, LUCENE-8175: Upgrade analysis/icu to ICU 61.1.
+  (Robert Muir, Adrien Grand, Uwe Schindler)
 
 
 ======================= Lucene 7.3.0 =======================
