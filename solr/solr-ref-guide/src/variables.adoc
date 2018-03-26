@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== The Let Expressions
+== The Let Expression
 
 The `let` expression sets variables and returns
 the value of the last variable by default. The output of any streaming expression
