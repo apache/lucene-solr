@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -68,6 +69,20 @@ public abstract class Weight implements SegmentCacheable {
    * will extract all terms which are used for matching.
    */
   public abstract void extractTerms(Set<Term> terms);
+
+  public OffsetValues offsets(LeafReaderContext context, Analyzer analyzer, String field) {
+    OffsetCollector collector = new OffsetCollector(analyzer, field);
+    OffsetValues ov = offsets(context, collector);
+    return new OffsetValues() {
+      @Override
+      public OffsetsIterator advanceTo(int doc, String source) {
+        collector.setSource(source);
+        return ov.advanceTo(doc, source);
+      }
+    };
+  }
+
+  protected abstract OffsetValues offsets(LeafReaderContext context, OffsetCollector collector);
 
   /**
    * An explanation of the score computation for the named document.
