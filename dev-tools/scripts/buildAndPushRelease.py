@@ -288,16 +288,15 @@ def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   check_ant()
 
-def check_ant(): # allow 1.8, 1.9, 1.10
+def check_ant():
   antVersion = os.popen('ant -version').read().strip()
-  if antVersion.startswith('Apache Ant(TM) version 1.8'):
+  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
     return
-  if antVersion.startswith('Apache Ant(TM) version 1.9'):
+  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
     return
-  if antVersion.startswith('Apache Ant(TM) version 1.10'):
+  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
     return
-  raise RuntimeError('Unsupported ant version (expecting 1.8 - 1.10) :' + antVersion)
-
+  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
   
 def main():
   check_cmdline_tools()

@@ -282,6 +282,12 @@
     </condition>
   </fail>
 
+  <fail message="Cannot run with ANT version 1.0.2 - see https://issues.apache.org/jira/browse/LUCENE-8189">
+    <condition>
+      <antversion exactly="1.10.2"/>
+    </condition>
+  </fail>
+
   <fail message="Minimum supported Java version is 1.8.">
     <condition>
       <not><hasmethod classname="java.util.Arrays" method="parallelSort"/></not>
