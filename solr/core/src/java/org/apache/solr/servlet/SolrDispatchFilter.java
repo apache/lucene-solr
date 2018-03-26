@@ -153,6 +153,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
     StartupLoggingUtils.checkLogDir();
+    log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {

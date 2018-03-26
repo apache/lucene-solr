@@ -187,7 +187,8 @@
   <property name="javadoc.noindex" value="true"/>
 
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
-  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
+  <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -proc:none"/>
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">

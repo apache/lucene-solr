@@ -18,12 +18,15 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Enumeration;
+import java.util.Map;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,10 @@ public final class StartupLoggingUtils {
     }
   }
 
+  public static String getLoggerImplStr() {
+    return binder.getLoggerFactoryClassStr();
+  }
+
   /**
    * Disables all log4j ConsoleAppender's by modifying log4j configuration dynamically.
    * Must only be used during early startup
@@ -61,15 +68,16 @@ public final class StartupLoggingUtils {
         logNotSupported("Could not mute logging to console.");
         return false;
       }
-      org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-      Enumeration appenders = rootLogger.getAllAppenders();
-      while (appenders.hasMoreElements()) {
-        Appender appender = (Appender) appenders.nextElement();
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      Configuration config = ctx.getConfiguration();
+      LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      Map<String, Appender> appenders = loggerConfig.getAppenders();
+      appenders.forEach((name, appender) -> {
         if (appender instanceof ConsoleAppender) {
-          log.info("Property solr.log.muteconsole given. Muting ConsoleAppender named " + appender.getName());
-          rootLogger.removeAppender(appender);
+          loggerConfig.removeAppender(name);
+          ctx.updateLoggers();
         }
-      }
+      });
       return true;
     } catch (Exception e) {
       logNotSupported("Could not mute logging to console.");
@@ -89,7 +97,12 @@ public final class StartupLoggingUtils {
         logNotSupported("Could not change log level.");
         return false;
       }
-      LogManager.getRootLogger().setLevel(Level.toLevel(logLevel, Level.INFO));
+
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      Configuration config = ctx.getConfiguration();
+      LoggerConfig loggerConfig = config.getRootLogger();
+      loggerConfig.setLevel(Level.toLevel(logLevel, Level.INFO));
+      ctx.updateLoggers();
       return true;
     } catch (Exception e) {
       logNotSupported("Could not change log level.");
