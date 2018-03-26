@@ -161,7 +161,7 @@ Returns the following response:
 
 Several types of data can be manipulated with the statistical programming syntax. The following sections explore <<Arrays,arrays>>, <<Tuples,tuples>>, and <<Lists,lists>>.
 
-=== Arrays
+=== Creating Arrays
 
 The first data structure we'll explore is the array.
 

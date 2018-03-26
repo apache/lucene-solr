@@ -20,7 +20,7 @@ This section of the user guide covers the
 *probability distribution
 framework* included in the math expressions library.
 
-== Probability Distributions
+== Probability Distribution Framework
 
 The probability distribution framework includes
 many commonly used *real* and *discrete* probability
@@ -161,7 +161,7 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-=== Probability
+=== Discrete Probability
 
 The `probability` function can be used with any discrete
 distribution function to compute the probability of a

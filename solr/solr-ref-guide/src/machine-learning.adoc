@@ -124,7 +124,7 @@ This expression returns the following response:
 }
 ----
 
-=== Unitize
+=== Unit Vectors
 
 The `unitize` function scales vectors to a magnitude of 1. A vector with a
 magnitude of 1 is known as a unit vector.  Unit vectors are
@@ -171,7 +171,7 @@ This expression returns the following response:
 }
 ----
 
-== Distance
+== Distance Measures
 
 The `distance` function computes a distance measure for two
 numeric arrays or a *distance matrix* for the columns of a matrix.
@@ -267,7 +267,7 @@ Once the clustering has been completed there are a number of useful functions av
 for examining the *clusters* and *centroids*.
 
 The examples below are clustering *term vectors*.
-The chapter on link:term-vectors.adoc[Text Analysis and Term Vectors] should be
+The chapter on link:term-vectors.adoc#term-vectors[Text Analysis and Term Vectors] should be
 consulted for a full explanation of these features.
 
 === Centroid Features
@@ -603,7 +603,7 @@ This expression returns the following response:
 }
 ----
 
-== K-nearest Neighbor
+== K-nearest Neighbor (knn)
 
 The `knn` function searches the rows of a matrix for the
 K-nearest neighbors of a search vector. The `knn` function
