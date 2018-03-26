@@ -1366,7 +1366,7 @@ goto done
 
 :run_config
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j2.xml" ^
+  -Dlog4j.configurationFile="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j2.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI %* 
 if errorlevel 1 (

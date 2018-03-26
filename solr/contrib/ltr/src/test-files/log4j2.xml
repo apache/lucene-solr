@@ -31,7 +31,6 @@
     <Logger name="org.apache.hadoop" level="WARN"/>
     <Logger name="org.apache.directory" level="WARN"/>
     <Logger name="org.apache.solr.hadoop" level="INFO"/>
-    <Logger name="log4j.logger.org.apache.solr.hadoop" level="INFO"/>
     <Logger name="org.apache.solr.client.solrj.embedded.JettySolrRunner" level="DEBUG"/>
 
     <Root level="INFO">
