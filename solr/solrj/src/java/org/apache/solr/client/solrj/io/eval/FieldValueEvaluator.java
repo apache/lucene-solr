@@ -29,27 +29,21 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class FieldValueEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
-  
+
   private String fieldName;
-  private boolean literal;
-  
+
   public FieldValueEvaluator(String fieldName) {
-    if(fieldName.startsWith("\"") && fieldName.endsWith("\"") && fieldName.length() > 1){
+    if(fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
       fieldName = fieldName.substring(1, fieldName.length() - 1);
-      literal = true;
-    }
-    
-    this.fieldName = fieldName;
-  }
-  
-  @Override
-  public Object evaluate(Tuple tuple) throws IOException {
-    if(literal) {
-      return fieldName;
     }
 
+    this.fieldName = fieldName;
+  }
+
+  @Override
+  public Object evaluate(Tuple tuple) throws IOException {
     Object value = tuple.get(fieldName);
-    
+
     // This is somewhat radical.
     // Here, we allow for the use of the context to provide alternative values
     // when they are not available in the provided tuple. This means that all
@@ -57,14 +51,14 @@ public class FieldValueEvaluator extends SourceEvaluator {
     // can even evaluate over fields from both of them in the same evaluation
     if(null == value && null != getStreamContext()){
       value = getStreamContext().getLets().get(fieldName);
-      
+
       // If what's contained in the context is itself an evaluator then
       // we need to evaluate it
       if(value instanceof StreamEvaluator){
         value = ((StreamEvaluator)value).evaluate(tuple);
       }
     }
-    
+
     // if we have an array then convert to an ArrayList
     // if we have an iterable that is not a list then convert to ArrayList
     // lists are good to go
@@ -90,9 +84,13 @@ public class FieldValueEvaluator extends SourceEvaluator {
       }
     }
 
+    if(value == null) {
+      return fieldName;
+    }
+
     return value;
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     return new StreamExpressionValue(fieldName);
@@ -101,9 +99,9 @@ public class FieldValueEvaluator extends SourceEvaluator {
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new Explanation(nodeId.toString())
-      .withExpressionType(ExpressionType.EVALUATOR)
-      .withImplementingClass(getClass().getName())
-      .withExpression(toExpression(factory).toString());
+        .withExpressionType(ExpressionType.EVALUATOR)
+        .withImplementingClass(getClass().getName())
+        .withExpression(toExpression(factory).toString());
   }
 
 }
