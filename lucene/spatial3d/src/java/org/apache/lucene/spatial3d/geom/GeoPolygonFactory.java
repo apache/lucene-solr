@@ -175,20 +175,20 @@ public class GeoPolygonFactory {
       holes = null;
     }
 
-    // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
-    //System.err.println(" filtering "+pointList.size()+" points...");
-    //final long startTime = System.currentTimeMillis();
-    final List<GeoPoint> firstFilteredPointList = filterPoints(description.points);
-    if (firstFilteredPointList == null) {
-      return null;
-    }
-    final List<GeoPoint> filteredPointList = filterEdges(firstFilteredPointList, leniencyValue);
-    //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
-    if (filteredPointList == null) {
-      return null;
-    }
+    if (description.points.size() <= SMALL_POLYGON_CUTOFF_EDGES) {
+      // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
+      //System.err.println(" filtering "+pointList.size()+" points...");
+      //final long startTime = System.currentTimeMillis();
+      final List<GeoPoint> firstFilteredPointList = filterPoints(description.points);
+      if (firstFilteredPointList == null) {
+        return null;
+      }
+      final List<GeoPoint> filteredPointList = filterEdges(firstFilteredPointList, leniencyValue);
+      //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
+      if (filteredPointList == null) {
+        return null;
+      }
 
-    if (filteredPointList.size() <= SMALL_POLYGON_CUTOFF_EDGES) {
       try {
         //First approximation to find a point
         final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
@@ -1144,7 +1144,7 @@ public class GeoPolygonFactory {
     final MutableBoolean seenConcave,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
       
     if (edgeBuffer.size() == 0) {
       return true;
@@ -1182,25 +1182,27 @@ public class GeoPolygonFactory {
       edge = edgeBuffer.getNext(edge);
     }
     
-    // Since we attempt to prevent the addition of any edge that shows up as colinear, and we filter out colinear edge parts
-    // beforehand, it isn't possible to have a colinear edge at this point.
-    if (testPoint != null && holes != null && holes.size() > 0) {
-      // No holes, for test
-      final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
-      if (testPolygon.isWithin(testPoint)) {
-        return false;
+    try {
+      if (testPoint != null && holes != null && holes.size() > 0) {
+        // No holes, for test
+        final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
+        if (testPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
-    }
-      
-    final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
-    if (testPoint != null && (holes == null || holes.size() == 0)) {
-      if (realPolygon.isWithin(testPoint)) {
-        return false;
+        
+      final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
+      if (testPoint != null && (holes == null || holes.size() == 0)) {
+        if (realPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
+        
+      rval.addShape(realPolygon);
+      return true;
+    } catch (IllegalArgumentException e) {
+      throw new TileException(e.getMessage());
     }
-      
-    rval.addShape(realPolygon);
-    return true;
   }
   
   /** Look for a convex polygon at the specified edge.  If we find it, create one and adjust the edge buffer.
