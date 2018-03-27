@@ -96,22 +96,15 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     LeafReader leafReader = getRandomIndex(analyzer, 100);
     try {
-      long trainStart = System.currentTimeMillis();
       BM25NBClassifier classifier = new BM25NBClassifier(leafReader,
           analyzer, null, categoryFieldName, textFieldName);
-      long trainEnd = System.currentTimeMillis();
-      long trainTime = trainEnd - trainStart;
-      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
 
-      long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
           classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
-      long evaluationEnd = System.currentTimeMillis();
-      long evaluationTime = evaluationEnd - evaluationStart;
-      assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
+
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
-      assertTrue("avg classification time: " + avgClassificationTime, 5000 > avgClassificationTime);
+      assertTrue(avgClassificationTime >= 0);
 
       double f1 = confusionMatrix.getF1Measure();
       assertTrue(f1 >= 0d);

@@ -173,7 +173,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         }
         if (e.code() == ErrorCode.CONFLICT.code) { // version conflict
           log.warn("Atomic update failed due to " + e.getMessage() +
-              "Retrying with new version .... (" + attempts + ")");
+              " Retrying with new version .... (" + attempts + ")");
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
           if (lastVersion != null) {
             cmd.solrDoc.setField(VERSION, lastVersion);

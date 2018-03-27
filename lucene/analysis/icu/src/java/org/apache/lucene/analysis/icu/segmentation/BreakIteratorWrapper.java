@@ -16,152 +16,84 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
-import java.text.CharacterIterator;
-
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 import com.ibm.icu.text.UTF16;
+import com.ibm.icu.text.UnicodeSet;
 
 /**
- * Contain all the issues surrounding BreakIterators in ICU in one place.
- * Basically this boils down to the fact that they aren't very friendly to any
- * sort of OO design.
- * <p>
- * http://bugs.icu-project.org/trac/ticket/5901: RBBI.getRuleStatus(), hoist to
- * BreakIterator from RuleBasedBreakIterator
- * <p>
- * DictionaryBasedBreakIterator is a subclass of RuleBasedBreakIterator, but
- * doesn't actually behave as a subclass: it always returns 0 for
- * getRuleStatus(): 
- * http://bugs.icu-project.org/trac/ticket/4730: Thai RBBI, no boundary type
- * tags
+ * Wraps RuleBasedBreakIterator, making object reuse convenient and 
+ * emitting a rule status for emoji sequences.
  * @lucene.experimental
  */
-abstract class BreakIteratorWrapper {
-  protected final CharArrayIterator textIterator = new CharArrayIterator();
-  protected char text[];
-  protected int start;
-  protected int length;
+final class BreakIteratorWrapper {
+  private final CharArrayIterator textIterator = new CharArrayIterator();
+  private final RuleBasedBreakIterator rbbi;
+  private char text[];
+  private int start;
+  private int status;
+  
+  BreakIteratorWrapper(RuleBasedBreakIterator rbbi) {
+    this.rbbi = rbbi;
+  }
+  
+  int current() {
+    return rbbi.current();
+  }
 
-  abstract int next();
-  abstract int current();
-  abstract int getRuleStatus();
-  abstract void setText(CharacterIterator text);
+  int getRuleStatus() {
+    return status;
+  }
+
+  int next() {
+    int current = rbbi.current();
+    int next = rbbi.next();
+    status = calcStatus(current, next);
+    return next;
+  }
+  
+  /** Returns current rule status for the text between breaks. (determines token type) */
+  private int calcStatus(int current, int next) {
+    // to support presentation selectors, we need to handle alphanum, num, and none at least, so currently not worth optimizing.
+    // https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%3AEmoji%3A%5D-%5B%3AEmoji_Presentation%3A%5D&g=Word_Break&i=
+    if (next != BreakIterator.DONE && isEmoji(current, next)) {
+      return ICUTokenizerConfig.EMOJI_SEQUENCE_STATUS;
+    } else {
+      return rbbi.getRuleStatus();
+    }
+  }
+  
+  // See unicode doc L2/16-315 and also the RBBI rules for rationale.
+  // we don't include regional indicators here, because they aren't ambiguous for tagging,
+  // they need only be treated special for segmentation.
+  static final UnicodeSet EMOJI_RK = new UnicodeSet("[\u002a\u00230-9©®™〰〽]").freeze();
+
+  /** Returns true if the current text represents emoji character or sequence */
+  private boolean isEmoji(int current, int next) {
+    int begin = start + current;
+    int end = start + next;
+    int codepoint = UTF16.charAt(text, 0, end, begin);
+    // TODO: this can be made more aggressive and future-proof if it uses [:Extended_Pictographic:]
+    if (UCharacter.hasBinaryProperty(codepoint, UProperty.EMOJI)) {
+      if (EMOJI_RK.contains(codepoint)) {
+        // if its in EmojiRK, we don't treat it as emoji unless there is evidence it forms emoji sequence,
+        // an emoji presentation selector or keycap follows.
+        int trailer = begin + Character.charCount(codepoint);
+        return trailer < end && (text[trailer] == 0xFE0F || text[trailer] == 0x20E3);
+      } else {
+        return true;
+      }
+    }
+    return false;
+  }
 
   void setText(char text[], int start, int length) {
     this.text = text;
     this.start = start;
-    this.length = length;
     textIterator.setText(text, start, length);
-    setText(textIterator);
-  }
-
-  /**
-   * If it's a RuleBasedBreakIterator, the rule status can be used for token type. If it's
-   * any other BreakIterator, the rulestatus method is not available, so treat
-   * it like a generic BreakIterator.
-   */
-  static BreakIteratorWrapper wrap(BreakIterator breakIterator) {
-    if (breakIterator instanceof RuleBasedBreakIterator)
-      return new RBBIWrapper((RuleBasedBreakIterator) breakIterator);
-    else
-      return new BIWrapper(breakIterator);
-  }
-
-  /**
-   * RuleBasedBreakIterator wrapper: RuleBasedBreakIterator (as long as it's not
-   * a DictionaryBasedBreakIterator) behaves correctly.
-   */
-  static final class RBBIWrapper extends BreakIteratorWrapper {
-    private final RuleBasedBreakIterator rbbi;
-
-    RBBIWrapper(RuleBasedBreakIterator rbbi) {
-      this.rbbi = rbbi;
-    }
-
-    @Override
-    int current() {
-      return rbbi.current();
-    }
-
-    @Override
-    int getRuleStatus() {
-      return rbbi.getRuleStatus();
-    }
-
-    @Override
-    int next() {
-      return rbbi.next();
-    }
-
-    @Override
-    void setText(CharacterIterator text) {
-      rbbi.setText(text);
-    }
-  }
-
-  /**
-   * Generic BreakIterator wrapper: Either the rulestatus method is not
-   * available or always returns 0. Calculate a rulestatus here so it behaves
-   * like RuleBasedBreakIterator.
-   * 
-   * Note: This is slower than RuleBasedBreakIterator.
-   */
-  static final class BIWrapper extends BreakIteratorWrapper {
-    private final BreakIterator bi;
-    private int status;
-
-    BIWrapper(BreakIterator bi) {
-      this.bi = bi;
-    }
-
-    @Override
-    int current() {
-      return bi.current();
-    }
-
-    @Override
-    int getRuleStatus() {
-      return status;
-    }
-
-    @Override
-    int next() {
-      int current = bi.current();
-      int next = bi.next();
-      status = calcStatus(current, next);
-      return next;
-    }
-
-    private int calcStatus(int current, int next) {
-      if (current == BreakIterator.DONE || next == BreakIterator.DONE)
-        return RuleBasedBreakIterator.WORD_NONE;
-
-      int begin = start + current;
-      int end = start + next;
-
-      int codepoint;
-      for (int i = begin; i < end; i += UTF16.getCharCount(codepoint)) {
-        codepoint = UTF16.charAt(text, 0, end, begin);
-
-        if (UCharacter.isDigit(codepoint))
-          return RuleBasedBreakIterator.WORD_NUMBER;
-        else if (UCharacter.isLetter(codepoint)) {
-          // TODO: try to separately specify ideographic, kana? 
-          // [currently all bundled as letter for this case]
-          return RuleBasedBreakIterator.WORD_LETTER;
-        }
-      }
-
-      return RuleBasedBreakIterator.WORD_NONE;
-    }
-
-    @Override
-    void setText(CharacterIterator text) {
-      bi.setText(text);
-      status = RuleBasedBreakIterator.WORD_NONE;
-    }
+    rbbi.setText(textIterator);
+    status = RuleBasedBreakIterator.WORD_NONE;
   }
 }

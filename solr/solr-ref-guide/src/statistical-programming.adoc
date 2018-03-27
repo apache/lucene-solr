@@ -159,9 +159,9 @@ Returns the following response:
 
 == Data Structures
 
-Several types of data can be manipulated with the statistical programming syntax. The following sections explore <<Arrays,arrays>>, <<Tuples,tuples>>, and <<Lists,lists>>.
+Several types of data can be manipulated with the statistical programming syntax. The following sections explore arrays, tuples and lists.
 
-=== Arrays
+=== Creating Arrays
 
 The first data structure we'll explore is the array.
 

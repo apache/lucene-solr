@@ -227,7 +227,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           ));
 
           cmd.solrDoc = new SolrInputDocument();
-          cmd.solrDoc.addField("id", 10); //hardcoded id=2
+          cmd.solrDoc.addField("id", 10); //hardcoded id=10
           cmd.solrDoc.addField("cat", strings[index]);
           cmd.solrDoc.addField("int_i", index);
 
@@ -258,7 +258,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     }
 
     assertQ("Check the total number of docs",
-        req("q", "cat:" + queryString.toString())
+        req("q", "cat:(" + queryString.toString() + ")")
         , "//result[@numFound=1]");
 
     assertQ("Check the total number of docs",
