@@ -1017,19 +1017,26 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
     private void countCrossingPoint(final GeoPoint crossingPoint, final Edge edge) {
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
+        
+        // The crossing point is shared by two edges.  If we are going to count it, this is the edge we'll count it on.
         // We have to figure out if this crossing should be counted.
         
+        // We look at the above plane and the below plane and see if we cross either of them.
+        // If we cross NEITHER of them: we're in the "zone" between the planes, and this edge doesn't count.
+
         // Does the crossing for this edge go up, or down?  Or can't we tell?
-        final GeoPoint[] aboveIntersections = abovePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
-        final GeoPoint[] belowIntersections = belowPlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
-        
-        assert !(aboveIntersections.length > 0 && belowIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
-        
-        if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
+        final GeoPoint[] aboveIntersections = abovePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] belowIntersections = belowPlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+
+        if ((aboveIntersections == null || aboveIntersections.length == 0) && (belowIntersections == null || belowIntersections.length == 0)) {
           return;
         }
-
-        final boolean edgeCrossesAbove = aboveIntersections.length > 0;
+        
+        // A null value means we have a situation where the edge is numerically identical.  That's not counted as a "crossing".
+        
+        assert !(aboveIntersections != null && aboveIntersections.length > 0 && belowIntersections != null && belowIntersections.length > 0) : "edge that ends in a crossing can't be both up and down!";
+        
+        final boolean edgeCrossesAbove = aboveIntersections != null && aboveIntersections.length > 0;
 
         // This depends on the previous edge that first departs from identicalness.
         Edge assessEdge = edge;
@@ -1037,12 +1044,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
         GeoPoint[] assessBelowIntersections;
         while (true) {
           assessEdge = assessEdge.previous;
-          assessAboveIntersections = abovePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
-          assessBelowIntersections = belowPlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessAboveIntersections = abovePlane.findCrossings(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessBelowIntersections = belowPlane.findCrossings(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
 
-          assert !(assessAboveIntersections.length > 0 && assessBelowIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
-
-          if (assessAboveIntersections.length == 0 && assessBelowIntersections.length == 0) {
+          if ((assessAboveIntersections == null || assessAboveIntersections.length == 0) && (assessBelowIntersections == null || assessBelowIntersections.length == 0)) {
             continue;
           }
           break;
@@ -1073,7 +1078,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
         // and make an assessment that way, since a single edge can intersect the plane at more than one point.
         
-        final boolean assessEdgeAbove = assessAboveIntersections.length > 0;
+        final boolean assessEdgeAbove = assessAboveIntersections != null && assessAboveIntersections.length > 0;
         if (assessEdgeAbove != edgeCrossesAbove) {
           crossingCount++;
         }
@@ -1082,16 +1087,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // Figure out if the crossing should be counted.
         
         // Does the crossing for this edge go up, or down?  Or can't we tell?
-        final GeoPoint[] aboveIntersections = abovePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
-        final GeoPoint[] belowIntersections = belowPlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] aboveIntersections = abovePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] belowIntersections = belowPlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
         
-        assert !(aboveIntersections.length > 0 && belowIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
-        
-        if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
+        if ((aboveIntersections == null || aboveIntersections.length == 0) && (belowIntersections == null || belowIntersections.length == 0)) {
           return;
         }
 
-        final boolean edgeCrossesAbove = aboveIntersections.length > 0;
+        final boolean edgeCrossesAbove = aboveIntersections != null && aboveIntersections.length > 0;
 
         // This depends on the previous edge that first departs from identicalness.
         Edge assessEdge = edge;
@@ -1099,12 +1102,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
         GeoPoint[] assessBelowIntersections;
         while (true) {
           assessEdge = assessEdge.next;
-          assessAboveIntersections = abovePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
-          assessBelowIntersections = belowPlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessAboveIntersections = abovePlane.findCrossings(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessBelowIntersections = belowPlane.findCrossings(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
 
-          assert !(assessAboveIntersections.length > 0 && assessBelowIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
-
-          if (assessAboveIntersections.length == 0 && assessBelowIntersections.length == 0) {
+          if (assessAboveIntersections != null && assessAboveIntersections.length == 0 && assessBelowIntersections != null && assessBelowIntersections.length == 0) {
             continue;
           }
           break;
@@ -1121,7 +1122,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
         // and make an assessment that way, since a single edge can intersect the plane at more than one point.
 
-        final boolean assessEdgeAbove = assessAboveIntersections.length > 0;
+        final boolean assessEdgeAbove = assessAboveIntersections != null && assessAboveIntersections.length > 0;
         if (assessEdgeAbove != edgeCrossesAbove) {
           crossingCount++;
         }
@@ -1326,14 +1327,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
         computeInsideOutside();
         
         // Does the crossing for this edge go up, or down?  Or can't we tell?
-        final GeoPoint[] insideTestPointPlaneIntersections = testPointInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTestPointCutoffPlane);
-        final GeoPoint[] insideTravelPlaneIntersections = travelInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTravelCutoffPlane);
-        final GeoPoint[] outsideTestPointPlaneIntersections = testPointOutsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
-        final GeoPoint[] outsideTravelPlaneIntersections = travelOutsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] insideTestPointPlaneIntersections = testPointInsidePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTestPointCutoffPlane);
+        final GeoPoint[] insideTravelPlaneIntersections = travelInsidePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTravelCutoffPlane);
+        final GeoPoint[] outsideTestPointPlaneIntersections = testPointOutsidePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] outsideTravelPlaneIntersections = travelOutsidePlane.findCrossings(planetModel, edge.plane, edge.startPlane, edge.endPlane);
           
-        assert !(insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length > 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
-          
-        if (insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length == 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length == 0) {
+        if ((insideTestPointPlaneIntersections == null || insideTestPointPlaneIntersections.length == 0) && 
+          (insideTravelPlaneIntersections == null || insideTravelPlaneIntersections.length == 0) &&
+          (outsideTestPointPlaneIntersections == null || outsideTestPointPlaneIntersections.length == 0) &&
+          (outsideTravelPlaneIntersections == null || outsideTravelPlaneIntersections.length == 0)) {
           //System.err.println(" No inside or outside crossings found");
           return;
         }
@@ -1353,10 +1355,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
           assessOutsideTestPointIntersections = testPointOutsidePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
           assessOutsideTravelIntersections = travelOutsidePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
 
-          // An edge can cross both outside and inside, because of the corner.  But it can be considered to cross the inside ONLY if it crosses either of the inside edges.
-          //assert !(assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0 && assessOutsideTestPointIntersections.length + assessOutsideTravelIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
-
-          if (assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length == 0 && assessOutsideTestPointIntersections.length + assessOutsideTravelIntersections.length == 0) {
+          // If the assess edge is numerically identical to the edge we're trying to find the intersections with, there's not really a crossing, so count it as zero.
+          
+          if ((assessInsideTestPointIntersections == null || assessInsideTestPointIntersections.length == 0) &&
+            (assessInsideTravelIntersections == null || assessInsideTravelIntersections.length == 0) &&
+            (assessOutsideTestPointIntersections == null || assessOutsideTestPointIntersections.length == 0) &&
+            (assessOutsideTravelIntersections == null || assessOutsideTravelIntersections.length == 0)) {
             continue;
           }
           break;
@@ -1376,7 +1380,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
         } else {
           otherCrossingPoints = testPointPlane.findCrossings(planetModel, assessEdge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, assessEdge.startPlane, assessEdge.endPlane);
         }        
-          
+
+        if (otherCrossingPoints == null) {
+          // The assessEdge plane is the same as the travel plane.  We consider this the same as "no crossing".
+          return;
+        }
+        
         // Look for a matching endpoint.  If the other endpoint doesn't show up, it is either out of bounds (in which case the
         // transition won't be counted for that edge), or it is not a crossing for that edge (so, same conclusion).
         for (final GeoPoint otherCrossingPoint : otherCrossingPoints) {
@@ -1393,7 +1402,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
         // and make an assessment that way, since a single edge can intersect the plane at more than one point.
           
-        final boolean assessEdgeInside = assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0;
+        final boolean assessEdgeInside = (assessInsideTestPointIntersections != null && assessInsideTestPointIntersections.length > 0) ||
+          (assessInsideTravelIntersections != null && assessInsideTravelIntersections.length > 0);
         if (assessEdgeInside != edgeCrossesInside) {
           //System.err.println(" Incrementing crossing count");
           crossingCount++;
@@ -1405,6 +1415,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         //System.err.println(" Crossing point = edge.endPoint");
         // Figure out if the crossing should be counted.
         computeInsideOutside();
+
+        // If the assess edge is numerically identical to the edge we're trying to find the intersections with, there's not really a crossing, so count it as zero.
         
         // Does the crossing for this edge go up, or down?  Or can't we tell?
         final GeoPoint[] insideTestPointPlaneIntersections = testPointInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTestPointCutoffPlane);
@@ -1413,14 +1425,17 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final GeoPoint[] outsideTravelPlaneIntersections = travelOutsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
         
         // An edge can cross both outside and inside, because of the corner.  But it can be considered to cross the inside ONLY if it crosses either of the inside edges.
-        //assert !(insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length > 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length > 0) : "edge that ends in a crossing can't go both up and down: insideTestPointPlaneIntersections: "+insideTestPointPlaneIntersections.length+" insideTravelPlaneIntersections: "+insideTravelPlaneIntersections.length+" outsideTestPointPlaneIntersections: "+outsideTestPointPlaneIntersections.length+" outsideTravelPlaneIntersections: "+outsideTravelPlaneIntersections.length;
           
-        if (insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length == 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length == 0) {
+        if ((insideTestPointPlaneIntersections == null || insideTestPointPlaneIntersections.length == 0) && 
+          (insideTravelPlaneIntersections == null || insideTravelPlaneIntersections.length == 0) && 
+          (outsideTestPointPlaneIntersections == null || outsideTestPointPlaneIntersections.length == 0) && 
+          (outsideTravelPlaneIntersections == null || outsideTravelPlaneIntersections.length == 0)) {
           //System.err.println(" No inside or outside crossings found");
           return;
         }
 
-        final boolean edgeCrossesInside = insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length > 0;
+        final boolean edgeCrossesInside = (insideTestPointPlaneIntersections !=null && insideTestPointPlaneIntersections.length > 0) || 
+          (insideTravelPlaneIntersections != null && insideTravelPlaneIntersections.length > 0);
 
         // This depends on the previous edge that first departs from identicalness.
         Edge assessEdge = edge;
@@ -1435,9 +1450,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           assessOutsideTestPointIntersections = testPointOutsidePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
           assessOutsideTravelIntersections = travelOutsidePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
 
-          assert !(assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0 && assessOutsideTestPointIntersections.length + assessOutsideTravelIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
-
-          if (assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length == 0 && assessOutsideTestPointIntersections.length + assessOutsideTravelIntersections.length == 0) {
+          if ((assessInsideTestPointIntersections == null || assessInsideTestPointIntersections.length == 0) && 
+            (assessInsideTravelIntersections == null || assessInsideTravelIntersections.length == 0) && 
+            (assessOutsideTestPointIntersections == null || assessOutsideTestPointIntersections.length == 0) && 
+            (assessOutsideTravelIntersections == null || assessOutsideTravelIntersections.length == 0)) {
             continue;
           }
           break;
@@ -1454,7 +1470,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
         // and make an assessment that way, since a single edge can intersect the plane at more than one point.
 
-        final boolean assessEdgeInside = assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0;
+        final boolean assessEdgeInside = (assessInsideTestPointIntersections !=null && assessInsideTestPointIntersections.length > 0) || 
+          (assessInsideTravelIntersections != null && assessInsideTravelIntersections.length > 0);
         if (assessEdgeInside != edgeCrossesInside) {
           //System.err.println(" Incrementing crossing count");
           crossingCount++;
