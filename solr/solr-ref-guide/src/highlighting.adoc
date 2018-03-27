@@ -46,6 +46,8 @@ When not defined, the defaults defined for the `df` query parameter will be used
 A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
 +
 When not defined, the query defined with the `q` parameter will the used.
++
+When `hl.qparser` is not defined, the query parser defined with the `defType` query parameter will be used and terms will be analyzed using those rules. This behavior can be overridden by specifying a field, for example: `hl.q=field:term`.
 
 `hl.qparser`::
 The query parser to use for the `hl.q` query.
