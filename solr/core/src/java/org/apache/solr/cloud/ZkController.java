@@ -898,18 +898,19 @@ public class ZkController {
     publishNodeAsDown(getNodeName());
 
     Set<String> collectionsWithLocalReplica = ConcurrentHashMap.newKeySet();
-    for (SolrCore core : cc.getCores()) {
-      collectionsWithLocalReplica.add(core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+    for (CoreDescriptor descriptor : cc.getCoreDescriptors()) {
+      collectionsWithLocalReplica.add(descriptor.getCloudDescriptor().getCollectionName());
     }
 
     CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
     for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
       zkStateReader.registerCollectionStateWatcher(collectionWithLocalReplica, (liveNodes, collectionState) -> {
+        if (collectionState == null)  return false;
         boolean foundStates = true;
-        for (SolrCore core : cc.getCores()) {
-          if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
-            Replica replica = collectionState.getReplica(core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-            if (replica.getState() != Replica.State.DOWN) {
+        for (CoreDescriptor coreDescriptor : cc.getCoreDescriptors()) {
+          if (coreDescriptor.getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
+            Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getCoreNodeName());
+            if (replica == null || replica.getState() != Replica.State.DOWN) {
               foundStates = false;
             }
           }
