@@ -40,7 +40,7 @@ record in your Solr Cloud cluster computable.
 
 == <<vectorization.adoc#vectorization,Streams and Vectorization>>
 
-== <<term-vectors.adoc#text1,Text Analysis and Term Vectors>>
+== <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>
 
 == <<statistics.adoc#statistics,Statistics>>
 
