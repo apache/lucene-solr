@@ -34,13 +34,13 @@ record in your Solr Cloud cluster computable.
 
 == <<vector-math.adoc#vector-math,Vector Math>>
 
-== <<variables.adoc#variables.adoc,Variables>>
+== <<variables.adoc#variables,Variables>>
 
 == <<matrix-math.adoc#matrix-math,Matrix Math>>
 
 == <<vectorization.adoc#vectorization,Streams and Vectorization>>
 
-== <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>
+== <<term-vectors.adoc#text-analysis-and-term-vectors,Text Analysis and Term Vectors>>
 
 == <<statistics.adoc#statistics,Statistics>>
 
