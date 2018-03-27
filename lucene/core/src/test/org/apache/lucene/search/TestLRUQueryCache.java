@@ -350,6 +350,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
         }
@@ -944,6 +949,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
         }
@@ -1293,6 +1303,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
+        @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
@@ -1364,6 +1379,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
+        @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return scorerSupplier(context).get(Long.MAX_VALUE);
@@ -1463,6 +1483,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, 1) {
+
+        @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
 
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {

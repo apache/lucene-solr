@@ -35,6 +35,12 @@ public final class MatchAllDocsQuery extends Query {
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";
       }
+
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;
+      }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));

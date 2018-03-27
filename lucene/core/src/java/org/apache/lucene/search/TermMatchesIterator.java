@@ -17,12 +17,47 @@
 
 package org.apache.lucene.search;
 
-public interface OffsetsIterator {
+import java.io.IOException;
 
-  int startOffset();
+import org.apache.lucene.index.PostingsEnum;
 
-  int endOffset();
+public class TermMatchesIterator implements MatchesIterator {
 
-  boolean nextOffset();
+  private int upto;
+  private int pos;
+  private final PostingsEnum pe;
 
+  public TermMatchesIterator(PostingsEnum pe) throws IOException {
+    this.pe = pe;
+    this.upto = pe.freq();
+  }
+
+  @Override
+  public boolean next() throws IOException {
+    if (upto-- > 0) {
+      pos = pe.nextPosition();
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public int startPosition() {
+    return pos;
+  }
+
+  @Override
+  public int endPosition() {
+    return pos;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return pe.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return pe.endOffset();
+  }
 }

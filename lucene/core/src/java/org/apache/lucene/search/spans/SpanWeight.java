@@ -29,6 +29,7 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -160,5 +161,62 @@ public abstract class SpanWeight extends Weight {
     }
 
     return Explanation.noMatch("no matching term");
+  }
+
+  @Override
+  public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+    if (this.field.equals(field) == false)
+      return null;
+    Spans spans = getSpans(context, Postings.OFFSETS);
+    if (spans.advance(doc) != doc)
+      return null;
+    return new MatchesIterator() {
+
+      SpanCollector offsetCollector = new SpanCollector() {
+        @Override
+        public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+          startOffset = Math.min(startOffset, postings.startOffset());
+          endOffset = Math.max(endOffset, postings.endOffset());
+        }
+
+        @Override
+        public void reset() {
+          startOffset = Integer.MAX_VALUE;
+          endOffset = Integer.MIN_VALUE;
+        }
+      };
+
+      int startOffset = -1;
+      int endOffset = -1;
+
+      @Override
+      public boolean next() throws IOException {
+        int next = spans.nextStartPosition();
+        if (next == Spans.NO_MORE_POSITIONS)
+          return false;
+        spans.collect(offsetCollector);
+        return true;
+      }
+
+      @Override
+      public int startPosition() {
+        return spans.startPosition();
+      }
+
+      @Override
+      public int endPosition() {
+        return spans.endPosition();
+      }
+
+      @Override
+      public int startOffset() {
+        return startOffset;
+      }
+
+      @Override
+      public int endOffset() {
+        return endOffset;
+      }
+    };
   }
 }

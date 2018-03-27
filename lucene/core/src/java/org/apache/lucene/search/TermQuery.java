@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -78,6 +79,22 @@ public class TermQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       terms.add(getTerm());
+    }
+
+    @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      if (term.field().equals(field) == false) {
+        return null;
+      }
+      TermsEnum te = getTermsEnum(context);
+      if (te == null) {
+        return null;
+      }
+      PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
+      if (pe.advance(doc) != doc) {
+        return null;
+      }
+      return new TermMatchesIterator(pe);
     }
 
     @Override

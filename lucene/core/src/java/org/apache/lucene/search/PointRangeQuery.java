@@ -314,6 +314,11 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;
+      }
+
+      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         ScorerSupplier scorerSupplier = scorerSupplier(context);
         if (scorerSupplier == null) {

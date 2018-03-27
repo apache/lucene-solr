@@ -232,6 +232,11 @@ public class TestSortRandom extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           Random random = new Random(context.docBase ^ seed);
           final int maxDoc = context.reader().maxDoc();

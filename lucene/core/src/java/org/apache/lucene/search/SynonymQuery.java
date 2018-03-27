@@ -29,9 +29,11 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -157,6 +159,11 @@ public final class SynonymQuery extends Query {
       for (Term term : SynonymQuery.this.terms) {
         terms.add(term);
       }
+    }
+
+    @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      return DisjunctionMatchesIterator.fromTerms(context, doc, field, Arrays.asList(SynonymQuery.this.terms));
     }
 
     @Override

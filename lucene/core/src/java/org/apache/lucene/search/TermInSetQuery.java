@@ -220,6 +220,11 @@ public class TermInSetQuery extends Query implements Accountable {
         // order to protect highlighters
       }
 
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, termData.iterator());
+      }
+
       /**
        * On the given leaf context, try to either rewrite to a disjunction if
        * there are few matching terms, or build a bitset containing matching docs.

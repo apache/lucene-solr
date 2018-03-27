@@ -31,6 +31,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Expert: the Weight for BooleanQuery, used to
@@ -117,6 +118,31 @@ final class BooleanWeight extends Weight {
       assert advanced == doc;
       return Explanation.match(scorer.score(), "sum of:", subs);
     }
+  }
+
+  @Override
+  public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+    if (query.getClauses(Occur.SHOULD).size() != weights.size() || query.getMinimumNumberShouldMatch() > 0) {
+      // check that we actually match the doc in this case
+      Scorer scorer = scorer(context);
+      if (scorer == null) {
+        return null;
+      }
+      if (scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+    }
+    List<MatchesIterator> mis = new ArrayList<>();
+    for (Weight w : weights) {
+      MatchesIterator mi = w.matches(context, doc, field);
+      if (mi != null) {
+        mis.add(mi);
+      }
+    }
+    if (mis.size() == 0) {
+      return null;
+    }
+    return new DisjunctionMatchesIterator(mis);
   }
 
   static BulkScorer disableScoring(final BulkScorer scorer) {

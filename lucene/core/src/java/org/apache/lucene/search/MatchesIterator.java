@@ -17,33 +17,18 @@
 
 package org.apache.lucene.search;
 
-import java.util.ArrayList;
+import java.io.IOException;
 
-import org.apache.lucene.analysis.Analyzer;
+public interface MatchesIterator {
 
-public class OffsetCollector {
+  boolean next() throws IOException;
 
-  private final Analyzer analyzer;
-  private final String field;
+  int startPosition();
 
-  private final List<AutomatonOffsetIterator> automata = new ArrayList<>();
+  int endPosition();
 
-  public OffsetCollector(Analyzer analyzer, String field) {
-    this.analyzer = analyzer;
-    this.field = field;
-  }
+  int startOffset() throws IOException;
 
-  public boolean hasAutomata() {
-    return automata.size() > 0;
-  }
+  int endOffset() throws IOException;
 
-  public void registerAutomaton(AutomatonOffsetIterator it) {
-    automata.add(it);
-  }
-
-  public void notifyAutomata(String source) {
-    for (AutomatonOffsetIterator it : automata) {
-      it.setSource(source);
-    }
-  }
 }

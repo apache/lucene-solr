@@ -70,19 +70,7 @@ public abstract class Weight implements SegmentCacheable {
    */
   public abstract void extractTerms(Set<Term> terms);
 
-  public OffsetValues offsets(LeafReaderContext context, Analyzer analyzer, String field) {
-    OffsetCollector collector = new OffsetCollector(analyzer, field);
-    OffsetValues ov = offsets(context, collector);
-    return new OffsetValues() {
-      @Override
-      public OffsetsIterator advanceTo(int doc, String source) {
-        collector.setSource(source);
-        return ov.advanceTo(doc, source);
-      }
-    };
-  }
-
-  protected abstract OffsetValues offsets(LeafReaderContext context, OffsetCollector collector);
+  public abstract MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException;
 
   /**
    * An explanation of the score computation for the named document.

@@ -1,0 +1,133 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.lucene.search;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.PrefixCodedTerms;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.PriorityQueue;
+
+class DisjunctionMatchesIterator implements MatchesIterator {
+
+  public static DisjunctionMatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
+    List<MatchesIterator> mis = new ArrayList<>();
+    Terms t = context.reader().terms(field);
+    if (t == null)
+      return null;
+    TermsEnum te = t.iterator();
+    PostingsEnum reuse = null;
+    for (Term term : terms) {
+      if (te.seekExact(term.bytes())) {
+        PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
+        if (pe.advance(doc) == doc) {
+          mis.add(new TermMatchesIterator(pe));
+        }
+        else {
+          reuse = pe;
+        }
+      }
+    }
+    if (mis.size() == 0)
+      return null;
+    return new DisjunctionMatchesIterator(mis);
+  }
+
+  public static DisjunctionMatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {
+    List<MatchesIterator> mis = new ArrayList<>();
+    Terms t = context.reader().terms(field);
+    if (t == null)
+      return null;
+    TermsEnum te = t.iterator();
+    PostingsEnum reuse = null;
+    for (BytesRef term = terms.next(); term != null; term = terms.next()) {
+      if (te.seekExact(term)) {
+        PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
+        if (pe.advance(doc) == doc) {
+          mis.add(new TermMatchesIterator(pe));
+        }
+        else {
+          reuse = pe;
+        }
+      }
+    }
+    if (mis.size() == 0)
+      return null;
+    return new DisjunctionMatchesIterator(mis);
+  }
+
+  private final PriorityQueue<MatchesIterator> queue;
+
+  private boolean started = false;
+
+  public DisjunctionMatchesIterator(List<MatchesIterator> matches) throws IOException {
+    queue = new PriorityQueue<MatchesIterator>(matches.size()){
+      @Override
+      protected boolean lessThan(MatchesIterator a, MatchesIterator b) {
+        return a.startPosition() < b.startPosition() ||
+            (a.startPosition() == b.startPosition() && a.endPosition() < b.endPosition());
+      }
+    };
+    for (MatchesIterator mi : matches) {
+      mi.next();
+      queue.add(mi);
+    }
+  }
+
+  @Override
+  public boolean next() throws IOException {
+    if (started == false) {
+      return started = true;
+    }
+    MatchesIterator mi = queue.pop();
+    if (mi != null && mi.next()) {
+      queue.add(mi);
+      return true;
+    }
+    return queue.size() > 0;
+  }
+
+  @Override
+  public int startPosition() {
+    return queue.top().startPosition();
+  }
+
+  @Override
+  public int endPosition() {
+    return queue.top().endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return queue.top().startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return queue.top().endOffset();
+  }
+}
