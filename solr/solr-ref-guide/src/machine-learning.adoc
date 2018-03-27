@@ -267,7 +267,7 @@ Once the clustering has been completed there are a number of useful functions av
 for examining the *clusters* and *centroids*.
 
 The examples below are clustering *term vectors*.
-The chapter on link:term-vectors.adoc#term-vectors[Text Analysis and Term Vectors] should be
+The chapter on <<term-vectors.adoc#text1,Text Analysis and Term Vectors>> should be
 consulted for a full explanation of these features.
 
 === Centroid Features
