@@ -178,7 +178,7 @@ IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
 set "JAVA=%JAVA_HOME%\bin\java"
 CALL :resolve_java_info
 IF !JAVA_MAJOR_VERSION! LSS 8 (
-  set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO!"
+  set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO! (detected major: !JAVA_MAJOR_VERSION!)"
   goto err
 )
 
@@ -1057,11 +1057,15 @@ IF ERRORLEVEL 1 (
   set IS_JDK=true
   set "SERVEROPT=-server"
 )
-"%JAVA%" -d64 -version > nul 2>&1
-IF ERRORLEVEL 1 (
-  set "IS_64BIT=false"
-  @echo WARNING: 32-bit Java detected. Not recommended for production. Point your JAVA_HOME to a 64-bit JDK
-  @echo.
+if !JAVA_MAJOR_VERSION! LSS 9  (
+  "%JAVA%" -d64 -version > nul 2>&1
+  IF ERRORLEVEL 1 (
+    set "IS_64BIT=false"
+    @echo WARNING: 32-bit Java detected. Not recommended for production. Point your JAVA_HOME to a 64-bit JDK
+    @echo.
+  ) ELSE (
+    set IS_64bit=true
+  )
 ) ELSE (
   set IS_64bit=true
 )
@@ -1126,7 +1130,6 @@ IF "%GC_TUNE%"=="" (
    -XX:TargetSurvivorRatio=90 ^
    -XX:MaxTenuringThreshold=8 ^
    -XX:+UseConcMarkSweepGC ^
-   -XX:+UseParNewGC ^
    -XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 ^
    -XX:+CMSScavengeBeforeRemark ^
    -XX:PretenureSizeThreshold=64m ^
@@ -1913,8 +1916,8 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
 
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
-  for /f "tokens=1,2 delims=." %%a in ("!JAVA_VERSION_INFO!") do (
-    if "%%a" GEQ "9" (
+  for /f "tokens=1,2 delims=._-" %%a in ("!JAVA_VERSION_INFO!") do (
+    if %%a GEQ 9 (
       set JAVA_MAJOR_VERSION=%%a
     ) else (
       set JAVA_MAJOR_VERSION=%%b

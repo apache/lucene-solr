@@ -353,6 +353,10 @@ Bug Fixes
 
 * SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
 
+* SOLR-12141: Fix "bin/solr" shell scripts (Windows/Linux/Mac) to correctly detect major Java version
+  and use numerical version comparison to enforce minimum requirements. Also remove obsolete "UseParNewGC" option.
+  This allows to start Solr with Java 10 or later. (Uwe Schindler)
+
 Optimizations
 ----------------------
 
