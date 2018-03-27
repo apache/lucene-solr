@@ -76,6 +76,8 @@ Optimizations
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
 
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
