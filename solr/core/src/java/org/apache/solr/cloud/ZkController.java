@@ -2174,7 +2174,8 @@ public class ZkController {
       }
 
       // we only really need to try to start the LIR process if the node itself is "live"
-      if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
+      if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)
+          && CloudUtil.replicaExists(getZkStateReader().getClusterState(), collection, shardId, replicaCoreNodeName)) {
 
         LeaderInitiatedRecoveryThread lirThread =
             new LeaderInitiatedRecoveryThread(this,
@@ -2199,9 +2200,8 @@ public class ZkController {
             replicaNodeName + " into leader-initiated recovery.", replicaCoreProps.getCoreName(), replicaCoreNodeName);
       } else {
         nodeIsLive = false; // we really don't need to send the recovery request if the node is NOT live
-        log.info("Node " + replicaNodeName +
-                " is not live, so skipping leader-initiated recovery for replica: core={} coreNodeName={}",
-            replicaCoreProps.getCoreName(), replicaCoreNodeName);
+        log.info("Node {} is not live or replica {} is deleted, so skipping leader-initiated recovery for replica: core={}",
+            replicaNodeName, replicaCoreNodeName, replicaCoreProps.getCoreName());
         // publishDownState will be false to avoid publishing the "down" state too many times
         // as many errors can occur together and will each call into this method (SOLR-6189)
       }

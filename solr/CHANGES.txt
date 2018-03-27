@@ -36,6 +36,8 @@ Bug Fixes
 
 * SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down state (Cao Manh Dat)
 
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
