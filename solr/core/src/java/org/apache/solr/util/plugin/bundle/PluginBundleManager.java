@@ -29,18 +29,19 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.FileUtils;
+import org.pf4j.DefaultVersionManager;
+import org.pf4j.PluginException;
+import org.pf4j.PluginManager;
+import org.pf4j.PluginWrapper;
+import org.pf4j.VersionManager;
+import org.pf4j.update.PluginInfo;
+import org.pf4j.update.UpdateManager;
+import org.pf4j.update.UpdateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.PluginException;
-import ro.fortsoft.pf4j.PluginManager;
-import ro.fortsoft.pf4j.PluginWrapper;
-import ro.fortsoft.pf4j.update.PluginInfo;
-import ro.fortsoft.pf4j.update.UpdateManager;
-import ro.fortsoft.pf4j.update.UpdateRepository;
 
 /**
  * Discovers and loads plugins from plugin folder using PF4J
@@ -48,10 +49,11 @@ import ro.fortsoft.pf4j.update.UpdateRepository;
 public class PluginBundleManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SOLR_INSTALL_DIR = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+  public static final VersionManager BUNDLE_VERSION_MANAGER = new DefaultVersionManager();
 
   private final SolrPf4jPluginManager pluginManager;
   private final UpdateManager updateManager;
-  public static final Version solrVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());;
+  public static final String solrVersion = org.apache.lucene.util.Version.LATEST.toString();
   private final Path pluginsRoot;
   private ClassLoader uberLoader;
 
@@ -113,13 +115,13 @@ public class PluginBundleManager {
       return Collections.emptyList();
     } else {
       List<PluginInfo> plugins = updateManager.getPlugins().stream()
-          .filter(p -> p.getLastRelease(solrVersion) != null).collect(Collectors.toList());
+          .filter(p -> p.getLastRelease(solrVersion, BUNDLE_VERSION_MANAGER) != null).collect(Collectors.toList());
       if (plugins.size() > 0 && q != null && q.length() > 0 && !q.equals("*")) {
         plugins = plugins.stream().filter(filterPredicate(q)).collect(Collectors.toList());
       }
       if (plugins.size() > 0) {
         log.debug("Found plugins for " + q + ": " + plugins.stream().map(p -> p.id +
-            "(" + p.getLastRelease(solrVersion) + ")").collect(Collectors.toList()));
+            "(" + p.getLastRelease(solrVersion, BUNDLE_VERSION_MANAGER) + ")").collect(Collectors.toList()));
         return plugins;
       }
       return Collections.emptyList();

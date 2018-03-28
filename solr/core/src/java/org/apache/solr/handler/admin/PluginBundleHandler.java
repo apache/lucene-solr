@@ -20,19 +20,18 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.bundle.PluginBundleManager;
-import ro.fortsoft.pf4j.PluginWrapper;
-import ro.fortsoft.pf4j.update.PluginInfo;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import org.pf4j.PluginWrapper;
+import org.pf4j.update.PluginInfo;
+import org.pf4j.update.UpdateRepository;
 
 import static org.apache.solr.common.SolrException.ErrorCode.INVALID_STATE;
+import static org.apache.solr.util.plugin.bundle.PluginBundleManager.BUNDLE_VERSION_MANAGER;
 
 /**
  * @since solr 7.0
@@ -102,7 +101,7 @@ public class PluginBundleHandler extends RequestHandlerBase
   }
 
   private SimpleOrderedMap<Object> pluginInfoToMap(PluginInfo p) {
-    Version systemVersion = pluginBundleManager.getPluginManager().getSystemVersion();
+    String systemVersion = pluginBundleManager.getPluginManager().getSystemVersion();
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     info.add("id", p.id);
     info.add("name", p.name);
@@ -110,10 +109,10 @@ public class PluginBundleHandler extends RequestHandlerBase
     info.add("projectUrl", p.projectUrl);
     info.add("provider", p.provider);
     info.add("repositoryId", p.getRepositoryId());
-    info.add("version", p.getLastRelease(systemVersion).version);
+    info.add("version", p.getLastRelease(systemVersion, BUNDLE_VERSION_MANAGER).version);
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-    info.add("date", df.format(p.getLastRelease(systemVersion).date));
-    info.add("url", p.getLastRelease(systemVersion).url);
+    info.add("date", df.format(p.getLastRelease(systemVersion, BUNDLE_VERSION_MANAGER).date));
+    info.add("url", p.getLastRelease(systemVersion, BUNDLE_VERSION_MANAGER).url);
     return info;
   }
 

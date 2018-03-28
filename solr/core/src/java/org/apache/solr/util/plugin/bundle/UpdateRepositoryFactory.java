@@ -20,8 +20,8 @@ package org.apache.solr.util.plugin.bundle;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import ro.fortsoft.pf4j.PluginException;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import org.pf4j.PluginException;
+import org.pf4j.update.UpdateRepository;
 
 public class UpdateRepositoryFactory {
   

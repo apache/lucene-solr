@@ -156,8 +156,8 @@
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
     <!-- Plugin framework support (PF4j) -->
-    <dependency org="ro.fortsoft.pf4j" name="pf4j" rev="${/ro.fortsoft.pf4j/pf4j}" conf="compile"/>
-    <dependency org="ro.fortsoft.pf4j" name="pf4j-update" rev="${/ro.fortsoft.pf4j/pf4j-update}" conf="compile" />
+    <dependency org="org.pf4j" name="pf4j" rev="${/org.pf4j/pf4j}" conf="compile"/>
+    <dependency org="org.pf4j" name="pf4j-update" rev="${/org.pf4j/pf4j-update}" conf="compile" />
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google.code.gson/gson}" conf="compile"/>
 

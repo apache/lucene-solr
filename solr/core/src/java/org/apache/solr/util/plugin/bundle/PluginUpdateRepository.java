@@ -22,7 +22,7 @@ import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
+import org.pf4j.update.DefaultUpdateRepository;
 
 /**
  * An update repo that defers URL location resolving to runtime

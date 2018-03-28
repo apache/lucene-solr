@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import ro.fortsoft.pf4j.update.PluginInfo;
+import org.pf4j.update.PluginInfo;
 
 /**
  * Test the PF4J integration

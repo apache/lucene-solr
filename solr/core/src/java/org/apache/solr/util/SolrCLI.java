@@ -131,10 +131,10 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.PluginWrapper;
-import ro.fortsoft.pf4j.update.PluginInfo;
-import ro.fortsoft.pf4j.update.UpdateManager;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import org.pf4j.PluginWrapper;
+import org.pf4j.update.PluginInfo;
+import org.pf4j.update.UpdateManager;
+import org.pf4j.update.UpdateRepository;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
@@ -4542,7 +4542,7 @@ public class SolrCLI {
             List<PluginInfo> updates = updateManager.getUpdates();
             if (updates.size() > 0) {
               if (longFormat) {
-                updates.forEach(p -> System.out.println(p.getLastRelease(PluginBundleManager.solrVersion)));
+                updates.forEach(p -> System.out.println(p.getLastRelease(PluginBundleManager.solrVersion, PluginBundleManager.BUNDLE_VERSION_MANAGER)));
               } else {
                 updates.forEach(p -> System.out.println(p.id));
               }
@@ -4681,7 +4681,7 @@ public class SolrCLI {
         DisplayPlugin p = new DisplayPlugin();
         p.id = info.id;
         p.description = info.description;
-        PluginInfo.PluginRelease latest = info.getLastRelease(com.github.zafarkhaja.semver.Version.valueOf(solrVersion));
+        PluginInfo.PluginRelease latest = info.getLastRelease(solrVersion, PluginBundleManager.BUNDLE_VERSION_MANAGER);
         p.version = latest.version;
         p.provider = info.provider;
         TimeZone tz = TimeZone.getTimeZone("UTC");

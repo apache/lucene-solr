@@ -31,9 +31,9 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.PluginException;
-import ro.fortsoft.pf4j.update.FileDownloader;
-import ro.fortsoft.pf4j.update.SimpleFileDownloader;
+import org.pf4j.PluginException;
+import org.pf4j.update.FileDownloader;
+import org.pf4j.update.SimpleFileDownloader;
 
 /**
  * Update Repository that resolves Apache Mirros

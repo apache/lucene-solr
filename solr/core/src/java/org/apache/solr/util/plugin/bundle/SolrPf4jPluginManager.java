@@ -25,32 +25,31 @@ import java.util.Map;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.DefaultPluginDescriptorFinder;
-import ro.fortsoft.pf4j.DefaultPluginFactory;
-import ro.fortsoft.pf4j.DefaultPluginLoader;
-import ro.fortsoft.pf4j.DefaultPluginManager;
-import ro.fortsoft.pf4j.DefaultPluginRepository;
-import ro.fortsoft.pf4j.ManifestPluginDescriptorFinder;
-import ro.fortsoft.pf4j.Plugin;
-import ro.fortsoft.pf4j.PluginClassLoader;
-import ro.fortsoft.pf4j.PluginClasspath;
-import ro.fortsoft.pf4j.PluginDescriptor;
-import ro.fortsoft.pf4j.PluginDescriptorFinder;
-import ro.fortsoft.pf4j.PluginException;
-import ro.fortsoft.pf4j.PluginFactory;
-import ro.fortsoft.pf4j.PluginLoader;
-import ro.fortsoft.pf4j.PluginManager;
-import ro.fortsoft.pf4j.PluginRepository;
-import ro.fortsoft.pf4j.PluginWrapper;
-import ro.fortsoft.pf4j.PropertiesPluginDescriptorFinder;
-import ro.fortsoft.pf4j.util.AndFileFilter;
-import ro.fortsoft.pf4j.util.DirectoryFileFilter;
-import ro.fortsoft.pf4j.util.JarFileFilter;
-import ro.fortsoft.pf4j.util.NotFileFilter;
-import ro.fortsoft.pf4j.util.OrFileFilter;
-import ro.fortsoft.pf4j.util.StringUtils;
+import org.pf4j.DefaultPluginFactory;
+import org.pf4j.DefaultPluginLoader;
+import org.pf4j.DefaultPluginManager;
+import org.pf4j.DefaultPluginRepository;
+import org.pf4j.ManifestPluginDescriptorFinder;
+import org.pf4j.Plugin;
+import org.pf4j.PluginClassLoader;
+import org.pf4j.PluginClasspath;
+import org.pf4j.PluginDescriptor;
+import org.pf4j.PluginDescriptorFinder;
+import org.pf4j.PluginException;
+import org.pf4j.PluginFactory;
+import org.pf4j.PluginLoader;
+import org.pf4j.PluginManager;
+import org.pf4j.PluginRepository;
+import org.pf4j.PluginWrapper;
+import org.pf4j.PropertiesPluginDescriptorFinder;
+import org.pf4j.util.AndFileFilter;
+import org.pf4j.util.DirectoryFileFilter;
+import org.pf4j.util.JarFileFilter;
+import org.pf4j.util.NotFileFilter;
+import org.pf4j.util.OrFileFilter;
 
 /**
  * PF4J Plugin manager for Solr that changes how to read manifest mm
@@ -144,15 +143,22 @@ public class SolrPf4jPluginManager extends DefaultPluginManager {
    * Descriptor finder that determines what to look for based on the given path
    */
   private class AutoPluginDescriptorFinder implements PluginDescriptorFinder {
-    private final DefaultPluginDescriptorFinder manifestFinder;
+    private final ManifestPluginDescriptorFinder manifestFinder;
     private final PropertiesPluginDescriptorFinder propertiesFinder;
     private final JarPluginDescriptorFinder jarFinder;
 
 
     public AutoPluginDescriptorFinder() {
-      manifestFinder = new DefaultPluginDescriptorFinder(pluginClasspath);
+      manifestFinder = new ManifestPluginDescriptorFinder();
       propertiesFinder = new PropertiesPluginDescriptorFinder();
       jarFinder = new JarPluginDescriptorFinder();
+    }
+
+    @Override
+    public boolean isApplicable(Path path) {
+      return manifestFinder.isApplicable(path)
+          || propertiesFinder.isApplicable(path)
+          || jarFinder.isApplicable(path);
     }
 
     @Override
@@ -185,6 +191,11 @@ public class SolrPf4jPluginManager extends DefaultPluginManager {
       this.pluginClasspath = pluginClasspath;
       jarLoader = new JarPluginLoader(solrPf4jPluginManager, pluginClasspath);
       defaultLoader = new DefaultPluginLoader(solrPf4jPluginManager, pluginClasspath);
+    }
+
+    @Override
+    public boolean isApplicable(Path path) {
+      return jarLoader.isApplicable(path) || defaultLoader.isApplicable(path);
     }
 
     @Override

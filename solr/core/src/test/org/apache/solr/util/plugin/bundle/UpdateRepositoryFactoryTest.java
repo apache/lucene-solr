@@ -18,10 +18,9 @@
 package org.apache.solr.util.plugin.bundle;
 
 import org.junit.Test;
-import ro.fortsoft.pf4j.PluginRepository;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import org.pf4j.update.UpdateRepository;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test the repo factory
