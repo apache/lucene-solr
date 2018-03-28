@@ -372,6 +372,11 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      return null;  // TODO
+    }
+
+    @Override
     public String toString() {
       return "weight(" + TermAutomatonQuery.this + ")";
     }

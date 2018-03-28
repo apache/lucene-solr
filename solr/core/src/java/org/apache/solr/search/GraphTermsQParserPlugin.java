@@ -49,6 +49,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -273,6 +274,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           // This query is for abuse cases when the number of terms is too high to
           // run efficiently as a BooleanQuery. So likewise we hide its terms in
           // order to protect highlighters
+        }
+
+        @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
         }
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
@@ -612,6 +618,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       Filter filter;
+
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;
+      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

@@ -51,6 +51,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -722,6 +723,11 @@ public class TestDrillSideways extends FacetTestCase {
           @Override
           public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
             return new ConstantScoreWeight(this, boost) {
+
+              @Override
+              public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+                return null;
+              }
 
               @Override
               public Scorer scorer(LeafReaderContext context) throws IOException {

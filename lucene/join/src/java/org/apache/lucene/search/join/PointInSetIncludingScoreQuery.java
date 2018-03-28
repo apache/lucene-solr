@@ -40,6 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -125,6 +126,11 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
       @Override
       public void extractTerms(Set<Term> terms) {
+      }
+
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;
       }
 
       @Override

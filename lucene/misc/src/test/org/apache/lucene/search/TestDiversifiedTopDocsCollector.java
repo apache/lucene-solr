@@ -525,7 +525,12 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         public void extractTerms(Set<Term> terms) {
           inner.extractTerms(terms);
         }
-        
+
+        @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           Scorer s = scorer(context);

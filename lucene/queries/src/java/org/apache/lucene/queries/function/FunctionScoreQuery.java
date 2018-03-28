@@ -29,6 +29,7 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -146,6 +147,11 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       this.inner.extractTerms(terms);
+    }
+
+    @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      return inner.matches(context, doc, field);
     }
 
     @Override

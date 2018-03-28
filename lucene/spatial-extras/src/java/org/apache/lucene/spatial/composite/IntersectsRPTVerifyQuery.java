@@ -24,6 +24,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -84,6 +85,12 @@ public class IntersectsRPTVerifyQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     return new ConstantScoreWeight(this, boost) {
+
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;  // TODO is there a way of reporting matches that makes sense?
+      }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         // Compute approx & exact

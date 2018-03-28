@@ -585,6 +585,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
+        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+          return null;
+        }
+
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           int maxDoc = context.reader().maxDoc();
           FixedBitSet bits = new FixedBitSet(maxDoc);

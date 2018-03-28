@@ -28,6 +28,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -109,6 +110,11 @@ final class GlobalOrdinalsQuery extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {}
+
+    @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      return null;
+    }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {

@@ -38,6 +38,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -483,6 +484,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         }
         return new DefaultBulkScorer(scorer);
       }
+    }
+
+    @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      return null;
     }
 
     @Override

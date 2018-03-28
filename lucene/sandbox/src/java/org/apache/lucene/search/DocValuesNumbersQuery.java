@@ -100,6 +100,11 @@ public class DocValuesNumbersQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;  // TODO maybe do something like return the matching docvalue index?
+      }
+
+      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
         return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {

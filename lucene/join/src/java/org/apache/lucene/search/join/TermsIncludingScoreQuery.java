@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -101,6 +102,11 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public void extractTerms(Set<Term> terms) {}
+
+      @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;  // TODO do matches make sense here?
+      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

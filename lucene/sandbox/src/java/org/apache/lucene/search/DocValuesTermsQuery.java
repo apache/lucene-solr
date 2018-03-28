@@ -169,6 +169,11 @@ public class DocValuesTermsQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
+      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        return null;  // TODO does it make sense to return matches here?
+      }
+
+      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedSetDocValues values = DocValues.getSortedSet(context.reader(), field);
         final LongBitSet bits = new LongBitSet(values.getValueCount());

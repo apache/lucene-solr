@@ -137,6 +137,25 @@ public final class CoveringQuery extends Query {
     }
 
     @Override
+    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      Scorer scorer = scorer(context);
+      if (scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+      List<MatchesIterator> mis = new ArrayList<>();
+      for (Weight w : weights) {
+        MatchesIterator mi = w.matches(context, doc, field);
+        if (mi != null) {
+          mis.add(mi);
+        }
+      }
+      if (mis.size() == 0) {
+        return null;
+      }
+      return new DisjunctionMatchesIterator(mis);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       LongValues minMatchValues = minimumNumberMatch.getValues(context, null);
       if (minMatchValues.advanceExact(doc) == false) {

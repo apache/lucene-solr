@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.suggest.BitsProducer;
@@ -145,6 +146,11 @@ public class CompletionWeight extends Weight {
   @Override
   public void extractTerms(Set<Term> terms) {
     // no-op
+  }
+
+  @Override
+  public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+    return null;
   }
 
   @Override
