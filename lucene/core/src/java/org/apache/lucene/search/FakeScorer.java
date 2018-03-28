@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
 import java.util.Collection;
 
 /** Used by {@link BulkScorer}s that need to pass a {@link
@@ -24,7 +25,6 @@ import java.util.Collection;
 final class FakeScorer extends Scorer {
   float score;
   int doc = -1;
-  int freq = 1;
 
   public FakeScorer() {
     super(null);
@@ -36,13 +36,13 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
-  public int freq() {
-    return freq;
-  }
-    
-  @Override
   public float score() {
     return score;
+  }
+
+  @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return Float.POSITIVE_INFINITY;
   }
 
   @Override

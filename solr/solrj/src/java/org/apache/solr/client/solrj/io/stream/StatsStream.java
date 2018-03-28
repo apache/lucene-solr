@@ -46,6 +46,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+/**
+* @since 6.0.0
+*/
 public class StatsStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;

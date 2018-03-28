@@ -92,6 +92,8 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           vals[i] = (long) random().nextInt((int) PackedInts.maxValue(bitsPerValue));
           f.setLongValue((Long) vals[i]);
           break;
+        default:
+          throw new AssertionError();
       }
       iw.addDocument(document);
       if (random().nextBoolean() && i % 10 == 9) {
@@ -150,6 +152,8 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           case SORTED_NUMERIC:
             assertEquals(((Number) expected).longValue(), values.longVal(i));
             break;
+          default:
+            throw new AssertionError();
         }
       }
     }

@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *       katakana="true" hangul="true" outputUnigrams="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.6.0
  */
 public class CJKBigramFilterFactory extends TokenFilterFactory {
   final int flags;

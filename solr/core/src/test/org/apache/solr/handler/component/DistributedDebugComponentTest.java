@@ -156,19 +156,20 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
   
   @Test
+  @SuppressWarnings("resource") // Cannot close client in this loop!
   public void testRandom() throws Exception {
     final int NUM_ITERS = atLeast(50);
 
-    for (int i = 0; i < NUM_ITERS; i++) { 
-      SolrClient client = random().nextBoolean() ? collection1 : collection2;
-      
+    for (int i = 0; i < NUM_ITERS; i++) {
+      final SolrClient client = random().nextBoolean() ? collection1 : collection2;
+
       SolrQuery q = new SolrQuery();
       q.set("distrib", "true");
       q.setFields("id", "text");
-      
+
       boolean shard1Results = random().nextBoolean();
       boolean shard2Results = random().nextBoolean();
-      
+
       String qs = "_query_with_no_results_";
       if (shard1Results) {
         qs += " OR batman";
@@ -181,10 +182,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       Set<String> shards = new HashSet<String>(Arrays.asList(shard1, shard2));
       if (random().nextBoolean()) {
         shards.remove(shard1);
-        shard1Results = false;
       } else if (random().nextBoolean()) {
         shards.remove(shard2);
-        shard2Results = false;
       }
       q.set("shards", StringUtils.join(shards, ","));
 

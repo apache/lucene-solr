@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -147,10 +148,7 @@ public class IntRange extends Field {
    * @return the decoded min value
    */
   public int getMin(int dimension) {
-    if (dimension < 0 || dimension >= type.pointDimensionCount()/2) {
-      throw new IllegalArgumentException("dimension request (" + dimension +
-          ") out of bounds for field (name=" + name + " dimensions=" + type.pointDimensionCount()/2 + "). ");
-    }
+    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -160,10 +158,7 @@ public class IntRange extends Field {
    * @return the decoded max value
    */
   public int getMax(int dimension) {
-    if (dimension < 0 || dimension >= type.pointDimensionCount()/2) {
-      throw new IllegalArgumentException("dimension request (" + dimension +
-          ") out of bounds for field (name=" + name + " dimensions=" + type.pointDimensionCount()/2 + "). ");
-    }
+    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -249,9 +244,9 @@ public class IntRange extends Field {
     sb.append(':');
     byte[] b = ((BytesRef)fieldsData).bytes;
     toString(b, 0);
-    for (int d=1; d<type.pointDimensionCount(); ++d) {
+    for (int d = 0; d < type.pointDimensionCount() / 2; ++d) {
       sb.append(' ');
-      toString(b, d);
+      sb.append(toString(b, d));
     }
     sb.append('>');
 

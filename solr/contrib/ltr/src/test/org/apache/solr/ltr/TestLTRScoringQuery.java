@@ -35,6 +35,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -67,7 +68,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -81,7 +82,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -98,7 +99,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = hits.scoreDocs[0].doc - context.docBase;
 
-    final Weight weight = searcher.createNormalizedWeight(model, true);
+    final Weight weight = searcher.createNormalizedWeight(model, ScoreMode.COMPLETE);
     final Scorer scorer = weight.scorer(context);
 
     // rerank using the field final-score

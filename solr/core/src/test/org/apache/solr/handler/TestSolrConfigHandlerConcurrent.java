@@ -34,9 +34,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -55,29 +53,13 @@ import org.slf4j.LoggerFactory;
 public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness h : restTestHarnesses) {
-      h.close();
-    }
-  }
 
   @Test
   public void test() throws Exception {
     Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
     Map caches = (Map) editable_prop_map.get("query");
 
-    setupHarnesses();
+    setupRestTestHarnesses();
     List<Thread> threads = new ArrayList<>(caches.size());
     final List<List> collectErrors = new ArrayList<>();
 
@@ -129,7 +111,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     Set<String> errmessages = new HashSet<>();
     for(int i =1;i<2;i++){//make it  ahigher number
-      RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
+      RestTestHarness publisher = randomRestTestHarness(r);
       String response;
       String val1;
       String val2;

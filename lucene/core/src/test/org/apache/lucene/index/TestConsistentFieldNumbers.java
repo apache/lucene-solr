@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
@@ -41,8 +40,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
 
       Document d1 = new Document();
-      d1.add(new StringField("f1", "first field", Field.Store.YES));
-      d1.add(new StringField("f2", "second field", Field.Store.YES));
+      d1.add(new TextField("f1", "first field", Field.Store.YES));
+      d1.add(new TextField("f2", "second field", Field.Store.YES));
       writer.addDocument(d1);
 
       if (i == 1) {

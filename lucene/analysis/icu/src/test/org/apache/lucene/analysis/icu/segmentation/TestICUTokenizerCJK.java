@@ -78,6 +78,15 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
     );
   }
   
+  /**
+   * dictionary segmentation with emoji
+   */
+  public void testSimpleJapaneseWithEmoji() throws Exception {
+    assertAnalyzesTo(a, "それはまだ実験段階にあります💩",
+        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます", "💩"  }
+    );
+  }
+  
   public void testJapaneseTypes() throws Exception {
     assertAnalyzesTo(a, "仮名遣い カタカナ",
         new String[] { "仮名遣い", "カタカナ" },
@@ -97,13 +106,11 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   }
   
   /** blast some random strings through the analyzer */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5575")
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5575")
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);

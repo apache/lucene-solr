@@ -19,17 +19,14 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -62,11 +59,6 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
         @Override
         public SolrParams getParams() {
             return new ModifiableSolrParams();
-        }
-
-        @Override
-        public Collection<ContentStream> getContentStreams() throws IOException {
-            return null;
         }
 
         @Override

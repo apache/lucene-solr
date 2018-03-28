@@ -16,12 +16,15 @@
  */
 package org.apache.solr.core;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -37,6 +40,7 @@ import javax.management.ObjectName;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Test for JMX Integration
@@ -44,7 +48,7 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class TestJmxIntegration extends AbstractSolrTestCase {
+public class TestJmxIntegration extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -96,6 +100,12 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
       MBeanServerFactory.releaseMBeanServer(newMbeanServer);
     }
     mbeanServer = null;
+  }
+
+  @Before
+  public void resetIndex() throws Exception {
+    clearIndex();
+    assertU("commit", commit());
   }
 
   @Test
@@ -159,16 +169,32 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
         numDocs > oldNumDocs);
   }
 
-  @Test @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
+  @Test
   public void testJmxOnCoreReload() throws Exception {
+    // make sure searcher beans are registered
+    assertQ(req("q", "*:*"), "//result[@numFound='0']");
 
+    SolrMetricManager mgr = h.getCoreContainer().getMetricManager();
+    String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String coreName = h.getCore().getName();
+    String coreHashCode = String.valueOf(h.getCore().hashCode());
+    Map<String, SolrMetricReporter> reporters = mgr.getReporters(registryName);
+    // take first JMX reporter
+    SolrJmxReporter reporter = null;
+    for (Map.Entry<String, SolrMetricReporter> e : reporters.entrySet()) {
+      if (e.getKey().endsWith(coreHashCode) && e.getValue() instanceof SolrJmxReporter) {
+        reporter = (SolrJmxReporter)e.getValue();
+        break;
+      }
+    }
+    assertNotNull("could not find JMX reporter for " + registryName, reporter);
+    String tag = reporter.getInstanceTag();
 
     Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
     int oldNumberOfObjects = 0;
     for (ObjectInstance bean : oldBeans) {
       try {
-        if (String.valueOf(h.getCore().hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+        if (tag.equals(mbeanServer.getAttribute(bean.getObjectName(), JmxMetricsReporter.INSTANCE_TAG))) {
           oldNumberOfObjects++;
         }
       } catch (AttributeNotFoundException e) {
@@ -176,19 +202,45 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
       }
     }
 
-    log.info("Before Reload: Size of infoRegistry: " + h.getCore().getInfoRegistry().size() + " MBeans: " + oldNumberOfObjects);
-    assertEquals("Number of registered MBeans is not the same as info registry size", h.getCore().getInfoRegistry().size(), oldNumberOfObjects);
-
+    int totalCoreMetrics = mgr.registry(registryName).getMetrics().size();
+    log.info("Before Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + oldNumberOfObjects);
+    assertEquals("Number of registered MBeans is not the same as the number of core metrics", totalCoreMetrics, oldNumberOfObjects);
     h.getCoreContainer().reload(coreName);
+    assertQ(req("q", "*:*"), "//result[@numFound='0']");
+
+    reporters = mgr.getReporters(registryName);
+    coreHashCode = String.valueOf(h.getCore().hashCode());
+    // take first JMX reporter
+    reporter = null;
+    for (Map.Entry<String, SolrMetricReporter> e : reporters.entrySet()) {
+      if (e.getKey().endsWith(coreHashCode) && e.getValue() instanceof SolrJmxReporter) {
+        reporter = (SolrJmxReporter)e.getValue();
+        break;
+      }
+    }
+    assertNotNull("could not find JMX reporter for " + registryName, reporter);
+    tag = reporter.getInstanceTag();
 
     Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
     int newNumberOfObjects = 0;
-    int registrySize = 0;
+    Set<String> metricNames = new TreeSet<>();
+    Set<String> beanNames = new TreeSet<>();
     try (SolrCore core = h.getCoreContainer().getCore(coreName)) {
-      registrySize = core.getInfoRegistry().size();
+      MetricRegistry registry = mgr.registry(registryName);
+      metricNames.addAll(registry.getNames());
+      totalCoreMetrics = registry.getMetrics().size();
       for (ObjectInstance bean : newBeans) {
         try {
-          if (String.valueOf(core.hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+          if (tag.equals(mbeanServer.getAttribute(bean.getObjectName(), JmxMetricsReporter.INSTANCE_TAG))) {
+            String[] name = bean.getObjectName().toString().substring(32).split(",");
+            StringBuilder sb = new StringBuilder();
+            for (String n : name) {
+              if (sb.length() > 0) {
+                sb.append(".");
+              }
+              sb.append(n.split("=")[1]);
+            }
+            beanNames.add(sb.toString());
             newNumberOfObjects++;
           }
         } catch (AttributeNotFoundException e) {
@@ -197,7 +249,15 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
       }
     }
 
-    log.info("After Reload: Size of infoRegistry: " + registrySize + " MBeans: " + newNumberOfObjects);
-    assertEquals("Number of registered MBeans is not the same as info registry size", registrySize, newNumberOfObjects);
+    log.info("After Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + newNumberOfObjects);
+    if (totalCoreMetrics != newNumberOfObjects) {
+      Set<String> errors = new TreeSet<>(beanNames);
+      errors.removeAll(metricNames);
+      log.error("Unexpected bean names: " + errors);
+      errors = new TreeSet<>(metricNames);
+      errors.removeAll(beanNames);
+      log.error("Unexpected metric names: " + errors);
+      fail("Number of registered MBeans is not the same as the number of core metrics: " + totalCoreMetrics + " != " + newNumberOfObjects);
+    }
   }
 }

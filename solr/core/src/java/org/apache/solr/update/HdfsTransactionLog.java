@@ -188,8 +188,9 @@ public class HdfsTransactionLog extends TransactionLog {
     fis = fis != null ? fis : new FSDataFastInputStream(fs.open(tlogFile), 0);
     Map header = null;
     try {
-      LogCodec codec = new LogCodec(resolver);
-      header = (Map) codec.unmarshal(fis);
+      try (LogCodec codec = new LogCodec(resolver)) {
+        header = (Map) codec.unmarshal(fis);
+      }
       
       fis.readInt(); // skip size
     } finally {
@@ -258,8 +259,9 @@ public class HdfsTransactionLog extends TransactionLog {
           pos);
       try {
         dis.seek(pos);
-        LogCodec codec = new LogCodec(resolver);
-        return codec.readVal(new FastInputStream(dis));
+        try (LogCodec codec = new LogCodec(resolver)) {
+          return codec.readVal(new FastInputStream(dis));
+        }
       } finally {
         dis.close();
       }

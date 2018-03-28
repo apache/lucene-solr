@@ -18,7 +18,7 @@ package org.apache.solr.update;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RTimer;
 import org.junit.AfterClass;
@@ -36,7 +36,7 @@ import java.util.Arrays;
  * 
  * $ ant test -Dtestcase=TestIndexingPerformance -Dargs="-server -Diter=100000"; grep throughput build/test-results/*TestIndexingPerformance.xml
  */
-public class TestIndexingPerformance extends AbstractSolrTestCase {
+public class TestIndexingPerformance extends SolrTestCaseJ4 {
   
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;

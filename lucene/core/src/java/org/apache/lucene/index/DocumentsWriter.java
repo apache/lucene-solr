@@ -19,10 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -218,7 +221,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  synchronized void abort(IndexWriter writer) {
+  synchronized void abort(IndexWriter writer) throws IOException {
     assert !Thread.holdsLock(writer) : "IndexWriter lock should never be hold when aborting";
     boolean success = false;
     try {
@@ -246,16 +249,45 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  /** Returns how many documents were aborted. */
-  synchronized long lockAndAbortAll(IndexWriter indexWriter) throws IOException {
+  final boolean flushOneDWPT() throws IOException {
+    if (infoStream.isEnabled("DW")) {
+      infoStream.message("DW", "startFlushOneDWPT");
+    }
+    // first check if there is one pending
+    DocumentsWriterPerThread documentsWriterPerThread = flushControl.nextPendingFlush();
+    if (documentsWriterPerThread == null) {
+      documentsWriterPerThread = flushControl.checkoutLargestNonPendingWriter();
+    }
+    if (documentsWriterPerThread != null) {
+      return doFlush(documentsWriterPerThread);
+    }
+    return false; // we didn't flush anything here
+  }
+
+  /** Locks all currently active DWPT and aborts them.
+   *  The returned Closeable should be closed once the locks for the aborted
+   *  DWPTs can be released. */
+  synchronized Closeable lockAndAbortAll(IndexWriter indexWriter) throws IOException {
     assert indexWriter.holdsFullFlushLock();
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "lockAndAbortAll");
     }
     // Make sure we move all pending tickets into the flush queue:
     ticketQueue.forcePurge(indexWriter);
-    long abortedDocCount = 0;
-    boolean success = false;
+    List<ThreadState> threadStates = new ArrayList<>();
+    AtomicBoolean released = new AtomicBoolean(false);
+    final Closeable release = () -> {
+      assert indexWriter.holdsFullFlushLock();
+      if (released.compareAndSet(false, true)) { // only once
+        if (infoStream.isEnabled("DW")) {
+          infoStream.message("DW", "unlockAllAbortedThread");
+        }
+        perThreadPool.clearAbort();
+        for (ThreadState state : threadStates) {
+          state.unlock();
+        }
+      }
+    };
     try {
       deleteQueue.clear();
       final int limit = perThreadPool.getMaxThreadStates();
@@ -263,30 +295,36 @@ final class DocumentsWriter implements Closeable, Accountable {
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
-        abortedDocCount += abortThreadState(perThread);
+        threadStates.add(perThread);
+        abortThreadState(perThread);
       }
       deleteQueue.clear();
 
       // jump over any possible in flight ops:
-      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount()+1);
+      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount() + 1);
 
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
-      success = true;
-      return abortedDocCount;
-    } finally {
       if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "finished lockAndAbortAll success=" + success);
+        infoStream.message("DW", "finished lockAndAbortAll success=true");
       }
-      if (success == false) {
+      return release;
+    } catch (Throwable t) {
+      if (infoStream.isEnabled("DW")) {
+        infoStream.message("DW", "finished lockAndAbortAll success=false");
+      }
+      try {
         // if something happens here we unlock all states again
-        unlockAllAfterAbortAll(indexWriter);
+        release.close();
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
+      throw t;
     }
   }
   
   /** Returns how many documents were aborted. */
-  private int abortThreadState(final ThreadState perThread) {
+  private int abortThreadState(final ThreadState perThread) throws IOException {
     assert perThread.isHeldByCurrentThread();
     if (perThread.isInitialized()) { 
       try {
@@ -301,28 +339,6 @@ final class DocumentsWriter implements Closeable, Accountable {
       flushControl.doOnAbort(perThread);
       // This DWPT was never initialized so it has no indexed documents:
       return 0;
-    }
-  }
-  
-  synchronized void unlockAllAfterAbortAll(IndexWriter indexWriter) {
-    assert indexWriter.holdsFullFlushLock();
-    if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "unlockAll");
-    }
-    final int limit = perThreadPool.getMaxThreadStates();
-    perThreadPool.clearAbort();
-    for (int i = 0; i < limit; i++) {
-      try {
-        final ThreadState perThread = perThreadPool.getThreadState(i);
-        if (perThread.isHeldByCurrentThread()) {
-          perThread.unlock();
-        }
-      } catch (Throwable e) {
-        if (infoStream.isEnabled("DW")) {
-          infoStream.message("DW", "unlockAll: could not unlock state: " + i + " msg:" + e.getMessage());
-        }
-        // ignore & keep on unlocking
-      }
     }
   }
 
@@ -374,10 +390,11 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushControl.setClosed();
   }
 
-  private boolean preUpdate() throws IOException, AbortingException {
+  private boolean preUpdate() throws IOException {
     ensureOpen();
     boolean hasEvents = false;
-    if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
+
+    if (flushControl.anyStalledThreads() || (flushControl.numQueuedFlushes() > 0 && config.checkPendingFlushOnUpdate)) {
       // Help out flushing any queued DWPTs so we can un-stall:
       do {
         // Try pick up pending threads here if possible
@@ -393,11 +410,11 @@ final class DocumentsWriter implements Closeable, Accountable {
     return hasEvents;
   }
 
-  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException, AbortingException {
+  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
     hasEvents |= applyAllDeletes(deleteQueue);
     if (flushingDWPT != null) {
       hasEvents |= doFlush(flushingDWPT);
-    } else {
+    } else if (config.checkPendingFlushOnUpdate) {
       final DocumentsWriterPerThread nextPendingFlush = flushControl.nextPendingFlush();
       if (nextPendingFlush != null) {
         hasEvents |= doFlush(nextPendingFlush);
@@ -417,7 +434,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                       final Term delTerm) throws IOException, AbortingException {
+                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
@@ -433,18 +450,17 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delTerm);
-      } catch (AbortingException ae) {
-        flushControl.doOnAbort(perThread);
-        dwpt.abort();
-        throw ae;
+        seqNo = dwpt.updateDocuments(docs, analyzer, delNode);
       } finally {
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        }
         // We don't know how many documents were actually
         // counted as indexed, so we must subtract here to
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
       }
-      final boolean isUpdate = delTerm != null;
+      final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
@@ -461,7 +477,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final Term delTerm) throws IOException, AbortingException {
+      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
 
     boolean hasEvents = preUpdate();
 
@@ -478,18 +494,17 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocument(doc, analyzer, delTerm); 
-      } catch (AbortingException ae) {
-        flushControl.doOnAbort(perThread);
-        dwpt.abort();
-        throw ae;
+        seqNo = dwpt.updateDocument(doc, analyzer, delNode);
       } finally {
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        }
         // We don't know whether the document actually
         // counted as being indexed, so we must subtract here to
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
       }
-      final boolean isUpdate = delTerm != null;
+      final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
@@ -506,7 +521,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
-  private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException, AbortingException {
+  private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {
       hasEvents = true;
@@ -534,7 +549,6 @@ final class DocumentsWriter implements Closeable, Accountable {
         try {
           // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
           ticket = ticketQueue.addFlushTicket(flushingDWPT);
-  
           final int flushingDocsInRam = flushingDWPT.getNumDocsInRAM();
           boolean dwptSuccess = false;
           try {
@@ -630,7 +644,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    * is called after this method, to release the flush lock in DWFlushControl
    */
   long flushAllThreads()
-    throws IOException, AbortingException {
+    throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "startFullFlush");
@@ -666,7 +680,9 @@ final class DocumentsWriter implements Closeable, Accountable {
         ticketQueue.addDeletes(flushingDeleteQueue);
       }
       ticketQueue.forcePurge(writer);
-      assert !flushingDeleteQueue.anyChanges() && !ticketQueue.hasTickets();
+      // we can't assert that we don't have any tickets in teh queue since we might add a DocumentsWriterDeleteQueue
+      // concurrently if we have very small ram buffers this happens quite frequently
+      assert !flushingDeleteQueue.anyChanges();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
     }
@@ -696,10 +712,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  public LiveIndexWriterConfig getIndexWriterConfig() {
-    return config;
-  }
-  
   void putEvent(Event event) {
     events.add(event);
   }
@@ -718,11 +730,16 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
 
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       try {
         packet.apply(writer);
       } catch (Throwable t) {
-        writer.tragicEvent(t, "applyUpdatesPacket");
+        try {
+          writer.onTragicEvent(t, "applyUpdatesPacket");
+        } catch (Throwable t1) {
+          t.addSuppressed(t1);
+        }
+        throw t;
       }
       writer.flushDeletesCount.incrementAndGet();
     }
@@ -736,7 +753,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.applyDeletesAndPurge(true); // we always purge!
     }
   }
@@ -749,7 +766,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.purge(true);
     }
   }
@@ -762,7 +779,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.flushFailed(info);
     }
   }
@@ -775,7 +792,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     
     @Override
-    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+    public void process(IndexWriter writer) throws IOException {
       writer.deleteNewFiles(files);
     }
   }

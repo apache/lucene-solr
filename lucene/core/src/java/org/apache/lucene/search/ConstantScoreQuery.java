@@ -95,8 +95,8 @@ public final class ConstantScoreQuery extends Query {
               return theScore;
             }
             @Override
-            public int freq() throws IOException {
-              return 1;
+            public float getMaxScore(int upTo) throws IOException {
+              return theScore;
             }
           });
         }
@@ -110,9 +110,9 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight innerWeight = searcher.createWeight(query, false, 1f);
-    if (needsScores) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight innerWeight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1f);
+    if (scoreMode.needsScores()) {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
@@ -141,8 +141,8 @@ public final class ConstantScoreQuery extends Query {
                   return score;
                 }
                 @Override
-                public int freq() throws IOException {
-                  return 1;
+                public float getMaxScore(int upTo) throws IOException {
+                  return score;
                 }
                 @Override
                 public Collection<ChildScorer> getChildren() {
@@ -165,6 +165,11 @@ public final class ConstantScoreQuery extends Query {
             return null;
           }
           return scorerSupplier.get(Long.MAX_VALUE);
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return innerWeight.isCacheable(ctx);
         }
 
       };

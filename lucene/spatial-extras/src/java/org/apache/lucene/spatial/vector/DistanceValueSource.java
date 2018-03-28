@@ -24,6 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.IndexSearcher;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
 
@@ -90,6 +91,16 @@ public class DistanceValueSource extends DoubleValuesSource {
   @Override
   public boolean needsScores() {
     return false;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return DocValues.isCacheable(ctx, strategy.getFieldNameX(), strategy.getFieldNameY());
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    return this;
   }
 
   @Override

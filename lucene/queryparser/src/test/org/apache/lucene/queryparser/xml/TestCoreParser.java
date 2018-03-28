@@ -30,6 +30,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
+import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,6 +68,18 @@ public class TestCoreParser extends LuceneTestCase {
     dumpResults("TermQuery", q, 5);
   }
 
+  public void test_DOCTYPE_TermQueryXML() throws ParserException, IOException {
+    SAXException saxe = LuceneTestCase.expectThrows(ParserException.class, SAXException.class,
+        () -> parse("DOCTYPE_TermQuery.xml"));
+    assertTrue(saxe.getMessage().startsWith("External Entity resolving unsupported:"));
+  }
+
+  public void test_ENTITY_TermQueryXML() throws ParserException, IOException {
+    SAXException saxe = LuceneTestCase.expectThrows(ParserException.class, SAXException.class,
+        () -> parse("ENTITY_TermQuery.xml"));
+    assertTrue(saxe.getMessage().startsWith("External Entity resolving unsupported:"));
+  }
+
   public void testTermQueryEmptyXML() throws ParserException, IOException {
     parseShouldFail("TermQueryEmpty.xml",
         "TermQuery has no text");
@@ -89,7 +102,7 @@ public class TestCoreParser extends LuceneTestCase {
     assertEquals(0.0f, d.getTieBreakerMultiplier(), 0.0001f);
     assertEquals(2, d.getDisjuncts().size());
     DisjunctionMaxQuery ndq = (DisjunctionMaxQuery) d.getDisjuncts().get(1);
-    assertEquals(1.2f, ndq.getTieBreakerMultiplier(), 0.0001f);
+    assertEquals(0.3f, ndq.getTieBreakerMultiplier(), 0.0001f);
     assertEquals(1, ndq.getDisjuncts().size());
   }
 

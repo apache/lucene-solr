@@ -26,6 +26,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -56,7 +58,12 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
     CollectionAdminRequest.ClusterProp request = CollectionAdminRequest.setClusterProperty("foo","bar");
     assertContainsParams(request.getParams(), ACTION, NAME, "val");
   }
-  
+
+  public void testCollectionProp() {
+    final CollectionAdminRequest.CollectionProp request = CollectionAdminRequest.setCollectionProperty("foo", "bar", "baz");
+    assertContainsParams(request.getParams(), ACTION, CoreAdminParams.NAME, CollectionAdminParams.PROPERTY_NAME, CollectionAdminParams.PROPERTY_VALUE);
+  }
+
   public void testAddRole() {
     CollectionAdminRequest.AddRole request = CollectionAdminRequest.addRole("node","role");
     assertContainsParams(request.getParams(), ACTION, "node", "role");

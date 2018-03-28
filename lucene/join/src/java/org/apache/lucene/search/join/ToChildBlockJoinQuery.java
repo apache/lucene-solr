@@ -65,8 +65,8 @@ public class ToChildBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher, needsScores, boost), parentsFilter, needsScores);
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+    return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher, scoreMode, boost), parentsFilter, scoreMode.needsScores());
   }
 
   /** Return our parent query. */
@@ -129,7 +129,6 @@ public class ToChildBlockJoinQuery extends Query {
     private final boolean doScores;
 
     private float parentScore;
-    private int parentFreq = 1;
 
     private int childDoc = -1;
     private int parentDoc = 0;
@@ -199,7 +198,6 @@ public class ToChildBlockJoinQuery extends Query {
                 if (childDoc < parentDoc) {
                   if (doScores) {
                     parentScore = parentScorer.score();
-                    parentFreq = parentScorer.freq();
                   }
                   //System.out.println("  " + childDoc);
                   return childDoc;
@@ -247,7 +245,6 @@ public class ToChildBlockJoinQuery extends Query {
 
             if (doScores) {
               parentScore = parentScorer.score();
-              parentFreq = parentScorer.freq();
             }
           }
 
@@ -284,8 +281,8 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public int freq() throws IOException {
-      return parentFreq;
+    public float getMaxScore(int upTo) throws IOException {
+      return parentScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
     }
     
     int getParentDoc() {

@@ -1,6 +1,4 @@
 = Schema Factory Definition in SolrConfig
-:page-shortname: schema-factory-definition-in-solrconfig
-:page-permalink: schema-factory-definition-in-solrconfig.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -66,7 +64,7 @@ An alternative to using a managed schema is to explicitly configure a `ClassicIn
 
 If you have an existing Solr collection that uses `ClassicIndexSchemaFactory`, and you wish to convert to use a managed schema, you can simply modify the `solrconfig.xml` to specify the use of the `ManagedIndexSchemaFactory`.
 
-Once Solr is restarted and it detects that a `schema.xml` file exists, but the `managedSchemaResourceName` file (ie: "`managed-schema`") does not exist, the existing `schema.xml` file will be renamed to `schema.xml.bak` and the contents are re-written to the managed schema file. If you look at the resulting file, you'll see this at the top of the page:
+Once Solr is restarted and it detects that a `schema.xml` file exists, but the `managedSchemaResourceName` file (i.e., "`managed-schema`") does not exist, the existing `schema.xml` file will be renamed to `schema.xml.bak` and the contents are re-written to the managed schema file. If you look at the resulting file, you'll see this at the top of the page:
 
 [source,xml]
 ----

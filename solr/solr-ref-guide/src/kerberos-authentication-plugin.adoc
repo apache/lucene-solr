@@ -1,6 +1,4 @@
 = Kerberos Authentication Plugin
-:page-shortname: kerberos-authentication-plugin
-:page-permalink: kerberos-authentication-plugin.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -252,9 +250,9 @@ SOLR_AUTHENTICATION_OPTS="-Djava.security.auth.login.config=/home/foo/jaas-clien
 .KDC with AES-256 encryption
 [IMPORTANT]
 ====
-If your KDC uses AES-256 encryption, you need to add the Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files to your JRE before a kerberized Solr can interact with the KDC.
+If your KDC uses AES-256 encryption, you need to add the Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files to your JRE before a Kerberized Solr can interact with the KDC.
 
-You will know this when you see an error like this in your Solr logs : "KrbException: Encryption type AES256 CTS mode with HMAC SHA1-96 is not supported/enabled"
+You will know this when you see an error like this in your Solr logs: "KrbException: Encryption type AES256 CTS mode with HMAC SHA1-96 is not supported/enabled".
 
 For Java 1.8, this is available here: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html.
 

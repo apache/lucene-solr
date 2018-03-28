@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
+
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -36,6 +37,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+/**
+ * @since 6.6.0
+ */
 public class LetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -48,8 +52,28 @@ public class LetStream extends TupleStream implements Expressible {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     //Get all the named params
+    Set<String> echo = null;
+    boolean echoAll = false;
+    String currentName = null;
     for(StreamExpressionParameter np : namedParams) {
       String name = ((StreamExpressionNamedParameter)np).getName();
+      currentName = name;
+
+      if(name.equals("echo")) {
+        echo = new HashSet();
+        String echoString = ((StreamExpressionNamedParameter) np).getParameter().toString().trim();
+        if(echoString.equalsIgnoreCase("true")) {
+          echoAll = true;
+        } else {
+          String[] echoVars = echoString.split(",");
+          for (String echoVar : echoVars) {
+            echo.add(echoVar.trim());
+          }
+        }
+
+        continue;
+      }
+
       StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
       if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
@@ -60,11 +84,27 @@ public class LetStream extends TupleStream implements Expressible {
       }
     }
 
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
-    }
+    if(streamExpressions.size() > 0) {
+      stream = factory.constructStream(streamExpressions.get(0));
+    } else {
+      StreamExpression tupleExpression = new StreamExpression("tuple");
+      if(!echoAll && echo == null) {
+        tupleExpression.addParameter(new StreamExpressionNamedParameter(currentName, currentName));
+      } else {
+        Set<String> names = letParams.keySet();
+        for(String name : names) {
+          if(echoAll) {
+            tupleExpression.addParameter(new StreamExpressionNamedParameter(name, name));
+          } else {
+            if(echo.contains(name)) {
+              tupleExpression.addParameter(new StreamExpressionNamedParameter(name, name));
+            }
+          }
+        }
+      }
 
-    stream = factory.constructStream(streamExpressions.get(0));
+      stream = factory.constructStream(tupleExpression);
+    }
   }
 
 

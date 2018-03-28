@@ -24,7 +24,7 @@ import java.util.function.Function;
 // A cache backed by a map
 public class MapBackedCache<K, V> implements Cache<K, V> {
 
-  private final Map<K, V> map;
+  protected final Map<K, V> map;
 
   public MapBackedCache(Map<K, V> map) {
     this.map = map;

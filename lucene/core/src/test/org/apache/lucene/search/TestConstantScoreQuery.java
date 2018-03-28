@@ -74,8 +74,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       }
       
       @Override
-      public boolean needsScores() {
-        return true;
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
       }
     });
     assertEquals("invalid number of results", 1, count[0]);
@@ -135,8 +135,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return in.createWeight(searcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return in.createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -203,7 +203,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
     ConstantScoreQuery q = new ConstantScoreQuery(pq);
 
-    final Weight weight = searcher.createNormalizedWeight(q, true);
+    final Weight weight = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNotNull(scorer.twoPhaseIterator());
 
@@ -218,11 +218,11 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     final ConstantScoreQuery csq = new ConstantScoreQuery(termQuery);
 
     final Set<Term> scoringTerms = new HashSet<>();
-    searcher.createNormalizedWeight(csq, true).extractTerms(scoringTerms);
+    searcher.createNormalizedWeight(csq, ScoreMode.COMPLETE).extractTerms(scoringTerms);
     assertEquals(Collections.emptySet(), scoringTerms);
 
     final Set<Term> matchingTerms = new HashSet<>();
-    searcher.createNormalizedWeight(csq, false).extractTerms(matchingTerms);
+    searcher.createNormalizedWeight(csq, ScoreMode.COMPLETE_NO_SCORES).extractTerms(matchingTerms);
     assertEquals(Collections.singleton(new Term("foo", "bar")), matchingTerms);
   }
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -37,8 +38,8 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   }
 
   @Override
-  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
-    super.flush(fieldsToFlush, state, sortMap);
+  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+    super.flush(fieldsToFlush, state, sortMap, norms);
     if (tmpDirectory != null) {
       if (sortMap == null) {
         // we're lucky the index is already sorted, just rename the temporary file and return

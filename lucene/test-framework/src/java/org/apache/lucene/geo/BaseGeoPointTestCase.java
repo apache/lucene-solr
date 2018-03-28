@@ -54,6 +54,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -564,8 +565,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
 
           @Override
@@ -824,8 +825,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
 
           @Override
@@ -963,8 +964,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
 
           @Override
@@ -1095,8 +1096,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
 
           @Override

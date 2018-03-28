@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +65,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   private int showItems = 0;
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   @Override

@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
@@ -107,7 +108,10 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
 
       for (ContentStream stream : req.getContentStreams()) {
-        ByteBuffer payload = SimplePostTool.inputStreamToByteArray(stream.getStream(), maxSize);
+        ByteBuffer payload;
+        try (InputStream is = stream.getStream()) {
+          payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
+        }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.position(), payload.limit());
         String md5 = new BigInteger(1, m.digest()).toString(16);
@@ -137,6 +141,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         String id = blobName + "/" + version;
         Map<String, Object> doc = makeMap(
             ID, id,
+            CommonParams.TYPE, "blob",
             "md5", md5,
             "blobName", blobName,
             VERSION, version,

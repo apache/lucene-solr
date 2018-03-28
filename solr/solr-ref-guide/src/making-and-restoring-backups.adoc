@@ -1,6 +1,4 @@
 = Making and Restoring Backups
-:page-shortname: making-and-restoring-backups
-:page-permalink: making-and-restoring-backups.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -33,7 +31,7 @@ Two commands are available:
 
 == Standalone Mode Backups
 
-Backups and restoration uses Solr's replication handler. Out of the box, Solr includes implicit support for replication so this API can be used. Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml` . For details on configuring the replication handler, see the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
+Backups and restoration uses Solr's replication handler. Out of the box, Solr includes implicit support for replication so this API can be used. Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml`. For details on configuring the replication handler, see the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
 
 === Backup API
 
@@ -73,7 +71,7 @@ The `backup` operation can be monitored to see if it has completed by sending th
 .Status API Example
 [source,text]
 ----
-http://localhost:8983/solr/gettingstarted/replication?command=details
+http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 ----
 
 .Output Snippet
@@ -126,7 +124,7 @@ You can also check the status of a `restore` operation by sending the `restorest
 .Status API Example
 [source,text]
 ----
-http://localhost:8983/solr/gettingstarted/replication?command=restorestatus
+http://localhost:8983/solr/gettingstarted/replication?command=restorestatus&wt=xml
 ----
 
 .Status API Output
@@ -144,7 +142,7 @@ http://localhost:8983/solr/gettingstarted/replication?command=restorestatus
 </response>
 ----
 
-The status value can be "In Progress" , "success" or "failed". If it failed then an "exception" will also be sent in the response.
+The status value can be "In Progress", "success" or "failed". If it failed then an "exception" will also be sent in the response.
 
 === Create Snapshot API
 
@@ -181,10 +179,10 @@ http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&co
 
 The list snapshot request parameters are:
 
-core::
+`core`::
 The name of the core to whose snapshots we want to list.
 
-async::
+`async`::
 Request ID to track this action which will be processed asynchronously.
 
 === Delete Snapshot API
@@ -210,16 +208,15 @@ The name of the core whose snapshot we want to delete
 `async`::
 Request ID to track this action which will be processed asynchronously
 
-
 == Backup/Restore Storage Repositories
 
 Solr provides interfaces to plug different storage systems for backing up and restoring. For example, you can have a Solr cluster running on a local filesystem like EXT3 but you can backup the indexes to a HDFS filesystem or vice versa.
 
-The repository interfaces needs to be configured in the solr.xml file . While running backup/restore commands we can specify the repository to be used.
+The repository interfaces needs to be configured in the `solr.xml` file. While running backup/restore commands we can specify the repository to be used.
 
 If no repository is configured then the local filesystem repository will be used automatically.
 
-Example solr.xml section to configure a repository like <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,HDFS>>:
+Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,HDFS>>:
 
 [source,xml]
 ----

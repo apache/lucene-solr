@@ -70,6 +70,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
+    assumeWorkingMockito();
+    
     AtomicReference<Principal> principal = new AtomicReference<>();
     String nodeName = "node_x_233";
 
@@ -143,8 +145,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.doAuthenticate(mockReq, null,filterChain );
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
-
-
+    mock1.close();
+    mock.close();
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {

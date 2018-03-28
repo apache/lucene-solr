@@ -16,16 +16,17 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
+public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -162,6 +163,15 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
             "//doc[./str[@name='id']='1']",
             "//doc[./str[@name='id']='2']",
             "//result[@numFound='2']"
+    );
+
+    assertQEx("don't parse subqueries",
+        "SyntaxError",
+        sumLRF.makeRequest("_query_:\"{!prefix f=name v=smi}\""), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("don't parse subqueries",
+        "SyntaxError",
+        sumLRF.makeRequest("{!prefix f=name v=smi}"), SolrException.ErrorCode.BAD_REQUEST
     );
 
   }

@@ -53,6 +53,9 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
+/**
+ * @since 6.1.0
+ */
 public class ShortestPathStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;

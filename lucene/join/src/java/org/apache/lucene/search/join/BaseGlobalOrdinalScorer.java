@@ -43,6 +43,11 @@ abstract class BaseGlobalOrdinalScorer extends Scorer {
   }
 
   @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return Float.POSITIVE_INFINITY;
+  }
+
+  @Override
   public int docID() {
     return approximation.docID();
   }
@@ -55,11 +60,6 @@ abstract class BaseGlobalOrdinalScorer extends Scorer {
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
     return createTwoPhaseIterator(approximation);
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return 1;
   }
 
   protected abstract TwoPhaseIterator createTwoPhaseIterator(DocIdSetIterator approximation);

@@ -239,12 +239,14 @@ public class TestRerankBase extends RestTestBase {
         .append(",\n");
     sb.append("\"class\":").append('"').append(type).append('"').append(",\n");
     sb.append("\"features\":").append('[');
-    for (final String feature : features) {
-      sb.append("\n\t{ ");
-      sb.append("\"name\":").append('"').append(feature).append('"')
-          .append("},");
+    if (features.length > 0) {
+      for (final String feature : features) {
+        sb.append("\n\t{ ");
+        sb.append("\"name\":").append('"').append(feature).append('"')
+        .append("},");
+      }
+      sb.deleteCharAt(sb.length() - 1);
     }
-    sb.deleteCharAt(sb.length() - 1);
     sb.append("\n]\n");
     if (params != null) {
       sb.append(",\n");

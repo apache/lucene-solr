@@ -1,6 +1,6 @@
 = Using SolrJ
-:page-shortname: using-solrj
-:page-permalink: using-solrj.html
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,148 +18,162 @@
 // specific language governing permissions and limitations
 // under the License.
 
-{solr-javadocs}/solr-solrj/[SolrJ] is an API that makes it easy for Java applications to talk to Solr. SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.
-
-The center of SolrJ is the `org.apache.solr.client.solrj` package, which contains just five main classes. Begin by creating a {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`], which represents the Solr instance you want to use. Then send `SolrRequests` or `SolrQuerys` and get back SolrResponses.
-
-`SolrClient` is abstract, so to connect to a remote Solr instance, you'll actually create an instance of either {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`], or {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`]. Both communicate with Solr via HTTP, the difference is that `HttpSolrClient` is configured using an explicit Solr URL, while `CloudSolrClient` is configured using the zkHost String for a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster.
-
-
-.Single node Solr client
-[source,java]
-----
-String urlString = "http://localhost:8983/solr/techproducts";
-SolrClient solr = new HttpSolrClient.Builder(urlString).build();
-----
-
-.SolrCloud client
-[source,java]
-----
-// Using a ZK Host String
-String zkHostString = "zkServerA:2181,zkServerB:2181,zkServerC:2181/solr";
-SolrClient solr = new CloudSolrClient.Builder().withZkHost(zkHostString).build();
-
-// Using already running Solr nodes
-SolrClient solr = new CloudSolrClient.Builder().withSolrUrl("http://localhost:8983/solr").build();
-----
-
-Once you have a `SolrClient`, you can use it by calling methods like `query()`, `add()`, and `commit()`.
+{solr-javadocs}/solr-solrj/[SolrJ] is an API that makes it easy for applications written in Java (or any language based on the JVM) to talk to Solr. SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.  SolrJ supports most Solr APIs, and is highly configurable.
 
 == Building and Running SolrJ Applications
 
-The SolrJ API is included with Solr, so you do not have to download or install anything else. However, in order to build and run applications that use SolrJ, you have to add some libraries to the classpath.
+The SolrJ API ships with Solr, so you do not have to download or install anything else. But you will need to configure your build to include SolrJ and its dependencies.
 
-At build time, the examples presented with this section require `solr-solrj-x.y.z.jar` to be in the classpath.
+=== Common Build Systems
 
-At run time, the examples in this section require the libraries found in the 'dist/solrj-lib' directory.
+Most mainstream build systems greatly simplify dependency management, making it easy to add SolrJ to your project.
 
-The Ant script bundled with this sections' examples includes the libraries as appropriate when building and running.
+For projects built with Ant (using http://ant.apache.org/ivy/[Ivy]), place the following in your `ivy.xml`:
 
-You can sidestep a lot of the messing around with the JAR files by using Maven instead of Ant. All you will need to do to include SolrJ in your application is to put the following dependency in the project's `pom.xml`:
+[source,xml,subs="verbatim,attributes"]
+----
+<dependency org="org.apache.solr" name="solr-solrj" rev="{solr-docs-version}.0"/>
+----
 
-[source,xml]
+For projects built with Maven, place the following in your `pom.xml`:
+
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-solrj</artifactId>
-  <version>x.y.z</version>
+  <version>{solr-docs-version}.0</version>
 </dependency>
+----
+
+For projects built with Gradle, place the following in your `build.gradle`:
+
+[source,groovy,subs="attributes"]
+----
+compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-docs-version}.0'
+----
+
+=== Adding SolrJ to the Classpath Manually
+
+If you are not using one of the above build system, it's still easy to add SolrJ to your build.
+
+At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-docs-version}.0.jar`.  To compile code manually that uses SolrJ, use a `javac` command similar to:
+
+[source,bash,subs="attributes"]
+----
+javac -cp .:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
+----
+
+At runtime, you need a few of SolrJ's dependencies, in addition to SolrJ itself. For convenience, these dependencies are made available in the `dist/solrj-lib` directory.  Run your project with a classpath like:
+
+[source,bash,subs="attributes"]
+----
+java -cp .:$SOLR_HOME/dist/solrj-lib/*:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
 ----
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.
 
-== Specifying Solr Base URLs
+== SolrJ Overview
 
+For all its flexibility, SolrJ is built around a few simple interfaces.
+
+All requests to Solr are sent by a {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.  They handle the work of connecting to and communicating with Solr, and are where most of the user configuration happens.
+
+Requests are sent in the form of {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
+
+=== Types of SolrClients
+
+`SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
+
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.  Communicates directly with a single Solr node.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes. Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments. Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.  Buffers documents internally before sending larger batches to Solr.
+
+=== Common Configuration Options
+
+Most SolrJ configuration happens at the `SolrClient` level.  The most common/important of these are discussed below.  For comprehensive information on how to tweak your `SolrClient`, see the Javadocs for the involved client, and its corresponding builder object.
+
+==== Base URLs
 Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
-. A URL with a path pointing to a specific core or collection (e.g. `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL with a generic path pointing to the root Solr path (e.g. `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+. A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
+. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
-== Setting XMLResponseParser
+Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.  Where more flexibility is required, the collection/core should be excluded.
 
-SolrJ uses a binary format, rather than XML, as its default response format. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST use the XML response parser. The binary format changed in 3.x, and the two javabin versions are entirely incompatible. The following code will make this change:
+==== Timeouts
+All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.  These are provided at client creation time, as in the example below:
 
-[source,java]
+[source,java,indent=0]
 ----
-solr.setParser(new XMLResponseParser());
-----
-
-== Performing Queries
-
-Use `query()` to have Solr search for results. You have to pass a `SolrQuery` object that describes the query, and you will get back a QueryResponse (from the `org.apache.solr.client.solrj.response` package).
-
-`SolrQuery` has methods that make it easy to add parameters to choose a request handler and send parameters to it. Here is a very simple example that uses the default request handler and sets the query string:
-
-[source,java]
-----
-SolrQuery query = new SolrQuery();
-query.setQuery(mQueryString);
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
 ----
 
-To choose a different request handler, there is a specific method available in SolrJ version 4.0 and later:
+When these values are not explicitly provided, SolrJ falls back to using the defaults for the OS/environment is running on.
 
-[source,java]
-----
-query.setRequestHandler("/spellCheckCompRH");
-----
+== Querying in SolrJ
+`SolrClient` has a number of `query()` methods for fetching results from Solr.  Each of these methods takes in a `SolrParams`,an object encapsulating arbitrary query-parameters.  And each method outputs a `QueryResponse`, a wrapper which can be used to access the result documents and other related metadata.
 
-You can also set arbitrary parameters on the query object. The first two code lines below are equivalent to each other, and the third shows how to use an arbitrary parameter `q` to set the query string:
+The following snippet uses a SolrClient to query Solr's "techproducts" example collection, and iterate over the results.
 
-[source,java]
+[source,java,indent=0]
 ----
-query.set("fl", "category,title,price");
-query.setFields("category", "title", "price");
-query.set("q", "category:books");
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-raw-solrparams]
 ----
 
-Once you have your `SolrQuery` set up, submit it with `query()`:
+`SolrParams` has a `SolrQuery` subclass, which provides some convenience methods that greatly simplifies query creation.  The following snippet shows how the query from the previous example can be built using some of the convenience methods in `SolrQuery`:
 
-[source,java]
+[source,java,indent=0]
 ----
-QueryResponse response = solr.query(query);
-----
-
-The client makes a network connection and sends the query. Solr processes the query, and the response is sent and parsed into a `QueryResponse`.
-
-The `QueryResponse` is a collection of documents that satisfy the query parameters. You can retrieve the documents directly with `getResults()` and you can call other methods to find out information about highlighting or facets.
-
-[source,java]
-----
-SolrDocumentList list = response.getResults();
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-solrquery]
 ----
 
-== Indexing Documents
+== Indexing in SolrJ
 
-Other operations are just as simple. To index (add) a document, all you need to do is create a `SolrInputDocument` and pass it along to the `SolrClient` 's `add()` method. This example assumes that the SolrClient object called 'solr' is already created based on the examples shown earlier.
+Indexing is also simple using SolrJ.  Users build the documents they want to index as instances of `SolrInputDocument`, and provide them as arguments to one of the `add()` methods on `SolrClient`.
 
-[source,java]
+The following example shows how to use SolrJ to add a document to Solr's "techproducts" example collection:
+
+[source,java,indent=0]
 ----
-SolrInputDocument document = new SolrInputDocument();
-document.addField("id", "552199");
-document.addField("name", "Gouda cheese wheel");
-document.addField("price", "49.99");
-UpdateResponse response = solr.add(document);
-
-// Remember to commit your changes!
-
-solr.commit();
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-with-raw-solrinputdoc]
 ----
 
-=== Uploading Content in XML or Binary Formats
+CAUTION: The indexing examples above are intended to show syntax.  For brevity, they break several Solr indexing best-practices.  Under normal circumstances, documents should be indexed in larger batches, instead of one at a time.  It is also suggested that Solr administrators commit documents using Solr's autocommit settings, and not using explicit `commit()` invocations.
 
-SolrJ lets you upload content in binary format instead of the default XML format. Use the following code to upload using binary format, which is the same format SolrJ uses to fetch results. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST stick with the XML request writer. The binary format changed in 3.x, and the two javabin versions are entirely incompatible.
+== Java Object Binding
+While the `UpdateResponse` and `QueryResponse` interfaces that SolrJ provides are useful, it is often more convenient to work with domain-specific objects that can more easily be understood by your application.  Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
 
-[source,java]
+Each instance variable in a Java object can be mapped to a corresponding Solr field, using the `Field` annotation.  The Solr field shares the name of the annotated variable by default, however, this can be overridden by providing the annotation with an explicit field name.
+
+The example snippet below shows an annotated `TechProduct` class that can be used to represent results from Solr's "techproducts" example collection.
+
+[source,java,indent=0]
 ----
-solr.setRequestWriter(new BinaryRequestWriter());
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-techproduct-value-type]
 ----
 
-=== Using the ConcurrentUpdateSolrClient
+Application code with access to the annotated `TechProduct` class above can index `TechProduct` objects directly without any conversion, as in the example snippet below:
 
-When implementing java applications that will be bulk loading a lot of documents at once, {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] is an alternative to consider instead of using `HttpSolrClient`. The `ConcurrentUpdateSolrClient` buffers all added documents and writes them into open HTTP connections. This class is thread safe. Although any SolrClient request can be made with this implementation, it is only recommended to use the `ConcurrentUpdateSolrClient` for `/update` requests.
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-bean-value-type]
+----
 
-== EmbeddedSolrServer
+Similarly, search results can be converted directly into bean objects using the `getBeans()` method on `QueryResponse`:
 
-The {solr-javadocs}/solr-core/org/apache/solr/client/solrj/embedded/EmbeddedSolrServer.html[`EmbeddedSolrServer`] class provides an implementation of the `SolrClient` client API talking directly to an micro-instance of Solr running directly in your Java application. This embedded approach is not recommended in most cases and fairly limited in the set of features it supports – in particular it can not be used with <<solrcloud.adoc#solrcloud,SolrCloud>> or <<index-replication.adoc#index-replication,Index Replication>>. `EmbeddedSolrServer` exists primarily to help facilitate testing.
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-bean-value-type]
+----
 
-For information on how to use `EmbeddedSolrServer` please review the SolrJ JUnit tests in the `org.apache.solr.client.solrj.embedded` package of the Solr source release.
+== Other APIs
+SolrJ allows more than just querying and indexing.  It supports all of Solr's APIs.  Accessing Solr's other APIs is as easy as finding the appropriate request object, providing any necessary parameters, and passing it to the `request()` method of your `SolrClient`.  `request()` will return a `NamedList`: a generic object which mirrors the hierarchical structure of the JSON or XML returned by their request.
+
+The example below shows how SolrJ users can call the CLUSTERSTATUS API of SolrCloud deployments, and manipulate the returned `NamedList`:
+
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-other-apis]
+----

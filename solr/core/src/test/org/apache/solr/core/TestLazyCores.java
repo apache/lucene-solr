@@ -42,6 +42,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
@@ -781,12 +782,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10101")
   // Insure that when a core is aged out of the transient cache, any uncommitted docs are preserved.
   // Note, this needs FS-based indexes to persist!
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
+    DirectUpdateHandler2.commitOnClose = true;
+
     CoreContainer cc = init();
     String[] coreList = new String[]{
         "collection2",
@@ -814,7 +816,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       openCores.clear();
       
       // We still should have 6, 7, 8, 9 loaded, their reference counts have NOT dropped to zero 
-      checkInCores(cc, "collection6", "collection7", "collection8", "collection9");
+      checkInCores(cc, "collection1", "collection5",
+          "collection6", "collection7", "collection8", "collection9");
 
       for (String coreName : coreList) {
         // The point of this test is to insure that when cores are aged out and re-opened

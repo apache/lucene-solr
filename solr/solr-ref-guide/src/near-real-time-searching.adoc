@@ -1,6 +1,4 @@
 = Near Real Time Searching
-:page-shortname: near-real-time-searching
-:page-permalink: near-real-time-searching.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,126 +16,73 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Near Real Time (NRT) search means that documents are available for search almost immediately after being indexed.
+Near Real Time (NRT) search means that documents are available for search soon after being indexed. NRT searching is one of the main features of SolrCloud and is rarely attempted in master/slave configurations.
 
-This allows additions and updates to documents to be seen in 'near' real time. Solr does not block updates while a commit is in progress. Nor does it wait for background merges to complete before opening a new search of indexes and returning.
+Document durability and searchability are controlled by `commits`. The "Near" in "Near Real Time" is configurable to meet the needs of your application. Commits are either "hard" or "soft" and can be issued by a client (say SolrJ), via a REST call or configured to occur automatically in `solrconfig.xml`. The recommendation usually gives is to configure your commit strategy in `solrconfig.xml` (see below) and avoid issuing commits externally.
 
-With NRT, you can modify a `commit` command to be a *soft commit*, which avoids parts of a standard commit that can be costly. You will still want to do standard commits to ensure that documents are in stable storage, but *soft commits* let you see a very near real time view of the index in the meantime.
+Typically in NRT applications, hard commits are configured with `openSearcher=false`, and soft commits are configured to make documents visible for search.
 
-However, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance.
+When a commit occurs, various background tasks are initiated, segment merging for example. These background tasks do not block additional updates to the index nor do they delay the availability of the documents for search.
 
-== Commits and Optimizing
+When configuring for NRT, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance. For extremely short autoCommit intervals, consider disabling caching and autowarming completely.
 
-A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for data loss issues.
+== Commits and Searching
 
-A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues.
+A *hard commit* calls `fsync` on the index files to ensure they have been flushed to stable storage. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for how data is recovered in the absence of a hard commit. Optionally a hard commit can also make documents visible for search, but this is not recommended for NRT searching as it is more expensive than a soft commit.
 
-An *optimize* is like a *hard commit* except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
+A *soft commit* is faster since it only makes index changes visible and does not `fsync` index files, start a new segment or start a new transaction log. Search collections that have NRT requirements will want to soft commit often enough to satisfy the visibility requirements of the application. A softCommit may be "less expensive" than a hard commit (openSearcher=true), but it is not free. It is recommended that this be set for as long as is reasonable given the application requirements.
 
-Soft commit takes uses two parameters: `maxDocs` and `maxTime`.
+Both hard and soft commits have two primary configuration parameters: `maxDocs` and `maxTime`.
 
 `maxDocs`::
-Integer. Defines the number of documents to queue before pushing them to the index. It works in conjunction with the `update_handler_autosoftcommit_max_time` parameter in that if either limit is reached, the documents will be pushed to the index.
+Integer. Defines the number of updates to process before activating.
 
 `maxTime`::
-The number of milliseconds to wait before pushing documents to the index. It works in conjunction with the `update_handler_autosoftcommit_max_docs` parameter in that if either limit is reached, the documents will be pushed to the index.
+Integer. The number of milliseconds to wait before activating.
 
-Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
+If both of these parameters are specified, the first one to expire is honored. Generally, it is preferred to use `maxTime` rather than `maxDocs`, especially when indexing large numbers of documents in batches. Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
+
+Hard commit has an additional parameter `openSearcher`
+
+`openSearcher`::
+true|false, whether to make documents visible for search. For NRT applications this is usually set to `false` and `soft commit` is configured to control when documents are visible for search.
 
 === Transaction Logs (tlogs)
 
-Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in solrconfig.xml, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
+Transaction logs are a "rolling window" of updates since the last hard commit. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
 
-When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9` etc) any documents written to the tlog that was open when Solr stopped are replayed on startup.
+When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9`, etc.) any documents written to the tlog but not yet committed with a hard commit when Solr was stopped are replayed on startup. Therefore the data is not lost.
 
-When Solr is shut down gracefully (i.e. using the `bin/solr stop` command and the like) Solr will close the tlog file and index segments so no replay will be necessary on startup.
+When Solr is shut down gracefully (using the `bin/solr stop` command) Solr will close the tlog file and index segments so no replay will be necessary on startup.
 
-=== AutoCommits
+One point of confusion is how much data is contained in a tlog. A tlog does not contain all documents, just the ones since the last hard commit. There are come low-level details involving `peer sync` that also involve the tlogs that are not relevant to this discussion. Older tlogs are deleted when no longer needed.
 
-An autocommit also uses the parameters `maxDocs` and `maxTime`. However it's useful in many strategies to use both a hard `autocommit` and `autosoftcommit` to achieve more flexible commits.
+WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled. Therefore it is important that hard commits be enabled when indexing.
 
-A common configuration is to do a hard `autocommit` every 1-10 minutes and a `autosoftcommit` every second. With this configuration, new documents will show up within about a second of being added, and if the power goes out, soft commits are lost unless a hard commit has been done.
+=== Configuring Commits
 
-For example:
+As mentioned above, it is usually preferable to configure your commits (both hard and soft) in `solrconfig.xml` and avoid sending commits from an external source. Check your `solrconfig.xml` file since the defaults are likely not tuned to your needs. Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 30 seconds. Note that these are _not_ the values in some of the examples!
 
 [source,xml]
 ----
+<autoCommit>
+  <maxTime>${solr.autoCommit.maxTime:60000}</maxTime>
+  <openSearcher>false</openSearcher>
+</autoCommit>
+
 <autoSoftCommit>
-  <maxTime>1000</maxTime>
-</autoSoftCommit>
+   <maxTime>${solr.autoSoftCommit.maxTime:30000}</maxTime>
+ </autoSoftCommit>
 ----
 
-It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`, especially when indexing a large number of documents through the commit operation. It's also better to turn off `autoSoftCommit` for bulk indexing.
+TIP: These parameters can be overridden at run time by defining Java "system variables", for example specifying ``-Dsolr.autoCommit.maxTime=15000` would override the hard commit interval with a value of 15 seconds.
 
-=== Optional Attributes for commit and optimize
+The choices for `autoCommit` (with `openSearcher=false`) and `autoSoftCommit` have different consequences. In the event of un-graceful shutdown, it can take up to the time specified in `autoCommit` for Solr to replay the uncommitted documents from the transaction log.
 
-`waitSearcher`::
-Block until a new searcher is opened and registered as the main query searcher, making the changes visible. Default is `true`.
+The time chosen for `autoSoftCommit` determines the maximum time after a document is sent to Solr before it becomes searchable and does not affect the transaction log. Choose as long an interval as your application can tolerate for this value, often 15-60 seconds is reasonable, or even longer depending on the requirements. In situations where the the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
 
-`OpenSearcher`::
-Open a new searcher making all documents indexed so far visible for searching. Default is `true`.
+TIP: For extremely high bulk indexing, especially for the initial load if there is no searching, consider turning off `autoSoftCommit` by specifying a value of `-1` for the maxTime parameter.
 
-`softCommit`::
-Perform a soft commit. This will refresh the view of the index faster, but without guarantees that the document is stably stored. Default is `false`.
+== Advanced Commit Options
 
-`expungeDeletes`::
-Valid for `commit` only. This parameter purges deleted data from segments. The default is `false`.
-
-`maxSegments`::
-Valid for `optimize` only. Optimize down to at most this number of segments. The default is `1`.
-
-Example of `commit` and `optimize` with optional attributes:
-
-[source,xml]
-----
-<commit waitSearcher="false"/>
-<commit waitSearcher="false" expungeDeletes="true"/>
-<optimize waitSearcher="false"/>
-----
-
-=== Passing commit and commitWithin Parameters as Part of the URL
-
-Update handlers can also get `commit`-related parameters as part of the update URL, if the `stream.body` feature is enabled. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
-
-[source,text]
-----
-http://localhost:8983/solr/my_collection/update?stream.body=<add><doc>
-   <field name="id">testdoc</field></doc></add>&commit=true
-----
-
-Alternately, you may want to use this:
-
-[source,text]
-----
-http://localhost:8983/solr/my_collection/update?stream.body=<optimize/>
-----
-
-This example causes the index to be optimized down to at most 10 segments, but won't wait around until it's done (`waitFlush=false`):
-
-[source,bash]
-----
-curl 'http://localhost:8983/solr/my_collection/update?optimize=true&maxSegments=10&waitFlush=false'
-----
-
-This example adds a small test document with a `commitWithin` instruction that tells Solr to make sure the document is committed no later than 10 seconds later (this method is generally preferred over explicit commits):
-
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
-  -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
-----
-
-WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> for details.
-
-=== Changing Default commitWithin Behavior
-
-The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
-
-[source,xml]
-----
-<commitWithin>
-  <softCommit>false</softCommit>
-</commitWithin>
-----
-
-With this configuration, when you call `commitWithin` as part of your update message, it will automatically perform a hard commit every time.
+All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<uploading-data-with-index-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl, etc., and the equivalents are available from a SolrJ client.

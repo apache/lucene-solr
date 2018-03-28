@@ -75,6 +75,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * splitting is in progress (see <a href="https://issues.apache.org/jira/browse/SOLR-8881">SOLR-8881</a> 
  * for more details.)
  * </p>
+ * @since 6.1.0
  */
 public class TolerantUpdateProcessorFactory extends UpdateRequestProcessorFactory
   implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {

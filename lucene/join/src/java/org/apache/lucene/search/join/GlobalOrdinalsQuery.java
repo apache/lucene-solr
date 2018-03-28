@@ -61,11 +61,11 @@ final class GlobalOrdinalsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
     }
-    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
+    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f), boost);
   }
 
   @Override
@@ -154,6 +154,14 @@ final class GlobalOrdinalsQuery extends Query {
       }
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      // disable caching because this query relies on a top reader context
+      // and holds a bitset of matching ordinals that cannot be accounted in
+      // the memory used by the cache
+      return false;
+    }
+
   }
 
   final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {
@@ -174,11 +182,7 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
+          if (values.advanceExact(approximation.docID())) {
             final long segmentOrd = values.ordValue();
             final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (foundOrds.get(globalOrd)) {
@@ -212,14 +216,8 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
-            if (foundOrds.get(values.ordValue())) {
-              return true;
-            }
+          if (values.advanceExact(approximation.docID()) && foundOrds.get(values.ordValue())) {
+            return true;
           }
           return false;
         }

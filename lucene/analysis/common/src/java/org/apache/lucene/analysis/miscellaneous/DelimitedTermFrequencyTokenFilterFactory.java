@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.DelimitedTermFrequencyTokenFilterFactory" delimiter="|"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 7.0.0
  */
 public class DelimitedTermFrequencyTokenFilterFactory extends TokenFilterFactory {
   public static final String DELIMITER_ATTR = "delimiter";

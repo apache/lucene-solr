@@ -106,8 +106,8 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
   public void absTwoFields() throws Exception{
     factory.constructEvaluator("abs(a,b)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void absNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     
@@ -115,7 +115,8 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test
+
+  @Test(expected = IOException.class)
   public void absNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     

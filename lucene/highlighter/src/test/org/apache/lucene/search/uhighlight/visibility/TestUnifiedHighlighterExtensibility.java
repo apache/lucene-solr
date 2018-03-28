@@ -19,7 +19,6 @@ package org.apache.lucene.search.uhighlight.visibility;
 
 import java.io.IOException;
 import java.text.BreakIterator;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,13 +68,13 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       }
 
       @Override
-      public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-        return Collections.emptyList();
+      public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+        return OffsetsEnum.EMPTY;
       }
 
       @Override
-      protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
-        return super.createOffsetsEnumsFromReader(leafReader, doc);
+      protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
+        return super.createOffsetsEnumFromReader(leafReader, doc);
       }
 
     };
@@ -193,7 +192,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
     final String fieldName = "fieldName";
     FieldHighlighter fieldHighlighter = new FieldHighlighter(fieldName, null, null, null, 1, 1, null) {
       @Override
-      protected Passage[] highlightOffsetsEnums(List<OffsetsEnum> offsetsEnums) throws IOException {
+      protected Passage[] highlightOffsetsEnums(OffsetsEnum offsetsEnums) throws IOException {
         return super.highlightOffsetsEnums(offsetsEnums);
       }
     };
@@ -213,33 +212,29 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
     }
 
     @Override
-    protected Passage[] highlightOffsetsEnums(List<OffsetsEnum> offsetsEnums) throws IOException {
+    protected Passage[] highlightOffsetsEnums(OffsetsEnum offsetsEnums) throws IOException {
       // TEST OffsetsEnums & Passage visibility
 
       // this code never runs; just for compilation
       Passage p;
-      try (OffsetsEnum oe = new OffsetsEnum(null, EMPTY)) {
+      try (OffsetsEnum oe = new OffsetsEnum.OfPostings(null, null)) {
         oe.getTerm();
-        oe.getPostingsEnum();
-        oe.freq();
-        oe.hasMorePositions();
         oe.nextPosition();
         oe.startOffset();
         oe.endOffset();
-        oe.getWeight();
-        oe.setWeight(2f);
+        oe.freq();
       }
 
       p = new Passage();
       p.setStartOffset(0);
       p.setEndOffset(9);
-      p.setScore(1f);
-      p.addMatch(1, 2, new BytesRef());
+      p.addMatch(1, 2, new BytesRef(), 1);
       p.reset();
-      p.sort();
+      p.setScore(1);
       //... getters are all exposed; custom PassageFormatter impls uses them
 
       return super.highlightOffsetsEnums(offsetsEnums);
     }
   }
+
 }

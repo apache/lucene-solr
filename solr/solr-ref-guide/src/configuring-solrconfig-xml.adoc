@@ -1,6 +1,4 @@
 = Configuring solrconfig.xml
-:page-shortname: configuring-solrconfig-xml
-:page-permalink: configuring-solrconfig-xml.html
 :page-children: datadir-and-directoryfactory-in-solrconfig, lib-directives-in-solrconfig, schema-factory-definition-in-solrconfig, indexconfig-in-solrconfig, requesthandlers-and-searchcomponents-in-solrconfig, initparams-in-solrconfig, updatehandlers-in-solrconfig, query-settings-in-solrconfig, requestdispatcher-in-solrconfig, update-request-processors, codec-factory
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

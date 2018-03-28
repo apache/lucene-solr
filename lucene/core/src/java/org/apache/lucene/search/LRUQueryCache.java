@@ -87,8 +87,9 @@ import org.apache.lucene.util.RoaringDocIdSet;
  */
 public class LRUQueryCache implements QueryCache, Accountable {
 
-  // memory usage of a simple term query
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = 192;
+  // approximate memory usage that we assign to all queries
+  // this maps roughly to a BooleanQuery with a couple term clauses
+  static final long QUERY_DEFAULT_RAM_BYTES_USED = 1024;
 
   static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
       2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
@@ -122,7 +123,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   /**
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
    * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
-   * leaves that satisfy {@code leavesToCache};
+   * leaves that satisfy {@code leavesToCache}.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
       Predicate<LeafReaderContext> leavesToCache) {
@@ -146,6 +147,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * <tt>33</tt> leaves can make it to the cache (very likely less than 10 in
    * practice), which is useful for this implementation since some operations
    * perform in linear time with the number of cached leaves.
+   * Only clauses whose cost is at most 100x the cost of the top-level query will
+   * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
     this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f));
@@ -298,7 +301,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     try {
       Query singleton = uniqueQueries.putIfAbsent(query, query);
       if (singleton == null) {
-        onQueryCache(query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(query));
+        onQueryCache(query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + QUERY_DEFAULT_RAM_BYTES_USED);
       } else {
         query = singleton;
       }
@@ -381,7 +384,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   private void onEviction(Query singleton) {
     assert lock.isHeldByCurrentThread();
-    onQueryEviction(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(singleton));
+    onQueryEviction(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + QUERY_DEFAULT_RAM_BYTES_USED);
     for (LeafCache leafCache : cache.values()) {
       leafCache.remove(singleton);
     }
@@ -421,9 +424,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       long recomputedRamBytesUsed =
             HASHTABLE_RAM_BYTES_PER_ENTRY * cache.size()
           + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * uniqueQueries.size();
-      for (Query query : mostRecentlyUsedQueries) {
-        recomputedRamBytesUsed += ramBytesUsed(query);
-      }
+      recomputedRamBytesUsed += mostRecentlyUsedQueries.size() * QUERY_DEFAULT_RAM_BYTES_USED;
       for (LeafCache leafCache : cache.values()) {
         recomputedRamBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY * leafCache.cache.size();
         for (DocIdSet set : leafCache.cache.values()) {
@@ -479,18 +480,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     } finally {
       lock.unlock();
     }
-  }
-
-  /**
-   * Return the number of bytes used by the given query. The default
-   * implementation returns {@link Accountable#ramBytesUsed()} if the query
-   * implements {@link Accountable} and <code>1024</code> otherwise.
-   */
-  protected long ramBytesUsed(Query query) {
-    if (query instanceof Accountable) {
-      return ((Accountable) query).ramBytesUsed();
-    }
-    return QUERY_DEFAULT_RAM_BYTES_USED;
   }
 
   /**
@@ -722,9 +711,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         policy.onUse(getQuery());
       }
 
-      // TODO: should it be pluggable, eg. for queries that run on doc values?
-      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
-      if (cacheHelper == null) {
+      if (in.isCacheable(context) == false) {
         // this segment is not suitable for caching
         return in.scorerSupplier(context);
       }
@@ -740,6 +727,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.scorerSupplier(context);
       }
 
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this reader has no cache helper
+        return in.scorerSupplier(context);
+      }
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -789,14 +781,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return in.isCacheable(ctx);
+    }
+
+    @Override
     public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
 
-      // TODO: should it be pluggable, eg. for queries that run on doc values?
-      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
-      if (cacheHelper == null) {
+      if (in.isCacheable(context) == false) {
         // this segment is not suitable for caching
         return in.bulkScorer(context);
       }
@@ -812,6 +807,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.bulkScorer(context);
       }
 
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this reader has no cacheHelper
+        return in.bulkScorer(context);
+      }
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);

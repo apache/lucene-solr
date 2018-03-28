@@ -1111,6 +1111,66 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     IOUtils.close(a, tempDir);
   }
 
+  /**
+   * Adds 50 random keys, that all analyze to the same thing (dog), with the same cost,
+   * and checks that they come back in surface-form order.
+   */
+  public void testTieBreakOnSurfaceForm() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
+
+        return new TokenStreamComponents(tokenizer) {
+          @Override
+          public TokenStream getTokenStream() {
+            return new CannedTokenStream(new Token[] {
+                token("dog", 1, 1)
+              });
+          }
+          @Override
+          protected void setReader(final Reader reader) {
+          }
+        };
+      }
+    };
+
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
+
+    // make 50 inputs all with the same cost of 1, random strings
+    Input[] inputs = new Input[100];
+    for (int i = 0; i < inputs.length; i++) {
+      inputs[i] = new Input(TestUtil.randomSimpleString(random()), 1);
+    }
+
+    suggester.build(new InputArrayIterator(inputs));
+
+    // Try to save/load:
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
+    Path path = tmpDir.resolve("suggester");
+
+    OutputStream os = Files.newOutputStream(path);
+    suggester.store(os);
+    os.close();
+
+    InputStream is = Files.newInputStream(path);
+    suggester.load(is);
+    is.close();
+
+    // now suggest everything, and check that stuff comes back in order
+    List<LookupResult> results = suggester.lookup("", false, 50);
+    assertEquals(50, results.size());
+    for (int i = 1; i < 50; i++) {
+      String previous = results.get(i-1).toString();
+      String current = results.get(i).toString();
+      assertTrue("surface forms out of order: previous=" + previous + ",current=" + current,
+                 current.compareTo(previous) >= 0);
+    }
+
+    IOUtils.close(a, tempDir);
+  }
+
   public void test0ByteKeys() throws Exception {
     final Analyzer a = new Analyzer() {
         @Override

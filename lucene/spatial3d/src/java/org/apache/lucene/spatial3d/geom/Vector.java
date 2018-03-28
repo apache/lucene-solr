@@ -49,6 +49,12 @@ public class Vector {
   public final double z;
 
   /**
+    * Gram-Schmidt convergence envelope is a bit smaller than we really need because we don't want the math to fail afterwards in
+    * other places.
+    */
+  private static final double MINIMUM_GRAM_SCHMIDT_ENVELOPE = MINIMUM_RESOLUTION * 0.5;
+  
+  /**
    * Construct from (U.S.) x,y,z coordinates.
    *@param x is the x value.
    *@param y is the y value.
@@ -72,20 +78,95 @@ public class Vector {
    * @param BZ is the Z value of the second
    */
   public Vector(final Vector A, final double BX, final double BY, final double BZ) {
+    // We're really looking at two vectors and computing a perpendicular one from that.
+    this(A.x, A.y, A.z, BX, BY, BZ);
+  }
+  
+  /**
+   * Construct a vector that is perpendicular to
+   * two other (non-zero) vectors.  If the vectors are parallel,
+   * IllegalArgumentException will be thrown.
+   * Produces a normalized final vector.
+   *
+   * @param AX is the X value of the first 
+   * @param AY is the Y value of the first
+   * @param AZ is the Z value of the first
+   * @param BX is the X value of the second 
+   * @param BY is the Y value of the second
+   * @param BZ is the Z value of the second
+   */
+  public Vector(final double AX, final double AY, final double AZ, final double BX, final double BY, final double BZ) {
+    // We're really looking at two vectors and computing a perpendicular one from that.
+    // We can think of this as having three points -- the origin, and two points that aren't the origin.
+    // Normally, we can compute the perpendicular vector this way:
     // x = u2v3 - u3v2
     // y = u3v1 - u1v3
     // z = u1v2 - u2v1
-    final double thisX = A.y * BZ - A.z * BY;
-    final double thisY = A.z * BX - A.x * BZ;
-    final double thisZ = A.x * BY - A.y * BX;
+    // Sometimes that produces a plane that does not contain the original three points, however, due to
+    // numerical precision issues.  Then we continue making the answer more precise using the
+    // Gram-Schmidt process: https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
+    
+    // Compute the naive perpendicular
+    final double thisX = AY * BZ - AZ * BY;
+    final double thisY = AZ * BX - AX * BZ;
+    final double thisZ = AX * BY - AY * BX;
+    
     final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
+    if (magnitude == 0.0) {
       throw new IllegalArgumentException("Degenerate/parallel vector constructed");
     }
-    final double inverseMagnitude = 1.0 / magnitude;
-    this.x = thisX * inverseMagnitude;
-    this.y = thisY * inverseMagnitude;
-    this.z = thisZ * inverseMagnitude;
+    final double inverseMagnitude = 1.0/magnitude;
+    
+    double normalizeX = thisX * inverseMagnitude;
+    double normalizeY = thisY * inverseMagnitude;
+    double normalizeZ = thisZ * inverseMagnitude;
+    // For a plane to work, the dot product between the normal vector
+    // and the points needs to be less than the minimum resolution.
+    // This is sometimes not true for points that are very close. Therefore
+    // we need to adjust
+    int i = 0;
+    while (true) {
+      final double currentDotProdA = AX * normalizeX + AY * normalizeY + AZ * normalizeZ;
+      final double currentDotProdB = BX * normalizeX + BY * normalizeY + BZ * normalizeZ;
+      if (Math.abs(currentDotProdA) < MINIMUM_GRAM_SCHMIDT_ENVELOPE && Math.abs(currentDotProdB) < MINIMUM_GRAM_SCHMIDT_ENVELOPE) {
+        break;
+      }
+      // Converge on the one that has largest dot product
+      final double currentVectorX;
+      final double currentVectorY;
+      final double currentVectorZ;
+      final double currentDotProd;
+      if (Math.abs(currentDotProdA) > Math.abs(currentDotProdB)) {
+        currentVectorX = AX;
+        currentVectorY = AY;
+        currentVectorZ = AZ;
+        currentDotProd = currentDotProdA;
+      } else {
+        currentVectorX = BX;
+        currentVectorY = BY;
+        currentVectorZ = BZ;
+        currentDotProd = currentDotProdB;
+      }
+
+      // Adjust
+      normalizeX = normalizeX - currentDotProd * currentVectorX;
+      normalizeY = normalizeY - currentDotProd * currentVectorY;
+      normalizeZ = normalizeZ - currentDotProd * currentVectorZ;
+      // Normalize
+      final double correctedMagnitude = magnitude(normalizeX, normalizeY, normalizeZ);
+      final double inverseCorrectedMagnitude = 1.0 / correctedMagnitude;
+      normalizeX = normalizeX * inverseCorrectedMagnitude;
+      normalizeY = normalizeY * inverseCorrectedMagnitude;
+      normalizeZ = normalizeZ * inverseCorrectedMagnitude;
+      //This is  probably not needed as the method seems to converge
+      //quite quickly. But it is safer to have a way out.
+      if (i++ > 10) {
+        throw new IllegalArgumentException("Plane could not be constructed! Could not find a normal vector.");
+      }
+    }
+    this.x = normalizeX;
+    this.y = normalizeY;
+    this.z = normalizeZ;
   }
 
   /**
@@ -98,20 +179,7 @@ public class Vector {
    * @param B is the second
    */
   public Vector(final Vector A, final Vector B) {
-    // x = u2v3 - u3v2
-    // y = u3v1 - u1v3
-    // z = u1v2 - u2v1
-    final double thisX = A.y * B.z - A.z * B.y;
-    final double thisY = A.z * B.x - A.x * B.z;
-    final double thisZ = A.x * B.y - A.y * B.x;
-    final double magnitude = magnitude(thisX, thisY, thisZ);
-    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
-      throw new IllegalArgumentException("Degenerate/parallel vector constructed");
-    }
-    final double inverseMagnitude = 1.0 / magnitude;
-    this.x = thisX * inverseMagnitude;
-    this.y = thisY * inverseMagnitude;
-    this.z = thisZ * inverseMagnitude;
+    this(A, B.x, B.y, B.z);
   }
 
   /** Compute a magnitude of an x,y,z value.
@@ -133,6 +201,79 @@ public class Vector {
       return null;
     double normFactor = 1.0 / denom;
     return new Vector(x * normFactor, y * normFactor, z * normFactor);
+  }
+
+  /**
+    * Evaluate the cross product of two vectors against a point.
+    * If the dot product of the resultant vector resolves to "zero", then
+    * return true.
+    * @param A is the first vector to use for the cross product.
+    * @param B is the second vector to use for the cross product.
+    * @param point is the point to evaluate.
+    * @return true if we get a zero dot product.
+    */
+  public static boolean crossProductEvaluateIsZero(final Vector A, final Vector B, final Vector point) {
+    // Include Gram-Schmidt in-line so we avoid creating objects unnecessarily
+    // Compute the naive perpendicular
+    final double thisX = A.y * B.z - A.z * B.y;
+    final double thisY = A.z * B.x - A.x * B.z;
+    final double thisZ = A.x * B.y - A.y * B.x;
+    
+    final double magnitude = magnitude(thisX, thisY, thisZ);
+    if (magnitude == 0.0) {
+      return true;
+    }
+    
+    final double inverseMagnitude = 1.0/magnitude;
+    
+    double normalizeX = thisX * inverseMagnitude;
+    double normalizeY = thisY * inverseMagnitude;
+    double normalizeZ = thisZ * inverseMagnitude;
+    // For a plane to work, the dot product between the normal vector
+    // and the points needs to be less than the minimum resolution.
+    // This is sometimes not true for points that are very close. Therefore
+    // we need to adjust
+    int i = 0;
+    while (true) {
+      final double currentDotProdA = A.x * normalizeX + A.y * normalizeY + A.z * normalizeZ;
+      final double currentDotProdB = B.x * normalizeX + B.y * normalizeY + B.z * normalizeZ;
+      if (Math.abs(currentDotProdA) < MINIMUM_GRAM_SCHMIDT_ENVELOPE && Math.abs(currentDotProdB) < MINIMUM_GRAM_SCHMIDT_ENVELOPE) {
+        break;
+      }
+      // Converge on the one that has largest dot product
+      final double currentVectorX;
+      final double currentVectorY;
+      final double currentVectorZ;
+      final double currentDotProd;
+      if (Math.abs(currentDotProdA) > Math.abs(currentDotProdB)) {
+        currentVectorX = A.x;
+        currentVectorY = A.y;
+        currentVectorZ = A.z;
+        currentDotProd = currentDotProdA;
+      } else {
+        currentVectorX = B.x;
+        currentVectorY = B.y;
+        currentVectorZ = B.z;
+        currentDotProd = currentDotProdB;
+      }
+
+      // Adjust
+      normalizeX = normalizeX - currentDotProd * currentVectorX;
+      normalizeY = normalizeY - currentDotProd * currentVectorY;
+      normalizeZ = normalizeZ - currentDotProd * currentVectorZ;
+      // Normalize
+      final double correctedMagnitude = magnitude(normalizeX, normalizeY, normalizeZ);
+      final double inverseCorrectedMagnitude = 1.0 / correctedMagnitude;
+      normalizeX = normalizeX * inverseCorrectedMagnitude;
+      normalizeY = normalizeY * inverseCorrectedMagnitude;
+      normalizeZ = normalizeZ * inverseCorrectedMagnitude;
+      //This is  probably not needed as the method seems to converge
+      //quite quickly. But it is safer to have a way out.
+      if (i++ > 10) {
+        throw new IllegalArgumentException("Plane could not be constructed! Could not find a normal vector.");
+      }
+    }
+    return Math.abs(normalizeX * point.x + normalizeY * point.y + normalizeZ * point.z) < MINIMUM_RESOLUTION;
   }
 
   /**
@@ -368,6 +509,32 @@ public class Vector {
    * @return true if they are numerically identical.
    */
   public boolean isNumericallyIdentical(final double otherX, final double otherY, final double otherZ) {
+    final double deltaX = x - otherX;
+    final double deltaY = y - otherY;
+    final double deltaZ = z - otherZ;
+    return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ < MINIMUM_RESOLUTION_SQUARED;
+  }
+
+  /**
+   * Compute whether two vectors are numerically identical.
+   * @param other is the other vector.
+   * @return true if they are numerically identical.
+   */
+  public boolean isNumericallyIdentical(final Vector other) {
+    final double deltaX = x - other.x;
+    final double deltaY = y - other.y;
+    final double deltaZ = z - other.z;
+    return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ < MINIMUM_RESOLUTION_SQUARED;
+  }
+
+  /**
+   * Compute whether two vectors are parallel.
+   * @param otherX is the other vector X.
+   * @param otherY is the other vector Y.
+   * @param otherZ is the other vector Z.
+   * @return true if they are parallel.
+   */
+  public boolean isParallel(final double otherX, final double otherY, final double otherZ) {
     final double thisX = y * otherZ - z * otherY;
     final double thisY = z * otherX - x * otherZ;
     final double thisZ = x * otherY - y * otherX;
@@ -377,15 +544,15 @@ public class Vector {
   /**
    * Compute whether two vectors are numerically identical.
    * @param other is the other vector.
-   * @return true if they are numerically identical.
+   * @return true if they are parallel.
    */
-  public boolean isNumericallyIdentical(final Vector other) {
+  public boolean isParallel(final Vector other) {
     final double thisX = y * other.z - z * other.y;
     final double thisY = z * other.x - x * other.z;
     final double thisZ = x * other.y - y * other.x;
     return thisX * thisX + thisY * thisY + thisZ * thisZ < MINIMUM_RESOLUTION_SQUARED;
   }
-  
+
   /** Compute the desired magnitude of a unit vector projected to a given
    * planet model.
    * @param planetModel is the planet model.

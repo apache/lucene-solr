@@ -16,7 +16,9 @@
  */
 package org.apache.solr.security.hadoop;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
@@ -167,8 +169,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
         .withKerberosDelegationToken(token)
         .withResponseParser(client.getParser())
         .build();
-    else delegationTokenClient = new CloudSolrClient.Builder()
-        .withZkHost((cluster.getZkServer().getZkAddress()))
+    else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
             .withHttpSolrClientBuilder(
@@ -268,7 +269,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-14044")
   public void testDelegationTokenCancelFail() throws Exception {
     // cancel a bogus token
     cancelDelegationToken("BOGUS", ErrorCode.NOT_FOUND.code, primarySolrClient);

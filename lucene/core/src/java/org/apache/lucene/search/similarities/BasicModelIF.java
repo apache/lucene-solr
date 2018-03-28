@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
@@ -29,10 +31,30 @@ public class BasicModelIF extends BasicModel {
   public BasicModelIF() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn, double aeTimes1pTfn) {
     long N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
-    return tfn * (float)(log2(1 + (N + 1) / (F + 0.5)));
+    double A = log2(1 + (N + 1) / (F + 0.5));
+    
+    // basic model IF should return A * tfn
+    // which we rewrite to A * (1 + tfn) - A
+    // so that it can be combined with the after effect while still guaranteeing
+    // that the result is non-decreasing with tfn
+    
+    return A * aeTimes1pTfn * (1 - 1 / (1 + tfn));
+  }
+
+  @Override
+    public Explanation explain(BasicStats stats, double tfn, double aeTimes1pTfn) {
+    return Explanation.match(
+        (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
+        getClass().getSimpleName() + ", computed as " +
+            "tfn * log2(1 + (N + 1) / (F + 0.5)) from:",
+        Explanation.match((float) tfn, "tfn, normalized term frequency"),
+        Explanation.match(stats.getNumberOfDocuments(),
+            "N, total number of documents with field"),
+        Explanation.match(stats.getTotalTermFreq(),
+            "F, total number of occurrences of term across all documents"));
   }
 
   @Override

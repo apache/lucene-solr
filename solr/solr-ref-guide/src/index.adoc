@@ -1,7 +1,5 @@
 = Apache Solr Reference Guide
-:page-shortname: index
-:page-permalink: index.html
-:page-children: about-this-guide, solr-tutorial, getting-started, solr-control-script-reference, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, the-well-configured-solr-instance, managing-solr, solrcloud, legacy-scaling-and-distribution, client-apis, major-changes-from-solr-5-to-solr-6, further-assistance, solr-glossary, errata, how-to-contribute
+:page-children: about-this-guide, getting-started, deployment-and-operations, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, solrcloud, legacy-scaling-and-distribution, the-well-configured-solr-instance, monitoring-solr, securing-solr, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -28,8 +26,6 @@ This Guide contains the following main sections:
 
 *<<getting-started.adoc#getting-started,Getting Started>>*: This section guides you through the installation and setup of Solr.
 
-*<<solr-control-script-reference#solr-control-script-reference,Solr Control Script Reference>>*: This section provides information about all of the options available to the `bin/solr` / `bin\solr.cmd` scripts, which can start and stop Solr, configure authentication, and create or remove collections and cores.
-
 *<<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>*: This section introduces the Solr Web-based user interface. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
 
 *<<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes its data for indexing. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
@@ -42,9 +38,13 @@ This Guide contains the following main sections:
 
 *<<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>*: This section discusses performance tuning for Solr. It begins with an overview of the `solrconfig.xml` file, then tells you how to configure cores with `solr.xml`, how to configure the Lucene index writer, and more.
 
-*<<managing-solr.adoc#managing-solr,Managing Solr>>*: This section discusses important topics for running and monitoring Solr. Other topics include how to back up a Solr instance, and how to run Solr with Java Management Extensions (JMX).
+*<<monitoring-solr.adoc#monitoring-solr,Monitoring Solr>>*: Administration and monitoring can be performed using the web-based administration console, through the command line interface, or using REST APIs.
+
+*<<deployment-and-operations.adoc#deployment-and-operations,Deployment and Operations>>*: An important aspect of Solr is that all operations and deployment can be done online, with minimal or no impact to running applications. This includes minor upgrades and provisioning and removing nodes, backing up and restoring indexes and editing configurations
 
 *<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes the newest and most exciting of Solr's new features, SolrCloud, which provides comprehensive distributed capabilities.
+
+*<<securing-solr.adoc#securing-solr,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
 
 *<<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>*: This section tells you how to grow a Solr distribution by dividing a large index into sections called shards, which are then distributed across multiple servers, or by replicating a single index across multiple services.
 

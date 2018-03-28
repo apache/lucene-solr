@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
-
 /**
  * A single-valued analytics value.
  * <p>
@@ -33,6 +32,7 @@ public interface AnalyticsValue extends AnalyticsValueStream {
    * @return whether the current value exists
    */
   boolean exists();
+  
   /**
    * Get the object representation of the current value.
    * 
@@ -50,6 +50,10 @@ public interface AnalyticsValue extends AnalyticsValueStream {
       if (exists()) {
         cons.accept(value);
       }
+    }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
     }
   }
 }

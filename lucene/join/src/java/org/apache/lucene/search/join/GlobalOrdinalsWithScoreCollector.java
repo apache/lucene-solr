@@ -96,8 +96,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE;
   }
 
   final class OrdinalMapCollector implements LeafCollector {
@@ -113,10 +113,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(docTermOrds.ordValue());
         collectedOrds.set(globalOrd);
         float existingScore = scores.getScore(globalOrd);
@@ -145,10 +142,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         int segmentOrd = docTermOrds.ordValue();
         collectedOrds.set(segmentOrd);
         float existingScore = scores.getScore(segmentOrd);
@@ -258,10 +252,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > docTermOrds.docID()) {
-              docTermOrds.advance(doc);
-            }
-            if (doc == docTermOrds.docID()) {
+            if (docTermOrds.advanceExact(doc)) {
               final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(docTermOrds.ordValue());
               collectedOrds.set(globalOrd);
               occurrences.increment(globalOrd);
@@ -276,10 +267,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
           @Override
           public void collect(int doc) throws IOException {
-            if (doc > docTermOrds.docID()) {
-              docTermOrds.advance(doc);
-            }
-            if (doc == docTermOrds.docID()) {
+            if (docTermOrds.advanceExact(doc)) {
               int segmentOrd = docTermOrds.ordValue();
               collectedOrds.set(segmentOrd);
               occurrences.increment(segmentOrd);
@@ -304,8 +292,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
 
     @Override
-    public boolean needsScores() {
-      return false;
+    public org.apache.lucene.search.ScoreMode scoreMode() {
+      return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

@@ -59,8 +59,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -649,11 +647,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false);
-
-    // We sorted postings by weight during indexing, so we
-    // only retrieve the first num hits now:
-    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
     List<LookupResult> results = null;
     SearcherManager mgr;
     IndexSearcher searcher;
@@ -663,7 +657,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     try {
       //System.out.println("got searcher=" + searcher);
-      searcher.search(finalQuery, c2);
+      searcher.search(finalQuery, c);
 
       TopFieldDocs hits = c.topDocs();
 

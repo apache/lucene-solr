@@ -48,6 +48,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
  * @lucene.experimental
+ * @since 3.5.0
  */
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private static final String PARAM_DICTIONARY    = "dictionary";

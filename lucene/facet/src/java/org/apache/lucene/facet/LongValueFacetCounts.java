@@ -23,11 +23,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.Facets;
+import com.carrotsearch.hppc.LongIntScatterMap;
+import com.carrotsearch.hppc.cursors.LongIntCursor;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,6 +37,7 @@ import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
+
 
 /** {@link Facets} implementation that computes counts for
  *  all uniqute long values, more efficiently counting small values (0-1023) using an int array,
@@ -53,7 +52,7 @@ public class LongValueFacetCounts extends Facets {
   private final int[] counts = new int[1024];
 
   /** Used for all values that are >= 1K. */
-  private final HashTable hashCounts = new HashTable();
+  private final LongIntScatterMap hashCounts = new LongIntScatterMap();
 
   private final String field;
 
@@ -68,14 +67,14 @@ public class LongValueFacetCounts extends Facets {
   }
 
   /** Create {@code LongValueFacetCounts}, using the provided
-   *  {@link org.apache.lucene.queries.function.ValueSource}.  If hits is
+   *  {@link LongValuesSource}.  If hits is
    *  null then all facets are counted. */
   public LongValueFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits) throws IOException {
     this(field, valueSource, hits, false);
   }
 
   /** Create {@code LongValueFacetCounts}, using the provided
-   *  {@link org.apache.lucene.queries.function.ValueSource}.
+   *  {@link LongValuesSource}.
    *  random access (implement {@link org.apache.lucene.search.DocIdSet#bits}). */
   public LongValueFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits,
                               boolean multiValued) throws IOException {
@@ -250,14 +249,11 @@ public class LongValueFacetCounts extends Facets {
   }
 
   private void increment(long value) {
-    /*
     if (value >= 0 && value < counts.length) {
       counts[(int) value]++;
     } else {
-      hashCounts.add(value, 1);
+      hashCounts.addTo(value, 1);
     }
-    */
-    hashCounts.add(value, 1);
   }
 
   @Override
@@ -279,7 +275,7 @@ public class LongValueFacetCounts extends Facets {
 
   /** Returns the specified top number of facets, sorted by count. */
   public FacetResult getTopChildrenSortByCount(int topN) {
-    PriorityQueue<Entry> pq = new PriorityQueue<Entry>(Math.min(topN, counts.length + hashCounts.size)) {
+    PriorityQueue<Entry> pq = new PriorityQueue<Entry>(Math.min(topN, counts.length + hashCounts.size())) {
                         @Override
         protected boolean lessThan(Entry a, Entry b) {
           // sort by count descending, breaking ties by value ascending:
@@ -301,15 +297,15 @@ public class LongValueFacetCounts extends Facets {
       }
     }
 
-    if (hashCounts.size != 0) {
-      childCount += hashCounts.size;
-      for (int i = 0; i < hashCounts.values.length; i++) {
-        int count = hashCounts.counts[i];
+    if (hashCounts.size() != 0) {
+      childCount += hashCounts.size();
+      for (LongIntCursor c : hashCounts) {
+        int count = c.value;
         if (count != 0) {
           if (e == null) {
             e = new Entry();
           }
-          e.value = hashCounts.values[i];
+          e.value = c.key;
           e.count = count;
           e = pq.insertWithOverflow(e);
         }
@@ -331,56 +327,52 @@ public class LongValueFacetCounts extends Facets {
     List<LabelAndValue> labelValues = new ArrayList<>();
 
     // compact & sort hash table's arrays by value
+    int[] hashCounts = new int[this.hashCounts.size()];
+    long[] hashValues = new long[this.hashCounts.size()];
+    
     int upto = 0;
-    for (int i = 0; i < hashCounts.values.length; i++) {
-      if (hashCounts.counts[i] != 0) {
-        hashCounts.counts[upto] = hashCounts.counts[i];
-        hashCounts.values[upto] = hashCounts.values[i];
+    for (LongIntCursor c : this.hashCounts) {
+      if (c.value != 0) {
+        hashCounts[upto] = c.value;
+        hashValues[upto] = c.key;
         upto++;
       }
     }
 
-    // zero fill all remaining counts so if we are called again we don't mistake these as real values
-    Arrays.fill(hashCounts.counts, upto, hashCounts.counts.length, 0);
-
-    assert upto == hashCounts.size : "upto=" + upto + " hashCounts.size=" + hashCounts.size;
+    assert upto == this.hashCounts.size() : "upto=" + upto + " hashCounts.size=" + this.hashCounts.size();
 
     new InPlaceMergeSorter() {
       @Override
       public int compare(int i, int j) {
-        return Long.compare(hashCounts.values[i], hashCounts.values[j]);
+        return Long.compare(hashValues[i], hashValues[j]);
       }
 
       @Override
       public void swap(int i, int j) {
-        int x = hashCounts.counts[i];
-        hashCounts.counts[i] = hashCounts.counts[j];
-        hashCounts.counts[j] = x;
+        int x = hashCounts[i];
+        hashCounts[i] = hashCounts[j];
+        hashCounts[j] = x;
 
-        long y = hashCounts.values[j];
-        hashCounts.values[j] = hashCounts.values[i];
-        hashCounts.values[i] = y;
+        long y = hashValues[j];
+        hashValues[j] = hashValues[i];
+        hashValues[i] = y;
       }
     }.sort(0, upto);
 
     boolean countsAdded = false;
     for (int i = 0; i < upto; i++) {
-      /*
-      if (countsAdded == false && hashCounts.values[i] >= counts.length) {
+      if (countsAdded == false && hashValues[i] >= counts.length) {
         countsAdded = true;
         appendCounts(labelValues);
       }
-      */
 
-      labelValues.add(new LabelAndValue(Long.toString(hashCounts.values[i]),
-                                        hashCounts.counts[i]));
+      labelValues.add(new LabelAndValue(Long.toString(hashValues[i]),
+                                        hashCounts[i]));
     }
 
-    /*
     if (countsAdded == false) {
       appendCounts(labelValues);
     }
-    */
 
     return new FacetResult(field, new String[0], totCount, labelValues.toArray(new LabelAndValue[0]), labelValues.size());
   }
@@ -420,80 +412,18 @@ public class LongValueFacetCounts extends Facets {
       }
     }
 
-    if (hashCounts.size != 0) {
-      for (int i = 0; i < hashCounts.values.length; i++) {
-        if (hashCounts.counts[i] != 0) {
+    if (hashCounts.size() != 0) {
+      for (LongIntCursor c : hashCounts) {
+        if (c.value != 0) {
           b.append("  ");
-          b.append(hashCounts.values[i]);
+          b.append(c.key);
           b.append(" -> count=");
-          b.append(hashCounts.counts[i]);
+          b.append(c.value);
           b.append('\n');
         }
       }
     }
 
     return b.toString();
-  }
-
-  /** Native typed hash table. */
-  static class HashTable {
-
-    static final float LOAD_FACTOR = 0.7f;
-
-    long[] values; // values identifying a value
-    int[] counts;
-    int mask;
-    int size;
-    int threshold;
-
-    HashTable() {
-      int capacity = 64; // must be a power of 2
-      values = new long[capacity];
-      counts = new int[capacity];
-      mask = capacity - 1;
-      size = 0;
-      threshold = (int) (capacity * LOAD_FACTOR);
-    }
-
-    private int hash(long v) {
-      int h = (int) (v ^ (v >>> 32));
-      h = (31 * h) & mask; // * 31 to try to use the whole table, even if values are dense
-      return h;
-    }
-
-    void add(long value, int inc) {
-      if (size >= threshold) {
-        rehash();
-      }
-      final int h = hash(value);
-      for (int slot = h;; slot = (slot + 1) & mask) {
-        if (counts[slot] == 0) {
-          values[slot] = value;
-          ++size;
-        } else if (values[slot] != value) {
-          continue;
-        }
-        counts[slot] += inc;
-        break;
-      }
-    }
-
-    private void rehash() {
-      final long[] oldValues = values;
-      final int[] oldCounts = counts;
-
-      final int newCapacity = values.length * 2;
-      values = new long[newCapacity];
-      counts = new int[newCapacity];
-      mask = newCapacity - 1;
-      threshold = (int) (LOAD_FACTOR * newCapacity);
-      size = 0;
-
-      for (int i = 0; i < oldValues.length; ++i) {
-        if (oldCounts[i] > 0) {
-          add(oldValues[i], oldCounts[i]);
-        }
-      }
-    }
   }
 }

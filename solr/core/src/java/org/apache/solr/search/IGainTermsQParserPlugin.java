@@ -125,12 +125,8 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     public void collect(int doc) throws IOException {
       super.collect(doc);
       ++count;
-      int valuesDocID = leafOutcomeValue.docID();
-      if (valuesDocID < doc) {
-        valuesDocID = leafOutcomeValue.advance(doc);
-      }
       int value;
-      if (valuesDocID == doc) {
+      if (leafOutcomeValue.advanceExact(doc)) {
         value = (int) leafOutcomeValue.longValue();
       } else {
         value = 0;

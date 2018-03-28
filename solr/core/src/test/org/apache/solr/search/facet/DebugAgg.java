@@ -109,6 +109,11 @@ public class DebugAgg extends AggValueSource {
     }
 
     @Override
+    protected void resetIterators() throws IOException {
+      sub.resetIterators();
+    }
+
+    @Override
     public void resize(Resizer resizer) {
       resizes.addAndGet(1);
       this.numSlots = resizer.getNewSize();

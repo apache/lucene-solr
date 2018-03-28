@@ -190,16 +190,20 @@ public class RequestUtil {
     }
 
     // implement compat for existing components...
+    JsonQueryConverter jsonQueryConverter = new JsonQueryConverter();
     if (json != null && !isShard) {
       for (Map.Entry<String,Object> entry : json.entrySet()) {
         String key = entry.getKey();
         String out = null;
+        boolean isQuery = false;
         boolean arr = false;
         if ("query".equals(key)) {
           out = "q";
+          isQuery = true;
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;
+          isQuery = true;
         } else if ("fields".equals(key)) {
           out = "fl";
           arr = true;
@@ -230,14 +234,14 @@ public class RequestUtil {
           if (lst != null) {
             for (int i = 0; i < jsonSize; i++) {
               Object v = lst.get(i);
-              newval[existingSize + i] = v.toString();
+              newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, newMap) : v.toString();
             }
           } else {
-            newval[newval.length-1] = val.toString();
+            newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString();
           }
           newMap.put(out, newval);
         } else {
-          newMap.put(out, new String[]{val.toString()});
+          newMap.put(out, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString()});
         }
 
       }

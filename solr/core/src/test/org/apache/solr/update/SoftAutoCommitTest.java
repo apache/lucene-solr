@@ -31,7 +31,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @Slow
-public class SoftAutoCommitTest extends AbstractSolrTestCase {
+public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -76,6 +77,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
 
     updater = (DirectUpdateHandler2) core.getUpdateHandler();
+    updater.setCommitWithinSoftCommit(true); // foce to default, let tests change as needed
     monitor = new MockEventListener();
 
     core.registerNewSearcherListener(monitor);
@@ -152,12 +154,6 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
                minHardCommitNanos + "ns",
                minHardCommitNanos < firstHardNanos);
 
-    final Long firstSearcherNanos = monitor.searcher.poll(5000, MILLISECONDS);
-    assertNotNull("didn't get a single new searcher", firstSearcherNanos);
-    for (int i = 0; i <= softCommitMaxDocs; i++) {
-      assertQ("should find one", req("id:"+(8000 + i)) ,"//result[@numFound=1]" );
-    }
-
     // wait a bit, w/o other action we shouldn't see any new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
                monitor.hard.poll(1000, MILLISECONDS));
@@ -169,11 +165,24 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testSoftAndHardCommitMaxTimeMixedAdds() throws Exception {
+   doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.NONE);
+  }
+  public void testSoftCommitWithinAndHardCommitMaxTimeMixedAdds() throws Exception {
+    doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.SOFT);
+  }
+  public void testHardCommitWithinAndSoftCommitMaxTimeMixedAdds() throws Exception {
+    doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.HARD);
+  }
+  private void doTestSoftAndHardCommitMaxTimeMixedAdds(final CommitWithinType commitWithinType)
+    throws Exception {
+    
     final int softCommitWaitMillis = 500;
     final int hardCommitWaitMillis = 1200;
-
+    final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
+    
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
+    updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
     
     // wait out any leaked commits
     monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
@@ -182,16 +191,16 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     int startingHardCommits = hardTracker.getCommitCount();
     int startingSoftCommits = softTracker.getCommitCount();
     
-    softTracker.setTimeUpperBound(softCommitWaitMillis);
+    softTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.SOFT) ? -1 : softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
-    hardTracker.setTimeUpperBound(hardCommitWaitMillis);
+    hardTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.HARD) ? -1 : hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
     // simplify whats going on by only having soft auto commits trigger new searchers
     hardTracker.setOpenSearcher(false);
 
     // Add a single document
     long add529 = System.nanoTime();
-    assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
+    assertU(adoc(commitWithin, "id", "529", "subject", "the doc we care about in this test"));
 
     monitor.assertSaneOffers();
 
@@ -211,7 +220,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // toss in another doc, shouldn't affect first hard commit time we poll
-    assertU(adoc("id", "530", "subject", "just for noise/activity"));
+    assertU(adoc(commitWithin, "id", "530", "subject", "just for noise/activity"));
 
 
     monitor.assertSaneOffers();
@@ -286,55 +295,48 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testSoftAndHardCommitMaxTimeDelete() throws Exception {
+    doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.NONE);
+  }
+  public void testSoftCommitWithinAndHardCommitMaxTimeDelete() throws Exception {
+    doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.SOFT);
+  }
+  public void testHardCommitWithinAndSoftCommitMaxTimeDelete() throws Exception {
+    doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.HARD);
+  }
+  private void doTestSoftAndHardCommitMaxTimeDelete(final CommitWithinType commitWithinType)
+    throws Exception {
     
     final int softCommitWaitMillis = 500;
     final int hardCommitWaitMillis = 1200;
+    final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
+    updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
     
     int startingHardCommits = hardTracker.getCommitCount();
     int startingSoftCommits = softTracker.getCommitCount();
     
-    softTracker.setTimeUpperBound(softCommitWaitMillis);
+    softTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.SOFT) ? -1 : softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
-    hardTracker.setTimeUpperBound(hardCommitWaitMillis);
+    hardTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.HARD) ? -1 : hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
     // we don't want to overlap soft and hard opening searchers - this now blocks commits and we
     // are looking for prompt timings
     hardTracker.setOpenSearcher(false);
     
     // add a doc and force a commit
-    assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
+    assertU(adoc(commitWithin, "id", "529", "subject", "the doc we care about in this test"));
     assertU(commit());
 
     Long soft529;
     Long hard529;
 
-/*** an explicit commit can (and should) clear pending auto-commits
-    long postAdd529 = System.currentTimeMillis();
-
-    // wait for first hard/soft commit
-    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
-    assertNotNull("soft529 wasn't fast enough", soft529);
-    Long manCommit = monitor.hard.poll(0, MILLISECONDS);
-
-    assertNotNull("manCommit wasn't fast enough", manCommit);
-    assertTrue("forced manCommit didn't happen when it should have: " + 
-        manCommit + " !<= " + postAdd529, 
-        manCommit <= postAdd529);
-    
-    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
-    assertNotNull("hard529 wasn't fast enough", hard529);
-
-    monitor.assertSaneOffers();
- ***/
-
     monitor.clear();
 
     // Delete the document
     long del529 = System.nanoTime();
-    assertU( delI("529") );
+    assertU( delI("529", "commitWithin", ""+commitWithin));
 
     monitor.assertSaneOffers();
 
@@ -349,7 +351,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // toss in another doc, shouldn't affect first hard commit time we poll
-    assertU(adoc("id", "550", "subject", "just for noise/activity"));
+    assertU(adoc(commitWithin, "id", "550", "subject", "just for noise/activity"));
 
     // wait for the hard commit
     hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
@@ -401,16 +403,28 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testSoftAndHardCommitMaxTimeRapidAdds() throws Exception {
+    doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.NONE);
+  }
+  public void testSoftCommitWithinAndHardCommitMaxTimeRapidAdds() throws Exception {
+    doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.SOFT);
+  }
+  public void testHardCommitWithinAndSoftCommitMaxTimeRapidAdds() throws Exception {
+    doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.HARD);
+  }
+  public void doTestSoftAndHardCommitMaxTimeRapidAdds(final CommitWithinType commitWithinType)
+    throws Exception {
  
     final int softCommitWaitMillis = 500;
     final int hardCommitWaitMillis = 1200;
+    final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
+    updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
     
-    softTracker.setTimeUpperBound(softCommitWaitMillis);
+    softTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.SOFT) ? -1 : softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
-    hardTracker.setTimeUpperBound(hardCommitWaitMillis);
+    hardTracker.setTimeUpperBound(commitWithinType.equals(CommitWithinType.HARD) ? -1 : hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
     // we don't want to overlap soft and hard opening searchers - this now blocks commits and we
     // are looking for prompt timings
@@ -420,7 +434,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
     final long preFirstNanos = System.nanoTime();
     for( int i=0;i<5; i++ ) {
-      assertU(adoc("id", ""+500 + i, "subject", "five fast docs"));
+      assertU(adoc(commitWithin, "id", ""+500 + i, "subject", "five fast docs"));
     }
     final long postLastNanos = System.nanoTime();
     
@@ -495,6 +509,35 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
       count++;
       commitNanos = queue.poll(commitWaitMillis * 3, MILLISECONDS);
     }
+  }
+
+  /** enum for indicating if a test should use commitWithin, and if so what type: hard or soft */
+  private static enum CommitWithinType {
+    NONE {
+      @Override public int useValue(final int softCommitWaitMillis, final int hardCommitWaitMillis) {
+        return -1;
+      }
+    },
+    SOFT {
+      @Override public int useValue(final int softCommitWaitMillis, final int hardCommitWaitMillis) {
+        return softCommitWaitMillis;
+      }
+    },
+    HARD {
+      @Override public int useValue(final int softCommitWaitMillis, final int hardCommitWaitMillis) {
+        return hardCommitWaitMillis;
+      }
+    };
+    public abstract int useValue(final int softCommitWaitMillis, final int hardCommitWaitMillis);
+  }
+
+  public String delI(String id, String... args) {
+    return TestHarness.deleteById(id, args);
+  }
+
+  public String adoc(int commitWithin, String... fieldsAndValues) {
+    XmlDoc d = doc(fieldsAndValues);
+    return add(d, "commitWithin", String.valueOf(commitWithin));
   }
 }
 

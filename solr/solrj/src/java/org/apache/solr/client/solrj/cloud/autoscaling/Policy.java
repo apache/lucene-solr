@@ -18,11 +18,11 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,17 +35,23 @@ import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 /*The class that reads, parses and applies policies specified in
@@ -58,58 +64,112 @@ import static java.util.stream.Collectors.toList;
  *
  */
 public class Policy implements MapWriter {
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String POLICY = "policy";
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
+  public static final String POLICIES = "policies";
   public static final String CLUSTER_POLICY = "cluster-policy";
-  public static final String CLUSTER_PREFERENCE = "cluster-preferences";
+  public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
-  final Map<String, List<Clause>> policies = new HashMap<>();
+  public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
+      Arrays.asList(
+          new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
+          new Preference((Map<String, Object>) Utils.fromJSONString("{maximize : freedisk}"))));
+  final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
-  final List<String> params;
+  final List<Pair<String, Suggestion.ConditionType>> params;
+  final List<String> perReplicaAttributes;
 
+  public Policy() {
+    this(Collections.emptyMap());
+  }
 
   public Policy(Map<String, Object> jsonMap) {
-
-    clusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCE, emptyList())).stream()
-        .map(Preference::new)
+    int[] idx = new int[1];
+    List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
+        .map(m -> new Preference(m, idx[0]++))
         .collect(toList());
-    for (int i = 0; i < clusterPreferences.size() - 1; i++) {
-      Preference preference = clusterPreferences.get(i);
-      preference.next = clusterPreferences.get(i + 1);
+    for (int i = 0; i < initialClusterPreferences.size() - 1; i++) {
+      Preference preference = initialClusterPreferences.get(i);
+      preference.next = initialClusterPreferences.get(i + 1);
     }
-    if (clusterPreferences.isEmpty()) {
-      clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
+    if (initialClusterPreferences.isEmpty()) {
+      initialClusterPreferences.addAll(DEFAULT_PREFERENCES);
     }
-    SortedSet<String> paramsOfInterest = new TreeSet<>();
-    for (Preference preference : clusterPreferences) {
-      if (paramsOfInterest.contains(preference.name.name())) {
-        throw new RuntimeException(preference.name + " is repeated");
-      }
-      paramsOfInterest.add(preference.name.toString());
-    }
-    this.params = new ArrayList<>(paramsOfInterest);
-
+    this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
+    final SortedSet<String> paramsOfInterest = new TreeSet<>();
+    paramsOfInterest.add(ImplicitSnitch.DISK);//always get freedisk anyway.
+    paramsOfInterest.add(ImplicitSnitch.CORES);//always get cores anyway.
+    clusterPreferences.forEach(preference -> paramsOfInterest.add(preference.name.toString()));
+    List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
         .filter(clause -> {
-          clause.addTags(params);
+          clause.addTags(newParams);
           return true;
         })
-        .collect(Collectors.toList());
+        .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-    ((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault("policies", emptyMap())).forEach((s, l1) ->
-        this.policies.put(s, l1.stream()
-            .map(Clause::new)
-            .filter(clause -> {
-              if (!clause.isPerCollectiontag())
-                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
-              clause.addTags(params);
-              return true;
-            })
-            .sorted()
-            .collect(toList())));
+    this.policies = Collections.unmodifiableMap(
+        policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
+    this.params = Collections.unmodifiableList(newParams.stream()
+        .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+        .collect(toList()));
+    perReplicaAttributes = readPerReplicaAttrs();
+  }
+
+  private List<String> readPerReplicaAttrs() {
+    return this.params.stream()
+        .map(s -> Suggestion.tagVsPerReplicaVal.get(s.first()))
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences) {
+    this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
+    this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
+    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
+    this.params = Collections.unmodifiableList(
+        buildParams(this.clusterPreferences, this.clusterPolicy, this.policies).stream()
+            .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+            .collect(toList())
+    );
+    perReplicaAttributes = readPerReplicaAttrs();
+  }
+
+  private List<String> buildParams(List<Preference> preferences, List<Clause> policy, Map<String, List<Clause>> policies) {
+    final SortedSet<String> paramsOfInterest = new TreeSet<>();
+    preferences.forEach(p -> {
+      if (paramsOfInterest.contains(p.name.name())) {
+        throw new RuntimeException(p.name + " is repeated");
+      }
+      paramsOfInterest.add(p.name.toString());
+    });
+    List<String> newParams = new ArrayList<>(paramsOfInterest);
+    policy.forEach(c -> {
+      c.addTags(newParams);
+    });
+    policies.values().forEach(clauses -> clauses.forEach(c -> c.addTags(newParams)));
+    return newParams;
+  }
+
+  public Policy withPolicies(Map<String, List<Clause>> policies) {
+    return new Policy(policies, clusterPolicy, clusterPreferences);
+  }
+
+  public Policy withClusterPreferences(List<Preference> clusterPreferences) {
+    return new Policy(policies, clusterPolicy, clusterPreferences);
+  }
+
+  public Policy withClusterPolicy(List<Clause> clusterPolicy) {
+    return new Policy(policies, clusterPolicy, clusterPreferences);
+  }
+
+  public Policy withParams(List<String> params) {
+    return new Policy(policies, clusterPolicy, clusterPreferences);
   }
 
   public List<Clause> getClusterPolicy() {
@@ -123,18 +183,37 @@ public class Policy implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (!policies.isEmpty()) {
-      ew.put("policies", (MapWriter) ew1 -> {
+      ew.put(POLICIES, (MapWriter) ew1 -> {
         for (Map.Entry<String, List<Clause>> e : policies.entrySet()) {
           ew1.put(e.getKey(), e.getValue());
         }
       });
     }
     if (!clusterPreferences.isEmpty()) {
-      ew.put("preferences", (IteratorWriter) iw -> {
+      ew.put(CLUSTER_PREFERENCES, (IteratorWriter) iw -> {
         for (Preference p : clusterPreferences) iw.add(p);
       });
     }
+    if (!clusterPolicy.isEmpty()) {
+      ew.put(CLUSTER_POLICY, (IteratorWriter) iw -> {
+        for (Clause c : clusterPolicy) {
+          iw.add(c);
+        }
+      });
+    }
+  }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Policy policy = (Policy) o;
+
+    if (!getPolicies().equals(policy.getPolicies())) return false;
+    if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
+    if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
+    return true;
   }
 
   /*This stores the logical state of the system, given a policy and
@@ -143,59 +222,81 @@ public class Policy implements MapWriter {
    */
   public class Session implements MapWriter {
     final List<String> nodes;
-    final ClusterDataProvider dataProvider;
+    final SolrCloudManager cloudManager;
     final List<Row> matrix;
     Set<String> collections = new HashSet<>();
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
+    final NodeStateProvider nodeStateProvider;
+    final int znodeVersion;
 
-    private Session(List<String> nodes, ClusterDataProvider dataProvider,
-                    List<Row> matrix, List<Clause> expandedClauses) {
+    private Session(List<String> nodes, SolrCloudManager cloudManager,
+                    List<Row> matrix, List<Clause> expandedClauses, int znodeVersion, NodeStateProvider nodeStateProvider) {
       this.nodes = nodes;
-      this.dataProvider = dataProvider;
+      this.cloudManager = cloudManager;
       this.matrix = matrix;
       this.expandedClauses = expandedClauses;
+      this.znodeVersion = znodeVersion;
+      this.nodeStateProvider = nodeStateProvider;
+      for (Row row : matrix) row.session = this;
     }
 
-    Session(ClusterDataProvider dataProvider) {
-      this.nodes = new ArrayList<>(dataProvider.getNodes());
-      this.dataProvider = dataProvider;
+
+    Session(SolrCloudManager cloudManager) {
+      ClusterState state = null;
+      this.nodeStateProvider = cloudManager.getNodeStateProvider();
+      try {
+        state = cloudManager.getClusterStateProvider().getClusterState();
+        LOG.trace("-- session created with cluster state: {}", state);
+      } catch (Exception e) {
+        LOG.trace("-- session created, can't obtain cluster state", e);
+      }
+      this.znodeVersion = state != null ? state.getZNodeVersion() : -1;
+      this.nodes = new ArrayList<>(cloudManager.getClusterStateProvider().getLiveNodes());
+      this.cloudManager = cloudManager;
       for (String node : nodes) {
-        collections.addAll(dataProvider.getReplicaInfo(node, Collections.emptyList()).keySet());
+        collections.addAll(nodeStateProvider.getReplicaInfo(node, Collections.emptyList()).keySet());
       }
 
       expandedClauses = clusterPolicy.stream()
           .filter(clause -> !clause.isPerCollectiontag())
           .collect(Collectors.toList());
 
+      ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
       for (String c : collections) {
-        addClausesForCollection(dataProvider, c);
+        addClausesForCollection(stateProvider, c);
       }
 
       Collections.sort(expandedClauses);
 
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, dataProvider));
+      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes, this));
       applyRules();
     }
 
-    private void addClausesForCollection(ClusterDataProvider dataProvider, String c) {
-      String p = dataProvider.getPolicyNameByCollection(c);
+    void addClausesForCollection(ClusterStateProvider stateProvider, String c) {
+      String p = stateProvider.getPolicyNameByCollection(c);
       if (p != null) {
         List<Clause> perCollPolicy = policies.get(p);
-        if (perCollPolicy == null)
-          throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
+        if (perCollPolicy == null) {
+          return;
+        }
       }
       expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
     }
 
     Session copy() {
-      return new Session(nodes, dataProvider, getMatrixCopy(), expandedClauses);
+      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider);
+    }
+
+    public Row getNode(String node) {
+      for (Row row : matrix) if (row.node.equals(node)) return row;
+      return null;
     }
 
     List<Row> getMatrixCopy() {
       return matrix.stream()
-          .map(Row::copy)
+          .map(row -> row.copy(this))
           .collect(Collectors.toList());
     }
 
@@ -207,27 +308,15 @@ public class Policy implements MapWriter {
     /**
      * Apply the preferences and conditions
      */
-    private void applyRules() {
-      if (!clusterPreferences.isEmpty()) {
-        //this is to set the approximate value according to the precision
-        ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
-        for (Preference p : clusterPreferences) {
-          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
-          p.setApproxVal(tmpMatrix);
-        }
-        //approximate values are set now. Let's do recursive sorting
-        Collections.sort(matrix, (Row r1, Row r2) -> {
-          int result = clusterPreferences.get(0).compare(r1, r2, true);
-          if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
-          return result;
-        });
-      }
+    void applyRules() {
+      setApproxValuesAndSortNodes(clusterPreferences, matrix);
 
       for (Clause clause : expandedClauses) {
         List<Violation> errs = clause.test(matrix);
         violations.addAll(errs);
       }
     }
+
 
     public List<Violation> getViolations() {
       return violations;
@@ -242,6 +331,7 @@ public class Policy implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("znodeVersion", znodeVersion);
       for (int i = 0; i < matrix.size(); i++) {
         Row row = matrix.get(i);
         ew.put(row.node, row);
@@ -256,17 +346,47 @@ public class Policy implements MapWriter {
     public List<Row> getSorted() {
       return Collections.unmodifiableList(matrix);
     }
+
+    public NodeStateProvider getNodeStateProvider() {
+      return nodeStateProvider;
+    }
+
+    public int indexOf(String node) {
+      for (int i = 0; i < matrix.size(); i++) if (matrix.get(i).node.equals(node)) return i;
+      throw new RuntimeException("NO such node found " + node);
+    }
   }
 
+  static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    if (!clusterPreferences.isEmpty()) {
+      //this is to set the approximate value according to the precision
+      ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      for (Preference p : clusterPreferences) {
+        try {
+          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+        } catch (Exception e) {
+          LOG.error("Exception! prefs = {}, matrix = {}", clusterPreferences, matrix);
+          throw e;
+        }
+        p.setApproxVal(tmpMatrix);
+      }
+      //approximate values are set now. Let's do recursive sorting
+      Collections.sort(matrix, (Row r1, Row r2) -> {
+        int result = clusterPreferences.get(0).compare(r1, r2, true);
+        if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+        return result;
+      });
+    }
+  }
 
-  public Session createSession(ClusterDataProvider dataProvider) {
-    return new Session(dataProvider);
+  public Session createSession(SolrCloudManager cloudManager) {
+    return new Session(cloudManager);
   }
 
   public enum SortParam {
     freedisk(0, Integer.MAX_VALUE), cores(0, Integer.MAX_VALUE), heapUsage(0, Integer.MAX_VALUE), sysLoadAvg(0, 100);
 
-    public final int min,max;
+    public final int min, max;
 
     SortParam(int min, int max) {
       this.min = min;
@@ -298,191 +418,25 @@ public class Policy implements MapWriter {
   }
 
 
-  public static class ReplicaInfo implements MapWriter {
-    final String name;
-    String core, collection, shard;
-    Map<String, Object> variables;
-
-    public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
-      this.name = name;
-      this.variables = vals;
-      this.collection = coll;
-      this.shard = shard;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(name, variables);
-    }
-
-    public String getCore() {
-      return core;
-    }
-
-    public String getCollection() {
-      return collection;
-    }
-
-    public String getShard() {
-      return shard;
-    }
-  }
-
-
-  /* A suggester is capable of suggesting a collection operation
-   * given a particular session. Before it suggests a new operation,
-   * it ensures that ,
-   *  a) load is reduced on the most loaded node
-   *  b) it causes no new violations
-   *
-   */
-  public static abstract class Suggester {
-    protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
-    Policy.Session session;
-    SolrRequest operation;
-    protected List<Violation> originalViolations = new ArrayList<>();
-    private boolean isInitialized = false;
-
-    private void _init(Session session) {
-      this.session = session.copy();
-    }
-
-    public Suggester hint(Hint hint, Object value) {
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
-        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
-      } else {
-        hints.put(hint, value);
-      }
-      return this;
-    }
-
-    abstract SolrRequest init();
-
-
-    public SolrRequest getOperation() {
-      if (!isInitialized) {
-        String coll = (String) hints.get(Hint.COLL);
-        String shard = (String) hints.get(Hint.SHARD);
-        // if this is not a known collection from the existing clusterstate,
-        // then add it
-        if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
-          session.addClausesForCollection(session.dataProvider, coll);
-          Collections.sort(session.expandedClauses);
-        }
-        if (coll != null) {
-          for (Row row : session.matrix) {
-            if (!row.collectionVsShardVsReplicas.containsKey(coll)) row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
-            if (shard != null) {
-              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
-              if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
-            }
-          }
-        }
-        session.applyRules();
-        originalViolations.addAll(session.getViolations());
-        this.operation = init();
-        isInitialized = true;
-      }
-      return operation;
-    }
-
-    public Session getSession() {
-      return session;
-    }
-
-    List<Row> getMatrix() {
-      return session.matrix;
-
-    }
-
-    //check if the fresh set of violations is less serious than the last set of violations
-    boolean isLessSerious(List<Violation> fresh, List<Violation> old) {
-      if (old == null || fresh.size() < old.size()) return true;
-      if (fresh.size() == old.size()) {
-        for (int i = 0; i < fresh.size(); i++) {
-          Violation freshViolation = fresh.get(i);
-          Violation oldViolation = null;
-          for (Violation v : old) {
-            if (v.equals(freshViolation)) oldViolation = v;
-          }
-          if (oldViolation != null && freshViolation.isLessSerious(oldViolation)) return true;
-        }
-      }
-      return false;
-    }
-
-    boolean containsNewErrors(List<Violation> violations) {
-      for (Violation v : violations) {
-        int idx = originalViolations.indexOf(v);
-        if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
-      }
-      return false;
-    }
-
-    List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
-      List<Pair<Policy.ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
-
-      if (sortDesc) {
-        if (until == -1) until = getMatrix().size();
-        for (int i = 0; i < until; i++) addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
-      } else {
-        if (until == -1) until = 0;
-        for (int i = getMatrix().size() - 1; i >= until; i--)
-          addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
-      }
-      return allPossibleReplicas;
-    }
-
-    void addReplicaToList(Row r, boolean isSource, List<Pair<Policy.ReplicaInfo, Row>> replicaList) {
-      if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
-        if (!isAllowed(e.getKey(), Hint.COLL)) continue;
-        for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
-          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;
-          replicaList.add(new Pair<>(shard.getValue().get(0), r));
-        }
-      }
-    }
-
-    protected List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
-      List<Violation> errors = new ArrayList<>();
-      for (Clause clause : session.expandedClauses) {
-        if (strict || clause.strict) {
-          List<Violation> errs = clause.test(rows);
-          if (!errs.isEmpty()) {
-            errors.addAll(errs);
-          }
-        }
-      }
-      return errors;
-    }
-
-    ArrayList<Row> getModifiedMatrix(List<Row> matrix, Row tmpRow, int i) {
-      ArrayList<Row> copy = new ArrayList<>(matrix);
-      copy.set(i, tmpRow);
-      return copy;
-    }
-
-    protected boolean isAllowed(Object v, Hint hint) {
-      Object hintVal = hints.get(hint);
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
-        Set set = (Set) hintVal;
-        return set == null || set.contains(v);
-      } else {
-        return hintVal == null || Objects.equals(v, hintVal);
-      }
-    }
-
-    public enum Hint {
-      COLL, SHARD, SRC_NODE, TARGET_NODE
-    }
-
-
+  public static Map<String, List<Clause>> policiesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
+    Map<String, List<Clause>> newPolicies = new HashMap<>();
+    map.forEach((s, l1) ->
+        newPolicies.put(s, l1.stream()
+            .map(Clause::new)
+            .filter(clause -> {
+              if (!clause.isPerCollectiontag())
+                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
+              clause.addTags(newParams);
+              return true;
+            })
+            .sorted()
+            .collect(collectingAndThen(toList(), Collections::unmodifiableList))));
+    return newPolicies;
   }
 
   public static List<Clause> mergePolicies(String coll,
-                                    List<Clause> collPolicy,
-                                    List<Clause> globalPolicy) {
+                                           List<Clause> collPolicy,
+                                           List<Clause> globalPolicy) {
 
     List<Clause> merged = insertColl(coll, collPolicy);
     List<Clause> global = insertColl(coll, globalPolicy);
@@ -517,5 +471,27 @@ public class Policy implements MapWriter {
 
   public Map<String, List<Clause>> getPolicies() {
     return policies;
+  }
+
+  public List<String> getParams() {
+    return params.stream().map(Pair::first).collect(toList());
+  }
+
+  /**
+   * Compares two {@link Row} loads according to a policy.
+   *
+   * @param r1 the first {@link Row} to compare
+   * @param r2 the second {@link Row} to compare
+   * @return the value {@code 0} if r1 and r2 are equally loaded
+   * a value {@code -1} if r1 is more loaded than r2
+   * a value {@code 1} if  r1 is less loaded than r2
+   */
+  static int compareRows(Row r1, Row r2, Policy policy) {
+    return policy.clusterPreferences.get(0).compare(r1, r2, true);
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

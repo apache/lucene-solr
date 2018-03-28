@@ -1,6 +1,4 @@
 = Field Type Definitions and Properties
-:page-shortname: field-type-definitions-and-properties
-:page-permalink: field-type-definitions-and-properties.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -62,7 +60,7 @@ The field type `class` determines most of the behavior of a field type, but opti
 
 [source,xml]
 ----
-<fieldType name="date" class="solr.TrieDateField"
+<fieldType name="date" class="solr.DatePointField"
            sortMissingLast="true" omitNorms="true"/>
 ----
 
@@ -89,6 +87,13 @@ For multivalued fields, specifies a distance between multiple values, which prev
 
 `autoGeneratePhraseQueries`:: For text fields. If `true`, Solr automatically generates phrase queries for adjacent terms. If `false`, terms must be enclosed in double-quotes to be treated as phrases.
 
+`synonymQueryStyle`::
+Query used to combine scores of overlapping query terms (i.e., synonyms). Consider a search for "blue tee" with query-time synonyms `tshirt,tee`.
++
+Use `as_same_term` (default) to blend terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important. Use `pick_best` to select the most significant synonym when scoring `Dismax(tee,tshirt)`. Use `as_distinct_terms` to bias scoring towards the most significant synonym `(pants OR slacks)`.
++
+`as_same_term` is appropriate when terms are true synonyms (television, tv). Use `pick_best` or `as_distinct_terms` when synonyms are expanding to hyponyms `(q=jeans w/ jeans\=>jeans,pants)` and you want exact to come before parent and sibling concepts. See this http://opensourceconnections.com/blog/2017/11/21/solr-synonyms-mea-culpa/[blog article].
+
 `enableGraphQueries`::
 For text fields, applicable when querying with <<the-standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>> (which is the default for the `sow` parameter). Use `true`, the default, for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filter-descriptions.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
 +
@@ -96,15 +101,15 @@ Use `false` for field types with query analyzers including filters that can matc
 
 [[docvaluesformat]]
 `docValuesFormat`::
-Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml.
+Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in `solrconfig.xml`.
 
 `postingsFormat`::
-Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml.
+Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in `solrconfig.xml`.
 
 
 [NOTE]
 ====
-Lucene index back-compatibility is only supported for the default codec. If you choose to customize the `postingsFormat` or `docValuesFormat` in your schema.xml, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
+Lucene index back-compatibility is only supported for the default codec. If you choose to customize the `postingsFormat` or `docValuesFormat` in your `schema.xml`, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
 ====
 
 === Field Default Properties

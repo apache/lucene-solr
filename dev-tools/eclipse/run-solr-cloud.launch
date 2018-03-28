@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+	<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+		<listEntry value="/@ECLIPSEPROJECTNAME@"/>
+	</listAttribute>
+	<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+		<listEntry value="4"/>
+	</listAttribute>
+	<booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+	<listAttribute key="org.eclipse.jdt.launching.CLASSPATH">
+		<listEntry value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;runtimeClasspathEntry containerPath=&quot;org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8&quot; javaProject=&quot;@ECLIPSEPROJECTNAME@&quot; path=&quot;1&quot; type=&quot;4&quot;/&gt;&#13;&#10;"/>
+		<listEntry value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;runtimeClasspathEntry id=&quot;org.eclipse.jdt.launching.classpathentry.defaultClasspath&quot;&gt;&#13;&#10;&lt;memento exportedEntriesOnly=&quot;false&quot; project=&quot;@ECLIPSEPROJECTNAME@&quot;/&gt;&#13;&#10;&lt;/runtimeClasspathEntry&gt;&#13;&#10;"/>
+		<listEntry value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;runtimeClasspathEntry internalArchive=&quot;/@ECLIPSEPROJECTNAME@/solr/server/start.jar&quot; path=&quot;3&quot; type=&quot;2&quot;/&gt;&#13;&#10;"/>
+	</listAttribute>
+	<booleanAttribute key="org.eclipse.jdt.launching.DEFAULT_CLASSPATH" value="false"/>
+	<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.eclipse.jetty.start.Main"/>
+	<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--module=http"/>
+	<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="@ECLIPSEPROJECTNAME@"/>
+	<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xms512m &#13;&#10;-Djetty.port=8983&#13;&#10;-DSTOP.PORT=7983 &#13;&#10;-DSTOP.KEY=solrrock&#13;&#10;-Dlog4j.configurationFile=&quot;file:${workspace_loc:@ECLIPSEPROJECTNAME@}/solr/server/resources/log4j2.xml&quot;&#13;&#10;-Djetty.home=&quot;${workspace_loc:@ECLIPSEPROJECTNAME@}/eclipse-build/solr-server&quot;&#13;&#10;-Djetty.base=&quot;${workspace_loc:@ECLIPSEPROJECTNAME@}/eclipse-build/solr-server&quot;&#13;&#10;-Dsolr.log=&quot;${workspace_loc:@ECLIPSEPROJECTNAME@}/eclipse-build&quot;&#13;&#10;-Dsolr.log.dir=&quot;${workspace_loc:@ECLIPSEPROJECTNAME@}/eclipse-build&quot;&#13;&#10;-Dsolr.solr.home=&quot;${workspace_loc:@ECLIPSEPROJECTNAME@}/eclipse-build/solr-server/solr&quot;&#13;&#10;-DzkRun"/>
+</launchConfiguration>

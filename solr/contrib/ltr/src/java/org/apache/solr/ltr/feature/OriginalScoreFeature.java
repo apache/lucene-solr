@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.DocInfo;
@@ -69,7 +70,7 @@ public class OriginalScoreFeature extends Feature {
     public OriginalScoreWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
-      w = searcher.createNormalizedWeight(originalQuery, true);
+      w = searcher.createNormalizedWeight(originalQuery, ScoreMode.COMPLETE);
     };
 
 
@@ -108,8 +109,8 @@ public class OriginalScoreFeature extends Feature {
       }
 
       @Override
-      public int freq() throws IOException {
-        return originalScorer.freq();
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
       }
 
       @Override

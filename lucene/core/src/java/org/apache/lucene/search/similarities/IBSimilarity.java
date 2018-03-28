@@ -17,6 +17,7 @@
 package org.apache.lucene.search.similarities;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.Explanation;
@@ -95,7 +96,7 @@ public class IBSimilarity extends SimilarityBase {
   }
   
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
+  protected double score(BasicStats stats, double freq, double docLen) {
     return stats.getBoost() *
         distribution.score(
             stats,
@@ -105,16 +106,32 @@ public class IBSimilarity extends SimilarityBase {
 
   @Override
   protected void explain(
-      List<Explanation> subs, BasicStats stats, int doc, float freq, float docLen) {
-    if (stats.getBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getBoost(), "boost"));
+      List<Explanation> subs, BasicStats stats, double freq, double docLen) {
+    if (stats.getBoost() != 1.0d) {
+      subs.add(Explanation.match((float)stats.getBoost(), "boost, query boost"));
     }
     Explanation normExpl = normalization.explain(stats, freq, docLen);
     Explanation lambdaExpl = lambda.explain(stats);
     subs.add(normExpl);
     subs.add(lambdaExpl);
-    subs.add(distribution.explain(stats, normExpl.getValue(), lambdaExpl.getValue()));
+    subs.add(distribution.explain(stats, normExpl.getValue().floatValue(), lambdaExpl.getValue().floatValue()));
   }
+
+  @Override
+  protected Explanation explain(
+      BasicStats stats, Explanation freq, double docLen) {
+    List<Explanation> subs = new ArrayList<>();
+    explain(subs, stats, freq.getValue().doubleValue(), docLen);
+
+    return Explanation.match(
+        (float) score(stats, freq.getValue().doubleValue(), docLen),
+        "score(" + getClass().getSimpleName() + ", freq=" +
+            freq.getValue() +"), computed as boost * " +
+            "distribution.score(stats, normalization.tfn(stats, freq," +
+            " docLen), lambda.lambda(stats)) from:",
+        subs);
+  }
+
   
   /**
    * The name of IB methods follow the pattern

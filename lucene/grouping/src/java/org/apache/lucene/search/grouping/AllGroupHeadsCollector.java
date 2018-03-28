@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -154,8 +155,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return sort.needsScores();
+  public ScoreMode scoreMode() {
+    return sort.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override

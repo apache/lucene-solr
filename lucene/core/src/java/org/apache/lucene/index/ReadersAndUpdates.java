@@ -291,11 +291,6 @@ class ReadersAndUpdates {
     return liveDocs;
   }
 
-  public synchronized Bits getReadOnlyLiveDocs() {
-    liveDocsShared = true;
-    return liveDocs;
-  }
-
   public synchronized void dropChanges() {
     assert Thread.holdsLock(writer);
     // Discard (don't save) changes when we are dropping
@@ -850,7 +845,7 @@ class ReadersAndUpdates {
         success = true;
       } finally {
         if (success == false) {
-          newReader.decRef();
+          newReader.close();
         }
       }
       reader = newReader;

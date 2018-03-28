@@ -23,6 +23,15 @@ public class TestStringHelper extends LuceneTestCase {
     BytesRef left = new BytesRef("foobar");
     BytesRef right = new BytesRef("foozo");
     assertEquals(3, StringHelper.bytesDifference(left, right));
+    assertEquals(2, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("for")));
+    assertEquals(2, StringHelper.bytesDifference(new BytesRef("foo1234"), new BytesRef("for1234")));
+    assertEquals(1, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("fz")));
+    assertEquals(0, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("g")));
+    assertEquals(3, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("food")));
+    // we can detect terms are out of order if we see a duplicate
+    expectThrows(IllegalArgumentException.class, () -> {
+      StringHelper.bytesDifference(new BytesRef("ab"), new BytesRef("ab"));
+    });
   }
   
   public void testStartsWith() {
@@ -63,5 +72,9 @@ public class TestStringHelper extends LuceneTestCase {
     assertEquals(2, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("fz")));
     assertEquals(1, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("g")));
     assertEquals(4, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("food")));
+    // we can detect terms are out of order if we see a duplicate
+    expectThrows(IllegalArgumentException.class, () -> {
+      StringHelper.sortKeyLength(new BytesRef("ab"), new BytesRef("ab"));
+    });
   }
 }

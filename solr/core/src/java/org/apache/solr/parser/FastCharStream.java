@@ -69,7 +69,7 @@ public final class FastCharStream implements CharStream {
     int charsRead =          // fill space in buffer
       input.read(buffer, newPosition, buffer.length-newPosition);
     if (charsRead == -1)
-      throw new IOException("read past eof");
+      throw READ_PAST_EOF;
     else
       bufferLength += charsRead;
   }
@@ -79,6 +79,11 @@ public final class FastCharStream implements CharStream {
     tokenStart = bufferPosition;
     return readChar();
   }
+
+  /**
+   * This Exception is used as a signal rather than an exceptional state.
+   */
+  private static final IOException READ_PAST_EOF = new IOException("read past eof");
 
   @Override
   public final void backup(int amount) {

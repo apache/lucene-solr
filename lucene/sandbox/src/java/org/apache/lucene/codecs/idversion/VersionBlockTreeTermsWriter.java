@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -221,7 +222,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(Fields fields, NormsProducer norms) throws IOException {
 
     String lastField = null;
     for(String field : fields) {
@@ -241,7 +242,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         if (term == null) {
           break;
         }
-        termsWriter.write(term, termsEnum);
+        termsWriter.write(term, termsEnum, norms);
       }
 
       termsWriter.finish();
@@ -729,8 +730,8 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     }
     
     /** Writes one term's worth of postings. */
-    public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
-      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+    public void write(BytesRef text, TermsEnum termsEnum, NormsProducer norms) throws IOException {
+      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen, norms);
       // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
       if (state != null && ((IDVersionPostingsWriter) postingsWriter).lastDocID != -1) {
         assert state.docFreq != 0;

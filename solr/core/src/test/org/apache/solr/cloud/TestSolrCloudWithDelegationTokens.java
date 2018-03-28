@@ -43,7 +43,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -179,8 +181,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
         .withKerberosDelegationToken(token)
         .withResponseParser(client.getParser())
         .build();
-    else delegationTokenClient = new CloudSolrClient.Builder()
-        .withZkHost((miniCluster.getZkServer().getZkAddress()))
+    else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(miniCluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
             .withHttpSolrClientBuilder(
@@ -282,7 +283,6 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-14044")
   public void testDelegationTokenCancelFail() throws Exception {
     // cancel a bogus token
     cancelDelegationToken("BOGUS", ErrorCode.NOT_FOUND.code, solrClientPrimary);

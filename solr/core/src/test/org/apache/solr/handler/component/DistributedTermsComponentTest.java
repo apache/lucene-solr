@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.junit.Test;
 
@@ -26,7 +25,6 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-11173")
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   @Test

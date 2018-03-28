@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -385,6 +386,21 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             "//doc[4]/str[@name='" + FIELD_NAME + "']/text()='High'",
             "//doc[5]/str[@name='" + FIELD_NAME + "']/text()='Critical'"
     );
+
+    // missing first....
+    for (String dir : Arrays.asList("asc", "desc")) {
+      assertQ(req("fl", "id", "q", "*:*", "sort", FIELD_NAME + "_missingFirst " + dir + ", id desc")
+              , "//doc[1]/str[@name='id']/text()='9'"
+              , "//doc[2]/str[@name='id']/text()='8'"
+              );
+    }
+    // missing last...
+    for (String dir : Arrays.asList("asc", "desc")) {
+      assertQ(req("fl", "id", "q", "*:*", "sort", FIELD_NAME + "_missingLast " + dir + ", id desc")
+              , "//doc[6]/str[@name='id']/text()='9'"
+              , "//doc[7]/str[@name='id']/text()='8'"
+              );
+    }
   }
 
   @Test

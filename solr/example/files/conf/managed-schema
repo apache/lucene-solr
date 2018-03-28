@@ -442,7 +442,7 @@
   <dynamicField name="*_descendent_path" type="descendent_path" indexed="true" stored="true"/>
   <dynamicField name="*_ancestor_path" type="ancestor_path" indexed="true" stored="true"/>
   <dynamicField name="*_txt_en_split" type="text_en_splitting" indexed="true" stored="true"/>
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
+  <dynamicField name="*_coordinate" type="pdouble" indexed="true" stored="false"/>
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="*_txt_rev" type="text_general_rev" indexed="true" stored="true"/>
   <dynamicField name="*_phon_en" type="phonetic_en" indexed="true" stored="true"/>
@@ -482,7 +482,7 @@
   <dynamicField name="*_point" type="point" indexed="true" stored="true"/>
   <dynamicField name="*_srpt" type="location_rpt" indexed="true" stored="true"/>
   <dynamicField name="attr_*" type="text_general" multiValued="true" indexed="true" stored="true"/>
-  <dynamicField name="*_l_ns" type="long" indexed="true" stored="false"/>
+  <dynamicField name="*_l_ns" type="plong" indexed="true" stored="false"/>
   <dynamicField name="*_s_ns" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="pdate" multiValued="true" indexed="true" stored="true"/>
@@ -493,10 +493,6 @@
   <dynamicField name="*_fs" type="pfloats" indexed="true" stored="true"/>
   <dynamicField name="*_ds" type="pdoubles" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="pdate" indexed="true" stored="true"/>
-  <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
-  <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>
-  <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
-  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_ws" type="text_ws" indexed="true" stored="true"/>
   <dynamicField name="*_i" type="pint" indexed="true" stored="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>

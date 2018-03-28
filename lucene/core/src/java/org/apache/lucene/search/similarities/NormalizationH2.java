@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
@@ -38,6 +40,10 @@ public class NormalizationH2 extends Normalization {
    * normalization with respect to the document length.
    */
   public NormalizationH2(float c) {
+    // unbounded but typical range 0..10 or so
+    if (Float.isFinite(c) == false || c < 0) {
+      throw new IllegalArgumentException("illegal c value: " + c + ", must be a non-negative finite value");
+    }
     this.c = c;
   }
 
@@ -49,8 +55,23 @@ public class NormalizationH2 extends Normalization {
   }
   
   @Override
-  public final float tfn(BasicStats stats, float tf, float len) {
-    return (float)(tf * log2(1 + c * stats.getAvgFieldLength() / len));
+  public final double tfn(BasicStats stats, double tf, double len) {
+    return tf * log2(1 + c * stats.getAvgFieldLength() / len);
+  }
+
+  @Override
+  public Explanation explain(BasicStats stats, double tf, double len) {
+    return Explanation.match(
+        (float) tfn(stats, tf, len),
+        getClass().getSimpleName()
+            + ", computed as tf * log2(1 + c * avgfl / fl) from:",
+        Explanation.match((float) tf,
+            "tf, number of occurrences of term in the document"),
+        Explanation.match(c,
+            "c, hyper-parameter"),
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgfl, average length of field across all documents"),
+        Explanation.match((float) len, "fl, field length of the document"));
   }
 
   @Override

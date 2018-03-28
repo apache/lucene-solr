@@ -29,11 +29,14 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -202,7 +205,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long totalTermFreq() {
-      return indexOptions == IndexOptions.DOCS ? -1 : totalTermFreq;
+      return indexOptions == IndexOptions.DOCS ? docFreq : totalTermFreq;
     }
 
     @Override
@@ -230,6 +233,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return docsEnum.reset(docsStart, indexOptions == IndexOptions.DOCS, docFreq);
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    }
   }
 
   private class SimpleTextDocsEnum extends PostingsEnum {
@@ -507,16 +514,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  static class TermData {
-    public long docsStart;
-    public int docFreq;
-
-    public TermData(long docsStart, int docFreq) {
-      this.docsStart = docsStart;
-      this.docFreq = docFreq;
-    }
-  }
-
   private static final long TERMS_BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(SimpleTextTerms.class)
           + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
@@ -568,12 +565,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
         } else if (StringHelper.startsWith(scratch.get(), DOC)) {
           docFreq++;
           sumDocFreq++;
+          totalTermFreq++;
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), DOC.length, scratch.length()-DOC.length);
           int docID = ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
           visitedDocs.set(docID);
         } else if (StringHelper.startsWith(scratch.get(), FREQ)) {
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), FREQ.length, scratch.length()-FREQ.length);
-          totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
+          totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length()) - 1;
         } else if (StringHelper.startsWith(scratch.get(), TERM)) {
           if (lastDocsStart != -1) {
             b.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef), outputs.newPair(lastDocsStart,
@@ -637,7 +635,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long getSumTotalTermFreq() {
-      return fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : sumTotalTermFreq;
+      return sumTotalTermFreq;
     }
 
     @Override

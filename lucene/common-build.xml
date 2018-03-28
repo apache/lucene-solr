@@ -66,6 +66,12 @@
     </condition>
   </fail>
 
+  <fail message="Your ~/.ant/lib folder or the main classpath of Ant contains some version of ASM. Please remove it, otherwise this build can't run correctly.">
+    <condition>
+      <available classname="org.objectweb.asm.ClassReader"/>
+    </condition>
+  </fail>
+
   <property name="year" value="2000-${current.year}"/>
   
   <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
@@ -74,19 +80,21 @@
   </condition>
 
   <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
-  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
+  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,**/*.sha512,ext/*.jar" />
 
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.3.0" /> <!-- UPGRADE NOTE: update disallowed.ivy.jars regex in ivy-availability-check -->
+  <property name="ivy.bootstrap.version" value="2.4.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
+  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[0123].*\.jar"/>
+
   <property name="ivy.default.configuration" value="*"/>
 
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
-  <property name="ivy.lock-strategy" value="artifact-lock"/>
+  <property name="ivy.lock-strategy" value="artifact-lock-nio"/>
 
   <property name="local.caches" location="${common.dir}/../.caches" />
   <property name="tests.cachedir"  location="${local.caches}/test-stats" />
@@ -131,11 +139,11 @@
     <istrue value="${tests.asserts}"/>
   </condition>
 
-  <condition property="tests.heapsize" value="768M" else="512M">
+  <condition property="tests.heapsize" value="1024M" else="512M">
     <isset property="run.clover"/>
   </condition>
   
-  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m" else="">
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=192m -Dclover.pertest.coverage=off" else="">
     <isset property="run.clover"/>
   </condition>
 
@@ -159,6 +167,10 @@
   <!-- Display at most this many failures as a summary at the end of junit4 run. -->
   <property name="tests.showNumFailures" value="10" />
 
+  <!-- If we detect Java 9+, should we test the patched classes of the
+   multi-release JAR or still run with our own classes? -->
+  <property name="tests.withJava9Patches" value="true" />
+
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.release" value="8"/>
@@ -175,8 +187,11 @@
   <property name="javadoc.noindex" value="true"/>
 
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
-  <property name="javac.doclint.args" value="-Xdoclint:none"/> <!---Xdoclint:all/protected -Xdoclint:-missing"/> NOCOMMIT: To avoid errors with PF4J-->
-  
+  <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
+  <!--<property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -proc:none"/>-->
+  <!-- NOCOMMIT: To avoid errors with PF4J-->
+  <property name="javac.doclint.args" value="-Xdoclint:none"/>
+
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
     <path refid="classpath"/>
@@ -222,7 +237,6 @@
 
   <property name="filtered.pom.templates.dir" location="${common.dir}/build/poms"/>
 
-  <property name="clover.license.path" location="${common.dir}/tools/clover/clover.license"/>
   <property name="clover.db.dir" location="${common.dir}/build/clover/db"/>
   <property name="clover.report.dir" location="${common.dir}/build/clover/reports"/>
 
@@ -254,7 +268,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java8/**,tools/clover/**"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java8/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
@@ -268,6 +282,12 @@
   <fail message="Minimum supported ANT version is 1.8.2. Yours: ${ant.version}">
     <condition>
       <not><antversion atleast="1.8.2" /></not>
+    </condition>
+  </fail>
+
+  <fail message="Cannot run with ANT version 1.10.2 - see https://issues.apache.org/jira/browse/LUCENE-8189">
+    <condition>
+      <antversion exactly="1.10.2"/>
     </condition>
   </fail>
 
@@ -413,12 +433,12 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
-  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
+  <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <path id="disallowed.ivy.jars">
       <fileset dir="${ivy_install_path}">
-        <filename regex="ivy-2\.[012].*\.jar"/> <!-- TODO: Update this regex to disallow Ivy versions -->
+        <filename regex="${disallowed_ivy_jars_regex}"/>
       </fileset>
     </path>
     <loadresource property="disallowed.ivy.jars.list">
@@ -482,19 +502,20 @@
     <fail>Ivy is not available</fail>
   </target>
 
-  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" depends="ivy-bootstrap1,ivy-bootstrap2,ivy-checksum"/>
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir"
+          depends="-ivy-bootstrap1,-ivy-bootstrap2,-ivy-checksum,-ivy-remove-old-versions"/>
 
   <!-- try to download from repo1.maven.org -->
-  <target name="ivy-bootstrap1">
+  <target name="-ivy-bootstrap1">
     <ivy-download src="${ivy_bootstrap_url1}" dest="${ivy_install_path}"/>
     <available file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar" property="ivy.bootstrap1.success" />
   </target> 
 
-  <target name="ivy-bootstrap2" unless="ivy.bootstrap1.success">
+  <target name="-ivy-bootstrap2" unless="ivy.bootstrap1.success">
     <ivy-download src="${ivy_bootstrap_url2}" dest="${ivy_install_path}"/>
   </target>
 
-  <target name="ivy-checksum">
+  <target name="-ivy-checksum">
     <checksum file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar"
               property="${ivy_checksum_sha1}"
               algorithm="SHA"
@@ -505,7 +526,15 @@
       </condition>
     </fail>
   </target>
-   
+
+  <target name="-ivy-remove-old-versions">
+    <delete verbose="true" failonerror="true">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="${disallowed_ivy_jars_regex}"/>
+      </fileset>
+    </delete>
+  </target>
+
   <macrodef name="ivy-download">
       <attribute name="src"/>
       <attribute name="dest"/>
@@ -535,9 +564,47 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <target name="jar-core" depends="compile-core">
+  <!-- Special targets to patch all class files by replacing some method calls with new Java 9 methods: -->
+  <target name="-mrjar-classes-uptodate">
+    <uptodate property="mrjar-classes-uptodate" targetfile="${build.dir}/patch-mrjar.stamp">
+      <srcfiles dir= "${build.dir}/classes/java" includes="**/*.class"/>
+    </uptodate>
+  </target>
+
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="patch-mrjar-classes" depends="-mrjar-classes-uptodate,ivy-availability-check,ivy-configure,resolve-groovy,compile-core"
+    unless="mrjar-classes-uptodate" description="Patches compiled class files for usage with Java 9 in MR-JAR">
+    <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
+    <ivy:cachepath organisation="org.ow2.asm" module="asm-commons" revision="${ivyversions./org.ow2.asm/asm-commons}"
+      inline="true" conf="default" transitive="true" log="download-only" pathid="asm.classpath"/>
+    <groovy taskname="patch-cls" classpathref="asm.classpath" src="${common.dir}/tools/src/groovy/patch-mrjar-classes.groovy"/>
+    <touch file="${build.dir}/patch-mrjar.stamp"/>
+  </target>
+
+  <target name="-mrjar-check" depends="patch-mrjar-classes">
+    <zipfileset id="mrjar-patched-files" prefix="META-INF/versions/9" dir="${build.dir}/classes/java9" erroronmissingdir="false"/>
+    <condition property="has-mrjar-patched-files">
+      <resourcecount refid="mrjar-patched-files" when="greater" count="0" />
+    </condition>
+  </target>
+
+  <target name="-mrjar-core" depends="-mrjar-check" if="has-mrjar-patched-files">
+    <jarify>
+      <filesets>
+        <zipfileset refid="mrjar-patched-files"/>
+      </filesets>
+      <jarify-additional-manifest-attributes>
+        <attribute name="Multi-Release" value="true"/>
+      </jarify-additional-manifest-attributes>
+    </jarify>
+  </target>
+
+  <target name="-jar-core" depends="-mrjar-check" unless="has-mrjar-patched-files">
     <jarify/>
   </target>
+
+  <target name="jar-core" depends="-mrjar-core,-jar-core"/>
+
+  <!-- Packaging targets: -->
 
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
@@ -595,7 +662,20 @@
       </artifact:install>
     </sequential>
   </macrodef>
-  
+
+  <macrodef name="m2-install" description="Installs a Maven artifact into the local repository">
+    <element name="parent-poms" optional="yes"/>
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
+    <sequential>
+      <parent-poms/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:install file="@{jar.file}">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </macrodef>
+
   <!-- validate maven dependencies -->
   <macrodef name="m2-validate-dependencies">
       <attribute name="pom.xml"/>
@@ -936,6 +1016,12 @@
           <istrue value="${tests.useSecurityManager}"/>
         </condition>
 
+        <!-- additional arguments for Java 9+ -->
+        <local name="tests.runtimespecific.args"/>
+        <condition property="tests.runtimespecific.args" value="" else="--illegal-access=deny">
+          <equals arg1="${build.java.runtime}" arg2="1.8"/>
+        </condition>
+
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
           <propertyresource name="tests.class" />
@@ -1016,6 +1102,7 @@
             <jvmarg line="${tests.clover.args}"/>
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
+            <jvmarg line="${tests.runtimespecific.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
@@ -1278,7 +1365,8 @@ ant test "-Dtests.method=*esi*"
 ant test -Dtests.seed=DEADBEEF
 
 # Repeats _all_ tests of ClassName N times. Every test repetition
-# will have a different seed.
+# will have a different seed. NOTE: does not reinitialize
+# between repetitions, use only for idempotent tests.
 ant test -Dtests.iters=N -Dtestcase=ClassName
 
 # Repeats _all_ tests of ClassName N times. Every test repetition
@@ -1322,6 +1410,7 @@ ant beast -Dtests.dups=N -Dtests.iters=M -Dbeast.iters=P \
 ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
 ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
 ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
+ant -Dtests.badapples=[true]  - flakey tests (@BadApple)
 ant -Dtests.slow=[true]       - slow tests (@Slow)
 
 # An alternative way to select just one (or more) groups of tests
@@ -1421,8 +1510,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </taskdef>
   </target>
 
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
-  <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+  <target name="test" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
+  <target name="beast" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
           description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>
@@ -1488,58 +1577,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <not><isreference refid="junit.classpath"/></not>
       </condition>
     </fail>
-    <groovy taskname="beaster"><![CDATA[
-      import org.apache.tools.ant.BuildException;
-      import org.apache.tools.ant.BuildLogger;
-      import org.apache.tools.ant.Project;
-      
-      int iters = (properties['beast.iters'] ?: '1') as int;
-      if (iters <= 1) {
-        throw new BuildException("Please give -Dbeast.iters with an int value > 1.");
-      }
-      
-      def antcall = project.createTask('antcall');
-      antcall.with {
-        target = '-test';
-        inheritAll = true;
-        inheritRefs = true;
-        createParam().with {
-          name = "tests.isbeasting";
-          value = "true";
-        };
-      };
-      
-      (1..iters).each { i ->
-        task.log('Beast round: ' + i, Project.MSG_INFO);
-        try {
-          // disable verbose build logging:
-          project.buildListeners.each { listener ->
-            if (listener instanceof BuildLogger) {
-              listener.messageOutputLevel = Project.MSG_WARN;
-            }
-          };
-          
-          antcall.execute();
-          
-        } catch (BuildException be) {
-          def logFile = new File(properties["junit.output.dir"], "tests-failures.txt");
-          if (logFile.exists()) {
-            logFile.eachLine("UTF-8", { line ->
-              task.log(line, Project.MSG_ERR);
-            });
-          }
-          throw be;
-        } finally {
-          // restore build logging (unfortunately there is no way to get the original logging level (write-only property):
-          project.buildListeners.each { listener ->
-            if (listener instanceof BuildLogger) {
-              listener.messageOutputLevel = Project.MSG_INFO;
-            }
-          };
-        }
-      };
-      task.log('Beasting finished.', Project.MSG_INFO);
-    ]]></groovy>
+    <groovy taskname="beaster" src="${common.dir}/tools/src/groovy/run-beaster.groovy"/>
   </target>
 
   <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
@@ -1583,27 +1621,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup"/>
   
   <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
-    <available file="${clover.license.path}" property="clover.license.available" />
-    <fail unless="clover.license.available"><![CDATA[.
-
-  #########################################################################
-  Atlassian Clover License not found!
-  
-  Current License path: ${clover.license.path}
-
-  To use Atlassian Clover with Lucene build, you need a proper license
-  and let the system property 'clover.license.path' point to it.
-  You can pass it to ANT with:
-  
-  $ ant -Dclover.license.path=/path/to/clover.license -Drun.clover=true ...
-  
-  Apache Lucene/Solr source checkouts from Git already contain the
-  file, but source distributions cannot because of legal reasons.
-  #########################################################################
-  
-]]></fail>
-    <echo>Code coverage with Atlassian Clover enabled.</echo>
-    <ivy:cachepath organisation="com.atlassian.clover" module="clover" revision="4.0.4"
+    <echo>Code coverage with OpenClover enabled.</echo>
+    <ivy:cachepath organisation="org.openclover" module="clover" revision="4.2.1"
       inline="true" conf="master" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
@@ -1620,11 +1639,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="-clover.setup" if="run.clover">
     <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
-      <fileset dir="${src.dir}" erroronmissingdir="no">
-        <include name="org/apache/**/*.java" />
-      </fileset>
+      <fileset dir="${src.dir}" erroronmissingdir="no"/>
       <testsources dir="${tests.src.dir}" erroronmissingdir="no">
-        <include name="org/apache/**/*.java" />
+        <exclude name="**/TestOpenNLP*Factory.java"/><!-- https://bitbucket.org/openclover/clover/issues/59 -->
       </testsources>
     </clover-setup>
   </target>
@@ -1710,6 +1727,44 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
                   classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
+    </sequential>
+  </target>
+
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </target>
+
+  <target name="-install-src-java-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
     </sequential>
   </target>
 
@@ -1838,7 +1893,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="stage-maven-artifacts">
     <sequential>
       <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
-      <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
+      <property name="dev-tools.scripts.dir" value="${common.dir}/../dev-tools/scripts"/>
+      <fail message="maven.dist.dir '${maven.dist.dir}' does not exist!">
+        <condition>
+          <not>
+            <available file="${maven.dist.dir}" type="dir"/>
+          </not>
+        </condition>
+      </fail>
       <exec dir="." executable="${perl.exe}" failonerror="false" outputproperty="stage.maven.script.output"
         resultproperty="stage.maven.script.success">
         <arg value="-CSD"/>
@@ -1848,7 +1910,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <arg value="${common.dir}/common-build.xml"/> <!-- Imported from the ant file to be written -->
         <arg value="${m2.credentials.prompt}"/>
         <arg value="${m2.repository.id}"/>
-        <arg value="${m2.repository.url}"/>
       </exec>
       <echo message="${stage.maven.script.output}"/>
       <fail message="maven stage script failed!">
@@ -2240,8 +2301,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="file"/>
     <sequential>
       <echo>Building checksums for '@{file}'</echo>
-      <checksum file="@{file}" algorithm="md5" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
-      <checksum file="@{file}" algorithm="sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="sha1" fileext=".sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="SHA-512" fileext=".sha512" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
     </sequential>
   </macrodef>
 
@@ -2360,7 +2421,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.8"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.13"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2374,7 +2435,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.3"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.4.1"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>
@@ -2443,48 +2504,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       <ivy:dependency org="com.vladsch.flexmark" name="flexmark-ext-autolink" rev="${flexmark.version}" conf="default" />
       <ivy:dependency org="com.vladsch.flexmark" name="flexmark-ext-abbreviation" rev="${flexmark.version}" conf="default" />
     </ivy:cachepath>
-    <groovy classpathref="markdown.classpath"><![CDATA[
-      import org.apache.tools.ant.AntTypeDefinition;
-      import org.apache.tools.ant.ComponentHelper;
-      import org.apache.tools.ant.filters.TokenFilter.ChainableReaderFilter;
-      import com.vladsch.flexmark.ast.Node;
-      import com.vladsch.flexmark.ast.Heading;
-      import com.vladsch.flexmark.html.HtmlRenderer;
-      import com.vladsch.flexmark.parser.Parser;
-      import com.vladsch.flexmark.parser.ParserEmulationProfile;
-      import com.vladsch.flexmark.util.html.Escaping;
-      import com.vladsch.flexmark.util.options.MutableDataSet;
-      import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
-      import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
-      
-      public final class MarkdownFilter extends ChainableReaderFilter {
-        @Override
-        public String filter(String markdownSource) {
-          MutableDataSet options = new MutableDataSet();
-          options.setFrom(ParserEmulationProfile.MARKDOWN);
-          options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create() ]);
-          options.set(HtmlRenderer.RENDER_HEADER_ID, true);
-          options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
-          Node parsed = Parser.builder(options).build().parse(markdownSource);
-
-          StringBuilder html = new StringBuilder('<html>\n<head>\n');
-          CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();          
-          if (title != null) {
-            html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
-          }
-          html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
-            .append('</head>\n<body>\n');
-          HtmlRenderer.builder(options).build().render(parsed, html);
-          html.append('</body>\n</html>\n');
-          return html;
-        }
-      }
-      
-      AntTypeDefinition t = new AntTypeDefinition();
-      t.setName('markdownfilter');
-      t.setClass(MarkdownFilter.class);
-      ComponentHelper.getComponentHelper(project).addDataTypeDefinition(t);
-    ]]></groovy>
+    <groovy classpathref="markdown.classpath" src="${common.dir}/tools/src/groovy/install-markdown-filter.groovy"/>
     <property name="markdown.loaded" value="true"/>
   </target>
   

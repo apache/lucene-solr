@@ -31,12 +31,14 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.CompetitiveFreqNormAccumulator;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -96,7 +98,11 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   private final ForUtil forUtil;
   private final Lucene50SkipWriter skipWriter;
-  
+
+  private boolean fieldHasNorms;
+  private NumericDocValues norms;
+  private final CompetitiveFreqNormAccumulator competitiveFreqNormAccumulator = new CompetitiveFreqNormAccumulator();
+
   /** Creates a postings writer */
   public Lucene50PostingsWriter(SegmentWriteState state) throws IOException {
     final float acceptableOverheadRatio = PackedInts.COMPACT;
@@ -185,6 +191,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     super.setField(fieldInfo);
     skipWriter.setField(writePositions, writeOffsets, writePayloads);
     lastState = emptyState;
+    fieldHasNorms = fieldInfo.hasNorms();
     if (writePositions) {
       if (writePayloads || writeOffsets) {
         return 3;  // doc + pos + pay FP
@@ -197,7 +204,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void startTerm() {
+  public void startTerm(NumericDocValues norms) {
     docStartFP = docOut.getFilePointer();
     if (writePositions) {
       posStartFP = posOut.getFilePointer();
@@ -208,6 +215,8 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     lastDocID = 0;
     lastBlockDocID = -1;
     skipWriter.resetSkip();
+    this.norms = norms;
+    competitiveFreqNormAccumulator.clear();
   }
 
   @Override
@@ -216,7 +225,9 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     // Should write skip data as well as postings list for
     // current block.
     if (lastBlockDocID != -1 && docBufferUpto == 0) {
-      skipWriter.bufferSkip(lastBlockDocID, docCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockPayloadByteUpto);
+      skipWriter.bufferSkip(lastBlockDocID, competitiveFreqNormAccumulator, docCount,
+          lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockPayloadByteUpto);
+      competitiveFreqNormAccumulator.clear();
     }
 
     final int docDelta = docID - lastDocID;
@@ -247,6 +258,24 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     lastDocID = docID;
     lastPosition = 0;
     lastStartOffset = 0;
+
+    long norm;
+    if (fieldHasNorms) {
+      boolean found = norms.advanceExact(docID);
+      if (found == false) {
+        // This can happen if indexing hits a problem after adding a doc to the
+        // postings but before buffering the norm. Such documents are written
+        // deleted and will go away on the first merge.
+        norm = 1L;
+      } else {
+        norm = norms.longValue();
+        assert norm != 0 : docID;
+      }
+    } else {
+      norm = 1L;
+    }
+
+    competitiveFreqNormAccumulator.add(writeFreqs ? termDocFreq : 1, norm);
   }
 
   @Override

@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -33,7 +35,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -712,5 +717,47 @@ public class TestPhraseQuery extends LuceneTestCase {
     expectThrows(IllegalArgumentException.class, () -> {
       builder.add(new Term("field", "three"), 4);
     });
+  }
+
+  static String[] DOCS = new String[] {
+      "a b c d e f g h",
+      "b c b",
+      "c d d d e f g b",
+      "c b a b c",
+      "a a b b c c d d",
+      "a b c d a b c d a b c d"
+  };
+
+  public void testTopPhrases() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    String[] docs = Arrays.copyOf(DOCS, DOCS.length);
+    Collections.shuffle(Arrays.asList(docs), random());
+    for (String value : DOCS) {
+      Document doc = new Document();
+      doc.add(new TextField("f", value, Store.NO));
+      w.addDocument(doc);
+    }
+    IndexReader r = DirectoryReader.open(w);
+    w.close();
+    IndexSearcher searcher = newSearcher(r);
+    for (Query query : Arrays.asList(
+        new PhraseQuery("f", "b", "c"), // common phrase
+        new PhraseQuery("f", "e", "f"), // always appear next to each other
+        new PhraseQuery("f", "d", "d")  // repeated term
+        )) {
+      for (int topN = 1; topN <= 2; ++topN) {
+        TopScoreDocCollector collector1 = TopScoreDocCollector.create(topN, null, true);
+        searcher.search(query, collector1);
+        ScoreDoc[] hits1 = collector1.topDocs().scoreDocs;
+        TopScoreDocCollector collector2 = TopScoreDocCollector.create(topN, null, false);
+        searcher.search(query, collector2);
+        ScoreDoc[] hits2 = collector2.topDocs().scoreDocs;
+        assertTrue("" + query, hits1.length > 0);
+        CheckHits.checkEqual(query, hits1, hits2);
+      }
+    }
+    r.close();
+    dir.close();
   }
 }

@@ -1,6 +1,4 @@
 = Working with Currencies and Exchange Rates
-:page-shortname: working-with-currencies-and-exchange-rates
-:page-permalink: working-with-currencies-and-exchange-rates.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,6 +24,7 @@ The `currency` FieldType provides support for monetary values to Solr/Lucene wit
 * Sorting
 * Currency parsing by either currency code or symbol
 * Symmetric & asymmetric exchange rates (asymmetric exchange rates are useful if there are fees associated with exchanging the currency)
+* Range faceting (using either `facet.range` or `type:range` in `json.facet`) as long as the `start` and `end` values are specified in the same Currency.
 
 == Configuring Currencies
 
@@ -70,7 +69,7 @@ You must specify parameters `amountLongSuffix` and `codeStrSuffix`, correspondin
            defaultCurrency="USD" currencyConfig="currency.xml" />
 ----
 
-In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e. one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e. one that is or extends `StrField`.
+In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e., one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e., one that is or extends `StrField`.
 
 .Atomic Updates won't work if dynamic sub-fields are stored
 [NOTE]

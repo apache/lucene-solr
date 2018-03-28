@@ -67,9 +67,6 @@ public abstract class Scorer {
    */
   public abstract float score() throws IOException;
 
-  /** Returns the freq of this Scorer on the current document */
-  public abstract int freq() throws IOException;
-
   /** returns parent Weight
    * @lucene.experimental
    */
@@ -146,4 +143,39 @@ public abstract class Scorer {
   public TwoPhaseIterator twoPhaseIterator() {
     return null;
   }
+
+  /**
+   * Optional method: Tell the scorer that its iterator may safely ignore all
+   * documents whose score is less than the given {@code minScore}. This is a
+   * no-op by default.
+   *
+   * This method may only be called from collectors that use
+   * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
+   * values of {@code minScore}.
+   */
+  public void setMinCompetitiveScore(float minScore) {
+    // no-op by default
+  }
+
+  /**
+   * Advance to the block of documents that contains {@code target} in order to
+   * get scoring information about this block. This method is implicitly called
+   * by {@link DocIdSetIterator#advance(int)} and
+   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
+   * current {@link DocIdSetIterator#docID()}.
+   * It returns a number that is greater than or equal to all documents
+   * contained in the current block, but less than any doc IDS of the next block.
+   * {@code target} must be &gt;= {@link #docID()} as well as all targets that
+   * have been passed to {@link #advanceShallow(int)} so far.
+   */
+  public int advanceShallow(int target) throws IOException {
+    return DocIdSetIterator.NO_MORE_DOCS;
+  }
+
+  /**
+   * Return the maximum score that documents between the last {@code target}
+   * that this iterator was {@link #advanceShallow(int) shallow-advanced} to
+   * included and {@code upTo} included.
+   */
+  public abstract float getMaxScore(int upTo) throws IOException;
 }

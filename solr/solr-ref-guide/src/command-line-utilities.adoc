@@ -1,6 +1,4 @@
 = Command Line Utilities
-:page-shortname: command-line-utilities
-:page-permalink: command-line-utilities.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -85,9 +83,9 @@ For `clusterprop`: the cluster property value. If not specified, *null* will be 
 
 [TIP]
 ====
-The short form parameter options may be specified with a single dash (eg: `-c mycollection`).
+The short form parameter options may be specified with a single dash (e.g., `-c mycollection`).
 
-The long form parameter options may be specified using either a single dash (eg: `-collection mycollection`) or a double dash (eg: `--collection mycollection`)
+The long form parameter options may be specified using either a single dash (e.g., `-collection mycollection`) or a double dash (e.g., `--collection mycollection`)
 ====
 
 == ZooKeeper CLI Examples
@@ -113,7 +111,7 @@ If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in the
 .Bootstrap with chroot
 [NOTE]
 ====
-Using the boostrap command with a zookeeper chroot in the `-zkhost` parameter, e.g. `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
+Using the boostrap command with a ZooKeeper chroot in the `-zkhost` parameter, e.g., `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
 ====
 
 === Put Arbitrary Data into a New ZooKeeper file

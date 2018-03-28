@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -40,7 +39,7 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
     LeafReader leafReader;
     if (reader instanceof LeafReader) {
       leafReader = (LeafReader) reader;
@@ -53,11 +52,11 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
 
     Terms docTerms = leafReader.getTermVector(docId, field);
     if (docTerms == null) {
-      return Collections.emptyList();
+      return OffsetsEnum.EMPTY;
     }
     leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms);
 
-    return createOffsetsEnumsFromReader(leafReader, docId);
+    return createOffsetsEnumFromReader(leafReader, docId);
   }
 
   @Override

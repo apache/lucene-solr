@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 /**
@@ -157,8 +156,6 @@ public class TemporalEvaluatorsTest {
     }
 
     values.clear();
-    values.put("a", null);
-    assertNull(evaluator.evaluate(new Tuple(values)));
   }
 
   @Test

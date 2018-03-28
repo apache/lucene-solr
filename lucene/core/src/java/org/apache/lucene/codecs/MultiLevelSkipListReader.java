@@ -40,8 +40,8 @@ public abstract class MultiLevelSkipListReader implements Closeable {
   /** the maximum number of skip levels possible for this index */
   protected int maxNumberOfSkipLevels; 
   
-  // number of levels in this skip list
-  private int numberOfSkipLevels;
+  /** number of levels in this skip list */
+  protected int numberOfSkipLevels;
   
   // Expert: defines the number of top skip levels to buffer in memory.
   // Reducing this number results in less memory usage, but possibly

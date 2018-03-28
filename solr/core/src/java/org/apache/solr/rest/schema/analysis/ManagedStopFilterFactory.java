@@ -28,6 +28,7 @@ import org.apache.solr.rest.ManagedResource;
 /**
  * TokenFilterFactory that uses the ManagedWordSetResource implementation
  * for managing stop words using the REST API.
+ * @since 4.8.0
  */
 public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
 

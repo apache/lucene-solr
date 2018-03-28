@@ -53,9 +53,14 @@ def runAndSendGPGPassword(command, password):
       p.stdin.write((password + '\n').encode('UTF-8'))
       p.stdin.write('\n'.encode('UTF-8'))
 
-  result = p.poll()
-  if result is not None:
-    msg = '    FAILED: %s [see log %s]' % (command, LOG)
+  try:
+    result = p.wait(timeout=120)
+    if result != 0:
+      msg = '    FAILED: %s [see log %s]' % (command, LOG)
+      print(msg)
+      raise RuntimeError(msg)
+  except TimeoutExpired:
+    msg = '    FAILED: %s [timed out after 2 minutes; see log %s]' % (command, LOG)
     print(msg)
     raise RuntimeError(msg)
 
@@ -281,9 +286,17 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
+  check_ant()
+
+def check_ant():
   antVersion = os.popen('ant -version').read().strip()
-  if not antVersion.startswith('Apache Ant(TM) version 1.8') and not antVersion.startswith('Apache Ant(TM) version 1.9'):
-    raise RuntimeError('ant version is not 1.8.X: "%s"' % antVersion)
+  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
+    return
+  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
   
 def main():
   check_cmdline_tools()
@@ -293,7 +306,7 @@ def main():
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:
-    os.chdir(root)
+    os.chdir(c.root)
     rev = open('rev.txt', encoding='UTF-8').read()
 
   if c.push_local:

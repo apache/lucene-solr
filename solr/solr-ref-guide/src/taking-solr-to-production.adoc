@@ -1,6 +1,4 @@
 = Taking Solr to Production
-:page-shortname: taking-solr-to-production
-:page-permalink: taking-solr-to-production.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -109,11 +107,11 @@ The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-r
 
 ==== Log Settings
 
-Solr uses Apache Log4J for logging. The installation script copies `/opt/solr/server/resources/log4j.properties` to `/var/solr/log4j.properties`. Take a moment to verify that the Solr include file is configured to send logs to the correct location by checking the following settings in `/etc/default/solr.in.sh`:
+Solr uses Apache Log4J for logging. The installation script copies `/opt/solr/server/resources/log4j2.xml` to `/var/solr/log4j2.xml`. Take a moment to verify that the Solr include file is configured to send logs to the correct location by checking the following settings in `/etc/default/solr.in.sh`:
 
 [source,bash]
 ----
-LOG4J_PROPS=/var/solr/log4j.properties
+LOG4J_PROPS=/var/solr/log4j2.xml
 SOLR_LOGS_DIR=/var/solr/logs
 ----
 
@@ -164,6 +162,20 @@ Solr process PID running on port 8983
 If the `status` command is not successful, look for error messages in `/var/solr/logs/solr.log`.
 
 == Fine-Tune Your Production Setup
+
+=== Dynamic Defaults for ConcurrentMergeScheduler
+
+The Merge Scheduler is configured in `solrconfig.xml` and defaults to `ConcurrentMergeScheduler`. This scheduler uses multiple threads to merge Lucene segments in the background.
+
+By default, the `ConcurrentMergeScheduler` auto-detects whether the underlying disk drive is rotational or a SSD and sets defaults for `maxThreadCount` and `maxMergeCount` accordingly. If the disk drive is determined to be rotational then the `maxThreadCount` is set to 1 and `maxMergeCount` is set to 6. Otherwise, `maxThreadCount` is set to 4 or half the number of processors available to the JVM whichever is greater and `maxMergeCount` is set to `maxThreadCount+5`.
+
+This auto-detection works only on Linux and even then it is not guaranteed to be correct. On all other platforms, the disk is assumed to be rotational. Therefore, if the auto-detection fails or is incorrect then indexing performance can suffer badly due to the wrong defaults.
+
+The auto-detected value is exposed by the <<metrics-reporting.adoc#metrics-api, Metrics API>> with the key `solr.node:CONTAINER.fs.coreRoot.spins`. A value of `true` denotes that the disk is detected to be a rotational or spinning disk.
+
+It is safer to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<indexconfig-in-solrconfig.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
+
+Alternatively, the boolean system property `lucene.cms.override_spins` can be set in the `SOLR_OPTS` variable in the include file to override the auto-detected value. Similarily, the system property `lucene.cms.override_core_count` can be set to the number of CPU cores to override the auto-detected processor count.
 
 === Memory and GC Settings
 
@@ -248,7 +260,29 @@ The `bin/solr` script simply passes options starting with `-D` on to the JVM dur
 SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=10000"
 ----
 
-== Running Multiple Solr Nodes Per Host
+=== File Handles and Processes (ulimit settings)
+
+Two common settings that result in errors on *nix systems are file handles and user processes.
+
+It is common for the default limits for number of processes and file handles to default to values that are too low for a large Solr installation. The required number of each of these will increase based on a combination of the number of replicas hosted per node and the number of segments in the index for each replica.
+
+The usual recommendation is to make processes and file handles at least 65,000 each, unlimited if possible. On most *nix systems, this command will show the currently-defined limits:
+
+[source,bash]
+----
+ulimit -a
+----
+
+It is strongly recommended that file handle and process limits be permanently raised as above. The exact form of the command will vary per operating system, and some systems require editing configuration files and restarting your server. Consult your system administrators for guidance in your particular environment.
+
+[WARNING]
+====
+If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
+
+Since exceeding these limits can result in such varied symptoms it is _strongly_ recommended that these limits be permanently raised as recommended above.
+====
+
+== Running Multiple Solr Nodes per Host
 
 The `bin/solr` script is capable of running multiple instances on one machine, but for a *typical* installation, this is not a recommended setup. Extra CPU and memory resources are required for each additional instance. A single instance is easily capable of handling multiple indexes.
 

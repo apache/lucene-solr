@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.FixedBitSet;
 
 final class SloppyPhraseScorer extends Scorer {
@@ -36,7 +35,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-  private final Similarity.SimScorer docScorer;
+  private final LeafSimScorer docScorer;
   
   private final int slop;
   private final int numPostings;
@@ -55,7 +54,7 @@ final class SloppyPhraseScorer extends Scorer {
   private final float matchCost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SimScorer docScorer, boolean needsScores,
+      int slop, LeafSimScorer docScorer, boolean needsScores,
       float matchCost) {
     super(weight);
     this.docScorer = docScorer;
@@ -107,7 +106,7 @@ final class SloppyPhraseScorer extends Scorer {
       }
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
-          freq += docScorer.computeSlopFactor(matchLength); // score match
+          freq += (1.0 / (1.0 + matchLength)); // score match
           numMatches++;
           if (!needsScores) {
             return freq;
@@ -125,7 +124,7 @@ final class SloppyPhraseScorer extends Scorer {
       }
     }
     if (matchLength <= slop) {
-      freq += docScorer.computeSlopFactor(matchLength); // score match
+      freq += (1.0 / (1.0 + matchLength)); // score match
       numMatches++;
     }    
     return freq;
@@ -516,8 +515,7 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  @Override
-  public int freq() {
+  int freq() {
     return numMatches;
   }
 
@@ -555,6 +553,11 @@ final class SloppyPhraseScorer extends Scorer {
   @Override
   public float score() throws IOException {
     return docScorer.score(docID(), sloppyFreq);
+  }
+
+  @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return docScorer.maxScore();
   }
 
   @Override

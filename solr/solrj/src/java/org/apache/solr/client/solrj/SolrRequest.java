@@ -16,9 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -26,6 +23,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 
 import static java.util.Collections.unmodifiableSet;
 
@@ -153,7 +154,22 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public abstract SolrParams getParams();
 
-  public abstract Collection<ContentStream> getContentStreams() throws IOException;
+  /**
+   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
+   */
+  @Deprecated
+  public Collection<ContentStream> getContentStreams() throws IOException {
+    return null;
+  }
+
+  /**
+   * If a request object wants to do a push write, implement this method.
+   *
+   * @param expectedType This is the type that the RequestWriter would like to get. But, it is OK to send any format
+   */
+  public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+    return null;
+  }
 
   /**
    * Create a new SolrResponse to hold the response from the server
@@ -173,11 +189,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * @throws IOException if there is a communication error
    */
   public final T process(SolrClient client, String collection) throws SolrServerException, IOException {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    long startNanos = System.nanoTime();
     T res = createResponse(client);
     res.setResponse(client.request(this, collection));
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
+    long endNanos = System.nanoTime();
+    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
   }
 

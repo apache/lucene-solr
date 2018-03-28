@@ -167,6 +167,67 @@
     </analyzer>
   </fieldType>
 
+
+  <fieldType name="text_pick_best" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory"
+              ignoreCase="true"
+              words="stopwords.txt"
+      />
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+              catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory"
+              ignoreCase="true"
+              words="stopwords.txt"
+      />
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+              catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  <fieldType name="text_as_distinct" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory"
+              ignoreCase="true"
+              words="stopwords.txt"
+      />
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+              catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory"
+              ignoreCase="true"
+              words="stopwords.txt"
+      />
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+              catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+
   <fieldType name="nametext" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
   </fieldType>
@@ -209,6 +270,17 @@
     <analyzer>
       <charFilter class="solr.HTMLStripCharFilterFactory"/>
       <tokenizer class="solr.StandardTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="isocharfilter" class="solr.TextField">
+    <analyzer type="index">
+      <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"/>
     </analyzer>
   </fieldType>
   <fieldType name="HTMLwhitetok" class="solr.TextField">
@@ -529,6 +601,7 @@
   <field name="lettertok" type="lettertok" indexed="true" stored="true"/>
   <field name="whitetok" type="whitetok" indexed="true" stored="true"/>
   <field name="HTMLwhitetok" type="HTMLwhitetok" indexed="true" stored="true"/>
+  <field name="isocharfilter" type="isocharfilter" indexed="true" stored="true"/>
   <field name="standardtokfilt" type="standardtokfilt" indexed="true" stored="true"/>
   <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
   <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>
@@ -590,6 +663,10 @@
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
+  <dynamicField name="t_pick_best_*" type="text_pick_best" indexed="true" stored="true"/>
+  <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
+
+
   <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
   <dynamicField name="tv_*" type="text" indexed="true" stored="true"
                 termVectors="true" termPositions="true" termOffsets="true"/>

@@ -32,6 +32,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.payloads.AveragePayloadFunction;
 import org.apache.lucene.queries.payloads.MaxPayloadFunction;
 import org.apache.lucene.queries.payloads.MinPayloadFunction;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.queries.payloads.SumPayloadFunction;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -44,6 +45,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.PayloadScoreQParserPlugin;
 
 public class PayloadUtils {
+
   public static String getPayloadEncoder(FieldType fieldType) {
     // TODO: support custom payload encoding fields too somehow - maybe someone has a custom component that encodes payloads as floats
     String encoder = null;
@@ -75,10 +77,10 @@ public class PayloadUtils {
     String encoder = getPayloadEncoder(fieldType);
 
     if ("integer".equals(encoder)) {
-      decoder = (int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeInt(payload.bytes, payload.offset);
+      decoder = (BytesRef payload) -> payload == null ? 1 : PayloadHelper.decodeInt(payload.bytes, payload.offset);
     }
     if ("float".equals(encoder)) {
-      decoder = (int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeFloat(payload.bytes, payload.offset);
+      decoder = (BytesRef payload) -> payload == null ? 1 : PayloadHelper.decodeFloat(payload.bytes, payload.offset);
     }
     // encoder could be "identity" at this point, in the case of DelimitedTokenFilterFactory encoder="identity"
 

@@ -25,14 +25,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -50,7 +52,8 @@ public class CloudUtil {
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
-    
+    if (!cc.isSharedFs(desc)) return;
+
     ZkController zkController = cc.getZkController();
     String thisCnn = zkController.getCoreNodeName(desc);
     String thisBaseUrl = zkController.getBaseUrl();
@@ -66,11 +69,10 @@ public class CloudUtil {
           
           String cnn = replica.getName();
           String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-          boolean isSharedFs = replica.getStr(CoreAdminParams.DATA_DIR) != null;
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
           
           if (thisCnn != null && thisCnn.equals(cnn)
-              && !thisBaseUrl.equals(baseUrl) && isSharedFs) {
+              && !thisBaseUrl.equals(baseUrl)) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
               cc.unload(desc.getName());
             }
@@ -91,6 +93,17 @@ public class CloudUtil {
         }
       }
     }
+  }
+
+  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (docCollection != null) {
+      Slice slice = docCollection.getSlice(shard);
+      if (slice != null) {
+        return slice.getReplica(coreNodeName) != null;
+      }
+    }
+    return false;
   }
 
   /**
@@ -131,4 +144,9 @@ public class CloudUtil {
 
   }
 
+  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
+      throws IOException, InterruptedException {
+    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    return !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || collection.getPolicyName() != null;
+  }
 }

@@ -29,6 +29,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
@@ -43,7 +44,7 @@ import org.apache.solr.search.SyntaxError;
 /**
  * This feature allows you to reuse any Solr query as a feature. The value
  * of the feature will be the score of the given query for the current document.
- * See <a href="https://cwiki.apache.org/confluence/display/solr/Other+Parsers">Solr documentation of other parsers</a> you can use as a feature.
+ * See <a href="https://lucene.apache.org/solr/guide/other-parsers.html">Solr documentation of other parsers</a> you can use as a feature.
  * Example configurations:
  * <pre>[{ "name": "isBook",
   "class": "org.apache.solr.ltr.feature.SolrFeature",
@@ -178,7 +179,7 @@ public class SolrFeature extends Feature {
         // leaving nothing for the phrase query to parse.
         if (query != null) {
           queryAndFilters.add(query);
-          solrQueryWeight = searcher.createNormalizedWeight(query, true);
+          solrQueryWeight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
         } else {
           solrQueryWeight = null;
         }
@@ -284,6 +285,11 @@ public class SolrFeature extends Feature {
                   "Unable to extract feature for "
                   + name, e);
         }
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
       }
     }
 

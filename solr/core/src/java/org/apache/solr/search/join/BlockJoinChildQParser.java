@@ -16,10 +16,15 @@
  */
 package org.apache.solr.search.join;
 
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrConstantScoreQuery;
+import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
@@ -35,5 +40,17 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   @Override
   protected String getParentFilterLocalParamName() {
     return "of";
+  }
+  
+  @Override
+  protected Query noClausesQuery() throws SyntaxError {
+    final Query parents = parseParentFilter();
+    final BooleanQuery notParents = new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), Occur.MUST)
+        .add(parents, Occur.MUST_NOT)
+      .build();
+    SolrConstantScoreQuery wrapped = new SolrConstantScoreQuery(getFilter(notParents));
+    wrapped.setCache(false);
+    return wrapped;
   }
 }

@@ -30,6 +30,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+/**
+ * @since 6.6.0
+ */
 public class CalculatorStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;

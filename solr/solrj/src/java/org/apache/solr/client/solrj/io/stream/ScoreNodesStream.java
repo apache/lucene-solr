@@ -54,6 +54,7 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
  *  You can use a different value for termFreq by providing the termFreq param
  *  scoreNodes(gatherNodes(...), termFreq="min(weight)")
  *
+ * @since 6.2.0
  **/
 
 public class ScoreNodesStream extends TupleStream implements Expressible

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.ShardHandler;
@@ -34,9 +35,9 @@ import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_A
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
    public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
-                                     final ShardHandler shardHandler,
-                                     String adminPath, Overseer.Stats stats, Overseer overseer,
-                                     OverseerNodePrioritizer overseerNodePrioritizer) {
+                                               final ShardHandler shardHandler,
+                                               String adminPath, Stats stats, Overseer overseer,
+                                               OverseerNodePrioritizer overseerNodePrioritizer) {
     this(
         zkStateReader,
         myId,
@@ -55,7 +56,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
   protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
-                                        Overseer.Stats stats,
+                                        Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerNodePrioritizer,
                                         OverseerTaskQueue workQueue,
@@ -80,7 +81,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
       String myId,
       final ShardHandlerFactory shardHandlerFactory,
       String adminPath,
-      Overseer.Stats stats,
+      Stats stats,
       Overseer overseer,
       OverseerNodePrioritizer overseerNodePrioritizer) {
     final OverseerCollectionMessageHandler collMessageHandler = new OverseerCollectionMessageHandler(

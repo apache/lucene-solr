@@ -66,7 +66,7 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
       final String name = "c" + i;
 
       fstore.addFeature(createMap(name,
-          OriginalScoreFeature.class.getCanonicalName(), null),
+          OriginalScoreFeature.class.getName(), null),
           "fstore-testFeature");
 
       final Feature f = fs.get(name);
@@ -87,7 +87,7 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
       final String name = "c" + i;
 
       fstore.addFeature(createMap(name,
-          ValueFeature.class.getCanonicalName(), params),
+          ValueFeature.class.getName(), params),
           "fstore-testFeature2");
 
     }
@@ -109,7 +109,7 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
       params.put("value", i);
       final String name = "testc" + (float) i;
       fstore.addFeature(createMap(name,
-          ValueFeature.class.getCanonicalName(), params),
+          ValueFeature.class.getName(), params),
           "fstore-testFeature3");
 
     }
@@ -120,13 +120,13 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
   public void getInstanceTest() throws FeatureException
   {
     fstore.addFeature(createMap("test",
-        OriginalScoreFeature.class.getCanonicalName(), null),
+        OriginalScoreFeature.class.getName(), null),
         "testFstore");
     final Feature feature = fstore.getFeatureStore("testFstore").get("test");
     assertNotNull(feature);
     assertEquals("test", feature.getName());
-    assertEquals(OriginalScoreFeature.class.getCanonicalName(), feature
-        .getClass().getCanonicalName());
+    assertEquals(OriginalScoreFeature.class.getName(), feature
+        .getClass().getName());
   }
 
   @Test

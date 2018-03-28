@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Check relationship between polygon and GeoShapes of basic polygons. Normally we construct
@@ -735,6 +736,29 @@ public class SimpleGeoPolygonRelationshipsTest {
     // and therefore CONTAINS
     assertEquals(GeoArea.CONTAINS,  rel);
   }
+
+  @Test
+  public void testDegeneratedPointInPole(){
+    GeoBBox bBox1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI*0.5, Math.PI*0.5, 0, 0);
+    GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Math.PI*0.5,  Math.PI);
+    System.out.println("bbox1 = "+bBox1+"; point = "+point);
+    assertTrue(bBox1.isWithin(point));
+  }
+
+  @Test
+  public void testDegeneratePathShape(){
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, 0, 0);
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, 0, 1);
+    GeoPoint[] pointPath1 = new GeoPoint[] {point1, point2};
+    GeoPath path1 = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 0, pointPath1);
+    GeoPath path2 = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 1, pointPath1);
+    int rel = path1.getRelationship(path2);
+    //if an end point is inside the shape it will always return intersects
+    assertEquals(GeoArea.CONTAINS, rel); //should be contains?
+    rel = path2.getRelationship(path1);
+    assertEquals(GeoArea.WITHIN, rel);
+  }
+
 
   private GeoPolygon buildConvexGeoPolygon(double lon1, double lat1,
                                            double lon2, double lat2,

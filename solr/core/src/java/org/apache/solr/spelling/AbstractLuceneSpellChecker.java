@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
@@ -109,7 +109,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       sd = core.getResourceLoader().newInstance(strDistanceName, StringDistance.class);
       //TODO: Figure out how to configure options.  Where's Spring when you need it?  Or at least BeanUtils...
     } else {
-      sd = new LevensteinDistance();
+      sd = new LevenshteinDistance();
     }
     try {
       initIndex();

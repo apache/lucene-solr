@@ -35,8 +35,8 @@ import java.util.Locale;
  * </p>
  * <p>
  * The default selection behavior is to mutate both those fields that don't match
- * a schema field, as well as those fields that match a schema field with a field 
- * type that uses class solr.TrieLongField.
+ * a schema field, as well as those fields that match a schema field with a long 
+ * field type.
  * </p>
  * <p>
  * If all values are parseable as long (or are already Long), then the field
@@ -60,6 +60,7 @@ import java.util.Locale;
  * See {@link Locale} for a description of acceptable language, country (optional)
  * and variant (optional) values, joined with underscore(s).
  * </p>
+ * @since 4.4.0
  */
 public class ParseLongFieldUpdateProcessorFactory extends ParseNumericFieldUpdateProcessorFactory {
   

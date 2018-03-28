@@ -112,13 +112,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   @Test
   public void testScore() throws Exception {
     //without score
-    testJoins(toColl, fromColl, toDocId, false);
+    testJoins(toColl, fromColl, toDocId, true);
   }
   
   @Test
   public void testNoScore() throws Exception {
     //with score
-    testJoins(toColl, fromColl, toDocId, true);
+    testJoins(toColl, fromColl, toDocId, false);
     
   }
   
@@ -141,7 +141,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   }
 
   private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
-      throws SolrServerException, IOException {
+      throws SolrServerException, IOException, InterruptedException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
     CloudSolrClient client = cluster.getSolrClient();
@@ -164,8 +164,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl+"Alias";
-    CollectionAdminRequest.CreateAlias request = CollectionAdminRequest.createAlias(alias,fromColl);
-    request.process(client);
+    CollectionAdminRequest.createAlias(alias, fromColl).process(client);
 
     {
       final String joinQ = "{!join " + anyScoreMode(isScoresTest)

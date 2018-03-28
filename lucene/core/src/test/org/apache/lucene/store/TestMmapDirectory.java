@@ -27,6 +27,7 @@ import org.junit.Ignore;
 /**
  * Tests MMapDirectory
  */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestMmapDirectory extends BaseDirectoryTestCase {
 
   @Override

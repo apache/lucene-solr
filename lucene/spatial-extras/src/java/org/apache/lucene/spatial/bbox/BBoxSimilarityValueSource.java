@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.ShapeValues;
 import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.shape.Rectangle;
@@ -43,6 +44,11 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
 
   public BBoxSimilarityValueSource(ShapeValuesSource bboxValueSource) {
     this.bboxValueSource = bboxValueSource;
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    return this;
   }
 
   @Override
@@ -98,7 +104,7 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
 
   @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
     if (dv.advanceExact(docId)) {
       AtomicReference<Explanation> explanation = new AtomicReference<>();
       final ShapeValues shapeValues = bboxValueSource.getValues(ctx);
@@ -108,6 +114,11 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
       }
     }
     return Explanation.noMatch(this.toString());
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return bboxValueSource.isCacheable(ctx);
   }
 
   @Override

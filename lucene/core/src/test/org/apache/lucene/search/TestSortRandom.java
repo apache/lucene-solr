@@ -229,7 +229,7 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -248,6 +248,11 @@ public class TestSortRandom extends LuceneTestCase {
           }
 
           return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
         }
       };
     }

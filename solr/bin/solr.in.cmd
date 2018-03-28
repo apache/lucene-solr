@@ -48,6 +48,9 @@ REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
 REM set SOLR_HOST=192.168.1.1
 
+REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+REM set SOLR_WAIT_FOR_ZK=30
+
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 
@@ -75,7 +78,7 @@ REM If not set, defaults to <instance_dir>/data. Overridable per core through 'd
 REM set SOLR_DATA_HOME=
 
 REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
-REM This is an alternative to changing the rootLogger in log4j.properties
+REM This is an alternative to changing the rootLogger in log4j2.xml
 REM set SOLR_LOG_LEVEL=INFO
 
 REM Location where Solr should write logs to. Absolute or relative to solr start dir

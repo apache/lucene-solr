@@ -1,6 +1,4 @@
 = Distributed Requests
-:page-shortname: distributed-requests
-:page-permalink: distributed-requests.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -63,7 +61,7 @@ Or you can specify a list of replicas to choose from for a single shard (for loa
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted
 ----
 
-And of course, you can specify a list of shards (seperated by commas) each defined by a list of replicas (seperated by pipes). In this example, 2 shards are queried, the first being a random replica from shard1, the second being a random replica from the explicit pipe delimited list:
+And of course, you can specify a list of shards (separated by commas) each defined by a list of replicas (seperated by pipes). In this example, 2 shards are queried, the first being a random replica from shard1, the second being a random replica from the explicit pipe delimited list:
 
 [source,text]
 ----
@@ -120,7 +118,7 @@ Chooses the JVM specifics dealing with fair policy queuing, if enabled distribut
 
 Document and term statistics are needed in order to calculate relevancy. Solr provides four implementations out of the box when it comes to document stats calculation:
 
-* `LocalStatsCache`: This only uses local term and document statistics to compute relevance. In cases with uniform term distribution across shards, this works reasonably well.This option is the default if no `<statsCache>` is configured.
+* `LocalStatsCache`: This only uses local term and document statistics to compute relevance. In cases with uniform term distribution across shards, this works reasonably well. This option is the default if no `<statsCache>` is configured.
 * `ExactStatsCache`: This implementation uses global values (across the collection) for document frequency.
 * `ExactSharedStatsCache`: This is exactly like the exact stats cache in its functionality but the global stats are reused for subsequent requests with the same terms.
 * `LRUStatsCache`: This implementation uses an LRU cache to hold global stats, which are shared between requests.

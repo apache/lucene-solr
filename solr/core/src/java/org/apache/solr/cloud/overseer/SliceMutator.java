@@ -16,18 +16,18 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.cloud.Assign;
+import com.google.common.collect.ImmutableSet;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -39,20 +39,22 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class SliceMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PREFERRED_LEADER_PROP = COLL_PROP_PREFIX + "preferredleader";
+  public static final String PREFERRED_LEADER_PROP = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + "preferredleader";
 
   public static final Set<String> SLICE_UNIQUE_BOOLEAN_PROPERTIES = ImmutableSet.of(PREFERRED_LEADER_PROP);
 
+  protected final SolrCloudManager dataProvider;
+  protected final DistribStateManager stateManager;
 
-  protected final ZkStateReader zkStateReader;
-
-  public SliceMutator(ZkStateReader zkStateReader) {
-    this.zkStateReader = zkStateReader;
+  public SliceMutator(SolrCloudManager dataProvider) {
+    this.dataProvider = dataProvider;
+    this.stateManager = dataProvider.getDistribStateManager();
   }
 
   public ZkWriteCommand addReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -70,7 +72,7 @@ public class SliceMutator {
     if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
       coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     } else {
-      coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
+      coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
     }
     Replica replica = new Replica(coreNodeName,
         makeMap(
@@ -138,9 +140,9 @@ public class SliceMutator {
       String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getStr(ZkStateReader.BASE_URL_PROP), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(zkStateReader).unsetLeader(replica);
+        replica = new ReplicaMutator(dataProvider).unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(zkStateReader).setLeader(replica);
+        replica = new ReplicaMutator(dataProvider).setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);
@@ -176,6 +178,8 @@ public class SliceMutator {
         props.remove("shard_parent_zk_session");
       }
       props.put(ZkStateReader.STATE_PROP, message.getStr(key));
+      // we need to use epoch time so that it's comparable across Overseer restarts
+      props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(dataProvider.getTimeSource().getEpochTimeNs()));
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
       slicesCopy.put(slice.getName(), newSlice);
     }

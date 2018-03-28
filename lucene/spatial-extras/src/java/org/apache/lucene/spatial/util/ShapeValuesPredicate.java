@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SegmentCacheable;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.spatial.ShapeValues;
 import org.apache.lucene.spatial.ShapeValuesSource;
@@ -37,7 +38,7 @@ import org.locationtech.spatial4j.shape.Shape;
  *
  * @lucene.experimental
  */
-public class ShapeValuesPredicate {
+public class ShapeValuesPredicate implements SegmentCacheable {
   private final ShapeValuesSource shapeValuesource;//the left hand side
   private final SpatialOperation op;
   private final Shape queryShape;//the right hand side (constant)
@@ -95,5 +96,10 @@ public class ShapeValuesPredicate {
     result = 31 * result + op.hashCode();
     result = 31 * result + queryShape.hashCode();
     return result;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return shapeValuesource.isCacheable(ctx);
   }
 }

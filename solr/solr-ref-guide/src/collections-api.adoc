@@ -1,6 +1,4 @@
 = Collections API
-:page-shortname: collections-api
-:page-permalink: collections-api.html
 :page-toclevels: 1
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -87,7 +85,7 @@ A `false` value makes the results of a collection creation predictable and gives
 This parameter is ignored if `createNodeSet` is not also specified.
 
 `collection.configName`::
-Defines the name of the configurations (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will default to the collection name as the configuration name.
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configSet to create a new (and mutable) configSet named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
 
 `router.field`::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
@@ -109,6 +107,11 @@ Replica placement rules. See the section <<rule-based-replica-placement.adoc#rul
 `snitch`::
 Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
 
+`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 === CREATE Response
 
 The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
@@ -119,7 +122,7 @@ The response will include the status of the request and the new core names. If t
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
 ----
 
 *Output*
@@ -173,6 +176,7 @@ The attributes that can be modified are:
 * collection.configName
 * rule
 * snitch
+* policy
 +
 See the <<create,CREATE action>> section above for details on these attributes.
 
@@ -201,7 +205,7 @@ The response will include the status of the request and the cores that were relo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt=xml
 ----
 
 *Output*
@@ -241,6 +245,10 @@ This command allows for seamless splitting and requires no downtime. A shard bei
 
 The split is performed by dividing the original shard's hash range into two equal partitions and dividing up the documents in the original shard according to the new sub-ranges. Two parameters discussed below, `ranges` and `split.key` provide further control over how the split occurs.
 
+The newly created shards will have as many replicas as the parent shard.
+
+You must ensure that the node running the leader of the parent shard has enough free disk space i.e. more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
 Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<Asynchronous Calls,asynchronous call>>.
 
 === SPLITSHARD Parameters
@@ -266,6 +274,9 @@ For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to s
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>
 
@@ -281,7 +292,7 @@ Split shard1 of the "anotherCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1&wt=xml
 ----
 
 *Output*
@@ -371,6 +382,9 @@ The format is a comma-separated list of node_names, such as `localhost:8983_solr
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
@@ -386,7 +400,7 @@ Create 'shard-z' for the "anImplicitCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z&wt=xml
 ----
 
 *Output*
@@ -440,7 +454,7 @@ Delete 'shard1' of the "anotherCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1
+http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1&wt=xml
 ----
 
 *Output*
@@ -466,24 +480,138 @@ http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anoth
 [[createalias]]
 == CREATEALIAS: Create or Modify an Alias for a Collection
 
-The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command.
+The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name
+already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command. Aliases
+come in 2 flavors: routed and non-routed.
+
+Non-routed aliases are simpler and can serve to rename a collection or to distribute queries across several collections.
+While it is possible to send updates to an alias spanning multiple collections, non-routed alias have no logic for
+distributing documents among the referenced collections so all updates will go to the first collection in the list.
 
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
+
+Routed aliases are more complex to configure, but include logic for automatically inspecting a field on the document
+and using the value in that field to select a destination collection. Additionally, the routed alias automates the
+partitioning of data across a series of collections by creating new collections periodically. This feature allows for
+indefinite indexing of data without degradation of performance otherwise experienced due to the continuous growth of
+an index. As new data arrives, a field on the document is inspected and the document is then potentially re-routed to
+another collection. The underlying collections can can be queried independently but usually the alias will be used.
+These collections are created automatically on the fly as new data arrives based on the parameters supplied in this
+command. For very high volume use cases or for use cases requiring only a limited span of data to be retained,
+collections older than a given age can be deleted. This delete of old collections only occurs if new documents are
+sent to the alias.
+
+NOTE: Presently this is only supported for temporal fields stored as a
+<<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
+well ordered field types may be added in future versions.
+
+[source,text]
+----
+localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+----
+
+If run on Jan 15, 2018, the above will create an alias named timedata, that contains collections with names prefixed
+with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
+alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
+minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
+As soon as the system receives a document for an allowable time window for which there is no collection it will
+automatically create the next required collection (and potentially any intervening collections if `router.interval` is
+smaller than `router.maxFutureMs`). Both the initial collection and any subsequent collections will be created using
+the specified configset. All collection creation parameters other than `name` are allowed, prefixed
+by `create-collection.`
+
+This means that one could, for example, partition their collections by day, and within each daily collection route
+the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
+placement strategies may also be used.
+
+The values supplied in this command for collection creation will be retained
+in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
+
+NOTE: Presently only updates are routed and queries are distributed to all collections in the alias, but future
+features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
+a filter on the routed field.
 
 === CREATEALIAS Parameters
 
 `name`::
-The alias name to be created. This parameter is required.
-
-`collections`::
-A comma-separated list of collections to be aliased. The collections must already exist in the cluster. This parameter is required.
+The alias name to be created. This parameter is required. If the alias is to be routed it also functions
+as a prefix for the names of the dependent collections that will be created. It must therefore adhere to normal
+requirements for collection naming.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
+==== Non-Routed Alias Parameters
+
+`collections`::
+A comma-separated list of collections to be aliased. The collections must already exist in the cluster.
+This parameter signals the creation of a simple (non-routed) alias. If it is present all routing parameters are
+prohibited. If routing parameters are present this parameter is prohibited.
+
+==== Routed Alias Parameters
+
+`router.start`::
+The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"
+optionally with <<working-with-dates.adoc#date-math,date math>>).
++
+The first collection created for the alias will be internally named after this value.
+If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then
+it will yield an error since it can't be routed. This date/time MUST NOT have a milliseconds component other than 0.
+Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work
+just fine. This parameter is required.
+
+`TZ`::
+The timezone to be used when evaluating any date math in router.start or router.interval. This is equivalent to the
+same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
+as an alias property.
++
+If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the
+myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
++
+The default timezone is UTC.
+
+`router.field`::
+The date field to inspect to determine which underlying collection an incoming document should be routed to.
+This field is required on all incoming documents.
+
+`router.name`::
+The type of routing to use. Presently only `time` is valid.  This parameter is required.
+
+`router.interval`::
+A date math expression that will be appended to a timestamp to determine the next collection in the series.
+Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
+work here.
++
+This parameter is required.
+
+`router.maxFutureMs`::
+The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
+without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
++
+The default is 10 minutes.
+
+`router.autoDeleteAge`::
+A date math expression that results in the oldest collections getting deleted automatically.
++
+The date math is relative to the timestamp of a newly created collection (typically close to the current time),
+and thus this must produce an earlier time via rounding and/or subtracting.
+Collections to be deleted must have a time range that is entirely before the computed age.
+Collections are considered for deletion immediately prior to new collections getting created.
+Example: `/DAY-90DAYS`.
++
+The default is not to delete.
+
+`create-collection.*`::
+The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+are identical in requirements and naming except that we insist that the configset be explicitly specified.
+The configset must be created beforehand, either uploaded or copied and modified.
+It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+
 === CREATEALIAS Response
 
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file.
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the
+`aliases.json` file. The initial collection for routed aliases should also be visible in various parts of the admin UI.
 
 === Examples using CREATEALIAS
 
@@ -493,7 +621,7 @@ Create an alias named "testalias" and link it to the collections named "anotherC
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
 ----
 
 *Output*
@@ -506,6 +634,79 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
     <int name="QTime">122</int>
   </lst>
 </response>
+----
+
+Create an alias named "myTimeData" for data begining on `2018-01-15` in the UTC time zone and partitioning daily
+based on the `evt_dt` field in the incomming documents. Data more than an hour beyond the latest (most recent)
+partiton is to be rejected and collections are created using a config set named myConfig and
+
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+
+A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
+Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
+
+*Input*
+
+[source,json]
+----
+POST /api/c
+{
+  "create-routed-alias" : {
+    "name": "somethingTemporalThisWayComes",
+    "router" : {
+      "name": "time",
+      "field": "evt_dt",
+      "start":"NOW/MINUTE",
+      "interval":"+2HOUR",
+      "maxFutureMs":"14400000"
+    },
+    "create-collection" : {
+      "config":"_default",
+      "router": {
+        "name":"implicit",
+        "field":"foo_s"
+      },
+      "shards":"foo,bar,baz",
+      "numShards": 3,
+      "tlogReplicas":1,
+      "pullReplicas":1,
+      "maxShardsPerNode":2,
+      "properties" : {
+        "foobar":"bazbam"
+      }
+    }
+  }
+}
+----
+
+*Output*
+
+[source,xml]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
 ----
 
 [[listaliases]]
@@ -521,6 +722,72 @@ The output will contain a list of aliases with the corresponding collection name
 
 === Examples using LISTALIASES
 
+*Input*
+
+List the existing aliases, requesting information as XML from Solr:
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+    <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+    </lst>
+    <lst name="aliases">
+        <str name="testalias1">collection1</str>
+        <str name="testalias2">collection1,collection2</str>
+    </lst>
+    <lst name="properties">
+        <lst name="testalias1"/>
+        <lst name="testalias2">
+            <str name="someKey">someValue</str>
+        </lst>
+    </lst>
+</response>
+----
+
+[[aliasprop]]
+== ALIASPROP: Modify Alias Properties for a Collection
+
+The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
+
+`/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
+
+=== ALIASPROP Parameters
+
+`name`::
+The alias name on which to set properties. This parameter is required.
+
+`property.*`::
+The name of the property to be modified replaces '*', the value for the parameter is passed as the value for the property.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+=== ALIASPROP Response
+
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
+find the `aliases.json` file or use the LISTALIASES api command.
+
+=== Examples using ALIASPROP
+
+*Input*
+
+For an alias named "testalias2" and set the value "someValue" for a property of "someKey" and "otherValue" for "otherKey".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&property.someKey=someValue&property.otherKey=otherValue&wt=xml
+----
+
 *Output*
 
 [source,xml]
@@ -528,11 +795,7 @@ The output will contain a list of aliases with the corresponding collection name
 <response>
   <lst name="responseHeader">
     <int name="status">0</int>
-    <int name="QTime">0</int>
-  </lst>
-  <lst name="aliases">
-    <str name="testalias1">collection1</str>
-    <str name="testalias2">collection2</str>
+    <int name="QTime">122</int>
   </lst>
 </response>
 ----
@@ -552,7 +815,9 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 === DELETEALIAS Response
 
-The output will simply be a responseHeader with details of the time it took to process the request. To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and find the `aliases.json` file.
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and
+find the `aliases.json` file.
 
 === Examples using DELETEALIAS
 
@@ -562,7 +827,7 @@ Remove the alias named "testalias".
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias&wt=xml
 ----
 
 *Output*
@@ -602,7 +867,7 @@ Delete the collection named "newCollection".
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
+http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt=xml
 ----
 
 *Output*
@@ -679,7 +944,7 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3&wt=xml
 ----
 
 *Output*
@@ -699,6 +964,8 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=tes
 
 Add a replica to a shard in a collection. The node name can be specified if the replica is to be created in a specific node.
 
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
 === ADDREPLICA Parameters
@@ -714,7 +981,7 @@ If `shard` is not specified, then `\_route_` must be.
 `\_route_`::
 If the exact shard name is not known, users may pass the `\_route_` value and the system would identify the name of the shard.
 +
-Ignored if the `shard` param is also specified.
+Ignored if the `shard` parameter is also specified.
 
 `node`::
 The name of the node where the replica should be created.
@@ -739,6 +1006,9 @@ See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,T
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
 
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>
 
@@ -748,7 +1018,7 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -797,7 +1067,50 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
+[[collectionprop]]
+== COLLECTIONPROP: Collection Properties
+
+Add, edit or delete a collection property.
+
+`/admin/collections?action=COLLECTIONPROP&name=_collectionName_&propertyName=_propertyName_&propertyValue=_propertyValue_`
+
+=== COLLECTIONPROP Parameters
+
+`name`::
+The name of the collection for which the property would be set.
+
+`propertyName`::
+The name of the property.
+
+`propertyValue`::
+The value of the property. When not provided, the property is deleted.
+
+=== COLLECTIONPROP Response
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+=== Examples using COLLECTIONPROP
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&val=bar&wt=xml
 ----
 
 *Output*
@@ -857,7 +1170,7 @@ The response will include the status of the request.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2&wt=xml
 ----
 
 *Output*
@@ -1033,7 +1346,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -1074,7 +1387,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -1281,7 +1594,7 @@ The user defined request ID for the request. This can be used to track the statu
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000&wt=xml
 ----
 
 *Output*
@@ -1304,7 +1617,7 @@ http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004&wt=xml
 ----
 
 *Output*
@@ -1344,7 +1657,7 @@ Set to `true` to clear all stored completed and failed async request responses.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo&wt=xml
 ----
 
 *Output*
@@ -1364,7 +1677,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar&wt=xml
 ----
 
 *Output*
@@ -1384,7 +1697,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true&wt=xml
 ----
 
 *Output*
@@ -1480,7 +1793,7 @@ This command would set the "preferredLeader" property (`property.preferredLeader
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true&wt=xml
 ----
 
 *Output*
@@ -1533,7 +1846,7 @@ The name of the collection the replica belongs to. This parameter is required.
 The name of the shard the replica belongs to. This parameter is required.
 
 `replica`::
-The replica, e.g. `core_node1`. This parameter is required.
+The replica, e.g., `core_node1`. This parameter is required.
 
 `property`::
 The property to add. This will have the literal `property.` prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
@@ -1556,7 +1869,7 @@ This command would delete the preferredLeader (`property.preferredLeader`) from 
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&wt=xml
 ----
 
 *Output*
@@ -1604,9 +1917,9 @@ Either of these commands would put the "preferredLeader" property on one replica
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=preferredLeader
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=preferredLeader&wt=xml
 
-http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=property.preferredLeader
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=property.preferredLeader&wt=xml
 ----
 
 *Output*
@@ -1661,8 +1974,8 @@ Either of these commands would cause all the active replicas that had the `prefe
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&wt=xml
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30&wt=xml
 ----
 
 *Output*
@@ -1745,7 +2058,7 @@ WARNING: This is an expert level command, and should be invoked only when regula
 [[migratestateformat]]
 == MIGRATESTATEFORMAT: Migrate Cluster State
 
-A expert level utility API to move a collection from shared `clusterstate.json` zookeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
+A expert level utility API to move a collection from shared `clusterstate.json` ZooKeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
 
 `/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>`
 
@@ -1848,9 +2161,11 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in one node (the source) to another node (the target). After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
 
@@ -1860,7 +2175,7 @@ For source replicas that are also shard leaders the operation will wait for the 
 The source node from which the replicas need to be copied from. This parameter is required.
 
 `targetNode`::
-The target node where replicas will be copied. This parameter is required.
+The target node where replicas will be copied. If this parameter is not provided, Solr will identify nodes automatically based on policies or number of cores in each node.
 
 `parallel`::
 If this flag is set to `true`, all replicas are created in separate threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices. The default is `false`.
@@ -1876,9 +2191,12 @@ Time in seconds to wait until new replicas are created, and until leader replica
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
 
+[[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
 This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.
+
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the replica to be moved but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=MOVEREPLICA&collection=collection&shard=shard&replica=replica&sourceNode=nodeName&targetNode=nodeName`
 
@@ -1902,6 +2220,20 @@ The name of the destination node. This parameter is required.
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
+[[utilizenode]]
+== UTILIZENODE: Utilize a New Node
+
+This command can be used to move some replicas from the existing nodes to either a new node or a less loaded node to reduce the load on the existing node.
+
+This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.
+
+`/admin/collections?action=UTILIZENODE&node=nodeName`
+
+=== UTILIZENODE Parameters
+
+`node`:: The name of the node that needs to be utilized. This parameter is required.
+
+
 == Asynchronous Calls
 
 Since some collection API calls can be long running tasks (such as SPLITSHARD), you can optionally have the calls run asynchronously. Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> call at any time.
@@ -1914,7 +2246,7 @@ As of now, REQUESTSTATUS does not automatically clean up the tracking data struc
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000&wt=xml
 ----
 
 *Output*

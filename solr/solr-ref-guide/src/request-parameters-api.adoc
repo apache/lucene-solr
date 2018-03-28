@@ -1,6 +1,4 @@
 = Request Parameters API
-:page-shortname: request-parameters-api
-:page-permalink: request-parameters-api.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,7 +43,7 @@ The available commands are:
 
 * `set`: Create or overwrite a parameter set map.
 * `unset`: delete a parameter set map.
-* `update`: update a parameter set map. This is equivalent to a map.putAll(newMap) . Both the maps are merged and if the new map has same keys as old they are overwritten
+* `update`: update a parameter set map. This is equivalent to a `map.putAll(newMap)`. Both the maps are merged and if the new map has same keys as old they are overwritten.
 
 You can mix these commands into a single request if necessary.
 
@@ -120,7 +118,7 @@ Solr ships with many out-of-the-box request handlers that may only be configured
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
-To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. E.g. for the `/export` request handler:
+To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. As an example, for the `/export` request handler:
 
 [source,bash]
 ----

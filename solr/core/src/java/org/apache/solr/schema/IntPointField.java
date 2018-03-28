@@ -27,7 +27,6 @@ import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -128,24 +127,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
     result.grow(Integer.BYTES);
     result.setLength(Integer.BYTES);
     IntPoint.encodeDimension(parseIntFromUser(null, val.toString()), result.bytes(), 0);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
   }
 
   @Override

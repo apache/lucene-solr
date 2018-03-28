@@ -37,7 +37,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;

@@ -1,6 +1,4 @@
 = Index Replication
-:page-shortname: index-replication
-:page-permalink: index-replication.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -33,7 +31,7 @@ Solr includes a Java implementation of index replication that works over HTTP:
 * The configuration affecting replication is controlled by a single file, `solrconfig.xml`
 * Supports the replication of configuration files as well as index files
 * Works across platforms with same configuration
-* No reliance on OS-dependent file system features (eg: hard links)
+* No reliance on OS-dependent file system features (e.g., hard links)
 * Tightly integrated with Solr; an admin page offers fine-grained control of each aspect of replication
 * The Java-based replication feature is implemented as a request handler. Configuring replication is therefore similar to any normal request handler.
 
@@ -56,7 +54,7 @@ Distribution::
 The copying of an index from the master server to all slaves. The distribution process takes advantage of Lucene's index file structure.
 
 Inserts and Deletes::
-As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created files. Documents that are deleted are not removed from the files. They are flagged in the file, deletable, and are not removed from the files until the index is optimized.
+As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created segment files. Documents that are deleted are not removed from the segment files. They are flagged in the file, deletable, and are not removed from the segments until the segment is merged as part of normal index updates.
 
 Master and Slave::
 A Solr replication master is a single node which receives all updates initially and keeps everything organized. Solr replication slave nodes receive no updates directly, instead all changes (such as inserts, updates, deletes, etc.) are made against the single master node. Changes made on the master are distributed to all the slave nodes which service all query requests from the clients.
@@ -66,6 +64,8 @@ An update is a single change request against a single Solr instance. It may be a
 
 Optimization::
 A process that compacts the index and merges segments in order to improve query performance. Optimization should only be run on the master nodes. An optimized index may give query performance gains compared to an index that has become fragmented over a period of time with many updates. Distributing an optimized index requires a much longer time than the distribution of new segments to an un-optimized index.
+
+WARNING: optimizing is not recommended unless it can be performed regularly as it may lead to a significantly larger portion of the index consisting of deleted documents than would normally be the case.
 
 Segments::
 A self contained subset of an index consisting of some documents and data structures related to the inverted index of terms in those documents.
@@ -101,7 +101,7 @@ Integer specifying how many backups to keep. This can be used to delete all but 
 The configuration files to replicate, separated by a comma.
 
 `commitReserveDuration`::
-If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time taken to download 5Mb from the master to a slave. The default is 10 seconds.
+If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time expected to be required to transfer data. The default is `00:00:10` i.e., 10 seconds.
 
 The example below shows a possible 'master' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent slaves from saturating its network interface
 
@@ -112,9 +112,9 @@ The example below shows a possible 'master' configuration for the `ReplicationHa
     <str name="replicateAfter">optimize</str>
     <str name="backupAfter">optimize</str>
     <str name="confFiles">schema.xml,stopwords.txt,elevate.xml</str>
-    <str name="commitReserveDuration">00:00:10</str>
   </lst>
   <int name="maxNumberOfBackups">2</int>
+  <str name="commitReserveDuration">00:00:10</str>
   <lst name="invariants">
     <str name="maxWriteMBPerSec">16</str>
   </lst>
@@ -358,3 +358,5 @@ Consider this example: on a three-slave one-master configuration, distributing a
 Optimizing on the master allows for a straight-forward optimization operation. No query slaves need to be taken out of service. The optimized index can be distributed in the background as queries are being normally serviced. The optimization can occur at any time convenient to the application providing index updates.
 
 While optimizing may have some benefits in some situations, a rapidly changing index will not retain those benefits for long, and since optimization is an intensive process, it may be better to consider other options, such as lowering the merge factor (discussed in the section on <<indexconfig-in-solrconfig.adoc#merge-factors,Index Configuration>>).
+
+TIP: Do not elect to optimize your index unless you have tangible evidence that it will significantly improve your search performance. Recent changes in Solr/Lucene have dramatically lessened the need to optimize as discussed at the above link.

@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.SoraniStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 4.7.0
  */
 public class SoraniStemFilterFactory extends TokenFilterFactory {
 

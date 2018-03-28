@@ -1,6 +1,4 @@
 = Solr Control Script Reference
-:page-shortname: solr-control-script-reference
-:page-permalink: solr-control-script-reference.html
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -115,19 +113,21 @@ Start Solr on the defined port. If this is not specified, '8983' will be used.
 *Example*: `bin/solr start -p 8655`
 
 `-s <dir>`::
-Sets the solr.solr.home system property; Solr will create core directories under this directory. This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the -d parameter. If set, the specified directory should contain a solr.xml file, unless solr.xml exists in ZooKeeper. The default value is `server/solr`.
+Sets the `solr.solr.home` system property; Solr will create core directories under this directory. This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
 +
-This parameter is ignored when running examples (-e), as the solr.solr.home depends on which example is run.
+If set, the specified directory should contain a `solr.xml` file, unless `solr.xml` exists in ZooKeeper. The default value is `server/solr`.
++
+This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
 *Example*: `bin/solr start -s newHome`
 
 `-v`::
-Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j.properties` accordingly.
+Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml` accordingly.
 +
 *Example*: `bin/solr start -f -v`
 
 `-q`::
-Be more quiet. This changes the logging level of log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j.properties` accordingly. This can be useful in a production setting where you want to limit logging to warnings and errors.
+Be more quiet. This changes the logging level of log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j2.xml` accordingly. This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
 
@@ -298,20 +298,19 @@ Solr process 39827 running on port 8865
 
 === Assert
 
-The `assert` command sanity-checks common issues with Solr installations.  These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL.  The command can either output a specified error message, or change its exit code to indicate errors.
+The `assert` command sanity checks common issues with Solr installations. These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL. The command can either output a specified error message, or change its exit code to indicate errors.
 
 As an example:
 
-`bin/solr assert --exists /opt/bin/solr`
+[source,bash]
+bin/solr assert --exists /opt/bin/solr
 
 Results in the output below:
 
 [source,plain]
-----
-
 ERROR: Directory /opt/bin/solr does not exist.
 
-----
+Use `bin/solr assert -help` for a full list of options.
 
 === Healthcheck
 
@@ -454,7 +453,7 @@ Any changes you make to the configuration for the contacts collection will not a
 
 You can override the name given to the configuration directory in ZooKeeper by using the `-n` option. For instance, the command `bin/solr create -c logs -d _default -n basic` will upload the `server/solr/configsets/_default/conf` directory to ZooKeeper as `/configs/basic`.
 
-Notice that we used the `-d` option to specify a different configuration than the default. Solr provides several built-in configurations under `server/solr/configsets`. However you can also provide the path to your own configuration directory using the `-d` option. For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll` .
+Notice that we used the `-d` option to specify a different configuration than the default. Solr provides several built-in configurations under `server/solr/configsets`. However you can also provide the path to your own configuration directory using the `-d` option. For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll`.
 
 To reiterate, the configuration directory is named after the collection unless you override it using the `-n` option.
 
@@ -462,9 +461,10 @@ Other collections can share the same configuration by specifying the name of the
 
 ==== Data-driven Schema and Shared Configurations
 
-The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e. data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e. data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
+The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e., data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e., data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
 
-`curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'`
+[source,text]
+curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 
 === Delete Core or Collection
 
@@ -536,11 +536,11 @@ The `bin/solr auth enable` command makes several changes to enable Basic Authent
 ----
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
-[source]
+[source,subs="attributes"]
 ----
 # The following lines added by ./solr for enabling BasicAuth
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-6.6.0/server/solr/basicAuth.conf"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-docs-version}.0/server/solr/basicAuth.conf"
 ----
 * Creates the file `server/solr/basicAuth.conf` to store the credential information that is used with `bin/solr` commands.
 
@@ -607,7 +607,7 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 *Example*: `-n myconfig`
 
 `-d <configset dir>`::
-The path of the configuration set to upload. It should have a "conf" directory immediately below it that in turn contains solrconfig.xml etc.
+The path of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
 +
 If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.
 +

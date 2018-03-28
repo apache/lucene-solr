@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
@@ -109,7 +110,7 @@ public class GraphQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     Weight graphWeight = new GraphQueryWeight((SolrIndexSearcher)searcher, boost);
     return graphWeight;
   }
@@ -275,7 +276,12 @@ public class GraphQuery extends Query {
       // create a scrorer on the result set, if results from right query are empty, use empty iterator.
       return new GraphScorer(this, readerSet == null ? DocIdSetIterator.empty() : readerSet.iterator(), 1);
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     @Override
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
@@ -301,6 +307,11 @@ public class GraphQuery extends Query {
     }
 
     @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return score;
+    }
+
+    @Override
     public DocIdSetIterator iterator() {
       return iter;
     }
@@ -310,11 +321,7 @@ public class GraphQuery extends Query {
       // current position of the doc iterator.
       return iter.docID();
     }
-    
-    @Override
-    public int freq() throws IOException {
-      return 1;
-    }
+
   }
   
   /**

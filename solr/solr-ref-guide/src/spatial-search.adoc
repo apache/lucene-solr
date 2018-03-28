@@ -1,6 +1,4 @@
 = Spatial Search
-:page-shortname: spatial-search
-:page-permalink: spatial-search.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -57,7 +55,19 @@ For indexing geodetic points (latitude and longitude), supply it in "lat,lon" or
 
 For indexing non-geodetic points, it depends. Use `x y` (a space) if RPT. For PointType however, use `x,y` (a comma).
 
-If you'd rather use a standard industry format, Solr supports WKT and GeoJSON. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
+If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON]. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
+
+=== Indexing GeoJSON and WKT
+
+Using the `bin/post` tool:
+
+[source,text]
+bin/post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
+
+The key parameter to pass in with your request is:
+
+`format`::
+The format of the file to pass in.  Accepted values: `WKT` or `geojson`.
 
 == Searching with Query Parsers
 
@@ -73,7 +83,7 @@ The center point using the format "lat,lon" if latitude & longitude. Otherwise, 
 A spatial indexed field.
 
 `score`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g. as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
+(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
 
 * `none`: A fixed score of 1.0. (the default)
 * `kilometers`: distance in kilometers between the field value and the specified center point
@@ -84,7 +94,7 @@ A spatial indexed field.
 +
 [WARNING]
 ====
-Don't use this for indexed non-point shapes (e.g. polygons). The results will be erroneous. And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
+Don't use this for indexed non-point shapes (e.g., polygons). The results will be erroneous. And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
 ====
 +
 When used with `BBoxField`, additional options are supported:
@@ -110,7 +120,8 @@ The `bbox` filter is very similar to `geofilt` except it uses the _bounding box_
 
 Here's a sample query:
 
-`&q=*:*&fq={!bbox sfield=store}&pt=45.15,-93.85&d=5`
+[source,text]
+&q=*:*&fq={!bbox sfield=store}&pt=45.15,-93.85&d=5
 
 The rectangular shape is faster to compute and so it's sometimes used as an alternative to `geofilt` when it's acceptable to return points outside of the radius. However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius). This will return results outside the radius but it will do so somewhat uniformly around the shape.
 
@@ -127,9 +138,10 @@ Sometimes the spatial search requirement calls for finding everything in a recta
 
 Here's an example:
 
-`&q=*:*&fq=store:[45,-94 TO 46,-93]`
+[source,text]
+&q=*:*&fq=store:[45,-94 TO 46,-93]
 
-LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g. `"x y"`.
+LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g., `"x y"`.
 
 
 === Optimizing: Cache or Not
@@ -138,7 +150,8 @@ It's most common to put a spatial query into an "fq" parameter – a filter quer
 
 If you know the filter query (be it spatial or not) is fairly unique and not likely to get a cache hit then specify `cache="false"` as a local-param as seen in the following example. The only spatial types which stand to benefit from this technique are LatLonPointSpatialField and LatLonType (deprecated). Enable docValues on the field (if it isn't already). LatLonType (deprecated) additionally requires a `cost="100"` (or more) local-param.
 
-`&q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5`
+[source,text]
+&q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5
 
 LLPSF does not support Solr's "PostFilter".
 
@@ -147,9 +160,9 @@ LLPSF does not support Solr's "PostFilter".
 There are four distance function queries:
 
 * `geodist`, see below, usually the most appropriate;
-*  http://wiki.apache.org/solr/FunctionQuery#dist[`dist`], to calculate the p-norm distance between multi-dimensional vectors;
-* http://wiki.apache.org/solr/FunctionQuery#hsin.2C_ghhsin_-_Haversine_Formula[`hsin`], to calculate the distance between two points on a sphere;
-* https://wiki.apache.org/solr/FunctionQuery#sqedist_-_Squared_Euclidean_Distance[`sqedist`], to calculate the squared Euclidean distance between two points.
+*  <<function-queries.adoc#dist-function,`dist`>>, to calculate the p-norm distance between multi-dimensional vectors;
+* <<function-queries.adoc#hsin-function,`hsin`>>, to calculate the distance between two points on a sphere;
+* <<function-queries.adoc#sqedist-function,`sqedist`>>, to calculate the squared Euclidean distance between two points.
 
 For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
 
@@ -157,9 +170,15 @@ For more information about these function queries, see the section on <<function
 
 `geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`. You can use the `geodist` function to sort results by distance or score return results.
 
-For example, to sort your results by ascending distance, enter `...&q=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist() asc`.
+For example, to sort your results by ascending distance, use a request like:
 
-To return the distance as the document score, enter `...&q={!func}geodist()&sfield=store&pt=45.15,-93.85&sort=score+asc`.
+[source,text]
+&q=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist() asc
+
+To return the distance as the document score, use a request like:
+
+[source,text]
+&q={!func}geodist()&sfield=store&pt=45.15,-93.85&sort=score+asc&fl=*,score
 
 == More Spatial Search Examples
 
@@ -169,37 +188,50 @@ Here are a few more useful examples of what you can do with spatial search in So
 
 Here we will query for results in Jacksonville, Florida, or within 50 kilometers of 45.15,-93.85 (near Buffalo, Minnesota):
 
-`&q=*:*&fq=(state:"FL" AND city:"Jacksonville") OR {!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist()+asc`
+[source,text]
+&q=*:*&fq=(state:"FL" AND city:"Jacksonville") OR {!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist()+asc
 
 === Facet by Distance
 
-To facet by distance, you can use the Frange query parser:
+To facet by distance, you can use the `frange` query parser:
 
-`&q=*:*&sfield=store&pt=45.15,-93.85&facet.query={!frange l=0 u=5}geodist()&facet.query={!frange l=5.001 u=3000}geodist()`
+[source,text]
+&q=*:*&sfield=store&pt=45.15,-93.85&facet.query={!frange l=0 u=5}geodist()&facet.query={!frange l=5.001 u=3000}geodist()
 
-There are other ways to do it too, like using a \{!geofilt} in each facet.query.
+There are other ways to do it too, like using a `{!geofilt}` in each facet.query.
 
 === Boost Nearest Results
 
 Using the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
 
-`&q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc`
+[source,text]
+&q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc
 
 == RPT
 
-RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version: `RptWithGeometrySpatialField` (aka RPT with Geometry). RPT offers several functional improvements over LatLonPointSpatialField:
+RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version:
+  `RptWithGeometrySpatialField` (aka RPT with Geometry).
+RPT offers several functional improvements over LatLonPointSpatialField:
 
-* Non-geodetic – geo=false general x & y (_not_ latitude and longitude)
+* Non-geodetic – geo=false general x & y (_not_ latitude and longitude) -- if desired
 * Query by polygons and other complex shapes, in addition to circles & rectangles
-* Ability to index non-point shapes (e.g. polygons) as well as points – see RptWithGeometrySpatialField
+* Ability to index non-point shapes (e.g., polygons) as well as points – see RptWithGeometrySpatialField
 * Heatmap grid faceting
 
 RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are listed here:
 
 * Latitude/Longitude indexed point data; possibly multi-valued
 * Fast filtering with `geofilt`, `bbox` filters, and range query syntax (dateline crossing is supported)
-* Sort/boost via `geodist`
-* Well-Known-Text (WKT) shape syntax (required for specifying polygons & other complex shapes), and GeoJSON too. In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
+* Well-Known-Text (WKT) shape syntax (required for specifying polygons & other complex shapes), and GeoJSON too.
+  In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
+* Sort/boost via `geodist` -- _although not recommended_
+
+[IMPORTANT]
+====
+Although RPT supports distance sorting/boosting, it is so inefficient at doing this that it might be
+ removed in the future.  Fortunately, you can use LatLonPointSpatialField _as well_ as RPT.  Use LLPSF for the distance
+ sorting/boosting; it only needs to have docValues for this; the index attribute can be disabled as it won't be used.
+====
 
 === Schema Configuration for RPT
 
@@ -219,10 +251,10 @@ If `true`, the default, latitude and longitude coordinates will be used and the 
 
 `format`:: Defines the shape syntax/format to be used. Defaults to `WKT` but `GeoJSON` is another popular format. Spatial4j governs this feature and supports https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/io/package-frame.html[other formats]. If a given shape is parseable as "lat,lon" or "x y" then that is always supported.
 
-`distanceUnits`:: a|
+`distanceUnits`::
 This is used to specify the units for distance measurements used throughout the use of this field. This can be `degrees`, `kilometers` or `miles`. It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`. However, it doesn't affect distances embedded in WKT strings, (e.g., `BUFFER(POINT(200 10),0.2)`), which are still in degrees.
 +
-`distanceUnits` defaults to either `kilometers` if `geo` is true`, or `degrees` if `geo` is `false`.
+`distanceUnits` defaults to either `kilometers` if `geo` is `true`, or `degrees` if `geo` is `false`.
 +
 `distanceUnits` replaces the `units` attribute; which is now deprecated and mutually exclusive with this attribute.
 
@@ -239,7 +271,7 @@ NOTE: For RPTWithGeometrySpatialField (see below), there's always complete accur
 Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`. If `geo="true"`, the standard lat-lon world boundaries are assumed. If `geo=false`, you should define your boundaries.
 
 `distCalculator`::
-Defines the distance calculation algorithm. If `geo=true`, "haversine" is the default. If `geo=false`, "cartesian" will be the default. Other possible values are "lawOfCosines", "vincentySphere" and "cartesian^2".
+Defines the distance calculation algorithm. If `geo=true`, `haversine` is the default. If `geo=false`, `cartesian` will be the default. Other possible values are `lawOfCosines`, `vincentySphere` and `cartesian^2`.
 
 `prefixTree`:: Defines the spatial grid implementation. Since a PrefixTree (such as RecursivePrefixTree) maps the world as a grid, each grid cell is decomposed to another set of grid cells at the next level.
 +
@@ -247,22 +279,40 @@ If `geo=true` then the default prefix tree is `geohash`, otherwise it's `quad`. 
 +
 A third choice is `packedQuad`, which is generally more efficient than `quad`, provided there are many levels -- perhaps 20 or more.
 
-`maxLevels`:: Sets the maximum grid depth for indexed data. Instead, it's usually more intuitive to compute an appropriate maxLevels by specifying `maxDistErr` .
+`maxLevels`:: Sets the maximum grid depth for indexed data. Instead, it's usually more intuitive to compute an appropriate maxLevels by specifying `maxDistErr`.
 
 *_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
 
-=== JTS and Polygons
+=== Standard Shapes
 
-As indicated above, `spatialContextFactory` must be set to `JTS` for polygon support, including multi-polygon.
+The RPT field types support a set of standard shapes:
+points, circles (aka buffered points), envelopes (aka rectangles or bounding boxes), line strings,
+polygons, and "multi" variants of these.  The envelopes and line strings are Euclidean/cartesian (flat 2D) shapes.
+Underlying Solr is the Spatial4j library which implements them.  To support other shapes, you can configure the
+`spatialContextFactory` attribute on the field type to reference other options.  Two are available: JTS and Geo3D.
 
-All other shapes, including even line-strings, are supported without JTS. JTS stands for http://sourceforge.net/projects/jts-topo-suite/[JTS Topology Suite], which does not come with Solr due to its LGPL license. You must download it (a JAR file) and put that in a special location internal to Solr: `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`. You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/. It will not work if placed in other more typical Solr lib directories, unfortunately.
+=== JTS and Polygons (flat)
 
-When activated, there are additional configuration attributes available; see https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/context/jts/JtsSpatialContextFactory.html[org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory] for the Javadocs, and remember to look at the superclass's options in as well. One option in particular you should most likely enable is `autoIndex` (i.e., use JTS's PreparedGeometry) as it's been shown to be a major performance boost for non-trivial polygons.
+The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computational geometry library with a Euclidean/cartesian (flat 2D) model.
+It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
+With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
+Unfortunately Solr cannot include JTS due to its LGPL license.
+You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
+You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/.
+_It will not work if placed in other more typical Solr lib directories, unfortunately._
+JTS's license is expected to be transitioned to BSD by the end of 2017.
+
+Set the `spatialContextFactory` attribute on the field type to `JTS`.
+
+When activated, there are additional configuration attributes available; see
+  https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/context/jts/JtsSpatialContextFactory.html[org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory]
+  for the Javadocs, and remember to look at the superclass's options as well.
+One option in particular you should most likely enable is `autoIndex` (i.e., use JTS's PreparedGeometry) as it's been shown to be a major performance boost for non-trivial polygons.
 
 [source,xml]
 ----
 <fieldType name="location_rpt"   class="solr.SpatialRecursivePrefixTreeFieldType"
-               spatialContextFactory="org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory"
+               spatialContextFactory="JTS"
                autoIndex="true"
                validationRule="repairBuffer0"
                distErrPct="0.025"
@@ -281,11 +331,30 @@ Inside the parenthesis following the search predicate is the shape definition. T
 
 Beyond this Reference Guide and Spatila4j's docs, there are some details that remain at the Solr Wiki at http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4.
 
+=== Geo3D and Polygons (on the ellipsoid)
+
+Geo3D is the colloquial name of the Lucene spatial-3d module, included with Solr.
+It's a computational geometry library implementing a variety of shapes (including polygons) on a sphere or WGS84 ellipsoid.
+Geo3D is particularly suited for spatial applications where the geometries cover large distances across the globe.
+Geo3D is named as-such due to its internal implementation that uses geocentric coordinates (X,Y,Z),
+  *not* for 3-dimensional geometry, which it does not support.
+Despite these internal details, you still supply latitude and longitude as you would normally in Solr.
+
+Set the `spatialContextFactory` attribute on the field type to `Geo3D`.
+
+[source,xml]
+----
+<fieldType name="geom" class="solr.SpatialRecursivePrefixTreeFieldType"
+             spatialContextFactory="Geo3D" planetModel="WGS84"/><!-- or "sphere" -->
+----
+
+Once the field type has been defined, define a field that uses it.
+
 === RptWithGeometrySpatialField
 
 The `RptWithGeometrySpatialField` field type is a derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry internally in Lucene DocValues, which it uses to achieve accurate search. It can also be used for indexed point fields. The Intersects predicate (the default) is particularly fast, since many search results can be returned as an accurate hit without requiring a geometry check. This field type is configured just like RPT except that the default `distErrPct` is 0.15 (higher than 0.025) because the grid squares are purely for performance and not to fundamentally represent the shape.
 
-An optional in-memory cache can be defined in `solrconfig.xml`, which should be done when the data tends to have shapes with many vertices. Assuming you name your field "geom", you can configure an optional cache in solrconfig.xml by adding the following – notice the suffix of the cache name:
+An optional in-memory cache can be defined in `solrconfig.xml`, which should be done when the data tends to have shapes with many vertices. Assuming you name your field "geom", you can configure an optional cache in `solrconfig.xml` by adding the following – notice the suffix of the cache name:
 
 [source,xml]
 ----
@@ -354,16 +423,17 @@ The `BBoxField` field type indexes a single rectangle (bounding box) per documen
 [source,xml]
 ----
 <field name="bbox" type="bbox" />
+
 <fieldType name="bbox" class="solr.BBoxField"
-        geo="true" units="kilometers" numberType="_bbox_coord" storeSubFields="false"/>
-<fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
+           geo="true" distanceUnits="kilometers" numberType="pdouble" />
+<fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
 ----
 
 BBoxField is actually based off of 4 instances of another field type referred to by numberType. It also uses a boolean to flag a dateline cross. Assuming you want to use the relevancy feature, docValues is required. Some of the attributes are in common with the RPT field like geo, units, worldBounds, and spatialContextFactory because they share some of the same spatial infrastructure.
 
 To index a box, add a field value to a bbox field that's a string in the WKT/CQL ENVELOPE syntax. Example: `ENVELOPE(-10, 20, 15, 10)` which is minX, maxX, maxY, minY order. The parameter ordering is unintuitive but that's what the spec calls for. Alternatively, you could provide a rectangular polygon in WKT (or GeoJSON if you set set `format="GeoJSON"`).
 
-To search, you can use the `{!bbox}` query parser, or the range syntax e.g. `[10,-10 TO 15,20]`, or the ENVELOPE syntax wrapped in parenthesis with a leading search predicate. The latter is the only way to choose a predicate other than Intersects. For example:
+To search, you can use the `{!bbox}` query parser, or the range syntax e.g., `[10,-10 TO 15,20]`, or the ENVELOPE syntax wrapped in parenthesis with a leading search predicate. The latter is the only way to choose a predicate other than Intersects. For example:
 
 [source,plain]
 &q={!field f=bbox}Contains(ENVELOPE(-10, 20, 15, 10))

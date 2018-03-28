@@ -68,6 +68,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -89,10 +90,9 @@ import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -109,6 +109,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
@@ -218,7 +219,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private PollListener pollListener;
   public interface PollListener {
-    void onComplete(SolrCore solrCore, boolean pollSuccess) throws IOException;
+    void onComplete(SolrCore solrCore, IndexFetchResult fetchResult) throws IOException;
   }
 
   /**
@@ -528,39 +529,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return status;
   }
 
-  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp,
-      SolrQueryRequest req) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
       int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
       if (numberToKeep > 0 && numberBackupsToKeep > 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot use "
-            + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM + " if "
-            + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM
-            + " was specified in the configuration.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot use " + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM +
+            " if " + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM + " was specified in the configuration.");
       }
       numberToKeep = Math.max(numberToKeep, numberBackupsToKeep);
       if (numberToKeep < 1) {
         numberToKeep = Integer.MAX_VALUE;
-      }
-
-      IndexCommit indexCommit = null;
-      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
-      if (commitName != null) {
-        SolrSnapshotMetaDataManager snapshotMgr = core.getSnapshotMetaDataManager();
-        Optional<IndexCommit> commit = snapshotMgr.getIndexCommitByName(commitName);
-        if(commit.isPresent()) {
-          indexCommit = commit.get();
-        } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " + commitName +
-              " for core " + core.getName());
-        }
-      } else {
-        IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
-        indexCommit = delPolicy.getLatestCommit();
-
-        if (indexCommit == null) {
-          indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
-        }
       }
 
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
@@ -584,12 +562,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       // small race here before the commit point is saved
       URI locationUri = repo.createURI(location);
+      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapAsync(indexCommit, numberToKeep, (nl) -> snapShootDetails = nl);
-
+      snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
     } catch (Exception e) {
-      LOG.warn("Exception during creating a snapshot", e);
+      LOG.error("Exception during creating a snapshot", e);
       rsp.add("exception", e);
     }
   }
@@ -688,9 +666,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     rsp.add(CMD_GET_FILE_LIST, result);
 
-    // fetch list of tlog files only if cdcr is activated
-    if (solrParams.getBool(TLOG_FILES, true) && core.getUpdateHandler().getUpdateLog() != null
-        && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
+    if (solrParams.getBool(TLOG_FILES, false)) {
       try {
         List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
         LOG.info("Adding tlog files to list: " + tlogfiles);
@@ -1180,8 +1156,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         LOG.debug("Polling for index modifications");
         markScheduledExecutionStart();
-        boolean pollSuccess = doFetch(null, false).getSuccessful();
-        if (pollListener != null) pollListener.onComplete(core, pollSuccess);
+        IndexFetchResult fetchResult = doFetch(null, false);
+        if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
         LOG.error("Exception in fetching index", e);
       }
@@ -1197,10 +1173,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "resource"})
   public void inform(SolrCore core) {
     this.core = core;
     registerCloseHook();
+    Long deprecatedReserveCommitDuration = null;
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
     if(nbtk!=null) {
       numberBackupsToKeep = Integer.parseInt(nbtk.toString());
@@ -1279,7 +1256,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         replicateOnStart = true;
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
-          DirectoryReader reader = s==null ? null : s.get().getIndexReader();
+          DirectoryReader reader = (s == null) ? null : s.get().getIndexReader();
           if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
             try {
               if(replicateOnOptimize){
@@ -1316,10 +1293,26 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String reserve = (String) master.get(RESERVE);
       if (reserve != null && !reserve.trim().equals("")) {
         reserveCommitDuration = readIntervalMs(reserve);
+        deprecatedReserveCommitDuration = reserveCommitDuration;
+        // remove this error check & backcompat logic when Version.LUCENE_7_1_0 is removed
+        assertWarnOrFail(
+          "Beginning with Solr 7.1, master."+RESERVE + " is deprecated and should now be configured directly on the ReplicationHandler.",
+          (null == reserve),
+          core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_1_0));
       }
-      LOG.info("Commits will be reserved for  " + reserveCommitDuration);
       isMaster = true;
     }
+
+    {
+      final String reserve = (String) initArgs.get(RESERVE);
+      if (reserve != null && !reserve.trim().equals("")) {
+        reserveCommitDuration = readIntervalMs(reserve);
+        if (deprecatedReserveCommitDuration != null) {
+          throw new IllegalArgumentException("'master."+RESERVE+"' and '"+RESERVE+"' are mutually exclusive.");
+        }
+      }
+    }
+    LOG.info("Commits will be reserved for " + reserveCommitDuration + "ms.");
   }
 
   // check master or slave is enabled
@@ -1424,7 +1417,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             SnapShooter snapShooter = new SnapShooter(core, null, null);
             snapShooter.validateCreateSnapshot();
-            snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, (nl) -> snapShootDetails = nl);
+            snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }
@@ -1734,6 +1727,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String MASTER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
+
+  // in case of TLOG replica, if masterVersion = zero, don't do commit
+  // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data loss
+  public static final String SKIP_COMMIT_ON_MASTER_VERSION_ZERO = "skipCommitOnMasterVersionZero";
 
   public static final String STATUS = "status";
 

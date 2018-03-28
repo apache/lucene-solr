@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  *  The FacetStream abstracts the output from the JSON facet API as a Stream of Tuples. This provides an alternative to the
  *  RollupStream which uses Map/Reduce to perform aggregations.
+ * @since 6.0.0
  **/
 
 public class FacetStream extends TupleStream implements Expressible  {
@@ -322,9 +324,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);
@@ -347,7 +349,9 @@ public class FacetStream extends TupleStream implements Expressible  {
 
   public void close() throws IOException {
     if(cache == null) {
-      cloudSolrClient.close();
+      if (cloudSolrClient != null) {
+        cloudSolrClient.close();
+      }
     }
   }
 
@@ -495,11 +499,15 @@ public class FacetStream extends TupleStream implements Expressible  {
         for(Metric metric : _metrics) {
           String identifier = metric.getIdentifier();
           if(!identifier.startsWith("count(")) {
-            double d = (double)bucket.get("facet_"+m);
+            Number d = ((Number)bucket.get("facet_"+m));
             if(metric.outputLong) {
-              t.put(identifier, Math.round(d));
+              if (d instanceof Long || d instanceof Integer) {
+                t.put(identifier, d.longValue());
+              } else {
+                t.put(identifier, Math.round(d.doubleValue()));
+              }
             } else {
-              t.put(identifier, d);
+              t.put(identifier, d.doubleValue());
             }
             ++m;
           } else {

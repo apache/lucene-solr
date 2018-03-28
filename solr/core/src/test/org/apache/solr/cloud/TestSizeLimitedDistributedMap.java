@@ -17,42 +17,53 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.SolrTestCaseJ4;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import org.apache.solr.common.cloud.SolrZkClient;
 
-public class TestSizeLimitedDistributedMap extends SolrTestCaseJ4 {
+public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
   public void testCleanup() throws Exception {
-    String zkDir = createTempDir("TestSizeLimitedDistributedMap").toFile().getAbsolutePath();
-
-    ZkTestServer server = new ZkTestServer(zkDir);
-    try {
-      server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
-        DistributedMap map = Overseer.getCompletedMap(zkClient);
-        assertTrue(map instanceof SizeLimitedDistributedMap);
-        for (int i = 0; i < Overseer.NUM_RESPONSES_TO_STORE; i++) {
-          map.put("xyz_" + i, new byte[0]);
-        }
-
-        assertEquals("Number of items do not match", Overseer.NUM_RESPONSES_TO_STORE, map.size());
-        // add another to trigger cleanup
-        map.put("xyz_10000", new byte[0]);
-        assertEquals("Distributed queue was not cleaned up",
-            Overseer.NUM_RESPONSES_TO_STORE - (Overseer.NUM_RESPONSES_TO_STORE / 10) + 1, map.size());
-        for (int i = Overseer.NUM_RESPONSES_TO_STORE; i >= Overseer.NUM_RESPONSES_TO_STORE / 10; i--) {
-          assertTrue(map.contains("xyz_" + i));
-        }
-        for (int i = Overseer.NUM_RESPONSES_TO_STORE / 10 - 1; i >= 0; i--) {
-          assertFalse(map.contains("xyz_" + i));
-        }
+    final List<String> deletedItems = new LinkedList<>();
+    final Set<String> expectedKeys = new HashSet<>();
+    int numResponsesToStore=TEST_NIGHTLY?Overseer.NUM_RESPONSES_TO_STORE:100;
+    
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+      String path = getAndMakeInitialPath(zkClient);
+      DistributedMap map = new SizeLimitedDistributedMap(zkClient, path, numResponsesToStore, (element)->deletedItems.add(element));
+      for (int i = 0; i < numResponsesToStore; i++) {
+        map.put("xyz_" + i, new byte[0]);
+        expectedKeys.add("xyz_" + i);
       }
-    } finally {
-      server.shutdown();
+
+      assertEquals("Number of items do not match", numResponsesToStore, map.size());
+      assertTrue("Expected keys do not match", expectedKeys.containsAll(map.keys()));
+      assertTrue("Expected keys do not match", map.keys().containsAll(expectedKeys));
+      // add another to trigger cleanup
+      map.put("xyz_" + numResponsesToStore, new byte[0]);
+      expectedKeys.add("xyz_" + numResponsesToStore);
+      assertEquals("Distributed queue was not cleaned up",
+          numResponsesToStore - (numResponsesToStore / 10) + 1, map.size());
+      for (int i = numResponsesToStore; i >= numResponsesToStore / 10; i--) {
+        assertTrue(map.contains("xyz_" + i));
+      }
+      for (int i = numResponsesToStore / 10 - 1; i >= 0; i--) {
+        assertFalse(map.contains("xyz_" + i));
+        assertTrue(deletedItems.contains("xyz_" + i));
+        expectedKeys.remove("xyz_" + i);
+      }
+      assertTrue("Expected keys do not match", expectedKeys.containsAll(map.keys()));
+      assertTrue("Expected keys do not match", map.keys().containsAll(expectedKeys));
+      map.remove("xyz_" + numResponsesToStore);
+      assertFalse("map.remove shouldn't trigger the observer", 
+          deletedItems.contains("xyz_" + numResponsesToStore));
     }
   }
+  
+  protected DistributedMap createMap(SolrZkClient zkClient, String path) {
+    return new SizeLimitedDistributedMap(zkClient, path, Overseer.NUM_RESPONSES_TO_STORE, null);
+  }
+  
 }

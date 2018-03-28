@@ -207,6 +207,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11974")
   public void testStringCollapse() throws Exception {
     for (final String hint : new String[] {"", " hint="+CollapsingQParserPlugin.HINT_TOP_FC}) {
       testCollapseQueries("group_s", hint, false);

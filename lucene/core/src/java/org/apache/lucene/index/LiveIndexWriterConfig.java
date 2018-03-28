@@ -103,6 +103,9 @@ public class LiveIndexWriterConfig {
   /** The field names involved in the index sort */
   protected Set<String> indexSortFields = Collections.emptySet();
 
+  /** if an indexing thread should check for pending flushes on update in order to help out on a full flush*/
+  protected volatile boolean checkPendingFlushOnUpdate = true;
+
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -413,8 +416,7 @@ public class LiveIndexWriterConfig {
   }
 
   /**
-   * Set the index-time {@link Sort} order. Merged segments will be written
-   * in this order.
+   * Get the index-time {@link Sort} order, applied to all (flushed and merged) segments.
    */
   public Sort getIndexSort() {
     return indexSort;
@@ -425,6 +427,29 @@ public class LiveIndexWriterConfig {
    */
   public Set<String> getIndexSortFields() {
     return indexSortFields;
+  }
+
+  /**
+   * Expert: Returns if indexing threads check for pending flushes on update in order
+   * to help our flushing indexing buffers to disk
+   * @lucene.experimental
+   */
+  public boolean isCheckPendingFlushOnUpdate() {
+    return checkPendingFlushOnUpdate;
+  }
+
+  /**
+   * Expert: sets if indexing threads check for pending flushes on update in order
+   * to help our flushing indexing buffers to disk. As a consequence, threads calling
+   * {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter)} or {@link IndexWriter#flush()} will
+   * be the only thread writing segments to disk unless flushes are falling behind. If indexing is stalled
+   * due to too many pending flushes indexing threads will help our writing pending segment flushes to disk.
+   *
+   * @lucene.experimental
+   */
+  public LiveIndexWriterConfig setCheckPendingFlushUpdate(boolean checkPendingFlushOnUpdate) {
+    this.checkPendingFlushOnUpdate = checkPendingFlushOnUpdate;
+    return this;
   }
 
   @Override
@@ -449,6 +474,7 @@ public class LiveIndexWriterConfig {
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
     sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
     sb.append("indexSort=").append(getIndexSort()).append("\n");
+    sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     return sb.toString();
   }
 }

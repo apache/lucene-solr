@@ -1,0 +1,62 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add>
+<doc>
+  <field name="id">EN7800GTX/2DHTV/256M</field>
+  <field name="name">ASUS Extreme N7800GTX/2DHTV (256 MB)</field>
+  <!-- Denormalized -->
+  <field name="manu">ASUS Computer Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">asus</field>
+  <field name="cat">electronics</field>
+  <field name="cat">graphics card</field>
+  <field name="features">NVIDIA GeForce 7800 GTX GPU/VPU clocked at 486MHz</field>
+  <field name="features">256MB GDDR3 Memory clocked at 1.35GHz</field>
+  <field name="features">PCI Express x16</field>
+  <field name="features">Dual DVI connectors, HDTV out, video input</field>
+  <field name="features">OpenGL 2.0, DirectX 9.0</field>
+  <field name="weight">16.0</field>
+  <field name="price">479.95</field>
+  <field name="popularity">7</field>
+  <field name="store">40.7143,-74.006</field>
+  <field name="inStock">false</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
+</doc>
+  <!-- yes, you can add more than one document at a time -->
+<doc>
+  <field name="id">100-435805</field>
+  <field name="name">ATI Radeon X1900 XTX 512 MB PCIE Video Card</field>
+  <field name="manu">ATI Technologies</field>
+  <!-- Join -->
+  <field name="manu_id_s">ati</field>
+  <field name="cat">electronics</field>
+  <field name="cat">graphics card</field>
+  <field name="features">ATI RADEON X1900 GPU/VPU clocked at 650MHz</field>
+  <field name="features">512MB GDDR3 SDRAM clocked at 1.55GHz</field>
+  <field name="features">PCI Express x16</field>
+  <field name="features">dual DVI, HDTV, svideo, composite out</field>
+  <field name="features">OpenGL 2.0, DirectX 9.0</field>
+  <field name="weight">48.0</field>
+  <field name="price">649.99</field>
+  <field name="popularity">7</field>
+  <field name="inStock">false</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
+  <!-- NYC store -->
+  <field name="store">40.7143,-74.006</field>
+</doc>
+</add>

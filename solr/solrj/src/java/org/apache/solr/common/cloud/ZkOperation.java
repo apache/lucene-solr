@@ -21,7 +21,7 @@ import org.apache.zookeeper.KeeperException;
 /**
  * A callback object which can be used for implementing retry-able operations.
  */
-public abstract class ZkOperation {
+public interface ZkOperation {
 
     /**
      * Performs the operation - which may be involved multiple times if the connection
@@ -29,5 +29,5 @@ public abstract class ZkOperation {
      *
      * @return the result of the operation or null
      */
-    public abstract Object execute() throws KeeperException, InterruptedException;
+    Object execute() throws KeeperException, InterruptedException;
 }

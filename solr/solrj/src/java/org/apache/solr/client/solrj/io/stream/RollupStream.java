@@ -40,6 +40,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
+/**
+ * @since 6.0.0
+ */
 public class RollupStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;

@@ -43,9 +43,6 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
     super(in);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public boolean incrementToken() throws IOException {
     while (input.incrementToken()) {
@@ -71,9 +68,6 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
     return false;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();

@@ -1,6 +1,4 @@
 = Highlighting
-:page-shortname: highlighting
-:page-permalink: highlighting.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -48,6 +46,8 @@ When not defined, the defaults defined for the `df` query parameter will be used
 A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
 +
 When not defined, the query defined with the `q` parameter will the used.
++
+When `hl.qparser` is not defined, the query parser defined with the `defType` query parameter will be used and terms will be analyzed using those rules. This behavior can be overridden by specifying a field, for example: `hl.q=field:term`.
 
 `hl.qparser`::
 The query parser to use for the `hl.q` query.
@@ -76,13 +76,13 @@ Specifies the approximate size, in characters, of fragments to consider for high
 +
 The default is `<em>`.
 
-`hl.tag.post`:: </em> |
+`hl.tag.post`::
 (`hl.simple.post` for the Original Highlighter) Specifies the “tag” to use after a highlighted term. This can be any string, but is most often an HTML or XML tag.
 +
 The default is `</em>`.
 
 `hl.encoder`::
-If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g. `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
+If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
 
 `hl.maxAnalyzedChars`::
 The character limit to look for highlights, after which no highlighting will be done. This is mostly only a performance concern for an _analysis_ based offset source since it's the slowest. See <<Schema Options and Performance Considerations>>.
@@ -146,7 +146,7 @@ There are four highlighters available that can be chosen at runtime with the `hl
 +
 The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most flexible and performant of the options. We recommend that you try this highlighter even though it isn't the default (yet).
 +
-This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g. as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
+This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g., as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
 
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
@@ -198,7 +198,7 @@ This adds substantial weight to the index – similar in size to the compressed 
 
 The Unified Highlighter supports these following additional parameters to the ones listed earlier:
 
-`hl.offsetSource`:: _(blank)_ |
+`hl.offsetSource`::
 By default, the Unified Highlighter will usually pick the right offset source (see above). However it may be ambiguous such as during a migration from one offset source to another that hasn't completed.
 +
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
@@ -275,15 +275,15 @@ If set to `false`, or if there is no match in the alternate field either, the al
 `hl.formatter`::
 Selects a formatter for the highlighted output. Currently the only legal value is `simple`, which surrounds a highlighted term with a customizable pre- and post-text snippet.
 
-`hl.simple.prehl.simple.post`::
-Specifies the text that should appear before (`hl.simple.pre`) and after (`hl.simple.post`) a highlighted term, when using the simple formatter. The default is `<em>` and `</em>`.
+`hl.simple.pre`, `hl.simple.post`::
+Specifies the text that should appear before (`hl.simple.pre`) and after (`hl.simple.post`) a highlighted term, when using the `simple` formatter. The default is `<em>` and `</em>`.
 
 `hl.fragmenter`::
 Specifies a text snippet generator for highlighted text. The standard (default) fragmenter is `gap`, which creates fixed-sized fragments with gaps for multi-valued fields.
 +
 Another option is `regex`, which tries to create fragments that resemble a specified regular expression.
 
-`hl.regex.slop`:: 0.6 |
+`hl.regex.slop`::
 When using the regex fragmenter (`hl.fragmenter=regex`), this parameter defines the factor by which the fragmenter can stray from the ideal fragment size (given by `hl.fragsize`) to accommodate a regular expression.
 +
 For instance, a slop of `0.2` with `hl.fragsize=100` should yield fragments between 80 and 120 characters in length. It is usually good to provide a slightly smaller `hl.fragsize` value when using the regex fragmenter.
@@ -293,7 +293,7 @@ The default is `0.6`.
 `hl.regex.pattern`::
 Specifies the regular expression for fragmenting. This could be used to extract sentences.
 
-`hl.regex.maxAnalyzedChars`:: 10000 |
+`hl.regex.maxAnalyzedChars`::
 Instructs Solr to analyze only this many characters from a field when using the regex fragmenter (after which, the fragmenter produces fixed-sized fragments). The default is `10000`.
 +
 Note, applying a complicated regex to a huge field is computationally expensive.
@@ -304,7 +304,7 @@ If `true`, multi-valued fields will return all values in the order they were sav
 `hl.payloads`::
 When `hl.usePhraseHighlighter` is `true` and the indexed field has payloads but not term vectors (generally quite rare), the index's payloads will be read into the highlighter's memory index along with the postings.
 +
-If this may happen and you know you don't need them for highlighting (i.e. your queries don't filter by payload) then you can save a little memory by setting this to false.
+If this may happen and you know you don't need them for highlighting (i.e., your queries don't filter by payload) then you can save a little memory by setting this to false.
 
 The Original Highlighter has a plugin architecture that enables new functionality to be registered in `solrconfig.xml`. The "```techproducts```" configset shows most of these settings explicitly. You can use it as a guide to provide your own components to include a `SolrFormatter`, `SolrEncoder`, and `SolrFragmenter.`
 
@@ -320,13 +320,13 @@ In addition to the initial listed parameters, the following parameters documente
 
 And here are additional parameters supported by the FVH:
 
-`hl.fragListBuilder`:: weighted |
+`hl.fragListBuilder`::
 The snippet fragmenting algorithm. The `weighted` fragListBuilder uses IDF-weights to order fragments. This fragListBuilder is the default.
 +
 Other options are `single`, which returns the entire field contents as one snippet, or `simple`. You can select a fragListBuilder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
 
 `hl.fragmentsBuilder`::
-The fragments builder is responsible for formatting the fragments, which uses`<em>` and `</em>` markup by default (if `hl.tag.pre` and `hl.tag.post` are not defined).
+The fragments builder is responsible for formatting the fragments, which uses `<em>` and `</em>` markup by default (if `hl.tag.pre` and `hl.tag.post` are not defined).
 +
 Another pre-configured choice is `colored`, which is an example of how to use the fragments builder to insert HTML into the snippets for colored highlights if you choose. You can also implement your own if you'd like. You can select a fragments builder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
 
@@ -367,14 +367,14 @@ Possible values for the `hl.bs.type` parameter are WORD, LINE, SENTENCE, and CHA
 
 ==== The simple Boundary Scanner
 
-The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). The `simple` boundary scanner may be useful for some custom To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:
+The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:
 
 [source,xml]
 ----
 <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
    <lst name="defaults">
-     <str name="hl.bs.maxScan">10</str >
-     <str name="hl.bs.chars">.,!?\t\n</str >
-   </lst >
+     <str name="hl.bs.maxScan">10</str>
+     <str name="hl.bs.chars">.,!?\t\n</str>
+   </lst>
 </boundaryScanner>
 ----

@@ -80,9 +80,9 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** 
- * This holds references to the transaction logs and pointers for the document IDs to their
- * exact positions in the transaction logs.
+/**
+ * This holds references to the transaction logs. It also keeps a map of unique key to location in log
+ * (along with the update's version). This map is only cleared on soft or hard commit
  *
  * @lucene.experimental
  */
@@ -244,6 +244,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected Gauge<Integer> bufferedOpsGauge;
   protected Meter applyingBufferedOpsMeter;
   protected Meter replayOpsMeter;
+  protected Meter copyOverOldUpdatesMeter;
 
   public static class LogPtr {
     final long pointer;
@@ -435,6 +436,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     manager.registerGauge(null, registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
     applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
+    copyOverOldUpdatesMeter = manager.meter(null, registry, "ops", scope, "copyOverOldUpdates");
     manager.registerGauge(null, registry, () -> state.getValue(), true, "state", scope);
   }
 
@@ -1158,7 +1160,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected void copyAndSwitchToNewTlog(CommitUpdateCommand cuc) {
     synchronized (this) {
-      if (tlog == null) return;
+      if (tlog == null) {
+        return;
+      }
       preCommit(cuc);
       try {
         copyOverOldUpdates(cuc.getVersion());
@@ -1182,13 +1186,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     try {
-      if (oldTlog.endsWithCommit()) {
-        return;
-      }
+      if (oldTlog.endsWithCommit()) return;
     } catch (IOException e) {
       log.warn("Exception reading log", e);
       return;
     }
+    copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core,
         new ModifiableSolrParams());
@@ -1428,8 +1431,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   update.pointer = reader.position();
                   update.version = version;
 
-                  if (oper == UpdateLog.UPDATE_INPLACE && entry.size() == 5) {
-                    update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                  if (oper == UpdateLog.UPDATE_INPLACE) {
+                    if ((update.log instanceof CdcrTransactionLog && entry.size() == 6) ||
+                        (!(update.log instanceof CdcrTransactionLog) && entry.size() == 5)) {
+                      update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                    }
                   }
                   updatesForLog.add(update);
                   updates.put(version, update);
@@ -1437,7 +1443,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   if (oper == UpdateLog.DELETE_BY_QUERY) {
                     deleteByQueryList.add(update);
                   } else if (oper == UpdateLog.DELETE) {
-                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(entry.size()-1)));
+                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(2)));
                   }
 
                   break;

@@ -33,12 +33,30 @@ public class DistributionSPL extends Distribution {
   public DistributionSPL() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn, float lambda) {
-    if (lambda == 1f) {
-      lambda = 0.99f;
+  public final double score(BasicStats stats, double tfn, double lambda) {
+    assert lambda != 1;
+
+    // tfn/(tfn+1) -> 1 - 1/(tfn+1), guaranteed to be non decreasing when tfn increases
+    double q = 1 - 1 / (tfn + 1);
+    if (q == 1) {
+      q = Math.nextDown(1.0);
     }
-    return (float)-Math.log(
-        (Math.pow(lambda, (tfn / (tfn + 1))) - lambda) / (1 - lambda));
+
+    double pow = Math.pow(lambda, q);
+    if (pow == lambda) {
+      // this can happen because of floating-point rounding
+      // but then we return infinity when taking the log, so we enforce
+      // that pow is different from lambda
+      if (lambda < 1) {
+        // x^y > x when x < 1 and y < 1
+        pow = Math.nextUp(lambda);
+      } else {
+        // x^y < x when x > 1 and y < 1
+        pow = Math.nextDown(lambda);
+      }
+    }
+
+    return -Math.log((pow - lambda) / (1 - lambda));
   }
   
   @Override

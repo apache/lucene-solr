@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -52,6 +53,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 /**
  *  The RandomStream emits a stream of psuedo random Tuples that match the query parameters. Sample expression syntax:
  *  random(collection, q="Hello word", rows="50", fl="title, body")
+ * @since 6.1.0
  **/
 
 public class RandomStream extends TupleStream implements Expressible  {
@@ -174,7 +176,9 @@ public class RandomStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = (new CloudSolrClient.Builder()).withZkHost(zkHost).build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new CloudSolrClient.Builder(hosts, Optional.empty()).build();
     }
 
     ModifiableSolrParams params = getParams(this.props);

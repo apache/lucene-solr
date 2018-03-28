@@ -426,13 +426,11 @@ public class UnInvertedField extends DocTermOrds {
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
-        try ( DocSet intersection = searcher.getDocSet(tt.termQuery, docs); )
-        {
-          int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
-          countAcc.incrementCount(tt.termNum - startTermIndex, collected);
-          if (collected > 0) {
-            uniqueTerms++;
-          }
+        DocSet intersection = searcher.getDocSet(tt.termQuery, docs);
+        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
+        countAcc.incrementCount(tt.termNum - startTermIndex, collected);
+        if (collected > 0) {
+          uniqueTerms++;
         }
       }
     }
@@ -603,4 +601,16 @@ public class UnInvertedField extends DocTermOrds {
 
     return uif;
   }
+
+  // Returns null if not already populated
+  public static UnInvertedField checkUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
+    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
+    if (cache == null) {
+      return null;
+    }
+    UnInvertedField uif = cache.get(field);  // cache is already synchronized, so no extra sync needed
+    // placeholder is an implementation detail, keep it hidden and return null if that is what we got
+    return uif==uifPlaceholder ? null : uif;
+  }
+
 }

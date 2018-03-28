@@ -134,7 +134,7 @@
    <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
-   <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
+   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false"/>
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
@@ -154,11 +154,11 @@
        "content_type": From the HTTP headers of incoming stream
        "resourcename": From SolrCell request param resource.name
    -->
-   <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
-   <field name="subject" type="text_general" indexed="true" stored="true"/>
+   <field name="title" type="text_gen_sort" indexed="true" stored="true" multiValued="true"/>
+   <field name="subject" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
    <field name="description" type="text_general" indexed="true" stored="true"/>
    <field name="comments" type="text_general" indexed="true" stored="true"/>
-   <field name="author" type="text_general" indexed="true" stored="true"/>
+   <field name="author" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
    <field name="keywords" type="text_general" indexed="true" stored="true"/>
    <field name="category" type="text_general" indexed="true" stored="true"/>
    <field name="resourcename" type="text_general" indexed="true" stored="true"/>
@@ -283,10 +283,7 @@
        standard package such as org.apache.solr.analysis
     -->
 
-    <!-- The StrField type is not analyzed, but indexed/stored verbatim.
-       It supports doc values but in that case the field needs to be
-       single-valued and either required or have a default value.
-      -->
+    <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
 
     <!-- boolean type: "true" or "false" -->
@@ -417,6 +414,28 @@
         <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         <filter class="solr.FlattenGraphFilterFactory"/>
         -->
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <!-- SortableTextField generaly functions exactly like TextField,
+         except that it supports, and by default uses, docValues for sorting (or faceting)
+         on the first 1024 characters of the original field values (which is configurable).
+         
+         This makes it a bit more useful then TextField in many situations, but the trade-off
+         is that it takes up more space on disk; which is why it's not used in place of TextField
+         for every fieldType in this _default schema.
+	  -->
+    <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
       <analyzer type="query">

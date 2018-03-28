@@ -31,6 +31,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 
+/**
+ * @since 6.6.0
+ */
 public class ShuffleStream extends CloudSolrStream implements Expressible {
 
   public ShuffleStream(StreamExpression expression, StreamFactory factory) throws IOException {

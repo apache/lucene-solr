@@ -494,6 +494,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-11673")
   public void doTestIndexAndConfigReplication() throws Exception {
     clearIndexWithReplication();
 
@@ -623,7 +624,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * the index hasn't changed. See SOLR-9036
    */
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
+  //Commented out 24-Feb 2018. JIRA marked as fixed.
+  // Still fails 26-Feb on master.
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
   public void doTestIndexFetchOnMasterRestart() throws Exception  {
     useFactory(null);
     try {
@@ -634,6 +637,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterJetty.stop();
       masterJetty.start();
+
+      // close and re-create master client because its connection pool has stale connections
+      masterClient.close();
+      masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
       nDocs--;
       for (int i = 0; i < nDocs; i++)

@@ -1,6 +1,4 @@
 = Update Request Processors
-:page-shortname: update-request-processors
-:page-permalink: update-request-processors.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -142,7 +140,7 @@ However executing a processor only on the forwarding nodes is a great way of dis
 .Custom update chain post-processors may never be invoked on a recovering replica
 [WARNING]
 ====
-While a replica is in <<read-and-write-side-fault-tolerance.adoc#write-side-fault-tolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
+While a replica is in <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
 ====
 
 === Atomic Update Processor Factory
@@ -261,9 +259,10 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]:: This processor will dynamically add fields to the schema if an input document contains one or more fields that don't match any field or dynamic field in the schema.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/AtomicUpdateRequestProcessorFactory.html[AtomicUpdateProcessorFactory]:: This processor will convert conventional field-value documents to atomic update documents.
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/AtomicUpdateProcessorFactory.html[AtomicUpdateProcessorFactory]:: This processor will convert conventional field-value documents to atomic update documents. This processor can be used at runtime (without defining it in `solrconfig.xml`), see the section <<atomicupdateprocessorfactory>> below.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/ClassificationUpdateProcessorFactory.html[ClassificationUpdateProcessorFactory]:: This processor uses Lucene's classification module to provide simple document classification. See https://wiki.apache.org/solr/SolrClassification for more details on how to use this processor.
+
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/DefaultValueUpdateProcessorFactory.html[DefaultValueUpdateProcessorFactory]:: A simple processor that adds a default value to any document which does not already have a value in fieldName.
@@ -276,17 +275,21 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/IgnoreCommitOptimizeUpdateProcessorFactory.html[IgnoreCommitOptimizeUpdateProcessorFactory]:: Allows you to ignore commit and/or optimize requests from client applications when running in SolrCloud mode, for more information, see: Shards and Indexing Data in SolrCloud
 
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
+
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document. Useful for only indexing one copy of "similar" documents.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/StatelessScriptUpdateProcessorFactory.html[StatelessScriptUpdateProcessorFactory]:: An update request processor factory that enables the use of update processors implemented as scripts.
 
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/TemplateUpdateProcessorFactory.html[TemplateUpdateProcessorFactory]:: Allows adding new fields to documents based on a template pattern. This update processor can also be used at runtime (without defining it in `solrconfig.xml`), see the section <<templateupdateprocessorfactory>> below.
+
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/TimestampUpdateProcessorFactory.html[TimestampUpdateProcessorFactory]:: An update processor that adds a newly generated date value of "NOW" to any document being added that does not already have a value in the specified field.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/URLClassifyProcessorFactory.html[URLClassifyProcessorFactory]:: Update processor which examines a URL and outputs to various other fields with characteristics of that URL, including length, number of path levels, whether it is a top level URL (levels==0), whether it looks like a landing/index page, a canonical representation of the URL (e.g., stripping index.html), the domain and path parts of the URL, etc.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]:: An update processor that adds a newly generated UUID value to any document being added that does not already have a value in the specified field.
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]:: An update processor that adds a newly generated UUID value to any document being added that does not already have a value in the specified field. This processor can also be used at runtime (without defining it in `solrconfig.xml`), see the section <<uuidupdateprocessorfactory>> below.
 
 === FieldMutatingUpdateProcessorFactory Derived Factories
 
@@ -328,7 +331,7 @@ These factories all provide functionality to _modify_ fields in a document as th
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RegexReplaceProcessorFactory.html[RegexReplaceProcessorFactory]:: An updated processor that applies a configured regex to any CharSequence values found in the selected fields, and replaces any matches with the configured replacement string.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0. (ie: empty strings).
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0 (i.e., empty strings).
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/TrimFieldUpdateProcessorFactory.html[TrimFieldUpdateProcessorFactory]:: Trims leading and trailing whitespace from any CharSequence values found in fields matching the specified conditions.
 
@@ -350,6 +353,10 @@ The {solr-javadocs}/solr-uima/index.html[`uima`] contrib provides::
 
 {solr-javadocs}/solr-uima/org/apache/solr/uima/processor/UIMAUpdateRequestProcessorFactory.html[UIMAUpdateRequestProcessorFactory]::: Update document(s) to be indexed with UIMA extracted information.
 
+The {solr-javadocs}/solr-analysis-extras/index.html[`analysis-extras`] contrib provides::
+
+{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+
 === Update Processor Factories You Should _Not_ Modify or Remove
 
 These are listed for completeness, but are part of the Solr infrastructure, particularly SolrCloud. Other than insuring you do _not_ remove them when modifying the update request handlers (or any copies you make), you will rarely, if ever, need to change these.
@@ -363,13 +370,33 @@ These are listed for completeness, but are part of the Solr infrastructure, part
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RunUpdateProcessorFactory.html[RunUpdateProcessorFactory]:: Executes the update commands using the underlying UpdateHandler. Almost all processor chains should end with an instance of `RunUpdateProcessorFactory` unless the user is explicitly executing the update commands in an alternative custom `UpdateRequestProcessorFactory`.
 
 === Update Processors That Can Be Used at Runtime
-These Update processors do not need any configuration is your `solrconfig.xml` . They are automatically initialized when their name is added to the `processor` parameter. Multiple processors can be used by appending multiple processor names (comma separated)
+These Update processors do not need any configuration in `solrconfig.xml`. They are automatically initialized when their name is added to the `processor` parameter sent with an update request. Multiple processors can be used by appending multiple processor names separated by commas.
+
+==== AtomicUpdateProcessorFactory
+
+The `AtomicUpdateProcessorFactory` is used to atomically update documents.
+
+Use the parameter `processor=atomic` to invoke it. Use it to convert your normal `update` operations to atomic update operations. This is particularly useful when you use endpoints such as `/update/csv` or `/update/json/docs` which does not otherwise have a syntax for atomic operations.
+
+For example:
+
+[source,bash]
+----
+processor=atomic&atomic.field1=add&atomic.field2=set&atomic.field3=inc&atomic.field4=remove&atomic.field4=remove
+----
+
+The above parameters convert a normal `update` operation in the following ways:
+
+* `field1` to an atomic `add` operation
+* `field2` to an atomic `set` operation
+* `field3` to an atomic `inc` operation
+* `field4` to an atomic `remove` operation
 
 ==== TemplateUpdateProcessorFactory
 
 The `TemplateUpdateProcessorFactory` can be used to add new fields to documents based on a template pattern.
 
-Use the parameter `processor=template` to use it. The template parameter `template.field` (multivalued) define the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
+Use the parameter `processor=template` to use it. The template parameter `template.field` (multivalued) defines the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
 
 For example:
 
@@ -380,29 +407,13 @@ processor=template&template.field=fullName:Mr. {firstName} {lastName}
 
 The above example would add a new field to the document called `fullName`. The fields `firstName and` `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
 
-==== AtomicUpdateProcessorFactory
-
-
-Name of the processor is `atomic` . Use it to convert your normal `update` operations to atomic update operations. This is particularly useful when you use endpoints such as `/update/csv` or `/update/json/docs` which does not support syntax for atomic operations.
-
-example:
-
-[source,bash]
-----
-processor=atomic&atomic.field1=add&atomic.field2=set&atomic.field3=inc&atomic.field4=remove&atomic.field4=remove
-----
-
-The above parameters convert a normal `update` operation on
-
-* `field1` to an atomic `add` operation
-* `field2` to an atomic `set` operation
-* `field3` to an atomic `inc` operation
-* `field4` to an atomic `remove` operation
-
 ==== UUIDUpdateProcessorFactory
 
-Name of the processor is `uuid` . Use it to add a UUID to a field
-example:
+The `UUIDUpdateProcessorFactory` is used to add generated UUIDs to documents.
+
+Use the parameter `processor=uuid` to invoke it. You will also need to specify the field where the UUID will be added with the `uuid.fieldName` parameter.
+
+For example:
 
 [source,bash]
 ----

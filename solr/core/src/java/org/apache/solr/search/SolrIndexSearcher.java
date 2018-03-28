@@ -47,7 +47,7 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
@@ -339,7 +339,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
      * Override these two methods to provide a way to use global collection stats.
      */
   @Override
-  public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
     final SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
     if (reqInfo != null) {
       final StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext().get(STATS_SOURCE);
@@ -362,12 +362,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return localCollectionStatistics(field);
   }
 
-  public TermStatistics localTermStatistics(Term term, TermContext context) throws IOException {
+  public TermStatistics localTermStatistics(Term term, TermStates context) throws IOException {
     return super.termStatistics(term, context);
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
-    return super.collectionStatistics(field);
+    // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
+    assert field != null;
+    // SlowAtomicReader has a cache of MultiTerms
+    Terms terms = getSlowAtomicReader().terms(field);
+    if (terms == null) {
+      return null;
+    }
+    return new CollectionStatistics(field, reader.maxDoc(),
+        terms.getDocCount(), terms.getSumTotalTermFreq(), terms.getSumDocFreq());
   }
 
   public boolean isCachingEnabled() {
@@ -1051,7 +1059,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       List<Weight> weights = new ArrayList<>(notCached.size());
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createNormalizedWeight(qq, true));
+        weights.add(createNormalizedWeight(qq, ScoreMode.COMPLETE));
       }
       pf.filter = new FilterImpl(answer, weights);
       pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
@@ -1389,8 +1397,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // slower than simply re-executing the query.
       if (out.docSet == null) {
         out.docSet = getDocSet(cmd.getQuery(), cmd.getFilter());
-        DocSet bigFilt = getDocSet(cmd.getFilterList());
-        if (bigFilt != null) out.docSet = out.docSet.intersection(bigFilt);
+        List<Query> filterList = cmd.getFilterList();
+        if (filterList != null && !filterList.isEmpty()) {
+          out.docSet = out.docSet.intersection(getDocSet(cmd.getFilterList()));
+        }
       }
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...
@@ -1510,7 +1520,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // ... see comments in populateNextCursorMarkFromTopDocs for cache issues (SOLR-5595)
       final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores, true);
     }
   }
 
@@ -1549,8 +1559,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
         };
       } else {
@@ -1570,8 +1580,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE;
           }
         };
       }
@@ -1659,8 +1669,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE;
           }
         };
 

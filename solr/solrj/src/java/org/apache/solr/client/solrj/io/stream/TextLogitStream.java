@@ -63,6 +63,9 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
+/**
+ * @since 6.2.0
+ */
 public class TextLogitStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -388,11 +391,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (isCloseCache && cache != null) {
       cache.close();
     }
 
-    executorService.shutdown();
+    if (executorService != null) {
+      executorService.shutdown();
+    }
     termsStream.close();
   }
 

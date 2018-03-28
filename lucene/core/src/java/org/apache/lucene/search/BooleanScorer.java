@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -105,9 +106,7 @@ final class BooleanScorer extends BulkScorer {
     }
 
     public BulkScorerAndDoc get(int i) {
-      if (i < 0 || i >= size()) {
-        throw new IndexOutOfBoundsException();
-      }
+      FutureObjects.checkIndex(i, size());
       return (BulkScorerAndDoc) getHeapArray()[1 + i];
     }
 
@@ -182,7 +181,6 @@ final class BooleanScorer extends BulkScorer {
     final FakeScorer fakeScorer = this.fakeScorer;
     final Bucket bucket = buckets[i];
     if (bucket.freq >= minShouldMatch) {
-      fakeScorer.freq = bucket.freq;
       fakeScorer.score = (float) bucket.score;
       final int doc = base | i;
       fakeScorer.doc = doc;

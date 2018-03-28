@@ -1,6 +1,4 @@
 = Distributed Search with Index Sharding
-:page-shortname: distributed-search-with-index-sharding
-:page-permalink: distributed-search-with-index-sharding.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -143,7 +141,7 @@ Now do a distributed search across both servers with your browser or `curl.` In 
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/core1/select?q=*:*&indent=true&shards=localhost:8983/solr/core1,localhost:8984/solr/core1&fl=id,name
+curl http://localhost:8983/solr/core1/select?q=*:*&indent=true&shards=localhost:8983/solr/core1,localhost:8984/solr/core1&fl=id,name&wt=xml
 ----
 +
 This should contain both the documents as shown below:

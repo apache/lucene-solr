@@ -1,4 +1,4 @@
-= Publication Process
+= Publication Steps for Each Process
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -61,7 +61,8 @@ These steps walk through checking out this directory and uploading the Guide to 
 IMPORTANT: The next step requires that you have already generated your GPG keys. Your GPG passphrase will be required.
 
 [start=3]
-. Run the Prep Ref Guide script to prepare the RC. This script ensures proper naming of the PDF file, generates `.sha1` and `.asc` files and creates the proper RC sub-directories under `solr-ref-guide-rc`.
+. Run the Prep Ref Guide script to prepare the RC. This script ensures proper naming of the PDF file, generates `.sha1`,
+ `.sha512` and `.asc` files and creates the proper RC sub-directories under `solr-ref-guide-rc`.
 .. The structure of the input is: `prep-solr-ref-guide-rc.sh <path/PDFfilename> <Solrversion-RC#> GPGkey`.
 .. From the `solr-ref-guide-rc` directory, it will look something like this:
 +
@@ -72,7 +73,8 @@ $ ~/lucene-source/dev-tools/scripts/prep-solr-ref-guide-rc.sh apache-solr-ref-gu
 + mkdir apache-solr-ref-guide-7.0-RC0
 + mv apache-solr-ref-guide-7.0.pdf apache-solr-ref-guide-7.0-RC0/apache-solr-ref-guide-7.0.pdf
 + cd apache-solr-ref-guide-7.0-RC0
-+ sha1sum apache-solr-ref-guide-7.0.pdf
++ shasum apache-solr-ref-guide-7.0.pdf
++ shasum -a 512 apache-solr-ref-guide-7.0.pdf
 + gpg -u DEADBEEF --armor --output apache-solr-ref-guide-7.0.pdf.asc --detach-sig apache-solr-ref-guide-7.0.pdf
 
 You need a passphrase to unlock the secret key for
@@ -92,7 +94,7 @@ Votes must be sent to the lucene-dev mailing list (`dev@lucene.apache.org`).
 . You can add your own +1 to the vote announcement email.
 . If there are issues that need to be resolved, you can start the process over, using RC1, RC2, etc., as needed.
 
-Ideally, the HTML version will also be available for voters to evaluate, see the section <<Publishing HTML Version>> below for details of how to do that.
+NOTE: Ideally, the HTML version will also be available for voters to evaluate. See the section <<Publishing HTML Version>> below for details of how to do that.
 
 === Publish to Production & Archive Old Versions
 
@@ -107,7 +109,7 @@ Once at least three PMC members have voted for release (see https://www.apache.o
 $ ~/lucene-source/dev-tools/scripts/publish-solr-ref-guide-rc.sh X.Y-RCZ
 
 ## Run the following commands when ready...
-svn move -m 'publishing apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.asc https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha1 https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/
+svn move -m 'publishing apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.asc https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha1 https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha512 https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/
 
 svn rm -m 'cleaning up apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ
 ----
@@ -144,7 +146,24 @@ WARNING: You must send the announcement email from your @apache.org email addres
 
 Always use the link to the download redirector for the announcement, as it will automatically direct users to the closest mirror for download: `https://www.apache.org/dyn/closer.cgi/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y.pdf`.
 
-You could also include a link to the HTML version in your announcement, if the publication process for that has finished.
+You should include a link to the HTML version in your announcement. There are additional steps to modify the website for the HTML version, so see <<Release Steps for HTML Version>> below for details.
+
+.Sample announcement
+[source,text]
+----
+The Lucene PMC is pleased to announce that the Solr Reference Guide
+for 7.0 is now available.
+
+This 1,035-page PDF is the definitive guide to using Apache Solr, the
+search server built on Lucene.
+
+The PDF Guide can be downloaded from:
+https://www.apache.org/dyn/closer.cgi/lucene/solr/ref-guide/apache-solr-ref-guide-7.0.pdf.
+
+It is also available online at https://lucene.apache.org/solr/guide/7_0.
+----
+
+If the Guide is being published more than a day or two after the application itself, you should update the Solr website news page with the announcement (https://lucene.apache.org/solr/news.html).
 
 == Publishing HTML Version
 The steps to publish the Guide differ depending on if it is the first time the Guide has been published or if it is an update to an already published Guide.
@@ -183,7 +202,7 @@ Go to the checkout directory where you have built the Guide and push the documen
 [source,bash]
 svn -m "Add Ref Guide for Solr 6.5" import <checkoutroot>/solr/build/solr-ref-guide/html-site https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/6_5
 
-Confirm you can browse to these URLs manually, and especially that solr javadocs link back to lucene's correctly. Example:
+Confirm you can browse to these URLs manually, and especially that Solr javadocs link back to lucene's correctly. Example:
 https://lucene.apache.org/solr/guide/6_5
 
 ==== Step 3: Push Staging extpaths.txt to Production
@@ -192,13 +211,21 @@ The `extpaths.txt` works by listing paths that should be ignored when the CMS sy
 
 Production URL: https://lucene.apache.org/extpaths.txt
 
-==== Update Ref Guide Landing Page
+=== Release Steps for HTML Version
 
-Update the landing page at https://lucene.apache.org/solr/guide to link to the newest version.
+When the PDF is announced as available, the HTML version should already be available on the Solr website. There are a few steps to take to make the new HTML version the default.
 
-You can use the CMS system for this since it is a small change, or you can edit the file locally and commit it to the staging repo.
+TIP: You can use the CMS system for these changes, or you can edit the file locally and commit it to the staging repo.
 
-=== Update a Published Guide
+. Update the landing page at https://lucene.apache.org/solr/guide (the file is at `content/solr/guide/index.mdtext` in SVN) to link to the newest version.
+. Update the Guide redirect rule that looks like the below in `content/.htaccess` so URLs without a version in the path are redirected to the latest available version.
++
+[source,text]
+RedirectMatch temp /solr/guide/(?!index.html)([a-z].*) /solr/guide/7_0/$1
++
+In the above example, you would change the `7_0` part of the path to the right version (`7_1`, etc.).
+
+=== Updating Files in an Already-Published Guide
 
 If you need to re-publish an existing online copy of the Guide, you will need to checkout the directory in production website repository and overwrite the existing files:
 

@@ -40,6 +40,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.feature.Feature;
@@ -187,7 +188,7 @@ public class LTRScoringQuery extends Query {
   }
 
   @Override
-  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
+  public ModelWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     final Collection<Feature> modelFeatures = ltrScoringModel.getFeatures();
     final Collection<Feature> allFeatures = ltrScoringModel.getAllFeatures();
@@ -205,10 +206,10 @@ public class LTRScoringQuery extends Query {
     List<Feature.FeatureWeight > featureWeights = new ArrayList<>(features.size());
 
     if (querySemaphore == null) {
-      createWeights(searcher, needsScores, featureWeights, features);
+      createWeights(searcher, scoreMode.needsScores(), featureWeights, features);
     }
     else{
-      createWeightsParallel(searcher, needsScores, featureWeights, features);
+      createWeightsParallel(searcher, scoreMode.needsScores(), featureWeights, features);
     }
     int i=0, j = 0;
     if (this.extractAllFeatures) {
@@ -479,6 +480,11 @@ public class LTRScoringQuery extends Query {
 
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
     public class ModelScorer extends Scorer {
       final private DocInfo docInfo;
       final private Scorer featureTraversalScorer;
@@ -517,8 +523,8 @@ public class LTRScoringQuery extends Query {
       }
 
       @Override
-      public int freq() throws IOException {
-        return featureTraversalScorer.freq();
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
       }
 
       @Override
@@ -576,13 +582,8 @@ public class LTRScoringQuery extends Query {
         }
 
         @Override
-        public int freq() throws IOException {
-          final DisiWrapper subMatches = subScorers.topList();
-          int freq = 1;
-          for (DisiWrapper w = subMatches.next; w != null; w = w.next) {
-            freq += 1;
-          }
-          return freq;
+        public float getMaxScore(int upTo) throws IOException {
+          return Float.POSITIVE_INFINITY;
         }
 
         @Override
@@ -668,17 +669,17 @@ public class LTRScoringQuery extends Query {
         }
 
         @Override
+        public float getMaxScore(int upTo) throws IOException {
+          return Float.POSITIVE_INFINITY;
+        }
+        
+        @Override
         public final Collection<ChildScorer> getChildren() {
           final ArrayList<ChildScorer> children = new ArrayList<>();
           for (final Scorer scorer : featureScorers) {
             children.add(new ChildScorer(scorer, "SHOULD"));
           }
           return children;
-        }
-
-        @Override
-        public int freq() throws IOException {
-          return freq;
         }
 
         @Override

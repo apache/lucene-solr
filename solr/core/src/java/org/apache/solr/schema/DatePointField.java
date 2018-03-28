@@ -29,7 +29,6 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -186,24 +185,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     result.grow(Long.BYTES);
     result.setLength(Long.BYTES);
     LongPoint.encodeDimension(date.getTime(), result.bytes(), 0);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.LONG, top);
-    sf.setMissingValue(missingValue);
-    return sf;
   }
 
   @Override

@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 /**
  * Pareto-Zipf Normalization
  * @lucene.experimental
@@ -34,15 +36,32 @@ public class NormalizationZ extends Normalization {
   /**
    * Creates NormalizationZ with the supplied parameter <code>z</code>.
    * @param z represents <code>A/(A+1)</code> where <code>A</code> 
-   *          measures the specificity of the language.
+   *          measures the specificity of the language. It ranges from (0 .. 0.5)
    */
   public NormalizationZ(float z) {
+    if (Float.isNaN(z) || z <= 0f || z >= 0.5f) {
+      throw new IllegalArgumentException("illegal z value: " + z + ", must be in the range (0 .. 0.5)");
+    }
     this.z = z;
   }
   
   @Override
-  public float tfn(BasicStats stats, float tf, float len) {
-    return (float)(tf * Math.pow(stats.avgFieldLength / len, z));
+  public double tfn(BasicStats stats, double tf, double len) {
+    return tf * Math.pow(stats.avgFieldLength / len, z);
+  }
+
+  @Override
+  public Explanation explain(BasicStats stats, double tf, double len) {
+    return Explanation.match(
+        (float) tfn(stats, tf, len),
+        getClass().getSimpleName()
+            + ", computed as tf * Math.pow(avgfl / fl, z) from:",
+        Explanation.match((float) tf,
+            "tf, number of occurrences of term in the document"),
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgfl, average length of field across all documents"),
+        Explanation.match((float) len, "fl, field length of the document"),
+        Explanation.match(z, "z, relates to specificity of the language"));
   }
 
   @Override

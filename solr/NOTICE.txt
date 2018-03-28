@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2017 The Apache Software Foundation
+ Copyright 2006-2018 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -122,7 +122,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2017 The Apache Software Foundation
+Copyright 2001-2018 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -177,13 +177,14 @@ The KStem stemmer in
 was developed by Bob Krovetz and Sergio Guzman-Lara (CIIR-UMass Amherst)
 under the BSD-license.
 
-The Arabic,Persian,Romanian,Bulgarian, and Hindi analyzers (common) come with a default
+The Arabic,Persian,Romanian,Bulgarian, Hindi and Bengali analyzers (common) come with a default
 stopword list that is BSD-licensed created by Jacques Savoy.  These files reside in:
 analysis/common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt,
 analysis/common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt,
 analysis/common/src/resources/org/apache/lucene/analysis/ro/stopwords.txt,
 analysis/common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt,
-analysis/common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt
+analysis/common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt,
+analysis/common/src/resources/org/apache/lucene/analysis/bn/stopwords.txt
 See http://members.unine.ch/jacques.savoy/clef/index.html.
 
 The German,Spanish,Finnish,French,Hungarian,Italian,Portuguese,Russian and Swedish light stemmers

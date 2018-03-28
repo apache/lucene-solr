@@ -52,13 +52,14 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
 
   @Override
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
+                                SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
     // Don't auto-quote graph-aware field queries 
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
-    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries);
+    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries, synonymQueryStyle);
   }
 
 // *   Query  ::= ( Clause )*
@@ -767,7 +768,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
   static private final class LookaheadSuccess extends java.lang.Error { }
-  final private LookaheadSuccess jj_ls = new LookaheadSuccess();
+  static final private LookaheadSuccess jj_ls = new LookaheadSuccess();
   private boolean jj_scan_token(int kind) {
     if (jj_scanpos == jj_lastpos) {
       jj_la--;

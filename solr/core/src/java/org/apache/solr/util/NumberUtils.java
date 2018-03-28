@@ -211,11 +211,7 @@ public class NumberUtils {
 
   public static int bytesToInt(byte[] bytes) {
     if (bytes == null) return 0;
-    int val = 0;
-    for (int i = 0; i < bytes.length; i++) {
-      val = val << 8;
-      val += bytes[i];
-    }
-    return val;
+    assert bytes.length == 4;
+    return bytes[0] << 24 | (bytes[1] & 255) << 16 | (bytes[2] & 255) << 8 | bytes[3] & 255;
   }
 }

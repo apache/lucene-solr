@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +34,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
@@ -42,6 +42,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -111,8 +112,9 @@ public class FSTOrdTermsReader extends FieldsProducer {
         FieldInfo fieldInfo = fieldInfos.fieldInfo(blockIn.readVInt());
         boolean hasFreq = fieldInfo.getIndexOptions() != IndexOptions.DOCS;
         long numTerms = blockIn.readVLong();
-        long sumTotalTermFreq = hasFreq ? blockIn.readVLong() : -1;
-        long sumDocFreq = blockIn.readVLong();
+        long sumTotalTermFreq = blockIn.readVLong();
+        // if freqs are omitted, sumDocFreq=sumTotalTermFreq and we only write one value
+        long sumDocFreq = hasFreq ? blockIn.readVLong() : sumTotalTermFreq;
         int docCount = blockIn.readVInt();
         int longsSize = blockIn.readVInt();
         FST<Long> index = new FST<>(indexIn, PositiveIntOutputs.getSingleton());
@@ -146,7 +148,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount + " (blockIn=" + blockIn + ")", indexIn);
     }
     // #positions must be >= #postings
-    if (field.sumTotalTermFreq != -1 && field.sumTotalTermFreq < field.sumDocFreq) {
+    if (field.sumTotalTermFreq < field.sumDocFreq) {
       throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq + " (blockIn=" + blockIn + ")", indexIn);
     }
     if (previous != null) {
@@ -343,9 +345,6 @@ public class FSTOrdTermsReader extends FieldsProducer {
         this.totalTermFreq = new long[INTERVAL];
         this.statsBlockOrd = -1;
         this.metaBlockOrd = -1;
-        if (!hasFreqs()) {
-          Arrays.fill(totalTermFreq, -1);
-        }
       }
 
       /** Decodes stats data into term state */
@@ -388,6 +387,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
             }
           } else {
             docFreq[i] = code;
+            totalTermFreq[i] = code;
           }
         }
       }
@@ -432,6 +432,12 @@ public class FSTOrdTermsReader extends FieldsProducer {
       public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         decodeMetaData();
         return postingsReader.postings(fieldInfo, state, reuse, flags);
+      }
+
+      @Override
+      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+        decodeMetaData();
+        return postingsReader.impacts(fieldInfo, state, scorer, flags);
       }
 
       // TODO: this can be achieved by making use of Util.getByOutput()

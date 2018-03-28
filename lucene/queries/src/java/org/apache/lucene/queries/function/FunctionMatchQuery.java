@@ -29,6 +29,7 @@ import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -61,11 +62,12 @@ public final class FunctionMatchQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    DoubleValuesSource vs = source.rewrite(searcher);
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        DoubleValues values = source.getValues(context, null);
+        DoubleValues values = vs.getValues(context, null);
         DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
         TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
           @Override
@@ -80,6 +82,12 @@ public final class FunctionMatchQuery extends Query {
         };
         return new ConstantScoreScorer(this, score(), twoPhase);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return source.isCacheable(ctx);
+      }
+
     };
   }
 

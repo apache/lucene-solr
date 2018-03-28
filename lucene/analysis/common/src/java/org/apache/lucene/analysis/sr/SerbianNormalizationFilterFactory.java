@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *       haircut="bald"/&gt; 
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
+ * @since 5.0.0
  */
 public class SerbianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   final String haircut;

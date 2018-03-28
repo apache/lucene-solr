@@ -21,7 +21,9 @@ import java.io.OutputStream;
 import java.io.IOException;
 
 /**
- * Circular area with a center and radius.
+ * Circular area with a center and cutoff angle that represents the latitude and longitude distance
+ * from the center where the planet will be cut. The resulting area is a circle for spherical
+ * planets and an ellipse otherwise.
  *
  * @lucene.experimental
  */

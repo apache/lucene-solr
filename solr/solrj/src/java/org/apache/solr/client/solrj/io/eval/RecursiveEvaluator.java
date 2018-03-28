@@ -55,6 +55,8 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
   protected Object normalizeInputType(Object value){
     if(null == value){
       return null;
+    } else if (value instanceof VectorFunction) {
+      return value;
     }
     else if(value instanceof Double){
       if(Double.isNaN((Double)value)){
@@ -97,8 +99,9 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
   protected Object normalizeOutputType(Object value) {
     if(null == value){
       return null;
-    }
-    else if(value instanceof BigDecimal){
+    } else if (value instanceof VectorFunction) {
+      return value;
+    } else if(value instanceof BigDecimal){
       BigDecimal bd = (BigDecimal)value;
       if(bd.signum() == 0 || bd.scale() <= 0 || bd.stripTrailingZeros().scale() <= 0){
         try{
@@ -171,7 +174,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
     
     Set<String> namedParameters = factory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
     long ignorableCount = ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
-    
+    /*
     if(0 != expression.getParameters().size() - containedEvaluators.size() - ignorableCount){
       if(namedParameters.isEmpty()){
         throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
@@ -180,6 +183,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
         throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators, field names, or named parameters [%s]", expression, namedParameters.stream().collect(Collectors.joining(","))));
       }
     }
+    */
   }
   
   @Override

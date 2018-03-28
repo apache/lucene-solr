@@ -1,6 +1,4 @@
 = DataDir and DirectoryFactory in SolrConfig
-:page-shortname: datadir-and-directoryfactory-in-solrconfig
-:page-permalink: datadir-and-directoryfactory-in-solrconfig.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,7 +36,7 @@ element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA
 
 == Specifying the DirectoryFactory For Your Index
 
-The default {solr-javadocs}/solr-core/org/apache/solr/core/StandardDirectoryFactory.html[`solr.StandardDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or config options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`], {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`], or {solr-javadocs}/solr-core/org/apache/solr/core/SimpleFSDirectoryFactory.html[`solr.SimpleFSDirectoryFactory`].
+The default {solr-javadocs}/solr-core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or config options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`], {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`], or {solr-javadocs}/solr-core/org/apache/solr/core/SimpleFSDirectoryFactory.html[`solr.SimpleFSDirectoryFactory`].
 
 [source,xml]
 ----

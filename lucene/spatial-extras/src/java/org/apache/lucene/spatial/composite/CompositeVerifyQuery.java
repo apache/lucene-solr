@@ -24,6 +24,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -80,8 +81,8 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight indexQueryWeight = indexQuery.createWeight(searcher, false, boost);//scores aren't unsupported
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight indexQueryWeight = indexQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);//scores aren't unsupported
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -96,6 +97,12 @@ public class CompositeVerifyQuery extends Query {
         final TwoPhaseIterator predFuncValues = predicateValueSource.iterator(context, indexQueryScorer.iterator());
         return new ConstantScoreScorer(this, score(), predFuncValues);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return predicateValueSource.isCacheable(ctx);
+      }
+
     };
   }
 }

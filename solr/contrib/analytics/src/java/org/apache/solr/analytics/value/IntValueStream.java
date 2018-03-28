@@ -67,5 +67,9 @@ public interface IntValueStream extends AnalyticsValueStream {
     public void streamObjects(Consumer<Object> cons) {
       streamInts((int val) -> cons.accept(val));
     }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
   }
 }

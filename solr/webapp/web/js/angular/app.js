@@ -67,6 +67,10 @@ solrAdminApp.config([
         templateUrl: 'partials/java-properties.html',
         controller: 'JavaPropertiesController'
       }).
+      when('/~cluster-suggestions', {
+        templateUrl: 'partials/cluster_suggestions.html',
+        controller: 'ClusterSuggestionsController'
+      }).
       when('/~pluginbundles', {
         templateUrl: 'partials/plugin-bundles.html',
         controller: 'PluginBundleController'

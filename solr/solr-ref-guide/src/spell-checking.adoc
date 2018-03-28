@@ -1,6 +1,4 @@
 = Spell Checking
-:page-shortname: spell-checking
-:page-permalink: spell-checking.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -41,7 +39,7 @@ The `IndexBasedSpellChecker` uses a Solr index as the basis for a parallel index
     <str name="field">content</str>
     <str name="buildOnCommit">true</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
@@ -101,7 +99,7 @@ The `FileBasedSpellChecker` uses an external file as a spelling dictionary. This
     <str name="characterEncoding">UTF-8</str>
     <str name="spellcheckIndexDir">./spellcheckerFile</str>
     <!-- optional elements with defaults
-    <str name="distanceMeasure">org.apache.lucene.search.spell.LevensteinDistance</str>
+    <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <str name="accuracy">0.5</str>
     -->
  </lst>
@@ -137,7 +135,7 @@ Here is how it might be configured in `solrconfig.xml`:
 
 Some of the parameters will be familiar from the discussion of the other spell checkers, such as `name`, `classname`, and `field`. New for this spell checker is `combineWords`, which defines whether words should be combined in a dictionary search (default is true); `breakWords`, which defines if words should be broken during a dictionary search (default is true); and `maxChanges`, an integer which defines how many times the spell checker should check collation possibilities against the index (default is 10).
 
-The spellchecker can be configured with a traditional checker (ie: `DirectSolrSpellChecker`). The results are combined and collations can contain a mix of corrections from both spellcheckers.
+The spellchecker can be configured with a traditional checker (i.e., `DirectSolrSpellChecker`). The results are combined and collations can contain a mix of corrections from both spellcheckers.
 
 === Add It to a Request Handler
 
@@ -193,8 +191,11 @@ If set to `true`, this parameter reloads the spellchecker. The results depend on
 `spellcheck.count`::
 This parameter specifies the maximum number of suggestions that the spellchecker should return for a term. If this parameter isn't set, the value defaults to `1`. If the parameter is set but not assigned a number, the value defaults to `5`. If the parameter is set to a positive integer, that number becomes the maximum number of suggestions returned by the spellchecker.
 
+`spellcheck.queryAnalyzerFieldtype`::
+A field type from Solr's schema. The analyzer configured for the provided field type is used by the QueryConverter to tokenize the value for "q" parameter. The field type specified by this parameter should do minimal transformations. It's usually a best practice to avoid types that aggressively stem or NGram, for instance, since those types of analysis can throw off spell checking.
+
 `spellcheck.onlyMorePopular`::
-If `true`, Solr will to return suggestions that result in more hits for the query than the existing query. Note that this will return more popular suggestions even when the given query term is present in the index and considered "correct".
+If `true`, Solr will return suggestions that result in more hits for the query than the existing query. Note that this will return more popular suggestions even when the given query term is present in the index and considered "correct".
 
 `spellcheck.maxResultsForSuggest`::
 If, for example, this is set to `5` and the user's query returns 5 or fewer results, the spellchecker will report "correctlySpelled=false" and also offer suggestions (and collations if requested). Setting this greater than zero is useful for creating "did-you-mean?" suggestions for queries that return a low number of hits.
@@ -249,7 +250,7 @@ For example, given a dictionary called `foo`, `spellcheck.foo.myKey=myValue` wou
 
 Using Solr's `bin/solr -e techproducts` example, this query shows the results of a simple request that defines a query using the `spellcheck.q` parameter, and forces the collations to require all input terms must match:
 
-`\http://localhost:8983/solr/techproducts/spell?df=text&spellcheck.q=delll+ultra+sharp&spellcheck=true&spellcheck.collateParam.q.op=AND`
+`\http://localhost:8983/solr/techproducts/spell?df=text&spellcheck.q=delll+ultra+sharp&spellcheck=true&spellcheck.collateParam.q.op=AND&wt=xml`
 
 Results:
 

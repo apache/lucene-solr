@@ -514,7 +514,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
-      ParallelStream parallelStream = new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
+      @SuppressWarnings("resource")
+      final ParallelStream parallelStream = new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
 
 
       parallelStream.setStreamFactory(factory);
@@ -740,7 +741,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if(numWorkers > 1) {
       // Do the unique in parallel
       // Maintain the sort of the Tuples coming from the workers.
-      ParallelStream parallelStream = new ParallelStream(zkHost, collection, tupleStream, numWorkers, comp);
+      @SuppressWarnings("resource")
+      final ParallelStream parallelStream = new ParallelStream(zkHost, collection, tupleStream, numWorkers, comp);
 
       StreamFactory factory = new StreamFactory()
           .withFunctionName("search", CloudSolrStream.class)

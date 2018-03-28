@@ -60,6 +60,9 @@
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST="192.168.1.1"
 
+# By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+#SOLR_WAIT_FOR_ZK="30"
+
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
 
@@ -90,13 +93,13 @@
 # If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
 #SOLR_DATA_HOME=
 
-# Solr provides a default Log4J configuration properties file in server/resources
+# Solr provides a default Log4J configuration xml file in server/resources
 # however, you may want to customize the log settings and file appender location
-# so you can point the script to use a different log4j.properties file
-#LOG4J_PROPS=/var/solr/log4j.properties
+# so you can point the script to use a different log4j2.xml file
+#LOG4J_PROPS=/var/solr/log4j2.xml
 
 # Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
-# This is an alternative to changing the rootLogger in log4j.properties
+# This is an alternative to changing the rootLogger in log4j2.xml
 #SOLR_LOG_LEVEL=INFO
 
 # Location where Solr should write logs to. Absolute or relative to solr start dir
@@ -145,4 +148,15 @@
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+
+# Settings for common system values that may cause operational imparement when system defaults are used.
+# Solr can use many processes and many file handles. On modern operating systems the savings by leaving
+# these settings low is minuscule, while the consequence can be Solr instability. To turn these checks off, set
+# SOLR_ULIMIT_CHECKS=false either here or as part of your profile.
+
+# Different limits can be set in solr.in.sh or your profile if you prefer as well.
+#SOLR_RECOMMENDED_OPEN_FILES=
+#SOLR_RECOMMENDED_MAX_PROCESSES=
+#SOLR_ULIMIT_CHECKS=
 

@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
 * Emits tuples from streamA which do not exist in streamB. Resulting tuples are ordered
 * the same as they were in streamA. Both streams must be sorted by the fields being compared.
+* @since 6.0.0
 **/
 
 public class ComplementStream extends TupleStream implements Expressible {

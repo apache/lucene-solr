@@ -1,6 +1,4 @@
 = Filter Descriptions
-:page-shortname: filter-descriptions
-:page-permalink: filter-descriptions.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -189,7 +187,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 *Arguments:*
 
-`inject` :: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 *Example:*
 
@@ -203,7 +201,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -345,7 +343,7 @@ This filter stems plural English words to their singular form.
 
 == English Possessive Filter
 
-This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g. the *s'* in "divers' snorkels", are not removed by this filter.
+This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not removed by this filter.
 
 *Factory class:* `solr.EnglishPossessiveFilterFactory`
 
@@ -825,13 +823,15 @@ Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Fil
 
 *Factory class:* `solr.ManagedSynonymFilterFactory`
 
-For arguments and examples, see the <<Managed Synonym Graph Filter>> below.
+For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
 This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
+
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
 *Arguments:*
 
@@ -854,7 +854,7 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 
-See <<Managed Synonym Filter>> for example input/output.
+See <<Synonym Graph Filter>> below for example input/output.
 
 == N-Gram Filter
 
@@ -1026,7 +1026,7 @@ This filter creates tokens using one of the phonetic encoding algorithms in the 
 
 *Arguments:*
 
-`encoder`:: (required) The name of the encoder to use. The encoder name must be one of the following (case insensitive): `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
+`encoder`:: (required) The name of the encoder to use. The encoder name must be one of the following (case insensitive): `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
 
 `inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
@@ -1437,6 +1437,8 @@ This filter maps single- or multi-token synonyms, producing a fully correct grap
 
 If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Synonym Filter, because the indexer can't directly consume a graph. To get fully correct positional queries when your synonym replacements are multiple tokens, you should instead apply synonyms using this filter at query time.
 
+NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
+
 *Factory class:* `solr.SynonymGraphFilterFactory`
 
 *Arguments:*
@@ -1578,6 +1580,38 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 
 *Out:* "Pay"[<ALPHANUM>], "Bob's"[<APOSTROPHE>], "I.O.U."[<ACRONYM>]
 
+== Type As Synonym Filter
+
+This filter adds the token's type, as a token at the same position as the token, optionally with a configurable prefix prepended.
+
+*Factory class:* `solr.TypeAsSynonymFilterFactory`
+
+*Arguments:*
+
+`prefix`:: (optional) The prefix to prepend to the token's type.
+
+*Examples:*
+
+With the example below, each token's type will be emitted verbatim at the same position:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory"/>
+</analyzer>
+----
+
+With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="_type_"/>
+</analyzer>
+----
+
 == Type Token Filter
 
 This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them. For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types. This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
@@ -1608,7 +1642,7 @@ This filter splits tokens at word delimiters.
 .Word Delimiter Filter has been Deprecated
 [WARNING]
 ====
-Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g. phrase queries can work correctly.
+Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g., phrase queries can work correctly.
 ====
 
 *Factory class:* `solr.WordDelimiterFilterFactory`

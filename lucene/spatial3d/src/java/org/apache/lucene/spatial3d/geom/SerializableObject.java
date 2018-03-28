@@ -17,15 +17,15 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
+import java.util.List;
 
 /**
  * Indicates that a geo3d object can be serialized and deserialized.
@@ -47,7 +47,7 @@ public interface SerializableObject {
     object.getPlanetModel().write(outputStream);
     writeObject(outputStream, object);
   }
-  
+
   /** Read a PlanetObject from a stream.
    * @param inputStream is the input stream.
    * @return the PlanetObject.
@@ -60,30 +60,28 @@ public interface SerializableObject {
     }
     return (PlanetObject)so;
   }
-  
+
   /** Write an object to a stream.
    * @param outputStream is the output stream.
    * @param object is the object to write.
    */
   public static void writeObject(final OutputStream outputStream, final SerializableObject object) throws IOException {
-    writeString(outputStream, object.getClass().getName());
+    writeClass(outputStream, object.getClass());
     object.write(outputStream);
   }
-  
+
   /** Read an object from a stream (for objects that need a PlanetModel).
    * @param planetModel is the planet model to use to deserialize the object.
    * @param inputStream is the input stream.
    * @return the deserialized object.
    */
   public static SerializableObject readObject(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    // Read the class name
-    final String className = readString(inputStream);
     try {
-      // Look for the class
-      final Class<?> clazz = Class.forName(className);
+      // Read the class
+      final Class<?> clazz = readClass(inputStream);
       return readObject(planetModel, inputStream, clazz);
     } catch (ClassNotFoundException e) {
-      throw new IOException("Can't find class "+className+" for deserialization: "+e.getMessage(), e);
+      throw new IOException("Can't find class for deserialization: "+e.getMessage(), e);
     }
   }
 
@@ -92,17 +90,15 @@ public interface SerializableObject {
    * @return the deserialized object.
    */
   public static SerializableObject readObject(final InputStream inputStream) throws IOException {
-    // Read the class name
-    final String className = readString(inputStream);
     try {
-      // Look for the class
-      final Class<?> clazz = Class.forName(className);
+      // read the class
+      final Class<?> clazz = readClass(inputStream);
       return readObject(inputStream, clazz);
     } catch (ClassNotFoundException e) {
-      throw new IOException("Can't find class "+className+" for deserialization: "+e.getMessage(), e);
+      throw new IOException("Can't find class for deserialization: "+e.getMessage(), e);
     }
   }
-  
+
   /** Instantiate a serializable object from a stream.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -130,7 +126,7 @@ public interface SerializableObject {
     }
 
   }
-  
+
   /** Instantiate a serializable object from a stream without a planet model.
    * @param inputStream is the input stream.
    * @param clazz is the class to instantiate.
@@ -158,6 +154,39 @@ public interface SerializableObject {
 
   }
 
+  /** Write a class to a stream.
+   * @param outputStream is the output stream.
+   * @param clazz is the class to write.
+   */
+  static void writeClass(final OutputStream outputStream, final Class<?> clazz) throws IOException {
+    Integer index = StandardObjects.classRegsitry.get(clazz);
+    if (index == null){
+      writeBoolean(outputStream, false);
+      writeString(outputStream, clazz.getName());
+    }
+    else {
+      writeBoolean(outputStream, true);
+      outputStream.write(index);
+    }
+  }
+
+  /**
+   * Read the class from the stream
+   * @param inputStream is the stream to read from.
+   * @return is the class read
+   */
+  static Class<?> readClass(final InputStream inputStream) throws IOException, ClassNotFoundException {
+    boolean standard = readBoolean(inputStream);
+    if (standard) {
+      int index = inputStream.read();
+      return StandardObjects.codeRegsitry.get(index);
+    }
+    else {
+      String className = readString(inputStream);
+      return  Class.forName(className);
+    }
+  }
+
   /** Write a string to a stream.
    * @param outputStream is the output stream.
    * @param value is the string to write.
@@ -165,7 +194,7 @@ public interface SerializableObject {
   static void writeString(final OutputStream outputStream, final String value) throws IOException {
     writeByteArray(outputStream, value.getBytes(StandardCharsets.UTF_8));
   }
-  
+
   /** Read a string from a stream.
    * @param inputStream is the stream to read from.
    * @return the string that was read.
@@ -173,7 +202,7 @@ public interface SerializableObject {
   static String readString(final InputStream inputStream) throws IOException {
     return new String(readByteArray(inputStream), StandardCharsets.UTF_8);
   }
-  
+
   /** Write a point array.
    * @param outputStream is the output stream.
    * @param values is the array of points to write.
@@ -189,7 +218,7 @@ public interface SerializableObject {
   static void writePointArray(final OutputStream outputStream, final List<GeoPoint> values) throws IOException {
     writeHomogeneousArray(outputStream, values);
   }
-  
+
   /** Read a point array.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -214,7 +243,7 @@ public interface SerializableObject {
   static void writePolygonArray(final OutputStream outputStream, final List<GeoPolygon> values) throws IOException {
     writeHeterogeneousArray(outputStream, values);
   }
-  
+
   /** Read a polygon array.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -253,7 +282,7 @@ public interface SerializableObject {
       }
     }
   }
-  
+
   /** Read an array.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -299,7 +328,7 @@ public interface SerializableObject {
       }
     }
   }
-  
+
   /** Read an array.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -322,7 +351,7 @@ public interface SerializableObject {
   static void writeBitSet(final OutputStream outputStream, final BitSet bitSet) throws IOException {
     writeByteArray(outputStream, bitSet.toByteArray());
   }
-  
+
   /** Read a bitset from a stream.
    * @param inputStream is the input stream.
    * @return the bitset read from the stream.
@@ -339,7 +368,7 @@ public interface SerializableObject {
     writeInt(outputStream, bytes.length);
     outputStream.write(bytes);
   }
-  
+
   /** Read byte array.
    * @param inputStream is the input stream.
    * @return the byte array.
@@ -366,7 +395,7 @@ public interface SerializableObject {
   static void writeDouble(final OutputStream outputStream, final double value) throws IOException {
     writeLong(outputStream, Double.doubleToLongBits(value));
   }
-  
+
   /** Read a double from a stream.
    * @param inputStream is the input stream.
    * @return the double value read from the stream.
@@ -374,7 +403,7 @@ public interface SerializableObject {
   static double readDouble(final InputStream inputStream) throws IOException {
     return Double.longBitsToDouble(readLong(inputStream));
   }
-  
+
   /** Write a long to a stream.
    * @param outputStream is the output stream.
    * @param value is the value to write.
@@ -383,7 +412,7 @@ public interface SerializableObject {
     writeInt(outputStream, (int)value);
     writeInt(outputStream, (int)(value >> 32));
   }
-  
+
   /** Read a long from a stream.
    * @param inputStream is the input stream.
    * @return the long value read from the stream.
@@ -393,7 +422,7 @@ public interface SerializableObject {
     final long upper = (((long)(readInt(inputStream))) << 32) & 0xffffffff00000000L;
     return lower + upper;
   }
-  
+
   /** Write an int to a stream.
    * @param outputStream is the output stream.
    * @param value is the value to write.
@@ -404,7 +433,7 @@ public interface SerializableObject {
     outputStream.write(value >> 16);
     outputStream.write(value >> 24);
   }
-  
+
   /** Read an int from a stream.
    * @param inputStream is the input stream.
    * @return the value read from the stream.
@@ -424,7 +453,7 @@ public interface SerializableObject {
   static void writeBoolean(final OutputStream outputStream, final boolean value) throws IOException {
     outputStream.write(value?1:0);
   }
-  
+
   /** Read a boolean from a stream.
    * @param inputStream is the input stream.
    * @return the boolean value.
@@ -436,5 +465,6 @@ public interface SerializableObject {
     }
     return (valueRead == 0)?false:true;
   }
-  
+
 }
+

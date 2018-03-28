@@ -18,6 +18,10 @@
     margin: 10px 0;
 }
 
+ul.nav.nav-pills li {
+  margin-left: 5px;
+}
+
 .pageSummary {
     font-size:13px;
     display:block;
@@ -233,6 +237,10 @@ background-color: #347DBE;
     padding: 4px 10px;
 }
 
+.nav-pills > li > a {
+  line-height: 30px;
+}
+
 ul#mysidebar {
     border-radius:0;
 }
@@ -407,7 +415,7 @@ i.border {
 }
 
 a[data-toggle] {
-    color: #248EC2;
+    color: #305CB3;
 }
 
 .summary {
@@ -446,7 +454,6 @@ div#toc ul li ul li {
 
 .tab-content {
     padding: 15px;
-    background-color: #FAFAFA;
 }
 
 span.tagTitle {font-weight: 500;}

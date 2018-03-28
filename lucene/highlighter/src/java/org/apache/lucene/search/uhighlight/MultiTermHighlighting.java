@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -80,8 +81,11 @@ class MultiTermHighlighting {
       list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (query instanceof BoostQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((BoostQuery)query).getQuery(), fieldMatcher, lookInSpan,
+      list.addAll(Arrays.asList(extractAutomata(((BoostQuery) query).getQuery(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
+    } else if (query instanceof FunctionScoreQuery) {
+      list.addAll(Arrays.asList(extractAutomata(((FunctionScoreQuery) query).getWrappedQuery(), fieldMatcher,
+          lookInSpan, preRewriteFunc)));
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Query sub : ((DisjunctionMaxQuery) query).getDisjuncts()) {
         list.addAll(Arrays.asList(extractAutomata(sub, fieldMatcher, lookInSpan, preRewriteFunc)));

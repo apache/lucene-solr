@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -62,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public class ChaosMonkey {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  private static final int NO_STOP_WARN_TIME = 60;
   private static final int CONLOSS_PERCENT = 10; // 0 - 10 = 0 - 100%
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
@@ -416,11 +418,7 @@ public class ChaosMonkey {
       CoreContainer cc = cjetty.jetty.getCoreContainer();
       if (cc != null) {
         try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          if (core == null) {
-            monkeyLog("selected jetty not running correctly - skip");
-            return null;
-          }
-          rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
+          rtIsLeader = core != null && core.getCoreDescriptor().getCloudDescriptor().isLeader();
         }
       } else {
         return null;
@@ -583,8 +581,8 @@ public class ChaosMonkey {
     DirectUpdateHandler2.commitOnClose = true;
 
     double runtime = runTimer.getTime()/1000.0f;
-    if (runtime > 45 && stops.get() == 0) {
-      LuceneTestCase.fail("The Monkey ran for over 45 seconds and no jetties were stopped - this is worth investigating!");
+    if (runtime > NO_STOP_WARN_TIME && stops.get() == 0) {
+      LuceneTestCase.fail("The Monkey ran for over " + NO_STOP_WARN_TIME +" seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 
@@ -697,7 +695,7 @@ public class ChaosMonkey {
    * @param zkStateReader current state reader
    */
   public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader) throws InterruptedException {
-    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS);
+    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!t.hasTimedOut()) {
       Thread.sleep(Math.min(1000, t.timeLeft(TimeUnit.MILLISECONDS)));
       logCollectionStateSummary(collectionName, zkStateReader);

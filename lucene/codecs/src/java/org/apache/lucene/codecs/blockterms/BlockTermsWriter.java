@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.IndexOptions;
@@ -127,7 +128,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(Fields fields, NormsProducer norms) throws IOException {
 
     for(String field : fields) {
 
@@ -146,7 +147,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
           break;
         }
 
-        termsWriter.write(term, termsEnum);
+        termsWriter.write(term, termsEnum, norms);
       }
 
       termsWriter.finish();
@@ -232,9 +233,9 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     
     private final BytesRefBuilder lastPrevTerm = new BytesRefBuilder();
 
-    void write(BytesRef text, TermsEnum termsEnum) throws IOException {
+    void write(BytesRef text, TermsEnum termsEnum, NormsProducer norms) throws IOException {
 
-      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen, norms);
       if (state == null) {
         // No docs for this term:
         return;

@@ -21,7 +21,10 @@ package org.apache.solr.common;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.util.Utils;
 
 /**
  * Use this class to push all entries of a Map into an output.
@@ -30,6 +33,9 @@ import java.util.Map;
  */
 public interface MapWriter extends MapSerializable {
 
+  default String jsonStr(){
+    return Utils.toJSONString(this);
+  }
   @Override
   default Map toMap(Map<String, Object> map) {
     try {
@@ -38,6 +44,25 @@ public interface MapWriter extends MapSerializable {
         public EntryWriter put(String k, Object v) throws IOException {
           if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
           if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+          if (v instanceof Iterable) {
+            List lst = new ArrayList();
+            for (Object vv : (Iterable)v) {
+              if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+              if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+              lst.add(vv);
+            }
+            v = lst;
+          }
+          if (v instanceof Map) {
+            Map map = new LinkedHashMap();
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>)v).entrySet()) {
+              Object vv = entry.getValue();
+              if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+              if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+              map.put(entry.getKey(), vv);
+            }
+            v = map;
+          }
           map.put(k, v);
           return this;
         }
@@ -63,6 +88,14 @@ public interface MapWriter extends MapSerializable {
      * @param v The value can be any supported object
      */
     EntryWriter put(String k, Object v) throws IOException;
+    default EntryWriter putNoEx(String k, Object v) {
+      try {
+        put(k,v);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return this;
+    }
 
     default EntryWriter putIfNotNull(String k, Object v) throws IOException {
       if(v != null) put(k,v);

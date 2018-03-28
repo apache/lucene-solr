@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.noggit.JSONWriter;
 
@@ -90,6 +92,13 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
+   * Returns the zNode version that was used to construct this instance.
+   */
+  public int getZNodeVersion() {
+    return znodeVersion;
+  }
+
+  /**
    * Returns true if the specified collection name exists, false otherwise.
    *
    * Implementation note: This method resolves the collection reference by calling
@@ -116,16 +125,27 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Returns the corresponding {@link DocCollection} object for the given collection name
+   * if such a collection exists. Returns null otherwise.  Equivalent to getCollectionOrNull(collectionName, false)
+   */
+  public DocCollection getCollectionOrNull(String collectionName) {
+    return getCollectionOrNull(collectionName, false);
+  }
+
+  /**
+   * Returns the corresponding {@link DocCollection} object for the given collection name
    * if such a collection exists. Returns null otherwise.
+   *
+   * @param collectionName Name of the collection
+   * @param allowCached allow LazyCollectionRefs to use a time-based cached value
    *
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which may make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
-  public DocCollection getCollectionOrNull(String collectionName) {
+  public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
     CollectionRef ref = collectionStates.get(collectionName);
-    return ref == null ? null : ref.get();
+    return ref == null ? null : ref.get(allowCached);
   }
 
   /**
@@ -194,7 +214,10 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
+    sb.append("znodeVersion: " + znodeVersion);
+    sb.append("\n");
     sb.append("live nodes:" + liveNodes);
+    sb.append("\n");
     sb.append("collections:" + collectionStates);
     return sb.toString();
   }
@@ -228,15 +251,6 @@ public class ClusterState implements JSONWriter.Writable {
     }
 
     return new ClusterState( liveNodes, collections,version);
-  }
-
-  public static Aliases load(byte[] bytes) {
-    if (bytes == null || bytes.length == 0) {
-      return new Aliases();
-    }
-    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) Utils.fromJSON(bytes);
-
-    return new Aliases(aliasMap);
   }
 
   // TODO move to static DocCollection.loadFromMap
@@ -339,7 +353,20 @@ public class ClusterState implements JSONWriter.Writable {
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
+  public void forEachCollection(Consumer<DocCollection> consumer) {
+    collectionStates.forEach((s, collectionRef) -> {
+      try {
+        consumer.accept(collectionRef.get());
+      } catch (SolrException e) {
+        if (e.getCause() instanceof KeeperException.NoNodeException) {
+          //don't do anything. This collection does not exist
+        } else{
+          throw e;
+        }
+      }
+    });
 
+  }
   public static class CollectionRef {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
@@ -352,7 +379,18 @@ public class ClusterState implements JSONWriter.Writable {
       this.coll = coll;
     }
 
+    /** Return the DocCollection, always refetching if lazy. Equivalent to get(false)
+     * @return The collection state modeled in zookeeper
+     */
     public DocCollection get(){
+      return get(false);
+    }
+
+    /** Return the DocCollection
+     * @param allowCached Determines if cached value can be used.  Applies only to LazyCollectionRef.
+     * @return The collection state modeled in zookeeper
+     */
+    public DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
       return coll;
     }

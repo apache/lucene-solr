@@ -230,7 +230,7 @@ public class TestDocValuesQueries extends LuceneTestCase {
         SortedNumericDocValuesField.newSlowRangeQuery("foo", 2, 4),
         SortedDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()),
         SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()))) {
-      Weight w = searcher.createNormalizedWeight(query, random().nextBoolean());
+      Weight w = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
       assertNull(w.scorer(searcher.getIndexReader().leaves().get(0)));
     }
     reader.close();

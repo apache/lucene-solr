@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 
  */
-public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
+public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -141,14 +141,14 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
                    && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
       // fetch the distributed version of this chain
-      proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "non_blank_value"),
+      proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "NONE"), // just some non-blank value
                                    new SolrQueryResponse());
       procs = procToList(proc);
       assertNotNull(name + " (distrib) chain produced null proc", proc);
       assertFalse(name + " (distrib) procs is empty", procs.isEmpty());
 
       // for these 3 (distrib) chains, the first proc should always be LogUpdateProcessor
-      assertTrue(name + " (distrib) first proc should be LogUpdateProcessor because of @RunAllways: "
+      assertTrue(name + " (distrib) first proc should be LogUpdateProcessor because of @RunAlways: "
                  + procs.toString(),
                  ( // compare them both just because i'm going insane and the more checks the better
                    proc instanceof LogUpdateProcessorFactory.LogUpdateProcessor
@@ -173,7 +173,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
    * walks the "next" values of the proc building up a List of the procs for easier testing
    */
   public static List<UpdateRequestProcessor> procToList(UpdateRequestProcessor proc) {
-    List<UpdateRequestProcessor> result = new ArrayList<UpdateRequestProcessor>(7);
+    List<UpdateRequestProcessor> result = new ArrayList<>(7);
     while (null != proc) {
       result.add(proc);
       proc = proc.next;

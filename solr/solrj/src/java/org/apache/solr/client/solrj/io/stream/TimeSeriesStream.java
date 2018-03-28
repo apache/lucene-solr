@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+/**
+ * @since 6.6.0
+ */
 public class TimeSeriesStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
@@ -270,12 +274,12 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    if(cache != null) {
+    if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
@@ -386,11 +390,13 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       for(Metric metric : _metrics) {
         String identifier = metric.getIdentifier();
         if(!identifier.startsWith("count(")) {
-          double d = (double)bucket.get("facet_"+m);
-          if(metric.outputLong) {
-            t.put(identifier, Math.round(d));
-          } else {
-            t.put(identifier, d);
+          if(bucket.get("facet_"+m) != null) {
+            Number d = (Number) bucket.get("facet_" + m);
+            if (metric.outputLong) {
+              t.put(identifier, Math.round(d.doubleValue()));
+            } else {
+              t.put(identifier, d.doubleValue());
+            }
           }
           ++m;
         } else {

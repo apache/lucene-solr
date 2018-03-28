@@ -72,13 +72,19 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    return reqScorer.freq();
+  public float score() throws IOException {
+    return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
 
   @Override
-  public float score() throws IOException {
-    return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
+  public float getMaxScore(int upTo) throws IOException {
+    return reqScorer.getMaxScore(upTo);
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float score) {
+    // The score of this scorer is the same as the score of 'reqScorer'.
+    reqScorer.setMinCompetitiveScore(score);
   }
 
   @Override

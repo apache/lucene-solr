@@ -24,6 +24,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -305,7 +306,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores);
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores, true); // TODO: disable exact counts?
       }
 
       LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);
@@ -492,7 +493,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return needsScores;
+  public ScoreMode scoreMode() {
+    return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 }

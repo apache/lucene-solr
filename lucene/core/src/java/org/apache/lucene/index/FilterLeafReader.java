@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -214,6 +215,10 @@ public abstract class FilterLeafReader extends LeafReader {
       return in.postings(reuse, flags);
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return in.impacts(scorer, flags);
+    }
   }
 
   /** Base class for filtering {@link PostingsEnum} implementations. */

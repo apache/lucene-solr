@@ -117,7 +117,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     PluginInfo pluginInfo = shouldDefinePlugin ? new PluginInfo(TestUtil.randomUnicodeString(random), attrs) : null;
 
     try {
-      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
           pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
       assertNotNull(pluginInfo);
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());

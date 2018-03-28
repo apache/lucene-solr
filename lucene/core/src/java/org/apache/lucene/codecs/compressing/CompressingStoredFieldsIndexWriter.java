@@ -64,7 +64,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>For any block, the start pointer of the n-th chunk can be restored with
  * <code>StartPointerBase + AvgChunkSize * n + StartPointerDeltas[n]</code>.</li>
  * <li>Once data is loaded into memory, you can lookup the start pointer of any
- * document by performing two binary searches: a first one based on the values
+ * document chunk by performing two binary searches: a first one based on the values
  * of DocBase in order to find the right block, and then inside the block based
  * on DocBaseDeltas (by reconstructing the doc bases for every chunk).</li>
  * </ul>

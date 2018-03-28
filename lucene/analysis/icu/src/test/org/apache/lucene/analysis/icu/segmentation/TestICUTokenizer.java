@@ -16,13 +16,10 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
 
 import com.ibm.icu.lang.UScript;
@@ -76,8 +73,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false, true));
-        TokenFilter filter = new ICUNormalizer2Filter(tokenizer);
-        return new TokenStreamComponents(tokenizer, filter);
+        return new TokenStreamComponents(tokenizer);
       }
     };
   }
@@ -90,8 +86,8 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
 
   public void testArmenian() throws Exception {
     assertAnalyzesTo(a, "Վիքիպեդիայի 13 միլիոն հոդվածները (4,600` հայերեն վիքիպեդիայում) գրվել են կամավորների կողմից ու համարյա բոլոր հոդվածները կարող է խմբագրել ցանկաց մարդ ով կարող է բացել Վիքիպեդիայի կայքը։",
-        new String[] { "վիքիպեդիայի", "13", "միլիոն", "հոդվածները", "4,600", "հայերեն", "վիքիպեդիայում", "գրվել", "են", "կամավորների", "կողմից", 
-        "ու", "համարյա", "բոլոր", "հոդվածները", "կարող", "է", "խմբագրել", "ցանկաց", "մարդ", "ով", "կարող", "է", "բացել", "վիքիպեդիայի", "կայքը" } );
+        new String[] { "Վիքիպեդիայի", "13", "միլիոն", "հոդվածները", "4,600", "հայերեն", "վիքիպեդիայում", "գրվել", "են", "կամավորների", "կողմից", 
+        "ու", "համարյա", "բոլոր", "հոդվածները", "կարող", "է", "խմբագրել", "ցանկաց", "մարդ", "ով", "կարող", "է", "բացել", "Վիքիպեդիայի", "կայքը" } );
   }
   
   public void testAmharic() throws Exception {
@@ -102,12 +98,12 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   public void testArabic() throws Exception {
     assertAnalyzesTo(a, "الفيلم الوثائقي الأول عن ويكيبيديا يسمى \"الحقيقة بالأرقام: قصة ويكيبيديا\" (بالإنجليزية: Truth in Numbers: The Wikipedia Story)، سيتم إطلاقه في 2008.",
         new String[] { "الفيلم", "الوثائقي", "الأول", "عن", "ويكيبيديا", "يسمى", "الحقيقة", "بالأرقام", "قصة", "ويكيبيديا",
-        "بالإنجليزية", "truth", "in", "numbers", "the", "wikipedia", "story", "سيتم", "إطلاقه", "في", "2008" } ); 
+        "بالإنجليزية", "Truth", "in", "Numbers", "The", "Wikipedia", "Story", "سيتم", "إطلاقه", "في", "2008" } ); 
   }
   
   public void testAramaic() throws Exception {
     assertAnalyzesTo(a, "ܘܝܩܝܦܕܝܐ (ܐܢܓܠܝܐ: Wikipedia) ܗܘ ܐܝܢܣܩܠܘܦܕܝܐ ܚܐܪܬܐ ܕܐܢܛܪܢܛ ܒܠܫܢ̈ܐ ܣܓܝܐ̈ܐ܂ ܫܡܗ ܐܬܐ ܡܢ ܡ̈ܠܬܐ ܕ\"ܘܝܩܝ\" ܘ\"ܐܝܢܣܩܠܘܦܕܝܐ\"܀",
-        new String[] { "ܘܝܩܝܦܕܝܐ", "ܐܢܓܠܝܐ", "wikipedia", "ܗܘ", "ܐܝܢܣܩܠܘܦܕܝܐ", "ܚܐܪܬܐ", "ܕܐܢܛܪܢܛ", "ܒܠܫܢ̈ܐ", "ܣܓܝܐ̈ܐ", "ܫܡܗ",
+        new String[] { "ܘܝܩܝܦܕܝܐ", "ܐܢܓܠܝܐ", "Wikipedia", "ܗܘ", "ܐܝܢܣܩܠܘܦܕܝܐ", "ܚܐܪܬܐ", "ܕܐܢܛܪܢܛ", "ܒܠܫܢ̈ܐ", "ܣܓܝܐ̈ܐ", "ܫܡܗ",
         "ܐܬܐ", "ܡܢ", "ܡ̈ܠܬܐ", "ܕ", "ܘܝܩܝ", "ܘ", "ܐܝܢܣܩܠܘܦܕܝܐ"});
   }
   
@@ -125,7 +121,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   public void testGreek() throws Exception {
     assertAnalyzesTo(a, "Γράφεται σε συνεργασία από εθελοντές με το λογισμικό wiki, κάτι που σημαίνει ότι άρθρα μπορεί να προστεθούν ή να αλλάξουν από τον καθένα.",
-        new String[] { "γράφεται", "σε", "συνεργασία", "από", "εθελοντέσ", "με", "το", "λογισμικό", "wiki", "κάτι", "που",
+        new String[] { "Γράφεται", "σε", "συνεργασία", "από", "εθελοντές", "με", "το", "λογισμικό", "wiki", "κάτι", "που",
         "σημαίνει", "ότι", "άρθρα", "μπορεί", "να", "προστεθούν", "ή", "να", "αλλάξουν", "από", "τον", "καθένα" });
   }
   
@@ -156,7 +152,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
    */
   public void testChinese() throws Exception {
     assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
-        new String[] { "我", "是", "中", "国", "人", "1234", "tests"});
+        new String[] { "我", "是", "中", "国", "人", "１２３４", "Ｔｅｓｔｓ"});
   }
   
   public void testHebrew() throws Exception {
@@ -186,8 +182,8 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   /* Tests from StandardAnalyzer, just to show behavior is similar */
   public void testAlphanumericSA() throws Exception {
     // alphanumeric tokens
-    assertAnalyzesTo(a, "B2B", new String[]{"b2b"});
-    assertAnalyzesTo(a, "2B", new String[]{"2b"});
+    assertAnalyzesTo(a, "B2B", new String[]{"B2B"});
+    assertAnalyzesTo(a, "2B", new String[]{"2B"});
   }
 
   public void testDelimitersSA() throws Exception {
@@ -199,34 +195,34 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
 
   public void testApostrophesSA() throws Exception {
     // internal apostrophes: O'Reilly, you're, O'Reilly's
-    assertAnalyzesTo(a, "O'Reilly", new String[]{"o'reilly"});
+    assertAnalyzesTo(a, "O'Reilly", new String[]{"O'Reilly"});
     assertAnalyzesTo(a, "you're", new String[]{"you're"});
     assertAnalyzesTo(a, "she's", new String[]{"she's"});
-    assertAnalyzesTo(a, "Jim's", new String[]{"jim's"});
+    assertAnalyzesTo(a, "Jim's", new String[]{"Jim's"});
     assertAnalyzesTo(a, "don't", new String[]{"don't"});
-    assertAnalyzesTo(a, "O'Reilly's", new String[]{"o'reilly's"});
+    assertAnalyzesTo(a, "O'Reilly's", new String[]{"O'Reilly's"});
   }
 
   public void testNumericSA() throws Exception {
     // floating point, serial, model numbers, ip addresses, etc.
     // every other segment must have at least one digit
     assertAnalyzesTo(a, "21.35", new String[]{"21.35"});
-    assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"r2d2", "c3po"});
+    assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"R2D2", "C3PO"});
     assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
     assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
   }
 
   public void testTextWithNumbersSA() throws Exception {
     // numbers
-    assertAnalyzesTo(a, "David has 5000 bones", new String[]{"david", "has", "5000", "bones"});
+    assertAnalyzesTo(a, "David has 5000 bones", new String[]{"David", "has", "5000", "bones"});
   }
 
   public void testVariousTextSA() throws Exception {
     // various
-    assertAnalyzesTo(a, "C embedded developers wanted", new String[]{"c", "embedded", "developers", "wanted"});
-    assertAnalyzesTo(a, "foo bar FOO BAR", new String[]{"foo", "bar", "foo", "bar"});
-    assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", new String[]{"foo", "bar", "foo", "bar"});
-    assertAnalyzesTo(a, "\"QUOTED\" word", new String[]{"quoted", "word"});
+    assertAnalyzesTo(a, "C embedded developers wanted", new String[]{"C", "embedded", "developers", "wanted"});
+    assertAnalyzesTo(a, "foo bar FOO BAR", new String[]{"foo", "bar", "FOO", "BAR"});
+    assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", new String[]{"foo", "bar", "FOO", "BAR"});
+    assertAnalyzesTo(a, "\"QUOTED\" word", new String[]{"QUOTED", "word"});
   }
 
   public void testKoreanSA() throws Exception {
@@ -242,14 +238,14 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   public void testOffsets() throws Exception {
     assertAnalyzesTo(a, "David has 5000 bones", 
-        new String[] {"david", "has", "5000", "bones"},
+        new String[] {"David", "has", "5000", "bones"},
         new int[] {0, 6, 10, 15},
         new int[] {5, 9, 14, 20});
   }
   
   public void testTypes() throws Exception {
     assertAnalyzesTo(a, "David has 5000 bones", 
-        new String[] {"david", "has", "5000", "bones"},
+        new String[] {"David", "has", "5000", "bones"},
         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<NUM>", "<ALPHANUM>" });
   }
   
@@ -263,6 +259,61 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "仮名遣い カタカナ",
         new String[] { "仮", "名", "遣", "い", "カタカナ" },
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
+  }
+  
+  /** simple emoji */
+  public void testEmoji() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩 💩💩",
+        new String[] { "💩", "💩", "💩" },
+        new String[] { "<EMOJI>", "<EMOJI>", "<EMOJI>" });
+  }
+ 
+  /** emoji zwj sequence */
+  public void testEmojiSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👩‍❤️‍👩",
+        new String[] { "👩‍❤️‍👩" },
+        new String[] { "<EMOJI>" });
+  }
+  
+  /** emoji zwj sequence with fitzpatrick modifier */
+  public void testEmojiSequenceWithModifier() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👨🏼‍⚕️",
+        new String[] { "👨🏼‍⚕️" },
+        new String[] { "<EMOJI>" });
+  }
+  
+  /** regional indicator */
+  public void testEmojiRegionalIndicator() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🇺🇸🇺🇸",
+        new String[] { "🇺🇸", "🇺🇸" },
+        new String[] { "<EMOJI>", "<EMOJI>" });
+  }
+  
+  /** variation sequence */
+  public void testEmojiVariationSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "#️⃣",
+        new String[] { "#️⃣" },
+        new String[] { "<EMOJI>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "3️⃣",
+        new String[] { "3️⃣",},
+        new String[] { "<EMOJI>" });
+  }
+
+  public void testEmojiTagSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        new String[] { "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+        new String[] { "<EMOJI>" });
+  }
+  
+  public void testEmojiTokenization() throws Exception {
+    // simple emoji around latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "poo💩poo",
+        new String[] { "poo", "💩", "poo" },
+        new String[] { "<ALPHANUM>", "<EMOJI>", "<ALPHANUM>" });
+    // simple emoji around non-latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩中國💩",
+        new String[] { "💩", "中", "國", "💩" },
+        new String[] { "<EMOJI>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<EMOJI>" });
   }
   
   /** blast some random strings through the analyzer */

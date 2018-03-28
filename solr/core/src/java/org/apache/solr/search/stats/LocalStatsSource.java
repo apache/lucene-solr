@@ -19,7 +19,7 @@ package org.apache.solr.search.stats;
 import java.io.IOException;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -34,7 +34,7 @@ public final class LocalStatsSource extends StatsSource {
   }
   
   @Override
-  public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermContext context)
+  public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
       throws IOException {
     return localSearcher.localTermStatistics(term, context);
   }

@@ -46,7 +46,7 @@ public abstract class FilterCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return in.needsScores();
+  public ScoreMode scoreMode() {
+    return in.scoreMode();
   }
 }

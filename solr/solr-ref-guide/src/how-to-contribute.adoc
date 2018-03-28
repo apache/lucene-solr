@@ -1,8 +1,6 @@
 = How to Contribute to Solr Documentation
 :page-tocclass: right
-:page-toclevels: 2
-:page-shortname: how-to-contribute
-:page-permalink: how-to-contribute.html
+:page-toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,7 +24,7 @@ The Guide is written in simple AsciiDoc-formatted files, and the source lives in
 
 // This section only appears in the PDF version of the Ref Guide.
 ifdef::backend-pdf[]
-See the latest information on how to contribute to documentation online at https://lucene.apache.org/solr/guide/meta-docs.html.
+Find information on how to contribute to documentation online at https://lucene.apache.org/solr/guide/how-to-contribute.html.
 endif::[]
 
 // This section only appears in the HTML version of the Ref Guide.
@@ -41,11 +39,12 @@ include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
 include::meta-docs/editing-tools.adoc[leveloffset=+2]
 
 == Modifying the Output Formats
-The Solr Reference Guide is published in two formats, HTML and PDF. Different tools are used for each.
+The Solr Reference Guide is published in two formats: HTML and PDF. Different tools are used for each.
+
 include::meta-docs/jekyll.adoc[leveloffset=+2]
 
 include::meta-docs/pdf.adoc[leveloffset=+2]
 
 == Building & Publishing the Guide
-include::meta-docs/publish.adoc[leveloffset=+2]
+include::meta-docs/publish.adoc[leveloffset=+1]
 endif::[]

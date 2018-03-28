@@ -1,6 +1,4 @@
 = Updating Parts of Documents
-:page-shortname: updating-parts-of-documents
-:page-permalink: updating-parts-of-documents.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,7 +30,7 @@ Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as 
 
 Solr supports several modifiers that atomically update values of a document. This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
 
-To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if a number.
+To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if the field has a numeric type.
 
 `set`::
 Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
@@ -41,6 +39,9 @@ May be specified as a single value, or as a list for multiValued fields.
 
 `add`::
 Adds the specified values to a multiValued field. May be specified as a single value, or as a list.
+
+`add-distinct`::
+Adds the specified values to a multiValued field, only if not already present. May be specified as a single value, or as a list.
 
 `remove`::
 Removes (all occurrences of) the specified values from a multiValued field. May be specified as a single value, or as a list.
@@ -69,6 +70,7 @@ If the following document exists in our collection:
  "price":10,
  "popularity":42,
  "categories":["kids"],
+ "sub_categories":["under_5","under_10"],
  "promo_ids":["a123x"],
  "tags":["free_to_try","buy_now","clearance","on_sale"]
 }
@@ -82,6 +84,7 @@ And we apply the following update command:
  "price":{"set":99},
  "popularity":{"inc":20},
  "categories":{"add":["toys","games"]},
+ "sub_categories":{"add-distinct":"under_10"},
  "promo_ids":{"remove":"a123x"},
  "tags":{"remove":["free_to_try","on_sale"]}
 }
@@ -95,6 +98,7 @@ The resulting document in our collection will be:
  "price":99,
  "popularity":62,
  "categories":["kids","toys","games"],
+ "sub_categories":["under_5","under_10"],
  "tags":["buy_now","clearance"]
 }
 ----
@@ -184,11 +188,11 @@ When the client resubmits a changed document to Solr, the `\_version_` can be in
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added with out needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
 
-For example...
+For example:
 
-[source,bash]
+[source]
 ----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true' --data-binary '
 [ { "id" : "aaa" },
@@ -231,7 +235,7 @@ For more information, please also see https://www.youtube.com/watch?v=WYVM6Wz-XT
 
 Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, In some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
-The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the http://wiki.apache.org/solr/UpdateRequestProcessor[UpdateRequestProcessorChain] and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
+The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
 [source,xml]
 ----

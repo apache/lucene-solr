@@ -23,6 +23,7 @@ import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Creates URLClassifyProcessor
+ * @since 3.6.0
  */
 public class URLClassifyProcessorFactory extends UpdateRequestProcessorFactory {
   

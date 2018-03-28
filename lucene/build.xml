@@ -353,8 +353,6 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${src.export.dir}/tools/javadoc/java8"/>
-    <!-- Exclude clover license files incompatible with the ASL -->
-    <delete dir="${src.export.dir}/tools/clover"/>
 
     <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: -->
     <property name="local.src.export.dir" location="${src.export.dir}/lucene"/>
@@ -425,6 +423,19 @@
         <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
       </subant>
       <modules-crawl target="-dist-maven"/>
+    </sequential>
+  </target>
+
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <m2-install pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
+      <m2-install pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
+      <subant target="-install-to-maven-local-repo" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      <modules-crawl target="-install-to-maven-local-repo"/>
     </sequential>
   </target>
 
@@ -544,7 +555,7 @@
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
-  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+  <target name="jar-core" depends="resolve-groovy,check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
     <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>

@@ -36,6 +36,7 @@ import com.ibm.icu.text.Transliterator;
  *   <li>direction (optional): Either 'forward' or 'reverse'. Default is forward.
  * </ul>
  * @see Transliterator
+ * @since 3.1.0
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private final Transliterator transliterator;

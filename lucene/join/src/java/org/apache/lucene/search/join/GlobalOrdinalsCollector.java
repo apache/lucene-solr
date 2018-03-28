@@ -50,8 +50,8 @@ final class GlobalOrdinalsCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override
@@ -77,10 +77,7 @@ final class GlobalOrdinalsCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         long segmentOrd = docTermOrds.ordValue();
         long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
         collectedOrds.set(globalOrd);
@@ -102,10 +99,7 @@ final class GlobalOrdinalsCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         collectedOrds.set(docTermOrds.ordValue());
       }
     }

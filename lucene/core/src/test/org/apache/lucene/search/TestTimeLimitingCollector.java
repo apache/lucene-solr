@@ -367,8 +367,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
 
   }

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -52,6 +53,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
@@ -327,7 +329,8 @@ public class HttpSolrClient extends SolrClient {
       request = ((V2RequestSupport) request).getV2Request();
     }
     SolrParams params = request.getParams();
-    Collection<ContentStream> streams = requestWriter.getContentStreams(request);
+    RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
+    Collection<ContentStream> streams = contentWriter == null ? requestWriter.getContentStreams(request) : null;
     String path = requestWriter.getPath(request);
     if (path == null || !path.startsWith("/")) {
       path = DEFAULT_PATH;
@@ -362,7 +365,7 @@ public class HttpSolrClient extends SolrClient {
     }
 
     if (SolrRequest.METHOD.GET == request.getMethod()) {
-      if (streams != null) {
+      if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
@@ -389,65 +392,32 @@ public class HttpSolrClient extends SolrClient {
           || (streams != null && streams.size() > 1)) && !hasNullStreamName;
 
       LinkedList<NameValuePair> postOrPutParams = new LinkedList<>();
-      if (streams == null || isMultipart) {
+
+      if(contentWriter != null) {
+        String fullQueryUrl = url + wparams.toQueryString();
+        HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
+            new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
+        postOrPut.addHeader("Content-Type",
+            contentWriter.getContentType());
+        postOrPut.setEntity(new BasicHttpEntity(){
+          @Override
+          public boolean isStreaming() {
+            return true;
+          }
+
+          @Override
+          public void writeTo(OutputStream outstream) throws IOException {
+            contentWriter.write(outstream);
+          }
+        });
+        return postOrPut;
+
+      } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
         String fullQueryUrl = url + queryParams.toQueryString();
-        HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
-            new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
-
-        if (!isMultipart) {
-          postOrPut.addHeader("Content-Type",
-              "application/x-www-form-urlencoded; charset=UTF-8");
-        }
-
-        List<FormBodyPart> parts = new LinkedList<>();
-        Iterator<String> iter = wparams.getParameterNamesIterator();
-        while (iter.hasNext()) {
-          String p = iter.next();
-          String[] vals = wparams.getParams(p);
-          if (vals != null) {
-            for (String v : vals) {
-              if (isMultipart) {
-                parts.add(new FormBodyPart(p, new StringBody(v, StandardCharsets.UTF_8)));
-              } else {
-                postOrPutParams.add(new BasicNameValuePair(p, v));
-              }
-            }
-          }
-        }
-
-        // TODO: remove deprecated - first simple attempt failed, see {@link MultipartEntityBuilder}
-        if (isMultipart && streams != null) {
-          for (ContentStream content : streams) {
-            String contentType = content.getContentType();
-            if (contentType == null) {
-              contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
-            }
-            String name = content.getName();
-            if (name == null) {
-              name = "";
-            }
-            parts.add(new FormBodyPart(name,
-                new InputStreamBody(
-                    content.getStream(),
-                    ContentType.parse(contentType),
-                    content.getName())));
-          }
-        }
-
-        if (parts.size() > 0) {
-          MultipartEntity entity = new MultipartEntity(HttpMultipartMode.STRICT);
-          for (FormBodyPart p : parts) {
-            entity.addPart(p);
-          }
-          postOrPut.setEntity(entity);
-        } else {
-          //not using multipart
-          postOrPut.setEntity(new UrlEncodedFormEntity(postOrPutParams, StandardCharsets.UTF_8));
-        }
-
+        HttpEntityEnclosingRequestBase postOrPut = fillContentStream(request, streams, wparams, isMultipart, postOrPutParams, fullQueryUrl);
         return postOrPut;
       }
       // It is has one stream, it is the post body, put the params in the URL
@@ -455,48 +425,94 @@ public class HttpSolrClient extends SolrClient {
         String fullQueryUrl = url + wparams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
             new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
+        fillSingleContentStream(streams, postOrPut);
 
-        // Single stream as body
-        // Using a loop just to get the first one
-        final ContentStream[] contentStream = new ContentStream[1];
-        for (ContentStream content : streams) {
-          contentStream[0] = content;
-          break;
-        }
-        if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
-          Long size = contentStream[0].getSize();
-          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
-            @Override
-            public Header getContentType() {
-              return new BasicHeader("Content-Type", contentStream[0].getContentType());
-            }
-
-            @Override
-            public boolean isRepeatable() {
-              return false;
-            }
-
-          });
-        } else {
-          Long size = contentStream[0].getSize();
-          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
-            @Override
-            public Header getContentType() {
-              return new BasicHeader("Content-Type", contentStream[0].getContentType());
-            }
-
-            @Override
-            public boolean isRepeatable() {
-              return false;
-            }
-          });
-        }
         return postOrPut;
       }
     }
 
     throw new SolrServerException("Unsupported method: " + request.getMethod());
 
+  }
+
+  private void fillSingleContentStream(Collection<ContentStream> streams, HttpEntityEnclosingRequestBase postOrPut) throws IOException {
+    // Single stream as body
+    // Using a loop just to get the first one
+    final ContentStream[] contentStream = new ContentStream[1];
+    for (ContentStream content : streams) {
+      contentStream[0] = content;
+      break;
+    }
+    Long size = contentStream[0].getSize();
+    postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
+      @Override
+      public Header getContentType() {
+        return new BasicHeader("Content-Type", contentStream[0].getContentType());
+      }
+
+      @Override
+      public boolean isRepeatable() {
+        return false;
+      }
+    });
+
+  }
+
+  private HttpEntityEnclosingRequestBase fillContentStream(SolrRequest request, Collection<ContentStream> streams, ModifiableSolrParams wparams, boolean isMultipart, LinkedList<NameValuePair> postOrPutParams, String fullQueryUrl) throws IOException {
+    HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
+        new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
+
+    if (!isMultipart) {
+      postOrPut.addHeader("Content-Type",
+          "application/x-www-form-urlencoded; charset=UTF-8");
+    }
+
+    List<FormBodyPart> parts = new LinkedList<>();
+    Iterator<String> iter = wparams.getParameterNamesIterator();
+    while (iter.hasNext()) {
+      String p = iter.next();
+      String[] vals = wparams.getParams(p);
+      if (vals != null) {
+        for (String v : vals) {
+          if (isMultipart) {
+            parts.add(new FormBodyPart(p, new StringBody(v, StandardCharsets.UTF_8)));
+          } else {
+            postOrPutParams.add(new BasicNameValuePair(p, v));
+          }
+        }
+      }
+    }
+
+    // TODO: remove deprecated - first simple attempt failed, see {@link MultipartEntityBuilder}
+    if (isMultipart && streams != null) {
+      for (ContentStream content : streams) {
+        String contentType = content.getContentType();
+        if (contentType == null) {
+          contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+        }
+        String name = content.getName();
+        if (name == null) {
+          name = "";
+        }
+        parts.add(new FormBodyPart(name,
+            new InputStreamBody(
+                content.getStream(),
+                ContentType.parse(contentType),
+                content.getName())));
+      }
+    }
+
+    if (parts.size() > 0) {
+      MultipartEntity entity = new MultipartEntity(HttpMultipartMode.STRICT);
+      for (FormBodyPart p : parts) {
+        entity.addPart(p);
+      }
+      postOrPut.setEntity(entity);
+    } else {
+      //not using multipart
+      postOrPut.setEntity(new UrlEncodedFormEntity(postOrPutParams, StandardCharsets.UTF_8));
+    }
+    return postOrPut;
   }
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")

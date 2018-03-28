@@ -180,8 +180,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, termsIn);
         }
-        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : termsIn.readVLong();
-        final long sumDocFreq = termsIn.readVLong();
+        final long sumTotalTermFreq = termsIn.readVLong();
+        // when frequencies are omitted, sumDocFreq=sumTotalTermFreq and only one value is written.
+        final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsIn.readVLong();
         final int docCount = termsIn.readVInt();
         final int longsSize = termsIn.readVInt();
         if (longsSize < 0) {
@@ -195,7 +196,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, termsIn);
         }
-        if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
+        if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
         final long indexStartFP = indexIn.readVLong();

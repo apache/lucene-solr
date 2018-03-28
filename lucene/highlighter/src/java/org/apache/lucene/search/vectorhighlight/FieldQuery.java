@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.CustomScoreQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -140,10 +140,10 @@ public class FieldQuery {
       if (q != null) {
         flatten( q, reader, flatQueries, boost);
       }
-    } else if (sourceQuery instanceof CustomScoreQuery) {
-      final Query q = ((CustomScoreQuery) sourceQuery).getSubQuery();
+    } else if (sourceQuery instanceof FunctionScoreQuery) {
+      final Query q = ((FunctionScoreQuery)sourceQuery).getWrappedQuery();
       if (q != null) {
-        flatten( q, reader, flatQueries, boost);
+        flatten(q, reader, flatQueries, boost);
       }
     } else if (sourceQuery instanceof ToParentBlockJoinQuery) {
       Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();

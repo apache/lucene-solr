@@ -1,6 +1,4 @@
 = Overview of the Solr Admin UI
-:page-shortname: overview-of-the-solr-admin-ui
-:page-permalink: overview-of-the-solr-admin-ui.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

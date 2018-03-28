@@ -149,9 +149,7 @@ public final class MultiTerms extends Terms {
     long sum = 0;
     for(Terms terms : subs) {
       final long v = terms.getSumTotalTermFreq();
-      if (v == -1) {
-        return -1;
-      }
+      assert v != -1;
       sum += v;
     }
     return sum;
@@ -162,9 +160,7 @@ public final class MultiTerms extends Terms {
     long sum = 0;
     for(Terms terms : subs) {
       final long v = terms.getSumDocFreq();
-      if (v == -1) {
-        return -1;
-      }
+      assert v != -1;
       sum += v;
     }
     return sum;
@@ -175,9 +171,7 @@ public final class MultiTerms extends Terms {
     int sum = 0;
     for(Terms terms : subs) {
       final int v = terms.getDocCount();
-      if (v == -1) {
-        return -1;
-      }
+      assert v != -1;
       sum += v;
     }
     return sum;

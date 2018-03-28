@@ -56,6 +56,7 @@ public class TestV2Request extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testHttpSolrClient() throws Exception {
     HttpSolrClient solrClient = new HttpSolrClient.Builder(
         cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
@@ -64,6 +65,7 @@ public class TestV2Request extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCloudSolrClient() throws Exception {
     doTest(cluster.getSolrClient());
   }

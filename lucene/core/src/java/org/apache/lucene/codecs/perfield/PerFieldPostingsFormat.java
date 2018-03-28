@@ -34,6 +34,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -117,7 +118,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(Fields fields, NormsProducer norms) throws IOException {
       Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(fields);
 
       // Write postings
@@ -137,7 +138,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
           FieldsConsumer consumer = format.fieldsConsumer(group.state);
           toClose.add(consumer);
-          consumer.write(maskedFields);
+          consumer.write(maskedFields, norms);
         }
         success = true;
       } finally {
@@ -148,7 +149,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void merge(MergeState mergeState) throws IOException {
+    public void merge(MergeState mergeState, NormsProducer norms) throws IOException {
       Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(new MultiFields(mergeState.fieldsProducers, null));
 
       // Merge postings
@@ -161,7 +162,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
           FieldsConsumer consumer = format.fieldsConsumer(group.state);
           toClose.add(consumer);
-          consumer.merge(pfMergeState.apply(group.fields));
+          consumer.merge(pfMergeState.apply(group.fields), norms);
         }
         success = true;
       } finally {

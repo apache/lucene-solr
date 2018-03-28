@@ -64,6 +64,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  * &lt;/processor&gt;</pre>
  *
  * @see java.util.regex.Pattern
+ * @since 4.0.0
  */
 public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   

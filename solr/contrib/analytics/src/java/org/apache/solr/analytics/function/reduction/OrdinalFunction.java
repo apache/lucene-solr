@@ -41,7 +41,7 @@ import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
-import org.apache.solr.analytics.value.constant.ConstantIntValue;
+import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
@@ -56,7 +56,7 @@ public class OrdinalFunction {
     }
     AnalyticsValueStream percValue = params[0];
     int ord = 0;
-    if (params[0] instanceof ConstantIntValue) {
+    if (params[0] instanceof IntValue && params[0] instanceof ConstantValue) {
       ord = ((IntValue)percValue).getInt();
       if (ord == 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires the ordinal to be >= 1 or <= -1, 0 is not accepted.");
@@ -81,10 +81,10 @@ public class OrdinalFunction {
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter.");
   });
   
-  protected static String createOrdinalExpressionString(AnalyticsValueStream param, double perc) {
+  protected static String createOrdinalExpressionString(AnalyticsValueStream param, double ord) {
     return String.format(Locale.ROOT, "%s(%s,%s)",
                          name,
-                         (int)(perc*100),
+                         ord,
                          param.getExpressionStr());
   }
 }
@@ -108,7 +108,6 @@ class IntOrdinalFunction extends AbstractIntValue implements ReductionFunction {
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -118,11 +117,7 @@ class IntOrdinalFunction extends AbstractIntValue implements ReductionFunction {
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
     collector = (SortedIntListCollector)sync.apply(collector);
-    if (ordinal > 0) {
-      collector.calcOrdinal(ordinal);
-    } else {
-      collector.calcReverseOrdinal(ordinal*-1);
-    }
+    collector.calcOrdinal(ordinal);
   }
 
   @Override
@@ -158,7 +153,6 @@ class LongOrdinalFunction extends AbstractLongValue implements ReductionFunction
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -168,11 +162,7 @@ class LongOrdinalFunction extends AbstractLongValue implements ReductionFunction
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
     collector = (SortedLongListCollector)sync.apply(collector);
-    if (ordinal > 0) {
-      collector.calcOrdinal(ordinal);
-    } else {
-      collector.calcReverseOrdinal(ordinal*-1);
-    }
+    collector.calcOrdinal(ordinal);
   }
 
   @Override
@@ -208,7 +198,6 @@ class FloatOrdinalFunction extends AbstractFloatValue implements ReductionFuncti
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -218,11 +207,7 @@ class FloatOrdinalFunction extends AbstractFloatValue implements ReductionFuncti
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
     collector = (SortedFloatListCollector)sync.apply(collector);
-    if (ordinal > 0) {
-      collector.calcOrdinal(ordinal);
-    } else {
-      collector.calcReverseOrdinal(ordinal*-1);
-    }
+    collector.calcOrdinal(ordinal);
   }
 
   @Override
@@ -258,7 +243,6 @@ class DoubleOrdinalFunction extends AbstractDoubleValue implements ReductionFunc
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -268,11 +252,7 @@ class DoubleOrdinalFunction extends AbstractDoubleValue implements ReductionFunc
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
     collector = (SortedDoubleListCollector)sync.apply(collector);
-    if (ordinal > 0) {
-      collector.calcOrdinal(ordinal);
-    } else {
-      collector.calcReverseOrdinal(ordinal*-1);
-    }
+    collector.calcOrdinal(ordinal);
   }
 
   @Override
@@ -308,7 +288,6 @@ class DateOrdinalFunction extends AbstractDateValue implements ReductionFunction
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -354,7 +333,6 @@ class StringOrdinalFunction extends AbstractStringValue implements ReductionFunc
     } else {
       return (ordinal * -1) <= size ? collector.get(size + ordinal) : null;
     }
-    
   }
   @Override
   public boolean exists() {
@@ -364,11 +342,7 @@ class StringOrdinalFunction extends AbstractStringValue implements ReductionFunc
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
     collector = (SortedStringListCollector)sync.apply(collector);
-    if (ordinal > 0) {
-      collector.calcOrdinal(ordinal);
-    } else {
-      collector.calcReverseOrdinal(ordinal*-1);
-    }
+    collector.calcOrdinal(ordinal);
   }
 
   @Override

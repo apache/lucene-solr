@@ -36,6 +36,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -76,7 +77,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("field", field);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getCanonicalName(),
+          FieldValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -276,7 +277,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     MockModel ltrScoringModel = new MockModel("test",
         features, norms, "test", allFeatures, null);
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
-    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, true, 1f);
+    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
@@ -292,7 +293,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     ltrScoringModel = new MockModel("test", features, norms,
         "test", allFeatures, null);
     query = new LTRScoringQuery(ltrScoringModel);
-    wgt = query.createWeight(null, true, 1f);
+    wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {

@@ -20,8 +20,8 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -29,15 +29,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +125,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                 log.warn("Leader " + core.getName() + " ignoring request to be in the recovering state because it is live and active.");
               }
 
+              ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
+              // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
+              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName) && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
+                // The replica changed it term, then published itself as RECOVERING.
+                // This core already see replica as RECOVERING
+                // so it is guarantees that a live-fetch will be enough for this core to see max term published
+                shardTerms.refreshTerms();
+              }
+
               boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && localState != Replica.State.ACTIVE;
               log.info("In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
                   ", thisCore=" + core.getName() + ", leaderDoesNotNeedRecovery=" + leaderDoesNotNeedRecovery +
@@ -176,33 +180,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         if (coreContainer.isShutDown()) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Solr is shutting down");
-        }
-
-        // solrcloud_debug
-        if (log.isDebugEnabled() && core != null) {
-          try {
-            LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
-                new ModifiableSolrParams());
-            CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
-            commitCmd.softCommit = true;
-            core.getUpdateHandler().commit(commitCmd);
-            RefCounted<SolrIndexSearcher> searchHolder = core
-                .getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
-            try {
-              log.debug(core.getCoreContainer()
-                  .getZkController().getNodeName()
-                  + " to replicate "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits
-                  + " gen:"
-                  + core.getDeletionPolicy().getLatestCommit().getGeneration()
-                  + " data:" + core.getDataDir());
-            } finally {
-              searchHolder.decref();
-            }
-          } catch (Exception e) {
-            log.debug("Error in solrcloud_debug block", e);
-          }
         }
       }
       Thread.sleep(1000);

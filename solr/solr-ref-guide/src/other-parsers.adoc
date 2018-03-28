@@ -1,6 +1,4 @@
 = Other Parsers
-:page-shortname: other-parsers
-:page-permalink: other-parsers.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,7 +24,7 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,indexed as nested documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,indexed as nested documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
 
@@ -64,7 +62,7 @@ The parameter `allParents` is a filter that matches *only parent documents*; her
 
 The parameter `someParents` identifies a query that will match some of the parent documents. The output is the children.
 
-Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene`. We only get one document in response:
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene&wt=xml`. We only get one document in response:
 
 [source,xml]
 ----
@@ -76,17 +74,33 @@ Using the example documents above, we can construct a query such as `q={!child o
 </result>
 ----
 
-Note that the query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
+[CAUTION]
+====
+The query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
 
 [literal]
 Parent query must not match any docs besides parent filter. Combine them as must (+) and must-not (-) clauses to find a problem doc.
 
-In older version the error is:
+You can search for `q=+(someParents) -(allParents)` to find a cause if you encounter this error.
+====
 
-[literal]
-Parent query yields document which is not matched by parents filter.
+==== Filtering and Tagging
 
-You can search for `q=+(someParents) -(allParents)` to find a cause.
+`{!child}` also supports `filters` and `excludeTags` local parameters like the following:
+
+[source,text]
+{!child of=<allParents> filters=$parentfq excludeTags=certain}<someParents>&parentfq=BRAND:Foo&parentfq=NAME:Bar&parentfq={!tag=certain}CATEGORY:Baz
+
+This is equivalent to:
+
+[source,text]
+{!child of=<allParents>}+<someParents> +BRAND:Foo +NAME:Bar
+
+Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
+
+==== All Children Syntax
+
+When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<allParents>}` is equivalent to `q=\*:* -<allParents>`.
 
 === Block Join Parent Query Parser
 
@@ -98,19 +112,17 @@ The parameter `allParents` is a filter that matches *only parent documents*; her
 
 The parameter `someChildren` is a query that matches some or all of the child documents.
 
-Note that the query for `someChildren` should match only child documents or you may get an exception:
+[CAUTION]
+====
+The query for `someChildren` should match only child documents or you may get an exception:
 
 [literal]
 Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
 
-In older version the error is:
+You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
+====
 
-[literal]
-child query must only match non-parent docs.
-
-You can search for `q=+(parentFilter) +(someChildren)` to find a cause .
-
-Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud`. We get this document in response:
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
 
 [source,xml]
 ----
@@ -135,9 +147,60 @@ Instead, you should use a sibling mandatory clause as a filter:
 `q= *+title:join* +{!parent which="*content_type:parentDocument*"}comments:SolrCloud`
 ====
 
-=== Scoring with the Block Join Parent Query Parser
+==== Filtering and Tagging
+
+The `{!parent}` query supports `filters` and `excludeTags` local parameters like the following:
+
+[source,text]
+{!parent which=<allParents> filters=$childfq excludeTags=certain}<someChildren>&
+childfq=COLOR:Red&
+childfq=SIZE:XL&
+childfq={!tag=certain}PRINT:Hatched
+
+This is equivalent to:
+
+[source,text]
+{!parent which=<allParents>}+<someChildren> +COLOR:Red +SIZE:XL
+
+Notice the "$" syntax in `filters` for referencing queries. Comma-separated tags in `excludeTags` allow excluding certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
+
+==== Scoring with the Block Join Parent Query Parser
 
 You can optionally use the `score` local parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`. Implicit default is `none` which returns `0.0`.
+
+==== All Parents Syntax
+
+When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<allParents>}` is equivalent to `q=<allParents>`.
+
+== Boolean Query Parser
+
+The `BoolQParser` creates a Lucene `BooleanQuery` which is a boolean combination of other queries. Sub-queries along with their typed occurrences indicate how documents will be matched and scored.
+
+*Parameters*
+
+`must`::
+A list of queries that *must* appear in matching documents and contribute to the score.
+
+`must_not`::
+A list of queries that *must not* appear in matching documents.
+
+`should`::
+A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
+
+`filter`::
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored.
+
+*Examples*
+
+[source,text]
+----
+{!bool must=foo must=bar}
+----
+
+[source,text]
+----
+{!bool filter=foo should=bar}
+----
 
 == Boost Query Parser
 
@@ -241,7 +304,7 @@ does _not_ return that document because SpanNearQuery has no good way to handle 
 
 ==== Escaping with Complex Phrase Parser
 
-Special care has to be given when escaping: clauses between double quotes (usually whole query) is parsed twice, these parts have to be escaped as twice. eg `"foo\\: bar\\^"`.
+Special care has to be given when escaping: clauses between double quotes (usually whole query) is parsed twice, these parts have to be escaped as twice, e.g., `"foo\\: bar\\^"`.
 
 == Field Query Parser
 
@@ -255,6 +318,23 @@ Example:
 ----
 
 This example creates a phrase query with "foo" followed by "bar" (assuming the analyzer for `myfield` is a text field with an analyzer that splits on whitespace and lowercase terms). This is generally equivalent to the Lucene query parser expression `myfield:"Foo Bar"`.
+
+== Filters Query Parser
+
+The syntax is:
+
+[literal]
+q={!filters param=$fqs excludeTags=sample}field:text&
+fqs=COLOR:Red&
+fqs=SIZE:XL&
+fqs={!tag=sample}BRAND:Foo
+
+which is equivalent to:
+
+[literal]
+q=+field:text +COLOR:Red +SIZE:XL
+
+`param` local parameter uses "$" syntax to refer to a few queries, where `excludeTags` may omit some of them.
 
 == Function Query Parser
 
@@ -307,9 +387,10 @@ The `graph` query parser does a breadth first, cyclic aware, graph traversal of 
 
 The graph is built according to linkages between documents based on the terms found in `from` and `to` fields that you specify as part of the query.
 
-The supported fieldTypes are point fields with docValues enabled or string fields with indexed=true or docValues=true.
-For string fields which are indexed=false and docValues=true please refer to the javadocs for `DocValuesTermsQuery`
-for it's performance characteristics so indexed=true will perform better for most use-cases.
+Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
+
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
+for it's performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 
@@ -395,7 +476,7 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 }
 ----
 
-The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes. The next example demonstrates using the `maxDepth` param to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
+The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes. The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
 
 [source,text]
 ----
@@ -421,7 +502,7 @@ The Document & Field modeling used in the above examples enumerated all of the o
 
 But in many cases it can also be possible to drastically simplify the model used.
 
-For example, the same graph shown in the diagram above can be modelled by Solr Documents that represent each node and know only the ids of the nodes they link to, with out knowing anything about the incoming links:
+For example, the same graph shown in the diagram above can be modelled by Solr Documents that represent each node and know only the ids of the nodes they link to, without knowing anything about the incoming links:
 
 [source,bash]
 ----
@@ -437,7 +518,7 @@ curl -H 'Content-Type: application/json' 'http://localhost:8983/solr/alt_graph/u
   ]'
 ----
 
-With this alternative document model, all of the same queries demonstrated above can still be executed, simply by changing the "```from```" param to replace the "```in_edge```" field with the "```id```" field:
+With this alternative document model, all of the same queries demonstrated above can still be executed, simply by changing the "```from```" parameter to replace the "```in_edge```" field with the "```id```" field:
 
 [source,text]
 ----
@@ -478,7 +559,7 @@ q  = {!join from=id to=manu_id_s}compName_s:Belkin
 fq = price:[* TO 12]
 ----
 
-The join operation is done on a term basis, so the "from" and "to" fields must use compatible field types. For example: joining between a `StrField` and a `TrieIntField` will not work, likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
+The join operation is done on a term basis, so the "from" and "to" fields must use compatible field types. For example: joining between a `StrField` and a `IntPointField` will not work, likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
 
 === Join Parser Scoring
 
@@ -658,24 +739,24 @@ The main query, for both of these parsers, is parsed straightforwardly from the 
 This parser accepts the following parameters:
 
 `f`::
-The field to use (required).
+The field to use. This parameter is required.
 
 `func`::
-Payload function: min, max, average, sum (required).
+The payload function. The options are: `min`, `max`, `average`, or `sum`. This parameter is required.
 
 `operator`::
-Search operator: or , phrase ( default ) (optional). This defines if the search query should be an OR
-query or a phrase query
+A search operator. The options are `or` and `phrase`, which is the default. This defines if the search query should be an OR query or a phrase query.
 
 `includeSpanScore`::
-If `true`, multiples computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
+If `true`, multiples the computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
 
-*Example*
+*Examples*
 
 [source,text]
-----
 {!payload_score f=my_field_dpf v=some_term func=max}
-----
+
+[source,text]
+{!payload_score f=payload_field func=sum operator=or}A B C
 
 === Payload Check Parser
 
@@ -888,7 +969,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate an boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 
@@ -974,7 +1055,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example solrconfig.xml snippet:
+You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

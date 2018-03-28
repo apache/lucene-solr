@@ -60,14 +60,16 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
   public void testExplanationsIncludingScore() throws Exception {
 
     Query q = new TermQuery(new Term(FIELD, "w1"));
-    FunctionScoreQuery csq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
+    FunctionScoreQuery fsq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
 
-    qtest(csq, new int[] { 0, 1, 2, 3 });
+    qtest(fsq, new int[] { 0, 1, 2, 3 });
 
     Explanation e1 = searcher.explain(q, 0);
-    Explanation e = searcher.explain(csq, 0);
+    Explanation e = searcher.explain(fsq, 0);
 
-    assertEquals(e, e1);
+    assertEquals(e.getValue(), e1.getValue());
+    assertEquals(e.getDetails()[0], e1);
+
   }
 
   public void testSubExplanations() throws IOException {
@@ -76,26 +78,27 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     searcher.setSimilarity(new BM25Similarity());
 
     Explanation expl = searcher.explain(query, 0);
-    assertEquals("constant(5.0)", expl.getDescription());
-    assertEquals(0, expl.getDetails().length);
+    Explanation subExpl = expl.getDetails()[0];
+    assertEquals("constant(5.0)", subExpl.getDescription());
+    assertEquals(0, subExpl.getDetails().length);
 
     query = new BoostQuery(query, 2);
     expl = searcher.explain(query, 0);
     assertEquals(2, expl.getDetails().length);
     // function
-    assertEquals(5f, expl.getDetails()[1].getValue(), 0f);
+    assertEquals(5f, expl.getDetails()[1].getValue().doubleValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[0].getDescription());
-    assertEquals(2f, expl.getDetails()[0].getValue(), 0f);
+    assertEquals(2f, expl.getDetails()[0].getValue().doubleValue(), 0f);
 
     searcher.setSimilarity(new ClassicSimilarity()); // in order to have a queryNorm != 1
     expl = searcher.explain(query, 0);
     assertEquals(2, expl.getDetails().length);
     // function
-    assertEquals(5f, expl.getDetails()[1].getValue(), 0f);
+    assertEquals(5f, expl.getDetails()[1].getValue().doubleValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[0].getDescription());
-    assertEquals(2f, expl.getDetails()[0].getValue(), 0f);
+    assertEquals(2f, expl.getDetails()[0].getValue().doubleValue(), 0f);
   }
 
 }

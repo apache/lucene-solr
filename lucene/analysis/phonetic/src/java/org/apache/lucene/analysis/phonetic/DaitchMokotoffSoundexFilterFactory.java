@@ -42,6 +42,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @see DaitchMokotoffSoundexFilter
  *
  * @lucene.experimental
+ * @since 5.0.0
  */
 public class DaitchMokotoffSoundexFilterFactory extends TokenFilterFactory {
   /** parameter name: true if encoded tokens should be added as synonyms */

@@ -34,13 +34,13 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,8 +132,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-    return Sorting.getTextSortField(field.getName(), top, field.sortMissingLast(), field.sortMissingFirst());
+    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, top,
+                                 SortField.STRING_FIRST, SortField.STRING_LAST);
   }
   
   @Override

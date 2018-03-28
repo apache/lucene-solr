@@ -20,7 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class GeoCircleTest extends LuceneTestCase {
-
+  
   @Test
   public void testCircleDistance() {
     GeoCircle c;
@@ -418,5 +418,4 @@ public class GeoCircleTest extends LuceneTestCase {
     assert gc.isWithin(gp)?solid.isWithin(gp):true;
     
   }
-  
 }

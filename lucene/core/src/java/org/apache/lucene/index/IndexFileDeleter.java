@@ -255,7 +255,7 @@ final class IndexFileDeleter implements Closeable {
   static void inflateGens(SegmentInfos infos, Collection<String> files, InfoStream infoStream) {
 
     long maxSegmentGen = Long.MIN_VALUE;
-    int maxSegmentName = Integer.MIN_VALUE;
+    long maxSegmentName = Long.MIN_VALUE;
 
     // Confusingly, this is the union of liveDocs, field infos, doc values
     // (and maybe others, in the future) gens.  This is somewhat messy,
@@ -288,7 +288,7 @@ final class IndexFileDeleter implements Closeable {
           continue;
         }
 
-        maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
+        maxSegmentName = Math.max(maxSegmentName, Long.parseLong(segmentName.substring(1), Character.MAX_RADIX));
 
         Long curGen = maxPerSegmentGen.get(segmentName);
         if (curGen == null) {
@@ -341,8 +341,8 @@ final class IndexFileDeleter implements Closeable {
   void ensureOpen() throws AlreadyClosedException {
     writer.ensureOpen(false);
     // since we allow 'closing' state, we must still check this, we could be closing because we hit e.g. OOM
-    if (writer.tragedy != null) {
-      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy);
+    if (writer.tragedy.get() != null) {
+      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy.get());
     }
   }
 
@@ -354,10 +354,6 @@ final class IndexFileDeleter implements Closeable {
     } catch (AlreadyClosedException ace) {
       return true;
     }
-  }
-
-  public SegmentInfos getLastSegmentInfos() {
-    return lastSegmentInfos;
   }
 
   /**
@@ -381,9 +377,7 @@ final class IndexFileDeleter implements Closeable {
         try {
           decRef(commit.files);
         } catch (Throwable t) {
-          if (firstThrowable == null) {
-            firstThrowable = t;
-          }
+          firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
         }
       }
       commitsToDelete.clear();
@@ -583,44 +577,18 @@ final class IndexFileDeleter implements Closeable {
           toDelete.add(file);
         }
       } catch (Throwable t) {
-        if (firstThrowable == null) {
-          // Save first exception and throw it in the end, but be sure to finish decRef all files
-          firstThrowable = t;
-        }
+        firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
       }
     }
 
     try {
       deleteFiles(toDelete);
     } catch (Throwable t) {
-      if (firstThrowable == null) {
-        // Save first exception and throw it in the end, but be sure to finish decRef all files
-        firstThrowable = t;
-      }
+      firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
     }
 
     if (firstThrowable != null) {
       throw IOUtils.rethrowAlways(firstThrowable);
-    }
-  }
-
-  /** Decrefs all provided files, ignoring any exceptions hit; call this if
-   *  you are already handling an exception. */
-  void decRefWhileHandlingException(Collection<String> files) {
-    assert locked();
-    Set<String> toDelete = new HashSet<>();
-    for(final String file : files) {
-      try {
-        if (decRef(file)) {
-          toDelete.add(file);
-        }
-      } catch (Throwable t) {
-      }
-    }
-
-    try {
-      deleteFiles(toDelete);
-    } catch (Throwable t) {
     }
   }
 

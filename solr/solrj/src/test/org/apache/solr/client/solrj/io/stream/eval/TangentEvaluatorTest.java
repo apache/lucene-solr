@@ -75,8 +75,8 @@ public class TangentEvaluatorTest extends LuceneTestCase {
   public void twoFields() throws Exception{
     factory.constructEvaluator("tan(a,b)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("tan(a)");
     
@@ -84,7 +84,8 @@ public class TangentEvaluatorTest extends LuceneTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test
+
+  @Test(expected = IOException.class)
   public void nullValue() throws Exception{
     test(null);
   }

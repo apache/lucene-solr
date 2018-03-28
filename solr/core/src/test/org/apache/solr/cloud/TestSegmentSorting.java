@@ -35,6 +35,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 
 
@@ -91,6 +92,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   }
 
 
+  @Test@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());

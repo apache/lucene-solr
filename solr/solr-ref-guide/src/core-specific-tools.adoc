@@ -1,6 +1,4 @@
 = Core-Specific Tools
-:page-shortname: core-specific-tools
-:page-permalink: core-specific-tools.html
 :page-children: ping, plugins-stats-screen, replication-screen, segments-info
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -24,8 +22,6 @@ The Core-Specific tools are a group of UI screens that allow you to see core-lev
 In the left-hand navigation bar, you will see a pull-down menu titled "Core Selector". Clicking on the menu will show a list of Solr cores hosted on this Solr node, with a search box that can be used to find a specific core by name.
 
 When you select a core from the pull-down, the main display of the page will show some basic metadata about the core, and a secondary menu will appear in the left nav with links to additional core specific administration screens.
-
-You can also define a configuration file called `admin-extra.html` that includes links or other information you would like to display in the "Admin Extra" part of this main screen.
 
 .Core overview screen
 image::images/core-specific-tools/core_dashboard.png[image,width=515,height=250]

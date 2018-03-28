@@ -73,7 +73,7 @@ public class MiniSolrCloudClusterTest extends LuceneTestCase {
 
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
       @Override
-      protected JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
+      public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
         JettySolrRunner j = super.stopJettySolrRunner(jetty);
         if (jettyIndex.incrementAndGet() == 2)
           throw new IOException("Fake IOException on shutdown!");

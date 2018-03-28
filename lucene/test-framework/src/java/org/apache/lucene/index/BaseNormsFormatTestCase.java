@@ -450,9 +450,10 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
     
     Directory dir = applyCreatedVersionMajor(newDirectory());
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    IndexWriterConfig conf = newIndexWriterConfig(analyzer);conf.setMergePolicy(NoMergePolicy.INSTANCE);
-    conf.setSimilarity(new CannedNormSimilarity(norms));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMergePolicy(NoMergePolicy.INSTANCE);
+    CannedNormSimilarity sim = new CannedNormSimilarity(norms);
+    conf.setSimilarity(sim);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     Field idField = new StringField("id", "", Field.Store.NO);
@@ -471,7 +472,8 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       } else {
         long value = norms[j++];
         dvField.setLongValue(value);
-        indexedField.setStringValue(Long.toString(value));
+        // only empty fields may have 0 as a norm
+        indexedField.setStringValue(value == 0 ? "" : "a");
         writer.addDocument(doc);
       }
       if (random().nextInt(31) == 0) {
@@ -530,16 +532,17 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
 
     @Override
     public long computeNorm(FieldInvertState state) {
-      return norms[index++];
+      assert state.length > 0;
+      while (true) {
+        long norm = norms[index++];
+        if (norm != 0) {
+          return norm;
+        }
+      }
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   }
@@ -647,7 +650,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
 
     Directory dir = applyCreatedVersionMajor(newDirectory());
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setSimilarity(new CannedNormSimilarity(norms));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -668,7 +671,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       } else {
         long value = norms[j++];
         dvField.setLongValue(value);
-        indexedField.setStringValue(Long.toString(value));
+        indexedField.setStringValue(value == 0 ? "" : "a");
         writer.addDocument(doc);
       }
       if (random().nextInt(31) == 0) {

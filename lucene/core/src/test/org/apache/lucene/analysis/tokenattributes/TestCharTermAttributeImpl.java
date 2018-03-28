@@ -42,6 +42,15 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     }
   }
 
+  public void testSetLength() {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    char[] content = "hello".toCharArray();
+    t.copyBuffer(content, 0, content.length);
+    expectThrows(IndexOutOfBoundsException.class, () -> {
+      t.setLength(-1);
+    });
+  }
+
   public void testGrow() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     StringBuilder buf = new StringBuilder("ab");

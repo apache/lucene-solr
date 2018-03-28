@@ -157,7 +157,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
   public void testToString() {
     TermInSetQuery termsQuery = new TermInSetQuery("field1",
         new BytesRef("a"), new BytesRef("b"), new BytesRef("c"));
-    assertEquals("field1:a field1:b field1:c", termsQuery.toString());
+    assertEquals("field1:(a b c)", termsQuery.toString());
   }
 
   public void testDedup() {
@@ -285,7 +285,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
   
   public void testBinaryToString() {
     TermInSetQuery query = new TermInSetQuery("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe }));
-    assertEquals("field:[ff fe]", query.toString());
+    assertEquals("field:([ff fe])", query.toString());
   }
 
   public void testIsConsideredCostlyByQueryCache() throws IOException {

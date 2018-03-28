@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <p>
  * It is important that punctuation is not discarded by the tokenizer so use
  * {@code discardPunctuation="false"} in your {@link JapaneseTokenizerFactory}.
+ * @since 6.0.0
  */
 public class JapaneseNumberFilterFactory extends TokenFilterFactory {
 

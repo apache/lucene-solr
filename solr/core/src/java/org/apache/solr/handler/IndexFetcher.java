@@ -60,6 +60,8 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -163,6 +165,10 @@ public class IndexFetcher {
 
   private Integer soTimeout;
 
+  private boolean downloadTlogFiles = false;
+
+  private boolean skipCommitOnMasterVersionZero;
+
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
 
   public static class IndexFetchResult {
@@ -226,6 +232,10 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
+    Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
+    if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
+      this.skipCommitOnMasterVersionZero = (boolean) skipCommitOnMasterVersionZero;
+    }
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -247,6 +257,10 @@ public class IndexFetcher {
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
       soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+    }
+
+    if (initArgs.getBooleanArg(TLOG_FILES) != null) {
+      downloadTlogFiles = initArgs.getBooleanArg(TLOG_FILES);
     }
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
@@ -294,6 +308,7 @@ public class IndexFetcher {
   private void fetchFileList(long gen) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND,  CMD_GET_FILE_LIST);
+    params.set(TLOG_FILES, downloadTlogFiles);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
@@ -347,7 +362,7 @@ public class IndexFetcher {
     boolean successfulInstall = false;
     markReplicationStart();
     Directory tmpIndexDir = null;
-    String tmpIndex;
+    String tmpIndexDirPath;
     Directory indexDir = null;
     String indexDirPath;
     boolean deleteTmpIdxDir = true;
@@ -428,7 +443,7 @@ public class IndexFetcher {
       LOG.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
 
       if (latestVersion == 0L) {
-        if (forceReplication && commit.getGeneration() != 0) {
+        if (commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
           LOG.info("New index in Master. Deleting mine...");
@@ -438,8 +453,12 @@ public class IndexFetcher {
           } finally {
             iw.decref();
           }
-          SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
-          solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+          if (skipCommitOnMasterVersionZero) {
+            openNewSearcherAndUpdateCommitPoint();
+          } else {
+            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+            solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+          }
         }
 
         //there is nothing to be replicated
@@ -479,9 +498,9 @@ public class IndexFetcher {
 
       String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       String tmpIdxDirName = "index." + timestamp;
-      tmpIndex = solrCore.getDataDir() + tmpIdxDirName;
+      tmpIndexDirPath = solrCore.getDataDir() + tmpIdxDirName;
 
-      tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+      tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
 
       // tmp dir for tlog files
       if (tlogFilesToDownload != null) {
@@ -494,8 +513,9 @@ public class IndexFetcher {
 
       try {
 
-        //We will compare all the index files from the master vs the index files on disk to see if there is a mismatch
-        //in the metadata. If there is a mismatch for the same index file then we download the entire index again.
+        // We will compare all the index files from the master vs the index files on disk to see if there is a mismatch
+        // in the metadata. If there is a mismatch for the same index file then we download the entire index
+        // (except when differential copy is applicable) again.
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
@@ -546,7 +566,8 @@ public class IndexFetcher {
           LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
-          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
+          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir,
+              tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
           if (tlogFilesToDownload != null) {
             bytesDownloaded += downloadTlogFiles(tmpTlogDir, latestGeneration);
             reloadCore = true; // reload update log
@@ -966,18 +987,26 @@ public class IndexFetcher {
    * Download the index files. If a new index is needed, download all the files.
    *
    * @param downloadCompleteIndex is it a fresh index copy
-   * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param indexDir                 the indexDir to be merged to
+   * @param tmpIndexDir              the directory to which files need to be downloaded to
+   * @param indexDirPath             the path of indexDir
    * @param latestGeneration         the version number
    *
    * @return number of bytes downloaded
    */
-  private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
+  private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir,
+                                  String indexDirPath, String tmpIndexDirPath, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
     long bytesDownloaded = 0;
+    long bytesSkippedCopying = 0;
+    boolean doDifferentialCopy = (indexDir instanceof FSDirectory ||
+        (indexDir instanceof FilterDirectory && FilterDirectory.unwrap(indexDir) instanceof FSDirectory))
+        && (tmpIndexDir instanceof FSDirectory ||
+        (tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
+
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
@@ -985,17 +1014,27 @@ public class IndexFetcher {
       boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
       LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-        dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
-            (String) file.get(NAME), FILE, latestGeneration);
-        currentFile = file;
-        dirFileFetcher.fetchFile();
-        bytesDownloaded += dirFileFetcher.getBytesDownloaded();
+        if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed) {
+          File localFile = new File(indexDirPath, filename);
+          LOG.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
+              localFile.getAbsolutePath(), file.get(CHECKSUM));
+          // A hard link here should survive the eventual directory move, and should be more space efficient as
+          // compared to a file copy. TODO: Maybe we could do a move safely here?
+          Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+          bytesSkippedCopying += localFile.length();
+        } else {
+          dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
+              (String) file.get(NAME), FILE, latestGeneration);
+          currentFile = file;
+          dirFileFetcher.fetchFile();
+          bytesDownloaded += dirFileFetcher.getBytesDownloaded();
+        }
         filesDownloaded.add(new HashMap<>(file));
       } else {
-        LOG.info("Skipping download for " + file.get(NAME)
-            + " because it already exists");
+        LOG.info("Skipping download for {} because it already exists", file.get(NAME));
       }
     }
+    LOG.info("Bytes downloaded: {}, Bytes skipped downloading: {}", bytesDownloaded, bytesSkippedCopying);
     return bytesDownloaded;
   }
   

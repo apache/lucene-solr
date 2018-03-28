@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentReader;
 
 // TODO: or ... replica node can do merging locally?  tricky to keep things in sync, when one node merges more slowly than others...
 
-class PreCopyMergedSegmentWarmer extends IndexReaderWarmer {
+class PreCopyMergedSegmentWarmer implements IndexReaderWarmer {
 
   private final PrimaryNode primary;
 
@@ -48,7 +48,7 @@ class PreCopyMergedSegmentWarmer extends IndexReaderWarmer {
     final SegmentCommitInfo info = ((SegmentReader) reader).getSegmentInfo();
     //System.out.println("TEST: warm merged segment files " + info);
     Map<String,FileMetaData> filesMetaData = new HashMap<>();
-    for(String fileName : info.files()) {
+    for (String fileName : info.files()) {
       FileMetaData metaData = primary.readLocalFileMetaData(fileName);
       assert metaData != null;
       assert filesMetaData.containsKey(fileName) == false;

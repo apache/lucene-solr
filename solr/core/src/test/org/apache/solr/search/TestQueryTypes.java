@@ -18,11 +18,11 @@ package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestQueryTypes extends AbstractSolrTestCase {
+public class TestQueryTypes extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -430,7 +430,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             );
 
     assertQ("test nested nested query",
-            req("q","_query_:\"{!query defType=query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
+            req("q","_query_:\"{!query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
             ,"//result[@numFound='2']"
             );
     assertQ("Test text field with no analysis doesn't NPE with wildcards (SOLR-4318)",
