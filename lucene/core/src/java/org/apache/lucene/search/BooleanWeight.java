@@ -133,7 +133,14 @@ final class BooleanWeight extends Weight {
       }
     }
     List<MatchesIterator> mis = new ArrayList<>();
-    for (Weight w : weights) {
+    Iterator<Weight> wIt = weights.iterator();
+    Iterator<BooleanClause> cIt = query.clauses().iterator();
+    while (wIt.hasNext()) {
+      Weight w = wIt.next();
+      BooleanClause bc = cIt.next();
+      if (bc.getOccur() == Occur.MUST_NOT) {
+        continue;
+      }
       MatchesIterator mi = w.matches(context, doc, field);
       if (mi != null) {
         mis.add(mi);

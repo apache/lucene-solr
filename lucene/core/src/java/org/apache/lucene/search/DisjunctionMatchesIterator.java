@@ -69,6 +69,7 @@ class DisjunctionMatchesIterator implements MatchesIterator {
         PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
         if (pe.advance(doc) == doc) {
           mis.add(new TermMatchesIterator(pe));
+          reuse = null;
         }
         else {
           reuse = pe;
@@ -103,12 +104,14 @@ class DisjunctionMatchesIterator implements MatchesIterator {
     if (started == false) {
       return started = true;
     }
-    MatchesIterator mi = queue.pop();
-    if (mi != null && mi.next()) {
-      queue.add(mi);
+    if (queue.top().next() == false) {
+      queue.pop();
+    }
+    if (queue.size() > 0) {
+      queue.updateTop();
       return true;
     }
-    return queue.size() > 0;
+    return false;
   }
 
   @Override
