@@ -19,16 +19,43 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.LeafReaderContext;
+
+/**
+ * An iterator over match positions (and optionally offsets) for a single document and field
+ *
+ * To iterate over the matches, call {@link #next()} until it returns {@code false}, retrieving
+ * positions and/or offsets after each call.  You should not call the position or offset methods
+ * before {@link #next()} has been called, or after {@link #next()} has returned {@code false}.
+ *
+ * @see Weight#matches(LeafReaderContext, int, String)
+ */
 public interface MatchesIterator {
 
+  /**
+   * Advance the iterator to the next match position
+   * @return {@code true} if matches have not been exhausted
+   */
   boolean next() throws IOException;
 
+  /**
+   * The start position of the current match
+   */
   int startPosition();
 
+  /**
+   * The end position of the current match
+   */
   int endPosition();
 
+  /**
+   * The starting offset of the current match, or {@code -1} if offsets are not available
+   */
   int startOffset() throws IOException;
 
+  /**
+   * The ending offset of the current match, or {@code -1} if offsets are not available
+   */
   int endOffset() throws IOException;
 
 }

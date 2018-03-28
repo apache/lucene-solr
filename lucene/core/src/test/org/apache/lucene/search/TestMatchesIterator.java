@@ -92,7 +92,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       }
       int pos = 1;
       while (it.next()) {
-        System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
+        // System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
         assertEquals(expected[i][pos], it.startPosition());
         assertEquals(expected[i][pos + 1], it.endPosition());
         assertEquals(expected[i][pos + 2], it.startOffset());
