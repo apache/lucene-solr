@@ -63,6 +63,9 @@ Bug Fixes
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
+* SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
+  Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
