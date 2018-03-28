@@ -35,26 +35,19 @@ import org.apache.lucene.util.PriorityQueue;
 class DisjunctionMatchesIterator implements MatchesIterator {
 
   public static DisjunctionMatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
-    List<MatchesIterator> mis = new ArrayList<>();
-    Terms t = context.reader().terms(field);
-    if (t == null)
-      return null;
-    TermsEnum te = t.iterator();
-    PostingsEnum reuse = null;
-    for (Term term : terms) {
-      if (te.seekExact(term.bytes())) {
-        PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
-        if (pe.advance(doc) == doc) {
-          mis.add(new TermMatchesIterator(pe));
-        }
-        else {
-          reuse = pe;
-        }
+    return fromTermsEnum(context, doc, field, asBytesRefIterator(terms));
+  }
+
+  private static BytesRefIterator asBytesRefIterator(List<Term> terms) {
+    return new BytesRefIterator() {
+      int i = 0;
+      @Override
+      public BytesRef next() {
+        if (i >= terms.size())
+          return null;
+        return terms.get(i++).bytes();
       }
-    }
-    if (mis.size() == 0)
-      return null;
-    return new DisjunctionMatchesIterator(mis);
+    };
   }
 
   public static DisjunctionMatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {

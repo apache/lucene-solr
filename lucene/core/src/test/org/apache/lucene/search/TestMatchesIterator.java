@@ -92,7 +92,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       }
       int pos = 1;
       while (it.next()) {
-        System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
+        //System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
         assertEquals(expected[i][pos], it.startPosition());
         assertEquals(expected[i][pos + 1], it.endPosition());
         assertEquals(expected[i][pos + 2], it.startOffset());
@@ -204,6 +204,16 @@ public class TestMatchesIterator extends LuceneTestCase {
 
     Query rq = new RegexpQuery(new Term(FIELD_WITH_OFFSETS, "w[1-2]"));
     checkMatches(rq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0, 0, 0, 0, 2, 1, 1, 3, 5 },
+        { 1, 0, 0, 0, 2, 2, 2, 6, 8 },
+        { 2, 0, 0, 0, 2, 2, 2, 6, 8 },
+        { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 }
+    });
+  }
+
+  public void testSynonymQuery() throws IOException {
+    Query q = new SynonymQuery(new Term(FIELD_WITH_OFFSETS, "w1"), new Term(FIELD_WITH_OFFSETS, "w2"));
+    checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
         { 0, 0, 0, 0, 2, 1, 1, 3, 5 },
         { 1, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 2, 0, 0, 0, 2, 2, 2, 6, 8 },
