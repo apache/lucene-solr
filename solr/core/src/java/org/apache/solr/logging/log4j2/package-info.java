@@ -14,39 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.logging.log4j;
 
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.logging.LoggerInfo;
+/**
+ * LOG4J2 based implementation of {@link org.apache.solr.logging.LogWatcher}
+ */
+package org.apache.solr.logging.log4j2;
 
-@SuppressForbidden(reason = "class is specific to log4j")
-public class Log4jInfo extends LoggerInfo {
-  final org.apache.log4j.Logger logger;
-
-  public Log4jInfo(String name, org.apache.log4j.Logger logger) {
-    super(name);
-    this.logger = logger;
-  }
-
-  @Override
-  public String getLevel() {
-    if(logger==null) {
-      return null;
-    }
-    Object level = logger.getLevel();
-    if(level==null) {
-      return null;
-    }
-    return level.toString();
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public boolean isSet() {
-    return (logger!=null && logger.getLevel()!=null);
-  }
-}

@@ -1,0 +1,243 @@
+= Streams and Vectorization
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section of the user guide explores techniques
+for retrieving streams of data from Solr and vectorizing the
+*numeric* fields.
+
+The next chapter of the user guide covers
+Text Analysis and Term Vectors which describes how to
+vectorize *text* fields.
+
+== Streams
+
+Streaming Expressions has a wide range of stream sources that can be used to
+retrieve data from Solr Cloud collections. Math expressions can be used
+to vectorize and analyze the results sets.
+
+Below are some of the key stream sources:
+
+* *random*: Random sampling is widely used in statistics, probability and machine learning.
+The `random` function returns a random sample of search results that match a
+query. The random samples can be vectorized and operated on by math expressions and the results
+can be used to describe and make inferences about the entire population.
+
+* *timeseries*: The `timeseries`
+expression provides fast distributed time series aggregations, which can be
+vectorized and analyzed with math expressions.
+
+* *knnSearch*: K-nearest neighbor is a core machine learning algorithm. The `knnSearch`
+function is a specialized knn algorithm optimized to find the k-nearest neighbors of a document in
+a distributed index. Once the nearest neighbors are retrieved they can be vectorized
+and operated on by machine learning and text mining algorithms.
+
+* *sql*: SQL is the primary query language used by data scientists. The `sql` function supports
+data retrieval using a subset of SQL which includes both full text search and
+fast distributed aggregations. The result sets can then be vectorized and operated
+on by math expressions.
+
+* *jdbc*: The `jdbc` function allows data from any JDBC compliant data source to be combined with
+streams originating from Solr. Result sets from outside data sources can be vectorized and operated
+on by math expressions in the same manner as result sets originating from Solr.
+
+* *topic*: Messaging is an important foundational technology for large scale computing. The `topic`
+function provides publish/subscribe messaging capabilities by treating
+Solr Cloud as a distributed message queue. Topics are extremely powerful
+because they allow subscription by query. Topics can be use to support a broad set of
+use cases including bulk text mining operations and AI alerting.
+
+* *nodes*: Graph queries are frequently used by recommendation engines and are an important
+machine learning tool. The `nodes` function provides fast, distributed, breadth
+first graph traversal over documents in a Solr Cloud collection. The node sets collected
+by the `nodes` function can be operated on by statistical and machine learning expressions to
+gain more insight into the graph.
+
+* *search*: Ranked search results are a powerful tool for finding the most relevant
+documents from a large document corpus. The `search` expression
+returns the top N ranked search results that match any
+Solr query, including geo-spatial queries. The smaller set of relevant
+documents can then be explored with statistical, machine learning and
+text mining expressions to gather insights about the data set.
+
+== Assigning Streams to Variables
+
+The output of any streaming expression can be set to a variable.
+Below is a very simple example using the `random` function to fetch
+three random samples from collection1. The random samples are returned
+as *tuples*, which contain name/value pairs.
+
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="3", fl="price_f"))
+----
+
+When this expression is sent to the /stream handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          {
+            "price_f": 0.7927976
+          },
+          {
+            "price_f": 0.060795486
+          },
+          {
+            "price_f": 0.55128294
+          }
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+== Creating a Vector with the *col* Function
+
+The `col` function iterates over a list of tuples and copies the values
+from a specific column into an *array*.
+
+The output of the `col` function is an numeric array that can be set to a
+variable and operated on by math expressions.
+
+Below is an example of the `col` function:
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="3", fl="price_f"),
+    b=col(a, price_f))
+----
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          0.42105234,
+          0.85237443,
+          0.7566981
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 9
+      }
+    ]
+  }
+}
+----
+
+== Applying Math Expressions to the Vector
+
+Once a vector has been created any math expression that operates on vectors
+can be applied. In the example below the `mean` function is applied to
+the vector assigned to variable *b*.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
+    b=col(a, price_f),
+    c=mean(b))
+----
+
+When this expression is sent to the /stream handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": 0.5016035594638814
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 306
+      }
+    ]
+  }
+}
+----
+
+== Creating Matrices
+
+Matrices can be created by vectorizing multiple numeric fields
+and adding them to a matrix. The matrices can then be operated on by
+any math expression that operates on matrices.
+
+Note that this section deals with the creation of matrices
+from numeric data. The next chapter of the user guide covers
+Text Analysis and Term Vectors which describes how to build TF-IDF
+term vector matrices from text fields.
+
+Below is a simple example where four random samples are taken
+from different sub-populations in the data. The *price_f* field of
+each random sample is
+vectorized and the vectors are added as rows to a matrix.
+Then the `sumRows`
+function is applied to the matrix to return a vector containing
+the sum of each row.
+
+[source,text]
+----
+let(a=random(collection1, q="market:A", rows="5000", fl="price_f"),
+    b=random(collection1, q="market:B", rows="5000", fl="price_f"),
+    c=random(collection1, q="market:C", rows="5000", fl="price_f"),
+    d=random(collection1, q="market:D", rows="5000", fl="price_f"),
+    e=col(a, price_f),
+    f=col(b, price_f),
+    g=col(c, price_f),
+    h=col(d, price_f),
+    i=matrix(e, f, g, h),
+    j=sumRows(i))
+----
+
+When this expression is sent to the /stream handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "j": [
+          154390.1293375,
+          167434.89453,
+          159293.258493,
+          149773.42769,
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 9
+      }
+    ]
+  }
+}
+----

@@ -52,6 +52,10 @@ Jetty 9.4.8.v20171121
 Upgrade Notes
 ----------------------
 
+* SOLR-7887: Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files.
+  This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging
+  implementation which is compatible with SLF4J.
+
 New Features
 ----------------------
 
@@ -60,6 +64,9 @@ New Features
 
 * SOLR-12015: Add support "add-distinct" in AtomicURP so that we can use the 'add-distict' as a request parameter e.g:
   atomic.<multival-field-name>=add-distict (Amrit Sarkar via noble)
+
+* SOLR-7887: Upgrade Solr to use Log4J 2.11
+ (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
 Bug Fixes
 ----------------------
@@ -76,6 +83,13 @@ Bug Fixes
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
+* SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
+  Tomás Fernández Löbbe)
+
+* SOLR-10734: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent updates for the same
+  document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
+  (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
+
 Optimizations
 ----------------------
 
@@ -88,6 +102,8 @@ Optimizations
 
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
+
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -361,6 +377,10 @@ Bug Fixes
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
 
 * SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
+
+* SOLR-12141: Fix "bin/solr" shell scripts (Windows/Linux/Mac) to correctly detect major Java version
+  and use numerical version comparison to enforce minimum requirements. Also remove obsolete "UseParNewGC" option.
+  This allows to start Solr with Java 10 or later. (Uwe Schindler)
 
 Optimizations
 ----------------------

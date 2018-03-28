@@ -1412,7 +1412,7 @@ public class ExtendedDismaxQParser extends QParser {
         newtf[j++] = facs[i];
       }
       
-      TokenizerChain newa = new TokenizerChain(tcq.getTokenizerFactory(), newtf);
+      TokenizerChain newa = new TokenizerChain(tcq.getCharFilterFactories(), tcq.getTokenizerFactory(), newtf);
       newa.setPositionIncrementGap(tcq.getPositionIncrementGap(fieldName));
       return newa;
     }

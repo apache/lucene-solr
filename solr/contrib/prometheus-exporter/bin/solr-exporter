@@ -100,7 +100,7 @@ do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 
-EXTRA_JVM_ARGUMENTS="-Xmx512m -Dlog4j.configuration=file:"$BASEDIR"/conf/log4j.properties"
+EXTRA_JVM_ARGUMENTS="-Xmx512m -Dlog4j.configurationFile=file:"$BASEDIR"/conf/log4j2.xml"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then

@@ -1,7 +1,7 @@
-# Unicode Character Database
-# Copyright (c) 1991-2016 Unicode, Inc.
-# For terms of use, see http://www.unicode.org/terms_of_use.html
-# For documentation, see http://www.unicode.org/reports/tr44/
+# Copyright (C) 2016 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
+# Copyright (C) 1999-2016, International Business Machines
+# Corporation and others.  All Rights Reserved.
 #
 # file name: nfkc_cf.txt
 #
@@ -12,7 +12,7 @@
 # and reformatted into syntax for the gennorm2 Normalizer2 data generator tool.
 # Use this file as the third gennorm2 input file after nfc.txt and nfkc.txt.
 
-* Unicode 9.0.0
+* Unicode 10.0.0
 
 0041>0061
 0042>0062
