@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
@@ -266,7 +267,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // The tricky thing is verifying the cache works correctly...
 
-    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+    MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
     assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
     assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 

@@ -36,6 +36,11 @@ Upgrade Notes
   when a negative value is produced. This change is due to the fact that
   Lucene now requires scores to be positive. (Adrien Grand)
 
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components that use this API
+  need to be updated. (Eros Taborelli, Erick Erickson, ab)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

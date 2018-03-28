@@ -105,6 +105,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private HttpClientMetricNameStrategy metricNameStrategy;
 
+  private String metricTag;
+
   protected final Random r = new Random();
 
   private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
@@ -398,10 +400,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricTag = tag;
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
-    httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
+    clientConnectionManager.initializeMetrics(manager, registry, tag, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registry, tag, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));

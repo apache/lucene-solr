@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -645,7 +646,7 @@ public class SolrMetricManager {
    *                   using dotted notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
-  public void register(SolrInfoBean info, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
+  public void registerMetric(SolrInfoBean info, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
     String fullName = mkName(metricName, metricPath);
     if (info != null) {
@@ -659,8 +660,56 @@ public class SolrMetricManager {
     }
   }
 
-  public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    register(info, registry, gauge, force, metricName, metricPath);
+  /**
+   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
+   * lambdas that often keep a reference to their parent instance. In order to make sure that
+   * all such metrics are removed when their parent instance is removed / closed the
+   * metric is associated with an instance tag, which can be used then to remove
+   * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
+   */
+  public static class GaugeWrapper<T> implements Gauge<T> {
+    private final Gauge<T> gauge;
+    private final String tag;
+
+    public GaugeWrapper(Gauge<T> gauge, String tag) {
+      this.gauge = gauge;
+      this.tag = tag;
+    }
+
+    @Override
+    public T getValue() {
+      return gauge.getValue();
+    }
+
+    public String getTag() {
+      return tag;
+    }
+
+    public Gauge<T> getGauge() {
+      return gauge;
+    }
+  }
+
+  public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+    registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
+  }
+
+  public int unregisterGauges(String registryName, String tag) {
+    if (tag == null) {
+      return 0;
+    }
+    MetricRegistry registry = registry(registryName);
+    AtomicInteger removed = new AtomicInteger();
+    registry.removeMatching((name, metric) -> {
+      if (metric instanceof GaugeWrapper &&
+          tag.equals(((GaugeWrapper)metric).getTag())) {
+        removed.incrementAndGet();
+        return true;
+      } else {
+        return false;
+      }
+    });
+    return removed.get();
   }
 
   /**
@@ -1110,8 +1159,7 @@ public class SolrMetricManager {
         attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
-        loadReporter(registryName, core, info,
-            String.valueOf(core.hashCode()));
+        loadReporter(registryName, core, info, core.getMetricTag());
       } catch (Exception e) {
         log.warn("Could not load shard reporter, pluginInfo=" + info, e);
       }
