@@ -40,6 +40,8 @@ Build
 * LUCENE-7935: Publish .sha512 hash files with the release artifacts and stop
   publishing .md5 hashes since the algorithm is broken (janhoy)
 
+* LUCENE-8230: Upgrade forbiddenapis to version 2.5.  (Uwe Schindler)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
