@@ -86,6 +86,10 @@ Bug Fixes
 * SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
   Tomás Fernández Löbbe)
 
+* SOLR-10734: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent updates for the same
+  document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
+  (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
+
 Optimizations
 ----------------------
 
@@ -121,8 +125,6 @@ Other Changes
   Varun Thacker, Uwe Schindler)
 
 * SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
-
-* SOLR-10734: Multithreaded test/support for AtomicURP broken. (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
 
 ==================  7.3.0 ==================
 

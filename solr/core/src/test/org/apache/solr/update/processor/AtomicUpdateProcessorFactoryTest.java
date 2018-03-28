@@ -198,7 +198,6 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   }
 
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10734")
   public void testMultipleThreads() throws Exception {
     clearIndex();
     String[] strings = new String[5];
