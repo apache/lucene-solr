@@ -237,7 +237,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return null; // nocommit
+      return null; // TODO - see PhraseQuery
     }
 
     @Override

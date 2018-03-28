@@ -394,7 +394,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return null;  // nocommit
+      return null;  // TODO - should be able to refactor Exact/SloppyPhraseScorer into something that reports positions too?
     }
 
     @Override
