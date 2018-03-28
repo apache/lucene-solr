@@ -153,17 +153,17 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       // if atomic, put _version_ for optimistic concurrency if doc present in index
       if (isAtomicUpdateAddedByMe) {
         Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-        if (lastVersion != null) {
-          orgdoc.setField(VERSION, lastVersion);
-        }
-        processAddWithRetry(cmd, 0);
+        // if lastVersion is null then we put -1 to assert that document must not exist
+        lastVersion = lastVersion == null ? -1 : lastVersion;
+        orgdoc.setField(VERSION, lastVersion);
+        processAddWithRetry(cmd, 1, cmd.getSolrInputDocument().deepCopy());
       } else {
         super.processAdd(cmd);
       }
       // else send it for doc to get inserted for the first time
     }
 
-    private void processAddWithRetry(AddUpdateCommand cmd, int attempts) throws IOException {
+    private void processAddWithRetry(AddUpdateCommand cmd, int attempts, SolrInputDocument clonedOriginalDoc) throws IOException {
       try {
         super.processAdd(cmd);
       } catch (SolrException e) {
@@ -174,11 +174,18 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         if (e.code() == ErrorCode.CONFLICT.code) { // version conflict
           log.warn("Atomic update failed due to " + e.getMessage() +
               " Retrying with new version .... (" + attempts + ")");
+
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-          if (lastVersion != null) {
-            cmd.solrDoc.setField(VERSION, lastVersion);
-          }
-          processAddWithRetry(cmd, attempts);
+          // if lastVersion is null then we put -1 to assert that document must not exist
+          lastVersion = lastVersion == null ? -1 : lastVersion;
+
+          // The AtomicUpdateDocumentMerger modifies the AddUpdateCommand.solrDoc to populate the real values of the
+          // modified fields. We don't want those absolute values because they are out-of-date due to the conflict
+          // so we restore the original document created in processAdd method and set the right version on it
+          cmd.solrDoc = clonedOriginalDoc;
+          cmd.solrDoc.setField(VERSION, lastVersion);
+
+          processAddWithRetry(cmd, attempts, clonedOriginalDoc);
         }
       }
     }
