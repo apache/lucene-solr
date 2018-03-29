@@ -393,8 +393,12 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return null;  // TODO - should be able to refactor Exact/SloppyPhraseScorer into something that reports positions too?
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      Scorer scorer = scorer(context);
+      if (scorer == null || scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+      return Matches.fromField(field, MatchesIterator.EMPTY); // TODO
     }
 
     @Override

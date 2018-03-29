@@ -679,8 +679,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return in.matches(context, doc, field);
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return in.matches(context, doc);
     }
 
     private boolean cacheEntryHasReasonableWorstCaseSize(int maxDoc) {

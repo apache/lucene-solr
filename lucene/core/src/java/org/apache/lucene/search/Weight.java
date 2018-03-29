@@ -71,20 +71,14 @@ public abstract class Weight implements SegmentCacheable {
   public abstract void extractTerms(Set<Term> terms);
 
   /**
-   * Returns an iterator over the match positions in a field for the named document
+   * Returns the {@link Matches} for a specific document
    *
    * If there are no matches, returns {@code null}
    *
-   * If the field was indexed with offsets, then the {@link MatchesIterator} will
-   * expose those offsets, otherwise only positions will be returned and
-   * {@link MatchesIterator#startOffset()} and {@link MatchesIterator#endOffset()} will
-   * always return {@code -1}.
-   *
    * @param context the reader's context to create the {@link MatchesIterator} for
    * @param doc     the document's id relative to the given context's reader
-   * @param field   the field to return match positions for
    */
-  public abstract MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException;
+  public abstract Matches matches(LeafReaderContext context, int doc) throws IOException;
 
   /**
    * An explanation of the score computation for the named document.

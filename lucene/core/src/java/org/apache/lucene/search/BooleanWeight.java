@@ -121,35 +121,38 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
-  public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-    if (query.getClauses(Occur.SHOULD).size() != weights.size() || query.getMinimumNumberShouldMatch() > 0) {
-      // check that we actually match the doc in this case
-      Scorer scorer = scorer(context);
-      if (scorer == null) {
-        return null;
-      }
-      if (scorer.iterator().advance(doc) != doc) {
-        return null;
-      }
-    }
-    List<MatchesIterator> mis = new ArrayList<>();
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    final int minShouldMatch = query.getMinimumNumberShouldMatch();
+    List<Matches> matches = new ArrayList<>();
+    int shouldMatchCount = 0;
     Iterator<Weight> wIt = weights.iterator();
     Iterator<BooleanClause> cIt = query.clauses().iterator();
     while (wIt.hasNext()) {
       Weight w = wIt.next();
       BooleanClause bc = cIt.next();
-      if (bc.getOccur() == Occur.MUST_NOT) {
-        continue;
+      Matches m = w.matches(context, doc);
+      if (bc.isProhibited()) {
+        if (m != null) {
+          return null;
+        }
       }
-      MatchesIterator mi = w.matches(context, doc, field);
-      if (mi != null) {
-        mis.add(mi);
+      if (bc.isRequired()) {
+        if (m == null) {
+          return null;
+        }
+        matches.add(m);
+      }
+      if (bc.getOccur() == Occur.SHOULD) {
+        if (m != null) {
+          matches.add(m);
+          shouldMatchCount++;
+        }
       }
     }
-    if (mis.size() == 0) {
+    if (shouldMatchCount < minShouldMatch) {
       return null;
     }
-    return new DisjunctionMatchesIterator(mis);
+    return Matches.fromSubMatches(matches);
   }
 
   static BulkScorer disableScoring(final BulkScorer scorer) {

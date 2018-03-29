@@ -30,7 +30,7 @@ import org.apache.lucene.index.LeafReaderContext;
  *
  * Matches are ordered by start position, and then by end position.  Match intervals map overlap.
  *
- * @see Weight#matches(LeafReaderContext, int, String)
+ * @see Weight#matches(LeafReaderContext, int)
  */
 public interface MatchesIterator {
 
@@ -59,5 +59,32 @@ public interface MatchesIterator {
    * The ending offset of the current match, or {@code -1} if offsets are not available
    */
   int endOffset() throws IOException;
+
+  final MatchesIterator EMPTY = new MatchesIterator() {
+    @Override
+    public boolean next() throws IOException {
+      return false;
+    }
+
+    @Override
+    public int startPosition() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  };
 
 }

@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -65,6 +66,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       doc.add(newField(FIELD_WITH_OFFSETS, docFields[i], OFFSETS));
       doc.add(newField(FIELD_NO_OFFSETS, docFields[i], TextField.TYPE_STORED));
       doc.add(new NumericDocValuesField("id", i));
+      doc.add(newField("id", Integer.toString(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
@@ -85,22 +87,27 @@ public class TestMatchesIterator extends LuceneTestCase {
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(expected[i][0], searcher.leafContexts));
       int doc = expected[i][0] - ctx.docBase;
-      MatchesIterator it = w.matches(ctx, doc, field);
-      if (it == null) {
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
         assertEquals(expected[i].length, 1);
         continue;
       }
-      int pos = 1;
-      while (it.next()) {
-        //System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
-        assertEquals(expected[i][pos], it.startPosition());
-        assertEquals(expected[i][pos + 1], it.endPosition());
-        assertEquals(expected[i][pos + 2], it.startOffset());
-        assertEquals(expected[i][pos + 3], it.endOffset());
-        pos += 4;
-      }
-      assertEquals(expected[i].length, pos);
+      MatchesIterator it = matches.getMatches(field);
+      checkFieldMatches(it, expected[i]);
     }
+  }
+
+  void checkFieldMatches(MatchesIterator it, int[] expected) throws IOException {
+    int pos = 1;
+    while (it.next()) {
+      //System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
+      assertEquals(expected[pos], it.startPosition());
+      assertEquals(expected[pos + 1], it.endPosition());
+      assertEquals(expected[pos + 2], it.startOffset());
+      assertEquals(expected[pos + 3], it.endOffset());
+      pos += 4;
+    }
+    assertEquals(expected.length, pos);
   }
 
   public void testTermQuery() throws IOException {
@@ -219,6 +226,26 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 2, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 }
     });
+  }
+
+  public void testMultipleFields() throws IOException {
+    Query q = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("id", "1")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.MUST)
+        .build();
+    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+
+    LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(1, searcher.leafContexts));
+    Matches m = w.matches(ctx, 1 - ctx.docBase);
+    assertNotNull(m);
+    checkFieldMatches(m.getMatches("id"), new int[]{ -1, 0, 0, -1, -1 });
+    checkFieldMatches(m.getMatches(FIELD_WITH_OFFSETS), new int[]{ -1, 1, 1, 3, 5, 3, 3, 9, 11 });
+    assertNull(m.getMatches("bogus"));
+
+    Set<String> fields = m.getMatchFields();
+    assertEquals(2, fields.size());
+    assertTrue(fields.contains(FIELD_WITH_OFFSETS));
+    assertTrue(fields.contains("id"));
   }
 
   protected String[] doc1Fields = {

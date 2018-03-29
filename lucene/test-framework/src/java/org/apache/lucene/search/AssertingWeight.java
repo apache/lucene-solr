@@ -32,11 +32,11 @@ class AssertingWeight extends FilterWeight {
   }
 
   @Override
-  public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-    MatchesIterator matches = in.matches(context, doc, field);
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    Matches matches = in.matches(context, doc);
     if (matches == null)
       return null;
-    return new AssertingMatchesIterator(matches);
+    return new AssertingMatches(matches);
   }
 
   @Override

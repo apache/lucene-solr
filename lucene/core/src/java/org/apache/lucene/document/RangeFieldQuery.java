@@ -30,6 +30,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -351,8 +352,12 @@ abstract class RangeFieldQuery extends Query {
       }
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        Scorer scorer = scorer(context);
+        if (scorer == null || scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+        return Matches.fromField(field, MatchesIterator.EMPTY);
       }
 
       @Override

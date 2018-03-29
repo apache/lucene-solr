@@ -236,8 +236,12 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return null; // TODO - see PhraseQuery
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      Scorer scorer = scorer(context);
+      if (scorer == null || scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+      return Matches.fromField(field, MatchesIterator.EMPTY); // TODO
     }
 
     @Override
