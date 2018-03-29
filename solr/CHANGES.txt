@@ -36,6 +36,11 @@ Upgrade Notes
   when a negative value is produced. This change is due to the fact that
   Lucene now requires scores to be positive. (Adrien Grand)
 
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components that use this API
+  need to be updated. (Eros Taborelli, Erick Erickson, ab)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -83,6 +88,13 @@ Bug Fixes
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
+* SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
+  Tomás Fernández Löbbe)
+
+* SOLR-10734: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent updates for the same
+  document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
+  (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
+
 Optimizations
 ----------------------
 
@@ -118,8 +130,6 @@ Other Changes
   Varun Thacker, Uwe Schindler)
 
 * SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
-
-* SOLR-10734: Multithreaded test/support for AtomicURP broken. (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
 
 ==================  7.3.0 ==================
 

@@ -114,7 +114,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   public static Metrics metrics;
   private static Boolean kerberosInit;
-  
+
   // we use this cache for FileSystem instances when we don't have access to a long lived instance
   private com.google.common.cache.Cache<String,FileSystem> tmpFsCache = CacheBuilder.newBuilder()
       .concurrencyLevel(10)
@@ -489,9 +489,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    MetricsHolder.metrics.initializeMetrics(manager, registry, scope);
-    LocalityHolder.reporter.initializeMetrics(manager, registry, scope);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    MetricsHolder.metrics.initializeMetrics(manager, registry, tag, scope);
+    LocalityHolder.reporter.initializeMetrics(manager, registry, tag, scope);
   }
 
   @Override

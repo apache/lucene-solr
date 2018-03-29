@@ -590,7 +590,7 @@
                   includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
-                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
+                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1 **/*.sha512" />
       <tarfileset dir="${javadoc-online.dir}"
                   prefix="${fullnamever}/docs" />
     </tar>

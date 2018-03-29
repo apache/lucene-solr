@@ -87,6 +87,9 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   
   @SuppressWarnings("unchecked")
   protected NamedList initParams;
+
+  protected SolrMetricManager metricManager;
+  protected String registryName;
   
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
@@ -348,16 +351,18 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.registryName = registryName;
+    this.metricManager = manager;
     registry = manager.registry(registryName);
-    manager.registerGauge(this, registryName, () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> ramBytesUsed(), tag, true, "totalSizeInBytes", getCategory().toString(), scope);
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
       for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
         SolrSuggester suggester = entry.getValue();
         map.put(entry.getKey(), suggester.toString());
       }
     });
-    manager.registerGauge(this, registryName, suggestersMap, true, "suggesters", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, suggestersMap, tag, true, "suggesters", getCategory().toString(), scope);
   }
 
   @Override
