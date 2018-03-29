@@ -26,6 +26,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -100,8 +101,12 @@ final class LatLonDocValuesDistanceQuery extends Query {
       private final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;  // TODO does it make sense to try and return matches?
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        Scorer scorer = scorer(context);
+        if (scorer == null || scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+        return Matches.fromField(field, MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
       }
 
       @Override

@@ -27,6 +27,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -137,7 +138,7 @@ public final class LongRange extends Range {
 
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 

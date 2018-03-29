@@ -43,6 +43,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -273,7 +274,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 

@@ -49,6 +49,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -277,8 +278,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
 
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-          return null;
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          Scorer scorer = scorer(context);
+          if (scorer == null || scorer.iterator().advance(doc) != doc) {
+            return null;
+          }
+          return Matches.fromField(field, MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
         }
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
@@ -620,8 +625,12 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
       Filter filter;
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        Scorer scorer = scorer(context);
+        if (scorer == null || scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+        return Matches.fromField(field, MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
       }
 
       @Override

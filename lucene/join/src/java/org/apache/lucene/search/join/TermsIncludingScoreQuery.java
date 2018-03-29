@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -104,8 +105,12 @@ class TermsIncludingScoreQuery extends Query {
       public void extractTerms(Set<Term> terms) {}
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;  // TODO do matches make sense here?
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        Scorer scorer = scorer(context);
+        if (scorer == null || scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+        return Matches.fromField(toField, MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
       }
 
       @Override

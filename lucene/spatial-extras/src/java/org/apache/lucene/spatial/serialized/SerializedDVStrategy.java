@@ -33,6 +33,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -114,7 +115,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   public Query makeQuery(SpatialArgs args) {
     ShapeValuesSource shapeValueSource = makeShapeValueSource();
     ShapeValuesPredicate predicateValueSource = new ShapeValuesPredicate(shapeValueSource, args.getOperation(), args.getShape());
-    return new PredicateValueSourceQuery(predicateValueSource);
+    return new PredicateValueSourceQuery(getFieldName(), predicateValueSource);
   }
 
   /**
@@ -129,9 +130,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
    */
   static class PredicateValueSourceQuery extends Query {
     private final ShapeValuesPredicate predicateValueSource;
+    private final String field;
 
-    public PredicateValueSourceQuery(ShapeValuesPredicate predicateValueSource) {
+    public PredicateValueSourceQuery(String field, ShapeValuesPredicate predicateValueSource) {
       this.predicateValueSource = predicateValueSource;
+      this.field = field;
     }
 
     @Override
@@ -139,8 +142,12 @@ public class SerializedDVStrategy extends SpatialStrategy {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-          return null;  // TODO is there a way of reporting matches that makes sense?
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          Scorer scorer = scorer(context);
+          if (scorer.iterator().advance(doc) != doc) {
+            return null;
+          }
+          return Matches.fromField(field, MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
         }
 
         @Override

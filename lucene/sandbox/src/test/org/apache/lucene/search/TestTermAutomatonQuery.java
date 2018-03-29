@@ -585,8 +585,12 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-          return null;
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          Scorer scorer = scorer(context);
+          if (scorer.iterator().advance(doc) != doc) {
+            return null;
+          }
+          return Matches.fromField("*", MatchesIterator.EMPTY);  // TODO is there a way of reporting matches that makes sense here?
         }
 
         @Override
