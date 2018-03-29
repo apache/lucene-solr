@@ -28,7 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
  * positions and/or offsets after each call.  You should not call the position or offset methods
  * before {@link #next()} has been called, or after {@link #next()} has returned {@code false}.
  *
- * Matches are ordered by start position, and then by end position.  Match intervals map overlap.
+ * Matches are ordered by start position, and then by end position.  Match intervals may overlap.
  *
  * @see Weight#matches(LeafReaderContext, int)
  */

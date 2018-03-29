@@ -71,11 +71,10 @@ public abstract class Weight implements SegmentCacheable {
   public abstract void extractTerms(Set<Term> terms);
 
   /**
-   * Returns the {@link Matches} for a specific document
+   * Returns {@link Matches} for a specific document, or {@code null} if the document
+   * does not match the parent query
    *
-   * If there are no matches, returns {@code null}
-   *
-   * @param context the reader's context to create the {@link MatchesIterator} for
+   * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
    */
   public abstract Matches matches(LeafReaderContext context, int doc) throws IOException;

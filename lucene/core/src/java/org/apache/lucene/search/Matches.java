@@ -25,10 +25,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Reports the positions and optionally offsets of all matching terms in a query
+ * for a single document
+ *
+ * To find all fields that have matches, call {@link #getMatchFields()}
+ *
+ * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}
+ */
 public class Matches {
 
   private final Map<String, MatchesIterator> matches;
 
+  /**
+   * Create a simple {@link Matches} for a single field
+   */
   public static Matches fromField(String field, MatchesIterator it) {
     if (it == null) {
       return null;
@@ -36,6 +47,9 @@ public class Matches {
     return new Matches(field, it);
   }
 
+  /**
+   * Amalgamate a collection of {@link Matches} into a single object
+   */
   public static Matches fromSubMatches(List<Matches> subMatches) throws IOException {
     if (subMatches == null || subMatches.size() == 0) {
       return null;
@@ -61,6 +75,9 @@ public class Matches {
     return new Matches(matches);
   }
 
+  /**
+   * Create a {@link Matches} from a map of fields to iterators
+   */
   protected Matches(Map<String, MatchesIterator> matches) {
     this.matches = matches;
   }
@@ -70,10 +87,17 @@ public class Matches {
     this.matches.put(field, iterator);
   }
 
+  /**
+   * Returns a {@link MatchesIterator} over the matches for a single field,
+   * or {@code null} if there are no matches in that field
+   */
   public MatchesIterator getMatches(String field) {
     return matches.get(field);
   }
 
+  /**
+   * Returns the fields with matches for this document
+   */
   public Set<String> getMatchFields() {
     return matches.keySet();
   }
