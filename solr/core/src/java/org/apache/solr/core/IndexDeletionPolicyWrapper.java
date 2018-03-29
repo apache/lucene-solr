@@ -267,11 +267,5 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
       return 0;
     }
   }
-
-  @Override
-  public IndexDeletionPolicy clone() {
-    // see class-level javadocs
-    return this;
-  }
 }
 
