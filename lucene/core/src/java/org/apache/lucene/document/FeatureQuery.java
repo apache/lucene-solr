@@ -85,11 +85,7 @@ final class FeatureQuery extends Query {
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        Scorer scorer = scorer(context);
-        if (scorer == null || scorer.iterator().advance(doc) != doc) {
-          return null;
-        }
-        return Matches.fromField(fieldName, MatchesIterator.EMPTY);
+        return Matches.emptyMatches(context, doc, this, fieldName);
       }
 
       @Override

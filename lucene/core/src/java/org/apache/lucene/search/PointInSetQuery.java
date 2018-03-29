@@ -115,11 +115,7 @@ public abstract class PointInSetQuery extends Query {
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        Scorer scorer = scorer(context);
-        if (scorer == null || scorer.iterator().advance(doc) != doc) {
-          return null;
-        }
-        return Matches.fromField(field, MatchesIterator.EMPTY);
+        return Matches.emptyMatches(context, doc, this, field);
       }
 
       @Override

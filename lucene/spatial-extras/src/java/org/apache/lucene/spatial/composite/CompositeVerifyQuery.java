@@ -99,7 +99,7 @@ public class CompositeVerifyQuery extends Query {
         Matches innerMatches = indexQueryWeight.matches(context, doc);
         List<Matches> subMatches = new ArrayList<>();
         for (String field : innerMatches.getMatchFields()) {
-          subMatches.add(Matches.fromField(field, MatchesIterator.EMPTY));
+          subMatches.add(Matches.emptyMatches(context, doc, this, field));
         }
         return Matches.fromSubMatches(subMatches);  // TODO is there a way of reporting matches that makes sense here?
       }

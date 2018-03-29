@@ -38,7 +38,7 @@ public final class MatchAllDocsQuery extends Query {
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.fromField("*", MatchesIterator.EMPTY);
+        return Matches.emptyMatches(context, doc, this, "*");
       }
 
       @Override

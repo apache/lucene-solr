@@ -276,14 +276,8 @@ public class PointVectorStrategy extends SpatialStrategy {
 
         @Override
         public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          Scorer scorer = scorer(context);
-          if (scorer == null || scorer.iterator().advance(doc) != doc) {
-            return null;
-          }
-          List<Matches> subFieldMatches = new ArrayList<>();
-          subFieldMatches.add(Matches.fromField(fieldNameX, MatchesIterator.EMPTY));
-          subFieldMatches.add(Matches.fromField(fieldNameY, MatchesIterator.EMPTY));
-          return Matches.fromSubMatches(subFieldMatches);  // TODO is there a way of reporting matches that makes sense here?
+          return Matches.emptyMatches(context, doc, this, fieldNameX, fieldNameY);
+          // TODO is there a way of reporting matches that makes sense here?
         }
 
         @Override

@@ -60,31 +60,4 @@ public interface MatchesIterator {
    */
   int endOffset() throws IOException;
 
-  final MatchesIterator EMPTY = new MatchesIterator() {
-    @Override
-    public boolean next() throws IOException {
-      return false;
-    }
-
-    @Override
-    public int startPosition() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endPosition() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-  };
-
 }

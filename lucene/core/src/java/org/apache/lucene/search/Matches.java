@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.LeafReaderContext;
+
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
  * for a single document
@@ -45,6 +47,25 @@ public class Matches {
       return null;
     }
     return new Matches(field, it);
+  }
+
+  /**
+   * Create an empty {@link Matches} for a Weight
+   *
+   * If the Weight's parent query does not match this document, returns {@code null},
+   * otherwise returns a {@link Matches} document with an empty iterator on the given
+   * fields
+   */
+  public static Matches emptyMatches(LeafReaderContext context, int doc, Weight weight, String... fields) throws IOException {
+    Scorer scorer = weight.scorer(context);
+    if (scorer == null || scorer.iterator().advance(doc) != doc) {
+      return null;
+    }
+    List<Matches> matches = new ArrayList<>();
+    for (String field : fields) {
+      matches.add(Matches.fromField(field, EMPTY));
+    }
+    return Matches.fromSubMatches(matches);
   }
 
   /**
@@ -101,4 +122,31 @@ public class Matches {
   public Set<String> getMatchFields() {
     return matches.keySet();
   }
+
+  private static final MatchesIterator EMPTY = new MatchesIterator() {
+    @Override
+    public boolean next() throws IOException {
+      return false;
+    }
+
+    @Override
+    public int startPosition() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  };
 }
