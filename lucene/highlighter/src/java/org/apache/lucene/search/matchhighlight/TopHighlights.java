@@ -14,38 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
 
+package org.apache.lucene.search.matchhighlight;
 
-/** Holds one hit in {@link TopDocs}. */
-
-public class  ScoreDoc {
-
-  /** The score of this document for the query. */
-  public float score;
-
-  /** A hit document's number.
-   * @see IndexSearcher#doc(int) */
-  public int doc;
-
-  /** Only set by {@link TopDocs#merge}*/
-  public int shardIndex;
-
-  /** Constructs a ScoreDoc. */
-  public ScoreDoc(int doc, float score) {
-    this(doc, score, -1);
-  }
-
-  /** Constructs a ScoreDoc. */
-  public ScoreDoc(int doc, float score, int shardIndex) {
-    this.doc = doc;
-    this.score = score;
-    this.shardIndex = shardIndex;
-  }
-  
-  // A convenience method for debugging.
-  @Override
-  public String toString() {
-    return "doc=" + doc + " score=" + score + " shardIndex=" + shardIndex;
-  }
+public class TopHighlights<T> {
 }
