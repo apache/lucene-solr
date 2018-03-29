@@ -23,6 +23,9 @@ New Features
 
 Other
 
+* LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
+  the javadoc. (Dawid Weiss)
+
 * LUCENE-8219: Use a realistic estimate of the number of nodes and links in
    LevensteinAutomaton.java, to save reallocation of arrays.
    (Christian Ziech)
