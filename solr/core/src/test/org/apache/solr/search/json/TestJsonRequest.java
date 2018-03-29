@@ -57,6 +57,11 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   @Test
+  public void testLocalJsonRequestWithTags() throws Exception {
+    doJsonRequestWithTag(Client.localClient);
+  }
+
+  @Test
   public void testDistribJsonRequest() throws Exception {
     initServers();
     initServers();
@@ -66,16 +71,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   public static void doJsonRequest(Client client, boolean isDistrib) throws Exception {
-    client.deleteByQuery("*:*", null);
-    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
-    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
-    client.add(sdoc("id", "3"), null);
-    client.commit();
-    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ"), null);
-    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ"), null);
-    client.commit();
-    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY"), null);
-    client.commit();
+    addDocs(client);
 
 
     // test json param
@@ -399,6 +395,115 @@ public class TestJsonRequest extends SolrTestCaseHS {
       assertTrue(e.getMessage().contains("foobar"));
     }
 
+  }
+
+  public static void doJsonRequestWithTag(Client client) throws Exception {
+    addDocs(client);
+    client.testJQ( params("json","{" +
+            " query : '*:*'," +
+            " filter : {" +
+            "  tagged : {" +
+            "   tagName : RCAT," +
+            "   query : {" +
+            "     term : {" +
+            "       f : cat_s," +
+            "       v : A" +
+            "     } " +
+            "   } " +
+            "  } " +
+            " } " +
+            "}", "json.facet", "{" +
+            "categories:{ type:terms, field:cat_s, domain:{excludeTags:RCAT} }  " +
+            "}"), "facets=={ count:2, " +
+            " categories:{ buckets:[ {val:B, count:3}, {val:A, count:2} ]  }" +
+            "}"
+    );
+
+    client.testJQ( params("json","{" +
+            " query : '*:*'," +
+            " filter : {" +
+            "  term : {" +
+            "   f : cat_s," +
+            "   v : A" +
+            "  } " +
+            " } " +
+            "}", "json.facet", "{" +
+            "categories:{ type:terms, field:cat_s, domain:{excludeTags:RCAT} }  " +
+            "}"), "facets=={ count:2, " +
+            " categories:{ buckets:[ {val:A, count:2} ] }" +
+            "}"
+    );
+
+    client.testJQ( params("json","{" +
+        " query : '*:*'," +
+        " filter : {" +
+        "  term : {" +
+        "   f : cat_s," +
+        "   v : A" +
+        "  } " +
+        " } " +
+        "}", "json.facet", "{" +
+        "categories:{ type:terms, field:cat_s }  " +
+        "}"), "facets=={ count:2, " +
+        " categories:{ buckets:[ {val:A, count:2} ] }" +
+        "}"
+    );
+
+    client.testJQ( params("json","{" +
+        " query : '*:*'," +
+        " filter : {" +
+        "  tagged : {" +
+        "   tagName : RCAT," +
+        "   query : {" +
+        "     term : {" +
+        "       f : cat_s," +
+        "       v : A" +
+        "     } " +
+        "   } " +
+        "  } " +
+        " } " +
+        "}", "json.facet", "{" +
+        "categories:{ type:terms, field:cat_s }  " +
+        "}"), "facets=={ count:2, " +
+        " categories:{ buckets:[ {val:A, count:2} ] }" +
+        "}"
+    );
+
+
+
+    client.testJQ( params("json","{" +
+        " query : {" +
+        "  tagged : {" +
+        "   tagName : RCAT," +
+        "   query : {" +
+        "     term : {" +
+        "       f : cat_s," +
+        "       v : A" +
+        "     } " +
+        "   } " +
+        "  } " +
+        " }  " +
+        "}", "json.facet", "{" +
+        "categories:{ type:terms, field:cat_s, domain:{excludeTags:RCAT} }  " +
+        "}"), "facets=={ count:2, " +
+        " categories:{ buckets:[ {val:B, count:3}, {val:A, count:2} ]  }" +
+        "}"
+    );
+
+
+  }
+
+  private static void addDocs(Client client) throws Exception {
+    client.deleteByQuery("*:*", null);
+    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
+    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ"), null);
+    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ"), null);
+    client.commit();
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY"), null);
+    client.commit();
   }
 
 }
