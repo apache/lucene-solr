@@ -333,8 +333,8 @@ class BufferedUpdatesStream implements Accountable {
       if (success) {
         totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
         int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
-        assert fullDelCount <= segState.rld.info.info.maxDoc();
-        if (fullDelCount == segState.rld.info.info.maxDoc()) {
+        assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
+        if (segState.rld.isFullyDeleted()) {
           if (allDeleted == null) {
             allDeleted = new ArrayList<>();
           }
