@@ -119,18 +119,15 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      List<MatchesIterator> mis = new ArrayList<>();
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      List<Matches> mis = new ArrayList<>();
       for (Weight weight : weights) {
-        MatchesIterator mi = weight.matches(context, doc, field);
+        Matches mi = weight.matches(context, doc);
         if (mi != null) {
           mis.add(mi);
         }
       }
-      if (mis.size() == 0) {
-        return null;
-      }
-      return new DisjunctionMatchesIterator(mis);
+      return Matches.fromSubMatches(mis);
     }
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */

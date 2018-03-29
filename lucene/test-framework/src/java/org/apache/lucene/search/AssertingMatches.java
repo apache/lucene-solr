@@ -14,28 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
+package org.apache.lucene.search;
 
-import java.util.List;
+import java.util.Set;
 
-/**
- * An {@link IndexDeletionPolicy} which keeps all index commits around, never
- * deleting them. This class is a singleton and can be accessed by referencing
- * {@link #INSTANCE}.
- */
-public final class NoDeletionPolicy extends IndexDeletionPolicy {
+public class AssertingMatches extends Matches {
 
-  /** The single instance of this class. */
-  public static final IndexDeletionPolicy INSTANCE = new NoDeletionPolicy();
-  
-  private NoDeletionPolicy() {
-    // keep private to avoid instantiation
+  private final Matches in;
+
+  public AssertingMatches(Matches matches) {
+    super(null);
+    this.in = matches;
   }
-  
-  @Override
-  public void onCommit(List<? extends IndexCommit> commits) {}
 
   @Override
-  public void onInit(List<? extends IndexCommit> commits) {}
+  public MatchesIterator getMatches(String field) {
+    MatchesIterator mi = in.getMatches(field);
+    if (mi == null)
+      return null;
+    return new AssertingMatchesIterator(mi);
+  }
+
+  @Override
+  public Set<String> getMatchFields() {
+    return in.getMatchFields();
+  }
 }

@@ -203,12 +203,12 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       }
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
         final Terms terms = context.reader().terms(query.field);
         if (terms == null) {
           return null;
         }
-        return DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, query.getTermsEnum(terms));
+        return Matches.fromField(query.field, DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, query.getTermsEnum(terms)));
       }
 
       @Override

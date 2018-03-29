@@ -25,9 +25,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
 /**
@@ -136,8 +138,8 @@ public class FunctionRangeQuery extends Query {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      return null;
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return Matches.emptyMatches(context, doc, this, valueSource.toString());  // TODO is there a way of reporting matches that makes sense here?
     }
 
     @Override

@@ -80,6 +80,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  protected String registryName;
+  protected SolrMetricManager metricManager;
 
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
@@ -144,8 +146,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, final String scope) {
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
+    this.registry = manager.registry(registryName);
     numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
     numServerErrors = manager.meter(this, registryName, "serverErrors", getCategory().toString(), scope);
     numClientErrors = manager.meter(this, registryName, "clientErrors", getCategory().toString(), scope);
@@ -153,10 +157,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
       shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    manager.register(this, registryName, metricsMap, true, "shardRequests", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, metricsMap, tag, true, "shardRequests", getCategory().toString(), scope);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    manager.registerGauge(this, registryName, () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> handlerStart, tag, true, "handlerStart", getCategory().toString(), scope);
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {

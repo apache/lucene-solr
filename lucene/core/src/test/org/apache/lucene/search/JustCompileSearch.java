@@ -248,7 +248,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
       return null;
     }
 

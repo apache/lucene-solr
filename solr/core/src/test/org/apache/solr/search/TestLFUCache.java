@@ -140,9 +140,9 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     LFUCache lfuCache = new LFUCache();
     LFUCache newLFUCache = new LFUCache();
     LFUCache noWarmLFUCache = new LFUCache();
-    lfuCache.initializeMetrics(metricManager, registry, scope + ".lfuCache");
-    newLFUCache.initializeMetrics(metricManager, registry, scope + ".newLFUCache");
-    noWarmLFUCache.initializeMetrics(metricManager, registry, scope + ".noWarmLFUCache");
+    lfuCache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
+    newLFUCache.initializeMetrics(metricManager, registry, "foo", scope + ".newLFUCache");
+    noWarmLFUCache.initializeMetrics(metricManager, registry, "foo", scope + ".noWarmLFUCache");
     try {
       Map params = new HashMap();
       params.put("size", "100");

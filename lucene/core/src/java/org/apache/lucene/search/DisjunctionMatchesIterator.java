@@ -74,11 +74,19 @@ class DisjunctionMatchesIterator implements MatchesIterator {
     return new DisjunctionMatchesIterator(mis);
   }
 
+  public static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {
+    if (mis.size() == 0)
+      return null;
+    if (mis.size() == 1)
+      return mis.get(0);
+    return new DisjunctionMatchesIterator(mis);
+  }
+
   private final PriorityQueue<MatchesIterator> queue;
 
   private boolean started = false;
 
-  public DisjunctionMatchesIterator(List<MatchesIterator> matches) throws IOException {
+  private DisjunctionMatchesIterator(List<MatchesIterator> matches) throws IOException {
     queue = new PriorityQueue<MatchesIterator>(matches.size()){
       @Override
       protected boolean lessThan(MatchesIterator a, MatchesIterator b) {
@@ -126,4 +134,5 @@ class DisjunctionMatchesIterator implements MatchesIterator {
   public int endOffset() throws IOException {
     return queue.top().endOffset();
   }
+
 }

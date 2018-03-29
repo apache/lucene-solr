@@ -159,8 +159,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-          return innerWeight.matches(context, doc, field);
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          return innerWeight.matches(context, doc);
         }
 
         @Override

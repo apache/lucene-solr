@@ -169,8 +169,8 @@ public class DocValuesTermsQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;  // TODO does it make sense to return matches here?
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
       }
 
       @Override

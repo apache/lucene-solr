@@ -120,8 +120,9 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return indexWeight.matches(context, doc, field);
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        // TODO we can probably make use of the doc values here to return something more useful
+        return indexWeight.matches(context, doc);
       }
 
       @Override

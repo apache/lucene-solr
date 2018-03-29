@@ -82,10 +82,7 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-      if (term.field().equals(field) == false) {
-        return null;
-      }
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
       TermsEnum te = getTermsEnum(context);
       if (te == null) {
         return null;
@@ -94,7 +91,7 @@ public class TermQuery extends Query {
       if (pe.advance(doc) != doc) {
         return null;
       }
-      return new TermMatchesIterator(pe);
+      return Matches.fromField(term.field(), new TermMatchesIterator(pe));
     }
 
     @Override

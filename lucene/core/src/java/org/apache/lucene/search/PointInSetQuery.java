@@ -114,8 +114,8 @@ public abstract class PointInSetQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
-        return null;
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return Matches.emptyMatches(context, doc, this, field);
       }
 
       @Override

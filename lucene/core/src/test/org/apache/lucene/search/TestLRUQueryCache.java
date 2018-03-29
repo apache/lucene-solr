@@ -350,7 +350,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 
@@ -949,7 +949,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 
@@ -1303,7 +1303,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 
@@ -1380,7 +1380,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 
@@ -1485,7 +1485,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       return new ConstantScoreWeight(this, 1) {
 
         @Override
-        public MatchesIterator matches(LeafReaderContext context, int doc, String field) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
 

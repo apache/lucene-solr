@@ -225,6 +225,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private final CoreContainer coreContainer;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private String metricTag = Integer.toHexString(hashCode());
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -925,12 +926,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     SolrMetricManager metricManager = coreContainer.getMetricManager();
 
     // initialize searcher-related metrics
-    initializeMetrics(metricManager, coreMetricManager.getRegistryName(), null);
+    initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
 
     SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
     // this is registered at the CONTAINER level because it's not core-specific - for now we
     // also register it here for back-compat
-    solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "core");
+    solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
     infoRegistry.put("fieldCache", solrFieldCacheBean);
 
 
@@ -1023,7 +1024,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
     // Allow the directory factory to report metrics
     if (directoryFactory instanceof SolrMetricProducer) {
-      ((SolrMetricProducer)directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "directoryFactory");
+      ((SolrMetricProducer)directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "directoryFactory");
     }
 
     // seed version buckets with max from index during core initialization ... requires a searcher!
@@ -1142,22 +1143,22 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     newSearcherCounter = manager.counter(this, registry, "new", Category.SEARCHER.toString());
     newSearcherTimer = manager.timer(this, registry, "time", Category.SEARCHER.toString(), "new");
     newSearcherWarmupTimer = manager.timer(this, registry, "warmup", Category.SEARCHER.toString(), "new");
     newSearcherMaxReachedCounter = manager.counter(this, registry, "maxReached", Category.SEARCHER.toString(), "new");
     newSearcherOtherErrorsCounter = manager.counter(this, registry, "errors", Category.SEARCHER.toString(), "new");
 
-    manager.registerGauge(this, registry, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> startTime, true, "startTime", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> name == null ? "(null)" : name, getMetricTag(), true, "coreName", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> startTime, getMetricTag(), true, "startTime", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> getOpenCount(), getMetricTag(), true, "refCount", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), getMetricTag(), true, "instanceDir", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : getIndexDir(), getMetricTag(), true, "indexDir", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? 0 : getIndexSize(), getMetricTag(), true, "sizeInBytes", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), getMetricTag(), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
+      manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), getMetricTag(), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         manager.registerGauge(this, registry, () -> {
@@ -1166,7 +1167,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           } else {
             return "_notset_";
           }
-        }, true, "collection", Category.CORE.toString());
+        }, getMetricTag(), true, "collection", Category.CORE.toString());
 
         manager.registerGauge(this, registry, () -> {
           if (cd.getShardId() != null) {
@@ -1174,15 +1175,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           } else {
             return "_auto_";
           }
-        }, true, "shard", Category.CORE.toString());
+        }, getMetricTag(), true, "shard", Category.CORE.toString());
       }
     }
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
-    manager.registerGauge(this, registry, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
+    manager.registerGauge(this, registry, () -> dataDirFile.getTotalSpace(), getMetricTag(), true, "totalSpace", Category.CORE.toString(), "fs");
+    manager.registerGauge(this, registry, () -> dataDirFile.getUsableSpace(), getMetricTag(), true, "usableSpace", Category.CORE.toString(), "fs");
+    manager.registerGauge(this, registry, () -> dataDirPath.toAbsolutePath().toString(), getMetricTag(), true, "path", Category.CORE.toString(), "fs");
     manager.registerGauge(this, registry, () -> {
       try {
         return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
@@ -1190,7 +1191,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         // default to spinning
         return true;
       }
-    }, true, "spins", Category.CORE.toString(), "fs");
+    }, getMetricTag(), true, "spins", Category.CORE.toString(), "fs");
+  }
+
+  public String getMetricTag() {
+    return metricTag;
   }
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
