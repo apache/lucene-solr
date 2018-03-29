@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collections;
 
 import org.junit.Test;
+import org.junit.Ignore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -1204,4 +1205,63 @@ shape:
     Collections.reverse(points);
     polygon  = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
   }
+  
+  /*
+   [lat=-0.63542308910253, lon=0.9853722928232957([X=0.4446759777403525, Y=0.6707549854468698, Z=-0.5934780737681111])], 
+  [lat=0.0, lon=0.0([X=1.0011188539924791, Y=0.0, Z=0.0])], 
+  [lat=0.45435018176633574, lon=3.141592653589793([X=-0.8989684544372841, Y=1.1009188402610632E-16, Z=0.4390846549572752])], 
+  [lat=-0.375870856827283, lon=2.9129132647718414([X=-0.9065744420970767, Y=0.21100590938346708, Z=-0.36732668582405886])], 
+  [lat=-1.2205765069413237, lon=3.141592653589793([X=-0.3424714964202101, Y=4.194066218902145E-17, Z=-0.9375649457139603])]}}
+  
+   [junit4]   1>       unquantized=[lat=-3.1780051348770987E-74, lon=-3.032608859187692([X=-0.9951793580358298, Y=-0.1088898762907205, Z=-3.181560858610375E-74])]
+   [junit4]   1>       quantized=[X=-0.9951793580415914, Y=-0.10888987641797832, Z=-2.3309121299774915E-10]
+  */
+  @Test
+  @Ignore
+  public void testLUCENE8227() throws Exception {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.63542308910253, 0.9853722928232957));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.0, 0.0));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.45435018176633574, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.375870856827283, 2.9129132647718414));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.2205765069413237, 3.141592653589793));
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    for (int i = 0; i < points.size(); i++) {
+      System.out.println("Point "+i+": "+points.get(i));
+    }
+
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, -3.1780051348770987E-74, -3.032608859187692);
+    final GeoPoint quantized = new GeoPoint(-0.9951793580415914, -0.10888987641797832, -2.3309121299774915E-10);
+    
+    final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
+    final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
+    
+    // Construct a standard polygon first to see what that does
+    GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    
+    System.out.println("Standard polygon: "+standard);
+    
+    // This shows y < 0 hemisphere is all in-set
+    //assertTrue(standard.isWithin(negativeY));
+    // This should be in-set too, but isn't!!
+    assertTrue(standard.isWithin(negativeX));
+    
+/*
+    final XYZBounds standardBounds = new XYZBounds();
+    standard.getBounds(standardBounds);
+    final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
+
+    System.out.println("Standard bounds: "+standardBounds);
+    
+    assertFalse(standardSolid.isWithin(quantized));
+    assertFalse(standardSolid.isWithin(unquantized));
+*/
+    // Now, both points should also not be in the poly
+    assertFalse(standard.isWithin(unquantized));
+    assertFalse(standard.isWithin(quantized));
+
+
+  }
+  
 }
