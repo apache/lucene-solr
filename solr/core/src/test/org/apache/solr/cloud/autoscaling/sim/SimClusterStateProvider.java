@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1155,14 +1156,15 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   /**
    * Return all replica infos for a node.
    * @param node node id
-   * @return list of replicas on that node, or empty list if none
+   * @return copy of the list of replicas on that node, or empty list if none
    */
   public List<ReplicaInfo> simGetReplicaInfos(String node) {
     List<ReplicaInfo> replicas = nodeReplicaMap.get(node);
     if (replicas == null) {
       return Collections.emptyList();
     } else {
-      return replicas;
+      // make a defensive copy to avoid ConcurrentModificationException
+      return Arrays.asList(replicas.toArray(new ReplicaInfo[0]));
     }
   }
 
