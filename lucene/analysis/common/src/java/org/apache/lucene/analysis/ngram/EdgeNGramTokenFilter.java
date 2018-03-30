@@ -34,27 +34,35 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
+  public static final boolean DEFAULT_KEEP_SHORT_TERM = false;
+  public static final boolean DEFAULT_KEEP_LONG_TERM = false;
 
   private final int minGram;
   private final int maxGram;
+  private final boolean keepShortTerm;
+  private final boolean keepLongTerm;
+
   private char[] curTermBuffer;
   private int curTermLength;
-  private int curCodePointCount;
+  private int curTermCodePointCount;
   private int curGramSize;
-  private int savePosIncr;
+  private int curPosIncr;
   private State state;
   
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final CharTermAttribute termAtt;
+  private final PositionIncrementAttribute posIncrAtt;
 
   /**
-   * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
+   * Creates EdgeNGramTokenFilter that generates edge n-grams of sizes in the given range.
    *
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
+   * @param keepShortTerm whether to pass through tokens that are shorter than minGram
+   * @param keepLongTerm whether to pass through tokens that are longer than maxGram
    */
-  public EdgeNGramTokenFilter(TokenStream input, int minGram, int maxGram) {
+  public EdgeNGramTokenFilter(
+      TokenStream input, int minGram, int maxGram, boolean keepShortTerm, boolean keepLongTerm) {
     super(input);
 
     if (minGram < 1) {
@@ -67,6 +75,15 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
 
     this.minGram = minGram;
     this.maxGram = maxGram;
+    this.keepShortTerm = keepShortTerm;
+    this.keepLongTerm = keepLongTerm;
+    
+    this.termAtt = addAttribute(CharTermAttribute.class);
+    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  }
+
+  public EdgeNGramTokenFilter(TokenStream input, int minGram, int maxGram) {
+    this(input, minGram, maxGram, DEFAULT_KEEP_SHORT_TERM, DEFAULT_KEEP_LONG_TERM);
   }
 
   @Override
@@ -75,32 +92,46 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       if (curTermBuffer == null) {
         if (!input.incrementToken()) {
           return false;
-        } else {
-          curTermBuffer = termAtt.buffer().clone();
-          curTermLength = termAtt.length();
-          curCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
-          curGramSize = minGram;
-          state = captureState();
-          savePosIncr += posIncrAtt.getPositionIncrement();
         }
+        state = captureState();
+        
+        curTermLength = termAtt.length();
+        curTermCodePointCount = Character.codePointCount(termAtt, 0, curTermLength);
+        curPosIncr += posIncrAtt.getPositionIncrement();
+
+        if (keepShortTerm && curTermCodePointCount < minGram) {
+          // Token is shorter than minGram, but we'd still like to keep it.
+          posIncrAtt.setPositionIncrement(curPosIncr);
+          curPosIncr = 0;
+          return true;
+        }
+        
+        curTermBuffer = termAtt.buffer().clone();
+        curGramSize = minGram;
       }
-      if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
-        if (curGramSize <= curCodePointCount) { // if the remaining input is too short, we can't generate any n-grams
-          // grab gramSize chars from front or back
+
+      if (curGramSize <= curTermCodePointCount) {
+        if (curGramSize <= maxGram) { // curGramSize is between minGram and maxGram
           restoreState(state);
           // first ngram gets increment, others don't
-          if (curGramSize == minGram) {
-            posIncrAtt.setPositionIncrement(savePosIncr);
-            savePosIncr = 0;
-          } else {
-            posIncrAtt.setPositionIncrement(0);
-          }
+          posIncrAtt.setPositionIncrement(curPosIncr);
+          curPosIncr = 0;
+
           final int charLength = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
           termAtt.copyBuffer(curTermBuffer, 0, charLength);
           curGramSize++;
           return true;
         }
+        else if (keepLongTerm) {
+          // Token is longer than maxGram, but we'd still like to keep it.
+          restoreState(state);
+          posIncrAtt.setPositionIncrement(0);
+          termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
+          curTermBuffer = null;
+          return true;
+        }
       }
+      // Done with this input token, get next token on the next iteration.
       curTermBuffer = null;
     }
   }
@@ -109,6 +140,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     curTermBuffer = null;
-    savePosIncr = 0;
+    curPosIncr = 0;
   }
 }

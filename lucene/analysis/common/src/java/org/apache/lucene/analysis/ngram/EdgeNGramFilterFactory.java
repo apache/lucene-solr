@@ -36,12 +36,16 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class EdgeNGramFilterFactory extends TokenFilterFactory {
   private final int maxGramSize;
   private final int minGramSize;
+  private final boolean keepShortTerm;
+  private final boolean keepLongTerm;
 
   /** Creates a new EdgeNGramFilterFactory */
   public EdgeNGramFilterFactory(Map<String, String> args) {
     super(args);
     minGramSize = getInt(args, "minGramSize", EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
     maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
+    keepShortTerm = getBoolean(args, "keepShortTerm", EdgeNGramTokenFilter.DEFAULT_KEEP_SHORT_TERM);
+    keepLongTerm = getBoolean(args, "keepLongTerm", EdgeNGramTokenFilter.DEFAULT_KEEP_LONG_TERM);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -49,6 +53,6 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenFilter create(TokenStream input) {
-    return new EdgeNGramTokenFilter(input, minGramSize, maxGramSize);
+    return new EdgeNGramTokenFilter(input, minGramSize, maxGramSize, keepShortTerm, keepLongTerm);
   }
 }

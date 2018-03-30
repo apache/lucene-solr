@@ -97,10 +97,22 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[0], new int[0], new int[0]);
   }
   
+  public void testOversizedNgramsKeepShortTerm() throws Exception {
+    NGramTokenFilter tokenizer = new NGramTokenFilter(input, 6, 6, true, false);
+    assertTokenStreamContents(tokenizer, new String[] {"abcde"}, new int[] {0}, new int[] {5});
+  }
+  
   public void testSmallTokenInStream() throws Exception {
     input = whitespaceMockTokenizer("abc de fgh");
-    NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
-    assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10}, new int[] {1, 2});
+    NGramTokenFilter tokenizer = new NGramTokenFilter(input, 3, 3);
+    assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10}, new int[] {1, 2});
+  }
+  
+  public void testSmallTokenInStreamKeepShortTerm() throws Exception {
+    input = whitespaceMockTokenizer("abc de fgh");
+    NGramTokenFilter tokenizer = new NGramTokenFilter(input, 3, 3, true, false);
+    assertTokenStreamContents(tokenizer, new String[]{"abc","de","fgh"}, new int[]{0,4,7}, new int[]{3,6,10}, new int[] {1, 1, 1});
+
   }
   
   public void testReset() throws Exception {
@@ -110,6 +122,50 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
     tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
+  }
+  
+  public void testKeepShortTermKeepLongTerm() throws Exception {
+    final String inputString = "a bcd efghi jk";
+
+    { // default behaviour
+      TokenStream ts = whitespaceMockTokenizer(inputString);
+      NGramTokenFilter filter = new NGramTokenFilter(ts, 2, 3);
+      assertTokenStreamContents(filter,
+          new String[] { "bc", "bcd",  "cd", "ef", "efg", "fg", "fgh", "gh", "ghi", "hi", "jk" },
+          new int[]    {    2,     2,     2,    6,     6,    6,     6,    6,     6,    6,   12 },
+          new int[]    {    5,     5,     5,   11,    11,   11,    11,   11,    11,   11,   14 },
+          new int[]    {    2,     0,     0,    1,     0,    0,     0,    0,     0,    0,    1 });
+    }
+
+    { // keepShortTerm && keepLongTerm
+      TokenStream ts = whitespaceMockTokenizer(inputString);
+      NGramTokenFilter filter = new NGramTokenFilter(ts, 2, 3, true, true);
+      assertTokenStreamContents(filter,
+          new String[] { "a", "bc", "bcd",  "cd", "ef", "efg", "fg", "fgh", "gh", "ghi", "hi", "efghi", "jk" },
+          new int[]    {   0,    2,     2,     2,    6,     6,    6,     6,    6,     6,    6,       6,   12 },
+          new int[]    {   1,    5,     5,     5,   11,    11,   11,    11,   11,    11,   11,      11,   14 },
+          new int[]    {   1,    1,     0,     0,    1,     0,    0,     0,    0,     0,    0,       0,    1 });
+    }
+    
+    { // keepShortTerm && !keepLongTerm
+      TokenStream ts = whitespaceMockTokenizer(inputString);
+      NGramTokenFilter filter = new NGramTokenFilter(ts, 2, 3, true, false);
+      assertTokenStreamContents(filter,
+          new String[] { "a", "bc", "bcd",  "cd", "ef",  "efg", "fg", "fgh", "gh", "ghi", "hi", "jk" },
+          new int[]    {   0,    2,     2,     2,    6,      6,    6,     6,    6,     6,    6,   12 },
+          new int[]    {   1,    5,     5,     5,   11,     11,   11,    11,   11,    11,   11,   14 },
+          new int[]    {   1,    1,     0,     0,    1,      0,    0,     0,    0,     0,    0,    1 });
+    }
+    
+    { // !keepShortTerm && keepLongTerm
+      TokenStream ts = whitespaceMockTokenizer(inputString);
+      NGramTokenFilter filter = new NGramTokenFilter(ts, 2, 3, false, true);
+      assertTokenStreamContents(filter,
+          new String[] { "bc", "bcd",  "cd", "ef",  "efg", "fg", "fgh", "gh", "ghi", "hi", "efghi", "jk" },
+          new int[]    {    2,     2,     2,    6,      6,    6,     6,    6,     6,   6,        6,   12 },
+          new int[]    {    5,     5,     5,   11,     11,   11,    11,   11,    11,  11,       11,   14 },
+          new int[]    {    2,     0,     0,    1,      0,    0,     0,    0,     0,   0,        0,    1 });
+    }
   }
   
   // LUCENE-3642
@@ -139,12 +195,15 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     for (int i = 0; i < 10; i++) {
       final int min = TestUtil.nextInt(random(), 2, 10);
       final int max = TestUtil.nextInt(random(), min, 20);
+      final boolean keepShortTerm = TestUtil.nextInt(random(), 0, 1) % 2 == 0;
+      final boolean keepLongTerm = TestUtil.nextInt(random(), 0, 1) % 2 == 0;
+      
       Analyzer a = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, 
-              new NGramTokenFilter(tokenizer, min, max));
+              new NGramTokenFilter(tokenizer, min, max, keepShortTerm, keepLongTerm));
         }    
       };
       checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
@@ -167,27 +226,48 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testSupplementaryCharacters() throws IOException {
-    final String s = TestUtil.randomUnicodeString(random(), 10);
-    final int codePointCount = s.codePointCount(0, s.length());
-    final int minGram = TestUtil.nextInt(random(), 1, 3);
-    final int maxGram = TestUtil.nextInt(random(), minGram, 10);
-    TokenStream tk = new KeywordTokenizer();
-    ((Tokenizer)tk).setReader(new StringReader(s));
-    tk = new NGramTokenFilter(tk, minGram, maxGram);
-    final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
-    final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
-    tk.reset();
-    for (int start = 0; start < codePointCount; ++start) {
-      for (int end = start + minGram; end <= Math.min(codePointCount, start + maxGram); ++end) {
+    for (int i = 0; i < 20; i++) {
+      final String s = TestUtil.randomUnicodeString(random(), 10);
+      final int codePointCount = s.codePointCount(0, s.length());
+      final int minGram = TestUtil.nextInt(random(), 1, 3);
+      final int maxGram = TestUtil.nextInt(random(), minGram, 10);
+      final boolean keepShortTerm = TestUtil.nextInt(random(), 0, 1) % 2 == 0;
+      final boolean keepLongTerm = TestUtil.nextInt(random(), 0, 1) % 2 == 0;
+
+      TokenStream tk = new KeywordTokenizer();
+      ((Tokenizer)tk).setReader(new StringReader(s));
+      tk = new NGramTokenFilter(tk, minGram, maxGram, keepShortTerm, keepLongTerm);
+      final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
+      final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
+      tk.reset();
+
+      if (codePointCount < minGram && keepShortTerm) {
         assertTrue(tk.incrementToken());
         assertEquals(0, offsetAtt.startOffset());
         assertEquals(s.length(), offsetAtt.endOffset());
-        final int startIndex = Character.offsetByCodePoints(s, 0, start);
-        final int endIndex = Character.offsetByCodePoints(s, 0, end);
-        assertEquals(s.substring(startIndex, endIndex), termAtt.toString());
+        assertEquals(s, termAtt.toString());
       }
+      
+      for (int start = 0; start < codePointCount; ++start) {
+        for (int end = start + minGram; end <= Math.min(codePointCount, start + maxGram); ++end) {
+          assertTrue(tk.incrementToken());
+          assertEquals(0, offsetAtt.startOffset());
+          assertEquals(s.length(), offsetAtt.endOffset());
+          final int startIndex = Character.offsetByCodePoints(s, 0, start);
+          final int endIndex = Character.offsetByCodePoints(s, 0, end);
+          assertEquals(s.substring(startIndex, endIndex), termAtt.toString());
+        }
+      }
+      
+      if (codePointCount > maxGram && keepLongTerm) {
+        assertTrue(tk.incrementToken());
+        assertEquals(0, offsetAtt.startOffset());
+        assertEquals(s.length(), offsetAtt.endOffset());
+        assertEquals(s, termAtt.toString());
+      }
+      
+      assertFalse(tk.incrementToken());
+      tk.close();
     }
-    assertFalse(tk.incrementToken());
   }
-
 }
