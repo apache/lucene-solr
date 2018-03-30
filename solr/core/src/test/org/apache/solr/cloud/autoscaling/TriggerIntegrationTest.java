@@ -64,15 +64,16 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CountDownLatch actionConstructorCalled;
-  private static CountDownLatch actionInitCalled;
-  private static CountDownLatch triggerFiredLatch;
-  private static int waitForSeconds = 1;
-  private static CountDownLatch actionStarted;
-  private static CountDownLatch actionInterrupted;
-  private static CountDownLatch actionCompleted;
+  private static volatile CountDownLatch actionConstructorCalled;
+  private static volatile CountDownLatch actionInitCalled;
+  private static volatile CountDownLatch triggerFiredLatch;
+  private static volatile int waitForSeconds = 1;
+  private static volatile CountDownLatch actionStarted;
+  private static volatile CountDownLatch actionInterrupted;
+  private static volatile CountDownLatch actionCompleted;
   private static AtomicBoolean triggerFired;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
+  public static volatile long eventQueueActionWait = 5000;
   private static SolrCloudManager cloudManager;
 
   // use the same time source as triggers use
@@ -166,6 +167,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     events.clear();
     listenerEvents.clear();
     lastActionExecutedAt.set(0);
+    eventQueueActionWait = 5000;
     while (cluster.getJettySolrRunners().size() < 2) {
       // perhaps a test stopped a node but didn't start it back
       // lets start a node
@@ -415,14 +417,17 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext actionContext) {
       log.info("-- event: " + event);
       events.add(event);
+      long eventQueueActionWaitCopy = eventQueueActionWait;
       getActionStarted().countDown();
       try {
-        Thread.sleep(eventQueueActionWait);
+        log.info("-- Going to sleep for {} ms", eventQueueActionWaitCopy);
+        Thread.sleep(eventQueueActionWaitCopy);
+        log.info("-- Woke up after sleeping for {} ms", eventQueueActionWaitCopy);
         triggerFired.compareAndSet(false, true);
         getActionCompleted().countDown();
       } catch (InterruptedException e) {
+        log.info("-- Interrupted");
         getActionInterrupted().countDown();
-        return;
       }
     }
 
@@ -434,10 +439,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
   }
 
-  public static long eventQueueActionWait = 5000;
-
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -471,6 +473,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner newNode = cluster.startJettySolrRunner();
     boolean await = actionStarted.await(60, TimeUnit.SECONDS);
     assertTrue("action did not start", await);
+    eventQueueActionWait = 1;
     // event should be there
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
@@ -478,7 +481,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertFalse(triggerFired.get());
     events.clear();
     actionStarted = new CountDownLatch(1);
-    eventQueueActionWait = 1;
     // kill overseer leader
     cluster.stopJettySolrRunner(overseerLeaderIndex);
     Thread.sleep(5000);
