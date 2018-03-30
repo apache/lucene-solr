@@ -23,6 +23,8 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class Plane extends Vector {
+  /** For plane envelopes, we need a small distance that can't lead to numerical confusion. */
+  public final static double MINIMUM_PLANE_OFFSET = MINIMUM_RESOLUTION * 1.5;
   /** An array with no points in it */
   public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
@@ -114,7 +116,7 @@ public class Plane extends Vector {
    *   or false in the negative direction.
    */
   public Plane(final Plane basePlane, final boolean above) {
-    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_RESOLUTION):Math.nextDown(basePlane.D - MINIMUM_RESOLUTION));
+    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_PLANE_OFFSET):Math.nextDown(basePlane.D - MINIMUM_PLANE_OFFSET));
   }
   
   /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
