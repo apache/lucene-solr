@@ -1659,6 +1659,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(5, docCollection.getReplicas().size());
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testScheduledTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
