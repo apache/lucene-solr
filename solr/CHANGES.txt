@@ -85,6 +85,8 @@ Optimizations
 
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
