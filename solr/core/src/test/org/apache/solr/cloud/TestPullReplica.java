@@ -60,6 +60,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -300,7 +301,9 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testRemoveAllWriterReplicas() throws Exception {
     doTestNoLeader(true);
   }
-  
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }

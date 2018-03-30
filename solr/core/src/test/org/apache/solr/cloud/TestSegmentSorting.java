@@ -122,6 +122,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
    * In this situation, the updates should *NOT* be done inplace, because that would
    * break the index sorting
    */
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testAtomicUpdateOfSegmentSortField() throws Exception {
 
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
