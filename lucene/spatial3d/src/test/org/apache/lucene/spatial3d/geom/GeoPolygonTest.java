@@ -253,6 +253,7 @@ public class GeoPolygonTest {
     shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+    //System.out.println("Large polygon = "+c);
     
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
@@ -1217,7 +1218,6 @@ shape:
    [junit4]   1>       quantized=[X=-0.9951793580415914, Y=-0.10888987641797832, Z=-2.3309121299774915E-10]
   */
   @Test
-  @Ignore
   public void testLUCENE8227() throws Exception {
     List<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.WGS84, -0.63542308910253, 0.9853722928232957));
@@ -1227,9 +1227,11 @@ shape:
     points.add(new GeoPoint(PlanetModel.WGS84, -1.2205765069413237, 3.141592653589793));
     GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
     
+    /*
     for (int i = 0; i < points.size(); i++) {
       System.out.println("Point "+i+": "+points.get(i));
     }
+    */
 
     final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, -3.1780051348770987E-74, -3.032608859187692);
     final GeoPoint quantized = new GeoPoint(-0.9951793580415914, -0.10888987641797832, -2.3309121299774915E-10);
@@ -1237,31 +1239,22 @@ shape:
     final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
     final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
     
-    // Construct a standard polygon first to see what that does
+    // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
     GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
-    
-    System.out.println("Standard polygon: "+standard);
     
     // This shows y < 0 hemisphere is all in-set
     //assertTrue(standard.isWithin(negativeY));
     // This should be in-set too, but isn't!!
     assertTrue(standard.isWithin(negativeX));
     
-/*
     final XYZBounds standardBounds = new XYZBounds();
     standard.getBounds(standardBounds);
     final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
 
-    System.out.println("Standard bounds: "+standardBounds);
+    // If within shape, should be within bounds
+    assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
+    assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
     
-    assertFalse(standardSolid.isWithin(quantized));
-    assertFalse(standardSolid.isWithin(unquantized));
-*/
-    // Now, both points should also not be in the poly
-    assertFalse(standard.isWithin(unquantized));
-    assertFalse(standard.isWithin(quantized));
-
-
   }
   
 }
