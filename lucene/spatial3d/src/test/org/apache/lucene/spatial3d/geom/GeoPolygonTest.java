@@ -1257,4 +1257,77 @@ shape:
     
   }
   
+  /*
+   [junit4]   1>     doc=754 is contained by shape but is outside the returned XYZBounds
+   [junit4]   1>       unquantized=[lat=2.4043303687704734E-204, lon=3.1342447995980507([X=-1.0010918284309325, Y=0.007356008974104805, Z=2.4070204634028112E-204])]
+   [junit4]   1>       quantized=[X=-1.0010918285430614, Y=0.007356008812298254, Z=2.3309121299774915E-10]
+
+   [junit4]   1>     doc=3728 is contained by shape but is outside the returned XYZBounds
+   [junit4]   1>       unquantized=[lat=2.4457272005608357E-47, lon=-3.1404077424936307([X=-1.001118151199965, Y=-0.0011862365610909341, Z=2.448463612203698E-47])]
+   [junit4]   1>       quantized=[X=-1.0011181510675629, Y=-0.001186236379718708, Z=2.3309121299774915E-10]
+   
+   [junit4]   1>   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=7969cab3, 
+   testPoint=[X=-0.07416172733314662, Y=0.5686488061136892, Z=0.8178445379402641], testPointInSet=true, shapes={ {
+   [lat=-1.5707963267948966, lon=-1.0755217966112058([X=2.903696886845155E-17, Y=-5.375400029710238E-17, Z=-0.997762292022105])], 
+   [lat=-1.327365682666958, lon=-2.9674513704178316([X=-0.23690293696956322, Y=-0.04167672037374933, Z=-0.9685334156912658])], 
+   [lat=0.32288591161895097, lon=3.141592653589793([X=-0.9490627533610154, Y=1.1622666630935417E-16, Z=0.3175519551883462])], 
+   [lat=0.0, lon=0.0([X=1.0011188539924791, Y=0.0, Z=0.0])], 
+   [lat=0.2839194570254642, lon=-1.2434404554202965([X=0.30893121415043073, Y=-0.9097632721627391, Z=0.2803596238536593])]}}
+  */
+  @Test
+  public void testLUCENE8227_case2() {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, -1.0755217966112058));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.327365682666958, -2.9674513704178316));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.32288591161895097, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.0, 0.0));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.2839194570254642, -1.2434404554202965));
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    for (int i = 0; i < points.size(); i++) {
+      System.out.println("Point "+i+": "+points.get(i));
+    }
+
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, -3.1404077424936307);
+    final GeoPoint quantized = new GeoPoint(-1.0011181510675629, -0.001186236379718708, 2.3309121299774915E-10);
+    
+    // Is the north pole in set, or out of set?
+    final GeoPoint northPole = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
+    final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
+    final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
+    final GeoPoint positiveY = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI * 0.5);
+    final GeoPoint testPoint = new GeoPoint(-0.07416172733314662, 0.5686488061136892, 0.8178445379402641);
+
+    // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
+    GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    
+    System.out.println("Shape = "+standard);
+
+    // This should be true, by inspection, but is false.  That's the cause for the failure.
+    assertTrue(standard.isWithin(negativeX));
+    System.out.println("Negative x pole in set? "+standard.isWithin(negativeX));
+    
+    System.out.println("Test point in set? "+standard.isWithin(testPoint));
+    assertTrue(standard.isWithin(testPoint));
+    
+    // This is in-set because it's on an edge
+    System.out.println("North pole in set? "+standard.isWithin(northPole));
+    assertTrue(standard.isWithin(northPole));
+    
+    // This is in-set
+    System.out.println("Plus-Y pole in set? "+standard.isWithin(positiveY));
+    assertTrue(standard.isWithin(positiveY));
+    
+
+    final XYZBounds standardBounds = new XYZBounds();
+    standard.getBounds(standardBounds);
+    System.out.println("Bounds = "+standardBounds);
+    final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
+
+    // If within shape, should be within bounds
+    assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
+    assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
+
+  }
+  
 }
