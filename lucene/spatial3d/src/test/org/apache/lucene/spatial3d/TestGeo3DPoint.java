@@ -80,8 +80,6 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
-import org.junit.Ignore;
-
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestGeo3DPoint extends LuceneTestCase {
@@ -189,8 +187,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
-  //@AwaitsFix("https://issues.apache.org/jira/browse/LUCENE-8227")
-  @Ignore
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8227")
   public void testGeo3DRelations() throws Exception {
 
     int numDocs = atLeast(1000);
@@ -470,22 +467,16 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
   }
 
-  //@AwaitsFix("https://issues.apache.org/jira/browse/LUCENE-8227")
-  @Ignore
   public void testRandomTiny() throws Exception {
     // Make sure single-leaf-node case is OK:
     doTestRandom(10);
   }
 
-  //@AwaitsFix("https://issues.apache.org/jira/browse/LUCENE-8227")
-  @Ignore
   public void testRandomMedium() throws Exception {
     doTestRandom(10000);
   }
 
   @Nightly
-  //@AwaitsFix("https://issues.apache.org/jira/browse/LUCENE-8227")
-  @Ignore
   public void testRandomBig() throws Exception {
     doTestRandom(50000);
   }
