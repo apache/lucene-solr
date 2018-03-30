@@ -54,7 +54,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(5)
+    configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     // disable .scheduled_maintenance
