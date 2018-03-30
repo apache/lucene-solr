@@ -52,7 +52,7 @@ public class NodeLostTrigger extends TriggerBase {
                          SolrCloudManager dataProvider) {
     super(TriggerEventType.NODELOST, name, properties, loader, dataProvider);
     lastLiveNodes = new HashSet<>(dataProvider.getClusterStateProvider().getLiveNodes());
-    log.debug("Initial livenodes: {}", lastLiveNodes);
+    log.debug("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
   }
 
   @Override

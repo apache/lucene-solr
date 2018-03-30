@@ -71,6 +71,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
+  private static SolrCloudManager cloudManager;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -82,10 +83,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-
-    fired.set(false);
-    triggerFiredLatch = new CountDownLatch(1);
-    actionContextPropsRef.set(null);
 
     // remove everything from autoscaling.json in ZK
     zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(UTF_8), true);
@@ -129,6 +126,20 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+
+    fired.set(false);
+    triggerFiredLatch = new CountDownLatch(1);
+    actionContextPropsRef.set(null);
+  }
+
+  private void deleteChildrenRecursively(String path) throws Exception {
+    cloudManager.getDistribStateManager().removeRecursively(path, true, false);
   }
 
   @After
@@ -365,7 +376,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   public static class AssertingTriggerAction implements TriggerAction {
-    static String expectedNode;
+    static volatile String expectedNode;
 
     @Override
     public String getName() {
@@ -397,8 +408,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12169")
   public void testSelectedCollections() throws Exception {
+    log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
     AssertingTriggerAction.expectedNode = null;
 
     // start 3 more nodes
@@ -467,7 +478,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null" + getNodeStateProviderState() + context, operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null. " + getNodeStateProviderState() + context, operations);
     assertEquals("ComputePlanAction should have computed exactly 2 operations", 2, operations.size());
     SolrRequest request = operations.get(0);
     SolrParams params = request.getParams();

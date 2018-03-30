@@ -53,7 +53,7 @@ public class NodeAddedTrigger extends TriggerBase {
                           SolrCloudManager cloudManager) {
     super(TriggerEventType.NODEADDED, name, properties, loader, cloudManager);
     lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-    log.debug("Initial livenodes: {}", lastLiveNodes);
+    log.debug("NodeAddedTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
     log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
   }
 

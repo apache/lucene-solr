@@ -137,6 +137,9 @@ Other Changes
 
 * SOLR-12133: Fix race conditions that caused TriggerIntegrationTest.testEventQueue to fail. (Mark Miller, shalin)
 
+* SOLR-12169: Fix ComputePlanActionTest.testSelectedCollections fails on jenkins by aggressively cleaning up
+  trigger state left by other test methods in the test setup. (shalin)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
