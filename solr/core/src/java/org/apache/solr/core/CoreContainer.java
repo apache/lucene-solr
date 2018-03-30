@@ -677,7 +677,7 @@ public class CoreContainer {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
               } catch (ExecutionException e) {
-                log.error("Error waiting for SolrCore to be created", e);
+                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
               }
             }
           } finally {
@@ -1063,6 +1063,11 @@ public class CoreContainer {
       return core;
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
+        // this mostly happen when the core is deleted when this node is down
+        unload(dcore.getName(), true, true, true);
+        throw e;
+      }
       solrCores.removeCoreDescriptor(dcore);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
       if(core != null && !core.isClosed())
