@@ -496,59 +496,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
   }
 
-  @Test
-  public void testEventFromRestoredState() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_triggerEFRS'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '10s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
-    if (!actionInitCalled.await(10, TimeUnit.SECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
-
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
-    String overseerLeader = (String) overSeerStatus.get("leader");
-    int overseerLeaderIndex = 0;
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
-      if (jetty.getNodeName().equals(overseerLeader)) {
-        overseerLeaderIndex = i;
-        break;
-      }
-    }
-
-    events.clear();
-
-    JettySolrRunner newNode = cluster.startJettySolrRunner();
-    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    assertTrue(triggerFired.get());
-    // reset
-    triggerFired.set(false);
-    triggerFiredLatch = new CountDownLatch(1);
-    NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
-    assertNotNull(nodeAddedEvent);
-    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
-    assertTrue(nodeNames.contains(newNode.getNodeName()));
-    // add a second node - state of the trigger will change but it won't fire for waitFor sec.
-    JettySolrRunner newNode2 = cluster.startJettySolrRunner();
-    Thread.sleep(10000);
-    // kill overseer leader
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
-    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    assertTrue(triggerFired.get());
-  }
-
   static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
   static CountDownLatch listenerCreated = new CountDownLatch(1);
   static boolean failDummyAction = false;
