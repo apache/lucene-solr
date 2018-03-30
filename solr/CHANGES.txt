@@ -108,6 +108,8 @@ Other Changes
 
 * SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
 
+* SOLR-12152: Split up TriggerIntegrationTest into multiple tests to isolate and increase reliability. (shalin)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
