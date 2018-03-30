@@ -38,6 +38,8 @@ Bug Fixes
 
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
