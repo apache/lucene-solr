@@ -36,23 +36,28 @@ The highlighting implementation to use. Acceptable values are: `unified`, `origi
 See the <<Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
 
 `hl.fl`::
-Specifies a list of fields to highlight. Accepts a comma- or space-delimited list of fields for which Solr should generate highlighted snippets.
+Specifies a list of fields to highlight, either comma- or space-delimited.
+A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible.
+When using `*`, consider adding `hl.requireFieldMatch=true`.
 +
-A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible. When using `*`, consider adding `hl.requireFieldMatch=true`.
+Note that the field(s) listed here ought to have compatible text-analysis (defined in the schema) with field(s) referenced in the query to be highlighted.
+It may be necessary to modify `hl.q` and `hl.qparser` and/or modify the text analysis.
+The following example uses the <<local-parameters-in-queries.adoc#local-parameters-in-queries,local-params>> syntax and <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,the edismax parser>> to highlight fields in `hl.fl`:
+`&hl.fl=field1 field2&hl.q={!edismax qf=$hl.fl v=$q}&hl.qparser=lucene&hl.requireFieldMatch=true` (along with other applicable parameters, of course).
 +
-When not defined, the defaults defined for the `df` query parameter will be used.
+The default is the value of the `df` parameter which in turn has no default.
 
 `hl.q`::
-A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
+A query to use for highlighting.
+This parameter allows you to highlight different terms or fields than those being used to search for documents.
+When setting this, you might also need to set `hl.qparser`.
 +
-When not defined, the query defined with the `q` parameter will the used.
-+
-When `hl.qparser` is not defined, the query parser defined with the `defType` query parameter will be used and terms will be analyzed using those rules. This behavior can be overridden by specifying a field, for example: `hl.q=field:term`.
+The default is the value of the `q` parameter (already parsed).
 
 `hl.qparser`::
-The query parser to use for the `hl.q` query.
+The query parser to use for the `hl.q` query.  It only applies when `hl.q` is set.
 +
-When not defined, the query parser defined with the `defType` query parameter will be used.
+The default is the value of the `defType` parameter which in turn defaults to `lucene`.
 
 `hl.requireFieldMatch`::
 By default, `false`, all query terms will be highlighted for each field to be highlighted (`hl.fl`) no matter what fields the parsed query refer to. If set to `true`, only query terms aligning with the field being highlighted will in turn be highlighted.
