@@ -397,7 +397,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12169")
   public void testSelectedCollections() throws Exception {
     AssertingTriggerAction.expectedNode = null;
 
