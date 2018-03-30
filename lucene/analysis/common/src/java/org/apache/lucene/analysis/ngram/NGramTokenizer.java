@@ -56,6 +56,8 @@ import org.apache.lucene.util.AttributeFactory;
 public class NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
+  public static final boolean DEFAULT_KEEP_SHORT_TERM = false;
+  public static final boolean DEFAULT_KEEP_LONG_TERM = false;
 
   private CharacterUtils.CharacterBuffer charBuffer;
   private int[] buffer; // like charBuffer, but converted to code points
