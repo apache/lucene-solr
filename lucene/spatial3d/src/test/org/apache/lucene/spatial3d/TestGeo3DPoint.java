@@ -187,7 +187,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8227")
   public void testGeo3DRelations() throws Exception {
 
     int numDocs = atLeast(1000);
