@@ -604,10 +604,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (!poolReaders && rld.refCount() == 1 && readerMap.containsKey(rld.info)) {
           // This is the last ref to this RLD, and we're not
           // pooling, so remove it:
-          boolean changed = rld.writeLiveDocs(directory);
-          changed |= rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream);
-
-          if (changed) {
+          if (rld.writeLiveDocs(directory)) {
             // Make sure we only write del docs for a live segment:
             assert assertInfoLive == false || assertInfoIsLive(rld.info);
             // Must checkpoint because we just
@@ -617,6 +614,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // do here: it was done previously (after we
             // invoked BDS.applyDeletes), whereas here all we
             // did was move the state to disk:
+            checkpointNoSIS();
+          }
+          if (rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream)) {
             checkpointNoSIS();
           }
           if (rld.getNumDVUpdates() == 0) {
