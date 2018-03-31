@@ -1275,7 +1275,9 @@ public class Plane extends Vector {
         // Since a==b==0, any plane including the Z axis suffices.
         //System.err.println("      Perpendicular to z");
         final GeoPoint[] points = findIntersections(planetModel, normalYPlane, NO_BOUNDS, NO_BOUNDS);
-        boundsInfo.addZValue(points[0]);
+        if (points.length > 0) {
+          boundsInfo.addZValue(points[0]);
+        }
       }
     }
 
@@ -2348,15 +2350,25 @@ public class Plane extends Vector {
    * @return true if the planes are numerically identical.
    */
   public boolean isNumericallyIdentical(final Plane p) {
-    // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
-    // (using D) and see if it also on the other plane.
+    // We can get the correlation by just doing a parallel plane check.  That's basically finding
+    // out if the magnitude of the cross-product is "zero".
+    final double cross1 = this.y * p.z - this.z * p.y;
+    final double cross2 = this.z * p.x - this.x * p.z;
+    final double cross3 = this.x * p.y - this.y * p.x;
+    //System.out.println("cross product magnitude = "+(cross1 * cross1 + cross2 * cross2 + cross3 * cross3));
+    // Technically should be MINIMUM_RESOLUTION_SQUARED, but that gives us planes that are *almost* parallel, and those are problematic too
+    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= MINIMUM_RESOLUTION) {
+      return false;
+    }
+    /* Old method
     if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION)
       return false;
     if (Math.abs(this.z * p.x - this.x * p.z) >= MINIMUM_RESOLUTION)
       return false;
     if (Math.abs(this.x * p.y - this.y * p.x) >= MINIMUM_RESOLUTION)
       return false;
-
+    */
+    
     // Now, see whether the parallel planes are in fact on top of one another.
     // The math:
     // We need a single point that fulfills:

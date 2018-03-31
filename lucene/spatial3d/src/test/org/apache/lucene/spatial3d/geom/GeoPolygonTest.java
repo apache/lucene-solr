@@ -756,19 +756,9 @@ shape:
     
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -0.41518838180529244, 3.141592653589793);
     final GeoPoint encodedPoint = new GeoPoint(-0.9155623168963972, 2.3309121299774915E-10, -0.40359240449795253);
-    //System.out.println("point = "+point);
-    //System.out.println("encodedPoint = "+encodedPoint);
     
-    assertTrue(p.isWithin(point));
-    assertTrue(solid.isWithin(point));
+    assertTrue(p.isWithin(point)?solid.isWithin(point):true);
     
-    //System.out.println("bounds1 = "+bounds1);
-    //System.out.println("bounds2 = "+bounds2);
-    //assertTrue(poly1.isWithin(point));
-    //assertTrue(poly2.isWithin(point));
-    //assertTrue(solid2.isWithin(point));
-    
-    //assertTrue(poly2.isWithin(encodedPoint));
   }
   
   @Test
@@ -967,8 +957,10 @@ shape:
     poly1List.add(new GeoPoint(PlanetModel.WGS84, 1.079437865394857, -1.720224083538152E-11));
     poly1List.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, 0.017453291479645996));
     poly1List.add(new GeoPoint(PlanetModel.WGS84, 0.017453291479645996, 2.4457272005608357E-47));
+
+    final GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(poly1List);
     
-    final GeoConvexPolygon poly1 = new GeoConvexPolygon(PlanetModel.WGS84, poly1List);
+    final GeoPolygon poly1 = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
     
     /*
    [junit4]   1>       unquantized=[lat=-1.5316724989005415, lon=3.141592653589793([X=-0.03902652216795768, Y=4.779370545484258E-18, Z=-0.9970038705813589])]
@@ -977,17 +969,12 @@ shape:
     
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -1.5316724989005415, 3.141592653589793);
 
-    assertTrue(poly1.isWithin(point));
-    
     final XYZBounds actualBounds1 = new XYZBounds();
     poly1.getBounds(actualBounds1);
     
-    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
-      actualBounds1.getMinimumX(), actualBounds1.getMaximumX(),
-      actualBounds1.getMinimumY(), actualBounds1.getMaximumY(),
-      actualBounds1.getMinimumZ(), actualBounds1.getMaximumZ());
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, actualBounds1);
 
-    assertTrue(solid.isWithin(point));
+    assertTrue(poly1.isWithin(point)?solid.isWithin(point):true);
   }
 
   @Test
@@ -1283,10 +1270,6 @@ shape:
     points.add(new GeoPoint(PlanetModel.WGS84, 0.2839194570254642, -1.2434404554202965));
     GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
     
-    for (int i = 0; i < points.size(); i++) {
-      System.out.println("Point "+i+": "+points.get(i));
-    }
-
     final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, -3.1404077424936307);
     final GeoPoint quantized = new GeoPoint(-1.0011181510675629, -0.001186236379718708, 2.3309121299774915E-10);
     
@@ -1300,33 +1283,149 @@ shape:
     // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
     GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
     
-    System.out.println("Shape = "+standard);
-
     // This should be true, by inspection, but is false.  That's the cause for the failure.
     assertTrue(standard.isWithin(negativeX));
-    System.out.println("Negative x pole in set? "+standard.isWithin(negativeX));
     
-    System.out.println("Test point in set? "+standard.isWithin(testPoint));
     assertTrue(standard.isWithin(testPoint));
     
     // This is in-set because it's on an edge
-    System.out.println("North pole in set? "+standard.isWithin(northPole));
     assertTrue(standard.isWithin(northPole));
     
     // This is in-set
-    System.out.println("Plus-Y pole in set? "+standard.isWithin(positiveY));
     assertTrue(standard.isWithin(positiveY));
     
 
     final XYZBounds standardBounds = new XYZBounds();
     standard.getBounds(standardBounds);
-    System.out.println("Bounds = "+standardBounds);
     final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
 
     // If within shape, should be within bounds
     assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
     assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
 
+  }
+  
+  @Test
+  public void testLUCENE7642() {
+    // Construct XYZ solid
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      0.1845405855034623, 0.2730694323646922,
+      -1.398547277986495E-9, 0.020766291030223535,
+      0.7703937553371503, 0.9977622932859774);
+    
+    /*
+   [junit4]   1> individual planes
+   [junit4]   1>  notableMinXPoints=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796]] 
+    notableMaxXPoints=[
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]] 
+    notableMinYPoints=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481]] 
+    notableMaxYPoints=[
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]] 
+    notableMinZPoints=[] 
+    notableMaxZPoints=[]
+    
+    [junit4]   1> All edge points=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796], 
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]]
+
+    */
+
+    final GeoPoint edge1 = new GeoPoint(0.1845405855034623, -1.398547277986495E-9, 0.9806642352600131);
+    final GeoPoint edge2 = new GeoPoint(0.1845405855034623, 0.020766291030223535, 0.9804458120424796);
+    final GeoPoint edge3 = new GeoPoint(0.2730694323646922, -1.398547277986495E-9, 0.959928047174481);
+    final GeoPoint edge4 = new GeoPoint(0.2730694323646922, 0.020766291030223535, 0.9597049045335464);
+    
+    // The above says that none of these intersect the surface: minZmaxX, minZminX, minZmaxY, minZminY, or
+    // maxZmaxX, maxZminX, maxZmaxY, maxZminY.
+    
+    // So what about minZ and maxZ all by themselves?
+    //
+    // [junit4]   1> Outside world: minXminYminZ=false minXminYmaxZ=true minXmaxYminZ=false minXmaxYmaxZ=true maxXminYminZ=false 
+    // maxXminYmaxZ=true maxXmaxYminZ=false maxXmaxYmaxZ=true
+    //
+    // So the minz plane does not intersect the world because it's all inside.  The maxZ plane is all outside but may intersect the world still.
+    // But it doesn't because it's too far north.
+    // So it looks like these are our edge points, and they are correct.
+    
+    /*
+  GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+    [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+    [lat=0.2892272352400239, lon=0.017453291479645996([X=0.9591279281485559, Y=0.01674163926221766, Z=0.28545251693892165])], 
+    [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])]], internalEdges={2}}, 
+  GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+    [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+    [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])], 
+    [lat=0.6723906085905078, lon=-3.0261581679831E-12([X=0.7821883235431606, Y=-2.367025584191143E-12, Z=0.6227413298552851])]], internalEdges={0}}]}
+    */
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.2267098126036888, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.2892272352400239, 0.017453291479645996));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, 1.6247683074702402E-201));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.6723906085905078, -3.0261581679831E-12));
+    
+    final GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    final List<GeoPolygonFactory.PolygonDescription> pdList = new ArrayList<>(1);
+    pdList.add(pd);
+    final GeoPolygon largeShape = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel. WGS84, pdList);
+    
+    /* This is the output:
+   [junit4]   1> shape = GeoCompositePolygon: {[
+    GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+      [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+      [lat=0.2892272352400239, lon=0.017453291479645996([X=0.9591279281485559, Y=0.01674163926221766, Z=0.28545251693892165])], 
+      [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])]], internalEdges={2}}, 
+    GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+      [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+      [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])], 
+      [lat=0.6723906085905078, lon=-3.0261581679831E-12([X=0.7821883235431606, Y=-2.367025584191143E-12, Z=0.6227413298552851])]], internalEdges={0}}]}
+    */
+    
+    final GeoPoint quantized = new GeoPoint(0.24162356556559528, 2.3309121299774915E-10, 0.9682657049003708);
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, 1.3262481806651818, 2.4457272005608357E-47);
+
+    // This passes; the point is definitely within the solid.
+    assertTrue(solid.isWithin(unquantized));
+
+    // This passes, so I assume that this is the correct response.
+    assertFalse(largeShape.isWithin(unquantized));
+    // This fails because the point is within the shape but apparently shouldn't be.
+    // Instrumenting isWithin finds that the point is on three edge planes somehow:
+    /*
+   [junit4]   1> localIsWithin start for point [0.2416235655409041,5.90945326539883E-48,0.9682657046994557]
+   [junit4]   1>  For edge [A=-1.224646799147353E-16, B=-1.0, C=-7.498798913309287E-33, D=0.0, side=1.0] the point evaluation is -2.959035261382389E-17
+   [junit4]   1>  For edge [A=-3.0261581679831E-12, B=-0.9999999999999999, C=-1.8529874570670608E-28, D=0.0, side=1.0] the point evaluation is -7.31191126438807E-13
+   [junit4]   1>  For edge [A=4.234084035470679E-12, B=1.0, C=-1.5172037954732973E-12, D=0.0, side=1.0] the point evaluation is -4.460019207463956E-13
+    */
+    // These are too close to parallel.  The only solution is to prevent the poly from being created.  Let's see if Geo3d thinks they are parallel.
+    
+    final Plane p1 = new Plane(-1.224646799147353E-16, -1.0, -7.498798913309287E-33, 0.0);
+    final Plane p2 = new Plane(-3.0261581679831E-12, -0.9999999999999999, -1.8529874570670608E-28, 0.0);
+    final Plane p3 = new Plane(4.234084035470679E-12, 1.0, -1.5172037954732973E-12, 0.0);
+    
+    assertFalse(shape.isWithin(unquantized));
+    
+    // This point is indeed outside the shape but it doesn't matter
+    assertFalse(shape.isWithin(quantized));
+    
+    // Sanity check with different poly implementation
+    assertTrue(shape.isWithin(edge1) == largeShape.isWithin(edge1));
+    assertTrue(shape.isWithin(edge2) == largeShape.isWithin(edge2));
+    assertTrue(shape.isWithin(edge3) == largeShape.isWithin(edge3));
+    assertTrue(shape.isWithin(edge4) == largeShape.isWithin(edge4));
+    
+    // Verify both shapes give the same relationship
+    int intersection = solid.getRelationship(shape);
+    int largeIntersection = solid.getRelationship(largeShape);
+    assertTrue(intersection == largeIntersection);
   }
   
 }
