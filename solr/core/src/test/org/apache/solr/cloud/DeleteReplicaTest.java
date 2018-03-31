@@ -41,10 +41,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.ZkContainer;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -153,36 +150,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     assertEquals(0, docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).size());
     
 
-  }
-
-  @Test
-  public void deleteReplicaOnDownNode() throws Exception {
-    final String collectionName = "deleteReplicaOnDownNode";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).process(cluster.getSolrClient());
-    waitForState("Expected one shards with two replicas", collectionName, clusterShape(1, 2));
-
-    Slice shard = getCollectionState(collectionName).getSlice("shard1");
-    Replica replica = shard.getReplicas(rep -> !rep.getName().equals(shard.getLeader().getName())).get(0);
-    JettySolrRunner replicaJetty = getJettyForReplica(replica);
-    CoreDescriptor replicaCd;
-    try (SolrCore core = replicaJetty.getCoreContainer().getCore(replica.getCoreName())) {
-      replicaCd = core.getCoreDescriptor();
-    }
-    assertNotNull("Expected core descriptor of "+ replica.getName() + " is not null",replicaCd);
-    String replicaJettyNodeName = replicaJetty.getNodeName();
-
-    // shutdown node of a replica
-    replicaJetty.stop();
-    waitForNodeLeave(replicaJettyNodeName);
-    waitForState("Expected one shards with one replica", collectionName, clusterShape(1, 1));
-    CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName()).process(cluster.getSolrClient());
-    waitForState("Expected only one replica left", collectionName, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
-
-    // restart the test and make sure the data get deleted
-    replicaJetty.start();
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Expected data dir and instance dir of " + replica.getName() + " is deleted", ()
-        -> !Files.exists(replicaCd.getInstanceDir()) && !FileUtils.fileExists(replicaCd.getDataDir()));
   }
 
   @Test
