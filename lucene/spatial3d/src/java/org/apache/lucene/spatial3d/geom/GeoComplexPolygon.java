@@ -394,6 +394,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
     for (final GeoPoint point : notablePoints) {
       xyzBounds.addPoint(point);
     }
+    // If we have no bounds at all then the answer is "false"
+    if (xyzBounds.getMaximumX() == null || xyzBounds.getMinimumX() == null ||
+      xyzBounds.getMaximumY() == null || xyzBounds.getMinimumY() == null ||
+      xyzBounds.getMaximumZ() == null || xyzBounds.getMinimumZ() == null) {
+      return false;
+    }
     // Figure out which tree likely works best
     final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
     final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
