@@ -70,6 +70,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -494,8 +495,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-11673")
   public void doTestIndexAndConfigReplication() throws Exception {
+
+    TestInjection.delayBeforeSlaveCommitRefresh = random().nextInt(10);
+
     clearIndexWithReplication();
 
     nDocs--;
@@ -550,7 +553,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty = createJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
-
     //add a doc with new field and commit on master to trigger index fetch from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
@@ -567,7 +569,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     checkForSingleIndex(masterJetty);
     checkForSingleIndex(slaveJetty, true);
-    
   }
 
   @Test
