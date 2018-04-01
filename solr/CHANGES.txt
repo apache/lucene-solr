@@ -36,6 +36,10 @@ Upgrade Notes
   This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging
   implementation which is compatible with SLF4J.
 
+* SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication. 
+  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication 
+  handler configuration, or pass it to the fetchindex command.
+
 New Features
 ----------------------
 
@@ -69,6 +73,9 @@ Bug Fixes
 * SOLR-10734: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent updates for the same
   document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
   (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
+
+* SOLR-11673: By default slave doesn't commit empty index when completely new index appears on master. 
+  See Upgrade Notes to find a way to get back to the previous behavior. (Mikhail Khludnev)
 
 Optimizations
 ----------------------
