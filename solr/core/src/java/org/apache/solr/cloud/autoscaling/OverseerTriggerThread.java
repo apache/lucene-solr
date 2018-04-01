@@ -124,6 +124,10 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     // we also automatically add a scheduled maintenance trigger
     while (!isClosed)  {
       try {
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Interrupted");
+          break;
+        }
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
         AutoScalingConfig updatedConfig = withAutoAddReplicasTrigger(autoScalingConfig);
         updatedConfig = withScheduledMaintenanceTrigger(updatedConfig);
