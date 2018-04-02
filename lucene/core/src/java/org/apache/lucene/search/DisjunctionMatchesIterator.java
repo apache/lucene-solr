@@ -61,7 +61,8 @@ class DisjunctionMatchesIterator implements MatchesIterator {
       if (te.seekExact(term)) {
         PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
         if (pe.advance(doc) == doc) {
-          mis.add(new TermMatchesIterator(term, pe));
+          // TODO do we want to use the copied term here, or instead create a label that associates all of the TMIs with a single term?
+          mis.add(new TermMatchesIterator(BytesRef.deepCopyOf(term), pe));
           reuse = null;
         }
         else {
