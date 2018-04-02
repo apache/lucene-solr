@@ -484,8 +484,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   /**
-   * Calls auditIfConfigured logging API if enabled
-   * @param auditEvent
+   * Calls audit logging API if enabled
+   * @param auditEvent the audit event
    */
   private void auditIfConfigured(AuditEvent auditEvent) {
     if (cores.getAuditLoggerPlugin() != null) {
