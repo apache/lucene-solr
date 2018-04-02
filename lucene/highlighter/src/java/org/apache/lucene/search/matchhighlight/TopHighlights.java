@@ -17,5 +17,11 @@
 
 package org.apache.lucene.search.matchhighlight;
 
-public class TopHighlights<T> {
+public class TopHighlights {
+
+  final HighlightDoc[] docs;
+
+  public TopHighlights(HighlightDoc[] docs) {
+    this.docs = docs;
+  }
 }

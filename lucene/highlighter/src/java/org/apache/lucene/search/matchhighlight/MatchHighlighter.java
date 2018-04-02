@@ -18,16 +18,16 @@
 package org.apache.lucene.search.matchhighlight;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -44,48 +44,43 @@ public class MatchHighlighter {
     this.analyzer = analyzer;
   }
 
-  public <T> TopHighlights<T> highlight(Query query, TopDocs docs, SnippetGenerator<T> generator) throws IOException {
-    List<HighlightDoc<T>> highlights = new ArrayList<>();
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+  public TopHighlights highlight(Query query, TopDocs docs, Supplier<SnippetCollector> collectorSupplier) throws IOException {
+    HighlightDoc[] highlights = new HighlightDoc[docs.scoreDocs.length];
+    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    int i = 0;
     for (ScoreDoc doc : docs.scoreDocs) {
       int contextOrd = ReaderUtil.subIndex(doc.doc, searcher.getIndexReader().leaves());
       LeafReaderContext ctx = searcher.getIndexReader().leaves().get(contextOrd);
-      HighlightingFieldVisitor<T> visitor = new HighlightingFieldVisitor<>(weight, ctx, doc.doc - ctx.docBase, generator);
+      Matches matches = weight.matches(ctx, doc.doc - ctx.docBase);
+      HighlightingFieldVisitor visitor = new HighlightingFieldVisitor(new SourceAwareMatches(matches, analyzer), collectorSupplier.get());
       ctx.reader().document(doc.doc, visitor);
-      highlights.add(visitor.getHighights());
+      highlights[i++] = new HighlightDoc(doc.doc, visitor.getHighlights());
     }
-    return new TopHighlights<>(highlights);
+    return new TopHighlights(highlights);
   }
 
-  private class HighlightingFieldVisitor<T> extends StoredFieldVisitor {
+  private class HighlightingFieldVisitor extends StoredFieldVisitor {
 
-    final LeafReaderContext context;
-    final int doc;
-    final SnippetGenerator<T> generator;
-    final Weight weight;
+    final SourceAwareMatches matches;
+    final SnippetCollector collector;
 
-    final HighlightDoc<T> highlights;
+    private HighlightingFieldVisitor(SourceAwareMatches matches, SnippetCollector collector) {
+      this.matches = matches;
+      this.collector = collector;
+    }
 
-    private HighlightingFieldVisitor(Weight weight, LeafReaderContext context, int doc, SnippetGenerator<T> generator) {
-      this.context = context;
-      this.doc = doc;
-      this.generator = generator;
-      this.weight = weight;
-      this.highlights = new HighlightDoc<>(doc, fields);
+    Document getHighlights() {
+      return collector.getHighlights();
     }
 
     @Override
     public Status needsField(FieldInfo fieldInfo) throws IOException {
-      return generator.needsField(fieldInfo.name);
+      return collector.needsField(fieldInfo.name) ? Status.YES : Status.NO;
     }
 
     @Override
     public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
-      String field = fieldInfo.name;
-      MatchesIterator matches = weight.matches(context, doc, field);
-      if (matches != null) {
-        this.highlights.highlights.put(field, generator.getSnippets(field, value, matches));
-      }
+      collector.collectSnippets(matches, fieldInfo.name, value);
     }
   }
 

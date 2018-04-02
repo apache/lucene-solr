@@ -19,7 +19,7 @@ package org.apache.lucene.search.matchhighlight;
 
 import org.apache.lucene.document.Document;
 
-public class HighlightDoc<T> {
+public class HighlightDoc {
 
   public final int doc;
 

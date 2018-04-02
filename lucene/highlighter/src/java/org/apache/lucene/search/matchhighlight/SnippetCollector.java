@@ -17,5 +17,19 @@
 
 package org.apache.lucene.search.matchhighlight;
 
-public class SnippetGenerator<T> {
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.StoredFieldVisitor;
+
+public class SnippetCollector {
+  public Document getHighlights() {
+    return null;
+  }
+
+  public boolean needsField(String name) {
+    return false;
+  }
+
+  public void collectSnippets(SourceAwareMatches matches, String name, byte[] value) {
+
+  }
 }
