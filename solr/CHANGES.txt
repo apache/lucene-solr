@@ -59,10 +59,11 @@ Upgrade Notes
 
 * SOLR-7887: Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files.
   This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging
-  implementation which is compatible with SLF4J.
+  implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr
+  start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either (SOLR-12144).
 
-* SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication. 
-  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication 
+* SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication.
+  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
 New Features
@@ -75,7 +76,7 @@ New Features
   atomic.<multival-field-name>=add-distict (Amrit Sarkar via noble)
 
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
- (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
+  (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
 Bug Fixes
 ----------------------
@@ -99,7 +100,7 @@ Bug Fixes
   document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
   (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
 
-* SOLR-11673: By default slave doesn't commit empty index when completely new index appears on master. 
+* SOLR-11673: By default slave doesn't commit empty index when completely new index appears on master.
   See Upgrade Notes to find a way to get back to the previous behavior. (Mikhail Khludnev)
 
 * SOLR-9399: Delete requests do not send credentials & fails for Basic Authentication
@@ -153,6 +154,8 @@ Other Changes
 
 * SOLR-12169: Fix ComputePlanActionTest.testSelectedCollections fails on jenkins by aggressively cleaning up
   trigger state left by other test methods in the test setup. (shalin)
+
+* SOLR-12144: SOLR_LOG_PRESTART_ROTATION now defaults to false, we leverage log4j2 for log rotation on startup (janhoy)
 
 ==================  7.3.0 ==================
 

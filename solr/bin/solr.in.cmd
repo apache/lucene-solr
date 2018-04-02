@@ -84,10 +84,10 @@ REM set SOLR_LOG_LEVEL=INFO
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
 
-REM Enables log rotation, cleanup, and archiving before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
-REM time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration. This
-REM pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
-REM set SOLR_LOG_PRESTART_ROTATION=true
+REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
+REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
+REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
+REM set SOLR_LOG_PRESTART_ROTATION=false
 
 REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
 REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!

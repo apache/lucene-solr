@@ -1070,14 +1070,15 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
   set IS_64bit=true
 )
 
-REM Clean up and rotate logs
+REM Clean up and rotate logs. Default to false since 7.4 as log4j2 handles startup rotation
 IF [%SOLR_LOG_PRESTART_ROTATION%] == [] (
-  set SOLR_LOG_PRESTART_ROTATION=true
+  set SOLR_LOG_PRESTART_ROTATION=false
 )
 IF [%SOLR_LOG_PRESTART_ROTATION%] == [true] (
-  call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
-  call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
-  call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
+  REM Enable any of these if you require old remove/archive behavior
+  REM call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
+  REM call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
+  REM call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
   call :run_utils "-rotate_solr_logs 9"     || echo "Failed rotating old solr logs"
 )
 

@@ -97,11 +97,9 @@ Also, in `log4j2.xml` if the default log rotation size threshold of 32MB is too 
 <SizeBasedTriggeringPolicy size="100 MB"/>
 ----
 
-Java Garbage Collection logs are rotated by the JVM when size hits 20M, for a max of 9 generations. Old GC logs are moved to `SOLR_LOGS_DIR/archived`. These settings can only be changed by editing the start scripts.
+Java Garbage Collection logs are rotated by the JVM when size hits 20M, for a max of 9 generations.
 
-On every startup of Solr, the start script will clean up old logs and rotate the main `solr.log` file. If you changed the `<DefaultRolloverStrategy max="10"/>` setting in `log4j2.xml`, you also need to change the corresponding setting `-rotate_solr_logs 10` in the start script.
-
-You can disable the automatic log rotation at startup by changing the setting `SOLR_LOG_PRESTART_ROTATION` found in `bin/solr.in.sh` or `bin/solr.in.cmd` to false.
+On every startup or restart of Solr, log4j2 performs log rotation. If you choose to use another log framework that does not support rotation on startup, you may enable `SOLR_LOG_PRESTART_ROTATION` in `bin/solr.in.sh` or `bin/solr.in.cmd` to let the start script rotate the logs on startup.
 
 == Logging Slow Queries
 
