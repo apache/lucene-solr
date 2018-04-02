@@ -121,8 +121,8 @@ public final class IndexOrDocValuesQuery extends Query {
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        // TODO we can probably make use of the doc values here to return something more useful
-        return indexWeight.matches(context, doc);
+        // We need to check a single doc, so the dv query should perform better
+        return dvWeight.matches(context, doc);
       }
 
       @Override
