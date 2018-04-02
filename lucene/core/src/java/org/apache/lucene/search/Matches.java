@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -123,7 +124,10 @@ public class Matches {
     return matches.keySet();
   }
 
+  private static final BytesRef EMPTY_BYTES = new BytesRef();
+
   private static final MatchesIterator EMPTY = new MatchesIterator() {
+
     @Override
     public boolean next() throws IOException {
       return false;
@@ -147,6 +151,11 @@ public class Matches {
     @Override
     public int endOffset() throws IOException {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef term() {
+      return EMPTY_BYTES;
     }
   };
 }

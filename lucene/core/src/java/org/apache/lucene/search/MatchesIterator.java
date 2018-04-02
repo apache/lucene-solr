@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * An iterator over match positions (and optionally offsets) for a single document and field
@@ -59,5 +60,10 @@ public interface MatchesIterator {
    * The ending offset of the current match, or {@code -1} if offsets are not available
    */
   int endOffset() throws IOException;
+
+  /**
+   * The underlying term of the current match
+   */
+  BytesRef term();
 
 }

@@ -61,7 +61,7 @@ class DisjunctionMatchesIterator implements MatchesIterator {
       if (te.seekExact(term)) {
         PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
         if (pe.advance(doc) == doc) {
-          mis.add(new TermMatchesIterator(pe));
+          mis.add(new TermMatchesIterator(term, pe));
           reuse = null;
         }
         else {
@@ -133,6 +133,11 @@ class DisjunctionMatchesIterator implements MatchesIterator {
   @Override
   public int endOffset() throws IOException {
     return queue.top().endOffset();
+  }
+
+  @Override
+  public BytesRef term() {
+    return queue.top().term();
   }
 
 }

@@ -91,7 +91,7 @@ public class TermQuery extends Query {
       if (pe.advance(doc) != doc) {
         return null;
       }
-      return Matches.fromField(term.field(), new TermMatchesIterator(pe));
+      return Matches.fromField(term.field(), new TermMatchesIterator(term.bytes(), pe));
     }
 
     @Override
