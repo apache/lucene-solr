@@ -184,6 +184,7 @@ public class NodeAddedTrigger extends TriggerBase {
   private void removeMarker(String nodeName) {
     String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     try {
+      log.debug("NodeAddedTrigger {} - removing marker path: {}", name, path);
       if (stateManager.hasData(path)) {
         stateManager.removeData(path, -1);
       }

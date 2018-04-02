@@ -117,7 +117,8 @@ Other Changes
 
 * SOLR-12152: Split up TriggerIntegrationTest into multiple tests to isolate and increase reliability. (shalin)
 
-* SOLR-12133: Fix race conditions that caused TriggerIntegrationTest.testEventQueue to fail. (Mark Miller, shalin)
+* SOLR-12133: Fix race conditions that caused TriggerIntegrationTest.testEventQueue and testNodeMarkersRegistration
+  to fail. (Mark Miller, shalin)
 
 * SOLR-12169: Fix ComputePlanActionTest.testSelectedCollections fails on jenkins by aggressively cleaning up
   trigger state left by other test methods in the test setup. (shalin)
