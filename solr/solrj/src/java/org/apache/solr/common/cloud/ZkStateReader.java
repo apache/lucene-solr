@@ -16,6 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSet;
+import static org.apache.solr.common.util.Utils.fromJSON;
+
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -43,7 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
@@ -52,6 +59,7 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -60,14 +68,6 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
-import static java.util.Collections.unmodifiableSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements Closeable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
@@ -172,6 +172,9 @@ public class ZkStateReader implements Closeable {
   private ConcurrentHashMap<String, CollectionWatch<CollectionPropsWatcher>> collectionPropsWatches = new ConcurrentHashMap<>();
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
+  
+  /** Used to submit notifications to Collection Properties watchers in order **/
+  private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("collectionPropsNotifications"));
 
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
@@ -760,6 +763,7 @@ public class ZkStateReader implements Closeable {
   public void close() {
     this.closed  = true;
     notifications.shutdown();
+    ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
     if (closeClient) {
       zkClient.close();
     }
@@ -975,8 +979,7 @@ public class ZkStateReader implements Closeable {
     final String znodePath = getCollectionPropsPath(collection);
     while (true) {
       try {
-        Stat stat = new Stat();
-        byte[] data = zkClient.getData(znodePath, watcher, stat, true);
+        byte[] data = zkClient.getData(znodePath, watcher, null, true);
         return (Map<String, String>) Utils.fromJSON(data);
       } catch (ClassCastException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to parse collection properties for collection " + collection, e);
@@ -1152,10 +1155,19 @@ public class ZkStateReader implements Closeable {
      */
     void refreshAndWatch(boolean notifyWatchers) {
       try {
-        Map<String, String> properties = fetchCollectionProperties(coll, this);
-        watchedCollectionProps.put(coll, properties);
-        if (notifyWatchers) {
-          notifyPropsWatchers(coll, properties);
+        synchronized (coll) { // We only have one PropsWatcher instance per collection, so it's fine to sync on coll
+          Map<String, String> properties = fetchCollectionProperties(coll, this);
+          watchedCollectionProps.put(coll, properties);
+          /*
+           * Note that if two events were fired close to each other and the second one arrived first, we would read the collectionprops.json
+           * twice for the same data and notify watchers (in case of notifyWatchers==true) twice for the same data, however it's guaranteed
+           * that after processing both events, watchedCollectionProps will have the latest data written to ZooKeeper and that the watchers
+           * won't be called with out of order data
+           * 
+           */
+          if (notifyWatchers) {
+            notifyPropsWatchers(coll, properties);
+          }
         }
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
         LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
@@ -1724,9 +1736,8 @@ public class ZkStateReader implements Closeable {
 
   private void notifyPropsWatchers(String collection, Map<String, String> properties) {
     try {
-      notifications.submit(new PropsNotification(collection, properties));
-    }
-    catch (RejectedExecutionException e) {
+      collectionPropsNotifications.submit(new PropsNotification(collection, properties));
+    } catch (RejectedExecutionException e) {
       if (!closed) {
         LOG.error("Couldn't run collection properties notifications for {}", collection, e);
       }

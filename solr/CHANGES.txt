@@ -105,6 +105,9 @@ Bug Fixes
 * SOLR-9399: Delete requests do not send credentials & fails for Basic Authentication
   (Susheel Kumar, Aibao Luo, Nikkolay Martinov via Erick Erickson)
 
+* SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
+  memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe) 
+
 Optimizations
 ----------------------
 
