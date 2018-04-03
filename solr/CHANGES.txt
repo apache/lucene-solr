@@ -112,6 +112,8 @@ Improvements
 
 * SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
 
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
+
 Bug Fixes
 ----------------------
 
