@@ -191,10 +191,10 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
     props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
     factory.init(new NamedList<>(props));
-    factory.initializeMetrics(metricManager, registry, scope);
+    factory.initializeMetrics(metricManager, registry, "foo", scope);
 
     // get the metrics map for the locality bean
-    MetricsMap metrics = (MetricsMap)metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality");
+    MetricsMap metrics = (MetricsMap)((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();
     // We haven't done anything, so there should be no data
     Map<String,Object> statistics = metrics.getValue();
     assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0l,

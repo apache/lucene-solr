@@ -83,6 +83,12 @@ Bug Fixes
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe) 
 
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components may continue to use the old API
+  but should be updated to avoid this bug (Eros Taborelli, Erick Erickson, ab)
+
+
 Optimizations
 ----------------------
 

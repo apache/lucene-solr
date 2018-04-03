@@ -29,16 +29,25 @@ import org.apache.solr.metrics.SolrMetricProducer;
  */
 public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientConnectionManager implements SolrMetricProducer {
 
+  private SolrMetricManager metricManager;
+  private String registryName;
+
   public InstrumentedPoolingHttpClientConnectionManager(Registry<ConnectionSocketFactory> socketFactoryRegistry) {
     super(socketFactoryRegistry);
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    manager.registerGauge(null, registry, () -> getTotalStats().getAvailable(), true, SolrMetricManager.mkName("availableConnections", scope));
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registry;
+    manager.registerGauge(null, registry, () -> getTotalStats().getAvailable(),
+        tag, true, SolrMetricManager.mkName("availableConnections", scope));
     // this acquires a lock on the connection pool; remove if contention sucks
-    manager.registerGauge(null, registry, () -> getTotalStats().getLeased(), true, SolrMetricManager.mkName("leasedConnections", scope));
-    manager.registerGauge(null, registry, () -> getTotalStats().getMax(), true, SolrMetricManager.mkName("maxConnections", scope));
-    manager.registerGauge(null, registry, () -> getTotalStats().getPending(), true, SolrMetricManager.mkName("pendingConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getLeased(),
+        tag, true, SolrMetricManager.mkName("leasedConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getMax(),
+        tag, true, SolrMetricManager.mkName("maxConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getPending(),
+        tag, true, SolrMetricManager.mkName("pendingConnections", scope));
   }
 }
