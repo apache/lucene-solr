@@ -111,6 +111,11 @@ New Features
 
 * LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
 
+Bug Fixes
+
+* LUCENE-8234: Fixed bug in how spatial relationship is computed for
+  GeoStandardCircle when it covers the whole world. (Ignacio Vera)
+
 Other
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
