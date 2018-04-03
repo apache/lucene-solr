@@ -159,6 +159,8 @@ Other Changes
 
 * SOLR-12095: AutoScalingHandler validates trigger configurations before updating Zookeeper. (ab)
 
+* SOLR-12165: Ref Guide: DisMax default mm param value is improperly documented as 100%. (Steve Rowe)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
