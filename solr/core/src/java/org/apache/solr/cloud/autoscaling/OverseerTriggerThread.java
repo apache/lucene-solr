@@ -230,7 +230,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           if (entry.getValue().getEventType().equals(TriggerEventType.NODEADDED)) {
             cleanOldNodeAddedMarkers = false;
           }
-          scheduledTriggers.add(entry.getValue());
+          try {
+            scheduledTriggers.add(entry.getValue());
+          } catch (Exception e) {
+            log.warn("Exception initializing trigger " + entry.getKey() + ", configuration ignored", e);
+          }
         }
       } catch (AlreadyClosedException e) {
         // this _should_ mean that we're closing, complain loudly if that's not the case
@@ -382,7 +386,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       AutoScalingConfig.TriggerConfig cfg = entry.getValue();
       TriggerEventType eventType = cfg.event;
       String triggerName = entry.getKey();
-      triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      try {
+        triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      } catch (TriggerValidationException e) {
+        log.warn("Error in trigger '" + triggerName + "' configuration, trigger config ignored: " + cfg, e);
+      }
     }
     return triggerMap;
   }

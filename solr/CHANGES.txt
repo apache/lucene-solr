@@ -138,6 +138,8 @@ Other Changes
 
 * SOLR-12144: SOLR_LOG_PRESTART_ROTATION now defaults to false, we leverage log4j2 for log rotation on startup (janhoy)
 
+* SOLR-12095: AutoScalingHandler validates trigger configurations before updating Zookeeper. (ab)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

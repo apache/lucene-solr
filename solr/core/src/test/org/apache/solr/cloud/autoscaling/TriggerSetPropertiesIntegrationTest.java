@@ -80,7 +80,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
     try (ScheduledTriggers scheduledTriggers = new ScheduledTriggers(resourceLoader, solrCloudManager)) {
       AutoScalingConfig config = new AutoScalingConfig(Collections.emptyMap());
       scheduledTriggers.setAutoScalingConfig(config);
-      scheduledTriggers.add(new TriggerBase(TriggerEventType.NODELOST, "x", Collections.emptyMap(), resourceLoader, solrCloudManager) {
+      AutoScaling.Trigger t = new TriggerBase(TriggerEventType.NODELOST, "x") {
         @Override
         protected Map<String, Object> getState() {
           return Collections.singletonMap("x", "y");
@@ -103,7 +103,10 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
           diff.set(timeSource.getTimeNs() - l);
           getTriggerFiredLatch().countDown();
         }
-      });
+      };
+      t.configure(runner.getCoreContainer().getResourceLoader(), runner.getCoreContainer().getZkController().getSolrCloudManager(), Collections.emptyMap());
+      scheduledTriggers.add(t);
+
       assertTrue(getTriggerFiredLatch().await(4, TimeUnit.SECONDS));
       assertTrue(diff.get() - TimeUnit.SECONDS.toNanos(ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS) >= 0);
 
@@ -125,7 +128,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
       final Set<String> triggerNames = Collections.synchronizedSet(new HashSet<>());
       triggerFiredLatch = new CountDownLatch(8);
       for (int i = 0; i < 8; i++) {
-        triggerList.add(new MockTrigger(TriggerEventType.NODELOST, "x" + i, Collections.emptyMap(), resourceLoader, solrCloudManager) {
+        AutoScaling.Trigger trigger = new MockTrigger(TriggerEventType.NODELOST, "x" + i)  {
           @Override
           public void run() {
             try {
@@ -140,8 +143,10 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
               threadNames.add(Thread.currentThread().getName());
             }
           }
-        });
-        scheduledTriggers.add(triggerList.get(i));
+        };
+        trigger.configure(resourceLoader, solrCloudManager, Collections.emptyMap());
+        triggerList.add(trigger);
+        scheduledTriggers.add(trigger);
       }
       assertTrue("Timed out waiting for latch to fire", getTriggerFiredLatch().await(20, TimeUnit.SECONDS));
       assertEquals("Expected 8 triggers but found: " + triggerNames, 8, triggerNames.size());
@@ -168,8 +173,8 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
 
   public static class MockTrigger extends TriggerBase {
 
-    public MockTrigger(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager cloudManager) {
-      super(eventType, name, properties, loader, cloudManager);
+    public MockTrigger(TriggerEventType eventType, String name) {
+      super(eventType, name);
     }
 
     @Override

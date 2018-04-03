@@ -81,8 +81,8 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
     Map<String, Object> properties = createTriggerProperties(new Date(threeDaysAgo).toInstant().toString(),
         TimeZone.getDefault().getID(),
         "+2DAYS", "+1HOUR");
-    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1", properties,
-        container.getResourceLoader(), container.getZkController().getSolrCloudManager())) {
+    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1")) {
+      scheduledTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), properties);
       scheduledTrigger.init();
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       scheduledTrigger.setProcessor(event -> {
@@ -94,9 +94,9 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
     }
   }
 
-  private void scheduledTriggerTest(CoreContainer container, Map<String, Object> properties) throws IOException, InterruptedException {
-    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1", properties,
-        container.getResourceLoader(), container.getZkController().getSolrCloudManager())) {
+  private void scheduledTriggerTest(CoreContainer container, Map<String, Object> properties) throws Exception {
+    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1")) {
+      scheduledTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), properties);
       scheduledTrigger.init();
       scheduledTrigger.setProcessor(noFirstRunProcessor);
       scheduledTrigger.run();
@@ -119,7 +119,7 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
 
   private Map<String, Object> createTriggerProperties(String startTime, String timeZone, String every, String graceTime) {
     Map<String, Object> properties = new HashMap<>();
-    properties.put("graceTime", graceTime);
+    properties.put("graceDuration", graceTime);
     properties.put("startTime", startTime);
     properties.put("timeZone", timeZone);
     properties.put("every", every);

@@ -51,10 +51,12 @@ import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerEventQueue;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
+import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
@@ -570,11 +572,12 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
+    public void init() throws Exception {
       log.info("TestTriggerAction init");
+      super.init();
       actionInitCalled.countDown();
-      super.init(args);
     }
+
   }
 
   public static class TestEventQueueAction extends TriggerActionBase {
@@ -599,10 +602,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> args) throws TriggerValidationException {
       log.debug("TestTriggerAction init");
       actionInitCalled.countDown();
-      super.init(args);
+      super.configure(loader, cloudManager, args);
     }
   }
 
@@ -760,10 +763,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> args) throws TriggerValidationException {
       log.info("TestEventMarkerAction init");
       actionInitCalled.countDown();
-      super.init(args);
+      super.configure(loader, cloudManager, args);
     }
   }
 
@@ -884,8 +887,8 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
-    public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
-      super.init(cloudManager, config);
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+      super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
     }
 
