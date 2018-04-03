@@ -23,28 +23,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Throwables;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.message.Message;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.CircularList;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 
-import com.google.common.base.Throwables;
-
+@SuppressForbidden(reason = "class is specific to log4j2")
 public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
   private final static String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
+
+  @SuppressForbidden(reason = "class is specific to log4j2")
   protected class Log4j2Appender extends AbstractAppender {
 
     private Log4j2Watcher watcher;
@@ -74,6 +77,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     }
   }
 
+  @SuppressForbidden(reason = "class is specific to log4j2")
   protected class Log4j2Info extends LoggerInfo {
     final Level level;
 

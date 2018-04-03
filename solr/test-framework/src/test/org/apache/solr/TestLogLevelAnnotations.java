@@ -23,7 +23,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 
-@SuppressForbidden(reason="We need to use log4J classes to access the log levels")
+@SuppressForbidden(reason="We need to use log4J2 classes to access the log levels")
 @LogLevel("org.apache.solr.ClassLogLevel=error;org.apache.solr.MethodLogLevel=warn")
 public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
 
