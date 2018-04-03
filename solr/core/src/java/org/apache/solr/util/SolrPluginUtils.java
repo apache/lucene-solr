@@ -698,7 +698,7 @@ public class SolrPluginUtils {
       spec = spec.substring(0,spec.length()-1);
       int percent = Integer.parseInt(spec);
       float calc = (result * percent) * (1/100f);
-      result = calc < 0 ? result + (int)calc : (int)calc;
+      result = calc < 0 ? result + (int)Math.round(calc) : (int)Math.round(calc);
     } else {
       int calc = Integer.parseInt(spec);
       result = calc < 0 ? result + calc : calc;
