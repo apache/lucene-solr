@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
