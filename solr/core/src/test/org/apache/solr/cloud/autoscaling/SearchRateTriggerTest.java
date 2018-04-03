@@ -83,7 +83,9 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     final List<TriggerEvent> events = new ArrayList<>();
     CloudSolrClient solrClient = cluster.getSolrClient();
 
-    try (SearchRateTrigger trigger = new SearchRateTrigger("search_rate_trigger", props, loader, cloudManager)) {
+    try (SearchRateTrigger trigger = new SearchRateTrigger("search_rate_trigger")) {
+      trigger.configure(loader, cloudManager, props);
+      trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
       trigger.setProcessor(event -> events.add(event));

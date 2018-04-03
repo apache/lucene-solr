@@ -47,6 +47,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -379,6 +380,16 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     static volatile String expectedNode;
 
     @Override
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+
+    }
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
     public String getName() {
       return null;
     }
@@ -398,11 +409,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     @Override
     public void close() throws IOException {
-
-    }
-
-    @Override
-    public void init(Map<String, String> args) {
 
     }
   }

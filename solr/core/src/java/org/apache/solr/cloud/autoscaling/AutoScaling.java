@@ -106,10 +106,19 @@ public class AutoScaling {
     void restoreState();
 
     /**
+     * Called when trigger is created but before it's initialized or scheduled for use.
+     * This method should also verify that the trigger configuration parameters are correct. It may
+     * be called multiple times.
+     * @param properties configuration properties
+     * @throws TriggerValidationException contains details of invalid configuration parameters.
+     */
+    void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException;
+
+    /**
      * Called before a trigger is scheduled. Any heavy object creation or initialisation should
      * be done in this method instead of the Trigger's constructor.
      */
-    void init();
+    void init() throws Exception;
   }
 
   /**
@@ -118,7 +127,7 @@ public class AutoScaling {
   public static abstract class TriggerFactory implements Closeable {
     protected boolean isClosed = false;
 
-    public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props);
+    public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException;
 
     @Override
     public void close() throws IOException {
@@ -144,24 +153,38 @@ public class AutoScaling {
     }
 
     @Override
-    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) {
+    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException {
       if (isClosed) {
         throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
       }
+      if (type == null) {
+        throw new IllegalArgumentException("Trigger type must not be null");
+      }
+      if (name == null || name.isEmpty()) {
+        throw new IllegalArgumentException("Trigger name must not be empty");
+      }
+      Trigger t;
       switch (type) {
         case NODEADDED:
-          return new NodeAddedTrigger(name, props, loader, cloudManager);
+          t = new NodeAddedTrigger(name);
+          break;
         case NODELOST:
-          return new NodeLostTrigger(name, props, loader, cloudManager);
+          t = new NodeLostTrigger(name);
+        break;
         case SEARCHRATE:
-          return new SearchRateTrigger(name, props, loader, cloudManager);
+          t = new SearchRateTrigger(name);
+        break;
         case METRIC:
-          return new MetricTrigger(name, props, loader, cloudManager);
+          t = new MetricTrigger(name);
+        break;
         case SCHEDULED:
-          return new ScheduledTrigger(name, props, loader, cloudManager);
+          t = new ScheduledTrigger(name);
+        break;
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }
+      t.configure(loader, cloudManager, props);
+      return t;
     }
 
   }
@@ -210,4 +233,5 @@ public class AutoScaling {
           "    }";
 
   public static final Map<String, Object> SCHEDULED_MAINTENANCE_TRIGGER_PROPS = (Map) Utils.fromJSONString(SCHEDULED_MAINTENANCE_TRIGGER_DSL);
+
 }

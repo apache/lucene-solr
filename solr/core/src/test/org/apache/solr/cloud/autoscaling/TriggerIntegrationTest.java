@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
@@ -400,10 +401,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
+    public void init() throws Exception {
       log.info("TestTriggerAction init");
       actionInitCalled.countDown();
-      super.init(args);
+      super.init();
     }
   }
 
@@ -432,10 +433,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
-      log.debug("TestTriggerAction init");
+    public void init() throws Exception {
+      log.info("TestEventQueueAction init");
       actionInitCalled.countDown();
-      super.init(args);
+      super.init();
     }
   }
 
@@ -504,8 +505,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
-    public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
-      super.init(cloudManager, config);
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+      super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
     }
 

@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +66,16 @@ public class HttpTriggerListener extends TriggerListenerBase {
   private int timeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
   private boolean followRedirects;
 
+  public HttpTriggerListener() {
+    super();
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, "url");
+    TriggerUtils.validProperties(validProperties, "payload", "contentType", "timeout", "followRedirects");
+    validPropertyPrefixes.add("header.");
+  }
+
   @Override
-  public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(cloudManager, config);
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+    super.configure(loader, cloudManager, config);
     urlTemplate = (String)config.properties.get("url");
     payloadTemplate = (String)config.properties.get("payload");
     contentType = (String)config.properties.get("contentType");

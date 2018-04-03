@@ -439,6 +439,123 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
   }
+
+  @Test
+  public void testValidation() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    // unknown trigger properties
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'foo': 'bar'," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+
+    // invalid trigger properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'search_rate_trigger'," +
+        "'event' : 'searchRate'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'rate': 'foo'," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("rate=Invalid 'rate' configuration value: 'foo'"));
+    }
+
+    // unknown trigger action properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'foo' : 'bar'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+
+    // unknown trigger listener properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'xyz'," +
+        "'trigger' : 'node_lost_trigger'," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
+        "'foo' : 'bar'," +
+        "'beforeAction' : 'execute_plan'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.HttpTriggerListener'," +
+        "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+  }
+
   @Test
   public void testPolicyAndPreferences() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
