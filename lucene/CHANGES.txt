@@ -43,6 +43,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8234: Fixed bug in how spatial relationship is computed for
+  GeoStandardCircle when it covers the whole world. (Ignacio Vera)
+
 * LUCENE-8076: Normalize Vincenti distance calculation for planet models that aren't normalized.
   (Ignacio Vera)
 
