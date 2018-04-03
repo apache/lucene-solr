@@ -50,7 +50,9 @@ class TermIntervalsSource extends IntervalsSource {
       throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
     }
     TermsEnum te = terms.iterator();
-    te.seekExact(term);
+    if (te.seekExact(term) == false) {
+      return null;
+    }
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);
     float cost = termPositionsCost(te);
     return new IntervalIterator() {

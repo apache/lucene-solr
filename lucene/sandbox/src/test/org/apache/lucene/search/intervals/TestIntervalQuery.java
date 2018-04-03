@@ -149,6 +149,11 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{ 1, 3, 4, 5 });
   }
 
+  public void testNonExistentTerms() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.ordered(Intervals.term("w0"), Intervals.term("w2")));
+    checkHits(q, new int[]{});
+  }
+
   // The Vigna paper doesn't deal with prefix disjunctions.  For now, we keep the same
   // logic as detailed in the paper, but we may want to address it in future so that tests
   // like the one below will pass
