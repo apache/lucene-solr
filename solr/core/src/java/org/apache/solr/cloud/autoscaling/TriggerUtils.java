@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
