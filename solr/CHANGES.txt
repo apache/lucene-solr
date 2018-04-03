@@ -163,6 +163,9 @@ Other Changes
 
 * SOLR-12154: Disallow explicit usage of Log4j2 logger via forbidden APIs. (Varun Thacker, Tomás Fernández Löbbe)
 
+* SOLR-12176: Improve FORCELEADER to handle the case when a replica win the election but does not present
+  in clusterstate (Cao Manh Dat)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
