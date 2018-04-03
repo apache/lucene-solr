@@ -111,6 +111,10 @@ New Features
 
 * LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
 
+* LUCENE-8196: A new IntervalQuery in the sandbox allows efficient proximity
+  searches based on minimum-interval semantics. (Alan Woodward, Adrien Grand,
+  Jim Ferenczi, Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
