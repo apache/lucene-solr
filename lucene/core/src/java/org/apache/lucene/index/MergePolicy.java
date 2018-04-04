@@ -604,4 +604,12 @@ public abstract class MergePolicy {
     v *= 1024 * 1024;
     this.maxCFSSegmentSize = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
   }
+
+  /**
+   * Returns true if the segment represented by the given CodecReader should be keep even if it's fully deleted.
+   * This is useful for testing of for instance if the merge policy implements retention policies for soft deletes.
+   */
+  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+    return false;
+  }
 }

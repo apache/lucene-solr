@@ -67,7 +67,12 @@ public final class NoMergePolicy extends MergePolicy {
   public void setNoCFSRatio(double noCFSRatio) {
     super.setNoCFSRatio(noCFSRatio);
   }
-  
+
+  @Override
+  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+    return super.keepFullyDeletedSegment(reader);
+  }
+
   @Override
   public String toString() {
     return "NoMergePolicy";

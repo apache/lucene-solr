@@ -49,10 +49,13 @@ public class TestMultiFields extends LuceneTestCase {
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                             .setMergePolicy(NoMergePolicy.INSTANCE));
-      // we can do this because we use NoMergePolicy (and dont merge to "nothing")
-      w.setKeepFullyDeletedSegments(true);
-
+                                             .setMergePolicy(new MergePolicyWrapper(NoMergePolicy.INSTANCE) {
+                                               @Override
+                                               public boolean keepFullyDeletedSegment(CodecReader reader) {
+                                                 // we can do this because we use NoMergePolicy (and dont merge to "nothing")
+                                                 return true;
+                                               }
+                                             }));
       Map<BytesRef,List<Integer>> docs = new HashMap<>();
       Set<Integer> deleted = new HashSet<>();
       List<BytesRef> terms = new ArrayList<>();
