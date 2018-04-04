@@ -1661,6 +1661,9 @@ public class ZkController {
       Thread.currentThread().interrupt();
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (NotInClusterStateException e) {
+      // make the stack trace less verbose
+      throw e;
     } catch (Exception e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -1688,7 +1691,7 @@ public class ZkController {
     return true;
   }
 
-  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
+  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException, NotInClusterStateException {
     if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String nodeName = cloudDesc.getCoreNodeName();
@@ -1722,7 +1725,8 @@ public class ZkController {
           }
           Replica replica = slice.getReplica(coreNodeName);
           if (replica == null) {
-            errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId());
+            errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+                ", ignore the exception if the replica was deleted");
             return false;
           }
           return true;
@@ -1730,8 +1734,9 @@ public class ZkController {
       } catch (TimeoutException e) {
         String error = errorMessage.get();
         if (error == null)
-          error = "Replica " + coreNodeName + " is not present in cluster state";
-        throw new SolrException(ErrorCode.SERVER_ERROR, error + ": " + collectionState.get());
+          error = "coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+              ", ignore the exception if the replica was deleted";
+        throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
       }
     }
   }
@@ -2707,6 +2712,15 @@ public class ZkController {
    */
   public static class NotLeaderException extends SolrException  {
     public NotLeaderException(ErrorCode code, String msg) {
+      super(code, msg);
+    }
+  }
+
+  /**
+   * Thrown during pre register process if the replica is not present in clusterstate
+   */
+  public static class NotInClusterStateException extends SolrException {
+    public NotInClusterStateException(ErrorCode code, String msg) {
       super(code, msg);
     }
   }

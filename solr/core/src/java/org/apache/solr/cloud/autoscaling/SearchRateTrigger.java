@@ -49,43 +49,43 @@ import org.slf4j.LoggerFactory;
 public class SearchRateTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String handler;
-  private final String collection;
-  private final String shard;
-  private final String node;
-  private final double rate;
+  private String handler;
+  private String collection;
+  private String shard;
+  private String node;
+  private double rate;
   private final Map<String, Long> lastCollectionEvent = new ConcurrentHashMap<>();
   private final Map<String, Long> lastNodeEvent = new ConcurrentHashMap<>();
   private final Map<String, Long> lastShardEvent = new ConcurrentHashMap<>();
   private final Map<String, Long> lastReplicaEvent = new ConcurrentHashMap<>();
   private final Map<String, Object> state = new HashMap<>();
 
-  public SearchRateTrigger(String name, Map<String, Object> properties,
-                           SolrResourceLoader loader,
-                           SolrCloudManager cloudManager) {
-    super(TriggerEventType.SEARCHRATE, name, properties, loader, cloudManager);
+  public SearchRateTrigger(String name) {
+    super(TriggerEventType.SEARCHRATE, name);
     this.state.put("lastCollectionEvent", lastCollectionEvent);
     this.state.put("lastNodeEvent", lastNodeEvent);
     this.state.put("lastShardEvent", lastShardEvent);
     this.state.put("lastReplicaEvent", lastReplicaEvent);
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, "rate");
+  }
 
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
     // parse config options
     collection = (String)properties.getOrDefault(AutoScalingParams.COLLECTION, Policy.ANY);
     shard = (String)properties.getOrDefault(AutoScalingParams.SHARD, Policy.ANY);
     if (collection.equals(Policy.ANY) && !shard.equals(Policy.ANY)) {
-      throw new IllegalArgumentException("When 'shard' is other than #ANY then collection name must be also other than #ANY");
+      throw new TriggerValidationException("shard", "When 'shard' is other than #ANY then collection name must be also other than #ANY");
     }
     node = (String)properties.getOrDefault(AutoScalingParams.NODE, Policy.ANY);
     handler = (String)properties.getOrDefault(AutoScalingParams.HANDLER, "/select");
 
-    if (properties.get("rate") == null) {
-      throw new IllegalArgumentException("No 'rate' specified in configuration");
-    }
     String rateString = String.valueOf(properties.get("rate"));
     try {
       rate = Double.parseDouble(rateString);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid 'rate' configuration value: '" + rateString + "'", e);
+      throw new TriggerValidationException(name, "rate", "Invalid 'rate' configuration value: '" + rateString + "': " + e.toString());
     }
   }
 

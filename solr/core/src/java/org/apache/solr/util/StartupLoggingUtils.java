@@ -57,11 +57,11 @@ public final class StartupLoggingUtils {
   }
 
   /**
-   * Disables all log4j ConsoleAppender's by modifying log4j configuration dynamically.
+   * Disables all log4j2 ConsoleAppender's by modifying log4j configuration dynamically.
    * Must only be used during early startup
-   * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
+   * @return true if ok or else false if something happened, e.g. log4j2 classes were not in classpath
    */
-  @SuppressForbidden(reason = "Legitimate log4j access")
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean muteConsole() {
     try {
       if (!isLog4jActive()) {
@@ -90,7 +90,7 @@ public final class StartupLoggingUtils {
    * @param logLevel String with level, should be one of the supported, e.g. TRACE, DEBUG, INFO, WARN, ERROR...
    * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
    */
-  @SuppressForbidden(reason = "Legitimate log4j access")
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean changeLogLevel(String logLevel) {
     try {
       if (!isLog4jActive()) {

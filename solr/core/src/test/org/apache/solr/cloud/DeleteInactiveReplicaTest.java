@@ -17,6 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -26,7 +28,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -64,6 +70,10 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     Slice shard = getRandomShard(collectionState);
     Replica replica = getRandomReplica(shard);
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
+    CoreDescriptor replicaCd;
+    try (SolrCore core = jetty.getCoreContainer().getCore(replica.getCoreName())) {
+      replicaCd = core.getCoreDescriptor();
+    }
     cluster.stopJettySolrRunner(jetty);
 
     waitForState("Expected replica " + replica.getName() + " on down node to be removed from cluster state", collectionName, (n, c) -> {
@@ -80,13 +90,9 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");
-
-    CoreContainer cc = jetty.getCoreContainer();
-    CoreContainer.CoreLoadFailure loadFailure = cc.getCoreInitFailures().get(replica.getCoreName());
-    assertNotNull("Deleted core was still loaded!", loadFailure);
-    assertNotNull(loadFailure.exception.getCause());
-    assertTrue("Unexpected load failure message: " + loadFailure.exception.getCause().getMessage(),
-        loadFailure.exception.getCause().getMessage().contains("does not exist in shard"));
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut.waitFor("Expected data dir and instance dir of " + replica.getName() + " is deleted", ()
+        -> !Files.exists(replicaCd.getInstanceDir()) && !FileUtils.fileExists(replicaCd.getDataDir()));
 
     // Check that we can't create a core with no coreNodeName
     try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {

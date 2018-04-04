@@ -50,12 +50,14 @@ import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
+import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -108,8 +110,8 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
-    public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
-      super.init(cloudManager, config);
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+      super.configure(loader, cloudManager, config);
     }
 
     @Override

@@ -28,7 +28,7 @@
     <RollingFile
         name="RollingFile"
         fileName="${sys:solr.log.dir}/solr.log"
-        filePattern="${sys:solr.log.dir}/solr.%i.log" >
+        filePattern="${sys:solr.log.dir}/solr.log.%i" >
       <PatternLayout>
         <Pattern>
           %-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; [%X{collection} %X{shard} %X{replica} %X{core}] %c; %m%n

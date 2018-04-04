@@ -1219,7 +1219,7 @@ public class GeoPolygonFactory {
     final GeoCompositePolygon rval,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
     
     //System.out.println("Looking at edge "+currentEdge+" with startpoint "+currentEdge.startPoint+" endpoint "+currentEdge.endPoint);
       
@@ -1237,6 +1237,11 @@ public class GeoPolygonFactory {
         break;
       }
       final Edge newLastEdge = edgeBuffer.getNext(lastEdge);
+      // Planes that are almost identical cannot be properly handled by the standard polygon logic.  Detect this case and, if found,
+      // give up on the tiling -- we'll need to create a large poly instead.
+      if (lastEdge.plane.isFunctionallyIdentical(newLastEdge.plane)) {
+        throw new TileException("Two adjacent edge planes are effectively parallel despite filtering; give up on tiling");
+      }
       if (Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newLastEdge.endPoint)) {
         break;
       }

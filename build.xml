@@ -124,7 +124,7 @@
     </subant>
   </target>
   
-  <target name="validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
+  <target name="validate-source-patterns" description="Validate source code (invalid code patterns,...)" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
     <groovy taskname="source-patterns" classpathref="rat.classpath" src="${common.dir}/tools/src/groovy/check-source-patterns.groovy"/>
   </target>
   

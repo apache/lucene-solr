@@ -105,10 +105,10 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation, cleanup, and archiving during start. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
-# time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration.
-# This pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
-#SOLR_LOG_PRESTART_ROTATION=true
+# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
+# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
+# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
+#SOLR_LOG_PRESTART_ROTATION=false
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
