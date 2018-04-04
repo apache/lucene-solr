@@ -56,6 +56,9 @@ class LowpassIntervalsSource extends IntervalsSource {
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     IntervalIterator i = in.intervals(field, ctx);
+    if (i == null) {
+      return null;
+    }
     return new IntervalFilter(i) {
       @Override
       protected boolean accept() {
