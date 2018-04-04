@@ -26,6 +26,9 @@ Bug Fixes
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
   GeoStandardCircle when it covers the whole world. (Ignacio Vera)
 
+* LUCENE-8236: Filter duplicated points when creating GeoPath shapes
+  to avoid creation of bogus planes. (Ignacio Vera)
+
 Other
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
