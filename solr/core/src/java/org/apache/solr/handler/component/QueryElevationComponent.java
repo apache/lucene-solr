@@ -132,12 +132,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   private final Map<IndexReader, ElevationProvider> elevationProviderCache = new WeakHashMap<>();
 
-  /**
-   * Keep track of a counter each time a configuration file cannot be loaded.
-   * Stop trying to load after {@link #getConfigLoadingExceptionHandler()}.{@link LoadingExceptionHandler#getLoadingMaxAttempts getLoadingMaxAttempts()}.
-   */
-  private final Map<IndexReader, Integer> configLoadingErrorCounters = new WeakHashMap<>();
-
   @Override
   public void init(NamedList args) {
     this.initArgs = args.toSolrParams();
@@ -160,7 +154,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       handleInitializationException(e, e.exceptionCause);
     } catch (Exception e) {
       assert !initialized;
-      handleInitializationException(e, InitializationExceptionHandler.ExceptionCause.OTHER);
+      handleInitializationException(e, InitializationExceptionCause.OTHER);
     }
   }
 
@@ -169,7 +163,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     if (a != null) {
       FieldType ft = core.getLatestSchema().getFieldTypes().get(a);
       if (ft == null) {
-        throw new InitializationException("Parameter " + FIELD_TYPE + " defines an unknown field type \"" + a + "\"", InitializationExceptionHandler.ExceptionCause.UNKNOWN_FIELD_TYPE);
+        throw new InitializationException("Parameter " + FIELD_TYPE + " defines an unknown field type \"" + a + "\"", InitializationExceptionCause.UNKNOWN_FIELD_TYPE);
       }
       queryAnalyzer = ft.getQueryAnalyzer();
     }
@@ -178,7 +172,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private void setUniqueKeyField(SolrCore core) throws InitializationException {
     SchemaField sf = core.getLatestSchema().getUniqueKeyField();
     if (sf == null) {
-      throw new InitializationException("This component requires the schema to have a uniqueKeyField", InitializationExceptionHandler.ExceptionCause.MISSING_UNIQUE_KEY_FIELD);
+      throw new InitializationException("This component requires the schema to have a uniqueKeyField", InitializationExceptionCause.MISSING_UNIQUE_KEY_FIELD);
     }
     uniqueKeyFieldType = sf.getType();
     uniqueKeyFieldName = sf.getName();
@@ -205,9 +199,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   /**
    * (Re)Loads elevation configuration.
-   * <p>
-   * Protected access to be called by extending class.
-   * </p>
    *
    * @param core The core holding this component.
    * @return The number of elevation rules parsed.
@@ -218,9 +209,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       elevationProviderCache.clear();
       String configFileName = initArgs.get(CONFIG_FILE);
       if (configFileName == null) {
-        // Throw an exception which can be handled by an overriding InitializationExceptionHandler (see handleInitializationException()).
-        // The default InitializationExceptionHandler will simply skip this exception.
-        throw new InitializationException("Missing component parameter " + CONFIG_FILE + " - it has to define the path to the elevation configuration file", InitializationExceptionHandler.ExceptionCause.NO_CONFIG_FILE_DEFINED);
+        // Throw an exception which is handled by handleInitializationException().
+        // If not overridden handleInitializationException() simply skips this exception.
+        throw new InitializationException("Missing component parameter " + CONFIG_FILE + " - it has to define the path to the elevation configuration file", InitializationExceptionCause.NO_CONFIG_FILE_DEFINED);
       }
       boolean configFileExists = false;
       ElevationProvider elevationProvider = NO_OP_ELEVATION_PROVIDER;
@@ -234,12 +225,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         File fC = new File(core.getResourceLoader().getConfigDir(), configFileName);
         File fD = new File(core.getDataDir(), configFileName);
         if (fC.exists() == fD.exists()) {
-          InitializationException e = new InitializationException("Missing config file \"" + configFileName + "\" - either " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both", InitializationExceptionHandler.ExceptionCause.MISSING_CONFIG_FILE);
+          InitializationException e = new InitializationException("Missing config file \"" + configFileName + "\" - either " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both", InitializationExceptionCause.MISSING_CONFIG_FILE);
           elevationProvider = handleConfigLoadingException(e, true);
           elevationProviderCache.put(null, elevationProvider);
         } else if (fC.exists()) {
           if (fC.length() == 0) {
-            InitializationException e = new InitializationException("Empty config file \"" + configFileName + "\" - " + fC.getAbsolutePath(), InitializationExceptionHandler.ExceptionCause.EMPTY_CONFIG_FILE);
+            InitializationException e = new InitializationException("Empty config file \"" + configFileName + "\" - " + fC.getAbsolutePath(), InitializationExceptionCause.EMPTY_CONFIG_FILE);
             elevationProvider = handleConfigLoadingException(e, true);
           } else {
             configFileExists = true;
@@ -268,6 +259,36 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       return elevationProvider.size();
     }
+  }
+
+  /**
+   * Handles the exception that occurred while initializing this component.
+   * If this method does not throw an exception, this component silently fails to initialize
+   * and is muted with field {@link #initialized} which becomes {@code false}.
+   */
+  protected void handleInitializationException(Exception exception, InitializationExceptionCause cause) {
+    if (cause != InitializationExceptionCause.NO_CONFIG_FILE_DEFINED) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error initializing " + QueryElevationComponent.class.getSimpleName(), exception);
+    }
+  }
+
+  /**
+   * Handles an exception that occurred while loading the configuration resource.
+   *
+   * @param e The exception caught.
+   * @param resourceAccessIssue <code>true</code> if the exception has been thrown
+   *                            because the resource could not be accessed (missing or cannot be read)
+   *                            or the config file is empty; <code>false</code> if the resource has
+   *                            been found and accessed but the error occurred while loading the resource
+   *                            (invalid format, incomplete or corrupted).
+   * @return The {@link ElevationProvider} to use if the exception is absorbed. If {@code null}
+   * is returned, the {@link #NO_OP_ELEVATION_PROVIDER} is used but not cached in
+   * the {@link ElevationProvider} cache.
+   * @throws E If the exception is not absorbed.
+   */
+  protected <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssue) throws E {
+    throw e;
   }
 
   /**
@@ -302,11 +323,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         boolean shouldCache = true;
         if (loadingException != null) {
           elevationProvider = handleConfigLoadingException(loadingException, resourceAccessIssue);
-          // Do not cache the fallback ElevationProvider for the first exceptions because the exception might
-          // occur only a couple of times and the config file could be loaded correctly afterwards
-          // (e.g. temporary invalid file access). After some attempts, cache the fallback ElevationProvider
-          // not to overload the exception handler (and beyond it, the logs probably).
-          if (incConfigLoadingErrorCount(reader) < getConfigLoadingExceptionHandler().getLoadingMaxAttempts()) {
+          if (elevationProvider == null) {
+            elevationProvider = NO_OP_ELEVATION_PROVIDER;
             shouldCache = false;
           }
         }
@@ -414,48 +432,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "invalid value \"" + matchString + "\" for query match attribute");
     }
-  }
-
-  /**
-   * Potentially handles and captures an exception that occurred while loading the configuration resource.
-   *
-   * @param e                   The exception caught.
-   * @param resourceAccessIssueOrEmptyConfig <code>true</code> if the exception has been thrown because the resource could not
-   *                            be accessed (missing or cannot be read) or the config file is empty; <code>false</code> if the resource has
-   *                            been found and accessed but the error occurred while loading the resource
-   *                            (invalid format, incomplete or corrupted).
-   * @return The {@link ElevationProvider} to use if the exception is absorbed.
-   * @throws E If the exception is not absorbed.
-   */
-  private <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssueOrEmptyConfig) throws E {
-    if (getConfigLoadingExceptionHandler().handleLoadingException(e, resourceAccessIssueOrEmptyConfig)) {
-      return NO_OP_ELEVATION_PROVIDER;
-    }
-    assert e != null;
-    throw e;
-  }
-
-  private int incConfigLoadingErrorCount(IndexReader reader) {
-    Integer counter = configLoadingErrorCounters.get(reader);
-    if (counter == null) {
-      counter = 1;
-    } else {
-      counter++;
-    }
-    configLoadingErrorCounters.put(reader, counter);
-    return counter;
-  }
-
-  /**
-   * Potentially handles and captures the exception that occurred while initializing this component. If the exception
-   * is captured by the handler, this component fails to initialize silently and is muted because field initialized is
-   * false.
-   */
-  private void handleInitializationException(Exception initializationException, InitializationExceptionHandler.ExceptionCause exceptionCause) {
-    SolrException solrException = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-        "Error initializing " + QueryElevationComponent.class.getSimpleName(), initializationException);
-    if (!getInitializationExceptionHandler().handleInitializationException(solrException, exceptionCause))
-      throw solrException;
   }
 
   //---------------------------------------------------------------------------------
@@ -633,61 +609,41 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer> boosted, Map context) throws IOException {
 
-    IntIntHashMap boostDocs = null;
+      IntIntHashMap boostDocs = null;
 
-    if (boosted != null) {
+      if (boosted != null) {
 
-      //First see if it's already in the request context. Could have been put there
-      //by another caller.
-      if (context != null) {
-        boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
-      }
-
-      if (boostDocs != null) {
-        return boostDocs;
-      }
-      //Not in the context yet so load it.
-
-      SchemaField idField = indexSearcher.getSchema().getUniqueKeyField();
-      String fieldName = idField.getName();
-
-      boostDocs = new IntIntHashMap(boosted.size());
-
-      List<LeafReaderContext>leaves = indexSearcher.getTopReaderContext().leaves();
-      PostingsEnum postingsEnum = null;
-      for (LeafReaderContext leaf : leaves) {
-        LeafReader reader = leaf.reader();
-        int docBase = leaf.docBase;
-        Bits liveDocs = reader.getLiveDocs();
-        Terms terms = reader.terms(fieldName);
-        TermsEnum termsEnum = terms.iterator();
-        Iterator<BytesRef> it = boosted.keySet().iterator();
-        while (it.hasNext()) {
-          BytesRef ref = it.next();
-          if (termsEnum.seekExact(ref)) {
-            postingsEnum = termsEnum.postings(postingsEnum);
-            int doc = postingsEnum.nextDoc();
-            while (doc != PostingsEnum.NO_MORE_DOCS && liveDocs != null && !liveDocs.get(doc)) {
-              doc = postingsEnum.nextDoc();
-            }
-            if (doc != PostingsEnum.NO_MORE_DOCS) {
-              //Found the document.
-              int p = boosted.get(ref);
-              boostDocs.put(doc+docBase, p);
-              it.remove();
-            }
+        //First see if it's already in the request context. Could have been put there by another caller.
+        if (context != null) {
+          boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
+          if (boostDocs != null) {
+            return boostDocs;
           }
         }
+
+        //Not in the context yet so load it.
+        boostDocs = new IntIntHashMap(boosted.size()); // docId to boost
+        for (Map.Entry<BytesRef,Integer> keyAndBoostPair : boosted.entrySet()) {
+          final BytesRef uniqueKey = keyAndBoostPair.getKey();
+          long segAndId = indexSearcher.lookupId(uniqueKey); // higher 32 bits == segment ID, low 32 bits == doc ID
+          if (segAndId == -1) { // not found
+            continue;
+          }
+          int seg = (int) (segAndId >> 32);
+          int localDocId = (int) segAndId;
+          final IndexReaderContext indexReaderContext = indexSearcher.getTopReaderContext().children().get(seg);
+          int docId = indexReaderContext.docBaseInParent + localDocId;
+          boostDocs.put(docId, keyAndBoostPair.getValue());
+        }
       }
-    }
 
-    if(context != null) {
-      //noinspection unchecked
-      context.put(BOOSTED_DOCIDS, boostDocs);
-    }
+      if (context != null) {
+        //noinspection unchecked
+        context.put(BOOSTED_DOCIDS, boostDocs);
+      }
 
-    return boostDocs;
-  }
+      return boostDocs;
+    }
 
   //---------------------------------------------------------------------------------
   // SolrInfoBean
@@ -727,23 +683,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /**
-   * Gets the {@link InitializationExceptionHandler} that handles exception thrown during the initialization of the
-   * elevation configuration.
-   */
-  @SuppressWarnings("WeakerAccess")
-  protected InitializationExceptionHandler getInitializationExceptionHandler() {
-    return InitializationExceptionHandler.NO_OP;
-  }
-
-  /**
-   * Gets the {@link LoadingExceptionHandler} that handles exception thrown during the loading of the elevation configuration.
-   */
-  @SuppressWarnings("WeakerAccess")
-  protected LoadingExceptionHandler getConfigLoadingExceptionHandler() {
-    return LoadingExceptionHandler.NO_OP;
-  }
-
-  /**
    * Creates the {@link ElevationProvider} to set during configuration loading. The same instance will be used later
    * when elevating results for queries.
    *
@@ -778,15 +717,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   private static void splitQueryTermsWithAnalyzer(String queryString, Analyzer queryAnalyzer, Collection<String> tokenCollector) {
-    try {
-      TokenStream tokens = queryAnalyzer.tokenStream("", new StringReader(queryString));
+    try (TokenStream tokens = queryAnalyzer.tokenStream("", new StringReader(queryString))) {
       tokens.reset();
       CharTermAttribute termAttribute = tokens.addAttribute(CharTermAttribute.class);
       while (tokens.incrementToken()) {
         tokenCollector.add(new String(termAttribute.buffer(), 0, termAttribute.length()));
       }
       tokens.end();
-      tokens.close();
     } catch (IOException e) {
       // Will never be thrown since we read a StringReader.
       throw Throwables.propagate(e);
@@ -837,122 +774,45 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   //---------------------------------------------------------------------------------
-  // Exception classes
+  // Exception
   //---------------------------------------------------------------------------------
 
   private static class InitializationException extends Exception {
-    final InitializationExceptionHandler.ExceptionCause exceptionCause;
 
-    InitializationException(String message, InitializationExceptionHandler.ExceptionCause exceptionCause) {
+    private final InitializationExceptionCause exceptionCause;
+
+    InitializationException(String message, InitializationExceptionCause exceptionCause) {
       super(message);
       this.exceptionCause = exceptionCause;
     }
   }
 
-  /**
-   * Handles resource loading exception.
-   */
-  protected interface InitializationExceptionHandler {
-
-    /**
-     * NoOp {@link LoadingExceptionHandler} that does not capture any exception and simply returns <code>false</code>.
-     */
-    InitializationExceptionHandler NO_OP = new InitializationExceptionHandler() {
-      @Override
-      public boolean handleInitializationException(Exception e, ExceptionCause exceptionCause) {
-        return exceptionCause == ExceptionCause.NO_CONFIG_FILE_DEFINED;
+  protected enum InitializationExceptionCause {
+        /**
+         * The component parameter {@link #FIELD_TYPE} defines an unknown field type.
+         */
+        UNKNOWN_FIELD_TYPE,
+        /**
+         * This component requires the schema to have a uniqueKeyField, which it does not have.
+         */
+        MISSING_UNIQUE_KEY_FIELD,
+        /**
+         * Missing component parameter {@link #CONFIG_FILE} - it has to define the path to the elevation configuration file (e.g. elevate.xml).
+         */
+        NO_CONFIG_FILE_DEFINED,
+        /**
+         * The elevation configuration file (e.g. elevate.xml) cannot be found, or is defined in both conf/ and data/ directories.
+         */
+        MISSING_CONFIG_FILE,
+        /**
+         * The elevation configuration file (e.g. elevate.xml) is empty.
+         */
+        EMPTY_CONFIG_FILE,
+        /**
+         * Unclassified exception cause.
+         */
+        OTHER,
       }
-    };
-
-    enum ExceptionCause {
-      /**
-       * The component parameter {@link #FIELD_TYPE} defines an unknown field type.
-       */
-      UNKNOWN_FIELD_TYPE,
-      /**
-       * This component requires the schema to have a uniqueKeyField, which it does not have.
-       */
-      MISSING_UNIQUE_KEY_FIELD,
-      /**
-       * Missing component parameter {@link #CONFIG_FILE} - it has to define the path to the elevation configuration file (e.g. elevate.xml).
-       */
-      NO_CONFIG_FILE_DEFINED,
-      /**
-       * The elevation configuration file (e.g. elevate.xml) cannot be found, or is defined in both conf/ and data/ directories.
-       */
-      MISSING_CONFIG_FILE,
-      /**
-       * The elevation configuration file (e.g. elevate.xml) is empty.
-       */
-      EMPTY_CONFIG_FILE,
-      /**
-       * Unclassified exception cause.
-       */
-      OTHER,
-    }
-
-    /**
-     * Potentially handles and captures an exception that occurred while initializing the component.
-     * If the exception is captured, the component fails to initialize silently and is muted.
-     *
-     * @param e              The exception caught.
-     * @param exceptionCause The exception cause.
-     * @param <E>            The exception type.
-     * @return <code>true</code> if the exception is handled and captured by this handler (and thus will not be
-     *         thrown anymore); <code>false</code> if the exception is not captured, in this case it will be probably
-     *         thrown again by the calling code.
-     * @throws E If this handler throws the exception itself (it may add some cause or message).
-     */
-    <E extends Exception> boolean handleInitializationException(E e, ExceptionCause exceptionCause) throws E;
-  }
-
-  /**
-   * Handles resource loading exception.
-   */
-  protected interface LoadingExceptionHandler {
-
-    /**
-     * NoOp {@link LoadingExceptionHandler} that does not capture any exception and simply returns <code>false</code>.
-     */
-    LoadingExceptionHandler NO_OP = new LoadingExceptionHandler() {
-      @Override
-      public boolean handleLoadingException(Exception e, boolean resourceAccessIssue) {
-        return false;
-      }
-
-      @Override
-      public int getLoadingMaxAttempts() {
-        return 0;
-      }
-    };
-
-    /**
-     * Potentially handles and captures an exception that occurred while loading a resource.
-     *
-     * @param e                   The exception caught.
-     * @param resourceAccessIssue <code>true</code> if the exception has been thrown because the resource could not
-     *                            be accessed (missing or cannot be read); <code>false</code> if the resource has
-     *                            been found and accessed but the error occurred while loading the resource
-     *                            (invalid format, incomplete or corrupted).
-     * @param <E>                 The exception type.
-     * @return <code>true</code> if the exception is handled and captured by this handler (and thus will not be
-     *         thrown anymore); <code>false</code> if the exception is not captured, in this case it will be probably
-     *         thrown again by the calling code.
-     * @throws E If this handler throws the exception itself (it may add some cause or message).
-     */
-    <E extends Exception> boolean handleLoadingException(E e, boolean resourceAccessIssue) throws E;
-
-    /**
-     * Gets the maximum number of attempts to load the resource in case of error (resource not found, I/O error,
-     * invalid format), for each Solr core.
-     * After this number of attempts (so {@link #handleLoadingException} is called this number of times),
-     * {@link #handleLoadingException} will not be called anymore for the specific Solr core, and the resource is
-     * considered empty afterwards (until the core is reloaded).
-     *
-     * @return The maximum number of attempts to load the resource. The value must be &gt;= 0.
-     */
-    int getLoadingMaxAttempts();
-  }
 
   //---------------------------------------------------------------------------------
   // Elevation classes
