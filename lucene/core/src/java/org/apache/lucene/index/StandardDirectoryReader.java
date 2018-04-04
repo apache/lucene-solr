@@ -103,7 +103,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         final ReadersAndUpdates rld = writer.readerPool.get(info, true);
         try {
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
-          if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
+          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(reader)) {
             // Steal the ref:
             readers.add(reader);
             infosUpto++;

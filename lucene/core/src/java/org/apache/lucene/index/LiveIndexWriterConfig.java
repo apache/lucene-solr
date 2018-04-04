@@ -106,6 +106,9 @@ public class LiveIndexWriterConfig {
   /** if an indexing thread should check for pending flushes on update in order to help out on a full flush*/
   protected volatile boolean checkPendingFlushOnUpdate = true;
 
+  /** soft deletes field */
+  protected String softDeletesField = null;
+
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -452,6 +455,14 @@ public class LiveIndexWriterConfig {
     return this;
   }
 
+  /**
+   * Returns the soft deletes field or <code>null</code> if soft-deletes are disabled.
+   * See {@link IndexWriterConfig#setSoftDeletesField(String)} for details.
+   */
+  public String getSoftDeletesField() {
+    return softDeletesField;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -475,6 +486,7 @@ public class LiveIndexWriterConfig {
     sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
+    sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
     return sb.toString();
   }
 }

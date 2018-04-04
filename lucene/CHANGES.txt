@@ -115,10 +115,19 @@ New Features
   searches based on minimum-interval semantics. (Alan Woodward, Adrien Grand,
   Jim Ferenczi, Simon Willnauer)
 
+* LUCENE-8233: Add support for soft deletes to IndexWriter delete accounting. 
+  Soft deletes are accounted for inside the index writer and therefor also
+  by merge policies. A SoftDeletesRetentionMergePolicy is added that allows
+  to selectively carry over soft_deleted document across merges for retention
+  policies (Simon Willnauer, Mike McCandless, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
   GeoStandardCircle when it covers the whole world. (Ignacio Vera)
+
+* LUCENE-8236: Filter duplicated points when creating GeoPath shapes to
+  avoid creation of bogus planes. (Ignacio Vera)
 
 Other
 

@@ -97,9 +97,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
                   if (random().nextBoolean()) {
                     seqNos[threadID] = w.updateDocument(id, doc);
                   } else {
-                    List<Document> docs = new ArrayList<>();
-                    docs.add(doc);
-                    seqNos[threadID] = w.updateDocuments(id, docs);
+                    seqNos[threadID] = w.updateDocuments(id, Arrays.asList(doc));
                   }
                 }
               } catch (Exception e) {
@@ -128,7 +126,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       DirectoryReader r = w.getReader();
       IndexSearcher s = newSearcher(r);
       TopDocs hits = s.search(new TermQuery(id), 1);
-      assertEquals(1, hits.totalHits);
+      assertEquals("maxDoc: " + r.maxDoc(), 1, hits.totalHits);
       Document doc = r.document(hits.scoreDocs[0].doc);
       assertEquals(maxThread, doc.getField("thread").numericValue().intValue());
       r.close();

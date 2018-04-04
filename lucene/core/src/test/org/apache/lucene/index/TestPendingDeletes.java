@@ -32,12 +32,16 @@ import org.apache.lucene.util.Version;
 
 public class TestPendingDeletes extends LuceneTestCase {
 
+  protected PendingDeletes newPendingDeletes(SegmentCommitInfo commitInfo) {
+    return new PendingDeletes(commitInfo);
+  }
+
   public void testDeleteDoc() throws IOException {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, 0, 0);
-    PendingDeletes deletes = new PendingDeletes(null, commitInfo);
+    PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertNull(deletes.getLiveDocs());
     int docToDelete = TestUtil.nextInt(random(), 0, 7);
     assertTrue(deletes.delete(docToDelete));
@@ -73,7 +77,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 6, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, 0, 0);
-    PendingDeletes deletes = new PendingDeletes(null, commitInfo);
+    PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertFalse(deletes.writeLiveDocs(dir));
     assertEquals(0, dir.listAll().length);
     boolean secondDocDeletes = random().nextBoolean();
@@ -130,7 +134,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, 0, 0);
-    PendingDeletes deletes = new PendingDeletes(null, commitInfo);
+    PendingDeletes deletes = newPendingDeletes(commitInfo);
     for (int i = 0; i < 3; i++) {
       assertTrue(deletes.delete(i));
       if (random().nextBoolean()) {
