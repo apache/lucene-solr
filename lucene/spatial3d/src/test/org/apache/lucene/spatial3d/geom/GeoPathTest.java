@@ -379,4 +379,27 @@ public class GeoPathTest {
 
   }
 
+  @Test
+  public void testIdenticalPoints() {
+    PlanetModel planetModel = PlanetModel.WGS84;
+    GeoPoint point1 = new GeoPoint(planetModel, 1.5707963267948963, -2.4818290647609542E-148);
+    GeoPoint point2 = new GeoPoint(planetModel, 1.570796326794895, -3.5E-323);
+    GeoPoint point3 = new GeoPoint(planetModel,4.4E-323, -3.1415926535897896);
+    GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 0, new GeoPoint[] {point1, point2, point3});
+    GeoPoint point = new GeoPoint(planetModel, -1.5707963267948952,2.369064805649877E-284);
+    //If not filtered the point is wrongly in set
+    assertFalse(path.isWithin(point));
+    //If not filtered it throws error
+    path = GeoPathFactory.makeGeoPath(planetModel, 1e-6, new GeoPoint[] {point1, point2, point3});
+    assertFalse(path.isWithin(point));
+
+    GeoPoint point4 = new GeoPoint(planetModel, 1.5, 0);
+    GeoPoint point5 = new GeoPoint(planetModel, 1.5, 0);
+    GeoPoint point6 = new GeoPoint(planetModel,4.4E-323, -3.1415926535897896);
+    //If not filtered creates a degenerated Vector
+    path = GeoPathFactory.makeGeoPath(planetModel, 0, new GeoPoint[] {point4, point5, point6});
+    path = GeoPathFactory.makeGeoPath(planetModel, 0.5, new GeoPoint[] {point4, point5, point6});
+
+  }
+
 }
