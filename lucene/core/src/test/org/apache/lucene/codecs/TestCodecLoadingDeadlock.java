@@ -61,8 +61,11 @@ public class TestCodecLoadingDeadlock extends Assert {
         .get(rnd.nextInt(avail.size()));
     final String dvfName = new ArrayList<>(avail = DocValuesFormat.availableDocValuesFormats())
         .get(rnd.nextInt(avail.size()));
-    
-    // spawn separate JVM:
+
+    System.out.println(String.format(Locale.ROOT,
+        "codec: %s, pf: %s, dvf: %s", codecName, pfName, dvfName));
+
+    // Fork a separate JVM to reinitialize classes.
     final Process p = new ProcessBuilder(
       Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
       "-cp",
@@ -85,9 +88,6 @@ public class TestCodecLoadingDeadlock extends Assert {
     final String codecName = args[0];
     final String pfName = args[1];
     final String dvfName = args[2];
-
-    System.out.println(String.format(Locale.ROOT,
-        "codec: %s, pf: %s, dvf: %s", codecName, pfName, dvfName));
 
     final int numThreads = 14; // two times the modulo in switch statement below
     final CopyOnWriteArrayList<Thread> allThreads = new CopyOnWriteArrayList<>();
