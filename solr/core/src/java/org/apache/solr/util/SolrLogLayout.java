@@ -45,10 +45,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
-@SuppressForbidden(reason = "class is specific to log4j")
+@SuppressForbidden(reason = "class is specific to log4j2")
 @Plugin(name = "SolrLogLayout", category = "Core", elementType = "layout", printObject = true)
 public class SolrLogLayout extends AbstractStringLayout {
-  
+
   protected SolrLogLayout(Charset charset) {
     super(charset);
   }
@@ -110,22 +110,8 @@ public class SolrLogLayout extends AbstractStringLayout {
   
   Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<>();
   
-  public Map<String,String> classAliases = new HashMap<>();
-  
-  public void appendThread(StringBuilder sb, LogEvent event) {
+  public void appendThread(StringBuilder sb) {
     Thread th = Thread.currentThread();
-    
-    /******
-     * sb.append(" T="); sb.append(th.getName()).append(' ');
-     * 
-     * // NOTE: tried creating a thread group around jetty but we seem to lose
-     * it and request // threads are in the normal "main" thread group
-     * ThreadGroup tg = th.getThreadGroup(); while (tg != null) {
-     * sb.append("(group_name=").append(tg.getName()).append(")");
-     * 
-     * if (tg instanceof TG) { sb.append(((TG)tg).getTag()); sb.append('/'); }
-     * try { tg = tg.getParent(); } catch (Throwable e) { tg = null; } }
-     ******/
     
     // NOTE: LogRecord.getThreadID is *not* equal to Thread.getId()
     sb.append(" T");
@@ -146,10 +132,8 @@ public class SolrLogLayout extends AbstractStringLayout {
     
     long now = event.getTimeMillis();
     long timeFromStart = now - startTime;
-    long timeSinceLast = now - lastTime;
     lastTime = now;
-    String shortClassName = getShortClassName(event.getSource().getClassName(),
-        event.getSource().getMethodName());
+    String shortClassName = getShortClassName(event.getSource().getClassName(), event.getSource().getMethodName());
     
     /***
      * sb.append(timeFromStart).append(' ').append(timeSinceLast);
@@ -165,7 +149,7 @@ public class SolrLogLayout extends AbstractStringLayout {
     try (SolrQueryRequest req = (requestInfo == null) ? null : requestInfo.getReq()) {
       core = (req == null) ? null : req.getCore();
     }
-    ZkController zkController = null;
+    ZkController zkController;
     CoreInfo info = null;
     
     if (core != null) {
@@ -206,7 +190,7 @@ public class SolrLogLayout extends AbstractStringLayout {
     // sb.append("\nL").append(record.getSequenceNumber()); // log number is
     // useful for sequencing when looking at multiple parts of a log file, but
     // ms since start should be fine.
-    appendThread(sb, event);
+    appendThread(sb);
 
     appendMDC(sb);
 
@@ -344,7 +328,7 @@ public class SolrLogLayout extends AbstractStringLayout {
     methodAlias.put(new Method(
         "org.apache.solr.update.processor.LogUpdateProcessor", "finish"), "");
   }
-  
+
   private Method classAndMethod = new Method(null, null); // don't need to be
                                                           // thread safe
   
