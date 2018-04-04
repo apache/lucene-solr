@@ -52,6 +52,8 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   public static final String WORD_LETTER = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ALPHANUM];
   /** Token type for words that appear to be numbers */
   public static final String WORD_NUMBER = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.NUM];
+  /** Token type for words that appear to be emoji sequences */
+  public static final String WORD_EMOJI = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.EMOJI];
   
   /*
    * the default breakiterators in use. these can be expensive to
@@ -65,9 +67,9 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   // maybe add an explicit check? http://icu-project.org/apiref/icu4j/com/ibm/icu/util/VersionInfo.html
 
   // the same as ROOT, except no dictionary segmentation for cjk
-  private static final BreakIterator defaultBreakIterator = 
+  private static final RuleBasedBreakIterator defaultBreakIterator = 
     readBreakIterator("Default.brk");
-  private static final BreakIterator myanmarSyllableIterator = 
+  private static final RuleBasedBreakIterator myanmarSyllableIterator = 
     readBreakIterator("MyanmarSyllable.brk");
   
   // TODO: deprecate this boolean? you only care if you are doing super-expert stuff...
@@ -95,16 +97,16 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   }
 
   @Override
-  public BreakIterator getBreakIterator(int script) {
+  public RuleBasedBreakIterator getBreakIterator(int script) {
     switch(script) {
-      case UScript.JAPANESE: return (BreakIterator)cjkBreakIterator.clone();
+      case UScript.JAPANESE: return (RuleBasedBreakIterator)cjkBreakIterator.clone();
       case UScript.MYANMAR: 
         if (myanmarAsWords) {
-          return (BreakIterator)defaultBreakIterator.clone();
+          return (RuleBasedBreakIterator)defaultBreakIterator.clone();
         } else {
-          return (BreakIterator)myanmarSyllableIterator.clone();
+          return (RuleBasedBreakIterator)myanmarSyllableIterator.clone();
         }
-      default: return (BreakIterator)defaultBreakIterator.clone();
+      default: return (RuleBasedBreakIterator)defaultBreakIterator.clone();
     }
   }
 
@@ -119,6 +121,8 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
         return script == UScript.HANGUL ? WORD_HANGUL : WORD_LETTER;
       case RuleBasedBreakIterator.WORD_NUMBER:
         return WORD_NUMBER;
+      case EMOJI_SEQUENCE_STATUS:
+        return WORD_EMOJI;
       default: /* some other custom code */
         return "<OTHER>";
     }

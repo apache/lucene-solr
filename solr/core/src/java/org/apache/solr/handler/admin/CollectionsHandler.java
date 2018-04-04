@@ -40,6 +40,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -1161,15 +1162,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       // Wait till we have an active leader
       boolean success = false;
-      for (int i = 0; i < 9; i++) {
-        Thread.sleep(5000);
-        clusterState = handler.coreContainer.getZkController().getClusterState();
+      for (int i = 0; i < 10; i++) {
+        ZkCoreNodeProps zombieLeaderProps = getZombieLeader(zkController, collectionName, sliceId);
+        if (zombieLeaderProps != null) {
+          log.warn("A replica {} on node {} won the leader election, but not exist in clusterstate, " +
+                  "remove it and waiting for another round of election",
+              zombieLeaderProps.getCoreName(), zombieLeaderProps.getNodeName());
+          try (HttpSolrClient solrClient = new HttpSolrClient.Builder(zombieLeaderProps.getBaseUrl()).build()) {
+            CoreAdminRequest.unloadCore(zombieLeaderProps.getCoreName(), solrClient);
+          }
+          // waiting for another election round
+          i = 0;
+        }
+        clusterState = zkController.getClusterState();
         collection = clusterState.getCollection(collectionName);
         slice = collection.getSlice(sliceId);
         if (slice.getLeader() != null && slice.getLeader().getState() == State.ACTIVE) {
           success = true;
           break;
         }
+        Thread.sleep(5000);
         log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice);
       }
 
@@ -1183,6 +1195,25 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Error executing FORCELEADER operation for collection: " + collectionName + " shard: " + sliceId, e);
+    }
+  }
+
+  /**
+   * Zombie leader is a replica won the election but does not exist in clusterstate
+   * @return null if the zombie leader does not exist
+   */
+  private static ZkCoreNodeProps getZombieLeader(ZkController zkController, String collection, String shardId) {
+    try {
+      ZkCoreNodeProps leaderProps = zkController.getLeaderProps(collection, shardId, 1000);
+      DocCollection docCollection = zkController.getClusterState().getCollection(collection);
+      Replica replica = docCollection.getReplica(leaderProps.getNodeProps().getStr(ZkStateReader.CORE_NODE_NAME_PROP));
+      if (replica == null) return leaderProps;
+      if (!replica.getNodeName().equals(leaderProps.getNodeName())) {
+        return leaderProps;
+      }
+      return null;
+    } catch (Exception e) {
+      return null;
     }
   }
 

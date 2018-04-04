@@ -122,12 +122,12 @@ This parameter is ignored when running examples (`-e`), as the `solr.solr.home` 
 *Example*: `bin/solr start -s newHome`
 
 `-v`::
-Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j.properties` accordingly.
+Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml` accordingly.
 +
 *Example*: `bin/solr start -f -v`
 
 `-q`::
-Be more quiet. This changes the logging level of log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j.properties` accordingly. This can be useful in a production setting where you want to limit logging to warnings and errors.
+Be more quiet. This changes the logging level of log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j2.xml` accordingly. This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
 

@@ -32,8 +32,9 @@
     <dependency org="net.thisptr" name="jackson-jq" rev="${/net.thisptr/jackson-jq}" conf="compile"/>
     <dependency org="net.sourceforge.argparse4j" name="argparse4j" rev="${/net.sourceforge.argparse4j/argparse4j}" conf="compile"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile"/>
-    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="compile"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="compile"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="compile"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

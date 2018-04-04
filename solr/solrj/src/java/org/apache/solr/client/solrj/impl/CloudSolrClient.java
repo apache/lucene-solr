@@ -588,6 +588,7 @@ public class CloudSolrClient extends SolrClient {
         nonRoutableRequest = new UpdateRequest();
       }
       nonRoutableRequest.setParams(nonRoutableParams);
+      nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
       List<String> urlList = new ArrayList<>();
       urlList.addAll(routes.keySet());
       Collections.shuffle(urlList, rand);

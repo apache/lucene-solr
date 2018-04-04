@@ -272,6 +272,17 @@
       <tokenizer class="solr.StandardTokenizerFactory"/>
     </analyzer>
   </fieldType>
+  <fieldType name="isocharfilter" class="solr.TextField">
+    <analyzer type="index">
+      <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"/>
+    </analyzer>
+  </fieldType>
   <fieldType name="HTMLwhitetok" class="solr.TextField">
     <analyzer>
       <charFilter class="solr.HTMLStripCharFilterFactory"/>
@@ -590,6 +601,7 @@
   <field name="lettertok" type="lettertok" indexed="true" stored="true"/>
   <field name="whitetok" type="whitetok" indexed="true" stored="true"/>
   <field name="HTMLwhitetok" type="HTMLwhitetok" indexed="true" stored="true"/>
+  <field name="isocharfilter" type="isocharfilter" indexed="true" stored="true"/>
   <field name="standardtokfilt" type="standardtokfilt" indexed="true" stored="true"/>
   <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
   <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>

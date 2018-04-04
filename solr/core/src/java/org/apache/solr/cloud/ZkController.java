@@ -898,18 +898,19 @@ public class ZkController {
     publishNodeAsDown(getNodeName());
 
     Set<String> collectionsWithLocalReplica = ConcurrentHashMap.newKeySet();
-    for (SolrCore core : cc.getCores()) {
-      collectionsWithLocalReplica.add(core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+    for (CoreDescriptor descriptor : cc.getCoreDescriptors()) {
+      collectionsWithLocalReplica.add(descriptor.getCloudDescriptor().getCollectionName());
     }
 
     CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
     for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
       zkStateReader.registerCollectionStateWatcher(collectionWithLocalReplica, (liveNodes, collectionState) -> {
+        if (collectionState == null)  return false;
         boolean foundStates = true;
-        for (SolrCore core : cc.getCores()) {
-          if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
-            Replica replica = collectionState.getReplica(core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-            if (replica.getState() != Replica.State.DOWN) {
+        for (CoreDescriptor coreDescriptor : cc.getCoreDescriptors()) {
+          if (coreDescriptor.getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
+            Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getCoreNodeName());
+            if (replica == null || replica.getState() != Replica.State.DOWN) {
               foundStates = false;
             }
           }
@@ -1660,6 +1661,9 @@ public class ZkController {
       Thread.currentThread().interrupt();
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (NotInClusterStateException e) {
+      // make the stack trace less verbose
+      throw e;
     } catch (Exception e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -1687,7 +1691,7 @@ public class ZkController {
     return true;
   }
 
-  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
+  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException, NotInClusterStateException {
     if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String nodeName = cloudDesc.getCoreNodeName();
@@ -1721,7 +1725,8 @@ public class ZkController {
           }
           Replica replica = slice.getReplica(coreNodeName);
           if (replica == null) {
-            errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId());
+            errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+                ", ignore the exception if the replica was deleted");
             return false;
           }
           return true;
@@ -1729,8 +1734,9 @@ public class ZkController {
       } catch (TimeoutException e) {
         String error = errorMessage.get();
         if (error == null)
-          error = "Replica " + coreNodeName + " is not present in cluster state";
-        throw new SolrException(ErrorCode.SERVER_ERROR, error + ": " + collectionState.get());
+          error = "coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+              ", ignore the exception if the replica was deleted";
+        throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
       }
     }
   }
@@ -2174,7 +2180,8 @@ public class ZkController {
       }
 
       // we only really need to try to start the LIR process if the node itself is "live"
-      if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
+      if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)
+          && CloudUtil.replicaExists(getZkStateReader().getClusterState(), collection, shardId, replicaCoreNodeName)) {
 
         LeaderInitiatedRecoveryThread lirThread =
             new LeaderInitiatedRecoveryThread(this,
@@ -2199,9 +2206,8 @@ public class ZkController {
             replicaNodeName + " into leader-initiated recovery.", replicaCoreProps.getCoreName(), replicaCoreNodeName);
       } else {
         nodeIsLive = false; // we really don't need to send the recovery request if the node is NOT live
-        log.info("Node " + replicaNodeName +
-                " is not live, so skipping leader-initiated recovery for replica: core={} coreNodeName={}",
-            replicaCoreProps.getCoreName(), replicaCoreNodeName);
+        log.info("Node {} is not live or replica {} is deleted, so skipping leader-initiated recovery for replica: core={}",
+            replicaNodeName, replicaCoreNodeName, replicaCoreProps.getCoreName());
         // publishDownState will be false to avoid publishing the "down" state too many times
         // as many errors can occur together and will each call into this method (SOLR-6189)
       }
@@ -2706,6 +2712,15 @@ public class ZkController {
    */
   public static class NotLeaderException extends SolrException  {
     public NotLeaderException(ErrorCode code, String msg) {
+      super(code, msg);
+    }
+  }
+
+  /**
+   * Thrown during pre register process if the replica is not present in clusterstate
+   */
+  public static class NotInClusterStateException extends SolrException {
+    public NotInClusterStateException(ErrorCode code, String msg) {
       super(code, msg);
     }
   }

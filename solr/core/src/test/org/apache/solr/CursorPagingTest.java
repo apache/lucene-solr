@@ -32,6 +32,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark; //jdoc
 import org.noggit.ObjectBuilder;
@@ -524,10 +525,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final MetricsMap filterCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     assertNotNull(filterCacheStats);
     final MetricsMap queryCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     assertNotNull(queryCacheStats);
 
     final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");

@@ -186,6 +186,8 @@ public class CoreContainer {
 
   protected SolrMetricManager metricManager;
 
+  protected String metricTag = Integer.toHexString(hashCode());
+
   protected MetricsHandler metricsHandler;
 
   protected MetricsCollectorHandler metricsCollectorHandler;
@@ -506,11 +508,11 @@ public class CoreContainer {
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer) {
       SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
-      metricProducer.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), "httpShardHandler");
+      metricProducer.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "httpShardHandler");
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
-    updateShardHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), "updateShardHandler");
+    updateShardHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "updateShardHandler");
 
     solrCores.load(loader);
 
@@ -541,7 +543,7 @@ public class CoreContainer {
     metricsCollectorHandler.init(null);
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    securityConfHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), AUTHZ_PATH);
+    securityConfHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
@@ -558,19 +560,20 @@ public class CoreContainer {
     // initialize gauges for reporting the number of cores and disk total/free
 
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    String metricTag = Integer.toHexString(hashCode());
     metricManager.registerGauge(null, registryName, () -> solrCores.getCores().size(),
-        true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+        metricTag,true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     metricManager.registerGauge(null, registryName, () -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
-        true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+        metricTag,true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     metricManager.registerGauge(null, registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
-        true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+        metricTag,true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     metricManager.registerGauge(null, registryName, () -> dataHome.toFile().getTotalSpace(),
-        true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+        metricTag,true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> dataHome.toFile().getUsableSpace(),
-        true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+        metricTag,true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> dataHome.toAbsolutePath().toString(),
-        true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+        metricTag,true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
@@ -579,13 +582,13 @@ public class CoreContainer {
             return true;
           }
         },
-        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+        metricTag,true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
-        true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+        metricTag,true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
-        true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+        metricTag,true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
-        true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+        metricTag,true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     metricManager.registerGauge(null, registryName, () -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
@@ -594,15 +597,15 @@ public class CoreContainer {
             return true;
           }
         },
-        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+        metricTag,true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     // add version information
     metricManager.registerGauge(null, registryName, () -> this.getClass().getPackage().getSpecificationVersion(),
-        true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
+        metricTag,true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
     metricManager.registerGauge(null, registryName, () -> this.getClass().getPackage().getImplementationVersion(),
-        true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
+        metricTag,true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(metricManager, registryName, null);
+    fieldCacheBean.initializeMetrics(metricManager, registryName, metricTag, null);
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -674,7 +677,7 @@ public class CoreContainer {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
               } catch (ExecutionException e) {
-                log.error("Error waiting for SolrCore to be created", e);
+                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
               }
             }
           } finally {
@@ -691,7 +694,7 @@ public class CoreContainer {
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
       containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
-      autoScalingHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), AutoScalingHandler.HANDLER_PATH);
+      autoScalingHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, AutoScalingHandler.HANDLER_PATH);
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -744,6 +747,10 @@ public class CoreContainer {
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty));
+
+      metricManager.unregisterGauges(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
+      metricManager.unregisterGauges(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
+      metricManager.unregisterGauges(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
     }
 
     if (isZooKeeperAware()) {
@@ -1056,6 +1063,11 @@ public class CoreContainer {
       return core;
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
+        // this mostly happen when the core is deleted when this node is down
+        unload(dcore.getName(), true, true, true);
+        throw e;
+      }
       solrCores.removeCoreDescriptor(dcore);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
       if(core != null && !core.isClosed())
@@ -1548,7 +1560,7 @@ public class CoreContainer {
       containerHandlers.put(path, (SolrRequestHandler)handler);
     }
     if (handler instanceof SolrMetricProducer) {
-      ((SolrMetricProducer)handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), path);
+      ((SolrMetricProducer)handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
   }

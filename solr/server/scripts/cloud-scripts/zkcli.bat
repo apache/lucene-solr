@@ -12,7 +12,7 @@ if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 if defined LOG4J_PROPS (
   set "LOG4J_CONFIG=file:%LOG4J_PROPS%"
 ) else (
-  set "LOG4J_CONFIG=file:%SDIR%\log4j.properties"
+  set "LOG4J_CONFIG=file:%SDIR%\log4j2.xml"
 )
 
 REM Settings for ZK ACL
@@ -21,5 +21,5 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 
-"%JVM%" %SOLR_ZK_CREDS_AND_ACLS% %ZKCLI_JVM_FLAGS% -Dlog4j.configuration="%LOG4J_CONFIG%" ^
+"%JVM%" %SOLR_ZK_CREDS_AND_ACLS% %ZKCLI_JVM_FLAGS% -Dlog4j.configurationFile="%LOG4J_CONFIG%" ^
 -classpath "%SDIR%\..\..\solr-webapp\webapp\WEB-INF\lib\*;%SDIR%\..\..\lib\ext\*;%SDIR%\..\..\lib\*" org.apache.solr.cloud.ZkCLI %*

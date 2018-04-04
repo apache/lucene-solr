@@ -40,8 +40,8 @@ public class BufferStoreTest extends LuceneTestCase {
     SolrMetricManager metricManager = new SolrMetricManager();
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
-    metrics.initializeMetrics(metricManager, registry, scope);
-    metricsMap = (MetricsMap) metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache");
+    metrics.initializeMetrics(metricManager, registry, "foo", scope);
+    metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }

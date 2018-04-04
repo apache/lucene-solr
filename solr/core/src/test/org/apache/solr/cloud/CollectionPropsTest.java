@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,6 +96,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     final CollectionPropsWatcher w = new CollectionPropsWatcher() {
       @Override
       public boolean onStateChanged(Map<String,String> collectionProperties) {
+        log.info("collection properties changed. Now: {}",  collectionProperties);
         return false;
       }
     };
@@ -134,17 +136,30 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   private void waitForValue(String propertyName, String expectedValue, int timeout) throws InterruptedException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
 
+    Object lastValueSeen = null;
     for (int i = 0; i < timeout; i += 10) {
       final Object value = zkStateReader.getCollectionProperties(collectionName).get(propertyName);
       if ((expectedValue == null && value == null) ||
           (expectedValue != null && expectedValue.equals(value))) {
         return;
       }
+      lastValueSeen = value;
       Thread.sleep(10);
     }
+    String collectionpropsInZk = null;
+    try {
+      collectionpropsInZk = new String(cluster.getZkClient().getData("/collections/" + collectionName + "/collectionprops.json", null, null, true), StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();
+      log.error("Could not get collectionprops from ZooKeeper for assertion mesage", e);
+    }
+    
+    String propertiesInZkReader = cluster.getSolrClient().getZkStateReader().getCollectionProperties(collectionName).toString();
 
-    fail(String.format(Locale.ROOT, "Could not see value change after setting collection property. Name: %s, current value: %s, expected value: %s",
-            propertyName, zkStateReader.getCollectionProperties(collectionName).get(propertyName), expectedValue));
+    fail(String.format(Locale.ROOT, "Could not see value change after setting collection property. Name: %s, current value: %s, expected value: %s. " +
+                                    "\ncollectionprops.json file in ZooKeeper: %s" +
+                                    "\nCollectionProperties in zkStateReader: %s",
+            propertyName, lastValueSeen, expectedValue, collectionpropsInZk, propertiesInZkReader));
   }
 
   @Test

@@ -96,6 +96,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "71", "text_sw", "ties"));
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
+    assertU(adoc("id", "74", "isocharfilter", "niño"));
 //    assertU(adoc("id", "74", "text_pick_best", "tabby"));
 //    assertU(adoc("id", "74", "text_as_distinct", "persian"));
 
@@ -210,7 +211,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           , "*[count(//doc)=1]");
     }
   }
-    
+
+  public void testCharFilter() throws Exception {
+    // test that charfilter was applied by the indexer
+    assertQ(req("defType", "edismax",
+        "stopwords","false",
+        "qf", "isocharfilter",
+        "q","nino"), "*[count(//doc)=1]"
+    );
+
+    // test that charfilter was applied to the query
+    assertQ(req("defType", "edismax",
+        "stopwords","false",
+        "qf", "isocharfilter",
+        "q","niño"), "*[count(//doc)=1]"
+    );
+  }
+
   // test the edismax query parser based on the dismax parser
   public void testFocusQueryParser() {
     String allq = "id:[42 TO 51]";

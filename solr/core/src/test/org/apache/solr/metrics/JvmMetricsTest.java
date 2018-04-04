@@ -103,7 +103,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     }
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
     Map<String,Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    MetricsMap map = (MetricsMap)metrics.get("system.properties");
+    MetricsMap map = (MetricsMap)((SolrMetricManager.GaugeWrapper)metrics.get("system.properties")).getGauge();
     assertNotNull(map);
     Map<String,Object> values = map.getValue();
     System.getProperties().forEach((k, v) -> {

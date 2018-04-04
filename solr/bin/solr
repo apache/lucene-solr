@@ -50,7 +50,7 @@ verbose=false
 THIS_OS=`uname -s`
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ="1.8"
+JAVA_VER_REQ="8"
 
 stop_all=false
 
@@ -138,10 +138,10 @@ if [[ $? -ne 0 ]] ; then
   echo >&2 "${PATH}"
   exit 1
 else
-  JAVA_VER_NUM=$(echo $JAVA_VER | head -1 | awk -F '"' '/version/ {print $2}')
-  if [[ "$JAVA_VER_NUM" < "$JAVA_VER_REQ" ]] ; then
-    echo >&2 "Your current version of Java is too old to run this version of Solr"
-    echo >&2 "We found version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
+  JAVA_VER_NUM=$(echo $JAVA_VER | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
+  if [[ "$JAVA_VER_NUM" -lt "$JAVA_VER_REQ" ]] ; then
+    echo >&2 "Your current version of Java is too old to run this version of Solr."
+    echo >&2 "We found major version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
     echo >&2 "${JAVA_VER}"
     echo >&2
     echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
@@ -681,7 +681,7 @@ function jetty_port() {
 function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configuration="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties" \
+    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j2.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI "$@"
 
@@ -1783,20 +1783,20 @@ if [ -z "$DEFAULT_CONFDIR" ]; then
   DEFAULT_CONFDIR="$SOLR_SERVER_DIR/solr/configsets/_default/conf"
 fi
 
-# This is quite hacky, but examples rely on a different log4j.properties
+# This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
 if [ -z "$SOLR_LOGS_DIR" ]; then
   SOLR_LOGS_DIR="$SOLR_SERVER_DIR/logs"
 fi
 EXAMPLE_DIR="$SOLR_TIP/example"
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
-  LOG4J_PROPS="$EXAMPLE_DIR/resources/log4j.properties"
+  LOG4J_PROPS="$EXAMPLE_DIR/resources/log4j2.xml"
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
-  LOG4J_CONFIG+=("-Dlog4j.configuration=file:$LOG4J_PROPS")
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=file:$LOG4J_PROPS")
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
@@ -1819,16 +1819,18 @@ if $verbose ; then
 else
   q="-q"
 fi
-if [ "${SOLR_LOG_PRESTART_ROTATION:=true}" == "true" ]; then
-  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
-  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_gc_logs $q     || echo "Failed archiving old GC logs"
-  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_console_logs   || echo "Failed archiving old console logs"
+# Rotate and clean on startup. Default to false since 7.4 as log4j2 handles startup rotation
+if [ "${SOLR_LOG_PRESTART_ROTATION:=false}" == "true" ]; then
+  # Enable any of these if you require old remove/archive behavior
+  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
+  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_gc_logs $q     || echo "Failed archiving old GC logs"
+  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_console_logs   || echo "Failed archiving old console logs"
   run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -rotate_solr_logs 10    || echo "Failed rotating old solr logs"
 fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)
 if [ -z ${GC_LOG_OPTS+x} ]; then
-  if [[ "$JAVA_VER_NUM" < "9" ]] ; then
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
     GC_LOG_OPTS=('-verbose:gc' '-XX:+PrintHeapAtGC' '-XX:+PrintGCDetails' \
                  '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
                  '-XX:+PrintGCApplicationStoppedTime')
@@ -1841,7 +1843,7 @@ fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
-  if [[ "$JAVA_VER_NUM" < "9" ]] ; then
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
     gc_log_flag="-Xloggc"
     if [ "$JAVA_VENDOR" == "IBM J9" ]; then
       gc_log_flag="-Xverbosegclog"
@@ -1953,7 +1955,6 @@ function launch_solr() {
         '-XX:TargetSurvivorRatio=90' \
         '-XX:MaxTenuringThreshold=8' \
         '-XX:+UseConcMarkSweepGC' \
-        '-XX:+UseParNewGC' \
         '-XX:ConcGCThreads=4' '-XX:ParallelGCThreads=4' \
         '-XX:+CMSScavengeBeforeRemark' \
         '-XX:PretenureSizeThreshold=64m' \

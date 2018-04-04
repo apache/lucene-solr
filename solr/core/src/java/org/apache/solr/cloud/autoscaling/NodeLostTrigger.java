@@ -29,11 +29,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,21 +41,19 @@ import org.slf4j.LoggerFactory;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<String> lastLiveNodes;
+  private Set<String> lastLiveNodes = new HashSet<>();
 
   private Map<String, Long> nodeNameVsTimeRemoved = new HashMap<>();
 
-  public NodeLostTrigger(String name, Map<String, Object> properties,
-                         SolrResourceLoader loader,
-                         SolrCloudManager dataProvider) {
-    super(TriggerEventType.NODELOST, name, properties, loader, dataProvider);
-    lastLiveNodes = new HashSet<>(dataProvider.getClusterStateProvider().getLiveNodes());
-    log.debug("Initial livenodes: {}", lastLiveNodes);
+  public NodeLostTrigger(String name) {
+    super(TriggerEventType.NODELOST, name);
   }
 
   @Override
-  public void init() {
+  public void init() throws Exception {
     super.init();
+    lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
+    log.debug("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
     // pick up lost nodes for which marker paths were created
     try {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
@@ -82,8 +78,10 @@ public class NodeLostTrigger extends TriggerBase {
     if (old instanceof NodeLostTrigger) {
       NodeLostTrigger that = (NodeLostTrigger) old;
       assert this.name.equals(that.name);
-      this.lastLiveNodes = new HashSet<>(that.lastLiveNodes);
-      this.nodeNameVsTimeRemoved = new HashMap<>(that.nodeNameVsTimeRemoved);
+      this.lastLiveNodes.clear();
+      this.lastLiveNodes.addAll(that.lastLiveNodes);
+      this.nodeNameVsTimeRemoved.clear();
+      this.nodeNameVsTimeRemoved.putAll(that.nodeNameVsTimeRemoved);
     } else  {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
           "Unable to restore state from an unknown type of trigger");

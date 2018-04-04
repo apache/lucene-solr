@@ -280,7 +280,7 @@ The `aggregationMode` parameter is available in the both the JDBC driver and HTT
 SELECT distinct fieldA as fa, fieldB as fb FROM tableA ORDER BY fa desc, fb desc
 ----
 
-=== Statistics
+=== Statistical Functions
 
 The SQL interface supports simple statistics calculated on numeric fields. The supported functions are `count(*)`, `min`, `max`, `sum`, and `avg`.
 

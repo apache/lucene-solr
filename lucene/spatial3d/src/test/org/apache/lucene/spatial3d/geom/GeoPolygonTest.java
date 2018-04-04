@@ -121,7 +121,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     //System.out.println(c);
     
     // Middle point should NOT be within!!
@@ -129,7 +130,7 @@ public class GeoPolygonTest {
     assertTrue(!c.isWithin(gp));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     assertTrue(!c.isWithin(gp));
@@ -141,7 +142,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));    
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    pd = new GeoPolygonFactory.PolygonDescription(points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     //System.out.println(c);
     
     // Middle point should be within!!
@@ -149,7 +151,7 @@ public class GeoPolygonTest {
     assertTrue(c.isWithin(gp));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     assertTrue(c.isWithin(gp));
@@ -170,7 +172,9 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
 
     xyzBounds = new XYZBounds();
     c.getBounds(xyzBounds);
@@ -180,7 +184,7 @@ public class GeoPolygonTest {
     assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
 
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
 
@@ -242,11 +246,13 @@ public class GeoPolygonTest {
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
 
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
     // Now, same thing for large polygon
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+    //System.out.println("Large polygon = "+c);
     
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
@@ -286,7 +292,8 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.7));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.01, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
-        
+    
+    pd = new GeoPolygonFactory.PolygonDescription(points);
         /*
         System.out.println("Points: ");
         for (GeoPoint p : points) {
@@ -294,7 +301,7 @@ public class GeoPolygonTest {
         }
         */
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
@@ -325,7 +332,7 @@ public class GeoPolygonTest {
 
     // Now, same thing for large polygon
     shapes = new ArrayList<>();
-    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
     // Sample some points within
@@ -622,7 +629,7 @@ shape:
   }
   
   @Test
-  public void testPolygonFactoryCase3() {
+  public void testPolygonFactoryCase3() throws Exception {
     /*
     This one failed to be detected as convex:
 
@@ -749,19 +756,9 @@ shape:
     
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -0.41518838180529244, 3.141592653589793);
     final GeoPoint encodedPoint = new GeoPoint(-0.9155623168963972, 2.3309121299774915E-10, -0.40359240449795253);
-    //System.out.println("point = "+point);
-    //System.out.println("encodedPoint = "+encodedPoint);
     
-    assertTrue(p.isWithin(point));
-    assertTrue(solid.isWithin(point));
+    assertTrue(p.isWithin(point)?solid.isWithin(point):true);
     
-    //System.out.println("bounds1 = "+bounds1);
-    //System.out.println("bounds2 = "+bounds2);
-    //assertTrue(poly1.isWithin(point));
-    //assertTrue(poly2.isWithin(point));
-    //assertTrue(solid2.isWithin(point));
-    
-    //assertTrue(poly2.isWithin(encodedPoint));
   }
   
   @Test
@@ -960,8 +957,10 @@ shape:
     poly1List.add(new GeoPoint(PlanetModel.WGS84, 1.079437865394857, -1.720224083538152E-11));
     poly1List.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, 0.017453291479645996));
     poly1List.add(new GeoPoint(PlanetModel.WGS84, 0.017453291479645996, 2.4457272005608357E-47));
+
+    final GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(poly1List);
     
-    final GeoConvexPolygon poly1 = new GeoConvexPolygon(PlanetModel.WGS84, poly1List);
+    final GeoPolygon poly1 = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
     
     /*
    [junit4]   1>       unquantized=[lat=-1.5316724989005415, lon=3.141592653589793([X=-0.03902652216795768, Y=4.779370545484258E-18, Z=-0.9970038705813589])]
@@ -970,17 +969,12 @@ shape:
     
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -1.5316724989005415, 3.141592653589793);
 
-    assertTrue(poly1.isWithin(point));
-    
     final XYZBounds actualBounds1 = new XYZBounds();
     poly1.getBounds(actualBounds1);
     
-    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
-      actualBounds1.getMinimumX(), actualBounds1.getMaximumX(),
-      actualBounds1.getMinimumY(), actualBounds1.getMaximumY(),
-      actualBounds1.getMinimumZ(), actualBounds1.getMaximumZ());
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, actualBounds1);
 
-    assertTrue(solid.isWithin(point));
+    assertTrue(poly1.isWithin(point)?solid.isWithin(point):true);
   }
 
   @Test
@@ -996,7 +990,7 @@ shape:
   }
 
   @Test
-  public void testConcavePolygonWithHole() {
+  public void testPolygonWithHole() {
     ArrayList<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -1.1, -1.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 1.0, -1.6));
@@ -1007,11 +1001,36 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
-    GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
+    
+    GeoPolygonFactory.PolygonDescription holeDescription = new GeoPolygonFactory.PolygonDescription(hole_points);
+    List<GeoPolygonFactory.PolygonDescription> holes = new ArrayList<>(1);
+    holes.add(holeDescription);
+    GeoPolygonFactory.PolygonDescription polygonDescription = new GeoPolygonFactory.PolygonDescription(points, holes);
+    
+    // Create two polygons -- one simple, the other complex.  Both have holes.  Compare their behavior.
+    GeoPolygon holeSimplePolygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,polygonDescription);
+    List<GeoPolygonFactory.PolygonDescription> polys = new ArrayList<>(1);
+    polys.add(polygonDescription);
+    GeoPolygon holeComplexPolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE,polys);
 
-    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
-    GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
-    assertEquals(polygon,polygon2);
+    // Sample some nearby points outside
+    GeoPoint gp;
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    // Random points outside
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
+    assertEquals(holeSimplePolygon.isWithin(gp), holeComplexPolygon.isWithin(gp));
+
   }
 
   @Test
@@ -1099,4 +1118,314 @@ shape:
     assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(-testPoint.x, testPoint.y, -testPoint.z)));
     assertFalse(polygon.isWithin(PlanetModel.SPHERE.createSurfacePoint(-testPoint.x, -testPoint.y, testPoint.z)));
   }
+
+  @Test
+  public void testCoplanarityTileConvex() throws Exception {
+    // This test has been disabled because it is possible that the polygon specified actually intersects itself.
+    //POLYGON((24.39398 65.77519,24.3941 65.77498,24.394024 65.77497,24.393976 65.77495,24.393963 65.77493,24.394068 65.774925,24.394156 65.77495,24.394201 65.77495,24.394234 65.77496,24.394266 65.77498,24.394318 65.77498,24.39434 65.774956,24.394377 65.77495,24.394451 65.77494,24.394476 65.77495,24.394457 65.77498,24.39398 65.77519))"
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77519), Geo3DUtil.fromDegrees(24.39398)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77498), Geo3DUtil.fromDegrees(24.3941)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77497), Geo3DUtil.fromDegrees(24.394024)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.393976)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77493), Geo3DUtil.fromDegrees(24.393963)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.774925), Geo3DUtil.fromDegrees(24.394068)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.394156)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.394201)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77496), Geo3DUtil.fromDegrees(24.394234)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77498), Geo3DUtil.fromDegrees(24.394266)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77498), Geo3DUtil.fromDegrees(24.394318)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.774956), Geo3DUtil.fromDegrees(24.39434)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.394377)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77494), Geo3DUtil.fromDegrees(24.394451)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77495), Geo3DUtil.fromDegrees(24.394476)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(65.77498), Geo3DUtil.fromDegrees(24.394457)));
+    GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    assertTrue(polygon != null);
+  }
+
+  @Test
+  public void testCoplanarityConcave() throws Exception {
+    //POLYGON((-52.18851 64.53777,-52.18853 64.53828,-52.18675 64.53829,-52.18676 64.53855,-52.18736 64.53855,-52.18737 64.53881,-52.18677 64.53881,-52.18683 64.54009,-52.18919 64.53981,-52.18916 64.53905,-52.19093 64.53878,-52.19148 64.53775,-52.18851 64.53777))
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53777), Geo3DUtil.fromDegrees(-52.18851)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53828), Geo3DUtil.fromDegrees(-52.18853)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53829), Geo3DUtil.fromDegrees(-52.18675)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53855), Geo3DUtil.fromDegrees(-52.18676)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53855), Geo3DUtil.fromDegrees(-52.18736)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53881), Geo3DUtil.fromDegrees(-52.18737)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53881), Geo3DUtil.fromDegrees(-52.18677)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.54009), Geo3DUtil.fromDegrees(-52.18683)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53981), Geo3DUtil.fromDegrees(-52.18919)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53905), Geo3DUtil.fromDegrees(-52.18916)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53878), Geo3DUtil.fromDegrees(-52.19093)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(64.53775), Geo3DUtil.fromDegrees(-52.19148)));
+    GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    Collections.reverse(points);
+    polygon  = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+  }
+
+  @Test
+  public void testCoplanarityConvex2() throws Exception {
+    //POLYGON((-3.488658 50.45564,-3.4898987 50.455627,-3.489865 50.455585,-3.489833 50.45551,-3.489808 50.455433,-3.489806 50.455406,-3.4898643 50.45525,-3.4892037 50.455162,-3.4891756 50.455166,-3.4891088 50.455147,-3.4890108 50.455166,-3.4889853 50.455166,-3.48895 50.45516,-3.488912 50.455166,-3.4889014 50.455177,-3.488893 50.455185,-3.488927 50.45523,-3.4890666 50.455456,-3.48905 50.455467,-3.488658 50.45564))
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.45564), Geo3DUtil.fromDegrees(-3.488658)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455627), Geo3DUtil.fromDegrees(-3.4898987)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455585), Geo3DUtil.fromDegrees(-3.489865)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.45551), Geo3DUtil.fromDegrees(-3.489833)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455433), Geo3DUtil.fromDegrees(-3.489808)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455406), Geo3DUtil.fromDegrees(-3.489806)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.45525), Geo3DUtil.fromDegrees(-3.4898643)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455162), Geo3DUtil.fromDegrees(-3.4892037)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455166), Geo3DUtil.fromDegrees(-3.4891756)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455147), Geo3DUtil.fromDegrees(-3.4891088)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455166), Geo3DUtil.fromDegrees(-3.4890108)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455166), Geo3DUtil.fromDegrees(-3.4889853)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.45516), Geo3DUtil.fromDegrees(-3.48895)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455166), Geo3DUtil.fromDegrees(-3.488912)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455177), Geo3DUtil.fromDegrees(-3.4889014)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455185), Geo3DUtil.fromDegrees( -3.488893)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.45523), Geo3DUtil.fromDegrees(-3.488927)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455456), Geo3DUtil.fromDegrees(-3.4890666)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(50.455467), Geo3DUtil.fromDegrees( -3.48905)));
+    GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    Collections.reverse(points);
+    polygon  = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+  }
+  
+  /*
+   [lat=-0.63542308910253, lon=0.9853722928232957([X=0.4446759777403525, Y=0.6707549854468698, Z=-0.5934780737681111])], 
+  [lat=0.0, lon=0.0([X=1.0011188539924791, Y=0.0, Z=0.0])], 
+  [lat=0.45435018176633574, lon=3.141592653589793([X=-0.8989684544372841, Y=1.1009188402610632E-16, Z=0.4390846549572752])], 
+  [lat=-0.375870856827283, lon=2.9129132647718414([X=-0.9065744420970767, Y=0.21100590938346708, Z=-0.36732668582405886])], 
+  [lat=-1.2205765069413237, lon=3.141592653589793([X=-0.3424714964202101, Y=4.194066218902145E-17, Z=-0.9375649457139603])]}}
+  
+   [junit4]   1>       unquantized=[lat=-3.1780051348770987E-74, lon=-3.032608859187692([X=-0.9951793580358298, Y=-0.1088898762907205, Z=-3.181560858610375E-74])]
+   [junit4]   1>       quantized=[X=-0.9951793580415914, Y=-0.10888987641797832, Z=-2.3309121299774915E-10]
+  */
+  @Test
+  public void testLUCENE8227() throws Exception {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.63542308910253, 0.9853722928232957));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.0, 0.0));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.45435018176633574, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.375870856827283, 2.9129132647718414));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.2205765069413237, 3.141592653589793));
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    /*
+    for (int i = 0; i < points.size(); i++) {
+      System.out.println("Point "+i+": "+points.get(i));
+    }
+    */
+
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, -3.1780051348770987E-74, -3.032608859187692);
+    final GeoPoint quantized = new GeoPoint(-0.9951793580415914, -0.10888987641797832, -2.3309121299774915E-10);
+    
+    final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
+    final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
+    
+    // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
+    GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    
+    // This shows y < 0 hemisphere is all in-set
+    //assertTrue(standard.isWithin(negativeY));
+    // This should be in-set too, but isn't!!
+    assertTrue(standard.isWithin(negativeX));
+    
+    final XYZBounds standardBounds = new XYZBounds();
+    standard.getBounds(standardBounds);
+    final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
+
+    // If within shape, should be within bounds
+    assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
+    assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
+    
+  }
+  
+  /*
+   [junit4]   1>     doc=754 is contained by shape but is outside the returned XYZBounds
+   [junit4]   1>       unquantized=[lat=2.4043303687704734E-204, lon=3.1342447995980507([X=-1.0010918284309325, Y=0.007356008974104805, Z=2.4070204634028112E-204])]
+   [junit4]   1>       quantized=[X=-1.0010918285430614, Y=0.007356008812298254, Z=2.3309121299774915E-10]
+
+   [junit4]   1>     doc=3728 is contained by shape but is outside the returned XYZBounds
+   [junit4]   1>       unquantized=[lat=2.4457272005608357E-47, lon=-3.1404077424936307([X=-1.001118151199965, Y=-0.0011862365610909341, Z=2.448463612203698E-47])]
+   [junit4]   1>       quantized=[X=-1.0011181510675629, Y=-0.001186236379718708, Z=2.3309121299774915E-10]
+   
+   [junit4]   1>   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=7969cab3, 
+   testPoint=[X=-0.07416172733314662, Y=0.5686488061136892, Z=0.8178445379402641], testPointInSet=true, shapes={ {
+   [lat=-1.5707963267948966, lon=-1.0755217966112058([X=2.903696886845155E-17, Y=-5.375400029710238E-17, Z=-0.997762292022105])], 
+   [lat=-1.327365682666958, lon=-2.9674513704178316([X=-0.23690293696956322, Y=-0.04167672037374933, Z=-0.9685334156912658])], 
+   [lat=0.32288591161895097, lon=3.141592653589793([X=-0.9490627533610154, Y=1.1622666630935417E-16, Z=0.3175519551883462])], 
+   [lat=0.0, lon=0.0([X=1.0011188539924791, Y=0.0, Z=0.0])], 
+   [lat=0.2839194570254642, lon=-1.2434404554202965([X=0.30893121415043073, Y=-0.9097632721627391, Z=0.2803596238536593])]}}
+  */
+  @Test
+  public void testLUCENE8227_case2() {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, -1.0755217966112058));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.327365682666958, -2.9674513704178316));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.32288591161895097, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.0, 0.0));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.2839194570254642, -1.2434404554202965));
+    GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, -3.1404077424936307);
+    final GeoPoint quantized = new GeoPoint(-1.0011181510675629, -0.001186236379718708, 2.3309121299774915E-10);
+    
+    // Is the north pole in set, or out of set?
+    final GeoPoint northPole = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
+    final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
+    final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
+    final GeoPoint positiveY = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI * 0.5);
+    final GeoPoint testPoint = new GeoPoint(-0.07416172733314662, 0.5686488061136892, 0.8178445379402641);
+
+    // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
+    GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    
+    // This should be true, by inspection, but is false.  That's the cause for the failure.
+    assertTrue(standard.isWithin(negativeX));
+    
+    assertTrue(standard.isWithin(testPoint));
+    
+    // This is in-set because it's on an edge
+    assertTrue(standard.isWithin(northPole));
+    
+    // This is in-set
+    assertTrue(standard.isWithin(positiveY));
+    
+
+    final XYZBounds standardBounds = new XYZBounds();
+    standard.getBounds(standardBounds);
+    final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
+
+    // If within shape, should be within bounds
+    assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
+    assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
+
+  }
+  
+  @Test
+  public void testLUCENE7642() {
+    // Construct XYZ solid
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      0.1845405855034623, 0.2730694323646922,
+      -1.398547277986495E-9, 0.020766291030223535,
+      0.7703937553371503, 0.9977622932859774);
+    
+    /*
+   [junit4]   1> individual planes
+   [junit4]   1>  notableMinXPoints=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796]] 
+    notableMaxXPoints=[
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]] 
+    notableMinYPoints=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481]] 
+    notableMaxYPoints=[
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]] 
+    notableMinZPoints=[] 
+    notableMaxZPoints=[]
+    
+    [junit4]   1> All edge points=[
+      [X=0.1845405855034623, Y=-1.398547277986495E-9, Z=0.9806642352600131], 
+      [X=0.1845405855034623, Y=0.020766291030223535, Z=0.9804458120424796], 
+      [X=0.2730694323646922, Y=-1.398547277986495E-9, Z=0.959928047174481], 
+      [X=0.2730694323646922, Y=0.020766291030223535, Z=0.9597049045335464]]
+
+    */
+
+    final GeoPoint edge1 = new GeoPoint(0.1845405855034623, -1.398547277986495E-9, 0.9806642352600131);
+    final GeoPoint edge2 = new GeoPoint(0.1845405855034623, 0.020766291030223535, 0.9804458120424796);
+    final GeoPoint edge3 = new GeoPoint(0.2730694323646922, -1.398547277986495E-9, 0.959928047174481);
+    final GeoPoint edge4 = new GeoPoint(0.2730694323646922, 0.020766291030223535, 0.9597049045335464);
+    
+    // The above says that none of these intersect the surface: minZmaxX, minZminX, minZmaxY, minZminY, or
+    // maxZmaxX, maxZminX, maxZmaxY, maxZminY.
+    
+    // So what about minZ and maxZ all by themselves?
+    //
+    // [junit4]   1> Outside world: minXminYminZ=false minXminYmaxZ=true minXmaxYminZ=false minXmaxYmaxZ=true maxXminYminZ=false 
+    // maxXminYmaxZ=true maxXmaxYminZ=false maxXmaxYmaxZ=true
+    //
+    // So the minz plane does not intersect the world because it's all inside.  The maxZ plane is all outside but may intersect the world still.
+    // But it doesn't because it's too far north.
+    // So it looks like these are our edge points, and they are correct.
+    
+    /*
+  GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+    [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+    [lat=0.2892272352400239, lon=0.017453291479645996([X=0.9591279281485559, Y=0.01674163926221766, Z=0.28545251693892165])], 
+    [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])]], internalEdges={2}}, 
+  GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+    [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+    [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])], 
+    [lat=0.6723906085905078, lon=-3.0261581679831E-12([X=0.7821883235431606, Y=-2.367025584191143E-12, Z=0.6227413298552851])]], internalEdges={0}}]}
+    */
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.2267098126036888, 3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.2892272352400239, 0.017453291479645996));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, 1.6247683074702402E-201));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.6723906085905078, -3.0261581679831E-12));
+    
+    final GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
+    final List<GeoPolygonFactory.PolygonDescription> pdList = new ArrayList<>(1);
+    pdList.add(pd);
+    final GeoPolygon largeShape = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel. WGS84, pdList);
+    
+    /* This is the output:
+   [junit4]   1> shape = GeoCompositePolygon: {[
+    GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+      [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+      [lat=0.2892272352400239, lon=0.017453291479645996([X=0.9591279281485559, Y=0.01674163926221766, Z=0.28545251693892165])], 
+      [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])]], internalEdges={2}}, 
+    GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+      [lat=-1.2267098126036888, lon=3.141592653589793([X=-0.33671029227864785, Y=4.123511816790159E-17, Z=-0.9396354281810864])], 
+      [lat=-1.5707963267948966, lon=1.6247683074702402E-201([X=6.109531986173988E-17, Y=9.926573944611206E-218, Z=-0.997762292022105])], 
+      [lat=0.6723906085905078, lon=-3.0261581679831E-12([X=0.7821883235431606, Y=-2.367025584191143E-12, Z=0.6227413298552851])]], internalEdges={0}}]}
+    */
+    
+    final GeoPoint quantized = new GeoPoint(0.24162356556559528, 2.3309121299774915E-10, 0.9682657049003708);
+    final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, 1.3262481806651818, 2.4457272005608357E-47);
+
+    // This passes; the point is definitely within the solid.
+    assertTrue(solid.isWithin(unquantized));
+
+    // This passes, so I assume that this is the correct response.
+    assertFalse(largeShape.isWithin(unquantized));
+    // This fails because the point is within the shape but apparently shouldn't be.
+    // Instrumenting isWithin finds that the point is on three edge planes somehow:
+    /*
+   [junit4]   1> localIsWithin start for point [0.2416235655409041,5.90945326539883E-48,0.9682657046994557]
+   [junit4]   1>  For edge [A=-1.224646799147353E-16, B=-1.0, C=-7.498798913309287E-33, D=0.0, side=1.0] the point evaluation is -2.959035261382389E-17
+   [junit4]   1>  For edge [A=-3.0261581679831E-12, B=-0.9999999999999999, C=-1.8529874570670608E-28, D=0.0, side=1.0] the point evaluation is -7.31191126438807E-13
+   [junit4]   1>  For edge [A=4.234084035470679E-12, B=1.0, C=-1.5172037954732973E-12, D=0.0, side=1.0] the point evaluation is -4.460019207463956E-13
+    */
+    // These are too close to parallel.  The only solution is to prevent the poly from being created.  Let's see if Geo3d thinks they are parallel.
+    
+    final Plane p1 = new Plane(-1.224646799147353E-16, -1.0, -7.498798913309287E-33, 0.0);
+    final Plane p2 = new Plane(-3.0261581679831E-12, -0.9999999999999999, -1.8529874570670608E-28, 0.0);
+    final Plane p3 = new Plane(4.234084035470679E-12, 1.0, -1.5172037954732973E-12, 0.0);
+    
+    assertFalse(shape.isWithin(unquantized));
+    
+    // This point is indeed outside the shape but it doesn't matter
+    assertFalse(shape.isWithin(quantized));
+    
+    // Sanity check with different poly implementation
+    assertTrue(shape.isWithin(edge1) == largeShape.isWithin(edge1));
+    assertTrue(shape.isWithin(edge2) == largeShape.isWithin(edge2));
+    assertTrue(shape.isWithin(edge3) == largeShape.isWithin(edge3));
+    assertTrue(shape.isWithin(edge4) == largeShape.isWithin(edge4));
+    
+    // Verify both shapes give the same relationship
+    int intersection = solid.getRelationship(shape);
+    int largeIntersection = solid.getRelationship(largeShape);
+    assertTrue(intersection == largeIntersection);
+  }
+  
 }

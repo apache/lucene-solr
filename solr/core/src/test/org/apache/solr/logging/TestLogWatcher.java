@@ -56,4 +56,25 @@ public class TestLogWatcher {
     assertEquals(event.get("message"), "This is a test message");
 
   }
+
+  // This seems weird to do the same thing twice, this is valid. We need to test whether listeners are replaced....
+  @Test
+  public void testLog4jWatcherRepeat() {
+    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(config, null);
+
+    assertEquals(watcher.getLastEvent(), -1);
+
+    log.warn("This is a test message");
+
+    assertTrue(watcher.getLastEvent() > -1);
+
+    SolrDocumentList events = watcher.getHistory(-1, new AtomicBoolean());
+    assertEquals(events.size(), 1);
+
+    SolrDocument event = events.get(0);
+    assertEquals(event.get("logger"), "org.apache.solr.logging.TestLogWatcher");
+    assertEquals(event.get("message"), "This is a test message");
+
+  }
+
 }

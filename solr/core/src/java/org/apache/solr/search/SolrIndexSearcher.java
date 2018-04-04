@@ -138,6 +138,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private boolean releaseDirectory;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -438,12 +440,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
-    String registry = core.getCoreMetricManager().getRegistryName();
+    metricManager = core.getCoreContainer().getMetricManager();
+    registryName = core.getCoreMetricManager().getRegistryName();
     for (SolrCache cache : cacheList) {
-      cache.initializeMetrics(manager, registry, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+      cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    initializeMetrics(manager, registry, STATISTICS_KEY);
+    initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2248,20 +2250,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-
-    manager.registerGauge(this, registry, () -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.registryName = registry;
+    this.metricManager = manager;
+    manager.registerGauge(this, registry, () -> name, tag, true, "searcherName", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> cachingEnabled, tag, true, "caching", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> openTime, tag, true, "openedAt", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> warmupTime, tag, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> registerTime, tag, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    manager.registerGauge(this, registry, () -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.numDocs(), tag, true, "numDocs", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.maxDoc(), tag, true, "maxDoc", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), tag, true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
 
   }
 

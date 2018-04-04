@@ -28,12 +28,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.AutoScaling;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerAction;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
+import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,7 +78,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, cluster.getLoader(), cluster)) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+      trigger.configure(cluster.getLoader(), cluster, props);
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
       Iterator<String> it = cluster.getLiveNodesSet().get().iterator();
@@ -120,7 +124,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
 
     // remove a node but add it back before the waitFor period expires
     // and assert that the trigger doesn't fire at all
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, cluster.getLoader(), cluster)) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+      trigger.configure(cluster.getLoader(), cluster, props);
       final long waitTime = 2;
       props.put("waitFor", waitTime);
       trigger.setProcessor(noFirstRunProcessor);
@@ -175,7 +180,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     action.put("name", "testActionInit");
     action.put("class", AssertInitTriggerAction.class.getName());
     actions.add(action);
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger", props, cluster.getLoader(), cluster)) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger")) {
+      trigger.configure(cluster.getLoader(), cluster, props);
       assertEquals(true, actionConstructorCalled.get());
       assertEquals(false, actionInitCalled.get());
       assertEquals(false, actionCloseCalled.get());
@@ -192,6 +198,16 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     }
 
     @Override
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+
+    }
+
+    @Override
+    public void init() {
+      actionInitCalled.compareAndSet(false, true);
+    }
+
+    @Override
     public String getName() {
       return "";
     }
@@ -205,17 +221,13 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     public void close() throws IOException {
       actionCloseCalled.compareAndSet(false, true);
     }
-
-    @Override
-    public void init(Map<String, String> args) {
-      actionInitCalled.compareAndSet(false, true);
-    }
   }
 
   @Test
   public void testListenerAcceptance() throws Exception {
     Map<String, Object> props = createTriggerProps(0);
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger", props, cluster.getLoader(), cluster)) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger")) {
+      trigger.configure(cluster.getLoader(), cluster, props);
       trigger.setProcessor(noFirstRunProcessor);
 
       String newNode = cluster.simAddNode();
@@ -258,7 +270,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     // remove a node but update the trigger before the waitFor period expires
     // and assert that the new trigger still fires
 
-    NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, cluster.getLoader(), cluster);
+    NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger");
+    trigger.configure(cluster.getLoader(), cluster, props);
     trigger.setProcessor(noFirstRunProcessor);
     trigger.run();
 
@@ -268,7 +281,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     trigger.run(); // this run should detect the lost node
     trigger.close(); // close the old trigger
 
-    try (NodeLostTrigger newTrigger = new NodeLostTrigger("some_different_name", props, cluster.getLoader(), cluster))  {
+    try (NodeLostTrigger newTrigger = new NodeLostTrigger("some_different_name"))  {
+      newTrigger.configure(cluster.getLoader(), cluster, props);
       try {
         newTrigger.restoreState(trigger);
         fail("Trigger should only be able to restore state from an old trigger of the same name");
@@ -277,7 +291,8 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
       }
     }
 
-    try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger", props, cluster.getLoader(), cluster)) {
+    try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger")) {
+      newTrigger.configure(cluster.getLoader(), cluster, props);
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {

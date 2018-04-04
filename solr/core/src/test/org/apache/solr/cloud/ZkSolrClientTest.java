@@ -16,14 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import junit.framework.Assert;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -223,14 +224,16 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMultipleWatchesAsync() throws Exception {
-    try (ZkConnection conn = new ZkConnection ()) {
+    try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
       zkClient.makePath("/collections", true);
 
       final int numColls = random().nextInt(100);
       final CountDownLatch latch = new CountDownLatch(numColls);
+      final CountDownLatch watchesDone = new CountDownLatch(numColls);
+      final Set<String> collectionsInProgress = new HashSet<>(numColls);
+      AtomicInteger maxCollectionsInProgress = new AtomicInteger();
 
       for (int i = 1; i <= numColls; i ++) {
         String collPath = "/collections/collection" + i;
@@ -238,11 +241,19 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         zkClient.getChildren(collPath, new Watcher() {
           @Override
           public void process(WatchedEvent event) {
+            synchronized (collectionsInProgress) {
+              collectionsInProgress.add(event.getPath()); // Will be something like /collections/collection##
+              maxCollectionsInProgress.set(Math.max(maxCollectionsInProgress.get(), collectionsInProgress.size()));
+            }
             latch.countDown();
             try {
-              Thread.sleep(1000);
+              latch.await(10000, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {}
+            synchronized (collectionsInProgress) {
+              collectionsInProgress.remove(event.getPath());
+            }
+            watchesDone.countDown();
           }
         }, true);
       }
@@ -252,7 +263,14 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         zkClient.makePath(shardsPath, true);
       }
 
-      assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+      assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+      assertEquals("All collections should have been processed in parallel", numColls, maxCollectionsInProgress.get());
+      
+      // just as sanity check for the test:
+      assertTrue(watchesDone.await(10000, TimeUnit.MILLISECONDS));
+      synchronized (collectionsInProgress) {
+        assertEquals(0, collectionsInProgress.size());
+      }
     }
   }
 

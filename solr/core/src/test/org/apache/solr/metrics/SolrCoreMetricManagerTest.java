@@ -118,7 +118,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
     try {
       metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
-          pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
+          pluginInfo, coreMetricManager.getTag());
       assertNotNull(pluginInfo);
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
       assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
