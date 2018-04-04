@@ -18,6 +18,7 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
@@ -30,7 +31,7 @@ public abstract class IntervalFilter extends IntervalIterator {
    * Create a new filter
    */
   public IntervalFilter(IntervalIterator in) {
-    this.in = in;
+    this.in = Objects.requireNonNull(in);
   }
 
   @Override
