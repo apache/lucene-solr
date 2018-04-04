@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -179,13 +180,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       //
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since blockUnknown==false");
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer realm=\"" + AUTH_REALM + "\"");
         filterChain.doFilter(request, response);
         return true;
       }
       log.warn("JWTAuth not configured");
-      authenticationFailure(response, "JWTAuth not configured");
-      return false;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
     }
 
     if (header != null) {
@@ -206,15 +205,29 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
       case PASS_THROUGH:
         log.debug("Unknown user, but allow due to block_unknown=false");
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer realm=\"" + AUTH_REALM + "\"");
         filterChain.doFilter(request, response);
         return true;
 
+      case AUTZ_HEADER_PROBLEM:
+        log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
+        authenticationFailure(response, authResponse.getAuthCode().msg, HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
+        return false;
+
+      case CLAIM_MISMATCH:
+      case JWT_EXPIRED:
+      case JWT_PARSE_ERROR:
+      case JWT_VALIDATION_EXCEPTION:
+      case PRINCIPAL_MISSING:
+        log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
+        if (authResponse.getJwtException() != null) {
+          log.info("Exception: {}", authResponse.getJwtException().getMessage());
+        }
+        authenticationFailure(response, authResponse.getAuthCode().msg, HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        return false;
+
+      case NO_AUTZ_HEADER:
       default:
         log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
-        if (authResponse.authCode.equals(AuthCode.JWT_VALIDATION_EXCEPTION)) {
-          log.debug("Exception: {}", authResponse.getJwtException().getMessage());
-        }
         authenticationFailure(response, authResponse.getAuthCode().msg);
         return false;
     }
@@ -367,9 +380,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   }
 
   private void authenticationFailure(HttpServletResponse response, String message) throws IOException {
-    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer realm=\"" + AUTH_REALM + "\"");
-    response.sendError(401, message);
+    authenticationFailure(response, message, HttpServletResponse.SC_UNAUTHORIZED, null);
   }
+
+  private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope};
+
+  private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
+    List<String> wwwAuthParams = new ArrayList<>();
+    wwwAuthParams.add("Bearer realm=\"" + AUTH_REALM + "\"");
+    if (responseError != null) {
+      wwwAuthParams.add("error=\"" + responseError + "\"");
+      wwwAuthParams.add("error_description=\"" + message + "\"");
+    }
+    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, org.apache.commons.lang.StringUtils.join(wwwAuthParams, ", "));
+    response.sendError(httpCode, message);
+  }
+
 
   /**
    * Response for authentication attempt
