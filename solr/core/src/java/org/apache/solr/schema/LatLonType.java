@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;

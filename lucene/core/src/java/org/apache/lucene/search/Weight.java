@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;

@@ -30,7 +30,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;

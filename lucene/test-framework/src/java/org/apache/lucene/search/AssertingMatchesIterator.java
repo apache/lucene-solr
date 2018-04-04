@@ -21,14 +21,14 @@ import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
 
-public class AssertingMatchesIterator implements MatchesIterator {
+class AssertingMatchesIterator implements MatchesIterator {
 
   private final MatchesIterator in;
   private State state = State.UNPOSITIONED;
 
   private enum State { UNPOSITIONED, ITERATING, EXHAUSTED }
 
-  public AssertingMatchesIterator(MatchesIterator in) {
+  AssertingMatchesIterator(MatchesIterator in) {
     this.in = in;
   }
 
