@@ -103,7 +103,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     String survivor = otherNodes.get(0);
 
     try (ExecutePlanAction action = new ExecutePlanAction()) {
-      action.init(Collections.singletonMap("name", "execute_plan"));
+      action.configure(cluster.getLoader(), cluster, Collections.singletonMap("name", "execute_plan"));
 
       // used to signal if we found that ExecutePlanAction did in fact create the right znode before executing the operation
       AtomicBoolean znodeCreated = new AtomicBoolean(false);

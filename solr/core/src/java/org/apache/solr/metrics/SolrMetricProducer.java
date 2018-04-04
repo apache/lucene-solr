@@ -17,16 +17,39 @@
 package org.apache.solr.metrics;
 
 /**
- * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
+ * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
 public interface SolrMetricProducer {
 
   /**
-   * Initializes metrics specific to this producer
+   * Initializes metrics specific to this producer.
+   * <p>Note: for back-compatibility this method by default calls {@link #initializeMetrics(SolrMetricManager, String, String)}.</p>
+   * @param manager an instance of {@link SolrMetricManager}
+   * @param registry registry name where metrics are registered
+   * @param tag symbolic tag that represents a group of related instances that
+   * have the same life-cycle. Parent component can use the <code>tag</code> when
+   * calling {@link SolrMetricManager#unregisterGauges(String, String)}
+   * to unregister metrics created by this instance of the producer.
+   * @param scope scope of the metrics (eg. handler name) to separate metrics of
+   *              instances of the same component executing in different contexts
+   */
+  default void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    initializeMetrics(manager, registry, scope);
+  }
+
+  /**
+   * Initializes metrics specific to this producer.
+   * <p>Note: for back-compatibility this method has a default no-op implementation.</p>
    * @param manager an instance of {@link SolrMetricManager}
    * @param registry registry name where metrics are registered
    * @param scope scope of the metrics (eg. handler name) to separate metrics of
    *              instances of the same component executing in different contexts
+   * @deprecated this method doesn't provide enough context to properly manage
+   * life-cycle of some metrics (see SOLR-11882).
+   * Instead use {@link #initializeMetrics(SolrMetricManager, String, String, String)}.
    */
-  void initializeMetrics(SolrMetricManager manager, String registry, String scope);
+  @Deprecated
+  default void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+
+  }
 }

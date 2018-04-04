@@ -19,7 +19,6 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -160,10 +159,10 @@ public class RestoreTriggerStateTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void init(Map<String, String> args) {
+    public void init() throws Exception {
       log.info("TestTriggerAction init");
       actionInitCalled.countDown();
-      super.init(args);
+      super.init();
     }
   }
 }

@@ -171,7 +171,7 @@ public class PeerSync implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
     syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
     syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);

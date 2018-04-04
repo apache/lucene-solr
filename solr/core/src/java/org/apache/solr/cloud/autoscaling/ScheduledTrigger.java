@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
@@ -52,20 +53,25 @@ public class ScheduledTrigger extends TriggerBase {
   private static final String LAST_RUN_AT = "lastRunAt";
   static final String ACTUAL_EVENT_TIME = "actualEventTime";
 
-  private final String everyStr;
+  private String everyStr;
 
-  private final String graceDurationStr;
+  private String graceDurationStr;
 
-  private final String preferredOp;
+  private String preferredOp;
 
-  private final TimeZone timeZone;
+  private TimeZone timeZone;
 
   private Instant lastRunAt;
 
-  public ScheduledTrigger(String name, Map<String, Object> properties,
-                          SolrResourceLoader loader, SolrCloudManager cloudManager) {
-    super(TriggerEventType.SCHEDULED, name, properties, loader, cloudManager);
+  public ScheduledTrigger(String name) {
+    super(TriggerEventType.SCHEDULED, name);
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, "startTime");
+    TriggerUtils.validProperties(validProperties, "timeZone", "every", "graceDuration", AutoScalingParams.PREFERRED_OP);
+  }
 
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
     String timeZoneStr = (String) properties.get("timeZone");
     this.timeZone = TimeZoneUtils.parseTimezone(timeZoneStr); // defaults to UTC
 
@@ -90,18 +96,17 @@ public class ScheduledTrigger extends TriggerBase {
     this.lastRunAt = startTime;
   }
 
-  private Instant parseStartTime(Date now, String startTimeStr, String timeZoneStr) {
-    if (startTimeStr == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'startTime' cannot be null");
-    }
+  private Instant parseStartTime(Date now, String startTimeStr, String timeZoneStr) throws TriggerValidationException {
     try {
       // try parsing startTime as an ISO-8601 date time string
       return DateMathParser.parseMath(now, startTimeStr).toInstant();
     } catch (SolrException e) {
-      if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code)  throw e;
+      if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code) {
+        throw new TriggerValidationException("startTime", "error parsing value '" + startTimeStr + "': " + e.toString());
+      }
     }
     if (timeZoneStr == null)  {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new TriggerValidationException("timeZone",
           "Either 'startTime' should be an ISO-8601 date time string or 'timeZone' must be not be null");
     }
     TimeZone timeZone = TimeZone.getTimeZone(timeZoneStr);
@@ -111,7 +116,11 @@ public class ScheduledTrigger extends TriggerBase {
         .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
         .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
         .toFormatter(Locale.ROOT).withZone(timeZone.toZoneId());
-    return Instant.from(dateTimeFormatter.parse(startTimeStr));
+    try {
+      return Instant.from(dateTimeFormatter.parse(startTimeStr));
+    } catch (Exception e) {
+      throw new TriggerValidationException("startTime", "error parsing startTime '" + startTimeStr + "': " + e.toString());
+    }
   }
 
   @Override
