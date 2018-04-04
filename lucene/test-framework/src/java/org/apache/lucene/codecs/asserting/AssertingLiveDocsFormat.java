@@ -82,7 +82,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
         deletedCount++;
       }
     }
-    assert deletedCount == expectedDeleteCount;
+    assert deletedCount == expectedDeleteCount : "deleted: " + deletedCount + " != expected: " + expectedDeleteCount;
   }
 
   @Override
