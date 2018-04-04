@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -63,7 +62,6 @@ class BufferedUpdatesStream implements Accountable {
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
   private final IndexWriter writer;
-  private boolean closed;
 
   public BufferedUpdatesStream(IndexWriter writer) {
     this.writer = writer;
@@ -120,12 +118,6 @@ class BufferedUpdatesStream implements Accountable {
   @Override
   public long ramBytesUsed() {
     return bytesUsed.get();
-  }
-
-  private synchronized void ensureOpen() {
-    if (closed) {
-      throw new AlreadyClosedException("already closed");
-    }
   }
 
   public static class ApplyDeletesResult {
@@ -300,8 +292,6 @@ class BufferedUpdatesStream implements Accountable {
   /** Opens SegmentReader and inits SegmentState for each segment. */
   public SegmentState[] openSegmentStates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos,
                                           Set<SegmentCommitInfo> alreadySeenSegments, long delGen) throws IOException {
-    ensureOpen();
-
     List<SegmentState> segStates = new ArrayList<>();
     try {
       for (SegmentCommitInfo info : infos) {
@@ -334,7 +324,7 @@ class BufferedUpdatesStream implements Accountable {
         totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
         int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
         assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
-        if (segState.rld.isFullyDeleted()) {
+        if (segState.rld.isFullyDeleted() && writer.getConfig().mergePolicy.keepFullyDeletedSegment(segState.reader) == false) {
           if (allDeleted == null) {
             allDeleted = new ArrayList<>();
           }

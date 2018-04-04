@@ -87,21 +87,22 @@ final class ReadersAndUpdates {
 
   final AtomicLong ramBytesUsed = new AtomicLong();
 
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info, SegmentReader reader,
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
                     PendingDeletes pendingDeletes) {
     this.info = info;
     this.pendingDeletes = pendingDeletes;
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
-    this.reader = reader;
   }
 
   /** Init from a previously opened SegmentReader.
    *
    * <p>NOTE: steals incoming ref from reader. */
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) {
-    this(indexCreatedVersionMajor, reader.getSegmentInfo(), reader, pendingDeletes);
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
+    this(indexCreatedVersionMajor, reader.getSegmentInfo(), pendingDeletes);
     assert pendingDeletes.numPendingDeletes() >= 0
         : "got " + pendingDeletes.numPendingDeletes() + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
+    this.reader = reader;
+    pendingDeletes.onNewReader(reader, info);
   }
 
   public void incRef() {
@@ -238,7 +239,8 @@ final class ReadersAndUpdates {
     Bits liveDocs = pendingDeletes.getLiveDocs();
     pendingDeletes.liveDocsShared();
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs, info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs,
+          info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -317,6 +319,7 @@ final class ReadersAndUpdates {
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
+        pendingDeletes.onDocValuesUpdate(fieldInfo, updatesToApply);
         // write the numeric updates to a new gen'd docvalues file
         fieldsConsumer.addNumericField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
@@ -452,15 +455,13 @@ final class ReadersAndUpdates {
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
         // write the binary updates to a new gen'd docvalues file
-
+        pendingDeletes.onDocValuesUpdate(fieldInfo, updatesToApply);
         fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
             public BinaryDocValues getBinary(FieldInfo fieldInfoIn) throws IOException {
               if (fieldInfoIn != fieldInfo) {
                 throw new IllegalArgumentException("wrong fieldInfo");
               }
-              final int maxDoc = reader.maxDoc();
-
               DocValuesFieldUpdates.Iterator[] subs = new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
               for(int i=0;i<subs.length;i++) {
                 subs[i] = updatesToApply.get(i).iterator();
@@ -678,9 +679,9 @@ final class ReadersAndUpdates {
       SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(), info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
       boolean success2 = false;
       try {
+        pendingDeletes.onNewReader(newReader, info);
         reader.decRef();
         reader = newReader;
-        pendingDeletes.onNewReader(reader, info);
         success2 = true;
       } finally {
         if (success2 == false) {
