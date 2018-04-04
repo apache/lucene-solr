@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
@@ -35,8 +37,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.SyntaxError;
 import org.locationtech.spatial4j.io.GeoJSONWriter;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.io.SupportedFormats;
@@ -87,7 +87,7 @@ public class GeoTransformerFactory extends TransformerFactory
     updater.display = display;
     updater.display_error = display+"_error"; 
         
-    ValueSource shapes = null;
+    final ShapeValuesSource shapes;
     AbstractSpatialFieldType<?> sdv = (AbstractSpatialFieldType<?>)sf.getType();
     SpatialStrategy strategy = sdv.getStrategy(fname);
     if(strategy instanceof CompositeSpatialStrategy) {
@@ -98,6 +98,8 @@ public class GeoTransformerFactory extends TransformerFactory
       shapes = ((SerializedDVStrategy)strategy)
           .makeShapeValueSource();
     }
+    else
+      shapes = null;
     
     
     String writerName = params.get("w", "GeoJSON");
@@ -122,27 +124,31 @@ public class GeoTransformerFactory extends TransformerFactory
 
     // Using ValueSource
     if(shapes!=null) {
-      // we don't really need the qparser... just so we can reuse valueSource
-      QParser parser = new QParser(null,null,params, req) {
+      return new DocTransformer() {
         @Override
-        public Query parse() throws SyntaxError {
-          return new MatchAllDocsQuery();
+        public String getName() {
+          return display;
         }
-      }; 
 
-      return new ValueSourceAugmenter(display, parser, shapes) {
         @Override
-        protected void setValue(SolrDocument doc, Object val) {
-          updater.setValue(doc, val);
+        public void transform(SolrDocument doc, int docid) throws IOException {
+          int leafOrd = ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
+          LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
+          ShapeValues values = shapes.getValues(ctx);
+          int segmentDoc = docid - ctx.docBase;
+          if (values.advanceExact(segmentDoc)) {
+            updater.setValue(doc, values.value());
+          }
         }
       };
+
     }
     
     // Using the raw stored values
     return new DocTransformer() {
       
       @Override
-      public void transform(SolrDocument doc, int docid, float score) throws IOException {
+      public void transform(SolrDocument doc, int docid) throws IOException {
         Object val = doc.remove(updater.field);
         if(val!=null) {
           updater.setValue(doc, val);
@@ -160,6 +166,7 @@ public class GeoTransformerFactory extends TransformerFactory
       }
     };
   }
+
 }
 
 class GeoFieldUpdater {

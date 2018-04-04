@@ -281,20 +281,20 @@ public final class TestUtil {
     return checkIndex(dir, true);
   }
 
-  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors) throws IOException {
-    return checkIndex(dir, crossCheckTermVectors, false, null);
+  public static CheckIndex.Status checkIndex(Directory dir, boolean doSlowChecks) throws IOException {
+    return checkIndex(dir, doSlowChecks, false, null);
   }
 
   /** If failFast is true, then throw the first exception when index corruption is hit, instead of moving on to other fields/segments to
    *  look for any other corruption.  */
-  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast, ByteArrayOutputStream output) throws IOException {
+  public static CheckIndex.Status checkIndex(Directory dir, boolean doSlowChecks, boolean failFast, ByteArrayOutputStream output) throws IOException {
     if (output == null) {
       output = new ByteArrayOutputStream(1024);
     }
     // TODO: actually use the dir's locking, unless test uses a special method?
     // some tests e.g. exception tests become much more complicated if they have to close the writer
     try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.INSTANCE.obtainLock(dir, "bogus"))) {
-      checker.setCrossCheckTermVectors(crossCheckTermVectors);
+      checker.setDoSlowChecks(doSlowChecks);
       checker.setFailFast(failFast);
       checker.setInfoStream(new PrintStream(output, false, IOUtils.UTF_8), false);
       CheckIndex.Status indexStatus = checker.checkIndex(null);
@@ -320,7 +320,7 @@ public final class TestUtil {
     }
   }
   
-  public static void checkReader(LeafReader reader, boolean crossCheckTermVectors) throws IOException {
+  public static void checkReader(LeafReader reader, boolean doSlowChecks) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
@@ -334,9 +334,9 @@ public final class TestUtil {
     CheckIndex.testLiveDocs(codecReader, infoStream, true);
     CheckIndex.testFieldInfos(codecReader, infoStream, true);
     CheckIndex.testFieldNorms(codecReader, infoStream, true);
-    CheckIndex.testPostings(codecReader, infoStream, false, true, Version.LUCENE_7_0_0);
+    CheckIndex.testPostings(codecReader, infoStream, false, doSlowChecks, true);
     CheckIndex.testStoredFields(codecReader, infoStream, true);
-    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true, Version.LUCENE_7_0_0);
+    CheckIndex.testTermVectors(codecReader, infoStream, false, doSlowChecks, true);
     CheckIndex.testDocValues(codecReader, infoStream, true);
     CheckIndex.testPoints(codecReader, infoStream, true);
     
@@ -434,7 +434,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static long nextLong(Random r, long start, long end) {
-    assert end >= start;
+    assert end >= start : "start=" + start + ",end=" + end;
     final BigInteger range = BigInteger.valueOf(end).add(BigInteger.valueOf(1)).subtract(BigInteger.valueOf(start));
     if (range.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0) {
       return start + r.nextInt(range.intValue());

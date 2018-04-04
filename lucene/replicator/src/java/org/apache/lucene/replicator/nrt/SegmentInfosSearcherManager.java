@@ -111,10 +111,14 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
   }
 
   private void addReaderClosedListener(IndexReader r) {
+    IndexReader.CacheHelper cacheHelper = r.getReaderCacheHelper();
+    if (cacheHelper == null) {
+      throw new IllegalStateException("StandardDirectoryReader must support caching");
+    }
     openReaderCount.incrementAndGet();
-    r.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
+    cacheHelper.addClosedListener(new IndexReader.ClosedListener() {
         @Override
-        public void onClose(IndexReader reader) {
+        public void onClose(IndexReader.CacheKey cacheKey) {
           onReaderClosed();
         }
       });

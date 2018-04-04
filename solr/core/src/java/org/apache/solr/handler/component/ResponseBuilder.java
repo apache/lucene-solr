@@ -60,6 +60,7 @@ public class ResponseBuilder
   public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
+  public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
   private boolean needDocList = false;
@@ -138,6 +139,13 @@ public class ResponseBuilder
   public List<ShardRequest> finished;  // requests that have received responses from all shards
   public String shortCircuitedURL;
 
+  /**
+   * This function will return true if this was a distributed search request.
+   */
+  public boolean isDistributed() {
+    return this.isDistrib;
+  }
+
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
       if (shards[i] == shard || shards[i].equals(shard)) return i;
@@ -173,6 +181,8 @@ public class ResponseBuilder
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
+  Object _analyticsRequestManager;
+  boolean _isOlapAnalytics;
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
@@ -422,7 +432,7 @@ public class ResponseBuilder
    * Creates a SolrIndexSearcher.QueryCommand from this
    * ResponseBuilder.  TimeAllowed is left unset.
    */
-  public QueryCommand getQueryCommand() {
+  public QueryCommand createQueryCommand() {
     QueryCommand cmd = new QueryCommand();
     cmd.setQuery(wrap(getQuery()))
             .setFilterList(getFilters())

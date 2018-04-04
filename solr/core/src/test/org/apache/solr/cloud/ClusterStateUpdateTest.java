@@ -16,25 +16,18 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,37 +35,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
+public class ClusterStateUpdateTest extends SolrCloudTestCase  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected ZkTestServer zkServer;
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    configureCluster(3)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
 
-  protected String zkDir;
-
-  private CoreContainer container1;
-
-  private CoreContainer container2;
-
-  private CoreContainer container3;
-
-  private File dataDir1;
-
-  private File dataDir2;
-
-  private File dataDir3;
-  
-  private File dataDir4;
-
-
-  private static volatile File solrHomeDirectory;
+  }
 
   @BeforeClass
-  public static void beforeClass() throws IOException {
-    solrHomeDirectory = createTempDir().toFile();
+  public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
-    System.setProperty("genericCoreNodeNames", "false");
-    copyMinFullSetup(solrHomeDirectory);
-
   }
 
   @AfterClass
@@ -80,82 +57,16 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
   }
-
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    System.setProperty("zkClientTimeout", "3000");
-    File tmpDir = createTempDir("zkData").toFile();
-    zkDir = tmpDir.getAbsolutePath();
-    zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
-    System.setProperty("zkHost", zkServer.getZkAddress());
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer
-        .getZkAddress(), "solrconfig.xml", "schema.xml");
-    
-    log.info("####SETUP_START " + getTestName());
-    dataDir1 = new File(tmpDir + File.separator + "data1");
-    dataDir1.mkdirs();
-    
-    dataDir2 = new File(tmpDir + File.separator + "data2");
-    dataDir2.mkdirs();
-    
-    dataDir3 = new File(tmpDir + File.separator + "data3");
-    dataDir3.mkdirs();
-    
-    dataDir4 = new File(tmpDir + File.separator + "data4");
-    dataDir4.mkdirs();
-    
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-    
-    System.setProperty("solr.solr.home", TEST_HOME());
-    System.setProperty("hostPort", "1661");
-    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir1.getAbsolutePath());
-    container1 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    container1.load();
-    System.clearProperty("hostPort");
-    
-    System.setProperty("hostPort", "1662");
-    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    container2.load();
-    System.clearProperty("hostPort");
-    
-    System.setProperty("hostPort", "1663");
-    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir3.getAbsolutePath());
-    container3 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    container3.load();
-    System.clearProperty("hostPort");
-    System.clearProperty("solr.solr.home");
-    
-    log.info("####SETUP_END " + getTestName());
-    
-  }
-
   
   @Test
   public void testCoreRegistration() throws Exception {
     System.setProperty("solrcloud.update.delay", "1");
-    
-   
-    Map<String,Object> props2 = new HashMap<>();
-    props2.put("configName", "conf1");
-    ZkNodeProps zkProps2 = new ZkNodeProps(props2);
-    
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
-        AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore",
-        Utils.toJSON(zkProps2), CreateMode.PERSISTENT, true);
-    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore/shards",
-        CreateMode.PERSISTENT, true);
-    zkClient.close();
 
-    container1.create("testcore", ImmutableMap.of("dataDir", dataDir4.getAbsolutePath()));
-    
-    ZkController zkController2 = container2.getZkController();
+    assertEquals(0, CollectionAdminRequest.createCollection("testcore", "conf", 1, 1)
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
+        .process(cluster.getSolrClient()).getStatus());
+
+    ZkController zkController2 = cluster.getJettySolrRunner(1).getCoreContainer().getZkController();
 
     String host = zkController2.getHostName();
     
@@ -165,7 +76,8 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     Map<String,Slice> slices = null;
     for (int i = 75; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
-      slices = clusterState2.getSlicesMap("testcore");
+      DocCollection docCollection = clusterState2.getCollectionOrNull("testcore");
+      slices = docCollection == null ? null : docCollection.getSlicesMap();
       
       if (slices != null && slices.containsKey("shard1")
           && slices.get("shard1").getReplicasMap().size() > 0) {
@@ -184,19 +96,23 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
     assertEquals(1, shards.size());
 
-    Replica zkProps = shards.get(host + ":1661_solr_testcore");
+    // assert this is core of container1
+    Replica zkProps = shards.values().iterator().next();
 
     assertNotNull(zkProps);
 
-    assertEquals(host + ":1661_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
+    assertEquals(host + ":" +cluster.getJettySolrRunner(0).getLocalPort()+"_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
 
-    assertEquals("http://" + host + ":1661/solr", zkProps.getStr(ZkStateReader.BASE_URL_PROP));
+    assertTrue(zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr")
+      || zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );
 
+    // assert there are 3 live nodes
     Set<String> liveNodes = clusterState2.getLiveNodes();
     assertNotNull(liveNodes);
     assertEquals(3, liveNodes.size());
 
-    container3.shutdown();
+    // shut down node 2
+    cluster.stopJettySolrRunner(2);
 
     // slight pause (15s timeout) for watch to trigger
     for(int i = 0; i < (5 * 15); i++) {
@@ -208,52 +124,21 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
     assertEquals(2, zkController2.getClusterState().getLiveNodes().size());
 
-    // quickly kill / start client
-
-    container2.getZkController().getZkClient().getSolrZooKeeper().getConnection()
-        .disconnect();
-    container2.shutdown();
-
-    System.setProperty("hostPort", "1662");
-    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    container2.load();
-    System.clearProperty("hostPort");
+    cluster.getJettySolrRunner(1).stop();
+    cluster.getJettySolrRunner(1).start();
     
     // pause for watch to trigger
     for(int i = 0; i < 200; i++) {
-      if (container1.getZkController().getClusterState().liveNodesContain(
-          container2.getZkController().getNodeName())) {
+      if (cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+          cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName())) {
         break;
       }
       Thread.sleep(100);
     }
 
-    assertTrue(container1.getZkController().getClusterState().liveNodesContain(
-        container2.getZkController().getNodeName()));
+    assertTrue(cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+        cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName()));
 
     // core.close();  // don't close - this core is managed by container1 now
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    container1.shutdown();
-    container2.shutdown();
-    container3.shutdown();
-
-    zkServer.shutdown();
-    super.tearDown();
-    System.clearProperty("zkClientTimeout");
-    System.clearProperty("zkHost");
-    System.clearProperty("hostPort");
-    System.clearProperty("solrcloud.update.delay");
-    System.clearProperty("solr.data.dir");
-  }
-  
-  static void printLayout(String zkHost) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(
-        zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStdOut();
-    zkClient.close();
   }
 }

@@ -66,12 +66,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.MetricsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -166,9 +165,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
-      HttpSolrClient client = getHttpSolrClient(baseUrl);
-      client.setConnectionTimeout(15000);
-      client.setSoTimeout(90000);
+      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 90000);
       return client;
     }
     catch (Exception ex) {
@@ -499,6 +496,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
   @Test
   public void doTestIndexAndConfigReplication() throws Exception {
+
+    TestInjection.delayBeforeSlaveCommitRefresh = random().nextInt(10);
+
     clearIndexWithReplication();
 
     nDocs--;
@@ -553,7 +553,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty = createJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
-
     //add a doc with new field and commit on master to trigger index fetch from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
@@ -570,7 +569,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     checkForSingleIndex(masterJetty);
     checkForSingleIndex(slaveJetty, true);
-    
   }
 
   @Test
@@ -627,7 +625,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * the index hasn't changed. See SOLR-9036
    */
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
+  //Commented out 24-Feb 2018. JIRA marked as fixed.
+  // Still fails 26-Feb on master.
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
   public void doTestIndexFetchOnMasterRestart() throws Exception  {
     useFactory(null);
     try {
@@ -638,6 +638,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterJetty.stop();
       masterJetty.start();
+
+      // close and re-create master client because its connection pool has stale connections
+      masterClient.close();
+      masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
       nDocs--;
       for (int i = 0; i < nDocs; i++)
@@ -923,12 +927,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private CachingDirectoryFactory getCachingDirectoryFactory(SolrCore core) {
-    DirectoryFactory df = core.getDirectoryFactory();
-    if (df instanceof MetricsDirectoryFactory) {
-      return (CachingDirectoryFactory)((MetricsDirectoryFactory)df).getDelegate();
-    } else {
-      return (CachingDirectoryFactory)df;
-    }
+    return (CachingDirectoryFactory) core.getDirectoryFactory();
   }
 
   private void checkForSingleIndex(JettySolrRunner jetty) {

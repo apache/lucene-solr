@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
+import org.apache.lucene.util.FutureObjects;
 
 /**
  * LeafReader implemented by codec APIs.
@@ -94,16 +95,17 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   private void checkBounds(int docID) {
-    if (docID < 0 || docID >= maxDoc()) {       
-      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
+    FutureObjects.checkIndex(docID, maxDoc());
   }
-  
+
   @Override
-  public final Fields fields() {
-    return getPostingsReader();
+  public final Terms terms(String field) throws IOException {
+    //ensureOpen(); no; getPostingsReader calls this
+    // We could check the FieldInfo IndexOptions but there's no point since
+    //   PostingsReader will simply return null for fields that don't exist or that have no terms index.
+    return getPostingsReader().terms(field);
   }
-  
+
   // returns the FieldInfo that corresponds to the given field and type, or
   // null if the field does not exist, or not indexed as the requested
   // DovDocValuesType.

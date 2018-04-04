@@ -64,44 +64,44 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     QueryResponse rsp;
 
     rsp = query("q", "*:*", "fl", "id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11); 
+    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "11"); 
     rsp = query("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12, 10, 2, 4, 6, 1, 7);
+    assertFieldValues(rsp.getResults(), id, "11", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
 
     // SOLR-6744
     rsp = query("q", "*:*", "fl", "key:id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), "key", 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
+    assertFieldValues(rsp.getResults(), "key", "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "11");
     rsp = query("q", "*:*", "fl", "key:id,id:text", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), "key", 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
+    assertFieldValues(rsp.getResults(), "key", "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "11");
     
     rsp = query("q", "text:a", "fl", "id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 1, 3, 5, 9);
+    assertFieldValues(rsp.getResults(), id, "1", "3", "5", "9");
     rsp = query("q", "text:a", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 9, 5, 3, 1);
+    assertFieldValues(rsp.getResults(), id, "9", "5", "3", "1");
     
     rsp = query("q", "text:b", "fl", "id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 4, 2, 10);
+    assertFieldValues(rsp.getResults(), id, "4", "2", "10");
     rsp = query("q", "text:b", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 10, 2, 4);
+    assertFieldValues(rsp.getResults(), id, "10", "2", "4");
 
     // SOLR-6744
     rsp = query("q", "text:b", "fl", "key:id", "sort", "payload asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, null, null, null);
 
     rsp = query("q", "text:c", "fl", "id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 7, 6, 8);
+    assertFieldValues(rsp.getResults(), id, "7", "6", "8");
     rsp = query("q", "text:c", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 8, 6, 7);
+    assertFieldValues(rsp.getResults(), id, "8", "6", "7");
     
     rsp = query("q", "text:d", "fl", "id", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 12, 13, 11);
+    assertFieldValues(rsp.getResults(), id, "12", "13", "11");
     rsp = query("q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 11, 13, 12);
+    assertFieldValues(rsp.getResults(), id, "11", "13", "12");
 
     // sanity check function sorting
-    rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                "sort", "abs(sub(5,id)) asc, id desc");
-    assertFieldValues(rsp.getResults(), id, 5 , 6,4 , 7,3 , 8,2 , 9,1 , 10 );
+    rsp = query("q", "id_i:[1 TO 10]", "fl", "id", "rows", "20",
+                "sort", "abs(sub(5,id_i)) asc, id desc");
+    assertFieldValues(rsp.getResults(), id, "5", "6","4", "7","3" , "8","2" , "9","1" , "10" );
 
     // Add two more docs with same payload as in doc #4 
     index(id, "14", "text", "b", "payload", ByteBuffer.wrap(new byte[] { 0x25, 0x21, 0x15 })); 
@@ -114,9 +114,9 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     
     commit();
     
-    rsp = query("q", "*:*", "fl", "id", "sort", "payload asc, id desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 7, 1, 6,   15,14,4,   2,   18,17,16,10,   12, 3, 5, 9, 8, 13, 11);
-    rsp = query("q", "*:*", "fl", "id", "sort", "payload desc, id asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12,   10,16,17,18,   2,   4,14,15,   6, 1, 7);
+    rsp = query("q", "*:*", "fl", "id", "sort", "payload asc, id_i desc", "rows", "20");
+    assertFieldValues(rsp.getResults(), id, "7", "1", "6",   "15","14","4",   "2",   "18","17","16","10",   "12", "3", "5", "9", "8", "13", "11");
+    rsp = query("q", "*:*", "fl", "id", "sort", "payload desc, id_i asc", "rows", "20");
+    assertFieldValues(rsp.getResults(), id, "11", "13", "8", "9", "5", "3", "12",   "10","16","17","18",   "2",   "4","14","15",   "6", "1", "7");
   }
 }

@@ -44,22 +44,29 @@ public class TestUkrainianAnalyzer extends BaseTokenStreamTestCase {
 
   public void testSpecialCharsTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
-    assertAnalyzesTo(a, "Ця пʼєса, у сво́ю чергу рухається.",
-                     new String[] { "п'єса", "черга", "рухатися" });
+    assertAnalyzesTo(a, "м'яса м'я\u0301са м\u02BCяса м\u2019яса м\u2018яса м`яса",
+                     new String[] { "м'ясо", "м'ясо", "м'ясо", "м'ясо", "м'ясо", "м'ясо"});
     a.close();
   }
 
   public void testCapsTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
-    assertAnalyzesTo(a, "Цей Чайковський і Ґете.",
-                     new String[] { "чайковський", "ґете" });
+    assertAnalyzesTo(a, "Цих Чайковського і Ґете.",
+                     new String[] { "Чайковське", "Чайковський", "Гете" });
     a.close();
   }
 
+  public void testCharNormalization() throws Exception {
+    Analyzer a = new UkrainianMorfologikAnalyzer();
+    assertAnalyzesTo(a, "Ґюмрі та Гюмрі.",
+                     new String[] { "Гюмрі", "Гюмрі" });
+    a.close();
+  }
+  
   public void testSampleSentence() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
     assertAnalyzesTo(a, "Це — проект генерування словника з тегами частин мови для української мови.",
-                     new String[] { "проект", "генерування", "словник", "тег", "частина", "мова", "українська", "український", "мова" });
+                     new String[] { "проект", "генерування", "словник", "тег", "частина", "мова", "українська", "український", "Українська", "мова" });
     a.close();
   }
 

@@ -17,22 +17,9 @@
 package org.apache.lucene.search.similarities;
 
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.Random;
 
-public class TestBM25Similarity extends LuceneTestCase {
-  
-  public void testSaneNormValues() {
-    BM25Similarity sim = new BM25Similarity();
-    for (int i = 0; i < 256; i++) {
-      float len = sim.decodeNormValue((byte) i);
-      assertFalse("negative len: " + len + ", byte=" + i, len < 0.0f);
-      assertFalse("inf len: " + len + ", byte=" + i, Float.isInfinite(len));
-      assertFalse("nan len for byte=" + i, Float.isNaN(len));
-      if (i > 0) {
-        assertTrue("len is not decreasing: " + len + ",byte=" + i, len < sim.decodeNormValue((byte)(i-1)));
-      }
-    }
-  }
+public class TestBM25Similarity extends BaseSimilarityTestCase {
   
   public void testIllegalK1() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -71,5 +58,53 @@ public class TestBM25Similarity extends LuceneTestCase {
       new BM25Similarity(1.2f, Float.NaN);
     });
     assertTrue(expected.getMessage().contains("illegal b value"));
+  }
+
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    // term frequency normalization parameter k1
+    final float k1;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        k1 = 0;
+        break;
+      case 1:
+        // tiny value
+        k1 = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        // upper bounds on individual term's score is 43.262806 * (k1 + 1) * boost
+        // we just limit the test to "reasonable" k1 values but don't enforce this anywhere.
+        k1 = Integer.MAX_VALUE;
+        break;
+      default:
+        // random value
+        k1 = Integer.MAX_VALUE * random.nextFloat();
+        break;
+    }
+    
+    // length normalization parameter b [0 .. 1]
+    final float b;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        b = 0;
+        break;
+      case 1:
+        // tiny value
+        b = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        b = 1;
+        break;
+      default:
+        // random value
+        b = random.nextFloat();
+        break;
+    }
+    return new BM25Similarity(k1, b);
   }
 }

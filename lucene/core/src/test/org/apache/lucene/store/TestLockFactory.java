@@ -76,7 +76,7 @@ public class TestLockFactory extends LuceneTestCase {
         }
     }
 
-    class MockLockFactory extends LockFactory {
+    static class MockLockFactory extends LockFactory {
 
         public Map<String,Lock> locksCreated = Collections.synchronizedMap(new HashMap<String,Lock>());
 
@@ -87,7 +87,7 @@ public class TestLockFactory extends LuceneTestCase {
             return lock;
         }
 
-        public class MockLock extends Lock {
+        public static class MockLock extends Lock {
 
             @Override
             public void close() {

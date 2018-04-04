@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,7 +57,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -79,7 +80,12 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** @lucene.experimental */
+/**
+ * This holds references to the transaction logs. It also keeps a map of unique key to location in log
+ * (along with the update's version). This map is only cleared on soft or hard commit
+ *
+ * @lucene.experimental
+ */
 public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
@@ -142,7 +148,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * The index of the _version_ value in an entry from the transaction log.
    */
-public static final int VERSION_IDX = 1;
+  public static final int VERSION_IDX = 1;
   
   /**
    * The index of the previous pointer in an entry from the transaction log.
@@ -203,7 +209,10 @@ public static final int VERSION_IDX = 1;
     }
   };
 
-  public class DBQ {
+  /**
+   * Holds the query and the version for a DeleteByQuery command
+   */
+  public static class DBQ {
     public String q;     // the query string
     public long version; // positive version of the DBQ
 
@@ -233,11 +242,11 @@ public static final int VERSION_IDX = 1;
 
   // metrics
   protected Gauge<Integer> bufferedOpsGauge;
-  protected Gauge<Integer> replayLogsCountGauge;
-  protected Gauge<Long> replayBytesGauge;
-  protected Gauge<Integer> stateGauge;
   protected Meter applyingBufferedOpsMeter;
   protected Meter replayOpsMeter;
+  protected Meter copyOverOldUpdatesMeter;
+  protected SolrMetricManager metricManager;
+  protected String registryName;
 
   public static class LogPtr {
     final long pointer;
@@ -405,11 +414,13 @@ public static final int VERSION_IDX = 1;
       }
 
     }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.TLOG.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registry;
     bufferedOpsGauge = () -> {
       if (tlog == null) {
         return 0;
@@ -423,16 +434,14 @@ public static final int VERSION_IDX = 1;
         return 0;
       }
     };
-    replayLogsCountGauge = () -> logs.size();
-    replayBytesGauge = () -> getTotalLogsSize();
 
-    manager.register(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
-    manager.register(registry, replayLogsCountGauge, true, "logs", scope, "replay", "remaining");
-    manager.register(registry, replayBytesGauge, true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applyingBuffered");
-    replayOpsMeter = manager.meter(registry, "ops", scope, "replay");
-    stateGauge = () -> state.getValue();
-    manager.register(registry, stateGauge, true, "state", scope);
+    manager.registerGauge(null, registry, bufferedOpsGauge, tag, true, "ops", scope, "buffered");
+    manager.registerGauge(null, registry, () -> logs.size(), tag, true, "logs", scope, "replay", "remaining");
+    manager.registerGauge(null, registry, () -> getTotalLogsSize(), tag, true, "bytes", scope, "replay", "remaining");
+    applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
+    replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
+    copyOverOldUpdatesMeter = manager.meter(null, registry, "ops", scope, "copyOverOldUpdates");
+    manager.registerGauge(null, registry, () -> state.getValue(), tag, true, "state", scope);
   }
 
   /**
@@ -618,7 +627,7 @@ public static final int VERSION_IDX = 1;
       }
 
       // only change our caches if we are not buffering
-      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0 && (cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) == 0) {
         // given that we just did a delete-by-query, we don't know what documents were
         // affected and hence we must purge our caches.
         openRealtimeSearcher();
@@ -1095,6 +1104,160 @@ public static final int VERSION_IDX = 1;
     return cs.submit(replayer, recoveryInfo);
   }
 
+  /**
+   * Replay current tlog, so all updates will be written to index.
+   * This is must do task for a tlog replica become a new leader.
+   * @return future of this task
+   */
+  public Future<RecoveryInfo> recoverFromCurrentLog() {
+    if (tlog == null) {
+      return null;
+    }
+    map.clear();
+    recoveryInfo = new RecoveryInfo();
+    tlog.incref();
+
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
+    LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
+
+    versionInfo.blockUpdates();
+    try {
+      state = State.REPLAYING;
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+
+    return cs.submit(replayer, recoveryInfo);
+  }
+
+  /**
+   * Block updates, append a commit at current tlog,
+   * then copy over buffer updates to new tlog and bring back ulog to active state.
+   * So any updates which hasn't made it to the index is preserved in the current tlog,
+   * this also make RTG work
+   * @param cuc any updates that have version larger than the version of cuc will be copied over
+   */
+  public void copyOverBufferingUpdates(CommitUpdateCommand cuc) {
+    versionInfo.blockUpdates();
+    try {
+      operationFlags &= ~FLAG_GAP;
+      state = State.ACTIVE;
+      copyAndSwitchToNewTlog(cuc);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
+
+  /**
+   * Block updates, append a commit at current tlog, then copy over updates to a new tlog.
+   * So any updates which hasn't made it to the index is preserved in the current tlog
+   * @param cuc any updates that have version larger than the version of cuc will be copied over
+   */
+  public void copyOverOldUpdates(CommitUpdateCommand cuc) {
+    versionInfo.blockUpdates();
+    try {
+      copyAndSwitchToNewTlog(cuc);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
+
+  protected void copyAndSwitchToNewTlog(CommitUpdateCommand cuc) {
+    synchronized (this) {
+      if (tlog == null) {
+        return;
+      }
+      preCommit(cuc);
+      try {
+        copyOverOldUpdates(cuc.getVersion());
+      } finally {
+        postCommit(cuc);
+      }
+    }
+  }
+
+  /**
+   * Copy over updates from prevTlog or last tlog (in tlog folder) to a new tlog
+   * @param commitVersion any updates that have version larger than the commitVersion will be copied over
+   */
+  public void copyOverOldUpdates(long commitVersion) {
+    TransactionLog oldTlog = prevTlog;
+    if (oldTlog == null && !logs.isEmpty()) {
+      oldTlog = logs.getFirst();
+    }
+    if (oldTlog == null || oldTlog.refcount.get() == 0) {
+      return;
+    }
+
+    try {
+      if (oldTlog.endsWithCommit()) return;
+    } catch (IOException e) {
+      log.warn("Exception reading log", e);
+      return;
+    }
+    copyOverOldUpdatesMeter.mark();
+
+    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core,
+        new ModifiableSolrParams());
+    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    Object o = null;
+    try {
+      while ( (o = logReader.next()) != null ) {
+        try {
+          List entry = (List)o;
+          int operationAndFlags = (Integer) entry.get(0);
+          int oper = operationAndFlags & OPERATION_MASK;
+          long version = (Long) entry.get(1);
+          if (Math.abs(version) > commitVersion) {
+            switch (oper) {
+              case UpdateLog.UPDATE_INPLACE:
+              case UpdateLog.ADD: {
+                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                add(cmd);
+                break;
+              }
+              case UpdateLog.DELETE: {
+                byte[] idBytes = (byte[]) entry.get(2);
+                DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+                cmd.setIndexedId(new BytesRef(idBytes));
+                cmd.setVersion(version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                delete(cmd);
+                break;
+              }
+
+              case UpdateLog.DELETE_BY_QUERY: {
+                String query = (String) entry.get(2);
+                DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+                cmd.query = query;
+                cmd.setVersion(version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                deleteByQuery(cmd);
+                break;
+              }
+
+              default:
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Operation! " + oper);
+            }
+          }
+        } catch (ClassCastException e) {
+          log.warn("Unexpected log entry or corrupt log.  Entry=" + o, e);
+        }
+      }
+      // Prev tlog will be closed, so nullify prevMap
+      if (prevTlog == oldTlog) {
+        prevMap = null;
+      }
+    } catch (IOException e) {
+      log.error("Exception reading versions from log",e);
+    } catch (InterruptedException e) {
+      log.warn("Exception reading log", e);
+    } finally {
+      if (logReader != null) logReader.close();
+    }
+  }
+
 
   protected void ensureLog() {
     if (tlog == null) {
@@ -1272,8 +1435,11 @@ public static final int VERSION_IDX = 1;
                   update.pointer = reader.position();
                   update.version = version;
 
-                  if (oper == UpdateLog.UPDATE_INPLACE && entry.size() == 5) {
-                    update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                  if (oper == UpdateLog.UPDATE_INPLACE) {
+                    if ((update.log instanceof CdcrTransactionLog && entry.size() == 6) ||
+                        (!(update.log instanceof CdcrTransactionLog) && entry.size() == 5)) {
+                      update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                    }
                   }
                   updatesForLog.add(update);
                   updates.put(version, update);
@@ -1281,7 +1447,7 @@ public static final int VERSION_IDX = 1;
                   if (oper == UpdateLog.DELETE_BY_QUERY) {
                     deleteByQueryList.add(update);
                   } else if (oper == UpdateLog.DELETE) {
-                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(entry.size()-1)));
+                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(2)));
                   }
 
                   break;
@@ -1482,11 +1648,17 @@ public static final int VERSION_IDX = 1;
     boolean activeLog;
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
     boolean debug = loglog.isDebugEnabled();
+    boolean inSortedOrder;
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
       this.translogs = new LinkedList<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
+    }
+
+    public LogReplayer(List<TransactionLog> translogs, boolean activeLog, boolean inSortedOrder) {
+      this(translogs, activeLog);
+      this.inSortedOrder = inSortedOrder;
     }
 
 
@@ -1552,9 +1724,13 @@ public static final int VERSION_IDX = 1;
 
     public void doReplay(TransactionLog translog) {
       try {
-        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart);
+        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart + " inSortedOrder=" + inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        if (inSortedOrder) {
+          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+        } else {
+          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
         // to change underneath us.
@@ -1628,7 +1804,7 @@ public static final int VERSION_IDX = 1;
                 recoveryInfo.adds++;
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
+                if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 proc.processAdd(cmd);
                 break;
               }
@@ -1696,6 +1872,7 @@ public static final int VERSION_IDX = 1;
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
+          
         }
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
@@ -1832,19 +2009,17 @@ public static final int VERSION_IDX = 1;
 
   // this method is primarily used for unit testing and is not part of the public API for this class
   Long getMaxVersionFromIndex() {
-    if (maxVersionFromIndex == null && versionInfo != null) {
-      RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
-          ? uhandler.core.getRealtimeSearcher() : null;
-      if (newestSearcher == null)
-        throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-      try {
-        maxVersionFromIndex = seedBucketsWithHighestVersion(newestSearcher.get(), versionInfo);
-      } finally {
-        newestSearcher.decref();
-      }
+    RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
+      ? uhandler.core.getRealtimeSearcher() : null;
+    if (newestSearcher == null)
+      throw new IllegalStateException("No searcher available to lookup max version from index!");
+    
+    try {
+      seedBucketsWithHighestVersion(newestSearcher.get());
+      return getCurrentMaxVersion();
+    } finally {
+      newestSearcher.decref();
     }
-    return maxVersionFromIndex;
   }
 
   /**

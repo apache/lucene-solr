@@ -17,7 +17,6 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +32,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,6 +50,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
@@ -60,7 +59,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
 
@@ -86,6 +84,7 @@ public class SolrRequestParsers
   private final HashMap<String, SolrRequestParser> parsers =
       new HashMap<>();
   private final boolean enableRemoteStreams;
+  private final boolean enableStreamBody;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
   private boolean addHttpRequestToContext;
@@ -103,8 +102,9 @@ public class SolrRequestParsers
     final int multipartUploadLimitKB, formUploadLimitKB;
     if( globalConfig == null ) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
-      enableRemoteStreams = true;
-      handleSelect = true;
+      enableRemoteStreams = false;
+      enableStreamBody = false;
+      handleSelect = false;
       addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
@@ -112,6 +112,7 @@ public class SolrRequestParsers
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
       
       enableRemoteStreams = globalConfig.isEnableRemoteStreams();
+      enableStreamBody = globalConfig.isEnableStreamBody();
   
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
@@ -123,9 +124,10 @@ public class SolrRequestParsers
   
   private SolrRequestParsers() {
     enableRemoteStreams = false;
+    enableStreamBody = false;
     handleSelect = false;
     addHttpRequestToContext = false;
-    init(2048, 2048);
+    init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
   private void init( int multipartUploadLimitKB, int formUploadLimitKB) {       
@@ -204,7 +206,7 @@ public class SolrRequestParsers
     strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -218,6 +220,9 @@ public class SolrRequestParsers
     // Check for streams in the request parameters
     strs = params.getParams( CommonParams.STREAM_BODY );
     if( strs != null ) {
+      if( !enableStreamBody ) {
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+      }
       for( final String body : strs ) {
         ContentStreamBase stream = new ContentStreamBase.StringStream( body );
         if( contentType != null ) {
@@ -239,7 +244,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null) {
           return httpSolrCall.getCommands(validateInput);
         }
-        return Collections.emptyList();
+        return super.getCommands(validateInput);
       }
 
       @Override
@@ -247,7 +252,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
           return ((V2HttpCall) httpSolrCall).getUrlParts();
         }
-        return Collections.EMPTY_MAP;
+        return super.getPathTemplateValues();
       }
 
       @Override
@@ -745,10 +750,6 @@ public class SolrRequestParsers
         boolean restletPath = false;
         int idx = uri.indexOf("/schema");
         if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
-          restletPath = true;
-        }
-        idx = uri.indexOf("/config");
-        if (idx >= 0 && uri.endsWith("/config") || uri.contains("/config/")) {
           restletPath = true;
         }
 

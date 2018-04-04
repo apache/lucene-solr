@@ -119,6 +119,28 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
         counts
     );
 
+    // now this time we add a filter query and exclude it
+    QueryResponse response = query(params(baseParams,
+        "fq", "{!tag=excludeme}id:0", // filter to only be id:0
+        FacetParams.FACET_HEATMAP, "{!ex=excludeme}" + FIELD, // exclude the filter
+        FacetParams.FACET_HEATMAP_GEOM, "[\"50 20\" TO \"180 90\"]",
+        FacetParams.FACET_HEATMAP_LEVEL, "4"));
+    assertEquals(1, response.getResults().getNumFound());// because of our 'fq'
+    hmObj = getHmObj(response);
+    counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
+    assertEquals(
+        Arrays.asList(  // same counts as before
+            Arrays.asList(0, 0, 2, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            Arrays.asList(0, 1, 1, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            null,
+            null
+        ),
+        counts
+    );
+
     // test using a circle input shape
     hmObj = getHmObj(query(params(baseParams,
         FacetParams.FACET_HEATMAP_GEOM, "BUFFER(POINT(110 40), 7)",

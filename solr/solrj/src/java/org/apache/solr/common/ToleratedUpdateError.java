@@ -18,9 +18,11 @@ package org.apache.solr.common;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.SolrException;
+
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.SimpleOrderedMap;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Models the basic information related to a single "tolerated" error that occured during updates.  
@@ -74,7 +76,7 @@ public final class ToleratedUpdateError {
    * @see #getSimpleMap
    */
   public static ToleratedUpdateError parseMap(SimpleOrderedMap<String> data) {
-    final String id = data.get("id");
+    final String id = data.get(ID);
     final String message = data.get("message");
     final String t = data.get("type");
     if (null == t || null == id || null == message) {
@@ -156,7 +158,7 @@ public final class ToleratedUpdateError {
   public SimpleOrderedMap<String> getSimpleMap() {
     SimpleOrderedMap<String> entry = new SimpleOrderedMap<String>();
     entry.add("type", type.toString());
-    entry.add("id", id);
+    entry.add(ID, id);
     entry.add("message", message);
     return entry;
   }

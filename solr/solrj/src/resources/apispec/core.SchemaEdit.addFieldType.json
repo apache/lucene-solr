@@ -1,0 +1,53 @@
+{
+  "type":"object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the field type. This name is used when defining a field. It is strongly recommended that field type names consist only of alphanumeric or underscore characters and not start with a digit."
+    },
+    "class": {
+      "type": "string",
+      "description": "The class name to use for the field type. Class names do not need to be fully qualified if they are included with Solr, so instead of 'org.apache.solr.schema.TextField', you can abbreviate the name as 'solr.TextField'. Custom or third-party class names may need to be fully qualified, however."
+    },
+    "positionIncrementGap": {
+      "type": "integer",
+      "description": "The distance between the values of a multivalued field. This is used to prevent inaccurate phrase matches across two separate values of the same field.",
+      "default": "0"
+    },
+    "autoGeneratePhraseQueries": {
+      "type": "boolean",
+      "description": "If true, phrase queries will automatically be generated for adjacent terms. If false, terms must also be enclosed in double-quotes to be treated as phrases.",
+      "default": "false"
+    },
+    "docValuesFormat": {
+      "type": "string",
+      "description": "Defines a custom DocValuesFormat to use for fields of this type. A custom DocValuesFormat requires that a schema-aware codec has also been configured in solrconfig.xml."
+    },
+    "postingsFormat": {
+      "type": "string",
+      "description": "Defines a custom PostingsFormat to use for fields of this type. A custom PostingsFormat requires that a schema-aware codec has also been configured in solrconfig.xml."
+    },
+    "queryAnalyzer": {
+      "description": "A query analyzer section defines how incoming queries to Solr will be analyzed for a field of this type.",
+      "#include": "core.SchemaEdit.addFieldType.analyzers"
+    },
+    "indexAnalyzer": {
+      "description": "An index analyzer section defines how incoming text in documents will be analyzed for a field of this type.",
+      "#include": "core.SchemaEdit.addFieldType.analyzers"
+    },
+    "multiTermAnalyzer": {
+      "description": "A multiterm analyzer section defines how incoming queries that results in Multi-Term expansion will be analyzed for a field of this type.",
+      "documentation": "https://lucene.apache.org/solr/guide/analyzers.html#analysis-for-multi-term-expansion",
+      "#include": "core.SchemaEdit.addFieldType.analyzers"
+    },
+    "analyzer": {
+      "description": "An analyzer defines how both incoming text in documents and queries are analyzed for a field of this type. If a query analyzer and an index analyzer have both been defined, a general analyzer does not need to be defined for this type.",
+      "#include": "core.SchemaEdit.addFieldType.analyzers"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "name",
+    "class"
+  ]
+}

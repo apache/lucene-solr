@@ -1,0 +1,14 @@
+{
+  "documentation":"https://lucene.apache.org/solr/guide/schema-api.html#delete-a-field-type",
+  "description": "Deletes a field type from the schema.",
+  "type":"object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the field type to delete."
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

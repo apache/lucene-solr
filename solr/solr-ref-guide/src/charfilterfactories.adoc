@@ -1,0 +1,169 @@
+= CharFilterFactories
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+CharFilter is a component that pre-processes input characters.
+
+CharFilters can be chained like Token Filters and placed in front of a Tokenizer. CharFilters can add, change, or remove characters while preserving the original character offsets to support features like highlighting.
+
+== solr.MappingCharFilterFactory
+
+This filter creates `org.apache.lucene.analysis.MappingCharFilter`, which can be used for changing one string to another (for example, for normalizing `é` to `e`.).
+
+This filter requires specifying a `mapping` argument, which is the path and name of a file containing the mappings to perform.
+
+Example:
+
+[source,xml]
+----
+<analyzer>
+  <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-FoldToASCII.txt"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+
+Mapping file syntax:
+
+* Comment lines beginning with a hash mark (`#`), as well as blank lines, are ignored.
+* Each non-comment, non-blank line consists of a mapping of the form: `"source" \=> "target"`
+** Double-quoted source string, optional whitespace, an arrow (`\=>`), optional whitespace, double-quoted target string.
+* Trailing comments on mapping lines are not allowed.
+* The source string must contain at least one character, but the target string may be empty.
+* The following character escape sequences are recognized within source and target strings:
++
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
++
+[cols="20,30,20,30",options="header"]
+|===
+|Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
+|`\\` |`\` |U+005C |`"\\" \=> "/"`
+|`\"` |`"` |U+0022 |`"\"and\"" \=> "'and'"`
+|`\b` |backspace (BS) |U+0008 |`"\b" \=> " "`
+|`\t` |tab (HT) |U+0009 |`"\t" \=> ","`
+|`\n` |newline (LF) |U+000A |`"\n" \=> "<br>"`
+|`\f` |form feed (FF) |U+000C |`"\f" \=> "\n"`
+|`\r` |carriage return (CR) |U+000D |`"\r" \=> "/carriage-return/"`
+|`\uXXXX` |Unicode char referenced by the 4 hex digits |U+XXXX |`"\uFEFF" \=> ""`
+|===
+** A backslash followed by any other character is interpreted as if the character were present without the backslash.
+
+== solr.HTMLStripCharFilterFactory
+
+This filter creates `org.apache.solr.analysis.HTMLStripCharFilter`. This CharFilter strips HTML from the input stream and passes the result to another CharFilter or a Tokenizer.
+
+This filter:
+
+* Removes HTML/XML tags while preserving other content.
+* Removes attributes within tags and supports optional attribute quoting.
+* Removes XML processing instructions, such as: <?foo bar?>
+* Removes XML comments.
+* Removes XML elements starting with <!>.
+* Removes contents of <script> and <style> elements.
+* Handles XML comments inside these elements (normal comment processing will not always work).
+* Replaces numeric character entities references like `&#65`; or `&#x7f`; with the corresponding character.
+* The terminating ';' is optional if the entity reference at the end of the input; otherwise the terminating ';' is mandatory, to avoid false matches on something like "Alpha&Omega Corp".
+* Replaces all named character entity references with the corresponding character.
+* `&nbsp`; is replaced with a space instead of the 0xa0 character.
+* Newlines are substituted for block-level elements.
+* <CDATA> sections are recognized.
+* Inline tags, such as `<b>`, `<i>`, or `<span>` will be removed.
+* Uppercase character entities like `quot`, `gt`, `lt` and `amp` are recognized and handled as lowercase.
+
+TIP: The input need not be an HTML document. The filter removes only constructs that look like HTML. If the input doesn't include anything that looks like HTML, the filter won't remove any input.
+
+The table below presents examples of HTML stripping.
+
+[width="100%",options="header",]
+|===
+|Input |Output
+|`my <a href="www.foo.bar">link</a>` |my link
+|`<br>hello<!--comment-\->` |hello
+|`hello<script><!-- f('<!--internal-\-></script>'); -\-></script>` |hello
+|`if a<b then print a;` |if a<b then print a;
+|`hello <td height=22 nowrap align="left">` |hello
+|`a<b &#65 Alpha&Omega` Ω |a<b A Alpha&Omega Ω
+|===
+
+Example:
+
+[source,xml]
+----
+<analyzer>
+  <charFilter class="solr.HTMLStripCharFilterFactory"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+
+== solr.ICUNormalizer2CharFilterFactory
+
+This filter performs pre-tokenization Unicode normalization using http://site.icu-project.org[ICU4J].
+
+Arguments:
+
+`name`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
+
+`mode`:: Either `compose` or `decompose`. Default is `compose`. Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
+
+`filter`:: A http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet] pattern. Codepoints outside the set are always left unchanged. Default is `[]` (the null set, no filtering - all codepoints are subject to normalization).
+
+Example:
+
+[source,xml]
+----
+<analyzer>
+  <charFilter class="solr.ICUNormalizer2CharFilterFactory"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+
+== solr.PatternReplaceCharFilterFactory
+
+This filter uses http://www.regular-expressions.info/reference.html[regular expressions] to replace or change character patterns.
+
+Arguments:
+
+`pattern`:: the regular expression pattern to apply to the incoming text.
+
+`replacement`:: the text to use to replace matching patterns.
+
+You can configure this filter in `schema.xml` like this:
+
+[source,xml]
+----
+<analyzer>
+  <charFilter class="solr.PatternReplaceCharFilterFactory"
+             pattern="([nN][oO]\.)\s*(\d+)" replacement="$1$2"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+
+The table below presents examples of regex-based pattern replacement:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,20,10,20,30",options="header"]
+|===
+|Input |Pattern |Replacement |Output |Description
+|see-ing looking |`(\w+)(ing)` |`$1` |see-ing look |Removes "ing" from the end of word.
+|see-ing looking |`(\w+)ing` |`$1` |see-ing look |Same as above. 2nd parentheses can be omitted.
+|No.1 NO. no. 543 |`[nN][oO]\.\s*(\d+)` |`#$1` |#1 NO. #543 |Replace some string literals
+|abc=1234=5678 |`(\w+)=(\d+)=(\d+)` |`$3=$1=$2` |5678=abc=1234 |Change the order of the groups.
+|===

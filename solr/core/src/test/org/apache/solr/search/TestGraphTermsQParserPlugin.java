@@ -74,11 +74,11 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "{!graphTerms f=group_s maxDocFreq=10}1,2");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='1.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='7.0']"
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='7']"
     );
 
     //Test without maxDocFreq param. Should default to Integer.MAX_VALUE and match all terms.
@@ -86,11 +86,11 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "{!graphTerms f=group_s}1,2");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='1.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='7.0']"
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='7']"
     );
 
     params = new ModifiableSolrParams();
@@ -104,11 +104,11 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "{!graphTerms f=test_ti maxDocFreq=10}5,10");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='1.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='7.0']"
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='7']"
     );
 
     //Test with int field
@@ -116,8 +116,8 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "{!graphTerms f=test_ti maxDocFreq=2}5,10");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=2]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='7.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='7']"
     );
   }
 }

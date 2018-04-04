@@ -41,6 +41,8 @@ import org.junit.Test;
 public class TestFaceting extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig.xml","schema11.xml");
   }
 
@@ -64,7 +66,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   void createIndex(int nTerms) {
     assertU(delQ("*:*"));
     for (int i=0; i<nTerms; i++) {
-      assertU(adoc("id", Float.toString(i), proto.field(), t(i) ));
+      assertU(adoc("id", Integer.toString(i), proto.field(), t(i) ));
     }
     assertU(optimize()); // squeeze out any possible deleted docs
   }
@@ -269,6 +271,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testTrieFields() {
+    assumeFalse("Test is only relevant when randomizing Trie fields",
+                Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+           
     // make sure that terms are correctly filtered even for trie fields that index several
     // terms for a single value
     List<String> fields = new ArrayList<>();
@@ -286,9 +291,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
         for (String facetSort : new String[] {FacetParams.FACET_SORT_COUNT, FacetParams.FACET_SORT_INDEX}) {
           for (String value : new String[] {"42", "43"}) { // match or not
             final String field = "f_" + suffix;
+            final int num_constraints = ("42".equals(value)) ? 1 : 0;
             assertQ("field=" + field + ",method=" + facetMethod + ",sort=" + facetSort,
-                req("q", field + ":" + value, FacetParams.FACET, "true", FacetParams.FACET_FIELD, field, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_SORT, facetSort, FacetParams.FACET_METHOD, facetMethod),
-                "*[count(//lst[@name='" + field + "']/int)=1]"); // exactly 1 facet count
+                req("q", field + ":" + value, FacetParams.FACET, "true", FacetParams.FACET_FIELD, field, FacetParams.FACET_MINCOUNT, "1", FacetParams.FACET_SORT, facetSort, FacetParams.FACET_METHOD, facetMethod),
+                "*[count(//lst[@name='" + field + "']/int)="+num_constraints+"]");
           }
         }
       }
@@ -297,9 +303,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount() {
-    assertU(adoc("id", "1.0", "f_td", "-420.126"));
-    assertU(adoc("id", "2.0", "f_td", "-285.672"));
-    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assertU(adoc("id", "1", "f_td", "-420.126"));
+    assertU(adoc("id", "2", "f_td", "-285.672"));
+    assertU(adoc("id", "3", "f_td", "-1.218"));
     assertU(commit());
 
     assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX),
@@ -329,9 +335,12 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount0() {
-    assertU(adoc("id", "1.0", "f_td", "-420.126"));
-    assertU(adoc("id", "2.0", "f_td", "-285.672"));
-    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-11174) or single valued DV",
+                Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
+    
+    assertU(adoc("id", "1", "f_td", "-420.126"));
+    assertU(adoc("id", "2", "f_td", "-285.672"));
+    assertU(adoc("id", "3", "f_td", "-1.218"));
     assertU(commit());
 
     assertQ(req("q", "id:1.0", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),
@@ -347,8 +356,28 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
   }
 
+  @Test
+  public void testFacetOverPointFieldWithMinCount0() {
+    String field = "f_" + new String[]{"i","l","f","d"}[random().nextInt(4)] + "_p";
+    String expectedWarning = "Raising facet.mincount from 0 to 1, because field " + field + " is Points-based.";
+    SolrQueryRequest req = req("q", "id:1.0",
+        FacetParams.FACET, "true",
+        FacetParams.FACET_FIELD, field,
+        FacetParams.FACET_MINCOUNT, "0");
+    assertQ(req
+        , "/response/lst[@name='responseHeader']/arr[@name='warnings']/str[.='" + expectedWarning + "']");
+    
+    field = "f_" + new String[]{"is","ls","fs","ds"}[random().nextInt(4)] + "_p";
+    expectedWarning = "Raising facet.mincount from 0 to 1, because field " + field + " is Points-based.";
+    req = req("q", "id:1.0",
+        FacetParams.FACET, "true",
+        FacetParams.FACET_FIELD, field,
+        FacetParams.FACET_MINCOUNT, "0");
+    assertQ(req
+        , "/response/lst[@name='responseHeader']/arr[@name='warnings']/str[.='" + expectedWarning + "']");
+  }
 
-    public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
+  public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
       clearIndex();
       String fname = "trait_ss";
       assertU(adoc("id", "42",

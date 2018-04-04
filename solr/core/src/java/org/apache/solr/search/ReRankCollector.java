@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -64,7 +65,7 @@ public class ReRankCollector extends TopDocsCollector {
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {
       sort = sort.rewrite(searcher);
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true, true);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -80,8 +81,8 @@ public class ReRankCollector extends TopDocsCollector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   public TopDocs topDocs(int start, int howMany) {
@@ -139,7 +140,7 @@ public class ReRankCollector extends TopDocsCollector {
     }
   }
 
-  public class BoostedComp implements Comparator {
+  public static class BoostedComp implements Comparator {
     IntFloatHashMap boostedMap;
 
     public BoostedComp(IntIntHashMap boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {

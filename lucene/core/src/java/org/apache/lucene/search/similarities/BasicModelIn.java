@@ -30,19 +30,30 @@ public class BasicModelIn extends BasicModel {
   public BasicModelIn() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn, double aeTimes1pTfn) {
     long N = stats.getNumberOfDocuments();
     long n = stats.getDocFreq();
-    return tfn * (float)(log2((N + 1) / (n + 0.5)));
+    double A = log2((N + 1) / (n + 0.5));
+
+    // basic model I(n) should return A * tfn
+    // which we rewrite to A * (1 + tfn) - A
+    // so that it can be combined with the after effect while still guaranteeing
+    // that the result is non-decreasing with tfn
+
+    return A * aeTimes1pTfn * (1 - 1 / (1 + tfn));
   }
   
   @Override
-  public final Explanation explain(BasicStats stats, float tfn) {
+  public final Explanation explain(BasicStats stats, double tfn, double aeTimes1pTfn) {
     return Explanation.match(
-        score(stats, tfn),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
-        Explanation.match(stats.getDocFreq(), "docFreq"));
+        (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
+        getClass().getSimpleName() +
+            ", computed as tfn * log2((N + 1) / (n + 0.5)) from:",
+        Explanation.match((float) tfn, "tfn, normalized term frequency"),
+        Explanation.match(stats.getNumberOfDocuments(),
+            "N, total number of documents with field"),
+        Explanation.match(stats.getDocFreq(),
+            "n, number of documents containing term"));
   }
 
   @Override

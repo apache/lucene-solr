@@ -20,10 +20,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -32,7 +30,9 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
-import org.apache.lucene.spatial.util.ShapePredicateValueSource;
+import org.apache.lucene.spatial.util.ShapeValuesPredicate;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * A composite {@link SpatialStrategy} based on {@link RecursivePrefixTreeStrategy} (RPT) and
@@ -86,7 +86,7 @@ public class CompositeSpatialStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     //TODO consider indexing center-point in DV?  Guarantee contained by the shape, which could then be used for
     // other purposes like faster WITHIN predicate?
     throw new UnsupportedOperationException();
@@ -108,8 +108,8 @@ public class CompositeSpatialStrategy extends SpatialStrategy {
       throw new UnsupportedSpatialOperation(pred);
     }
 
-    final ShapePredicateValueSource predicateValueSource =
-        new ShapePredicateValueSource(geometryStrategy.makeShapeValueSource(), pred, args.getShape());
+    final ShapeValuesPredicate predicateValueSource =
+        new ShapeValuesPredicate(geometryStrategy.makeShapeValueSource(), pred, args.getShape());
     //System.out.println("PredOpt: " + optimizePredicates);
     if (pred == SpatialOperation.Intersects && optimizePredicates) {
       // We have a smart Intersects impl

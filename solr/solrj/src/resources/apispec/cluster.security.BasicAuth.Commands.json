@@ -1,0 +1,23 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
+  "description": "Modifies the configuration of Basic authentication, allowing you to add or remove users and their passwords.",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/security/authentication"
+    ]
+  },
+  "commands": {
+    "set-user": {
+      "type":"object",
+      "description": "The set-user command allows you to add users and change their passwords. Usernames and passwords are expressed as key-value pairs in a JSON object.",
+      "additionalProperties": true
+    },
+    "delete-user": {
+      "description": "Delete a user or a list of users. Passwords do not need to be provided, simply list the users in a JSON array, separated by colons.",
+      "type":"string"
+    }
+  }
+}

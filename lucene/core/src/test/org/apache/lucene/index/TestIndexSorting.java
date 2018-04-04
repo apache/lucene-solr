@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -59,7 +61,6 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -1939,20 +1940,15 @@ public class TestIndexSorting extends LuceneTestCase {
     @Override
     public long computeNorm(FieldInvertState state) {
       if (state.getName().equals("norms")) {
-        return Float.floatToIntBits(state.getBoost());
+        return state.getLength();
       } else {
         return in.computeNorm(state);
       }
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(boost, collectionStats, termStats);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return in.simScorer(weight, context);
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.scorer(boost, collectionStats, termStats);
     }
 
   }
@@ -2021,8 +2017,8 @@ public class TestIndexSorting extends LuceneTestCase {
       positions.setId(id);
       doc.add(new Field("positions", positions, POSITIONS_TYPE));
       doc.add(new NumericDocValuesField("numeric", id));
-      TextField norms = new TextField("norms", Integer.toString(id), Store.NO);
-      norms.setBoost(Float.intBitsToFloat(id));
+      String value = IntStream.range(0, id).mapToObj(k -> Integer.toString(id)).collect(Collectors.joining(" "));
+      TextField norms = new TextField("norms", value, Store.NO);
       doc.add(norms);
       doc.add(new BinaryDocValuesField("binary", new BytesRef(Integer.toString(id))));
       doc.add(new SortedDocValuesField("sorted", new BytesRef(Integer.toString(id))));
@@ -2092,7 +2088,7 @@ public class TestIndexSorting extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now compare r1=" + r1 + " r2=" + r2);
     }
-    assertEquals(sort, getOnlyLeafReader(r2).getIndexSort());
+    assertEquals(sort, getOnlyLeafReader(r2).getMetaData().getSort());
     assertReaderEquals("left: sorted by hand; right: sorted by Lucene", r1, r2);
     IOUtils.close(w1, w2, r1, r2, dir1, dir2);
   }
@@ -2333,13 +2329,12 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
       }
 
-      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true, true);
+      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true, true, true);
       s1.search(new MatchAllDocsQuery(), c1);
       TopDocs hits1 = c1.topDocs();
 
-      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, true, true);
-      EarlyTerminatingSortingCollector c3 = new EarlyTerminatingSortingCollector(c2, sort, numHits);
-      s2.search(new MatchAllDocsQuery(), c3);
+      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, true, true, false);
+      s2.search(new MatchAllDocsQuery(), c2);
 
       TopDocs hits2 = c2.topDocs();
 
@@ -2360,7 +2355,7 @@ public class TestIndexSorting extends LuceneTestCase {
         ScoreDoc hit1 = hits1.scoreDocs[i];
         ScoreDoc hit2 = hits2.scoreDocs[i];
         assertEquals(r1.document(hit1.doc).get("id"), r2.document(hit2.doc).get("id"));
-        assertEquals(((FieldDoc) hit1).fields, ((FieldDoc) hit2).fields);
+        assertArrayEquals(((FieldDoc) hit1).fields, ((FieldDoc) hit2).fields);
       }
     }
 
@@ -2401,4 +2396,86 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     IOUtils.close(r, w, dir);
   }
+
+  public void testIndexSortWithSparseField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortField("dense_int", SortField.Type.INT, true);
+    Sort indexSort = new Sort(sortField);
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Field textField = newTextField("sparse_text", "", Field.Store.NO);
+    for (int i = 0; i < 128; i++) {
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField("dense_int", i));
+      if (i < 64) {
+        doc.add(new NumericDocValuesField("sparse_int", i));
+        doc.add(new BinaryDocValuesField("sparse_binary", new BytesRef(Integer.toString(i))));
+        textField.setStringValue("foo");
+        doc.add(textField);
+      }
+      w.addDocument(doc);
+    }
+    w.commit();
+    w.forceMerge(1);
+    DirectoryReader r = DirectoryReader.open(w);
+    assertEquals(1, r.leaves().size());
+    LeafReader leafReader = r.leaves().get(0).reader();
+
+    NumericDocValues denseValues = leafReader.getNumericDocValues("dense_int");
+    NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse_int");
+    BinaryDocValues sparseBinaryValues = leafReader.getBinaryDocValues("sparse_binary");
+    NumericDocValues normsValues = leafReader.getNormValues("sparse_text");
+    for(int docID = 0; docID < 128; docID++) {
+      assertTrue(denseValues.advanceExact(docID));
+      assertEquals(127-docID, (int) denseValues.longValue());
+      if (docID >= 64) {
+        assertTrue(denseValues.advanceExact(docID));
+        assertTrue(sparseValues.advanceExact(docID));
+        assertTrue(sparseBinaryValues.advanceExact(docID));
+        assertTrue(normsValues.advanceExact(docID));
+        assertEquals(1, normsValues.longValue());
+        assertEquals(127-docID, (int) sparseValues.longValue());
+        assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.binaryValue());
+      } else {
+        assertFalse(sparseBinaryValues.advanceExact(docID));
+        assertFalse(sparseValues.advanceExact(docID));
+        assertFalse(normsValues.advanceExact(docID));
+      }
+    }
+    IOUtils.close(r, w, dir);
+  }
+
+  public void testIndexSortOnSparseField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortField("sparse", SortField.Type.INT, false);
+    sortField.setMissingValue(Integer.MIN_VALUE);
+    Sort indexSort = new Sort(sortField);
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for (int i = 0; i < 128; i++) {
+      Document doc = new Document();
+      if (i < 64) {
+        doc.add(new NumericDocValuesField("sparse", i));
+      }
+      w.addDocument(doc);
+    }
+    w.commit();
+    w.forceMerge(1);
+    DirectoryReader r = DirectoryReader.open(w);
+    assertEquals(1, r.leaves().size());
+    LeafReader leafReader = r.leaves().get(0).reader();
+    NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse");
+    for(int docID = 0; docID < 128; docID++) {
+      if (docID >= 64) {
+        assertTrue(sparseValues.advanceExact(docID));
+        assertEquals(docID-64, (int) sparseValues.longValue());
+      } else {
+        assertFalse(sparseValues.advanceExact(docID));
+      }
+    }
+    IOUtils.close(r, w, dir);
+  }
+
 }

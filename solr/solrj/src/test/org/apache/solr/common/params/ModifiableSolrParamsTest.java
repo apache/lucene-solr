@@ -18,6 +18,9 @@ package org.apache.solr.common.params;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Unit Test Case for {@link org.apache.solr.common.params.ModifiableSolrParams
  * ModifiableSolrParams}
@@ -39,6 +42,29 @@ public class ModifiableSolrParamsTest extends LuceneTestCase {
     super.tearDown();
   }
 
+  public void testOf() throws Exception
+  {
+    String key = "key";
+    String value = "value";
+
+    // input is not of type ModifiableSolrParams
+    Map<String, String> values = new HashMap<>();
+    values.put(key, value);
+    SolrParams mapParams = new MapSolrParams(values);
+    ModifiableSolrParams result = ModifiableSolrParams.of(mapParams);
+    assertNotSame(mapParams, result);
+    assertEquals(value, result.get(key));
+
+    // input is of type ModifiableSolrParams
+    modifiable.add(key, value);
+    result = ModifiableSolrParams.of(modifiable);
+    assertSame(result, modifiable);
+
+    // input is null
+    result = ModifiableSolrParams.of(null);
+    assertNotNull(result);
+    assertEquals(0, result.size());
+  }
 
   public void testAdd()
   {

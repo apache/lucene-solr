@@ -336,7 +336,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   }
 
   /** whitespace+lowercase analyzer with synonyms (dogs,dog) and (guinea pig,cavy) */
-  private class MockSynonymAnalyzer extends Analyzer {
+  private static class MockSynonymAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
@@ -351,7 +351,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     assertEquals("Synonym(b:dog b:dogs) Synonym(t:dog t:dogs)", q.toString());
     q = parser.parse("guinea pig");
     assertFalse(parser.getSplitOnWhitespace());
-    assertEquals("((+b:guinea +b:pig) (+t:guinea +t:pig)) (b:cavy t:cavy)", q.toString());
+    assertEquals("((+b:guinea +b:pig) b:cavy) ((+t:guinea +t:pig) t:cavy)", q.toString());
     parser.setSplitOnWhitespace(true);
     q = parser.parse("guinea pig");
     assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());

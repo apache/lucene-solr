@@ -60,7 +60,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <ul>
  *  <li><code>wordset</code> - This is the default format, which supports one word per 
  *      line (including any intra-word whitespace) and allows whole line comments 
- *      begining with the "#" character.  Blank lines are ignored.  See 
+ *      beginning with the "#" character.  Blank lines are ignored.  See 
  *      {@link WordlistLoader#getLines WordlistLoader.getLines} for details.
  *  </li>
  *  <li><code>snowball</code> - This format allows for multiple words specified on each 
@@ -70,6 +70,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *      for details.
  *  </li>
  * </ul>
+ * @since 5.0.0
  */
   public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /** the default format, one word per line, whole line comments start with "#" */

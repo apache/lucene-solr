@@ -206,6 +206,11 @@ public class MultiPassIndexSplitter {
     @Override
     protected void doClose() {}
 
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
+
     // no need to override numDocs/hasDeletions,
     // as we pass the subreaders directly to IW.addIndexes().
   }
@@ -246,6 +251,16 @@ public class MultiPassIndexSplitter {
     @Override
     public Bits getLiveDocs() {
       return liveDocs;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
 }

@@ -18,4 +18,10 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.lucene" module="facet"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
+  </dependencies>
 </ivy-module>

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.loader;
+
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLInputFactory;
@@ -35,14 +36,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -59,18 +63,19 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.util.xslt.TransformerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 public class XMLLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
@@ -130,6 +135,12 @@ public class XMLLoader extends ContentStreamLoader {
 
     String tr = req.getParams().get(CommonParams.TR,null);
     if(tr!=null) {
+      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
+          throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+                  + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset"
+                  + " after enabling authentication and authorization.");
+      }
+
       final Transformer t = getTransformer(tr,req);
       final DOMResult result = new DOMResult();
       
@@ -316,7 +327,7 @@ public class XMLLoader extends ContentStreamLoader {
       switch (event) {
         case XMLStreamConstants.START_ELEMENT:
           String mode = parser.getLocalName();
-          if (!("id".equals(mode) || "query".equals(mode))) {
+          if (!(ID.equals(mode) || "query".equals(mode))) {
             String msg = "XML element <delete> has invalid XML child element: " + mode;
             log.warn(msg);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -324,14 +335,14 @@ public class XMLLoader extends ContentStreamLoader {
           }
           text.setLength(0);
           
-          if ("id".equals(mode)) {
+          if (ID.equals(mode)) {
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
               if (UpdateRequestHandler.VERSION.equals(attrName)) {
                 deleteCmd.setVersion(Long.parseLong(attrVal));
               }
-              if (UpdateRequest.ROUTE.equals(attrName)) {
+              if (ShardParams._ROUTE_.equals(attrName)) {
                 deleteCmd.setRoute(attrVal);
               }
             }
@@ -340,7 +351,7 @@ public class XMLLoader extends ContentStreamLoader {
 
         case XMLStreamConstants.END_ELEMENT:
           String currTag = parser.getLocalName();
-          if ("id".equals(currTag)) {
+          if (ID.equals(currTag)) {
             deleteCmd.setId(text.toString());         
           } else if ("query".equals(currTag)) {
             deleteCmd.setQuery(text.toString());
@@ -379,7 +390,12 @@ public class XMLLoader extends ContentStreamLoader {
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
-        doc.setDocumentBoost(Float.parseFloat(parser.getAttributeValue(i)));
+        String message = "Ignoring document boost: " + parser.getAttributeValue(i) + " as index-time boosts are not supported anymore";
+        if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+          log.warn(message);
+        } else {
+          log.debug(message);
+        }
       } else {
         log.warn("XML element <doc> has invalid XML attr:" + attrName);
       }
@@ -387,7 +403,6 @@ public class XMLLoader extends ContentStreamLoader {
 
     StringBuilder text = new StringBuilder();
     String name = null;
-    float boost = 1.0f;
     boolean isNull = false;
     String update = null;
     Collection<SolrInputDocument> subDocs = null;
@@ -438,8 +453,7 @@ public class XMLLoader extends ContentStreamLoader {
               }
               break;
             }
-            doc.addField(name, v, boost);
-            boost = 1.0f;
+            doc.addField(name, v);
             // field is over
             name = null;
           }
@@ -460,7 +474,6 @@ public class XMLLoader extends ContentStreamLoader {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                       msg);
             }
-            boost = 1.0f;
             update = null;
             isNull = false;
             String attrVal = "";
@@ -470,7 +483,12 @@ public class XMLLoader extends ContentStreamLoader {
               if (NAME.equals(attrName)) {
                 name = attrVal;
               } else if ("boost".equals(attrName)) {
-                boost = Float.parseFloat(attrVal);
+                String message = "Ignoring field boost: " + attrVal + " as index-time boosts are not supported anymore";
+                if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                  log.warn(message);
+                } else {
+                  log.debug(message);
+                }
               } else if ("null".equals(attrName)) {
                 isNull = StrUtils.parseBoolean(attrVal);
               } else if ("update".equals(attrName)) {
@@ -488,7 +506,7 @@ public class XMLLoader extends ContentStreamLoader {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
         name = entry.getKey();
         Map<String, Object> value = entry.getValue();
-        doc.addField(name, value, 1.0f);
+        doc.addField(name, value);
       }
     }
 

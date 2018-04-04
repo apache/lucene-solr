@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.document.IntPoint;    // javadocs
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -99,7 +99,7 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -262,7 +262,7 @@ public abstract class PointRangeQuery extends Query {
           // all docs have a value and all points are within bounds, so everything matches
           return new ScorerSupplier() {
             @Override
-            public Scorer get(boolean randomAccess) {
+            public Scorer get(long leadCost) {
               return new ConstantScoreScorer(weight, score(),
                   DocIdSetIterator.all(reader.maxDoc()));
             }
@@ -280,7 +280,7 @@ public abstract class PointRangeQuery extends Query {
             long cost = -1;
 
             @Override
-            public Scorer get(boolean randomAccess) throws IOException {
+            public Scorer get(long leadCost) throws IOException {
               if (values.getDocCount() == reader.maxDoc()
                   && values.getDocCount() == values.size()
                   && cost() > reader.maxDoc() / 2) {
@@ -319,8 +319,14 @@ public abstract class PointRangeQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 

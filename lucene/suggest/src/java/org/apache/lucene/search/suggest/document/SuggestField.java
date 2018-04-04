@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
  * Besides the usual {@link org.apache.lucene.analysis.Analyzer}s,
  * {@link CompletionAnalyzer}
  * can be used to tune suggest field only parameters
- * (e.g. preserving token seperators, preserving position increments
+ * (e.g. preserving token separators, preserving position increments
  * when converting the token stream to an automaton)
  * </p>
  * <p>

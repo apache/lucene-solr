@@ -19,90 +19,40 @@ package org.apache.solr.cloud.rule;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.common.cloud.rule.RemoteCallback;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.rule.SnitchContext;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.update.UpdateShardHandler;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
 
 public class ServerSnitchContext extends SnitchContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  final CoreContainer coreContainer;
+  SolrCloudManager cloudManager;
   public ServerSnitchContext(SnitchInfo perSnitch,
                              String node, Map<String, Object> session,
-                             CoreContainer coreContainer) {
+                             SolrCloudManager cloudManager) {
     super(perSnitch, node, session);
-    this.coreContainer = coreContainer;
+    this.cloudManager = cloudManager;
   }
 
 
-  public  Map getZkJson(String path) {
-    if (coreContainer.isZooKeeperAware()) {
-      try {
-        byte[] data = coreContainer.getZkController().getZkClient().getData(path, null, new Stat(), true);
-        if (data == null) return null;
-        return (Map) Utils.fromJSON(data);
-      } catch (Exception e) {
-        log.warn("Unable to read from ZK path : " + path, e);
-        return null;
-
-      }
-    } else {
-      return null;
-    }
-
-  }
-
-  public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {
-    if (callback == null) callback = this;
-    String url = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-    params.add("class", klas);
-    params.add(ACTION, INVOKE.toString());
-    //todo batch all requests to the same server
-
+  public Map getZkJson(String path) throws KeeperException, InterruptedException {
     try {
-      SimpleSolrResponse rsp = invoke(coreContainer.getUpdateShardHandler(), url, CommonParams.CORES_HANDLER_PATH, params);
-      Map<String, Object> returnedVal = (Map<String, Object>) rsp.getResponse().get(klas);
-      if(exception == null){
-//        log this
-      } else {
-        callback.remoteCallback(ServerSnitchContext.this,returnedVal);
-      }
-      callback.remoteCallback(this, returnedVal);
-    } catch (Exception e) {
-      log.error("Unable to invoke snitch counterpart", e);
-      exception = e;
+      return Utils.getJson(cloudManager.getDistribStateManager(), path) ;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+
   }
 
-  public SimpleSolrResponse invoke(UpdateShardHandler shardHandler,  final String url, String path, SolrParams params)
-      throws IOException, SolrServerException {
-    GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
-    try (HttpSolrClient client = new HttpSolrClient.Builder(url).withHttpClient(shardHandler.getHttpClient())
-        .withResponseParser(new BinaryResponseParser()).build()) {
-      NamedList<Object> rsp = client.request(request);
-      request.response.nl = rsp;
-      return request.response;
-    }
+  public Map<String, Object> getNodeValues(String node, Collection<String> tags){
+    return cloudManager.getNodeStateProvider().getNodeValues(node, tags);
   }
+
 
 }

@@ -36,6 +36,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -48,7 +49,6 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,12 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
   private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
 
   private IndexSearcher getSearcher(IndexReader r) {
-    final IndexSearcher searcher = newSearcher(r);
+    // 'yes' to maybe wrapping in general
+    final boolean maybeWrap = true;
+    final boolean wrapWithAssertions = false;
+     // 'no' to asserting wrap because lucene AssertingWeight
+     // cannot be cast to solr LTRScoringQuery$ModelWeight
+    final IndexSearcher searcher = newSearcher(r, maybeWrap, wrapWithAssertions);
 
     return searcher;
   }
@@ -72,7 +77,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("field", field);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getCanonicalName(),
+          FieldValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -80,7 +85,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     return features;
   }
 
-  private class MockModel extends LTRScoringModel {
+  private static class MockModel extends LTRScoringModel {
 
     public MockModel(String name, List<Feature> features,
         List<Normalizer> norms,
@@ -102,7 +107,6 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
   }
 
-  @Ignore
   @Test
   public void testRescorer() throws IOException {
     final Directory dir = newDirectory();
@@ -112,7 +116,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     doc.add(newStringField("id", "0", Field.Store.YES));
     doc.add(newTextField("field", "wizard the the the the the oz",
         Field.Store.NO));
-    doc.add(new FloatDocValuesField("final-score", 1.0f));
+    doc.add(newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
 
     w.addDocument(doc);
     doc = new Document();
@@ -120,7 +124,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     // 1 extra token, but wizard and oz are close;
     doc.add(newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
-    doc.add(new FloatDocValuesField("final-score", 2.0f));
+    doc.add(newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
     w.addDocument(doc);
 
     final IndexReader r = w.getReader();
@@ -145,7 +149,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
     final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
-        features, norms, "test", allFeatures, null);
+        features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
     final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
     hits = rescorer.rescore(searcher, hits, 2);
@@ -159,7 +163,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
   }
 
-  @Ignore
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
     final Directory dir = newDirectory();
@@ -221,7 +225,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
     final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
-        features, norms, "test", allFeatures, null);
+        features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
     final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
 
@@ -273,7 +277,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     MockModel ltrScoringModel = new MockModel("test",
         features, norms, "test", allFeatures, null);
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
-    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, true, 1f);
+    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
@@ -289,7 +293,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     ltrScoringModel = new MockModel("test", features, norms,
         "test", allFeatures, null);
     query = new LTRScoringQuery(ltrScoringModel);
-    wgt = query.createWeight(null, true, 1f);
+    wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {

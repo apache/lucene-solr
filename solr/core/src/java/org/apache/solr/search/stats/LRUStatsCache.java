@@ -24,7 +24,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.core.PluginInfo;
@@ -132,11 +132,11 @@ public class LRUStatsCache extends ExactStatsCache {
       this.colStatsCache = colStatsCache;
     }
     @Override
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermContext context)
+    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       if (termStats == null) {
-        LOG.debug("## Missing global termStats info: {}, using local", term.toString());
+        LOG.debug("## Missing global termStats info: {}, using local", term);
         return localSearcher.localTermStatistics(term, context);
       } else {
         return termStats.toTermStatistics();

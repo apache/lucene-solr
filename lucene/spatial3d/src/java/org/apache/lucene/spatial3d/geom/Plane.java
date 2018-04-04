@@ -23,6 +23,8 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class Plane extends Vector {
+  /** For plane envelopes, we need a small distance that can't lead to numerical confusion. */
+  public final static double MINIMUM_PLANE_OFFSET = MINIMUM_RESOLUTION * 1.5;
   /** An array with no points in it */
   public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
@@ -114,7 +116,7 @@ public class Plane extends Vector {
    *   or false in the negative direction.
    */
   public Plane(final Plane basePlane, final boolean above) {
-    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_RESOLUTION):Math.nextDown(basePlane.D - MINIMUM_RESOLUTION));
+    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_PLANE_OFFSET):Math.nextDown(basePlane.D - MINIMUM_PLANE_OFFSET));
   }
   
   /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
@@ -665,6 +667,21 @@ public class Plane extends Vector {
       return null;
     }
     return findCrossings(planetModel, q, bounds, NO_BOUNDS);
+  }
+
+  /**
+   * Checks if three points are coplanar in any of the three planes they can describe.
+   * The planes are all assumed to go through the origin.
+   *
+   * @param A The first point.
+   * @param B The second point.
+   * @param C The third point
+   * @return true if provided points are coplanar in any of the three planes they can describe.
+   */
+  public static boolean arePointsCoplanar(final GeoPoint A, final GeoPoint B, final GeoPoint C) {
+    return Vector.crossProductEvaluateIsZero(A, B, C) ||
+      Vector.crossProductEvaluateIsZero(A, C, B) ||
+      Vector.crossProductEvaluateIsZero(B, C, A);
   }
   
   /**
@@ -1258,7 +1275,9 @@ public class Plane extends Vector {
         // Since a==b==0, any plane including the Z axis suffices.
         //System.err.println("      Perpendicular to z");
         final GeoPoint[] points = findIntersections(planetModel, normalYPlane, NO_BOUNDS, NO_BOUNDS);
-        boundsInfo.addZValue(points[0]);
+        if (points.length > 0) {
+          boundsInfo.addZValue(points[0]);
+        }
       }
     }
 
@@ -2150,20 +2169,242 @@ public class Plane extends Vector {
   }
 
   /**
+   * Determine whether the plane crosses another plane within the
+   * bounds provided.  Crossing is defined as intersecting with the geo surface at two points.
+   *
+   * @param planetModel is the planet model to use in determining intersection.
+   * @param q                 is the other plane.
+   * @param notablePoints     are points to look at to disambiguate cases when the two planes are identical.
+   * @param moreNotablePoints are additional points to look at to disambiguate cases when the two planes are identical.
+   * @param bounds            is one part of the bounds.
+   * @param moreBounds        are more bounds.
+   * @return true if there's a crossing.
+   */
+  public boolean crosses(final PlanetModel planetModel, final Plane q, final GeoPoint[] notablePoints, final GeoPoint[] moreNotablePoints, final Membership[] bounds, final Membership... moreBounds) {
+    //System.err.println("Does plane "+this+" cross plane "+q);
+    // If the two planes are identical, then the math will find no points of intersection.
+    // So a special case of this is to check for plane equality.  But that is not enough, because
+    // what we really need at that point is to determine whether overlap occurs between the two parts of the intersection
+    // of plane and circle.  That is, are there *any* points on the plane that are within the bounds described?
+    if (isNumericallyIdentical(q)) {
+      //System.err.println(" Identical plane");
+      // The only way to efficiently figure this out will be to have a list of trial points available to evaluate.
+      // We look for any point that fulfills all the bounds.
+      for (GeoPoint p : notablePoints) {
+        if (meetsAllBounds(p, bounds, moreBounds)) {
+          //System.err.println("  found a notable point in bounds, so intersects");
+          return true;
+        }
+      }
+      for (GeoPoint p : moreNotablePoints) {
+        if (meetsAllBounds(p, bounds, moreBounds)) {
+          //System.err.println("  found a notable point in bounds, so intersects");
+          return true;
+        }
+      }
+      //System.err.println("  no notable points inside found; no intersection");
+      return false;
+    }
+    
+    // Save on allocations; do inline instead of calling findIntersections
+    //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
+    // Unnormalized, unchecked...
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
+      // Degenerate case: parallel planes
+      //System.err.println(" planes are parallel - no intersection");
+      return false;
+    }
+
+    // The line will have the equation: A t + A0 = x, B t + B0 = y, C t + C0 = z.
+    // We have A, B, and C.  In order to come up with A0, B0, and C0, we need to find a point that is on both planes.
+    // To do this, we find the largest vector value (either x, y, or z), and look for a point that solves both plane equations
+    // simultaneous.  For example, let's say that the vector is (0.5,0.5,1), and the two plane equations are:
+    // 0.7 x + 0.3 y + 0.1 z + 0.0 = 0
+    // and
+    // 0.9 x - 0.1 y + 0.2 z + 4.0 = 0
+    // Then we'd pick z = 0, so the equations to solve for x and y would be:
+    // 0.7 x + 0.3y = 0.0
+    // 0.9 x - 0.1y = -4.0
+    // ... which can readily be solved using standard linear algebra.  Generally:
+    // Q0 x + R0 y = S0
+    // Q1 x + R1 y = S1
+    // ... can be solved by Cramer's rule:
+    // x = det(S0 R0 / S1 R1) / det(Q0 R0 / Q1 R1)
+    // y = det(Q0 S0 / Q1 S1) / det(Q0 R0 / Q1 R1)
+    // ... where det( a b / c d ) = ad - bc, so:
+    // x = (S0 * R1 - R0 * S1) / (Q0 * R1 - R0 * Q1)
+    // y = (Q0 * S1 - S0 * Q1) / (Q0 * R1 - R0 * Q1)
+    double x0;
+    double y0;
+    double z0;
+    // We try to maximize the determinant in the denominator
+    final double denomYZ = this.y * q.z - this.z * q.y;
+    final double denomXZ = this.x * q.z - this.z * q.x;
+    final double denomXY = this.x * q.y - this.y * q.x;
+    if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
+      // X is the biggest, so our point will have x0 = 0.0
+      if (Math.abs(denomYZ) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomYZ;
+      x0 = 0.0;
+      y0 = (-this.D * q.z - this.z * -q.D) * denom;
+      z0 = (this.y * -q.D + this.D * q.y) * denom;
+    } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
+      // Y is the biggest, so y0 = 0.0
+      if (Math.abs(denomXZ) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomXZ;
+      x0 = (-this.D * q.z - this.z * -q.D) * denom;
+      y0 = 0.0;
+      z0 = (this.x * -q.D + this.D * q.x) * denom;
+    } else {
+      // Z is the biggest, so Z0 = 0.0
+      if (Math.abs(denomXY) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomXY;
+      x0 = (-this.D * q.y - this.y * -q.D) * denom;
+      y0 = (this.x * -q.D + this.D * q.x) * denom;
+      z0 = 0.0;
+    }
+
+    // Once an intersecting line is determined, the next step is to intersect that line with the ellipsoid, which
+    // will yield zero, one, or two points.
+    // The ellipsoid equation: 1,0 = x^2/a^2 + y^2/b^2 + z^2/c^2
+    // 1.0 = (At+A0)^2/a^2 + (Bt+B0)^2/b^2 + (Ct+C0)^2/c^2
+    // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
+    // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
+    // Use the quadratic formula to determine t values and candidate point(s)
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
+    final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
+
+    final double BsquaredMinus = B * B - 4.0 * A * C;
+    if (Math.abs(BsquaredMinus) < MINIMUM_RESOLUTION_SQUARED) {
+      //System.err.println(" One point of intersection");
+      // We're not interested in situations where there is only one solution; these are intersections but not crossings
+      return false;
+    } else if (BsquaredMinus > 0.0) {
+      //System.err.println(" Two points of intersection");
+      final double inverse2A = 1.0 / (2.0 * A);
+      // Two solutions
+      final double sqrtTerm = Math.sqrt(BsquaredMinus);
+      final double t1 = (-B + sqrtTerm) * inverse2A;
+      final double t2 = (-B - sqrtTerm) * inverse2A;
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      boolean point1Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
+      }
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      if (point1Valid) {
+        return true;
+      }
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          return false;
+        }
+      }
+      for (final Membership bound : moreBounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      //System.err.println(" no solutions - no intersection");
+      return false;
+    }
+  }
+
+  /**
+   * Returns true if this plane and the other plane are functionally identical within the margin of error.
+   * Functionally identical means that the planes are so close to parallel that many aspects of planar math,
+   * like intersections, no longer have answers to within the required precision.
+   * @param p is the plane to compare against.
+   * @return true if the planes are functionally identical.
+   */
+  public boolean isFunctionallyIdentical(final Plane p) {
+    // We can get the correlation by just doing a parallel plane check.  That's basically finding
+    // out if the magnitude of the cross-product is "zero".
+    final double cross1 = this.y * p.z - this.z * p.y;
+    final double cross2 = this.z * p.x - this.x * p.z;
+    final double cross3 = this.x * p.y - this.y * p.x;
+    //System.out.println("cross product magnitude = "+(cross1 * cross1 + cross2 * cross2 + cross3 * cross3));
+    // Should be MINIMUM_RESOLUTION_SQUARED, but that gives us planes that are *almost* parallel, and those are problematic too,
+    // so we have a tighter constraint on parallelism in this method.
+    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= MINIMUM_RESOLUTION) {
+      return false;
+    }
+    
+    // Now, see whether the parallel planes are in fact on top of one another.
+    // The math:
+    // We need a single point that fulfills:
+    // Ax + By + Cz + D = 0
+    // Pick:
+    // x0 = -(A * D) / (A^2 + B^2 + C^2)
+    // y0 = -(B * D) / (A^2 + B^2 + C^2)
+    // z0 = -(C * D) / (A^2 + B^2 + C^2)
+    // Check:
+    // A (x0) + B (y0) + C (z0) + D =? 0
+    // A (-(A * D) / (A^2 + B^2 + C^2)) + B (-(B * D) / (A^2 + B^2 + C^2)) + C (-(C * D) / (A^2 + B^2 + C^2)) + D ?= 0
+    // -D [ A^2 / (A^2 + B^2 + C^2) + B^2 / (A^2 + B^2 + C^2) + C^2 / (A^2 + B^2 + C^2)] + D ?= 0
+    // Yes.
+    final double denom = 1.0 / (p.x * p.x + p.y * p.y + p.z * p.z);
+    return evaluateIsZero(-p.x * p.D * denom, -p.y * p.D * denom, -p.z * p.D * denom);
+  }
+  
+  /**
    * Returns true if this plane and the other plane are identical within the margin of error.
    * @param p is the plane to compare against.
    * @return true if the planes are numerically identical.
    */
   public boolean isNumericallyIdentical(final Plane p) {
-    // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
-    // (using D) and see if it also on the other plane.
+    // We can get the correlation by just doing a parallel plane check.  That's basically finding
+    // out if the magnitude of the cross-product is "zero".
+    final double cross1 = this.y * p.z - this.z * p.y;
+    final double cross2 = this.z * p.x - this.x * p.z;
+    final double cross3 = this.x * p.y - this.y * p.x;
+    //System.out.println("cross product magnitude = "+(cross1 * cross1 + cross2 * cross2 + cross3 * cross3));
+    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= MINIMUM_RESOLUTION_SQUARED) {
+      return false;
+    }
+    /* Old method
     if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION)
       return false;
     if (Math.abs(this.z * p.x - this.x * p.z) >= MINIMUM_RESOLUTION)
       return false;
     if (Math.abs(this.x * p.y - this.y * p.x) >= MINIMUM_RESOLUTION)
       return false;
-
+    */
+    
     // Now, see whether the parallel planes are in fact on top of one another.
     // The math:
     // We need a single point that fulfills:
@@ -2197,7 +2438,9 @@ public class Plane extends Vector {
     if (!evaluateIsZero(startPoint)) {
       throw new IllegalArgumentException("Start point is not on plane");
     }
-    assert Math.abs(x*x + y*y + z*z - 1.0) < MINIMUM_RESOLUTION_SQUARED : "Plane needs to be normalized";
+    
+    // The following assertion fails at times even for planes that were *explicitly* normalized, so I've disabled the check.
+    //assert Math.abs(x*x + y*y + z*z - 1.0) < MINIMUM_RESOLUTION_SQUARED : "Plane needs to be normalized";
     
     // The first step is to rotate coordinates for the point so that the plane lies on the x-y plane.
     // To acheive this, there will need to be three rotations:

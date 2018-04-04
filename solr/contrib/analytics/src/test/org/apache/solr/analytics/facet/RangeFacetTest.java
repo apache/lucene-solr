@@ -16,429 +16,298 @@
  */
 package org.apache.solr.analytics.facet;
 
-
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
-public class RangeFacetTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "/analytics/requestFiles/rangeFacets.txt";
-
-  public static final int INT = 71;
-  public static final int LONG = 36;
-  public static final int FLOAT = 93;
-  public static final int DOUBLE = 48;
-  public static final int DATE = 52;
-  public static final int STRING = 28;
-  public static final int NUM_LOOPS = 100;
-  
-  //INT
-  static ArrayList<ArrayList<Integer>> intLongTestStart; 
-  static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
-  static ArrayList<ArrayList<Integer>> intDateTestStart; 
-  
-  //FLOAT
-  static ArrayList<ArrayList<Float>> floatLongTestStart; 
-  static ArrayList<ArrayList<Float>> floatDoubleTestStart; 
-  static ArrayList<ArrayList<Float>> floatDateTestStart; 
+public class RangeFacetTest extends SolrAnalyticsFacetTestCase {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
-    h.update("<delete><query>*:*</query></delete>");
-    
-    //INT
-    intLongTestStart = new ArrayList<>();
-    intDoubleTestStart = new ArrayList<>();
-    intDateTestStart = new ArrayList<>();
-    
-    //FLOAT
-    floatLongTestStart = new ArrayList<>();
-    floatDoubleTestStart = new ArrayList<>();
-    floatDateTestStart = new ArrayList<>();
-    
+  public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
       float f = j%FLOAT;
       double d = j%DOUBLE;
-      int dt = j%DATE;
-      int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-          "double_dd", "" + d,  "date_dtd", (1000+dt) + "-01-01T23:59:59Z", "string_sd", "abc" + s));
-      //Longs
-      if (j-LONG<0) {
-        ArrayList<Integer> list1 = new ArrayList<>();
-        list1.add(i);
-        intLongTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<>();
-        list2.add(f);
-        floatLongTestStart.add(list2);
-      } else {
-        intLongTestStart.get((int)l).add(i);
-        floatLongTestStart.get((int)l).add(f);
-      }
-      //Doubles
-      if (j-DOUBLE<0) {
-        ArrayList<Integer> list1 = new ArrayList<>();
-        list1.add(i);
-        intDoubleTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<>();
-        list2.add(f);
-        floatDoubleTestStart.add(list2);
-      } else {
-        intDoubleTestStart.get((int)d).add(i);
-        floatDoubleTestStart.get((int)d).add(f);
-      }
-      //Dates
-      if (j-DATE<0) {
-        ArrayList<Integer> list1 = new ArrayList<>();
-        list1.add(i);
-        intDateTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<>();
-        list2.add(f);
-        floatDateTestStart.add(list2);
-      } else {
-        intDateTestStart.get(dt).add(i);
-        floatDateTestStart.get(dt).add(f);
+      String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
+      String dtm = (1800+j%DATE + 10) + "-12-31T23:59:59Z";
+      String s = "str" + (j%STRING);
+      List<String> fields = new ArrayList<>();
+      fields.add("id"); fields.add("1000"+j);
+      
+      if ( i != 0 ) {
+        fields.add("int_i"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + (i+10));
       }
       
-      if (usually()) {
-        assertU(commit());  // to have several segments
+      if ( l != 0l ) {
+        fields.add("long_l"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + (l+10));
       }
-    }
-    
-    assertU(commit()); 
-    
-    setResponse(h.query(request(fileToStringArr(RangeFacetTest.class, fileName))));
-  }
+      
+      if ( f != 0.0f ) {
+        fields.add("float_f"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + (f+10));
+      }
+      
+      if ( d != 0.0d ) {
+        fields.add("double_d"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + (d+10));
+      }
+      
+      if ( (j%DATE) != 0 ) {
+        fields.add("date_dt"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dtm);
+      }
+      
+      if ( (j%STRING) != 0 ) {
+        fields.add("string_s"); fields.add(s);
+        fields.add("string_sm"); fields.add(s);
+        fields.add("string_sm"); fields.add(s + "_second");
+      }
 
-  @SuppressWarnings("unchecked")
-  @Test
-  public void rangeTest() throws Exception {
-    
-    //Int Long
-    ArrayList<Long> intLong = getLongList("ri", "rangeFacets", "long_ld", "long", "count");
-    ArrayList<Long> intLongTest = calculateStat(transformLists(intLongTestStart, 5, 30, 5
-                                                        , false, true, false, false, false), "count");
-    assertEquals(getRawResponse(), intLong,intLongTest);
-    //Int Double
-    ArrayList<Double> intDouble = getDoubleList("ri", "rangeFacets", "double_dd", "double", "mean");
-    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
-                                                          , false, false, true, false, true), "mean");
-    assertEquals(getRawResponse(), intDouble,intDoubleTest);
-    //Int Date
-    ArrayList<Long> intDate = getLongList("ri", "rangeFacets", "date_dtd", "long", "count");
-    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
-                                                      , false, true, false, true, true), "count");
-    assertEquals(getRawResponse(), intDate,intDateTest);
-    
-    //Float Long
-    ArrayList<Double> floatLong = getDoubleList("rf", "rangeFacets", "long_ld", "double", "median");
-    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
-                                                          , false, true, true, true, true), "median");
-    assertEquals(getRawResponse(), floatLong,floatLongTest);
-    //Float Double
-    ArrayList<Long> floatDouble = getLongList("rf", "rangeFacets", "double_dd", "long", "count");
-    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
-                                                                     , false, false, false, true, false), "count");
-    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
-    //Float Date                      
-    ArrayList<Double> floatDate = getDoubleList("rf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
-    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
-                                                          , false, false, true, true, false), "sumOfSquares");
-    assertEquals(getRawResponse(), floatDate,floatDateTest);
+      addDoc(fields);
+    }
+    commitDocs();
   }
   
+  static public final int INT = 7;
+  static public final int LONG = 2;
+  static public final int FLOAT = 6;
+  static public final int DOUBLE = 5;
+  static public final int DATE = 3;
+  static public final int STRING = 4;
+  static public final int NUM_LOOPS = 20;
+  
+  @Test
+  public void intRangeHardEndTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(float_f)");
+    expressions.put("count", "count(string_sm)");
+    
+    // Hard end on
+    addFacet("hard_end_on", "{ 'type':'range', "
+        + " 'field': 'int_im', "
+        + " 'start': '2', "
+        + " 'end' : '13', "
+        + " 'gaps' : ['2', '5', '3'], "
+        + " 'hardend' : true }");
 
-  @SuppressWarnings("unchecked")
-  @Test
-  public void hardendRangeTest() throws Exception {
-    //Int Long
-    ArrayList<Double> intLong = getDoubleList("hi", "rangeFacets", "long_ld", "double", "sum");
-    ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, 5
-                                                        , true, true, false, false, false), "sum");
-    assertEquals(getRawResponse(), intLong,intLongTest);
-    //Int Double
-    ArrayList<Double> intDouble = getDoubleList("hi", "rangeFacets", "double_dd", "double", "mean");
-    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
-                                                          , true, false, true, false, true), "mean");
-    assertEquals(getRawResponse(), intDouble,intDoubleTest);
-    //Int Date
-    ArrayList<Long> intDate = getLongList("hi", "rangeFacets", "date_dtd", "long", "count");
-    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
-                                                      , true, true, false, true, true), "count");
-    assertEquals(getRawResponse(), intDate,intDateTest);
+    addFacetValue("[2 TO 4)");
+    addFacetResult("mean", 3.5);
+    addFacetResult("count", 10L);
     
-    //Float Long
-    ArrayList<Double> floatLong = getDoubleList("hf", "rangeFacets", "long_ld", "double", "median");
-    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
-                                                          , true, true, true, true, true), "median");
-    assertEquals(getRawResponse(), floatLong,floatLongTest);
-    //Float Double
-    ArrayList<Long> floatDouble = getLongList("hf", "rangeFacets", "double_dd", "long", "count");
-    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
-                                                                     , true, false, false, true, false), "count");
-    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
-    //Float Date                      
-    ArrayList<Double> floatDate = getDoubleList("hf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
-    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
-                                                          , true, false, true, true, false), "sumOfSquares");
-    assertEquals(getRawResponse(), floatDate,floatDateTest);
-  }
-  
-  @SuppressWarnings("unchecked")
-  @Test
-  public void multiGapTest() throws Exception {
-    //Int Long
-    ArrayList<Double> intLong = getDoubleList("mi", "rangeFacets", "long_ld", "double", "sum");
-    ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, "4,2,6,3"
-                                                        , false, true, false, false, false), "sum");
-    assertEquals(getRawResponse(), intLong,intLongTest);
-    //Int Double
-    ArrayList<Double> intDouble = getDoubleList("mi", "rangeFacets", "double_dd", "double", "mean");
-    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, "3,1,7"
-                                                          , false, false, true, false, true), "mean");
-    assertEquals(getRawResponse(), intDouble,intDoubleTest);
-    //Int Date
-    ArrayList<Long> intDate = getLongList("mi", "rangeFacets", "date_dtd", "long", "count");
-    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, "2,7"
-                                                      , false, true, false, true, true), "count");
-    assertEquals(getRawResponse(), intDate,intDateTest);
+    addFacetValue("[4 TO 9)");
+    addFacetResult("mean", 16.0/5.0);
+    addFacetResult("count", 12L);
     
-    //Float Long
-    ArrayList<Double> floatLong = getDoubleList("mf", "rangeFacets", "long_ld", "double", "median");
-    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, "1,4"
-                                                          , false, true, true, true, true), "median");;
-    assertEquals(getRawResponse(), floatLong,floatLongTest);
-    //Float Double
-    ArrayList<Long> floatDouble = getLongList("mf", "rangeFacets", "double_dd", "long", "count");
-    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, "2,3,11"
-                                                          , false, false, false, true, false), "count");
-    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
-    //Float Date                      
-    ArrayList<Double> floatDate = getDoubleList("mf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
-    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, "4,5"
-                                                          , false, false, true, true, false), "sumOfSquares");
-    assertEquals(getRawResponse(), floatDate,floatDateTest);
-  }
-  
-  private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, int gap
-      , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
-    int off = (end-start)%gap;
-    if (!hardend && off>0) {
-      end+=gap-off;
-    }
+    addFacetValue("[9 TO 12)");
+    addFacetResult("mean", 2.0);
+    addFacetResult("count", 4L);
+    
+    addFacetValue("[12 TO 13)");
+    addFacetResult("mean", 3.0);
+    addFacetResult("count", 4L);
+    
+    // Hard end off
+    addFacet("hard_end_off", "{ 'type':'range', "
+        + " 'field': 'int_im', "
+        + " 'start': '2', "
+        + " 'end' : '13', "
+        + " 'gaps' : ['2', '5', '3'], "
+        + " 'hardend' : false }");
 
-    ArrayList<ArrayList<T>> lists = new ArrayList<>();
-    ArrayList<T> between = new ArrayList<>();
-    if (incLow && incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start; i<listsStart.size() && i<=end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else if (incLow && !incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start; i<listsStart.size() && i<end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else if (!incLow && incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start+1; i<listsStart.size() && i<=end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start+1; i<listsStart.size() && i<end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    }
+    addFacetValue("[2 TO 4)");
+    addFacetResult("mean", 3.5);
+    addFacetResult("count", 10L);
     
-    if (incEdge && !incLow && start>=0) {
-      lists.get(0).addAll(listsStart.get(start));
-      between.addAll(listsStart.get(start));
-    }
-    if (incEdge && !incUp && end<listsStart.size()) {
-      lists.get(lists.size()-1).addAll(listsStart.get(end));
-      between.addAll(listsStart.get(end));
-    }
-    ArrayList<T> before = new ArrayList<>();
-    ArrayList<T> after = new ArrayList<>();
-    if (incOut || !(incLow||incEdge)) {
-      for (int i = 0; i<=start; i++) {
-        before.addAll(listsStart.get(i));
-      }
-    } else {
-      for (int i = 0; i<start; i++) {
-        before.addAll(listsStart.get(i));
-      }
-    }
-    if (incOut || !(incUp||incEdge)) {
-      for (int i = end; i<listsStart.size(); i++) {
-        after.addAll(listsStart.get(i));
-      }
-    } 
-    else {
-      for (int i = end+1; i<listsStart.size(); i++) {
-        after.addAll(listsStart.get(i));
-      }
-    }
-    if (before.size()>0) {
-      lists.add(before);
-    }
-    if (after.size()>0) {
-      lists.add(after);
-    }
-    if (between.size()>0) {
-      lists.add(between);
-    }
-    return lists;
+    addFacetValue("[4 TO 9)");
+    addFacetResult("mean", 16.0/5.0);
+    addFacetResult("count", 12L);
+    
+    addFacetValue("[9 TO 12)");
+    addFacetResult("mean", 2.0);
+    addFacetResult("count", 4L);
+    
+    addFacetValue("[12 TO 15)");
+    addFacetResult("mean", 30.0/8.0);
+    addFacetResult("count", 14L);
+    
+    testGrouping(expressions);
   }
   
-  private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, String gapString
-      , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
-    String[] stringGaps = gapString.split(",");
-    int[] gaps = new int[stringGaps.length];
-    for (int i = 0; i<gaps.length; i++) {
-      gaps[i] = Integer.parseInt(stringGaps[i]);
-    }
-    int bigGap = 0;
-    int last = gaps[gaps.length-1];
-    for (int i = 0; i<gaps.length-1; i++) {
-      bigGap += gaps[i];
-    }
-    int off = (end-start-bigGap)%last;
-    if (!hardend && off>0) {
-      end+=last-off;
-    }
+  @Test
+  public void doubleOthersTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(float_f)");
+    expressions.put("count", "count(string_sm)");
     
-    ArrayList<ArrayList<T>> lists = new ArrayList<>();
-    ArrayList<T> between = new ArrayList<>();
-    int gap = 0;
-    int gapCounter = 0;
-    if (incLow && incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        if (gapCounter<gaps.length) {
-          gap = gaps[gapCounter++];
-        }
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start; i<listsStart.size() && i<=end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else if (incLow && !incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        if (gapCounter<gaps.length) {
-          gap = gaps[gapCounter++];
-        }
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start; i<listsStart.size() && i<end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else if (!incLow && incUp) {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        if (gapCounter<gaps.length) {
-          gap = gaps[gapCounter++];
-        }
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start+1; i<listsStart.size() && i<=end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    } else {
-      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        if (gapCounter<gaps.length) {
-          gap = gaps[gapCounter++];
-        }
-        ArrayList<T> list = new ArrayList<>();
-        for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
-          list.addAll(listsStart.get(j));
-        }
-        lists.add(list);
-      }
-      for (int i = start+1; i<listsStart.size() && i<end; i++) {
-        between.addAll(listsStart.get(i));
-      }
-    }
+    addFacet("before_between", "{ 'type':'range', "
+        + " 'field': 'double_d', "
+        + " 'start': '2', "
+        + " 'end' : '4', "
+        + " 'gaps' : ['1'], "
+        + " 'others' : ['before', 'between'] }");
+
+    addFacetValue("[2.0 TO 3.0)");
+    addFacetResult("mean", 8.0/3.0);
+    addFacetResult("count", 6L);
     
-    if (incEdge && !incLow && start>=0) {
-      lists.get(0).addAll(listsStart.get(start));
-      between.addAll(listsStart.get(start));
-    }
-    if (incEdge && !incUp && end<listsStart.size()) {
-      lists.get(lists.size()-1).addAll(listsStart.get(end));
-      between.addAll(listsStart.get(end));
-    }
-    ArrayList<T> before = new ArrayList<>();
-    ArrayList<T> after = new ArrayList<>();
-    if (incOut || !(incLow||incEdge)) {
-      for (int i = 0; i<=start; i++) {
-        before.addAll(listsStart.get(i));
-      }
-    } else {
-      for (int i = 0; i<start; i++) {
-        before.addAll(listsStart.get(i));
-      }
-    }
-    if (incOut || !(incUp||incEdge)) {
-      for (int i = end; i<listsStart.size(); i++) {
-        after.addAll(listsStart.get(i));
-      }
-    } 
-    else {
-      for (int i = end+1; i<listsStart.size(); i++) {
-        after.addAll(listsStart.get(i));
-      }
-    }
-    if (before.size()>0) {
-      lists.add(before);
-    }
-    if (after.size()>0) {
-      lists.add(after);
-    }
-    if (between.size()>0) {
-      lists.add(between);
-    }
-    return lists;
+    addFacetValue("[3.0 TO 4.0)");
+    addFacetResult("mean", 2.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("(* TO 2.0)");
+    addFacetResult("mean", 10.0/3.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("[2.0 TO 4.0)");
+    addFacetResult("mean", 14.0/6.0);
+    addFacetResult("count", 12L);
+    
+    addFacet("after", "{ 'type':'range', "
+        + " 'field': 'double_d', "
+        + " 'start': '2', "
+        + " 'end' : '4', "
+        + " 'gaps' : ['1'], "
+        + " 'others' : ['after'] }");
+
+    addFacetValue("[2.0 TO 3.0)");
+    addFacetResult("mean", 8.0/3.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("[3.0 TO 4.0)");
+    addFacetResult("mean", 2.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("[4.0 TO *)");
+    addFacetResult("mean", 2.5);
+    addFacetResult("count", 6L);
+    
+    testGrouping(expressions);
   }
   
+  @Test
+  public void dateIncludeTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(float_f)");
+    expressions.put("count", "count(string_sm)");
+    
+    addFacet("lower_upper", "{ 'type':'range', "
+        + " 'field': 'date_dt', "
+        + " 'start': '1801-12-31T23:59:59Z', "
+        + " 'end' : '1803-12-31T23:59:59Z', "
+        + " 'gaps' : ['+1YEAR'], "
+        + " 'include' : ['lower', 'upper'] }");
+
+    addFacetValue("[1801-12-31T23:59:59Z TO 1802-12-31T23:59:59Z]");
+    addFacetResult("mean", 37.0/13.0);
+    addFacetResult("count", 20L);
+    
+    addFacetValue("[1802-12-31T23:59:59Z TO 1803-12-31T23:59:59Z]");
+    addFacetResult("mean", 3.5);
+    addFacetResult("count", 10L);
+    
+    testGrouping(expressions);
+    
+    addFacet("lower_upper", "{ 'type':'range', "
+        + " 'field': 'date_dt', "
+        + " 'start': '1801-12-31T23:59:59Z', "
+        + " 'end' : '1803-12-31T23:59:59Z', "
+        + " 'gaps' : ['+1YEAR'], "
+        + " 'include' : ['lower','edge'] }");
+
+    addFacetValue("[1801-12-31T23:59:59Z TO 1802-12-31T23:59:59Z)");
+    addFacetResult("mean", 16.0/7.0);
+    addFacetResult("count", 10L);
+    
+    addFacetValue("[1802-12-31T23:59:59Z TO 1803-12-31T23:59:59Z]");
+    addFacetResult("mean", 3.5);
+    addFacetResult("count", 10L);
+    
+    testGrouping(expressions);
+  }
+  
+  @Test
+  public void floatIncludeOuterTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(int_i)");
+    expressions.put("count", "count(string_sm)");
+    
+    addFacet("include_outer", "{ 'type':'range', "
+        + " 'field': 'float_f', "
+        + " 'start': '1', "
+        + " 'end' : '5', "
+        + " 'gaps' : ['2'], "
+        + " 'include' : ['outer'], "
+        + " 'others' : ['all'] }");
+
+    addFacetValue("(1.0 TO 3.0)");
+    addFacetResult("mean", 1.5);
+    addFacetResult("count", 4L);
+
+    addFacetValue("(3.0 TO 5.0)");
+    addFacetResult("mean", 3.0);
+    addFacetResult("count", 2L);
+    
+    addFacetValue("(* TO 1.0]");
+    addFacetResult("mean", 4.0);
+    addFacetResult("count", 8L);
+    
+    addFacetValue("[5.0 TO *)");
+    addFacetResult("mean", 4.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("(1.0 TO 5.0)");
+    addFacetResult("mean", 18.0/8.0);
+    addFacetResult("count", 12L);
+    
+    testGrouping(expressions);
+  }
+  
+  @Test
+  public void floatIncludeAllTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(int_i)");
+    expressions.put("count", "count(string_sm)");
+    
+    addFacet("include_all", "{ 'type':'range', "
+        + " 'field': 'float_f', "
+        + " 'start': '1', "
+        + " 'end' : '5', "
+        + " 'gaps' : ['2'], "
+        + " 'include' : ['all'], "
+        + " 'others' : ['all'] }");
+
+    addFacetValue("[1.0 TO 3.0]");
+    addFacetResult("mean", 21.0/8.0);
+    addFacetResult("count", 18L);
+
+    addFacetValue("[3.0 TO 5.0]");
+    addFacetResult("mean", 3.0);
+    addFacetResult("count", 14L);
+    
+    addFacetValue("(* TO 1.0]");
+    addFacetResult("mean", 4.0);
+    addFacetResult("count", 8L);
+    
+    addFacetValue("[5.0 TO *)");
+    addFacetResult("mean", 4.0);
+    addFacetResult("count", 6L);
+    
+    addFacetValue("[1.0 TO 5.0]");
+    addFacetResult("mean", 3.0);
+    addFacetResult("count", 26L);
+    
+    testGrouping(expressions);
+  }
 }

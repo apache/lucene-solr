@@ -264,7 +264,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
   @Override
   public void or(DocIdSetIterator iter) throws IOException {
     if (BitSetIterator.getFixedBitSetOrNull(iter) != null) {
-      assertUnpositioned(iter);
+      checkUnpositioned(iter);
       final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
       or(bits);
     } else {
@@ -293,7 +293,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
   
   /** Does in-place XOR of the bits provided by the iterator. */
   public void xor(DocIdSetIterator iter) throws IOException {
-    assertUnpositioned(iter);
+    checkUnpositioned(iter);
     if (BitSetIterator.getFixedBitSetOrNull(iter) != null) {
       final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
       xor(bits);

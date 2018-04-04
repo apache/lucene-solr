@@ -45,6 +45,8 @@ import static org.mockito.Mockito.*;
 public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
+    assumeWorkingMockito();
+    
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -64,7 +66,7 @@ public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
-    assertEquals(1, reporters.size());
+    assertTrue(reporters.toString(), reporters.size() >= 1);
     SolrMetricReporter reporter = reporters.get("test");
     assertNotNull(reporter);
     assertTrue(reporter instanceof SolrGangliaReporter);

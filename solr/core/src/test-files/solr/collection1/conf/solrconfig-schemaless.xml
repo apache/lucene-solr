@@ -35,7 +35,11 @@
     </updateLog>
   </updateHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestDispatcher>
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
+  
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
@@ -85,16 +89,16 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdate</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlong</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">tdouble</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory"/>

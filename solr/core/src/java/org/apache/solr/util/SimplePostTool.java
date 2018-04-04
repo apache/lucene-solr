@@ -125,8 +125,8 @@ public class SimplePostTool {
       "Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]";
 
   // Used in tests to avoid doing actual network traffic
-  static boolean mockMode = false;
-  static PageFetcher pageFetcher;
+  boolean mockMode = false;
+  PageFetcher pageFetcher;
 
   static {
     DATA_MODES.add(DATA_MODE_FILES);
@@ -652,17 +652,17 @@ public class SimplePostTool {
    * @throws IOException If there is a low-level I/O error.
    */
   public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
-    BAOS bos =  new BAOS();
-    long sz = 0;
-    int next = is.read();
-    while (next > -1) {
-      if(++sz > maxSize) throw new BufferOverflowException();
-      bos.write(next);
-      next = is.read();
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) throw new BufferOverflowException();
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
     }
-    bos.flush();
-    is.close();
-    return bos.getByteBuffer();
   }
 
   /**
@@ -810,7 +810,7 @@ public class SimplePostTool {
       } else {
         if(type == null) type = DEFAULT_CONTENT_TYPE;
       }
-      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix);
+      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix + (mockMode ? " MOCK!":""));
       is = new FileInputStream(file);
       postData(is, file.length(), output, type, url);
     } catch (IOException e) {
@@ -851,7 +851,7 @@ public class SimplePostTool {
   /**
    * Performs a simple get on the given URL
    */
-  public static void doGet(String url) {
+  public void doGet(String url) {
     try {
       doGet(new URL(url));
     } catch (MalformedURLException e) {
@@ -862,7 +862,7 @@ public class SimplePostTool {
   /**
    * Performs a simple get on the given URL
    */
-  public static void doGet(URL url) {
+  public void doGet(URL url) {
     try {
       if(mockMode) return;
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
@@ -1065,7 +1065,7 @@ public class SimplePostTool {
   /**
    * Inner class to filter files based on glob wildcards
    */
-  class GlobFileFilter implements FileFilter
+  static class GlobFileFilter implements FileFilter
   {
     private String _pattern;
     private Pattern p;
@@ -1105,7 +1105,7 @@ public class SimplePostTool {
   //
   class PageFetcher {
     Map<String, List<String>> robotsCache;
-    final String DISALLOW = "Disallow:";
+    static final String DISALLOW = "Disallow:";
     
     public PageFetcher() {
       robotsCache = new HashMap<>();
@@ -1258,7 +1258,7 @@ public class SimplePostTool {
   /**
    * Utility class to hold the result form a page fetch
    */
-  public class PageFetcherResult {
+  public static class PageFetcherResult {
     int httpStatus = 200;
     String contentType = "text/html";
     URL redirectUrl = null;

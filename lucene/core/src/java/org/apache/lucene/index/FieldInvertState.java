@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.TokenStream; // javadocs
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -31,14 +32,15 @@ import org.apache.lucene.util.AttributeSource;
  * @lucene.experimental
  */
 public final class FieldInvertState {
-  String name;
+  final int indexCreatedVersionMajor;
+  final String name;
+  final IndexOptions indexOptions;
   int position;
   int length;
   int numOverlap;
   int offset;
   int maxTermFrequency;
   int uniqueTermCount;
-  float boost;
   // we must track these across field instances (multi-valued case)
   int lastStartOffset = 0;
   int lastPosition = 0;
@@ -48,22 +50,26 @@ public final class FieldInvertState {
   PositionIncrementAttribute posIncrAttribute;
   PayloadAttribute payloadAttribute;
   TermToBytesRefAttribute termAttribute;
+  TermFrequencyAttribute termFreqAttribute;
 
   /** Creates {code FieldInvertState} for the specified
    *  field name. */
-  public FieldInvertState(String name) {
+  public FieldInvertState(int indexCreatedVersionMajor, String name, IndexOptions indexOptions) {
+    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
     this.name = name;
+    this.indexOptions = indexOptions;
   }
   
   /** Creates {code FieldInvertState} for the specified
    *  field name and values for all fields. */
-  public FieldInvertState(String name, int position, int length, int numOverlap, int offset, float boost) {
-    this.name = name;
+  public FieldInvertState(int indexCreatedVersionMajor, String name, IndexOptions indexOptions, int position, int length, int numOverlap, int offset, int maxTermFrequency, int uniqueTermCount) {
+    this(indexCreatedVersionMajor, name, indexOptions);
     this.position = position;
     this.length = length;
     this.numOverlap = numOverlap;
     this.offset = offset;
-    this.boost = boost;
+    this.maxTermFrequency = maxTermFrequency;
+    this.uniqueTermCount = uniqueTermCount;
   }
 
   /**
@@ -76,7 +82,6 @@ public final class FieldInvertState {
     offset = 0;
     maxTermFrequency = 0;
     uniqueTermCount = 0;
-    boost = 1.0f;
     lastStartOffset = 0;
     lastPosition = 0;
   }
@@ -89,6 +94,7 @@ public final class FieldInvertState {
     if (this.attributeSource != attributeSource) {
       this.attributeSource = attributeSource;
       termAttribute = attributeSource.getAttribute(TermToBytesRefAttribute.class);
+      termFreqAttribute = attributeSource.addAttribute(TermFrequencyAttribute.class);
       posIncrAttribute = attributeSource.addAttribute(PositionIncrementAttribute.class);
       offsetAttribute = attributeSource.addAttribute(OffsetAttribute.class);
       payloadAttribute = attributeSource.getAttribute(PayloadAttribute.class);
@@ -139,21 +145,6 @@ public final class FieldInvertState {
   }
 
   /**
-   * Get boost value. This is the cumulative product of
-   * document boost and field boost for all field instances
-   * sharing the same field name.
-   * @return the boost
-   */
-  public float getBoost() {
-    return boost;
-  }
-
-  /** Set boost value. */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
-
-  /**
    * Get the maximum term-frequency encountered for any term in the field.  A
    * field containing "the quick brown fox jumps over the lazy dog" would have
    * a value of 2, because "the" appears twice.
@@ -181,5 +172,19 @@ public final class FieldInvertState {
    */
   public String getName() {
     return name;
+  }
+
+  /**
+   * Return the version that was used to create the index, or 6 if it was created before 7.0.
+   */
+  public int getIndexCreatedVersionMajor() {
+    return indexCreatedVersionMajor;
+  }
+  
+  /**
+   * Get the index options for this field
+   */
+  public IndexOptions getIndexOptions() {
+    return indexOptions;
   }
 }

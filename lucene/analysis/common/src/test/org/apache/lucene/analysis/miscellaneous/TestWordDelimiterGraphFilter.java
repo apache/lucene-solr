@@ -171,7 +171,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   /*
    * Set a large position increment gap of 10 if the token is "largegap" or "/"
    */
-  private final class LargePosIncTokenFilter extends TokenFilter {
+  private static final class LargePosIncTokenFilter extends TokenFilter {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     

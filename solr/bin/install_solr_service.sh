@@ -251,9 +251,9 @@ solr_uid="`id -u "$SOLR_USER"`"
 if [ $? -ne 0 ]; then
   echo "Creating new user: $SOLR_USER"
   if [ "$distro" == "RedHat" ] || [ "$distro" == "CentOS" ] ; then
-    adduser "$SOLR_USER"
+    adduser --system -U -m --home-dir "$SOLR_VAR_DIR" "$SOLR_USER"
   elif [ "$distro" == "SUSE" ]; then
-    useradd -m "$SOLR_USER"
+    useradd --system -U -m --home-dir "$SOLR_VAR_DIR" "$SOLR_USER"
   else
     adduser --system --shell /bin/bash --group --disabled-password --home "$SOLR_VAR_DIR" "$SOLR_USER"
   fi
@@ -326,13 +326,13 @@ else
   mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
   echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
-LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j.properties\"
+LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
 SOLR_PORT=\"$SOLR_PORT\"
 " >> "/etc/default/$SOLR_SERVICE.in.sh"
 fi
-chown root: "/etc/default/$SOLR_SERVICE.in.sh"
-chmod 0644 "/etc/default/$SOLR_SERVICE.in.sh"
+chown root:${SOLR_USER} "/etc/default/$SOLR_SERVICE.in.sh"
+chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
@@ -340,12 +340,12 @@ mkdir -p "$SOLR_VAR_DIR/logs"
 if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
 else
-  cp "$SOLR_INSTALL_DIR/server/solr/solr.xml" "$SOLR_VAR_DIR/data/solr.xml"
+  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
 fi
-if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
-  echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
+if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
+  echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else
-  cp "$SOLR_INSTALL_DIR/server/resources/log4j.properties" "$SOLR_VAR_DIR/log4j.properties"
+  cp "$SOLR_INSTALL_DIR/server/resources/log4j2.xml" "$SOLR_VAR_DIR/log4j2.xml"
 fi
 chown -R "$SOLR_USER:" "$SOLR_VAR_DIR"
 find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750

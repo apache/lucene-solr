@@ -16,37 +16,28 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryCommand;
-import org.apache.solr.search.QueryResult;
-import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocList;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests that the functions in SolrPluginUtils work as advertised.
@@ -56,52 +47,6 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
-  }
-
-  @Test
-  public void testDocListConversion() throws Exception {
-    assertU("", adoc("id", "3234", "val_i", "1", 
-                     "val_dynamic", "quick red fox"));
-    assertU("", adoc("id", "3235", "val_i", "1", 
-                     "val_dynamic", "quick green fox"));
-    assertU("", adoc("id", "3236", "val_i", "1", 
-                     "val_dynamic", "quick brown fox"));
-    assertU("", commit());
-
-    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher srchr = holder.get();
-      QueryResult qr = new QueryResult();
-      QueryCommand cmd = new QueryCommand();
-      cmd.setQuery(new MatchAllDocsQuery());
-      cmd.setLen(10);
-      qr = srchr.search(qr, cmd);
-      
-      DocList docs = qr.getDocList();
-      assertEquals("wrong docs size", 3, docs.size());
-      Set<String> fields = new HashSet<>();
-      fields.add("val_dynamic");
-      fields.add("dynamic_val");
-      fields.add("range_facet_l"); // copied from id
-      
-      SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, null);
-      assertEquals("wrong list Size", docs.size(), list.size());
-      for (SolrDocument document : list) {
-        
-        assertTrue("unexpected field", ! document.containsKey("val_i"));
-        assertTrue("unexpected id field", ! document.containsKey("id"));
-
-        assertTrue("original field", document.containsKey("val_dynamic"));
-        assertTrue("dyn copy field", document.containsKey("dynamic_val"));
-        assertTrue("copy field", document.containsKey("range_facet_l"));
-        
-        assertNotNull("original field null", document.get("val_dynamic"));
-        assertNotNull("dyn copy field null", document.get("dynamic_val"));
-        assertNotNull("copy field null", document.get("range_facet_l"));
-      }
-    } finally {
-      if (null != holder) holder.decref();
-    }
   }
 
   @Test
@@ -181,11 +126,11 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     Query out;
     String t;
 
-    SolrQueryRequest req = req();
+    SolrQueryRequest req = req("df", "text");
     QParser qparser = QParser.getParser("hi", "dismax", req);
 
     DisjunctionMaxQueryParser qp =
-      new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getSchema().getDefaultSearchFieldName());
+      new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getParams().get("df"));
 
     qp.addAlias("hoss", 0.01f, SolrPluginUtils.parseFieldBoosts
                 ("title^2.0 title_stemmed name^1.2 subject^0.5"));
@@ -202,7 +147,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertTrue(t+" sanity test isn't TermQuery: " + out.getClass(),
                out instanceof TermQuery);
     assertEquals(t+" sanity test is wrong field",
-                 h.getCore().getLatestSchema().getDefaultSearchFieldName(),
+                 qp.getDefaultField(),
                  ((TermQuery)out).getTerm().field());
 
     t = "subject:XXXXXXXX";
@@ -455,7 +400,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(3, q.build().getMinimumNumberShouldMatch());
   }
 
-  private class InvokeSettersTestClass {
+  private static class InvokeSettersTestClass {
     private float aFloat = random().nextFloat();
     public float getAFloat() {
       return aFloat;

@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -54,7 +53,6 @@ import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
 import static org.apache.solr.common.params.FacetParams.FACET_SORT;
-import static org.apache.solr.common.params.FacetParams.FACET_DISTRIB_MCO;
 
 /**
  * <p>
@@ -79,7 +77,6 @@ import static org.apache.solr.common.params.FacetParams.FACET_DISTRIB_MCO;
  *
  */
 @SuppressSSL // Too Slow
-@SuppressPointFields
 public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -87,12 +84,15 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   // param used by test purely for tracing & validation
   private static String TRACE_MIN = "_test_min";
   // param used by test purely for tracing & validation
-  private static String TRACE_DISTRIB_MIN = "_test_distrib_min";
-  // param used by test purely for tracing & validation
   private static String TRACE_MISS = "_test_miss";
   // param used by test purely for tracing & validation
   private static String TRACE_SORT = "_test_sort";
 
+  public TestCloudPivotFacet() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
+  
   /** 
    * Controls the odds of any given doc having a value in any given field -- as this gets lower, 
    * the counts for "facet.missing" pivots should increase.
@@ -196,12 +196,6 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         baseP.add(TRACE_MIN, min);
       }
       
-      if (random().nextBoolean()) {
-        pivotP.add(FACET_DISTRIB_MCO, "true");
-        // trace param for validation
-        baseP.add(TRACE_DISTRIB_MIN, "true");
-      }
-
       if (random().nextBoolean()) {
         String missing = ""+random().nextBoolean();
         pivotP.add(FACET_MISSING, missing);

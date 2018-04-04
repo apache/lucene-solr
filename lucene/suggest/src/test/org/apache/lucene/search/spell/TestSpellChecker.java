@@ -149,7 +149,7 @@ public class TestSpellChecker extends LuceneTestCase {
   public void testComparator() throws Exception {
     IndexReader r = DirectoryReader.open(userindex);
     Directory compIdx = newDirectory();
-    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
+    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevenshteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
 
     String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3",
@@ -167,7 +167,7 @@ public class TestSpellChecker extends LuceneTestCase {
   public void testBogusField() throws Exception {
     IndexReader r = DirectoryReader.open(userindex);
     Directory compIdx = newDirectory();
-    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
+    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevenshteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
 
     String[] similar = compareSP.suggestSimilar("fvie", 2, r,

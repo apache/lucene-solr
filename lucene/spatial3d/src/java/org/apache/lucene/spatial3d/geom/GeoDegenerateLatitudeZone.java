@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * This GeoBBox represents an area rectangle of one specific latitude with
  * no longitude bounds.
@@ -52,6 +56,20 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     edgePoints = new GeoPoint[]{interiorPoint};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     double newTopLat = latitude + angle;
@@ -86,6 +104,11 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.noLongitudeBound()
@@ -98,7 +121,7 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     // work with no area endpoints.  So we rely entirely on intersections.
     //System.out.println("Got here! latitude="+latitude+" path="+path);
 
-    if (path.intersects(plane, planePoints)) {
+    if (intersects(path)) {
       return OVERLAPS;
     }
 

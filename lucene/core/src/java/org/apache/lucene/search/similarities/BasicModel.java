@@ -36,24 +36,18 @@ public abstract class BasicModel {
    */
   public BasicModel() {}
 
-  /** Returns the informative content score. */
-  public abstract float score(BasicStats stats, float tfn);
+  /** Returns the informative content score combined with the after effect, more specifically
+   * {@code informationContentScore * aeTimes1pTfn / (1 + tfn)}. This function must be
+   * non-decreasing with {@code tfn}. */
+  public abstract double score(BasicStats stats, double tfn, double aeTimes1pTfn);
   
+
   /**
    * Returns an explanation for the score.
-   * <p>Most basic models use the number of documents and the total term
-   * frequency to compute Inf<sub>1</sub>. This method provides a generic
-   * explanation for such models. Subclasses that use other statistics must
-   * override this method.</p>
+   * Subclasses must override this method.
    */
-  public Explanation explain(BasicStats stats, float tfn) {
-    return Explanation.match(
-        score(stats, tfn),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
-        Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"));
-  }
-  
+  public abstract Explanation explain (BasicStats stats, double tfn, double aeTimes1pTfn);
+
   /**
    * Subclasses must override this method to return the code of the
    * basic model formula. Refer to the original paper for the list. 

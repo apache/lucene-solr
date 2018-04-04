@@ -38,7 +38,6 @@ solrAdminApp.controller('DocumentsController',
             $scope.type = "json";
             $scope.commitWithin = 1000;
             $scope.overwrite = true;
-            $scope.boost = "1.0";
         };
 
         $scope.refresh();
@@ -78,7 +77,6 @@ solrAdminApp.controller('DocumentsController',
             }
 
             params.commitWithin = $scope.commitWithin;
-            params.boost = $scope.boost;
             params.overwrite = $scope.overwrite;
             params.core = $routeParams.core;
             params.wt = "json";

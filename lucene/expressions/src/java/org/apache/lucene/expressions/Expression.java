@@ -25,20 +25,38 @@ import org.apache.lucene.search.SortField;
 /**
  * Base class that computes the value of an expression for a document.
  * <p>
- * Example usage:
+ * Example that sorts based on an expression:
  * <pre class="prettyprint">
  *   // compile an expression:
  *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
  *   
  *   // SimpleBindings just maps variables to SortField instances
- *   SimpleBindings bindings = new SimpleBindings();    
+ *   SimpleBindings bindings = new SimpleBindings();
  *   bindings.add(new SortField("_score", SortField.Type.SCORE));
  *   bindings.add(new SortField("popularity", SortField.Type.INT));
  *   
  *   // create a sort field and sort by it (reverse order)
  *   Sort sort = new Sort(expr.getSortField(bindings, true));
  *   Query query = new TermQuery(new Term("body", "contents"));
- *   searcher.search(query, null, 10, sort);
+ *   searcher.search(query, 10, sort);
+ * </pre>
+ * <p>
+ * Example that modifies the scores produced by the query:
+ * <pre class="prettyprint">
+ *   // compile an expression:
+ *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
+ *
+ *   // SimpleBindings just maps variables to SortField instances
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *
+ *   // create a query that matches based on body:contents but
+ *   // scores using expr
+ *   Query query = new FunctionScoreQuery(
+ *       new TermQuery(new Term("body", "contents")),
+ *       expr.getDoubleValuesSource(bindings));
+ *   searcher.search(query, 10);
  * </pre>
  * @see JavascriptCompiler#compile
  * @lucene.experimental

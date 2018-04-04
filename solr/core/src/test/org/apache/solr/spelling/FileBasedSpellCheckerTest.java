@@ -20,7 +20,6 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;

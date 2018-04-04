@@ -191,9 +191,9 @@ public class SolrDocumentTest extends LuceneTestCase
     // Set up a simple document
     SolrInputDocument doc = new SolrInputDocument();
     for( int i=0; i<5; i++ ) {
-      doc.addField( "f", fval0, 1.0f );
-      doc.addField( "f", fval1, 1.0f );
-      doc.addField( "f", fval2, 1.0f );
+      doc.addField( "f", fval0 );
+      doc.addField( "f", fval1 );
+      doc.addField( "f", fval2 );
     }
     assertEquals( (3*5), doc.getField("f").getValueCount() );
   }

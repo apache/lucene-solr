@@ -27,15 +27,14 @@ public abstract class ScorerSupplier {
   /**
    * Get the {@link Scorer}. This may not return {@code null} and must be called
    * at most once.
-   * @param randomAccess A hint about the expected usage of the {@link Scorer}.
-   * If {@link DocIdSetIterator#advance} or {@link TwoPhaseIterator} will be
-   * used to check whether given doc ids match, then pass {@code true}.
-   * Otherwise if the {@link Scorer} will be mostly used to lead the iteration
-   * using {@link DocIdSetIterator#nextDoc()}, then {@code false} should be
-   * passed. Under doubt, pass {@code false} which usually has a better
-   * worst-case.
+   * @param leadCost Cost of the scorer that will be used in order to lead
+   * iteration. This can be interpreted as an upper bound of the number of times
+   * that {@link DocIdSetIterator#nextDoc}, {@link DocIdSetIterator#advance}
+   * and {@link TwoPhaseIterator#matches} will be called. Under doubt, pass
+   * {@link Long#MAX_VALUE}, which will produce a {@link Scorer} that has good
+   * iteration capabilities.
    */
-  public abstract Scorer get(boolean randomAccess) throws IOException;
+  public abstract Scorer get(long leadCost) throws IOException;
 
   /**
    * Get an estimate of the {@link Scorer} that would be returned by {@link #get}.

@@ -40,11 +40,14 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Reader for {@link Lucene70NormsFormat}
  */
-final class Lucene70NormsProducer extends NormsProducer {
+final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<Integer,NormsEntry> norms = new HashMap<>();
-  private final IndexInput data;
   private final int maxDoc;
+  private IndexInput data;
+  private boolean merging;
+  private Map<Integer, IndexInput> disiInputs;
+  private Map<Integer, RandomAccessInput> dataInputs;
 
   Lucene70NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.maxDoc();
@@ -85,6 +88,22 @@ final class Lucene70NormsProducer extends NormsProducer {
         IOUtils.closeWhileHandlingException(this.data);
       }
     }
+  }
+
+  @Override
+  public NormsProducer getMergeInstance() throws IOException {
+    Lucene70NormsProducer clone;
+    try {
+      clone = (Lucene70NormsProducer) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // cannot happen
+      throw new RuntimeException(e);
+    }
+    clone.data = data.clone();
+    clone.dataInputs = new HashMap<>();
+    clone.disiInputs = new HashMap<>();
+    clone.merging = true;
+    return clone;
   }
 
   static class NormsEntry {
@@ -193,6 +212,34 @@ final class Lucene70NormsProducer extends NormsProducer {
     }
   }
 
+  private RandomAccessInput getDataInput(FieldInfo field, NormsEntry entry) throws IOException {
+    RandomAccessInput slice = null;
+    if (merging) {
+      slice = dataInputs.get(field.number);
+    }
+    if (slice == null) {
+      slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
+      if (merging) {
+        dataInputs.put(field.number, slice);
+      }
+    }
+    return slice;
+  }
+
+  private IndexInput getDisiInput(FieldInfo field, NormsEntry entry) throws IOException {
+    IndexInput slice = null;
+    if (merging) {
+      slice = disiInputs.get(field.number);
+    }
+    if (slice == null) {
+      slice = data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
+      if (merging) {
+        disiInputs.put(field.number, slice);
+      }
+    }
+    return slice;
+  }
+
   @Override
   public NumericDocValues getNorms(FieldInfo field) throws IOException {
     final NormsEntry entry = norms.get(field.number);
@@ -209,7 +256,7 @@ final class Lucene70NormsProducer extends NormsProducer {
           }
         };
       }
-      final RandomAccessInput slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
+      final RandomAccessInput slice = getDataInput(field, entry);
       switch (entry.bytesPerNorm) {
         case 1:
           return new DenseNormsIterator(maxDoc) {
@@ -245,7 +292,8 @@ final class Lucene70NormsProducer extends NormsProducer {
       }
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      final IndexInput disiInput = getDisiInput(field, entry);
+      final IndexedDISI disi = new IndexedDISI(disiInput, entry.numDocsWithField);
       if (entry.bytesPerNorm == 0) {
         return new SparseNormsIterator(disi) {
           @Override

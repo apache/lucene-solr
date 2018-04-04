@@ -157,7 +157,7 @@ public class TestDictionary extends LuceneTestCase {
     tempDir.close();
   }
   
-  private class CloseCheckInputStream extends FilterInputStream {
+  private static class CloseCheckInputStream extends FilterInputStream {
     private boolean closed = false;
 
     public CloseCheckInputStream(InputStream delegate) {

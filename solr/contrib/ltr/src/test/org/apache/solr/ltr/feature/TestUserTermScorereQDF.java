@@ -56,9 +56,9 @@ public class TestUserTermScorereQDF extends TestRerankBase {
   @Test
   public void testUserTermScorerQWithDF() throws Exception {
     // before();
-    loadFeature("matchedTitleDF", SolrFeature.class.getCanonicalName(),
+    loadFeature("matchedTitleDF", SolrFeature.class.getName(),
         "{\"q\":\"w5\",\"df\":\"title\"}");
-    loadModel("Term-matchedTitleDF", LinearModel.class.getCanonicalName(),
+    loadModel("Term-matchedTitleDF", LinearModel.class.getName(),
         new String[] {"matchedTitleDF"},
         "{\"weights\":{\"matchedTitleDF\":1.0}}");
     final SolrQuery query = new SolrQuery();

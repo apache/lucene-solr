@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -35,6 +34,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -150,7 +150,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void test() throws IOException {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term("field", "seventy")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -164,7 +164,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     /*float score = hits.score(0);
     for (int i =1; i < hits.length(); i++)
@@ -176,7 +176,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   
   public void testQuery() {
     SpanQuery boostingFuncTermQuery = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new MaxPayloadFunction());
+        new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     QueryUtils.check(boostingFuncTermQuery);
     
     SpanTermQuery spanTermQuery = new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
@@ -184,14 +184,14 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
     
     SpanQuery boostingFuncTermQuery2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new AveragePayloadFunction());
+        new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     
     QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -215,7 +215,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     //should be two matches per document
     int count = 0;
@@ -230,7 +230,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void testNoMatch() throws Exception {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.FIELD, "junk")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 0, hits.totalHits == 0);
@@ -239,9 +239,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void testNoPayload() throws Exception {
     SpanQuery q1 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     SpanQuery q2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
     BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -257,23 +257,11 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   static class BoostingSimilarity extends ClassicSimilarity {
 
-    // TODO: Remove warning after API has been finalized
-    @Override
-    public float scorePayload(int docId, int start, int end, BytesRef payload) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
-    }
-
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override 
-    public float lengthNorm(FieldInvertState state) {
-      return state.getBoost();
-    }
-
-    @Override
-    public float sloppyFreq(int distance) {
+    public float lengthNorm(int length) {
       return 1;
     }
 
@@ -285,13 +273,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     @Override
     public float tf(float freq) {
       return freq == 0 ? 0 : 1;
-    }
-  }
-
-  static class FullSimilarity extends ClassicSimilarity{
-    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload[offset];
     }
   }
 

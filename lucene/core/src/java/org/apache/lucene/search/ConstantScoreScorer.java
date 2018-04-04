@@ -54,6 +54,11 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   @Override
+  public float getMaxScore(int upTo) throws IOException {
+    return score;
+  }
+
+  @Override
   public DocIdSetIterator iterator() {
     return disi;
   }
@@ -71,11 +76,6 @@ public final class ConstantScoreScorer extends Scorer {
   @Override
   public float score() throws IOException {
     return score;
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return 1;
   }
 
 }

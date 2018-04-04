@@ -18,17 +18,16 @@ package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
-
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SortSpecParsing;
+
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects.
  */
 public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
-
-  static final String SORT = "sort"; // not private so that test(s) can use it
 
   protected final Sort mergeSort;
 
@@ -36,7 +35,7 @@ public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
     super(resourceLoader, args, schema);
     final String sortArg = (String) args.remove(SORT);
     if (sortArg == null) {
-      throw new IllegalArgumentException(SortingMergePolicyFactory.class.getSimpleName()+" requires a '"+SORT+ "' argument.");
+      throw new IllegalArgumentException(SortingMergePolicyFactory.class.getSimpleName()+" requires a '"+ SORT + "' argument.");
     }
     this.mergeSort = SortSpecParsing.parseSortSpec(sortArg, schema).getSort();
   }

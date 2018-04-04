@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.apache.solr.util.TimeOut;
@@ -33,6 +34,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Test for {@link LeaderInitiatedRecoveryThread}
  */
+@Deprecated
 @SolrTestCaseJ4.SuppressSSL
 public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTestBase {
 
@@ -57,7 +59,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
       }
     }
     assertNotNull(notLeader);
-    Replica replica = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, notLeader.coreNodeName);
+    Replica replica = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(notLeader.coreNodeName);
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(replica);
     
     MockCoreDescriptor cd = new MockCoreDescriptor() {
@@ -98,7 +100,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     // kill the replica
     int children = cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size();
     ChaosMonkey.stop(notLeader.jetty);
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       if (children > cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size()) {
         break;
@@ -173,9 +175,9 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     // this should have published a down state so assert that cversion has incremented
     assertTrue(getOverseerCversion() > cversion);
 
-    timeOut = new TimeOut(30, TimeUnit.SECONDS);
+    timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-      Replica r = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replica.getName());
+      Replica r = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(replica.getName());
       if (r.getState() == Replica.State.DOWN) {
         break;
       }
@@ -183,7 +185,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     }
 
     assertNull(zkController.getLeaderInitiatedRecoveryState(DEFAULT_COLLECTION, SHARD1, replica.getName()));
-    assertEquals(Replica.State.DOWN, cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replica.getName()).getState());
+    assertEquals(Replica.State.DOWN, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(replica.getName()).getState());
 
     /*
     6. Test that non-leader cannot set LIR nodes
@@ -217,7 +219,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, coreContainer.getCores().iterator().next().getCoreDescriptor());
     thread.publishDownState(replicaCoreNodeProps.getCoreName(), replica.getName(), replica.getNodeName(), replicaCoreNodeProps.getCoreUrl(), false);
-    timeOut = new TimeOut(30, TimeUnit.SECONDS);
+    timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica.State state = zkController.getLeaderInitiatedRecoveryState(DEFAULT_COLLECTION, SHARD1, replica.getName());
       if (state == Replica.State.DOWN) {

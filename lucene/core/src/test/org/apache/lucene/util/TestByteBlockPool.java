@@ -18,6 +18,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TestByteBlockPool extends LuceneTestCase {
@@ -34,8 +35,7 @@ public class TestByteBlockPool extends LuceneTestCase {
       final int numValues = atLeast(100);
       BytesRefBuilder ref = new BytesRefBuilder();
       for (int i = 0; i < numValues; i++) {
-        final String value = TestUtil.randomRealisticUnicodeString(random(),
-            maxLength);
+        final String value = TestUtil.randomRealisticUnicodeString(random(), maxLength);
         list.add(new BytesRef(value));
         ref.copyChars(value);
         pool.append(ref.get());
@@ -76,5 +76,33 @@ public class TestByteBlockPool extends LuceneTestCase {
         pool.nextBuffer(); // prepare for next iter
       }
     }
-  } 
+  }
+
+  public void testLargeRandomBlocks() throws IOException {
+    Counter bytesUsed = Counter.newCounter();
+    ByteBlockPool pool = new ByteBlockPool(new ByteBlockPool.DirectTrackingAllocator(bytesUsed));
+    pool.nextBuffer();
+
+    List<byte[]> items = new ArrayList<>();
+    for (int i=0;i<100;i++) {
+      int size;
+      if (random().nextBoolean()) {
+        size = TestUtil.nextInt(random(), 100, 1000);
+      } else {
+        size = TestUtil.nextInt(random(), 50000, 100000);
+      }
+      byte[] bytes = new byte[size];
+      random().nextBytes(bytes);
+      items.add(bytes);
+      pool.append(new BytesRef(bytes));
+    }
+
+    long position = 0;
+    for (byte[] expected : items) {
+      byte[] actual = new byte[expected.length];
+      pool.readBytes(position, actual, 0, actual.length);
+      assertTrue(Arrays.equals(expected, actual));
+      position += expected.length;
+    }
+  }
 }

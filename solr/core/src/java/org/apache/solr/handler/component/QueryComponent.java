@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,6 +48,7 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
@@ -167,7 +167,7 @@ public class QueryComponent extends SearchComponent
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
-        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
+        QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
@@ -185,11 +185,6 @@ public class QueryComponent extends SearchComponent
       }
 
       rb.setSortSpec( parser.getSortSpec(true) );
-      for (SchemaField sf:rb.getSortSpec().getSchemaFields()) {
-        if (sf != null && sf.getType().isPointField() && !sf.hasDocValues()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Can't sort on a point field without docValues");
-        }
-      }
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -259,7 +254,6 @@ public class QueryComponent extends SearchComponent
     //TODO: move weighting of sort
     final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
 
-    // groupSort defaults to sort
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
@@ -312,12 +306,12 @@ public class QueryComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-    SolrIndexSearcher searcher = req.getSearcher();
 
     StatsCache statsCache = req.getCore().getStatsCache();
     
     int purpose = params.getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
     if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
+      SolrIndexSearcher searcher = req.getSearcher();
       statsCache.returnLocalStats(rb, searcher);
       return;
     }
@@ -327,50 +321,11 @@ public class QueryComponent extends SearchComponent
       statsCache.receiveGlobalStats(req);
     }
 
-    SolrQueryResponse rsp = rb.rsp;
-    IndexSchema schema = searcher.getSchema();
-
     // Optional: This could also be implemented by the top-level searcher sending
     // a filter that lists the ids... that would be transparent to
     // the request handler, but would be more expensive (and would preserve score
     // too if desired).
-    String ids = params.get(ShardParams.IDS);
-    if (ids != null) {
-      SchemaField idField = schema.getUniqueKeyField();
-      List<String> idArr = StrUtils.splitSmart(ids, ",", true);
-      int[] luceneIds = new int[idArr.size()];
-      int docs = 0;
-      if (idField.getType().isPointField()) {
-        for (int i=0; i<idArr.size(); i++) {
-          int id = searcher.search(
-              idField.getType().getFieldQuery(null, idField, idArr.get(i)), 1).scoreDocs[0].doc;
-          if (id >= 0) {
-            luceneIds[docs++] = id;
-          }
-        }
-      } else {
-        for (int i=0; i<idArr.size(); i++) {
-          int id = searcher.getFirstMatch(
-                  new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
-          if (id >= 0)
-            luceneIds[docs++] = id;
-        }
-      }
-
-      DocListAndSet res = new DocListAndSet();
-      res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
-      if (rb.isNeedDocSet()) {
-        // TODO: create a cache for this!
-        List<Query> queries = new ArrayList<>();
-        queries.add(rb.getQuery());
-        List<Query> filters = rb.getFilters();
-        if (filters != null) queries.addAll(filters);
-        res.docSet = searcher.getDocSet(queries);
-      }
-      rb.setResults(res);
-
-      ResultContext ctx = new BasicResultContext(rb);
-      rsp.addResponse(ctx);
+    if (doProcessSearchByIds(rb)) {
       return;
     }
 
@@ -382,7 +337,7 @@ public class QueryComponent extends SearchComponent
                               CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
-    QueryCommand cmd = rb.getQueryCommand();
+    QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
@@ -401,143 +356,15 @@ public class QueryComponent extends SearchComponent
     if (groupingSpec != null) {
       cmd.setSegmentTerminateEarly(false); // not supported, silently ignore any segmentTerminateEarly flag
       try {
-        boolean needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
-          CommandHandler.Builder topsGroupsActionBuilder = new CommandHandler.Builder()
-              .setQueryCommand(cmd)
-              .setNeedDocSet(false) // Order matters here
-              .setIncludeHitCount(true)
-              .setSearcher(searcher);
-
-          for (String field : groupingSpec.getFields()) {
-            topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
-                .setField(schema.getField(field))
-                .setGroupSort(groupingSpec.getGroupSort())
-                .setTopNGroups(cmd.getOffset() + cmd.getLen())
-                .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
-                .build()
-            );
-          }
-
-          CommandHandler commandHandler = topsGroupsActionBuilder.build();
-          commandHandler.execute();
-          SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
-          rsp.add("firstPhase", commandHandler.processResult(result, serializer));
-          rsp.add("totalHitCount", commandHandler.getTotalHitCount());
-          rb.setResult(result);
+          doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
           return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
-          CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
-              .setQueryCommand(cmd)
-              .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
-              .setSearcher(searcher);
-
-          int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
-          docsToCollect = Math.max(docsToCollect, 1);
-
-          for (String field : groupingSpec.getFields()) {
-            SchemaField schemaField = schema.getField(field);
-            String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
-            if (topGroupsParam == null) {
-              topGroupsParam = new String[0];
-            }
-
-            List<SearchGroup<BytesRef>> topGroups = new ArrayList<>(topGroupsParam.length);
-            for (String topGroup : topGroupsParam) {
-              SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
-              if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
-                searchGroup.groupValue = new BytesRef(schemaField.getType().readableToIndexed(topGroup));
-              }
-              topGroups.add(searchGroup);
-            }
-
-            secondPhaseBuilder.addCommandField(
-                new TopGroupsFieldCommand.Builder()
-                    .setField(schemaField)
-                    .setGroupSort(groupingSpec.getGroupSort())
-                    .setSortWithinGroup(groupingSpec.getSortWithinGroup())
-                    .setFirstPhaseGroups(topGroups)
-                    .setMaxDocPerGroup(docsToCollect)
-                    .setNeedScores(needScores)
-                    .setNeedMaxScore(needScores)
-                    .build()
-            );
-          }
-
-          for (String query : groupingSpec.getQueries()) {
-            secondPhaseBuilder.addCommandField(new Builder()
-                .setDocsToCollect(docsToCollect)
-                .setSort(groupingSpec.getGroupSort())
-                .setQuery(query, rb.req)
-                .setDocSet(searcher)
-                .build()
-            );
-          }
-
-          CommandHandler commandHandler = secondPhaseBuilder.build();
-          commandHandler.execute();
-          TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
-          rsp.add("secondPhase", commandHandler.processResult(result, serializer));
-          rb.setResult(result);
+          doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
           return;
         }
 
-        int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
-        boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
-        Grouping.TotalCount defaultTotalCount = groupingSpec.isIncludeGroupCount() ?
-            Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
-        int limitDefault = cmd.getLen(); // this is normally from "rows"
-        Grouping grouping =
-            new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
-        grouping.setGroupSort(groupingSpec.getGroupSort())
-            .setWithinGroupSort(groupingSpec.getSortWithinGroup())
-            .setDefaultFormat(groupingSpec.getResponseFormat())
-            .setLimitDefault(limitDefault)
-            .setDefaultTotalCount(defaultTotalCount)
-            .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
-            .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
-            .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
-
-        if (groupingSpec.getFields() != null) {
-          for (String field : groupingSpec.getFields()) {
-            grouping.addFieldCommand(field, rb.req);
-          }
-        }
-
-        if (groupingSpec.getFunctions() != null) {
-          for (String groupByStr : groupingSpec.getFunctions()) {
-            grouping.addFunctionCommand(groupByStr, rb.req);
-          }
-        }
-
-        if (groupingSpec.getQueries() != null) {
-          for (String groupByStr : groupingSpec.getQueries()) {
-            grouping.addQueryCommand(groupByStr, rb.req);
-          }
-        }
-
-        if( rb.isNeedDocList() || rb.isDebug() ){
-          // we need a single list of the returned docs
-          cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
-        }
-
-        grouping.execute();
-        if (grouping.isSignalCacheWarning()) {
-          rsp.add(
-              "cacheWarning",
-              String.format(Locale.ROOT, "Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
-          );
-        }
-        rb.setResult(result);
-
-        if (grouping.mainResult != null) {
-          ResultContext ctx = new BasicResultContext(rb, grouping.mainResult);
-          rsp.addResponse(ctx);
-          rsp.getToLog().add("hits", grouping.mainResult.matches());
-        } else if (!grouping.getCommands().isEmpty()) { // Can never be empty since grouping.execute() checks for this.
-          rsp.add("grouped", result.groupedResults);
-          rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
-        }
+        doProcessGroupedSearch(rb, cmd, result);
         return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -545,27 +372,7 @@ public class QueryComponent extends SearchComponent
     }
 
     // normal search result
-    searcher.search(result, cmd);
-    rb.setResult(result);
-
-    ResultContext ctx = new BasicResultContext(rb);
-    rsp.addResponse(ctx);
-    rsp.getToLog().add("hits", rb.getResults().docList.matches());
-
-    if ( ! rb.req.getParams().getBool(ShardParams.IS_SHARD,false) ) {
-      if (null != rb.getNextCursorMark()) {
-        rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
-                   rb.getNextCursorMark().getSerializedTotem());
-      }
-    }
-
-    if(rb.mergeFieldHandler != null) {
-      rb.mergeFieldHandler.handleMergeFields(rb, searcher);
-    } else {
-      doFieldSortValues(rb, searcher);
-    }
-
-    doPrefetch(rb);
+    doProcessUngroupedSearch(rb, cmd, result);
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
@@ -1376,7 +1183,7 @@ public class QueryComponent extends SearchComponent
   }
 
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -1389,9 +1196,263 @@ public class QueryComponent extends SearchComponent
     return Category.QUERY;
   }
 
-  @Override
-  public URL[] getDocs() {
-    return null;
+  private boolean doProcessSearchByIds(ResponseBuilder rb) throws IOException {
+
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+
+    SolrParams params = req.getParams();
+
+    String ids = params.get(ShardParams.IDS);
+    if (ids == null) {
+      return false;
+    }
+
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = searcher.getSchema();
+    SchemaField idField = schema.getUniqueKeyField();
+    List<String> idArr = StrUtils.splitSmart(ids, ",", true);
+    int[] luceneIds = new int[idArr.size()];
+    int docs = 0;
+    if (idField.getType().isPointField()) {
+      for (int i=0; i<idArr.size(); i++) {
+        int id = searcher.search(
+            idField.getType().getFieldQuery(null, idField, idArr.get(i)), 1).scoreDocs[0].doc;
+        if (id >= 0) {
+          luceneIds[docs++] = id;
+        }
+      }
+    } else {
+      for (int i=0; i<idArr.size(); i++) {
+        int id = searcher.getFirstMatch(
+            new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
+        if (id >= 0)
+          luceneIds[docs++] = id;
+      }
+    }
+
+    DocListAndSet res = new DocListAndSet();
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
+    if (rb.isNeedDocSet()) {
+      // TODO: create a cache for this!
+      List<Query> queries = new ArrayList<>();
+      queries.add(rb.getQuery());
+      List<Query> filters = rb.getFilters();
+      if (filters != null) queries.addAll(filters);
+      res.docSet = searcher.getDocSet(queries);
+    }
+    rb.setResults(res);
+
+    ResultContext ctx = new BasicResultContext(rb);
+    rsp.addResponse(ctx);
+    return true;
+  }
+
+  private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
+
+    GroupingSpecification groupingSpec = rb.getGroupingSpec();
+    assert null != groupingSpec : "GroupingSpecification is null";
+
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = searcher.getSchema();
+
+    CommandHandler.Builder topsGroupsActionBuilder = new CommandHandler.Builder()
+        .setQueryCommand(cmd)
+        .setNeedDocSet(false) // Order matters here
+        .setIncludeHitCount(true)
+        .setSearcher(searcher);
+
+    for (String field : groupingSpec.getFields()) {
+      topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
+          .setField(schema.getField(field))
+          .setGroupSort(groupingSpec.getGroupSort())
+          .setTopNGroups(cmd.getOffset() + cmd.getLen())
+          .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
+          .build()
+      );
+    }
+
+    CommandHandler commandHandler = topsGroupsActionBuilder.build();
+    commandHandler.execute();
+    SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
+
+    rsp.add("firstPhase", commandHandler.processResult(result, serializer));
+    rsp.add("totalHitCount", commandHandler.getTotalHitCount());
+    rb.setResult(result);
+  }
+
+  private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
+
+    GroupingSpecification groupingSpec = rb.getGroupingSpec();
+    assert null != groupingSpec : "GroupingSpecification is null";
+
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+
+    SolrParams params = req.getParams();
+
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = searcher.getSchema();
+
+    boolean needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
+
+    CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
+        .setQueryCommand(cmd)
+        .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
+        .setSearcher(searcher);
+
+    int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
+    docsToCollect = Math.max(docsToCollect, 1);
+
+    for (String field : groupingSpec.getFields()) {
+      SchemaField schemaField = schema.getField(field);
+      String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
+      if (topGroupsParam == null) {
+        topGroupsParam = new String[0];
+      }
+
+      List<SearchGroup<BytesRef>> topGroups = new ArrayList<>(topGroupsParam.length);
+      for (String topGroup : topGroupsParam) {
+        SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
+        if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
+          BytesRefBuilder builder = new BytesRefBuilder();
+          schemaField.getType().readableToIndexed(topGroup, builder);
+          searchGroup.groupValue = builder.get();
+        }
+        topGroups.add(searchGroup);
+      }
+
+      secondPhaseBuilder.addCommandField(
+          new TopGroupsFieldCommand.Builder()
+              .setField(schemaField)
+              .setGroupSort(groupingSpec.getGroupSort())
+              .setSortWithinGroup(groupingSpec.getSortWithinGroup())
+              .setFirstPhaseGroups(topGroups)
+              .setMaxDocPerGroup(docsToCollect)
+              .setNeedScores(needScores)
+              .setNeedMaxScore(needScores)
+              .build()
+      );
+    }
+
+    for (String query : groupingSpec.getQueries()) {
+      secondPhaseBuilder.addCommandField(new Builder()
+          .setDocsToCollect(docsToCollect)
+          .setSort(groupingSpec.getGroupSort())
+          .setQuery(query, rb.req)
+          .setDocSet(searcher)
+          .build()
+      );
+    }
+
+    CommandHandler commandHandler = secondPhaseBuilder.build();
+    commandHandler.execute();
+    TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
+    rsp.add("secondPhase", commandHandler.processResult(result, serializer));
+    rb.setResult(result);
+  }
+
+  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
+
+    GroupingSpecification groupingSpec = rb.getGroupingSpec();
+    assert null != groupingSpec : "GroupingSpecification is null";
+
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+
+    SolrParams params = req.getParams();
+
+    SolrIndexSearcher searcher = req.getSearcher();
+
+    int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
+    boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
+    Grouping.TotalCount defaultTotalCount = groupingSpec.isIncludeGroupCount() ?
+        Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
+    int limitDefault = cmd.getLen(); // this is normally from "rows"
+    Grouping grouping =
+        new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
+    grouping.setGroupSort(groupingSpec.getGroupSort())
+        .setWithinGroupSort(groupingSpec.getSortWithinGroup())
+        .setDefaultFormat(groupingSpec.getResponseFormat())
+        .setLimitDefault(limitDefault)
+        .setDefaultTotalCount(defaultTotalCount)
+        .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
+        .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
+        .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
+
+    if (groupingSpec.getFields() != null) {
+      for (String field : groupingSpec.getFields()) {
+        grouping.addFieldCommand(field, rb.req);
+      }
+    }
+
+    if (groupingSpec.getFunctions() != null) {
+      for (String groupByStr : groupingSpec.getFunctions()) {
+        grouping.addFunctionCommand(groupByStr, rb.req);
+      }
+    }
+
+    if (groupingSpec.getQueries() != null) {
+      for (String groupByStr : groupingSpec.getQueries()) {
+        grouping.addQueryCommand(groupByStr, rb.req);
+      }
+    }
+
+    if( rb.isNeedDocList() || rb.isDebug() ){
+      // we need a single list of the returned docs
+      cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
+    }
+
+    grouping.execute();
+    if (grouping.isSignalCacheWarning()) {
+      rsp.add(
+          "cacheWarning",
+          String.format(Locale.ROOT, "Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
+      );
+    }
+    rb.setResult(result);
+
+    if (grouping.mainResult != null) {
+      ResultContext ctx = new BasicResultContext(rb, grouping.mainResult);
+      rsp.addResponse(ctx);
+      rsp.getToLog().add("hits", grouping.mainResult.matches());
+    } else if (!grouping.getCommands().isEmpty()) { // Can never be empty since grouping.execute() checks for this.
+      rsp.add("grouped", result.groupedResults);
+      rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
+    }
+  }
+
+  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
+
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+
+    SolrIndexSearcher searcher = req.getSearcher();
+
+    searcher.search(result, cmd);
+    rb.setResult(result);
+
+    ResultContext ctx = new BasicResultContext(rb);
+    rsp.addResponse(ctx);
+    rsp.getToLog().add("hits", rb.getResults().docList.matches());
+
+    if ( ! rb.req.getParams().getBool(ShardParams.IS_SHARD,false) ) {
+      if (null != rb.getNextCursorMark()) {
+        rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
+                   rb.getNextCursorMark().getSerializedTotem());
+      }
+    }
+
+    if(rb.mergeFieldHandler != null) {
+      rb.mergeFieldHandler.handleMergeFields(rb, searcher);
+    } else {
+      doFieldSortValues(rb, searcher);
+    }
+
+    doPrefetch(rb);
   }
 
   /**
@@ -1420,8 +1481,8 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public int freq() throws IOException {
-      throw new UnsupportedOperationException();
+    public float getMaxScore(int upTo) throws IOException {
+      return Float.POSITIVE_INFINITY;
     }
 
     @Override

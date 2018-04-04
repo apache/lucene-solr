@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -302,6 +303,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
     // gather equal top fields
     if (queue.size() > 0) {
+      // TODO: we could maybe defer this somewhat costly operation until one of the APIs that
+      // needs to see the top is invoked (docFreq, postings, etc.)
       pullTop();
     } else {
       current = null;
@@ -324,9 +327,7 @@ public final class MultiTermsEnum extends TermsEnum {
     long sum = 0;
     for(int i=0;i<numTop;i++) {
       final long v = top[i].terms.totalTermFreq();
-      if (v == -1) {
-        return v;
-      }
+      assert v != -1;
       sum += v;
     }
     return sum;
@@ -365,6 +366,12 @@ public final class MultiTermsEnum extends TermsEnum {
     }
     
     return docsEnum.reset(subDocs, upto);
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    // implemented to not fail CheckIndex, but you shouldn't be using impacts on a slow reader
+    return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
   }
 
   final static class TermsEnumWithSlice {

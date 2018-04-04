@@ -76,8 +76,7 @@ public class FieldLengthFeature extends Feature {
   static {
     NORM_TABLE[0] = 0;
     for (int i = 1; i < 256; i++) {
-      float norm = SmallFloat.byte315ToFloat((byte) i);
-      NORM_TABLE[i] = 1.0f / (norm * norm);
+      NORM_TABLE[i] = SmallFloat.byte4ToInt((byte) i);
     }
   }
 
@@ -145,6 +144,11 @@ public class FieldLengthFeature extends Feature {
         final long l = norms.longValue();
         final float numTerms = decodeNorm(l);
         return numTerms;
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
       }
     }
   }

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -101,11 +102,16 @@ class SortedDocValuesTermsEnum extends TermsEnum {
 
   @Override
   public long totalTermFreq() {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
     throw new UnsupportedOperationException();
   }
 

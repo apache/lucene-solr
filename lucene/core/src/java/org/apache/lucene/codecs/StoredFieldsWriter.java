@@ -249,11 +249,6 @@ public abstract class StoredFieldsWriter implements Closeable {
     public Reader readerValue() {
       return null;
     }
-    
-    @Override
-    public float boost() {
-      return 1F;
-    }
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {

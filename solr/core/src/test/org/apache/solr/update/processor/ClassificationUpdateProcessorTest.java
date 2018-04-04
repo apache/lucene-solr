@@ -61,6 +61,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     System.setProperty("enable.update.log", "false");
     initCore("solrconfig-classification.xml", "schema-classification.xml");
   }
@@ -99,7 +100,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest=new ClassificationUpdateProcessor(params,mockProcessor,reader,req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    assertThat(unseenDocument1.getFieldValue(PREDICTED_CLASS),is("class1"));
+    assertThat(unseenDocument1.getFieldValue(PREDICTED_CLASS),is("class2"));
   }
 
   @Test
@@ -119,7 +120,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest=new ClassificationUpdateProcessor(params,mockProcessor,reader,req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class1"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class2"));
   }
 
   @Test

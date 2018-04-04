@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -35,7 +35,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
+
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  *  Iterates over a stream and fetches additional fields from a specified collection.
@@ -45,6 +49,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  *  fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
  *
+ * @since 6.3.0
  **/
 
 public class FetchStream extends TupleStream implements Expressible {
@@ -139,7 +144,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
     for(int i=0; i<fields.length; i++) {
       fields[i] = fields[i].trim();
-      if(fields[i].equals("_version_")) {
+      if(fields[i].equals(VERSION_FIELD)) {
         appendVersion = false;
       }
 
@@ -205,9 +210,8 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   private void fetchBatch() throws IOException {
-
     Tuple EOFTuple = null;
-    List<Tuple> batch = new ArrayList();
+    List<Tuple> batch = new ArrayList<>(batchSize);
     for(int i=0; i<batchSize; i++) {
       Tuple tuple = stream.read();
       if(tuple.EOF) {
@@ -219,30 +223,24 @@ public class FetchStream extends TupleStream implements Expressible {
     }
 
     if(batch.size() > 0) {
-      StringBuilder buf = new StringBuilder();
-      buf.append(rightKey);
-      buf.append(":(");
-      for (int i = 0; i < batch.size(); i++) {
-        if (i > 0) {
-          buf.append(" ");
-        }
-        Tuple tuple = batch.get(i);
+      StringBuilder buf = new StringBuilder(batch.size() * 10 + 20);
+      buf.append("{! df=").append(rightKey).append(" q.op=OR cache=false }");//disable queryCache
+      for (Tuple tuple : batch) {
         String key = tuple.getString(leftKey);
-        buf.append(key);
+        buf.append(' ').append(ClientUtils.escapeQueryChars(key));
       }
-      buf.append(")");
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", buf.toString());
       params.add("fl", fieldList+appendFields());
       params.add("rows", Integer.toString(batchSize));
-      params.add("sort", "_version_ desc");
+      params.add(SORT, "_version_ desc");
 
       CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
       StreamContext newContext = new StreamContext();
       newContext.setSolrClientCache(streamContext.getSolrClientCache());
       cloudSolrStream.setStreamContext(newContext);
-      Map<String, Tuple> fetched = new HashMap();
+      Map<String, Tuple> fetched = new HashMap<>();
       try {
         cloudSolrStream.open();
         while (true) {

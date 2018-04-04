@@ -212,7 +212,7 @@ class SimpleReplicaNode extends ReplicaNode {
           IndexSearcher searcher = mgr.acquire();
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new TermQuery(new Term("body", "the")), 1).totalHits;
+            int hitCount = searcher.count(new TermQuery(new Term("body", "the")));
             //node.message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);
@@ -229,7 +229,7 @@ class SimpleReplicaNode extends ReplicaNode {
           IndexSearcher searcher = mgr.acquire();
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
+            int hitCount = searcher.count(new MatchAllDocsQuery());
             //node.message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);

@@ -20,10 +20,10 @@ solrAdminApp.controller('QueryController',
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     // @todo read URL parameters into scope
-    $scope.query = {wt: 'json', q:'*:*', indent:'on'};
+    $scope.query = {q:'*:*'};
     $scope.filters = [{fq:""}];
     $scope.dismax = {defType: "dismax"};
-    $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: true};
+    $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: false};
     $scope.hl = {hl:"on"};
     $scope.facet = {facet: "on"};
     $scope.spatial = {};
@@ -87,6 +87,9 @@ solrAdminApp.controller('QueryController',
       var url = Query.url(params);
       Query.query(params, function(data) {
         $scope.lang = $scope.query.wt;
+        if ($scope.lang == undefined || $scope.lang == '') {
+          $scope.lang = "json";
+        }
         $scope.response = data;
         // Use relative URL to make it also work through proxies that may have a different host/port/context
         $scope.url = url;

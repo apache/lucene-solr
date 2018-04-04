@@ -142,6 +142,9 @@ public class HeatmapFacetCounter {
     }
 
     final Heatmap heatmap = new Heatmap(columns, rows, ctx.makeRectangle(heatMinX, heatMaxX, heatMinY, heatMaxY));
+    if (topAcceptDocs instanceof Bits.MatchNoBits) {
+      return heatmap; // short-circuit
+    }
 
     //All ancestor cell counts (of facetLevel) will be captured during facet visiting and applied later. If the data is
     // just points then there won't be any ancestors.

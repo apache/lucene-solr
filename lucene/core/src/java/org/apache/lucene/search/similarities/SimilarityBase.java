@@ -17,24 +17,21 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
 
 /**
  * A subclass of {@code Similarity} that provides a simplified API for its
  * descendants. Subclasses are only required to implement the {@link #score}
  * and {@link #toString()} methods. Implementing
- * {@link #explain(List, BasicStats, int, float, float)} is optional,
+ * {@link #explain(List, BasicStats, double, double)} is optional,
  * inasmuch as SimilarityBase already provides a basic explanation of the score
  * and the term frequency. However, implementers of a subclass are encouraged to
  * include as much detail about the scoring method as possible.
@@ -83,58 +80,38 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    BasicStats stats[] = new BasicStats[termStats.length];
+  public final SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    SimScorer weights[] = new SimScorer[termStats.length];
     for (int i = 0; i < termStats.length; i++) {
-      stats[i] = newStats(collectionStats.field(), boost);
-      fillBasicStats(stats[i], collectionStats, termStats[i]);
+      BasicStats stats = newStats(collectionStats.field(), boost);
+      fillBasicStats(stats, collectionStats, termStats[i]);
+      weights[i] = new BasicSimScorer(stats);
     }
-    return stats.length == 1 ? stats[0] : new MultiSimilarity.MultiStats(stats);
+    if (weights.length == 1) {
+      return weights[0];
+    } else {
+      return new MultiSimilarity.MultiSimScorer(collectionStats.field(), weights);
+    }
   }
   
   /** Factory method to return a custom stats object */
-  protected BasicStats newStats(String field, float boost) {
+  protected BasicStats newStats(String field, double boost) {
     return new BasicStats(field, boost);
   }
   
   /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 
    *  Subclasses can override this method to fill additional stats. */
   protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
-    // #positions(field) must be >= #positions(term)
-    assert collectionStats.sumTotalTermFreq() == -1 || collectionStats.sumTotalTermFreq() >= termStats.totalTermFreq();
-    long numberOfDocuments = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    
-    long docFreq = termStats.docFreq();
-    long totalTermFreq = termStats.totalTermFreq();
-
-    // codec does not supply totalTermFreq: substitute docFreq
-    if (totalTermFreq == -1) {
-      totalTermFreq = docFreq;
-    }
-
-    final long numberOfFieldTokens;
-    final float avgFieldLength;
-
-    long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
-
-    if (sumTotalTermFreq <= 0) {
-      // field does not exist;
-      // We have to provide something if codec doesnt supply these measures,
-      // or if someone omitted frequencies for the field... negative values cause
-      // NaN/Inf for some scorers.
-      numberOfFieldTokens = docFreq;
-      avgFieldLength = 1;
-    } else {
-      numberOfFieldTokens = sumTotalTermFreq;
-      avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
-    }
+    // TODO: validate this for real, somewhere else
+    assert termStats.totalTermFreq() <= collectionStats.sumTotalTermFreq();
+    assert termStats.docFreq() <= collectionStats.sumDocFreq();
  
     // TODO: add sumDocFreq for field (numberOfFieldPostings)
-    stats.setNumberOfDocuments(numberOfDocuments);
-    stats.setNumberOfFieldTokens(numberOfFieldTokens);
-    stats.setAvgFieldLength(avgFieldLength);
-    stats.setDocFreq(docFreq);
-    stats.setTotalTermFreq(totalTermFreq);
+    stats.setNumberOfDocuments(collectionStats.docCount());
+    stats.setNumberOfFieldTokens(collectionStats.sumTotalTermFreq());
+    stats.setAvgFieldLength(collectionStats.sumTotalTermFreq() / (double) collectionStats.docCount());
+    stats.setDocFreq(termStats.docFreq());
+    stats.setTotalTermFreq(termStats.totalTermFreq());
   }
   
   /**
@@ -145,8 +122,8 @@ public abstract class SimilarityBase extends Similarity {
    * @param docLen the document length.
    * @return the score.
    */
-  protected abstract float score(BasicStats stats, float freq, float docLen);
-  
+  protected abstract double score(BasicStats stats, double freq, double docLen);
+
   /**
    * Subclasses should implement this method to explain the score. {@code expl}
    * already contains the score, the name of the class and the doc id, as well
@@ -156,55 +133,35 @@ public abstract class SimilarityBase extends Similarity {
    * 
    * @param subExpls the list of details of the explanation to extend
    * @param stats the corpus level statistics.
-   * @param doc the document id.
    * @param freq the term frequency.
    * @param docLen the document length.
    */
   protected void explain(
-      List<Explanation> subExpls, BasicStats stats, int doc, float freq, float docLen) {}
+      List<Explanation> subExpls, BasicStats stats, double freq, double docLen) {}
   
   /**
    * Explains the score. The implementation here provides a basic explanation
    * in the format <em>score(name-of-similarity, doc=doc-id,
    * freq=term-frequency), computed from:</em>, and
-   * attaches the score (computed via the {@link #score(BasicStats, float, float)}
+   * attaches the score (computed via the {@link #score(BasicStats, double, double)}
    * method) and the explanation for the term frequency. Subclasses content with
    * this format may add additional details in
-   * {@link #explain(List, BasicStats, int, float, float)}.
+   * {@link #explain(List, BasicStats, double, double)}.
    *  
    * @param stats the corpus level statistics.
-   * @param doc the document id.
    * @param freq the term frequency and its explanation.
    * @param docLen the document length.
    * @return the explanation.
    */
   protected Explanation explain(
-      BasicStats stats, int doc, Explanation freq, float docLen) {
+      BasicStats stats, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
-    explain(subs, stats, doc, freq.getValue(), docLen);
+    explain(subs, stats, freq.getValue().floatValue(), docLen);
     
     return Explanation.match(
-        score(stats, freq.getValue(), docLen),
-        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
+        (float) score(stats, freq.getValue().floatValue(), docLen),
+        "score(" + getClass().getSimpleName() + ", freq=" + freq.getValue() +"), computed from:",
         subs);
-  }
-  
-  @Override
-  public SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
-    if (stats instanceof MultiSimilarity.MultiStats) {
-      // a multi term query (e.g. phrase). return the summation, 
-      // scoring almost as if it were boolean query
-      SimWeight subStats[] = ((MultiSimilarity.MultiStats) stats).subStats;
-      SimScorer subScorers[] = new SimScorer[subStats.length];
-      for (int i = 0; i < subScorers.length; i++) {
-        BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
-      }
-      return new MultiSimilarity.MultiSimScorer(subScorers);
-    } else {
-      BasicStats basicstats = (BasicStats) stats;
-      return new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
-    }
   }
   
   /**
@@ -216,40 +173,29 @@ public abstract class SimilarityBase extends Similarity {
 
   // ------------------------------ Norm handling ------------------------------
   
-  /** Norm to document length map. */
-  private static final float[] NORM_TABLE = new float[256];
+  /** Cache of decoded bytes. */
+  private static final float[] LENGTH_TABLE = new float[256];
 
   static {
-    for (int i = 1; i < 256; i++) {
-      float floatNorm = SmallFloat.byte315ToFloat((byte)i);
-      NORM_TABLE[i] = 1.0f / (floatNorm * floatNorm);
+    for (int i = 0; i < 256; i++) {
+      LENGTH_TABLE[i] = SmallFloat.byte4ToInt((byte) i);
     }
-    NORM_TABLE[0] = 1.0f / NORM_TABLE[255]; // otherwise inf
   }
 
-  /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
+  /** Encodes the document length in the same way as {@link BM25Similarity}. */
   @Override
-  public long computeNorm(FieldInvertState state) {
-    final float numTerms;
-    if (discountOverlaps)
+  public final long computeNorm(FieldInvertState state) {
+    final int numTerms;
+    if (state.getIndexOptions() == IndexOptions.DOCS && state.getIndexCreatedVersionMajor() >= 8) {
+      numTerms = state.getUniqueTermCount();
+    } else if (discountOverlaps) {
       numTerms = state.getLength() - state.getNumOverlap();
-    else
+    } else {
       numTerms = state.getLength();
-    return encodeNormValue(state.getBoost(), numTerms);
+    }
+    return SmallFloat.intToByte4(numTerms);
   }
-  
-  /** Decodes a normalization factor (document length) stored in an index.
-   * @see #encodeNormValue(float,float)
-   */
-  protected float decodeNormValue(byte norm) {
-    return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
-  }
-  
-  /** Encodes the length to a byte via SmallFloat. */
-  protected byte encodeNormValue(float boost, float length) {
-    return SmallFloat.floatToByte315((boost / (float) Math.sqrt(length)));
-  }
-  
+
   // ----------------------------- Static methods ------------------------------
   
   /** Returns the base two logarithm of {@code x}. */
@@ -260,51 +206,33 @@ public abstract class SimilarityBase extends Similarity {
   
   // --------------------------------- Classes ---------------------------------
   
-  /** Delegates the {@link #score(int, float)} and
-   * {@link #explain(int, Explanation)} methods to
-   * {@link SimilarityBase#score(BasicStats, float, float)} and
-   * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
+  /** Delegates the {@link #score(float, long)} and
+   * {@link #explain(Explanation, long)} methods to
+   * {@link SimilarityBase#score(BasicStats, double, double)} and
+   * {@link SimilarityBase#explain(BasicStats, Explanation, double)},
    * respectively.
    */
-  private class BasicSimScorer extends SimScorer {
-    private final BasicStats stats;
-    private final NumericDocValues norms;
+  final class BasicSimScorer extends SimScorer {
+    final BasicStats stats;
     
-    BasicSimScorer(BasicStats stats, NumericDocValues norms) throws IOException {
+    BasicSimScorer(BasicStats stats) {
+      super(stats.field);
       this.stats = stats;
-      this.norms = norms;
     }
 
-    private float getNormValue(int doc) throws IOException {
-      if (norms == null) {
-        return 1F;
-      }
-      if (norms.advanceExact(doc)) {
-        return decodeNormValue((byte) norms.longValue());
-      } else {
-        return decodeNormValue((byte) 0);
-      }
+    double getLengthValue(long norm) {
+      return LENGTH_TABLE[Byte.toUnsignedInt((byte) norm)];
     }
     
     @Override
-    public float score(int doc, float freq) throws IOException {
-      // We have to supply something in case norms are omitted
-      return SimilarityBase.this.score(stats, freq, getNormValue(doc));
+    public float score(float freq, long norm) {
+      return (float) SimilarityBase.this.score(stats, freq, getLengthValue(norm));
     }
 
     @Override
-    public Explanation explain(int doc, Explanation freq) throws IOException {
-      return SimilarityBase.this.explain(stats, doc, freq, getNormValue(doc));
+    public Explanation explain(Explanation freq, long norm) {
+      return SimilarityBase.this.explain(stats, freq, getLengthValue(norm));
     }
 
-    @Override
-    public float computeSlopFactor(int distance) {
-      return 1.0f / (distance + 1);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return 1f;
-    }
   }
 }

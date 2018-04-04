@@ -45,14 +45,16 @@ public class ContentStreamTest extends SolrTestCaseJ4
 
   public void testFileStream() throws IOException 
   {
-    InputStream is = new SolrResourceLoader().openResource( "solrj/README" );
-    assertNotNull( is );
-    File file = new File(createTempDir().toFile(), "README");
-    FileOutputStream os = new FileOutputStream(file);
-    IOUtils.copy(is, os);
-    os.close();
-    is.close();
-    
+    File file = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource( "solrj/README" )) {
+      assertNotNull(is);
+      file = new File(createTempDir().toFile(), "README");
+      try (FileOutputStream os = new FileOutputStream(file)) {
+        IOUtils.copy(is, os);
+      }
+    }
+
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
     InputStream s = stream.getStream();
     FileInputStream fis = new FileInputStream(file);
@@ -74,13 +76,18 @@ public class ContentStreamTest extends SolrTestCaseJ4
 
   public void testURLStream() throws IOException 
   {
-    InputStream is = new SolrResourceLoader().openResource( "solrj/README" );
-    assertNotNull( is );
-    File file = new File(createTempDir().toFile(), "README");
-    FileOutputStream os = new FileOutputStream(file);
-    IOUtils.copy(is, os);
-    os.close();
-    is.close();
+    File file = null;
+    FileOutputStream os = null;
+
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource( "solrj/README" )) {
+      assertNotNull(is);
+      file = new File(createTempDir().toFile(), "README");
+      os = new FileOutputStream(file);
+      IOUtils.copy(is, os);
+      os.close();
+      is.close();
+    }
     
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file
         .toURI().toASCIIString()));

@@ -16,14 +16,14 @@
  */
 package org.apache.solr.response;
 
-import org.apache.velocity.runtime.resource.loader.ResourceLoader;
-import org.apache.velocity.runtime.resource.Resource;
-import org.apache.velocity.exception.ResourceNotFoundException;
-import org.apache.commons.collections.ExtendedProperties;
-import org.apache.solr.core.SolrResourceLoader;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.commons.collections.ExtendedProperties;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.velocity.exception.ResourceNotFoundException;
+import org.apache.velocity.runtime.resource.Resource;
+import org.apache.velocity.runtime.resource.loader.ResourceLoader;
 
 /**
   * Velocity resource loader wrapper around Solr resource loader

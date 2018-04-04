@@ -16,109 +16,95 @@
  */
 package org.apache.solr.analytics.facet;
 
-
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class QueryFacetTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "/analytics/requestFiles/queryFacets.txt";
-
-  public final int INT = 71;
-  public final int LONG = 36;
-  public final int FLOAT = 93;
-  public final int DOUBLE = 49;
-  public final int DATE = 12;
-  public final int STRING = 28;
-  public final int NUM_LOOPS = 100;
-
+public class QueryFacetTest extends SolrAnalyticsFacetTestCase {
+  
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
-  public void queryTest() throws Exception { 
-    h.update("<delete><query>*:*</query></delete>");
-    //INT
-    ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
-    int1TestStart.add(new ArrayList<Integer>());
-    ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
-    int2TestStart.add(new ArrayList<Integer>());
-    
-    //LONG
-    ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
-    longTestStart.add(new ArrayList<Long>());
-    longTestStart.add(new ArrayList<Long>());
-    
-    //FLOAT
-    ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
-    
+  public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
       float f = j%FLOAT;
       double d = j%DOUBLE;
-      int dt = j%DATE;
-      int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + new Integer(s).toString().charAt(0)));
-
-      if (f<=50) {
-        int1TestStart.get(0).add(i);
-      }
-      if (f<=30) {
-        int2TestStart.get(0).add(i);
-      }
-      if (new Integer(s).toString().charAt(0)=='1') {
-        longTestStart.get(0).add(l);
-      }
-      if (new Integer(s).toString().charAt(0)=='2') {
-        longTestStart.get(1).add(l);
-      }
-      if (l>=20) {
-        floatTestStart.get(0).add(f);
-      }
-      if (l>=30) {
-        floatTestStart.get(1).add(f);
-      }
-      if (d<=50) {
-        floatTestStart.get(2).add(f);
+      String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
+      String dtm = (1800+j%DATE + 10) + "-12-31T23:59:59Z";
+      String s = "str" + (j%STRING);
+      List<String> fields = new ArrayList<>();
+      fields.add("id"); fields.add("1000"+j);
+      
+      if ( i != 0 ) {
+        fields.add("int_i"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + (i+10));
       }
       
-      if (usually()) {
-        assertU(commit()); // to have several segments
+      if ( l != 0l ) {
+        fields.add("long_l"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + (l+10));
       }
+      
+      if ( f != 0.0f ) {
+        fields.add("float_f"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + (f+10));
+      }
+      
+      if ( d != 0.0d ) {
+        fields.add("double_d"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + (d+10));
+      }
+      
+      if ( (j%DATE) != 0 ) {
+        fields.add("date_dt"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dtm);
+      }
+      
+      if ( (j%STRING) != 0 ) {
+        fields.add("string_s"); fields.add(s);
+        fields.add("string_sm"); fields.add(s);
+        fields.add("string_sm"); fields.add(s + "_second");
+      }
+
+      addDoc(fields);
     }
-    
-    assertU(commit()); 
-    
-    //Query ascending tests
-    setResponse(h.query(request(fileToStringArr(QueryFacetTest.class, fileName))));
-    
-    //Int One
-    ArrayList<Double> int1 = getDoubleList("ir", "queryFacets", "float1", "double", "sum");
-    ArrayList<Double> int1Test = calculateNumberStat(int1TestStart, "sum");
-    assertEquals(getRawResponse(), int1, int1Test);
-    //Int Two
-    ArrayList<Integer> int2 = getIntegerList("ir", "queryFacets", "float2", "int", "percentile_8");
-    ArrayList<Integer> int2Test = (ArrayList<Integer>)calculateStat(int2TestStart, "perc_8");
-    assertEquals(getRawResponse(), int2, int2Test);
-
-    //Long
-    ArrayList<Double> long1 = getDoubleList("lr", "queryFacets", "string", "double", "median");
-    ArrayList<Double> long1Test = calculateNumberStat(longTestStart, "median");
-    assertEquals(getRawResponse(),long1,long1Test);
-
-    //Float
-    ArrayList<Double> float1 = getDoubleList("fr", "queryFacets", "lad", "double", "mean");
-    ArrayList<Double> float1Test = calculateNumberStat(floatTestStart, "mean");
-    assertEquals(getRawResponse(), float1, float1Test);
+    commitDocs();
   }
+  
+  static public final int INT = 7;
+  static public final int LONG = 2;
+  static public final int FLOAT = 6;
+  static public final int DOUBLE = 5;
+  static public final int DATE = 3;
+  static public final int STRING = 4;
+  static public final int NUM_LOOPS = 20;
+  
+  @Test
+  public void queryFacetTest() throws Exception {
+    Map<String, String> expressions = new HashMap<>();
+    expressions.put("mean", "mean(int_i)");
+    expressions.put("count", "count(string_sm)");
+    
+    // Value Facet "with_missing"
+    addFacet("with_missing", "{ 'type':'query', 'queries':{'q1':'long_l:1 AND float_f:1.0','q2':'double_dm:[3 TO 11] OR double_dm:1'}}");
 
+    addFacetValue("q1");
+    addFacetResult("mean", 4.0);
+    addFacetResult("count", 8L);
+    
+    addFacetValue("q2");
+    addFacetResult("mean", 38.0/11.0);
+    addFacetResult("count", 18L);
+    
+    testGrouping(expressions);
+  }
 }

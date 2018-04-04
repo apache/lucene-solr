@@ -37,7 +37,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   }
 
   public void testAltDirectoryUsed() throws Exception {
-    assertQ(req("q","*:*","qt","standard"));
+    assertQ(req("q","*:*","qt","/select"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
   }

@@ -114,9 +114,6 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       Directory dir = c.getDirectory();
-      if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
-        dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
-      }
       if (dir instanceof FSDirectory) {
         FSDirectory fsd = (FSDirectory) dir;
         sb.append("dir=").append(fsd.getDirectory());
@@ -197,9 +194,6 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private String getId(IndexCommit commit) {
     StringBuilder sb = new StringBuilder();
     Directory dir = commit.getDirectory();
-    if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
-      dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
-    }
 
     // For anything persistent, make something that will
     // be the same, regardless of the Directory instance.

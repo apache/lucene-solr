@@ -32,7 +32,7 @@ public class TopFieldDocs extends TopDocs {
    * @param fields     The sort criteria used to find the top hits.
    * @param maxScore   The maximum score encountered.
    */
-  public TopFieldDocs (int totalHits, ScoreDoc[] scoreDocs, SortField[] fields, float maxScore) {
+  public TopFieldDocs (long totalHits, ScoreDoc[] scoreDocs, SortField[] fields, float maxScore) {
     super (totalHits, scoreDocs, maxScore);
     this.fields = fields;
   }

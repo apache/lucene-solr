@@ -82,8 +82,8 @@ public abstract class DiversifiedTopDocsCollector extends
   protected abstract NumericDocValues getKeys(LeafReaderContext context);
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   @Override
@@ -124,10 +124,7 @@ public abstract class DiversifiedTopDocsCollector extends
     // a leaf reader value when looking up keys
     int leafDocID = addition.doc - docBase;
     long value;
-    if (keys.docID() < leafDocID) {
-      keys.advance(leafDocID);
-    }
-    if (keys.docID() == leafDocID) {
+    if (keys.advanceExact(leafDocID)) {
       value = keys.longValue();
     } else {
       value = 0;

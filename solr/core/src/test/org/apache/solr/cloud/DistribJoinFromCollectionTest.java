@@ -62,7 +62,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   private static String toColl = "to_2x2";
   private static String fromColl = "from_1x4";
 
-  private static Integer toDocId;
+  private static String toDocId;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -112,13 +112,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   @Test
   public void testScore() throws Exception {
     //without score
-    testJoins(toColl, fromColl, toDocId, false);
+    testJoins(toColl, fromColl, toDocId, true);
   }
   
   @Test
   public void testNoScore() throws Exception {
     //with score
-    testJoins(toColl, fromColl, toDocId, true);
+    testJoins(toColl, fromColl, toDocId, false);
     
   }
   
@@ -140,8 +140,8 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     log.info("DistribJoinFromCollectionTest succeeded ... shutting down now!");
   }
 
-  private void testJoins(String toColl, String fromColl, Integer toDocId, boolean isScoresTest)
-      throws SolrServerException, IOException {
+  private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
+      throws SolrServerException, IOException, InterruptedException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
     CloudSolrClient client = cluster.getSolrClient();
@@ -164,8 +164,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl+"Alias";
-    CollectionAdminRequest.CreateAlias request = CollectionAdminRequest.createAlias(alias,fromColl);
-    request.process(client);
+    CollectionAdminRequest.createAlias(alias, fromColl).process(client);
 
     {
       final String joinQ = "{!join " + anyScoreMode(isScoresTest)
@@ -219,12 +218,12 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     }
   }
 
-  protected static Integer indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {
+  protected static String indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.setCommitWithin(50);
     up.setParam("collection", collection);
     SolrInputDocument doc = new SolrInputDocument();
-    Integer docId = new Integer(id);
+    String docId = "" + id;
     doc.addField("id", docId);
     doc.addField("join_s", joinField);
     if (matchField != null)

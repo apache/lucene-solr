@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -193,10 +194,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     LeafReader ar = getOnlyLeafReader(ir);
-    Fields fields = ar.fields();
-    int fieldCount = fields.size();
-    // -1 is allowed, if the codec doesn't implement fields.size():
-    assertTrue(fieldCount == 1 || fieldCount == -1);
+    assertEquals(1, ar.getFieldInfos().size());
     Terms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
@@ -218,10 +216,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     LeafReader ar = getOnlyLeafReader(ir);
-    Fields fields = ar.fields();
-    int fieldCount = fields.size();
-    // -1 is allowed, if the codec doesn't implement fields.size():
-    assertTrue(fieldCount == 1 || fieldCount == -1);
+    assertEquals(1, ar.getFieldInfos().size());
     Terms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
@@ -296,11 +291,10 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.forceMerge(1);
     DirectoryReader ir = iw.getReader();
     LeafReader ar = getOnlyLeafReader(ir);
-    Fields fields = ar.fields();
     // Ghost busting terms dict impls will have
     // fields.size() == 0; all others must be == 1:
-    assertTrue(fields.size() <= 1);
-    Terms terms = fields.terms("ghostField");
+    assertTrue(ar.getFieldInfos().size() <= 1);
+    Terms terms = ar.terms("ghostField");
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
       BytesRef term = termsEnum.next();
@@ -405,8 +399,8 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
               return new FieldsConsumer() {
                 @Override
-                public void write(Fields fields) throws IOException {
-                  fieldsConsumer.write(fields);
+                public void write(Fields fields, NormsProducer norms) throws IOException {
+                  fieldsConsumer.write(fields, norms);
 
                   boolean isMerge = state.context.context == IOContext.Context.MERGE;
 

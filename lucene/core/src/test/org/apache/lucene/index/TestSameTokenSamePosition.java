@@ -64,7 +64,7 @@ final class BugReproTokenStream extends TokenStream {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  private final int tokenCount = 4;
+  private static final int TOKEN_COUNT = 4;
   private int nextTokenIndex = 0;
   private final String terms[] = new String[]{"six", "six", "drunken", "drunken"};
   private final int starts[] = new int[]{0, 0, 4, 4};
@@ -73,7 +73,7 @@ final class BugReproTokenStream extends TokenStream {
 
   @Override
   public boolean incrementToken() {
-    if (nextTokenIndex < tokenCount) {
+    if (nextTokenIndex < TOKEN_COUNT) {
       termAtt.setEmpty().append(terms[nextTokenIndex]);
       offsetAtt.setOffset(starts[nextTokenIndex], ends[nextTokenIndex]);
       posIncAtt.setPositionIncrement(incs[nextTokenIndex]);

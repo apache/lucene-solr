@@ -47,9 +47,11 @@ interface SolrRel extends RelNode {
     RelOptTable table;
     SolrTable solrTable;
 
-    void addFieldMapping(String key, String val) {
-      if(key != null && !fieldMappings.containsKey(key)) {
-        this.fieldMappings.put(key, val);
+    void addFieldMapping(String key, String val, boolean overwrite) {
+      if(key != null) {
+        if(overwrite || !fieldMappings.containsKey(key)) {
+          this.fieldMappings.put(key, val);
+        }
       }
     }
 
@@ -83,7 +85,7 @@ interface SolrRel extends RelNode {
 
       String metricIdentifier = metric.toLowerCase(Locale.ROOT) + "(" + column + ")";
       if(outName != null) {
-        this.addFieldMapping(outName, metricIdentifier);
+        this.addFieldMapping(outName, metricIdentifier, true);
       }
     }
 

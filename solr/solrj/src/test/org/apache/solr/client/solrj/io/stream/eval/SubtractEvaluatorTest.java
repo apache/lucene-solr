@@ -17,17 +17,17 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class SubtractEvaluatorTest extends LuceneTestCase {
 
@@ -39,7 +39,7 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
     
     factory = new StreamFactory()
       .withFunctionName("sub", SubtractEvaluator.class);
-    values = new HashedMap();
+    values = new HashMap<String,Object>();
   }
     
   @Test
@@ -73,8 +73,8 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
   public void subOneField() throws Exception{
     factory.constructEvaluator("sub(a)");
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void subTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -83,8 +83,8 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void subTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -108,7 +108,7 @@ public class SubtractEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void subTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;

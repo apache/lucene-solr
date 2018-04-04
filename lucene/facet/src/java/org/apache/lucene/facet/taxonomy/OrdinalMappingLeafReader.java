@@ -157,5 +157,15 @@ public class OrdinalMappingLeafReader extends FilterLeafReader {
       return in.getBinaryDocValues(field);
     }
   }
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return null;
+  }
   
 }

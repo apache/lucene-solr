@@ -16,464 +16,233 @@
  */
 package org.apache.solr.analytics;
 
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NoFacetTest extends AbstractAnalyticsStatsTest {
-  static String fileName = "/analytics/requestFiles/noFacets.txt";
-
-  static public final int INT = 71;
-  static public final int LONG = 36;
-  static public final int FLOAT = 93;
-  static public final int DOUBLE = 49;
-  static public final int DATE = 12;
-  static public final int STRING = 28;
-  static public final int NUM_LOOPS = 100;
-  
-  //INT
-  static ArrayList<Integer> intTestStart; 
-  static long intMissing = 0;
-  
-  //LONG
-  static ArrayList<Long> longTestStart; 
-  static long longMissing = 0;
-  
-  //FLOAT
-  static ArrayList<Float> floatTestStart; 
-  static long floatMissing = 0;
-  
-  //DOUBLE
-  static ArrayList<Double> doubleTestStart; 
-  static long doubleMissing = 0;
-  
-  //DATE
-  static ArrayList<String> dateTestStart; 
-  static long dateMissing = 0;
-  
-  //STR
-  static ArrayList<String> stringTestStart; 
-  static long stringMissing = 0;
+public class NoFacetTest extends SolrAnalyticsTestCase {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
-    h.update("<delete><query>*:*</query></delete>");
-    defaults.put("int_id", new Integer(0));
-    defaults.put("long_ld", new Long(0));
-    defaults.put("float_fd", new Float(0));
-    defaults.put("double_dd", new Double(0));
-    defaults.put("date_dtd", "1800-12-31T23:59:59Z");
-    defaults.put("string_sd", "str0");
-    
-    intTestStart = new ArrayList<>();
-    longTestStart = new ArrayList<>();
-    floatTestStart = new ArrayList<>();
-    doubleTestStart = new ArrayList<>();
-    dateTestStart = new ArrayList<>();
-    stringTestStart = new ArrayList<>();
-    
+  public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
       float f = j%FLOAT;
       double d = j%DOUBLE;
       String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
+      String dtm = (1800+j%DATE + 10) + "-12-31T23:59:59Z";
       String s = "str" + (j%STRING);
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
       
-      if( i != 0 ){
-        fields.add("int_id"); fields.add("" + i);
-        intTestStart.add(i);
-      } else intMissing++;
-      
-      if( l != 0l ){
-        fields.add("long_ld"); fields.add("" + l);
-        longTestStart.add(l);
-      } else longMissing++;
-      
-      if( f != 0.0f ){
-        fields.add("float_fd"); fields.add("" + f);
-        floatTestStart.add(f);
-      } else floatMissing++;
-      
-      if( d != 0.0d ){
-        fields.add("double_dd"); fields.add("" + d);
-        doubleTestStart.add(d);
-      } else doubleMissing++;
-      
-      if( (j%DATE) != 0 ){
-        fields.add("date_dtd"); fields.add(dt);
-        dateTestStart.add(dt);
-      } else dateMissing++;
-      
-      if( (j%STRING) != 0 ){
-        fields.add("string_sd"); fields.add(s);
-        stringTestStart.add(s);
-      } else stringMissing++;
-      
-      fields.add("int_i"); fields.add("" + i);
-      fields.add("long_l"); fields.add("" + l);
-      fields.add("float_f"); fields.add("" + f);
-      fields.add("double_d"); fields.add("" + d);
-      
-      assertU(adoc(fields.toArray(new String[0])));
-      
-      
-      if (usually()) {
-        assertU(commit());  // to have several segments
+      if ( i != 0 ) {
+        fields.add("int_i"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + i);
+        fields.add("int_im"); fields.add("" + (i+10));
       }
+      
+      if ( l != 0l ) {
+        fields.add("long_l"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + l);
+        fields.add("long_lm"); fields.add("" + (l+10));
+      }
+      
+      if ( f != 0.0f ) {
+        fields.add("float_f"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + f);
+        fields.add("float_fm"); fields.add("" + (f+10));
+      }
+      
+      if ( d != 0.0d ) {
+        fields.add("double_d"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + d);
+        fields.add("double_dm"); fields.add("" + (d+10));
+      }
+      
+      if ( (j%DATE) != 0 ) {
+        fields.add("date_dt"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dt);
+        fields.add("date_dtm"); fields.add(dtm);
+      }
+      
+      if ( (j%STRING) != 0 ) {
+        fields.add("string_s"); fields.add(s);
+        fields.add("string_sm"); fields.add(s);
+        fields.add("string_sm"); fields.add(s + "_second");
+      }
+
+      addDoc(fields);
     }
+    commitDocs();
+  }
+  
+  static public final int INT = 7;
+  static public final int LONG = 2;
+  static public final int FLOAT = 6;
+  static public final int DOUBLE = 5;
+  static public final int DATE = 3;
+  static public final int STRING = 4;
+  static public final int NUM_LOOPS = 20;
+
+  @Test
+  public void countTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("count(long_l)", 10L));
+    expressions.put("multi", new ETP("count(string_sm)", 30L));
     
-    assertU(commit()); 
+    testExpressions(expressions);
+  }
+  
+  @Test
+  public void docCountTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("doc_count(date_dt)", 13L));
+    expressions.put("multi", new ETP("doc_count(float_fm)", 16L));
     
-    //Sort ascending tests
-    setResponse(h.query(request(fileToStringArr(NoFacetTest.class, fileName))));
+    testExpressions(expressions);
   }
       
+  @Test
+  public void missingTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("missing(string_s)", 5L));
+    expressions.put("multi", new ETP("missing(date_dtm)", 7L));
+    
+    testExpressions(expressions);
+  }
+  
+  @Test
+  public void uniqueTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("unique(int_i)", 6L));
+    expressions.put("longs", new ETP("unique(long_lm)", 2L));
+    expressions.put("float", new ETP("unique(float_f)", 5L));
+    expressions.put("doubles", new ETP("unique(double_dm)", 8L));
+    expressions.put("dates", new ETP("unique(date_dt)", 2L));
+    expressions.put("strings", new ETP("unique(string_sm)", 6L));
+
+    testExpressions(expressions);
+  }
+  
+  @Test
+  public void minTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("min(int_i)", 1));
+    expressions.put("longs", new ETP("min(long_lm)", 1L));
+    expressions.put("float", new ETP("min(float_f)", 1.0F));
+    expressions.put("doubles", new ETP("min(double_dm)", 1.0));
+    expressions.put("dates", new ETP("min(date_dt)", "1801-12-31T23:59:59Z"));
+    expressions.put("strings", new ETP("min(string_sm)", "str1"));
+
+    testExpressions(expressions);
+  }
+  
+  @Test
+  public void maxTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("max(int_i)", 6));
+    expressions.put("longs", new ETP("max(long_lm)", 11L));
+    expressions.put("float", new ETP("max(float_f)", 5.0F));
+    expressions.put("doubles", new ETP("max(double_dm)", 14.0));
+    expressions.put("dates", new ETP("max(date_dt)", "1802-12-31T23:59:59Z"));
+    expressions.put("strings", new ETP("max(string_sm)", "str3_second"));
+
+    testExpressions(expressions);
+  }
+  
   @Test
   public void sumTest() throws Exception {
-    //Int
-    Double intResult = (Double)getStatResult("sr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = (Double)calculateNumberStat(intTestStart, "sum");
-    assertEquals(getRawResponse(), intResult,intTest);
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("sum(int_i)", 57.0));
+    expressions.put("multi", new ETP("sum(long_lm)", 120.0));
     
-    //Long
-    Double longResult = (Double)getStatResult("sr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = (Double)calculateNumberStat(longTestStart, "sum");
-    assertEquals(getRawResponse(), longResult,longTest);
-    
-    //Float
-    Double floatResult = (Double)getStatResult("sr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "sum");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-    
-    //Double
-    Double doubleResult = (Double)getStatResult("sr", "double_dd", VAL_TYPE.DOUBLE);
-        Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void sumOfSquaresTest() throws Exception { 
-    //Int
-    Double intResult = (Double)getStatResult("sosr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = (Double)calculateNumberStat(intTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void meanTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("mean(int_i)", 3.3529411764));
+    expressions.put("multi", new ETP("mean(long_lm)", 6.0));
     
-    //Long
-    Double longResult = (Double)getStatResult("sosr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = (Double)calculateNumberStat(longTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(), longResult,longTest);
-    
-    //Float
-    Double floatResult = (Double)getStatResult("sosr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-    
-    //Double
-    Double doubleResult = (Double)getStatResult("sosr", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void meanTest() throws Exception { 
-    //Int
-    Double intResult = (Double)getStatResult("mr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = (Double)calculateNumberStat(intTestStart, "mean");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void weightedMeanTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("wmean(int_i, long_l)", 3.33333333333));
+    expressions.put("multi", new ETP("wmean(double_d, float_f)", 2.470588235));
     
-    //Long
-    Double longResult = (Double)getStatResult("mr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = (Double)calculateNumberStat(longTestStart, "mean");
-    assertEquals(getRawResponse(), longResult,longTest);
-    
-    //Float
-    Double floatResult = (Double)getStatResult("mr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "mean");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-    
-    //Double
-    Double doubleResult = (Double)getStatResult("mr", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "mean");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void stddevTest() throws Exception { 
-    //Int
-    Double intResult = (Double)getStatResult("str", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = (Double)calculateNumberStat(intTestStart, "stddev");
-    assertEquals(getRawResponse(), intResult, intTest, 0.00000000001);
+  public void sumOfSquaresTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("sumofsquares(int_i)", 237.0));
+    expressions.put("multi", new ETP("sumofsquares(long_lm)", 1220.0));
     
-    //Long
-    Double longResult = (Double)getStatResult("str", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = (Double)calculateNumberStat(longTestStart, "stddev");
-    assertEquals(getRawResponse(), longResult, longTest, 0.00000000001);
+    testExpressions(expressions);
+  }
+  
+  @Test
+  public void varianceTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("variance(int_i)", 2.6989619377162));
+    expressions.put("multi", new ETP("variance(long_lm)", 25.0));
     
-    //Float
-    Double floatResult = (Double)getStatResult("str", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
-    assertEquals(getRawResponse(), floatResult, floatTest, 0.00000000001);
-
-
-    //Double
-    Double doubleResult = (Double)getStatResult("str", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
-    assertEquals(getRawResponse(), doubleResult, doubleTest, 0.00000000001);
+    testExpressions(expressions);
   }
   
   @Test
-  public void medianTest() throws Exception { 
-    //Int
-    Double intResult = (Double)getStatResult("medr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = (Double)calculateNumberStat(intTestStart, "median");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void standardDeviationTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("single", new ETP("stddev(int_i)", 1.6428517698551));
+    expressions.put("multi", new ETP("stddev(long_lm)", 5.0));
     
-    //Long
-    Double longResult = (Double)getStatResult("medr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = (Double)calculateNumberStat(longTestStart, "median");
-    assertEquals(getRawResponse(), longResult,longTest);
-    
-    //Float
-    Double floatResult = (Double)getStatResult("medr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "median");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-    
-    //Double
-    Double doubleResult = (Double)getStatResult("medr", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "median");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void perc20Test() throws Exception {
-    //Int 20
-    Integer intResult = (Integer)getStatResult("p2r", "int_id", VAL_TYPE.INTEGER);
-    Integer intTest = (Integer)calculateStat(intTestStart, "perc_20");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void medianTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("median(int_i)", 3.0));
+    expressions.put("longs", new ETP("median(long_lm)", 6.0));
+    expressions.put("float", new ETP("median(float_f)", 3.0));
+    expressions.put("doubles", new ETP("median(double_dm)", 7.5));
+    expressions.put("dates", new ETP("median(date_dt)", "1801-12-31T23:59:59Z"));
 
-    //Long 20
-    Long longResult = (Long)getStatResult("p2r", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "perc_20");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float 20
-    Float floatResult = (Float)getStatResult("p2r", "float_fd", VAL_TYPE.FLOAT);
-    Float floatTest = (Float)calculateStat(floatTestStart, "perc_20");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double 20
-    Double doubleResult = (Double)getStatResult("p2r", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateStat(doubleTestStart, "perc_20");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date 20
-    String dateResult = (String)getStatResult("p2r", "date_dtd", VAL_TYPE.DATE);
-    String dateTest = (String)calculateStat(dateTestStart, "perc_20");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String 20
-    String stringResult = (String)getStatResult("p2r", "string_sd", VAL_TYPE.STRING);
-    String stringTest = (String)calculateStat(stringTestStart, "perc_20");
-    assertEquals(getRawResponse(), stringResult,stringTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void perc60Test() throws Exception { 
-    //Int 60
-    Integer intResult = (Integer)getStatResult("p6r", "int_id", VAL_TYPE.INTEGER);
-    Integer intTest = (Integer)calculateStat(intTestStart, "perc_60");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void percentileTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("percentile(20,int_i)", 2));
+    expressions.put("longs", new ETP("percentile(80,long_lm)", 11L));
+    expressions.put("float", new ETP("percentile(40,float_f)", 2.0F));
+    expressions.put("doubles", new ETP("percentile(50,double_dm)", 11.0));
+    expressions.put("dates", new ETP("percentile(0,date_dt)", "1801-12-31T23:59:59Z"));
+    expressions.put("strings", new ETP("percentile(99.99,string_sm)", "str3_second"));
 
-    //Long 60
-    Long longResult = (Long)getStatResult("p6r", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "perc_60");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float 60
-    Float floatResult = (Float)getStatResult("p6r", "float_fd", VAL_TYPE.FLOAT);
-    Float floatTest = (Float)calculateStat(floatTestStart, "perc_60");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double 60
-    Double doubleResult = (Double)getStatResult("p6r", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateStat(doubleTestStart, "perc_60");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date 60
-    String dateResult = (String)getStatResult("p6r", "date_dtd", VAL_TYPE.DATE);
-    String dateTest = (String)calculateStat(dateTestStart, "perc_60");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String 60
-    String stringResult = (String)getStatResult("p6r", "string_sd", VAL_TYPE.STRING);
-    String stringTest = (String)calculateStat(stringTestStart, "perc_60");
-    assertEquals(getRawResponse(), stringResult,stringTest);
+    testExpressions(expressions);
   }
   
   @Test
-  public void minTest() throws Exception { 
-    //Int
-    Integer intResult = (Integer)getStatResult("mir", "int_id", VAL_TYPE.INTEGER);
-    Integer intTest = (Integer)calculateStat(intTestStart, "min");
-    assertEquals(getRawResponse(), intResult,intTest);
+  public void ordinalTest() throws Exception {
+    Map<String, ETP> expressions = new HashMap<>();
+    expressions.put("int", new ETP("ordinal(15,int_i)", 5));
+    expressions.put("longs", new ETP("ordinal(11,long_lm)", 11L));
+    expressions.put("float", new ETP("ordinal(-5,float_f)", 4.0F));
+    expressions.put("doubles", new ETP("ordinal(1,double_dm)", 1.0));
+    expressions.put("dates", new ETP("ordinal(-1,date_dt)", "1802-12-31T23:59:59Z"));
+    expressions.put("strings", new ETP("ordinal(6,string_sm)", "str1_second"));
 
-    //Long
-    Long longResult = (Long)getStatResult("mir", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "min");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float
-    Float floatResult = (Float)getStatResult("mir", "float_fd", VAL_TYPE.FLOAT);
-    Float floatTest = (Float)calculateStat(floatTestStart, "min");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double
-    Double doubleResult = (Double)getStatResult("mir", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateStat(doubleTestStart, "min");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date
-    String dateResult = (String)getStatResult("mir", "date_dtd", VAL_TYPE.DATE);
-    String dateTest = (String)calculateStat(dateTestStart, "min");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String
-    String stringResult = (String)getStatResult("mir", "string_sd", VAL_TYPE.STRING);
-    String stringTest = (String)calculateStat(stringTestStart, "min");
-    assertEquals(getRawResponse(), stringResult,stringTest);
+    testExpressions(expressions);
   }
-  
-  @Test
-  public void maxTest() throws Exception { 
-    //Int
-    Integer intResult = (Integer)getStatResult("mar", "int_id", VAL_TYPE.INTEGER);
-    Integer intTest = (Integer)calculateStat(intTestStart, "max");
-    assertEquals(getRawResponse(), intResult,intTest);
-
-    //Long
-    Long longResult = (Long)getStatResult("mar", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "max");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float
-    Float floatResult = (Float)getStatResult("mar", "float_fd", VAL_TYPE.FLOAT);
-    Float floatTest = (Float)calculateStat(floatTestStart, "max");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double
-    Double doubleResult = (Double)getStatResult("mar", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = (Double)calculateStat(doubleTestStart, "max");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date
-    String dateResult = (String)getStatResult("mar", "date_dtd", VAL_TYPE.DATE);
-    String dateTest = (String)calculateStat(dateTestStart, "max");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String
-    String stringResult = (String)getStatResult("mar", "string_sd", VAL_TYPE.STRING);
-    String stringTest = (String)calculateStat(stringTestStart, "max");
-    assertEquals(getRawResponse(), stringResult,stringTest);
-  }
-  
-  @Test
-  public void uniqueTest() throws Exception { 
-    //Int
-    Long intResult = (Long)getStatResult("ur", "int_id", VAL_TYPE.LONG);
-    Long intTest = (Long)calculateStat(intTestStart, "unique");
-    assertEquals(getRawResponse(), intResult,intTest);
-
-    //Long
-    Long longResult = (Long)getStatResult("ur", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "unique");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float
-    Long floatResult = (Long)getStatResult("ur", "float_fd", VAL_TYPE.LONG);
-    Long floatTest = (Long)calculateStat(floatTestStart, "unique");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double
-    Long doubleResult = (Long)getStatResult("ur", "double_dd", VAL_TYPE.LONG);
-    Long doubleTest = (Long)calculateStat(doubleTestStart, "unique");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date
-    Long dateResult = (Long)getStatResult("ur", "date_dtd", VAL_TYPE.LONG);
-    Long dateTest = (Long)calculateStat(dateTestStart, "unique");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String
-    Long stringResult = (Long)getStatResult("ur", "string_sd", VAL_TYPE.LONG);
-    Long stringTest = (Long)calculateStat(stringTestStart, "unique");
-    assertEquals(getRawResponse(), stringResult,stringTest);
-  }
-  
-  @Test
-  public void countTest() throws Exception { 
-    //Int
-    Long intResult = (Long)getStatResult("cr", "int_id", VAL_TYPE.LONG);
-    Long intTest = (Long)calculateStat(intTestStart, "count");
-    assertEquals(getRawResponse(), intResult,intTest);
-
-    //Long
-    Long longResult = (Long)getStatResult("cr", "long_ld", VAL_TYPE.LONG);
-    Long longTest = (Long)calculateStat(longTestStart, "count");
-    assertEquals(getRawResponse(), longResult,longTest);
-
-    //Float
-    Long floatResult = (Long)getStatResult("cr", "float_fd", VAL_TYPE.LONG);
-    Long floatTest = (Long)calculateStat(floatTestStart, "count");
-    assertEquals(getRawResponse(), floatResult,floatTest);
-
-    //Double
-    Long doubleResult = (Long)getStatResult("cr", "double_dd", VAL_TYPE.LONG);
-    Long doubleTest = (Long)calculateStat(doubleTestStart, "count");
-    assertEquals(getRawResponse(), doubleResult,doubleTest);
-
-    //Date
-    Long dateResult = (Long)getStatResult("cr", "date_dtd", VAL_TYPE.LONG);
-    Long dateTest = (Long)calculateStat(dateTestStart, "count");
-    assertEquals(getRawResponse(), dateResult,dateTest);
-
-    //String
-    Long stringResult = (Long)getStatResult("cr", "string_sd", VAL_TYPE.LONG);
-    Long stringTest = (Long)calculateStat(stringTestStart, "count");
-    assertEquals(getRawResponse(), stringResult,stringTest);
-  }  
-    
-  @Test
-  public void missingDefaultTest() throws Exception { 
-    //Int
-    long intResult = (Long)getStatResult("misr", "int_id", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), intMissing,intResult);
-
-    //Long
-    long longResult = (Long)getStatResult("misr", "long_ld", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), longMissing,longResult);
-
-    //Float
-    long floatResult = (Long)getStatResult("misr", "float_fd", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), floatMissing,floatResult);
-
-    //Double
-    long doubleResult = (Long)getStatResult("misr", "double_dd", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), doubleMissing,doubleResult);
-
-    //Date
-    long dateResult = (Long)getStatResult("misr", "date_dtd", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), dateMissing,dateResult);
-
-    //String
-    long stringResult = (Long)getStatResult("misr", "string_sd", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), stringMissing, stringResult);
-  }
-
 }

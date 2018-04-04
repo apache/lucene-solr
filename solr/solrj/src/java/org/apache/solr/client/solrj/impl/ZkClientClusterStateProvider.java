@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -34,14 +35,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
+public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   ZkStateReader zkStateReader;
+  private boolean closeZkStateReader = true;
   String zkHost;
   int zkConnectTimeout = 10000;
   int zkClientTimeout = 10000;
+
+  public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
+    this.zkStateReader = zkStateReader;
+    this.closeZkStateReader =  false;
+  }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
     zkHost = buildZkHostString(zkHosts,chroot);
@@ -53,19 +60,51 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    return zkStateReader.getClusterState().getCollectionRef(collection);
+    ClusterState clusterState = zkStateReader.getClusterState();
+    if (clusterState != null) {
+      return clusterState.getCollectionRef(collection);
+    } else {
+      return null;
+    }
+  }
+  public ZkStateReader getZkStateReader(){
+    return zkStateReader;
   }
 
   @Override
-  public Set<String> liveNodes() {
-    return zkStateReader.getClusterState().getLiveNodes();
+  public Set<String> getLiveNodes() {
+    ClusterState clusterState = zkStateReader.getClusterState();
+    if (clusterState != null) {
+      return clusterState.getLiveNodes();
+    } else {
+      return Collections.emptySet();
+    }
   }
 
 
   @Override
-  public String getAlias(String collection) {
-    Aliases aliases = zkStateReader.getAliases();
-    return aliases.getCollectionAlias(collection);
+  public List<String> resolveAlias(String alias) {
+    return zkStateReader.getAliases().resolveAliases(alias); // if not an alias, returns itself
+  }
+
+  @Override
+  public Object getClusterProperty(String propertyName) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    return props.get(propertyName);
+  }
+
+  @Override
+  public <T> T getClusterProperty(String propertyName, T def) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    if (props.containsKey(propertyName)) {
+      return (T)props.get(propertyName);
+    }
+    return def;
+  }
+
+  @Override
+  public ClusterState getClusterState() throws IOException {
+    return zkStateReader.getClusterState();
   }
 
   @Override
@@ -74,16 +113,11 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
   }
 
   @Override
-  public String getCollectionName(String name) {
-    Aliases aliases = zkStateReader.getAliases();
-    if (aliases != null) {
-      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
-      if (collectionAliases != null && collectionAliases.containsKey(name)) {
-        name = collectionAliases.get(name);
-      }
-    }
-    return name;
+  public String getPolicyNameByCollection(String coll) {
+    ClusterState.CollectionRef state = getState(coll);
+    return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
   }
+
   /**
    * Download a named config from Zookeeper to a location on the filesystem
    * @param configName    the name of the config
@@ -141,7 +175,7 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
 
   @Override
   public void close() throws IOException {
-    if (zkStateReader != null) {
+    if (zkStateReader != null && closeZkStateReader) {
       synchronized (this) {
         if (zkStateReader != null)
           zkStateReader.close();

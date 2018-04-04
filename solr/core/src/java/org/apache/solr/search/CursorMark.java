@@ -183,9 +183,8 @@ public final class CursorMark {
     List<Object> pieces = null;
     try {
       final byte[] rawData = Base64.base64ToByteArray(serialized);
-      ByteArrayInputStream in = new ByteArrayInputStream(rawData);
-      try {
-        pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
+      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream in = new ByteArrayInputStream(rawData)){
+        pieces = (List<Object>) jbc.unmarshal(in);
         boolean b = false;
         for (Object o : pieces) {
           if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
@@ -196,8 +195,6 @@ public final class CursorMark {
           in.reset();
           pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
         }
-      } finally {
-        in.close();
       }
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -259,19 +256,13 @@ public final class CursorMark {
     // the type/name/dir from the SortFields (or a hashCode to act as a checksum) 
     // could help provide more validation beyond just the number of clauses.
 
-    try {
-      ByteArrayOutputStream out = new ByteArrayOutputStream(256);
-      try {
-        new JavaBinCodec().marshal(marshalledValues, out);
-        byte[] rawData = out.toByteArray();
-        return Base64.byteArrayToBase64(rawData, 0, rawData.length);
-      } finally {
-        out.close();
-      }
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
+      jbc.marshal(marshalledValues, out);
+      byte[] rawData = out.toByteArray();
+      return Base64.byteArrayToBase64(rawData, 0, rawData.length);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
                               "Unable to format search after totem", ex);
-      
     }
   }
 

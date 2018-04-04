@@ -39,6 +39,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -75,7 +76,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     return new TestRankQueryParser(query, localParams, params, req);
   }
 
-  class TestRankQueryParser extends QParser {
+  static class TestRankQueryParser extends QParser {
 
     public TestRankQueryParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
@@ -89,7 +90,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestRankQuery extends RankQuery {
+  static class TestRankQuery extends RankQuery {
 
     private int mergeStrategy;
     private int collector;
@@ -109,8 +110,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores, float boost) throws IOException{
-      return q.createWeight(indexSearcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher indexSearcher, ScoreMode scoreMode, float boost) throws IOException{
+      return q.createWeight(indexSearcher, scoreMode, boost);
     }
 
     @Override
@@ -143,7 +144,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestMergeStrategy implements MergeStrategy {
+  static class TestMergeStrategy implements MergeStrategy {
 
     public int getCost() {
       return 1;
@@ -314,7 +315,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestMergeStrategy1 implements MergeStrategy {
+  static class TestMergeStrategy1 implements MergeStrategy {
 
     public int getCost() {
       return 1;
@@ -435,7 +436,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
     }
 
-    private class FakeScorer extends Scorer {
+    private static class FakeScorer extends Scorer {
 
       final int docid;
       final float score;
@@ -457,8 +458,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
 
       @Override
-      public int freq() throws IOException {
-        throw new UnsupportedOperationException();
+      public float getMaxScore(int upTo) throws IOException {
+        return score;
       }
 
       @Override
@@ -674,7 +675,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
   }
 
 
-  class TestCollector extends TopDocsCollector {
+  static class TestCollector extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
 
@@ -692,12 +693,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
         public void setScorer(Scorer scorer) throws IOException {}
         
         public void collect(int doc) throws IOException {
-          int valuesDocID = values.docID();
-          if (valuesDocID < doc) {
-            valuesDocID = values.advance(doc);
-          }
           long value;
-          if (valuesDocID == doc) {
+          if (values.advanceExact(doc)) {
             value = values.longValue();
           } else {
             value = 0;
@@ -738,12 +735,12 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 
-  class TestCollector1 extends TopDocsCollector {
+  static class TestCollector1 extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
 
@@ -800,8 +797,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
     
     @Override
-    public boolean needsScores() {
-      return true;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
     }
   }
 

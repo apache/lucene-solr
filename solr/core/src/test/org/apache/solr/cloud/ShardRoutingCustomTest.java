@@ -20,6 +20,8 @@ import java.io.File;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -60,6 +62,16 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     jettyDir.mkdirs();
     setupJettySolrHome(jettyDir);
     JettySolrRunner j = createJetty(jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
+    assertEquals(0, CollectionAdminRequest
+        .createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
+        .setStateFormat(Integer.parseInt(getStateFormat()))
+        .setCreateNodeSet("")
+        .process(cloudClient).getStatus());
+    assertTrue(CollectionAdminRequest
+        .addReplicaToShard(collection,"shard1")
+        .setNode(j.getNodeName())
+        .setType(useTlogReplicas()? Replica.Type.TLOG: Replica.Type.NRT)
+        .process(cloudClient).isSuccess());
     jettys.add(j);
     SolrClient client = createNewSolrClient(j.getLocalPort());
     clients.add(client);

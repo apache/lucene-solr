@@ -19,12 +19,9 @@ package org.apache.solr.cloud;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
@@ -41,24 +38,6 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
 public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
-  private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
-      restTestHarnesses.add(harness);
-    }
-  }
-
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness r : restTestHarnesses) {
-      r.close();
-    }
-  }
-
 
   public TestCryptoKeys() {
     super();
@@ -68,7 +47,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    setupHarnesses();
+    setupRestTestHarnesses();
     String pk1sig = "G8LEW7uJ1is81Aqqfl3Sld3qDtOxPuVFeTLJHFJWecgDvUkmJNFXmf7nkHOVlXnDWahp1vqZf0W02VHXg37lBw==";
     String pk2sig = "pCyBQycB/0YvLVZfKLDIIqG1tFwM/awqzkp2QNpO7R3ThTqmmrj11wEJFDRLkY79efuFuQPHt40EE7jrOKoj9jLNELsfEqvU3jw9sZKiDONY+rV9Bj9QPeW8Pgt+F9Y1";
     String wrongKeySig = "xTk2hTipfpb+J5s4x3YZGOXkmHWtnJz05Vvd8RTm/Q1fbQVszR7vMk6dQ1URxX08fcg4HvxOo8g9bG2TSMOGjg==";
@@ -123,12 +102,12 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler' , 'runtimeLib':true }" +
         "}";
-    RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    RestTestHarness client = randomRestTestHarness();
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
 
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "requestHandler", "/runtime", "class"),
         "org.apache.solr.core.RuntimeLibReqHandler", 10);
@@ -137,16 +116,16 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     payload = "{\n" +
         "'add-runtimelib' : { 'name' : 'signedjar' ,'version':1}\n" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    client = randomRestTestHarness();
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "runtimeLib", blobName, "version"),
         1l, 10);
 
-    Map map = TestSolrConfigHandler.getRespMap("/runtime?wt=json", client);
+    Map map = TestSolrConfigHandler.getRespMap("/runtime", client);
     String s = (String) Utils.getObjectByPath(map, false, Arrays.asList("error", "msg"));
     assertNotNull(TestBlobHandler.getAsString(map), s);
     assertTrue(TestBlobHandler.getAsString(map), s.contains("should be signed with one of the keys in ZK /keys/exe"));
@@ -156,16 +135,16 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     payload = "{\n" +
         "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'QKqHtd37QN02iMW9UEgvAO9g9qOOuG5vEBNkbUsN7noc2hhXKic/ABFIOYJA9PKw61mNX2EmNFXOcO3WClYdSw=='}\n" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    client = randomRestTestHarness();
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "runtimeLib", blobName, "sig"),
         wrongSig, 10);
 
-    map = TestSolrConfigHandler.getRespMap("/runtime?wt=json", client);
+    map = TestSolrConfigHandler.getRespMap("/runtime", client);
     s = (String) Utils.getObjectByPath(map, false, Arrays.asList("error", "msg"));
     assertNotNull(TestBlobHandler.getAsString(map), s);//No key matched signature for jar
     assertTrue(TestBlobHandler.getAsString(map), s.contains("No key matched signature for jar"));
@@ -175,18 +154,18 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     payload = "{\n" +
         "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'YkTQgOtvcM/H/5EQdABGl3wjjrPhonAGlouIx59vppBy2cZEofX3qX1yZu5sPNRmJisNXEuhHN2149dxeUmk2Q=='}\n" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    client = randomRestTestHarness();
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "runtimeLib", blobName, "sig"),
         rightSig, 10);
 
     map = TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/runtime?wt=json",
+        "/runtime",
         null,
         Arrays.asList("class"),
         "org.apache.solr.core.RuntimeLibReqHandler", 10);
@@ -196,18 +175,18 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     payload = "{\n" +
         "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'VJPMTxDf8Km3IBj2B5HWkIOqeM/o+HHNobOYCNA3WjrEVfOMZbMMqS1Lo7uLUUp//RZwOGkOhrUhuPNY1z2CGEIKX2/m8VGH64L14d52oSvFiwhoTDDuuyjW1TFGu35D'}\n" +
         "}";
-    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    client = randomRestTestHarness();
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "runtimeLib", blobName, "sig"),
         rightSig, 10);
 
     map = TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/runtime?wt=json",
+        "/runtime",
         null,
         Arrays.asList("class"),
         "org.apache.solr.core.RuntimeLibReqHandler", 10);

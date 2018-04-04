@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="schema-docValues" version="1.6">
+<schema name="schema-analytics" version="1.6">
 
 
   <!-- field type definitions... note that the "name" attribute is
@@ -39,51 +39,89 @@
        These are provided more for backward compatability, allowing one
        to create a schema that matches an existing lucene index.
   -->
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  
+  <!-- Numeric Trie Fields -->
+  <fieldType name="int_trie" class="solr.TrieIntField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float_trie" class="solr.TrieFloatField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long_trie" class="solr.TrieLongField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double_trie" class="solr.TrieDoubleField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date_trie" class="solr.TrieDateField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  
+  <!-- Numeric Trie Fields -->
+  <fieldType name="int_pnt" class="solr.IntPointField" docValues="true" />
+  <fieldType name="float_pnt" class="solr.FloatPointField" docValues="true" />
+  <fieldType name="long_pnt" class="solr.LongPointField" docValues="true" />
+  <fieldType name="double_pnt" class="solr.DoublePointField" docValues="true" />
+  <fieldType name="date_pnt" class="solr.DatePointField" docValues="true" />
 
-  <fieldType name="boolean" class="solr.BoolField"/>
-  <fieldType name="string" class="solr.StrField"/>
-
-  <fieldType name="uuid" class="solr.UUIDField"/>
+  <fieldType name="boolean" class="solr.BoolField" docValues="true"/>
+  <fieldType name="string" class="solr.StrField" docValues="true"/>
 
 
-  <field name="id" type="string" required="true"/>
+  <field name="id" type="string" multiValued="false" required="true"/>
 
-  <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" default="1"/>
-  <field name="intdv" type="int" indexed="false" stored="false" docValues="true" default="2"/>
-  <field name="doubledv" type="double" indexed="false" stored="false" docValues="true" default="3"/>
-  <field name="longdv" type="long" indexed="false" stored="false" docValues="true" default="4"/>
-  <field name="datedv" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z"/>
-
-  <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" default="solr"/>
-  <field name="stringdvm" type="string" indexed="false" stored="false" docValues="true" default="solr"
-         multiValued="true"/>
-
-  <dynamicField name="*_i" type="int" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_id" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_idm" type="int" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_l" type="long" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_ld" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ldm" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_f" type="float" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_fd" type="float" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_fdm" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_d" type="double" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_dd" type="double" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ddm" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_dtd" type="date" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_dtdm" type="date" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_s" type="string" indexed="true" stored="true" docValues="false" multiValued="false"/>
-  <dynamicField name="*_sd" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_sdm" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_b" type="boolean" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_bm" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_bd" type="boolean" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_bdm" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_i" type="int" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_im" type="int" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_i_t" type="int_trie" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_im_t" type="int_trie" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_i_p" type="int_pnt" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_im_p" type="int_pnt" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_id" type="int" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_idm" type="int" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_l" type="long" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_lm" type="long" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_l_t" type="long_trie" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_lm_t" type="long_trie" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_l_p" type="long_pnt" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_lm_p" type="long_pnt" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_ld" type="long" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_ldm" type="long" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_f" type="float" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_fm" type="float" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_f_t" type="float_trie" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_fm_t" type="float_trie" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_f_p" type="float_pnt" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_fm_p" type="float_pnt" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_fd" type="float" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_fdm" type="float" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_d" type="double" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dm" type="double" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_d_t" type="double_trie" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dm_t" type="double_trie" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_d_p" type="double_pnt" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dm_p" type="double_pnt" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dd" type="double" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_ddm" type="double" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_dt" type="date" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dtm" type="date" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dt_t" type="date_trie" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dtm_t" type="date_trie" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dt_p" type="date_pnt" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dtm_p" type="date_pnt" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dtd" type="date" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dtdm" type="date" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_sm" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_sd" type="string" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_sdm" type="string" indexed="true" stored="true" multiValued="true"/>
 
 
   <uniqueKey>id</uniqueKey>

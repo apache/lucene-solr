@@ -20,13 +20,13 @@ import org.apache.solr.common.util.NamedList;
 
 public class SpellCheckCollation implements Comparable<SpellCheckCollation> {
   private NamedList<String> misspellingsAndCorrections;
-  private int hits;
+  private long hits;
   private int internalRank;
   private String collationQuery;
 
   @Override
   public int compareTo(SpellCheckCollation scc) {
-    int c = new Integer(internalRank).compareTo(scc.internalRank);
+    int c = Integer.compare(internalRank, scc.internalRank);
     if (c == 0) {
       return collationQuery.compareTo(scc.collationQuery);
     }
@@ -42,11 +42,11 @@ public class SpellCheckCollation implements Comparable<SpellCheckCollation> {
     this.misspellingsAndCorrections = misspellingsAndCorrections;
   }
 
-  public int getHits() {
+  public long getHits() {
     return hits;
   }
 
-  public void setHits(int hits) {
+  public void setHits(long hits) {
     this.hits = hits;
   }
 

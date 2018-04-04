@@ -70,6 +70,10 @@ public class SegmentCommitInfo {
   
   private volatile long sizeInBytes = -1;
 
+  // NOTE: only used in-RAM by IW to track buffered deletes;
+  // this is never written to/read from the Directory
+  private long bufferedDeletesGen = -1;
+  
   /**
    * Sole constructor.
    * 
@@ -236,17 +240,17 @@ public class SegmentCommitInfo {
     return files;
   }
 
-  // NOTE: only used in-RAM by IW to track buffered deletes;
-  // this is never written to/read from the Directory
-  private long bufferedDeletesGen;
-  
   long getBufferedDeletesGen() {
     return bufferedDeletesGen;
   }
 
   void setBufferedDeletesGen(long v) {
-    bufferedDeletesGen = v;
-    sizeInBytes =  -1;
+    if (bufferedDeletesGen == -1) {
+      bufferedDeletesGen = v;
+      sizeInBytes =  -1;
+    } else {
+      throw new IllegalStateException("buffered deletes gen should only be set once");
+    }
   }
   
   /** Returns true if there are any deletions for the 

@@ -29,6 +29,40 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 
+/**
+ * The {@link XmlQParserPlugin} extends the {@link QParserPlugin} and supports the creation of queries from XML.
+ *<p>
+ * Example:
+ * <pre>
+&lt;BooleanQuery fieldName="description"&gt;
+   &lt;Clause occurs="must"&gt;
+      &lt;TermQuery&gt;shirt&lt;/TermQuery&gt;
+   &lt;/Clause&gt;
+   &lt;Clause occurs="mustnot"&gt;
+      &lt;TermQuery&gt;plain&lt;/TermQuery&gt;
+   &lt;/Clause&gt;
+   &lt;Clause occurs="should"&gt;
+      &lt;TermQuery&gt;cotton&lt;/TermQuery&gt;
+   &lt;/Clause&gt;
+   &lt;Clause occurs="must"&gt;
+      &lt;BooleanQuery fieldName="size"&gt;
+         &lt;Clause occurs="should"&gt;
+            &lt;TermsQuery&gt;S M L&lt;/TermsQuery&gt;
+         &lt;/Clause&gt;
+      &lt;/BooleanQuery&gt;
+   &lt;/Clause&gt;
+&lt;/BooleanQuery&gt;
+</pre>
+ * You can configure your own custom query builders for additional XML elements.
+ * The custom builders need to extend the {@link SolrQueryBuilder} or the
+ * {@link SolrSpanQueryBuilder} class.
+ *<p>
+ * Example solrconfig.xml snippet:
+ * <pre>&lt;queryParser name="xmlparser" class="XmlQParserPlugin"&gt;
+  &lt;str name="MyCustomQuery"&gt;com.mycompany.solr.search.MyCustomQueryBuilder&lt;/str&gt;
+&lt;/queryParser&gt;
+</pre>
+ */
 public class XmlQParserPlugin extends QParserPlugin {
   public static final String NAME = "xmlparser";
 
@@ -53,7 +87,7 @@ public class XmlQParserPlugin extends QParserPlugin {
         return null;
       }
       final IndexSchema schema = req.getSchema();
-      final String defaultField = QueryParsing.getDefaultField(schema, getParam(CommonParams.DF));
+      final String defaultField = getParam(CommonParams.DF);
       final Analyzer analyzer = schema.getQueryAnalyzer();
 
       final SolrCoreParser solrParser = new SolrCoreParser(defaultField, analyzer, req);

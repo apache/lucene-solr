@@ -44,7 +44,7 @@ public class CSVConfig {
     private int fill;
     /** The fill char. Defaults to a space */
     private char fillChar = ' ';
-    /** The seperator character. Defaults to , */
+    /** The separator character. Defaults to , */
     private char delimiter = ',';
     /** Should we ignore the delimiter. Defaults to false */
     private boolean ignoreDelimiter = false;

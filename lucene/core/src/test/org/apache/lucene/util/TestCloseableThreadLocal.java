@@ -40,7 +40,7 @@ public class TestCloseableThreadLocal extends LuceneTestCase {
     assertNull(ctl.get());
   }
 
-  public class InitValueThreadLocal extends CloseableThreadLocal<Object> {
+  public static class InitValueThreadLocal extends CloseableThreadLocal<Object> {
     @Override
     protected Object initialValue() {
       return TEST_VALUE;

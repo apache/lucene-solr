@@ -163,7 +163,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     assertNotNull(actual.getSimilarity());
   }
 
-  private static String withWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
+  private String withWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
       "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
       "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
       "    <field name=\"which\" type=\"int\" indexed=\"true\" stored=\"true\"/>\n" +
@@ -177,11 +177,11 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
       "    </fieldtype>\n" +
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
-      "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
+      "    <fieldType name=\"int\" class=\""+RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)+"\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
       "  <similarity class=\"${solr.test.simfac1}\"/> " +
       "</schema>";
 
-  private static String withoutWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
+  private String withoutWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
       "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
       "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
       "  <uniqueKey>id</uniqueKey>\n" +
@@ -193,7 +193,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       "      </analyzer>\n" +
       "    </fieldtype>\n" +
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
-      "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
+      "    <fieldType name=\"int\" class=\""+RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)+"\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
       "  <similarity class=\"${solr.test.simfac2}\"/> " +
       "</schema>";
 

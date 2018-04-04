@@ -1,0 +1,126 @@
+= Phonetic Matching
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Phonetic matching algorithms may be used to encode tokens so that two different spellings that are pronounced similarly will match.
+
+For overviews of and comparisons between algorithms, see http://en.wikipedia.org/wiki/Phonetic_algorithm and http://ntz-develop.blogspot.com/2011/03/phonetic-algorithms.html
+
+== Beider-Morse Phonetic Matching (BMPM)
+
+For examples of how to use this encoding in your analyzer, see <<filter-descriptions.adoc#beider-morse-filter,Beider Morse Filter>> in the Filter Descriptions section.
+
+Beider-Morse Phonetic Matching (BMPM) is a "soundalike" tool that lets you search using a new phonetic matching system. BMPM helps you search for personal names (or just surnames) in a Solr/Lucene index, and is far superior to the existing phonetic codecs, such as regular soundex, metaphone, caverphone, etc.
+
+In general, phonetic matching lets you search a name list for names that are phonetically equivalent to the desired name. BMPM is similar to a soundex search in that an exact spelling is not required. Unlike soundex, it does not generate a large quantity of false hits.
+
+From the spelling of the name, BMPM attempts to determine the language. It then applies phonetic rules for that particular language to transliterate the name into a phonetic alphabet. If it is not possible to determine the language with a fair degree of certainty, it uses generic phonetic instead. Finally, it applies language-independent rules regarding such things as voiced and unvoiced consonants and vowels to further insure the reliability of the matches.
+
+For example, assume that the matches found when searching for Stephen in a database are "Stefan", "Steph", "Stephen", "Steve", "Steven", "Stove", and "Stuffin". "Stefan", "Stephen", and "Steven" are probably relevant, and are names that you want to see. "Stuffin", however, is probably not relevant. Also rejected were "Steph", "Steve", and "Stove". Of those, "Stove" is probably not one that we would have wanted. But "Steph" and "Steve" are possibly ones that you might be interested in.
+
+For Solr, BMPM searching is available for the following languages:
+
+* English
+* French
+* German
+* Greek
+* Hebrew written in Hebrew letters
+* Hungarian
+* Italian
+
+* Polish
+* Romanian
+* Russian written in Cyrillic letters
+* Russian transliterated into English letters
+* Spanish
+* Turkish
+
+The name matching is also applicable to non-Jewish surnames from the countries in which those languages are spoken.
+
+For more information, see here: http://stevemorse.org/phoneticinfo.htm and http://stevemorse.org/phonetics/bmpm.htm[http://stevemorse.org/phonetics/bmpm.htm.]
+
+== Daitch-Mokotoff Soundex
+
+To use this encoding in your analyzer, see <<filter-descriptions.adoc#daitch-mokotoff-soundex-filter,Daitch-Mokotoff Soundex Filter>> in the Filter Descriptions section.
+
+The Daitch-Mokotoff Soundex algorithm is a refinement of the Russel and American Soundex algorithms, yielding greater accuracy in matching especially Slavic and Yiddish surnames with similar pronunciation but differences in spelling.
+
+The main differences compared to the other soundex variants are:
+
+* coded names are 6 digits long
+* initial character of the name is coded
+* rules to encoded multi-character n-grams
+* multiple possible encodings for the same name (branching)
+
+Note: the implementation used by Solr (commons-codec's http://commons.apache.org/proper/commons-codec/apidocs/org/apache/commons/codec/language/DaitchMokotoffSoundex.html[`DaitchMokotoffSoundex`] ) has additional branching rules compared to the original description of the algorithm.
+
+For more information, see http://en.wikipedia.org/wiki/Daitch%E2%80%93Mokotoff_Soundex and http://www.avotaynu.com/soundex.htm
+
+== Double Metaphone
+
+To use this encoding in your analyzer, see <<filter-descriptions.adoc#double-metaphone-filter,Double Metaphone Filter>> in the Filter Descriptions section. Alternatively, you may specify `encoder="DoubleMetaphone"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>, but note that the Phonetic Filter version will *not* provide the second ("alternate") encoding that is generated by the Double Metaphone Filter for some tokens.
+
+Encodes tokens using the double metaphone algorithm by Lawrence Philips. See the original article at http://www.drdobbs.com/the-double-metaphone-search-algorithm/184401251?pgno=2
+
+== Metaphone
+
+To use this encoding in your analyzer, specify `encoder="Metaphone"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+Encodes tokens using the Metaphone algorithm by Lawrence Philips, described in "Hanging on the Metaphone" in Computer Language, Dec. 1990.
+
+Another reference for more information is http://www.drdobbs.com/the-double-metaphone-search-algorithm/184401251?pgno=2[Double Metaphone Search Algorithm], by Lawrence Philips.
+
+
+== Soundex
+
+To use this encoding in your analyzer, specify `encoder="Soundex"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+Encodes tokens using the Soundex algorithm, which is used to relate similar names, but can also be used as a general purpose scheme to find words with similar phonemes.
+
+See also http://en.wikipedia.org/wiki/Soundex.
+
+== Refined Soundex
+
+To use this encoding in your analyzer, specify `encoder="RefinedSoundex"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+Encodes tokens using an improved version of the Soundex algorithm.
+
+See http://en.wikipedia.org/wiki/Soundex.
+
+== Caverphone
+
+To use this encoding in your analyzer, specify `encoder="Caverphone"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+Caverphone is an algorithm created by the Caversham Project at the University of Otago. The algorithm is optimised for accents present in the southern part of the city of Dunedin, New Zealand.
+
+See http://en.wikipedia.org/wiki/Caverphone and the Caverphone 2.0 specification at http://caversham.otago.ac.nz/files/working/ctp150804.pdf
+
+== Kölner Phonetik a.k.a. Cologne Phonetic
+
+To use this encoding in your analyzer, specify `encoder="ColognePhonetic"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+The Kölner Phonetik, an algorithm published by Hans Joachim Postel in 1969, is optimized for the German language.
+
+See http://de.wikipedia.org/wiki/K%C3%B6lner_Phonetik
+
+== NYSIIS
+
+To use this encoding in your analyzer, specify `encoder="Nysiis"` with the <<filter-descriptions.adoc#phonetic-filter,Phonetic Filter>>.
+
+NYSIIS is an encoding used to relate similar names, but can also be used as a general purpose scheme to find words with similar phonemes.
+
+See http://en.wikipedia.org/wiki/NYSIIS and http://www.dropby.com/NYSIIS.html

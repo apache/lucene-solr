@@ -148,12 +148,8 @@
  *            deleted documents, when segments are merged the statistic is updated as 
  *            those deleted documents are merged away.
  *        <li>{@link org.apache.lucene.index.TermsEnum#totalTermFreq}: Returns the number 
- *            of occurrences of this term across all documents. Note that this statistic 
- *            is unavailable (returns <code>-1</code>) if term frequencies were omitted 
- *            from the index 
- *            ({@link org.apache.lucene.index.IndexOptions#DOCS DOCS}) 
- *            for the field. Like docFreq(), it will also count occurrences that appear in 
- *            deleted documents.
+ *            of occurrences of this term across all documents. Like docFreq(), it will
+ *            also count occurrences that appear in deleted documents.
  *     </ul>
  * <a name="fieldstats"></a>
  * <h3>
@@ -180,10 +176,7 @@
  *            of tokens for the field. This can be thought of as the sum of 
  *            {@link org.apache.lucene.index.TermsEnum#totalTermFreq} across all terms in the
  *            field, and like totalTermFreq() it will also count occurrences that appear in
- *            deleted documents, and will be unavailable (returns <code>-1</code>) if term 
- *            frequencies were omitted from the index 
- *            ({@link org.apache.lucene.index.IndexOptions#DOCS DOCS}) 
- *            for the field.
+ *            deleted documents.
  *     </ul>
  * <a name="segmentstats"></a>
  * <h3>

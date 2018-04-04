@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -37,8 +36,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanContainingQuery;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -61,7 +62,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
     assertTrue("Expected docs and scores arrays must be the same length!", expectedDocs.length == expectedScores.length);
 
-    PayloadScoreQuery psq = new PayloadScoreQuery(query, function, includeSpanScore);
+    PayloadScoreQuery psq = new PayloadScoreQuery(query, function, PayloadDecoder.FLOAT_DECODER, includeSpanScore);
     TopDocs hits = searcher.search(psq, expectedDocs.length);
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -139,11 +140,11 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     }, 1, true);
 
     // check includeSpanScore makes a difference here
-    searcher.setSimilarity(new MultiplyingSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
     try {
-      checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 41.802513122558594f, 34.13160705566406f });
-      checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 34.13160705566406f, 20.901256561279297f });
-      checkQuery(q, new AveragePayloadFunction(), new int[] { 122, 222 }, new float[]{ 38.3189697265625f, 34.13160705566406f });
+      checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 20.901256561279297f, 17.06580352783203f });
+      checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 17.06580352783203f, 10.450628280639648f });
+      checkQuery(q, new AveragePayloadFunction(), new int[] { 122, 222 }, new float[]{ 19.15948486328125f, 17.06580352783203f });
       checkQuery(q, new MaxPayloadFunction(), false, new int[]{122, 222}, new float[]{4.0f, 4.0f});
       checkQuery(q, new MinPayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 2.0f});
       checkQuery(q, new AveragePayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 3.666666f});
@@ -172,10 +173,40 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
   }
 
+  @Test
+  public void testEquality() {
+    SpanQuery sq1 = new SpanTermQuery(new Term("field", "one"));
+    SpanQuery sq2 = new SpanTermQuery(new Term("field", "two"));
+    PayloadFunction minFunc = new MinPayloadFunction();
+    PayloadFunction maxFunc = new MaxPayloadFunction();
+    PayloadScoreQuery query1 = new PayloadScoreQuery(sq1, minFunc, PayloadDecoder.FLOAT_DECODER, true);
+    PayloadScoreQuery query2 = new PayloadScoreQuery(sq2, minFunc, PayloadDecoder.FLOAT_DECODER, true);
+    PayloadScoreQuery query3 = new PayloadScoreQuery(sq2, maxFunc, PayloadDecoder.FLOAT_DECODER, true);
+    PayloadScoreQuery query4 = new PayloadScoreQuery(sq2, maxFunc, PayloadDecoder.FLOAT_DECODER, false);
+    PayloadScoreQuery query5 = new PayloadScoreQuery(sq1, minFunc, PayloadDecoder.FLOAT_DECODER);
+
+    assertEquals(query1, query5);
+    assertFalse(query1.equals(query2));
+    assertFalse(query1.equals(query3));
+    assertFalse(query1.equals(query4));
+    assertFalse(query2.equals(query3));
+    assertFalse(query2.equals(query4));
+    assertFalse(query3.equals(query4));
+  }
+
+  public void testRewrite() throws IOException {
+    SpanMultiTermQueryWrapper xyz = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("field", "xyz*")));
+    PayloadScoreQuery psq = new PayloadScoreQuery(xyz, new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER, false);
+
+    // if query wasn't rewritten properly, the query would have failed with "Rewrite first!"
+    searcher.search(psq, 1);
+  }
+
+
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Directory directory;
-  private static BoostingSimilarity similarity = new BoostingSimilarity();
+  private static JustScorePayloadSimilarity similarity = new JustScorePayloadSimilarity();
   private static byte[] payload2 = new byte[]{2};
   private static byte[] payload4 = new byte[]{4};
 
@@ -224,8 +255,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new PayloadAnalyzer())
-            .setMergePolicy(NoMergePolicy.INSTANCE)
-            .setSimilarity(similarity));
+            .setMergePolicy(NoMergePolicy.INSTANCE));
     //writer.infoStream = System.out;
     for (int i = 0; i < 300; i++) {
       Document doc = new Document();
@@ -238,7 +268,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
-    searcher.setSimilarity(similarity);
+    searcher.setSimilarity(new JustScorePayloadSimilarity());
   }
 
   @AfterClass
@@ -250,29 +280,14 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = null;
   }
 
-  static class MultiplyingSimilarity extends ClassicSimilarity {
-
-    @Override
-    public float scorePayload(int docId, int start, int end, BytesRef payload) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
-    }
-
-  }
-
-  static class BoostingSimilarity extends MultiplyingSimilarity {
+  static class JustScorePayloadSimilarity extends ClassicSimilarity {
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
-    public float lengthNorm(FieldInvertState state) {
-      return state.getBoost();
-    }
-
-    @Override
-    public float sloppyFreq(int distance) {
-      return 1.0f;
+    public float lengthNorm(int length) {
+      return 1;
     }
 
     @Override

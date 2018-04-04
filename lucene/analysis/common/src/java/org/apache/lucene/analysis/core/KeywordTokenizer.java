@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
+import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
+
 /**
  * Emits the entire input as a single token.
  */
@@ -41,16 +43,16 @@ public final class KeywordTokenizer extends Tokenizer {
   }
 
   public KeywordTokenizer(int bufferSize) {
-    if (bufferSize <= 0) {
-      throw new IllegalArgumentException("bufferSize must be > 0");
+    if (bufferSize > MAX_TOKEN_LENGTH_LIMIT || bufferSize <= 0) {
+      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + bufferSize);
     }
     termAtt.resizeBuffer(bufferSize);
   }
 
   public KeywordTokenizer(AttributeFactory factory, int bufferSize) {
     super(factory);
-    if (bufferSize <= 0) {
-      throw new IllegalArgumentException("bufferSize must be > 0");
+    if (bufferSize > MAX_TOKEN_LENGTH_LIMIT || bufferSize <= 0) {
+      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + bufferSize);
     }
     termAtt.resizeBuffer(bufferSize);
   }

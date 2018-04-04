@@ -139,7 +139,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Expands "multi" to "multi" and "multi2", both at the same position, and
    * expands "triplemulti" to "triplemulti", "multi3", and "multi2".
    */
-  private class MultiAnalyzer extends Analyzer {
+  private static class MultiAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -148,7 +148,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     }
   }
 
-  private final class TestFilter extends TokenFilter {
+  private static final class TestFilter extends TokenFilter {
 
     private String prevType;
     private int prevStartOffset;
@@ -206,7 +206,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1). Does not work
    * correctly for input other than "the quick brown ...".
    */
-  private class PosIncrementAnalyzer extends Analyzer {
+  private static class PosIncrementAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -215,7 +215,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     }
   }
 
-  private class TestPosIncrementFilter extends TokenFilter {
+  private static class TestPosIncrementFilter extends TokenFilter {
 
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);

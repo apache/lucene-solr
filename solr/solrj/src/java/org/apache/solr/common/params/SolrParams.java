@@ -30,7 +30,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -40,7 +41,7 @@ import org.apache.solr.common.util.StrUtils;
  *
  *
  */
-public abstract class SolrParams implements Serializable, MapSerializable {
+public abstract class SolrParams implements Serializable, MapWriter {
 
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
@@ -497,7 +498,27 @@ public abstract class SolrParams implements Serializable, MapSerializable {
       throw new AssertionError(e);
     }
   }
-  
+
+  /**
+   * Generates a local-params string of the form <pre>{! name=value name2=value2}</pre>.
+   */
+  public String toLocalParamsString() {
+    final StringBuilder sb = new StringBuilder(128);
+    sb.append("{!");
+    //TODO perhaps look for 'type' and add here?  but it doesn't matter.
+    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
+      final String name = it.next();
+      for (String val : getParams(name)) {
+        sb.append(' '); // do so even the first time; why not.
+        sb.append(name); // no escaping for name; it must follow "Java Identifier" rules.
+        sb.append('=');
+        sb.append(ClientUtils.encodeLocalParamVal(val));
+      }
+    }
+    sb.append('}');
+    return sb.toString();
+  }
+
   /** Like {@link #toQueryString()}, but only replacing enough chars so that
    * the URL may be unambiguously pasted back into a browser.
    * This method can be used to properly log query parameters without
@@ -529,11 +550,17 @@ public abstract class SolrParams implements Serializable, MapSerializable {
   }
 
   @Override
-  public Map toMap(Map<String, Object> map) {
+  public void writeMap(EntryWriter ew) throws IOException {
     toNamedList().forEach((k, v) -> {
       if (v == null || "".equals(v)) return;
-      map.put(k, v);
+      try {
+        ew.put(k, v);
+      } catch (IOException e) {
+        throw new RuntimeException("Error serializing", e);
+      }
     });
-    return map;
+
   }
+
+
 }

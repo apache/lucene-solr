@@ -22,29 +22,29 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
-import org.apache.lucene.spatial.util.ShapePredicateValueSource;
+import org.apache.lucene.spatial.util.ShapeValuesPredicate;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.io.BinaryCodec;
 import org.locationtech.spatial4j.shape.Point;
@@ -100,7 +100,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     //TODO if makeShapeValueSource gets lifted to the top; this could become a generic impl.
     return new DistanceToShapeValueSource(makeShapeValueSource(), queryPoint, multiplier, ctx);
   }
@@ -111,18 +111,15 @@ public class SerializedDVStrategy extends SpatialStrategy {
    */
   @Override
   public Query makeQuery(SpatialArgs args) {
-    ValueSource shapeValueSource = makeShapeValueSource();
-    ShapePredicateValueSource predicateValueSource = new ShapePredicateValueSource(
-        shapeValueSource, args.getOperation(), args.getShape());
+    ShapeValuesSource shapeValueSource = makeShapeValueSource();
+    ShapeValuesPredicate predicateValueSource = new ShapeValuesPredicate(shapeValueSource, args.getOperation(), args.getShape());
     return new PredicateValueSourceQuery(predicateValueSource);
   }
 
   /**
-   * Provides access to each shape per document as a ValueSource in which
-   * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)} returns a {@link
-   * Shape}.
+   * Provides access to each shape per document
    */ //TODO raise to SpatialStrategy
-  public ValueSource makeShapeValueSource() {
+  public ShapeValuesSource makeShapeValueSource() {
     return new ShapeDocValueSource(getFieldName(), ctx.getBinaryCodec());
   }
 
@@ -130,34 +127,27 @@ public class SerializedDVStrategy extends SpatialStrategy {
    * by {@link TwoPhaseIterator}.
    */
   static class PredicateValueSourceQuery extends Query {
-    private final ValueSource predicateValueSource;//we call boolVal(doc)
+    private final ShapeValuesPredicate predicateValueSource;
 
-    public PredicateValueSourceQuery(ValueSource predicateValueSource) {
+    public PredicateValueSourceQuery(ShapeValuesPredicate predicateValueSource) {
       this.predicateValueSource = predicateValueSource;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-          final FunctionValues predFuncValues = predicateValueSource.getValues(null, context);
-          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(approximation) {
-
-            @Override
-            public boolean matches() throws IOException {
-              final int docID = approximation.docID();
-              return predFuncValues.boolVal(docID);
-            }
-
-            @Override
-            public float matchCost() {
-              // TODO: what is the cost of the predicateValueSource
-              return 100f;
-            }
-          });
+          TwoPhaseIterator it = predicateValueSource.iterator(context, approximation);
+          return new ConstantScoreScorer(this, score(), it);
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return predicateValueSource.isCacheable(ctx);
+        }
+
       };
     }
 
@@ -181,10 +171,10 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }//PredicateValueSourceQuery
 
   /**
-   * Implements a ValueSource by deserializing a Shape in from BinaryDocValues using BinaryCodec.
+   * Implements a ShapeValueSource by deserializing a Shape from BinaryDocValues using BinaryCodec.
    * @see #makeShapeValueSource()
    */
-  static class ShapeDocValueSource extends ValueSource {
+  static class ShapeDocValueSource extends ShapeValuesSource {
 
     private final String fieldName;
     private final BinaryCodec binaryCodec;//spatial4j
@@ -195,68 +185,29 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-      final BinaryDocValues docValues = readerContext.reader().getBinaryDocValues(fieldName);
+    public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
+      final BinaryDocValues docValues = DocValues.getBinary(readerContext.reader(), fieldName);
 
-      return new FunctionValues() {
-        int bytesRefDoc = -1;
-        BytesRefBuilder bytesRef = new BytesRefBuilder();
-
-        boolean fillBytes(int doc) throws IOException {
-          if (bytesRefDoc != doc) {
-            if (docValues.docID() < doc) {
-              docValues.advance(doc);
-            }
-            if (docValues.docID() == doc) {
-              bytesRef.copyBytes(docValues.binaryValue());
-            } else {
-              bytesRef.clear();
-            }
-            bytesRefDoc = doc;
-          }
-          return bytesRef.length() != 0;
+      return new ShapeValues() {
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          return docValues.advanceExact(doc);
         }
 
         @Override
-        public boolean exists(int doc) throws IOException {
-          return fillBytes(doc);
-        }
-
-        @Override
-        public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
-          target.clear();
-          if (fillBytes(doc)) {
-            target.copyBytes(bytesRef);
-            return true;
-          } else {
-            return false;
-          }
-        }
-
-        @Override
-        public Object objectVal(int docId) throws IOException {
-          if (!fillBytes(docId))
-            return null;
-          DataInputStream dataInput = new DataInputStream(
-              new ByteArrayInputStream(bytesRef.bytes(), 0, bytesRef.length()));
-          try {
-            return binaryCodec.readShape(dataInput);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-
-        @Override
-        public Explanation explain(int doc) throws IOException {
-          return Explanation.match(Float.NaN, toString(doc));
-        }
-
-        @Override
-        public String toString(int doc) throws IOException {
-          return description() + "=" + objectVal(doc);//TODO truncate?
+        public Shape value() throws IOException {
+          BytesRef bytesRef = docValues.binaryValue();
+          DataInputStream dataInput
+              = new DataInputStream(new ByteArrayInputStream(bytesRef.bytes, bytesRef.offset, bytesRef.length));
+          return binaryCodec.readShape(dataInput);
         }
 
       };
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, fieldName);
     }
 
     @Override
@@ -278,7 +229,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public String description() {
+    public String toString() {
       return "shapeDocVal(" + fieldName + ")";
     }
   }//ShapeDocValueSource

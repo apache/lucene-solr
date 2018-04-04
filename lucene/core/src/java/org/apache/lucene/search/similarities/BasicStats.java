@@ -23,14 +23,14 @@ import org.apache.lucene.index.Terms;
  * Stores all statistics commonly used ranking methods.
  * @lucene.experimental
  */
-public class BasicStats extends Similarity.SimWeight {
+public class BasicStats {
   final String field;
   /** The number of documents. */
   protected long numberOfDocuments;
   /** The total number of tokens in the field. */
   protected long numberOfFieldTokens;
   /** The average field length. */
-  protected float avgFieldLength;
+  protected double avgFieldLength;
   /** The document frequency. */
   protected long docFreq;
   /** The total number of occurrences of this term across all documents. */
@@ -39,10 +39,10 @@ public class BasicStats extends Similarity.SimWeight {
   // -------------------------- Boost-related stuff --------------------------
 
   /** A query boost. Should be applied as a multiplicative factor to the score. */
-  protected final float boost;
+  protected final double boost;
   
   /** Constructor. */
-  public BasicStats(String field, float boost) {
+  public BasicStats(String field, double boost) {
     this.field = field;
     this.boost = boost;
   }
@@ -76,12 +76,12 @@ public class BasicStats extends Similarity.SimWeight {
   }
   
   /** Returns the average field length. */
-  public float getAvgFieldLength() {
+  public double getAvgFieldLength() {
     return avgFieldLength;
   }
   
   /** Sets the average field length. */
-  public void setAvgFieldLength(float avgFieldLength) {
+  public void setAvgFieldLength(double avgFieldLength) {
     this.avgFieldLength = avgFieldLength;
   }
   
@@ -106,7 +106,7 @@ public class BasicStats extends Similarity.SimWeight {
   }
   
   /** Returns the total boost. */
-  public float getBoost() {
+  public double getBoost() {
     return boost;
   }
 }

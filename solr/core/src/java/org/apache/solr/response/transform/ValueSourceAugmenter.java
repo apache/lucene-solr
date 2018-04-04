@@ -77,7 +77,7 @@ public class ValueSourceAugmenter extends DocTransformer
   List<LeafReaderContext> readerContexts;
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
     // This is only good for random-access functions
 
     try {

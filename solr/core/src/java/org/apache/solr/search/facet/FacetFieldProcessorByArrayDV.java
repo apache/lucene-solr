@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSet;
@@ -43,7 +44,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
   boolean multiValuedField;
   SortedSetDocValues si;  // only used for term lookups (for both single and multi-valued)
-  MultiDocValues.OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
+  OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
 
   FacetFieldProcessorByArrayDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);

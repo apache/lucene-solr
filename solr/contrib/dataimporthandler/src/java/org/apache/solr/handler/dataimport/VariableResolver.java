@@ -143,7 +143,7 @@ public class VariableResolver {
    * @return the string with the placeholders replaced with their values
    */
   public String replaceTokens(String template) {
-    return TemplateUpdateProcessorFactory.replaceTokens(template, cache, fun);
+    return TemplateUpdateProcessorFactory.replaceTokens(template, cache, fun, TemplateUpdateProcessorFactory.DOLLAR_BRACES_PLACEHOLDER_PATTERN);
   }
   public void addNamespace(String name, Map<String,Object> newMap) {
     if (newMap != null) {
@@ -164,10 +164,10 @@ public class VariableResolver {
   }
 
   public List<String> getVariables(String expr) {
-    return TemplateUpdateProcessorFactory.getVariables(expr, cache);
+    return TemplateUpdateProcessorFactory.getVariables(expr, cache, TemplateUpdateProcessorFactory.DOLLAR_BRACES_PLACEHOLDER_PATTERN);
   }
 
-  class CurrentLevel {
+  static class CurrentLevel {
     final Map<String,Object> map;
     final int level;
     CurrentLevel(int level, Map<String,Object> map) {

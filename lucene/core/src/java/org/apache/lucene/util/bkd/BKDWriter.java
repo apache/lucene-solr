@@ -82,12 +82,8 @@ import org.apache.lucene.util.StringHelper;
 public class BKDWriter implements Closeable {
 
   public static final String CODEC_NAME = "BKD";
-  public static final int VERSION_START = 0;
-  public static final int VERSION_COMPRESSED_DOC_IDS = 1;
-  public static final int VERSION_COMPRESSED_VALUES = 2;
-  public static final int VERSION_IMPLICIT_SPLIT_DIM_1D = 3;
-  public static final int VERSION_PACKED_INDEX = 4;
-  public static final int VERSION_CURRENT = VERSION_PACKED_INDEX;
+  public static final int VERSION_START = 4; // version used by Lucene 7.0
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -884,11 +880,11 @@ public class BKDWriter implements Closeable {
         };
       }
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc, null, 0) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
-          protected ByteSequencesWriter getWriter(IndexOutput out) {
+          protected ByteSequencesWriter getWriter(IndexOutput out, long count) {
             return new ByteSequencesWriter(out) {
               @Override
               public void write(byte[] bytes, int off, int len) throws IOException {
@@ -1362,7 +1358,9 @@ public class BKDWriter implements Closeable {
 
   /** Called on exception, to check whether the checksum is also corrupt in this source, and add that
    *  information (checksum matched or didn't) as a suppressed exception. */
-  private void verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+  private Error verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+    assert priorException != null;
+
     // TODO: we could improve this, to always validate checksum as we recurse, if we shared left and
     // right reader after recursing to children, and possibly within recursed children,
     // since all together they make a single pass through the file.  But this is a sizable re-org,
@@ -1373,10 +1371,10 @@ public class BKDWriter implements Closeable {
       try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
         CodecUtil.checkFooter(in, priorException);
       }
-    } else {
-      // We are reading from heap; nothing to add:
-      IOUtils.reThrow(priorException);
     }
+    
+    // We are reading from heap; nothing to add:
+    throw IOUtils.rethrowAlways(priorException);
   }
 
   /** Marks bits for the ords (points) that belong in the right sub tree (those docs that have values >= the splitValue). */
@@ -1398,7 +1396,7 @@ public class BKDWriter implements Closeable {
         reader.markOrds(rightCount-1, ordBitSet);
       }
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
+      throw verifyChecksum(t, source.writer);
     }
 
     return scratch1;
@@ -1469,10 +1467,7 @@ public class BKDWriter implements Closeable {
       }
       return new PathSlice(writer, 0, count);
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
-
-      // Dead code but javac disagrees:
-      return null;
+      throw verifyChecksum(t, source.writer);
     }
   }
 
@@ -1797,7 +1792,7 @@ public class BKDWriter implements Closeable {
           leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
           rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
         } catch (Throwable t) {
-          verifyChecksum(t, slices[dim].writer);
+          throw verifyChecksum(t, slices[dim].writer);
         }
       }
 

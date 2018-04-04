@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -435,7 +436,7 @@ public final class StandardTokenizerImpl {
    */
   public static final int SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.SOUTHEAST_ASIAN;
   
-  /** Idiographic token type */
+  /** Ideographic token type */
   public static final int IDEOGRAPHIC_TYPE = StandardTokenizer.IDEOGRAPHIC;
   
   /** Hiragana token type */

@@ -65,7 +65,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
   private final CoreContainer cores;
-  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
+  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "10000"));
   private final String myNodeName;
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
@@ -198,8 +198,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     String url, uri = null;
     log.info("getRemotePublicKey for nodename {}", nodename);
     if (cores.isZooKeeperAware()) {
+      if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
       url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     } else {
+      // TODO: Check that nodename is in shards whitelist
       url = getBaseUrlForNodeNameLocal(nodename);
     }
     try {

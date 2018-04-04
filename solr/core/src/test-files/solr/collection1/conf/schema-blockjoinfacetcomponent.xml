@@ -17,14 +17,14 @@
   -->
 
 <schema name="test" version="1.0">
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-  <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="name" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -36,6 +36,5 @@
   <dynamicField name="*_f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
 
-  <defaultSearchField>name</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

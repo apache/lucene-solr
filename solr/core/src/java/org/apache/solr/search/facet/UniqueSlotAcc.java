@@ -20,42 +20,35 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.util.hll.HLL;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.hll.HLL;
 
 abstract class UniqueSlotAcc extends SlotAcc {
   HLLAgg.HLLFactory factory;
   SchemaField field;
   FixedBitSet[] arr;
-  int currentDocBase;
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
-  public UniqueSlotAcc(FacetContext fcontext, String field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
-    this.field = fcontext.searcher.getSchema().getField(field);
+    this.field = field;
   }
 
   @Override
-  public void reset() {
+  public void reset() throws IOException {
     counts = null;
     for (FixedBitSet bits : arr) {
       if (bits == null) continue;
       bits.clear(0, bits.length());
     }
-  }
-
-  @Override
-  public void setNextReader(LeafReaderContext readerContext) throws IOException {
-    currentDocBase = readerContext.docBase;
   }
 
   @Override

@@ -556,7 +556,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
           if (ids.size() < numInitialDocs) {
             message.append("Missing doc(s): ");
             for (SolrInputDocument doc : initialDocs) {
-              int id = ((Integer)doc.get("id").getValue()).intValue();
+              int id = Integer.parseInt(doc.getFieldValue("id").toString());
               if ( ! ids.exists(id)) {
                 QueryResponse rsp = cloudClient.query(params("q", "id:" + id,
                                                              "rows", "1"));
@@ -664,12 +664,12 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * "id" of the list of documents returned matches the expected list
    * @see org.apache.solr.client.solrj.SolrClient#query
    */
-  private void assertDocList(QueryResponse rsp, Object... ids) {
+  private void assertDocList(QueryResponse rsp, int... ids) {
     SolrDocumentList docs = extractDocList(rsp);
     assertEquals("Wrong number of docs in response", ids.length, docs.size());
     int i = 0;
-    for (Object id : ids) {
-      assertEquals(rsp.toString(), id, docs.get(i).get("id"));
+    for (int id : ids) {
+      assertEquals(rsp.toString(), ""+id, docs.get(i).get("id"));
       i++;
     }
   }
@@ -730,7 +730,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       }
 
       for (SolrDocument doc : docs) {
-        int id = ((Integer)doc.get("id")).intValue();
+        int id = Integer.parseInt(doc.getFieldValue("id").toString());
         if (ids.exists(id)) {
           String msg = "(" + p + ") walk already seen: " + id;
           try {

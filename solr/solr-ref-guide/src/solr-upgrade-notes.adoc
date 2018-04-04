@@ -1,0 +1,115 @@
+= Solr Upgrade Notes
+:page-children: major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The following notes describe changes to Solr in recent releases that you should be aware of before upgrading.
+
+These notes highlight the biggest changes that may impact the largest number of implementations. It is not a comprehensive list of all changes to Solr in any release.
+
+When planning your Solr upgrade, consider the customizations you have made to your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package. That file includes all the changes and updates that may effect your existing implementation.
+
+Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+
+== Upgrading to 7.x Releases
+
+=== Solr 7.3
+
+See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
+
+When upgrading to Solr 7.3, users should be aware of the following major changes from v7.2:
+
+* Collections created without specifying a configset name have used a copy of the `_default` configset since Solr 7.0. Before 7.3, the copied configset was named the same as the collection name, but from 7.3 onwards it will be named with a new ".AUTOCREATED" suffix. This is to prevent overwriting custom configset names.
+
+* The `rq` parameter used with Learning to Rank rerank query parsing no longer considers the `defType` parameter. See <<learning-to-rank.adoc#running-a-rerank-query,Running a Rerank Query>> for more information about this parameter.
+
+* The default value of `autoReplicaFailoverWaitAfterExpiration`, used with the AutoAddReplicas feature, has increased to 120 seconds from the previous default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown.
+
+* The default Solr log file size and number of backups have been raised to 32MB and 10 respectively. See the section <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more information about how to configure logging.
+
+* The old Leader-In-Recovery implementation (implemented in Solr 4.9) is now deprecated and replaced. Solr will support rolling upgrades from old 7.x versions of Solr to future 7.x releases until the last release of the 7.x major version.
++
+This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 or higher.
+
+* Replicas which are not up-to-date are no longer allowed to become leader. Use the <<collections-api.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
+
+* The behaviour of the autoscaling system will now pause all triggers from execution between the start of actions and the end of a cool down period. The triggers will resume after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event completed and during this time all triggers continued to run but any events were rejected and tried later.
+
+* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the <<solrcloud-autoscaling-api.adoc#change-autoscaling-properties,`set-properties` Autoscaling API>> which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
+
+* If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. See the section on <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+
+* The top-level `<highlighting>` element in `solrconfig.xml` is now officially deprecated in favour of the equivalent `<searchComponent>` syntax. This element has been out of use in default Solr installations for several releases already.
+
+=== Solr 7.2
+
+See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
+
+When upgrading to Solr 7.2, users should be aware of the following major changes from v7.1:
+
+* Starting a query string with <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
++
+So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
++
+Another example is if `deftype=edismax` then `hl.q={!myparser ...}` won't work for the same reason. In this example, either put the desired query parser into the `hl.qparser` parameter or set `hl.qparser=lucene`. Most users won't run into these cases but some will need to change.
++
+If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or an earlier version.
+
+* The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local parameters, or the older `\_query_` magic field trick.
++
+For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=* _query_` or some other value that includes `\_query_`.
++
+If you need full backwards compatibility for the time being, use `luceneMatchVersion=7.1.0` or something earlier.
+
+=== Solr 7.1
+
+See the https://wiki.apache.org/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
+
+When upgrading to Solr 7.1, users should be aware of the following major changes from v7.0:
+
+* The feature to automatically add replicas if a replica goes down, previously available only when storing indexes in HDFS, has been ported to the autoscaling framework. Due to this, `autoAddReplicas` is now available to all users even if their indexes are on local disks.
++
+Existing users of this feature should not have to change anything. However, they should note these changes:
+
+** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collections-api.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
+** Deprecations: Enabling/disabling autoAddReplicas cluster-wide with the API will be deprecated; use suspend/resume trigger APIs with `name=".auto_add_replicas"` instead.
++
+More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.
+
+* Shard and cluster metric reporter configuration now require a class attribute.
+** If a reporter configures the `group="shard"` attribute then please also configure the `class="org.apache.solr.metrics.reporters.solr.SolrShardReporter"` attribute.
+** If a reporter configures the `group="cluster"` attribute then please also configure the  `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
++
+See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and Cluster Reporters>> for more information.
+
+* All Stream Evaluators in `solrj.io.eval` have been refactored to have a simpler and more robust structure. This simplifies and condenses the code required to implement a new Evaluator and makes it much easier for evaluators to handle differing data types (primitives, objects, arrays, lists, and so forth).
+
+* In the ReplicationHandler, the `master.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (master, slave, cloud).
+
+* The `RunExecutableListener` was removed for security reasons. If you want to listen to events caused by updates, commits, or optimize, write your own listener as native Java class as part of a Solr plugin.
+
+* In the XML query parser (`defType=xmlparser` or `{!xmlparser ... }`) the resolving of external entities is now disallowed by default.
+
+== Upgrading to 7.x from Any 6.x Release
+
+The upgrade from Solr 6.x to Solr 7.0 introduces several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
+
+== Upgrading to 7.x from pre-6.x Versions of Solr
+
+Users upgrading from versions of Solr prior to 6.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>>.

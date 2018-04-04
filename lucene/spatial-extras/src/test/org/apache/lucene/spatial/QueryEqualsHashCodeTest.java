@@ -58,9 +58,7 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     strategies.add(recursive_geohash);
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
     strategies.add(PointVectorStrategy.newInstance(ctx, "pointvector"));
-    strategies.add(PointVectorStrategy.newLegacyInstance(ctx, "pointvector_legacy"));
     strategies.add(BBoxStrategy.newInstance(ctx, "bbox"));
-    strategies.add(BBoxStrategy.newLegacyInstance(ctx, "bbox_legacy"));
     final SerializedDVStrategy serialized = new SerializedDVStrategy(ctx, "serialized");
     strategies.add(serialized);
     strategies.add(new CompositeSpatialStrategy("composite", recursive_geohash, serialized));

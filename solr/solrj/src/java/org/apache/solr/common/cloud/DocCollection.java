@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -25,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONUtil;
@@ -33,7 +36,10 @@ import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
@@ -57,9 +63,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String znode;
 
   private final Integer replicationFactor;
+  private final Integer numNrtReplicas;
+  private final Integer numTlogReplicas;
+  private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
-
+  private final String policy;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
@@ -81,9 +90,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
+    this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS);
+    this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS);
+    this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
-    this.autoAddReplicas = autoAddReplicas == null ? false : autoAddReplicas;
+    this.policy = (String) props.get(Policy.POLICY);
+    this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
+    
     verifyProp(props, RULE);
     verifyProp(props, SNITCH);
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -126,6 +140,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     switch (propName) {
       case MAX_SHARDS_PER_NODE:
       case REPLICATION_FACTOR:
+      case NRT_REPLICAS:
+      case PULL_REPLICAS:
+      case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
       case AUTO_ADD_REPLICAS:
         return Boolean.parseBoolean(o.toString());
@@ -155,6 +172,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public Slice getSlice(String sliceName) {
     return slices.get(sliceName);
+  }
+
+  public void forEachReplica(BiConsumer<String, Replica> consumer) {
+    slices.forEach((shard, slice) -> slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
 
   /**
@@ -223,7 +244,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (maxShardsPerNode == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
     }
-    return maxShardsPerNode;
+    //maxShardsPerNode=0 when policy is used. This variable is not important then
+    return maxShardsPerNode == 0 ? Integer.MAX_VALUE : maxShardsPerNode;
   }
 
   public String getZNode(){
@@ -299,6 +321,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     return replicas;
   }
+  
+  public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : this) {
+      replicas.addAll(slice.getReplicas(s));
+    }
+    return replicas;
+  }
 
   /**
    * Get the shardId of a core on a specific node
@@ -321,4 +351,31 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
   }
 
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with
+   */
+  public Integer getNumNrtReplicas() {
+    return numNrtReplicas;
+  }
+
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG} this collection was created with
+   */
+  public Integer getNumTlogReplicas() {
+    return numTlogReplicas;
+  }
+
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL} this collection was created with
+   */
+  public Integer getNumPullReplicas() {
+    return numPullReplicas;
+  }
+
+  /**
+   * @return the policy associated with this collection if any
+   */
+  public String getPolicyName() {
+    return policy;
+  }
 }

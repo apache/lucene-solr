@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /**
  * Simple {@link ResourceLoader} that uses {@link ClassLoader#getResourceAsStream(String)}
  * and {@link Class#forName(String,boolean,ClassLoader)} to open resources and
@@ -30,9 +32,17 @@ public final class ClasspathResourceLoader implements ResourceLoader {
   private final ClassLoader loader;
   
   /**
-   * Creates an instance using the context classloader to load Resources and classes.
+   * Creates an instance using the context classloader to load resources and classes.
    * Resource paths must be absolute.
+   * 
+   * @deprecated You should not use this ctor, because it uses the thread's context
+   * class loader, which is bad programming style. Please specify a reference class or
+   * a {@link ClassLoader} instead.
+   * @see #ClasspathResourceLoader(ClassLoader)
+   * @see #ClasspathResourceLoader(Class)
    */
+  @Deprecated
+  @SuppressForbidden(reason = "Deprecated method uses thread's context classloader, but there for backwards compatibility")
   public ClasspathResourceLoader() {
     this(Thread.currentThread().getContextClassLoader());
   }

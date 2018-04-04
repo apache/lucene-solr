@@ -106,7 +106,7 @@ public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
     xpathes[0]= "//result[@numFound=" +ids.length+ "]";
     int i=1;
     for(String id : ids) {
-      xpathes[i++] = "//doc/int[@name='id' and text()='"+id+"']";
+      xpathes[i++] = "//doc/str[@name='id' and text()='"+id+"']";
     }
     return xpathes;
   }

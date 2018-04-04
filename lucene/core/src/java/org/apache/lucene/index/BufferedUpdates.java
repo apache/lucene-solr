@@ -30,11 +30,12 @@ import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/* Holds buffered deletes and updates, by docID, term or query for a
- * single segment. This is used to hold buffered pending
- * deletes and updates against the to-be-flushed segment.  Once the
- * deletes and updates are pushed (on flush in DocumentsWriter), they
- * are converted to a FrozenBufferedUpdates instance. */
+/** Holds buffered deletes and updates, by docID, term or query for a
+ *  single segment. This is used to hold buffered pending
+ *  deletes and updates against the to-be-flushed segment.  Once the
+ *  deletes and updates are pushed (on flush in DocumentsWriter), they
+ *  are converted to a {@link FrozenBufferedUpdates} instance and
+ *  pushed to the {@link BufferedUpdatesStream}. */
 
 // NOTE: instances of this class are accessed either via a private
 // instance on DocumentWriterPerThread, or via sync'd code by
@@ -128,10 +129,9 @@ class BufferedUpdates {
   final AtomicInteger numNumericUpdates = new AtomicInteger();
   final AtomicInteger numBinaryUpdates = new AtomicInteger();
 
-  // TODO: rename thes three: put "deleted" prefix in front:
-  final Map<Term,Integer> terms = new HashMap<>();
-  final Map<Query,Integer> queries = new HashMap<>();
-  final List<Integer> docIDs = new ArrayList<>();
+  final Map<Term,Integer> deleteTerms = new HashMap<>();
+  final Map<Query,Integer> deleteQueries = new HashMap<>();
+  final List<Integer> deleteDocIDs = new ArrayList<>();
 
   // Map<dvField,Map<updateTerm,NumericUpdate>>
   // For each field we keep an ordered list of NumericUpdates, key'd by the
@@ -169,19 +169,19 @@ class BufferedUpdates {
   @Override
   public String toString() {
     if (VERBOSE_DELETES) {
-      return "gen=" + gen + " numTerms=" + numTermDeletes + ", terms=" + terms
-        + ", queries=" + queries + ", docIDs=" + docIDs + ", numericUpdates=" + numericUpdates
+      return "gen=" + gen + " numTerms=" + numTermDeletes + ", deleteTerms=" + deleteTerms
+        + ", deleteQueries=" + deleteQueries + ", deleteDocIDs=" + deleteDocIDs + ", numericUpdates=" + numericUpdates
         + ", binaryUpdates=" + binaryUpdates + ", bytesUsed=" + bytesUsed;
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
-        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + terms.size() + ")";
+        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + deleteTerms.size() + ")";
       }
-      if (queries.size() != 0) {
-        s += " " + queries.size() + " deleted queries";
+      if (deleteQueries.size() != 0) {
+        s += " " + deleteQueries.size() + " deleted queries";
       }
-      if (docIDs.size() != 0) {
-        s += " " + docIDs.size() + " deleted docIDs";
+      if (deleteDocIDs.size() != 0) {
+        s += " " + deleteDocIDs.size() + " deleted docIDs";
       }
       if (numNumericUpdates.get() != 0) {
         s += " " + numNumericUpdates.get() + " numeric updates (unique count=" + numericUpdates.size() + ")";
@@ -198,7 +198,7 @@ class BufferedUpdates {
   }
 
   public void addQuery(Query query, int docIDUpto) {
-    Integer current = queries.put(query, docIDUpto);
+    Integer current = deleteQueries.put(query, docIDUpto);
     // increment bytes used only if the query wasn't added so far.
     if (current == null) {
       bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
@@ -206,12 +206,12 @@ class BufferedUpdates {
   }
 
   public void addDocID(int docID) {
-    docIDs.add(Integer.valueOf(docID));
+    deleteDocIDs.add(Integer.valueOf(docID));
     bytesUsed.addAndGet(BYTES_PER_DEL_DOCID);
   }
 
   public void addTerm(Term term, int docIDUpto) {
-    Integer current = terms.get(term);
+    Integer current = deleteTerms.get(term);
     if (current != null && docIDUpto < current) {
       // Only record the new number if it's greater than the
       // current one.  This is important because if multiple
@@ -223,7 +223,7 @@ class BufferedUpdates {
       return;
     }
 
-    terms.put(term, Integer.valueOf(docIDUpto));
+    deleteTerms.put(term, Integer.valueOf(docIDUpto));
     // note that if current != null then it means there's already a buffered
     // delete on that term, therefore we seem to over-count. this over-counting
     // is done to respect IndexWriterConfig.setMaxBufferedDeleteTerms.
@@ -290,11 +290,16 @@ class BufferedUpdates {
       bytesUsed.addAndGet(BYTES_PER_BINARY_UPDATE_ENTRY + update.sizeInBytes());
     }
   }
+
+  void clearDeleteTerms() {
+    deleteTerms.clear();
+    numTermDeletes.set(0);
+  }
   
   void clear() {
-    terms.clear();
-    queries.clear();
-    docIDs.clear();
+    deleteTerms.clear();
+    deleteQueries.clear();
+    deleteDocIDs.clear();
     numericUpdates.clear();
     binaryUpdates.clear();
     numTermDeletes.set(0);
@@ -304,6 +309,6 @@ class BufferedUpdates {
   }
   
   boolean any() {
-    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0 || numericUpdates.size() > 0 || binaryUpdates.size() > 0;
+    return deleteTerms.size() > 0 || deleteDocIDs.size() > 0 || deleteQueries.size() > 0 || numericUpdates.size() > 0 || binaryUpdates.size() > 0;
   }
 }

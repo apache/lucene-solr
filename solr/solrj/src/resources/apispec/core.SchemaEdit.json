@@ -1,0 +1,47 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html",
+  "description": "The Schema API provides viewing, editing, adding, and deleting elements of Solr's schema. This API can only be used if Managed Schema is enabled and the schema is defined as mutable. See https://lucene.apache.org/solr/guide/schema-factory-definition-in-solrconfig.html for more information about enabling Managed Schema.",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "$handlerName"
+    ]
+  },
+  "commands": {
+    "add-field": {
+      "#include": "core.SchemaEdit.addField"
+    },
+    "delete-field": {
+      "#include": "core.SchemaEdit.deleteField"
+    },
+    "replace-field": {
+      "#include": "core.SchemaEdit.addField"
+    },
+    "add-dynamic-field": {
+      "#include": "core.SchemaEdit.addField"
+    },
+    "delete-dynamic-field": {
+      "#include": "core.SchemaEdit.deleteDynamicField"
+    },
+    "replace-dynamic-field": {
+      "#include": "core.SchemaEdit.addField"
+    },
+    "add-field-type": {
+      "#include": "core.SchemaEdit.addFieldType"
+    },
+    "delete-field-type": {
+      "#include": "core.SchemaEdit.deleteFieldType"
+    },
+    "replace-field-type": {
+      "#include": "core.SchemaEdit.addFieldType"
+    },
+    "add-copy-field": {
+      "#include": "core.SchemaEdit.addCopyField"
+    },
+    "delete-copy-field": {
+      "#include": "core.SchemaEdit.deleteCopyField"
+    }
+  }
+}

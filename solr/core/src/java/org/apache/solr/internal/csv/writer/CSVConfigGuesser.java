@@ -107,7 +107,7 @@ public class CSVConfigGuesser {
     
     protected void analyseLines(String[] lines) {
         guessFixedWidth(lines);
-        guessFieldSeperator(lines);
+        guessFieldSeparator(lines);
     }
     
     /**
@@ -130,16 +130,16 @@ public class CSVConfigGuesser {
     }
         
 
-    protected void guessFieldSeperator(String[] lines) {
+    protected void guessFieldSeparator(String[] lines) {
         if (config.isFixedWidth()) {
-            guessFixedWidthSeperator(lines);
+            guessFixedWidthSeparator(lines);
             return;
         }
         for (int i = 0; i < lines.length; i++) {
         }
     }
     
-    protected void guessFixedWidthSeperator(String[] lines) {
+    protected void guessFixedWidthSeparator(String[] lines) {
         // keep track of the fieldlength
         int previousMatch = -1;
         for (int i = 0; i < lines[0].length(); i++) {

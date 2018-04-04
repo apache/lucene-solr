@@ -20,7 +20,7 @@ limitations under the License.
 #content #schema .loader
 {
   background-position: 0 50%;
-  padding-left: 21px;   
+  padding-left: 21px;
 }
 
 #content #schema.loaded
@@ -76,7 +76,7 @@ limitations under the License.
 #content #schema #related dl dt,
 #content #schema #related dl dd a
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #schema #related dl dt
@@ -167,7 +167,7 @@ limitations under the License.
 
 #content #schema #data #field .field-options .flags thead td
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   padding-right: 5px;
   width: 100px;
 }
@@ -210,7 +210,7 @@ limitations under the License.
 
 #content #schema #data #field .field-options .flags tbody .text
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #schema #data #field .field-options .analyzer,
@@ -305,7 +305,7 @@ limitations under the License.
 
 #content #schema #data #field .field-options .analyzer ul p
 {
-  color: #999;
+  color: #4D4D4D;
   margin-right: 5px;
   text-align: right;
   width: 70px;
@@ -320,7 +320,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/document-list.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   padding-left: 21px;
 }
 
@@ -382,7 +382,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/ui-check-box-uncheck.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #8D8D8D;
   display: block;
   margin-top: 10px;
   padding-left: 21px;
@@ -418,7 +418,7 @@ limitations under the License.
 
 #content #schema #data #field .topterms-holder .head .max-holder
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #schema #data #field .topterms-holder .head .max-holder:hover .max
@@ -430,7 +430,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/question-white.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   padding-left: 21px;
   margin-left: 5px;
 }

@@ -17,7 +17,9 @@
 package org.apache.solr.schema;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -56,117 +58,74 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   @Test
   public void testDefaultOmitNorms() throws Exception {
-    BinaryField bin;
-    TextField t;
-    TrieDateField dt;
-    StrField s;
-    TrieIntField ti;
-    TrieLongField tl;
-    TrieFloatField tf;
-    TrieDoubleField td;
-    BoolField b;
     
+    final List<Class<? extends FieldType>> types
+      = Arrays.asList(TrieDateField.class, DatePointField.class,
+                      TrieIntField.class, IntPointField.class,
+                      TrieLongField.class, IntPointField.class,
+                      TrieFloatField.class, FloatPointField.class,
+                      TrieDoubleField.class, DoublePointField.class,
+                      StrField.class, BoolField.class,
+                      // Non-prims, omitNorms always defaults to false regardless of schema version...
+                      TextField.class, BinaryField.class);
     
     // ***********************
     // With schema version 1.4:
     // ***********************
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema12.xml", config);
+
+
+    for (Class<? extends FieldType> clazz : types) {
+      FieldType ft = clazz.newInstance();
+      ft.init(schema, initMap);
+      assertFalse(ft.getClass().getName(), ft.hasProperty(FieldType.OMIT_NORMS));
+    }
     
-    dt = new TrieDateField();
-    dt.init(schema, initMap);
-    assertFalse(dt.hasProperty(FieldType.OMIT_NORMS));
-
-    s = new StrField();
-    s.init(schema, initMap);
-    assertFalse(s.hasProperty(FieldType.OMIT_NORMS));
-
-    ti = new TrieIntField();
-    ti.init(schema, initMap);
-    assertFalse(ti.hasProperty(FieldType.OMIT_NORMS));
-
-    tl = new TrieLongField();
-    tl.init(schema, initMap);
-    assertFalse(tl.hasProperty(FieldType.OMIT_NORMS));
-
-    tf = new TrieFloatField();
-    tf.init(schema, initMap);
-    assertFalse(tf.hasProperty(FieldType.OMIT_NORMS));
-
-    td = new TrieDoubleField();
-    td.init(schema, initMap);
-    assertFalse(td.hasProperty(FieldType.OMIT_NORMS));
-
-    b = new BoolField();
-    b.init(schema, initMap);
-    assertFalse(b.hasProperty(FieldType.OMIT_NORMS));
-
-    // Non-primitive fields
-    t = new TextField();
-    t.init(schema, initMap);
-    assertFalse(t.hasProperty(FieldType.OMIT_NORMS));
-
-    bin = new BinaryField();
-    bin.init(schema, initMap);
-    assertFalse(bin.hasProperty(FieldType.OMIT_NORMS));
-
     // ***********************
     // With schema version 1.5
     // ***********************
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
 
-    dt = new TrieDateField();
-    dt.init(schema, initMap);
-    assertTrue(dt.hasProperty(FieldType.OMIT_NORMS));
-
-    s = new StrField();
-    s.init(schema, initMap);
-    assertTrue(s.hasProperty(FieldType.OMIT_NORMS));
-
-    ti = new TrieIntField();
-    ti.init(schema, initMap);
-    assertTrue(ti.hasProperty(FieldType.OMIT_NORMS));
-
-    tl = new TrieLongField();
-    tl.init(schema, initMap);
-    assertTrue(tl.hasProperty(FieldType.OMIT_NORMS));
-
-    tf = new TrieFloatField();
-    tf.init(schema, initMap);
-    assertTrue(tf.hasProperty(FieldType.OMIT_NORMS));
-
-    td = new TrieDoubleField();
-    td.init(schema, initMap);
-    assertTrue(td.hasProperty(FieldType.OMIT_NORMS));
-
-    b = new BoolField();
-    b.init(schema, initMap);
-    assertTrue(b.hasProperty(FieldType.OMIT_NORMS));
-
-    // Non-primitive fields
-    t = new TextField();
-    t.init(schema, initMap);
-    assertFalse(t.hasProperty(FieldType.OMIT_NORMS));
-
-    bin = new BinaryField();
-    bin.init(schema, initMap);
-    assertFalse(bin.hasProperty(FieldType.OMIT_NORMS));
+    for (Class<? extends FieldType> clazz : types) {
+      FieldType ft = clazz.newInstance();
+      ft.init(schema, initMap);
+      assertEquals(ft.getClass().getName(),
+                   ft instanceof PrimitiveFieldType,
+                   ft.hasProperty(FieldType.OMIT_NORMS));
+    }
+    
   }
   
-  public void testTrieDateField() {
+  public void testDateField() { 
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
-    TrieDateField tdt = new TrieDateField();
-    Map<String, String> args = new HashMap<>();
-    args.put("sortMissingLast", "true");
-    args.put("indexed", "true");
-    args.put("stored", "false");
-    args.put("docValues", "true");
-    args.put("precisionStep", "16");
-    tdt.setArgs(schema, args);
-    assertTrue(tdt.hasProperty(FieldType.OMIT_NORMS));
-    assertTrue(tdt.hasProperty(FieldType.SORT_MISSING_LAST));
-    assertTrue(tdt.hasProperty(FieldType.INDEXED));
-    assertFalse(tdt.hasProperty(FieldType.STORED));
-    assertTrue(tdt.hasProperty(FieldType.DOC_VALUES));
-    assertEquals(16, tdt.getPrecisionStep());
+    
+    final TrieDateField tdt = new TrieDateField();
+    {
+      final Map<String, String> args = new HashMap<>();
+      args.put("sortMissingLast", "true");
+      args.put("indexed", "true");
+      args.put("stored", "false");
+      args.put("docValues", "true");
+      args.put("precisionStep", "16");
+      tdt.setArgs(schema, args);
+      assertEquals(16, tdt.getPrecisionStep());
+    }
+    final DatePointField pdt = new DatePointField();
+    {
+      final Map<String, String> args = new HashMap<>();
+      args.put("sortMissingLast", "true");
+      args.put("indexed", "true");
+      args.put("stored", "false");
+      args.put("docValues", "true");
+      pdt.setArgs(schema, args);
+    }
+    
+    for (FieldType ft : Arrays.asList(tdt, pdt)) {
+      assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.OMIT_NORMS));
+      assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.SORT_MISSING_LAST));
+      assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.INDEXED));
+      assertFalse(ft.getClass().getName(), ft.hasProperty(FieldType.STORED));
+      assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.DOC_VALUES));
+    }
   }
 }

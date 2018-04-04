@@ -53,7 +53,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -67,8 +66,8 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -171,7 +170,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
   private void duellReaders(CompositeReader other, LeafReader memIndexReader)
       throws IOException {
-    Fields memFields = memIndexReader.fields();
+    Fields memFields = memIndexReader.getTermVectors(0);
     for (String field : MultiFields.getFields(other)) {
       Terms memTerms = memFields.terms(field);
       Terms iwTerms = memIndexReader.terms(field);
@@ -536,14 +535,13 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     MemoryIndex mi = new MemoryIndex(true, true);
     MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
 
-    mi.addField(new BinaryDocValuesField("text", new BytesRef("quick brown fox")), mockAnalyzer, 5f);
-    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), mockAnalyzer, 5f);
+    mi.addField(new BinaryDocValuesField("text", new BytesRef("quick brown fox")), mockAnalyzer);
+    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), mockAnalyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
 
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("text", new BytesRef("quick brown fox")));
     Field field = new TextField("text", "quick brown fox", Field.Store.NO);
-    field.setBoost(5f);
     doc.add(field);
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));

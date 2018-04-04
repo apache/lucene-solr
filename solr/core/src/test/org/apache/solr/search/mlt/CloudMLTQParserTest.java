@@ -102,7 +102,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
@@ -117,7 +117,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
@@ -127,7 +127,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
     assertArrayEquals(expectedIds, actualIds);
@@ -138,7 +138,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
     assertArrayEquals(expectedIds, actualIds);
@@ -154,7 +154,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
@@ -184,7 +184,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
 
     assertArrayEquals(expectedIds, actualIds);
@@ -236,7 +236,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int i = 0;
     StringBuilder sb = new StringBuilder();
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] =  Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
       sb.append(actualIds[i-1]).append(", ");
     }
     assertArrayEquals(expectedIds, actualIds);

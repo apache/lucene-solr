@@ -20,6 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.EmptyParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.html.HtmlMapper;
@@ -62,6 +63,7 @@ import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
  * @since solr 3.1
  */
 public class TikaEntityProcessor extends EntityProcessorBase {
+  private static Parser EMPTY_PARSER = new EmptyParser();
   private TikaConfig tikaConfig;
   private String format = "text";
   private boolean done = false;
@@ -84,7 +86,9 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
       if (tikaConfigFile == null) {
         ClassLoader classLoader = context.getSolrCore().getResourceLoader().getClassLoader();
-        tikaConfig = new TikaConfig(classLoader);
+        try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
+          tikaConfig = new TikaConfig(is);
+        }
       } else {
         File configFile = new File(tikaConfigFile);
         if (!configFile.isAbsolute()) {
@@ -155,6 +159,8 @@ public class TikaEntityProcessor extends EntityProcessorBase {
         }
         if (extractEmbedded) {
           context.set(Parser.class, tikaParser);
+        } else {
+          context.set(Parser.class, EMPTY_PARSER);
         }
         tikaParser.parse(is, contentHandler, metadata , context);
     } catch (Exception e) {

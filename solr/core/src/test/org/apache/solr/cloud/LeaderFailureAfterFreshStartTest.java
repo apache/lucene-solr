@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -146,14 +147,14 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
       // start the freshNode 
       restartNodes(singletonList(freshNode));
-      
-      String replicationProperties = (String) freshNode.jetty.getSolrHome() + "/cores/" +  DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
+      String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
+      String replicationProperties = freshNode.jetty.getSolrHome() + "/cores/" +  coreName + "/data/replication.properties";
       String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
         
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, SECONDS));
+      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, SECONDS, TimeSource.NANO_TIME));
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);

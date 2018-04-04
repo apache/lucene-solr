@@ -98,7 +98,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   private String getUri(HttpSolrClient client) {
     String baseURL = client.getBaseURL();
     return random().nextBoolean() ?
-        baseURL.replace("/collection1", "/v2/cores/collection1/update") :
+        baseURL.replace("/collection1", "/____v2/cores/collection1/update") :
         baseURL + "/update/json/docs";
   }
 }

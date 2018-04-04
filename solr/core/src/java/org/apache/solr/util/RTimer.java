@@ -41,7 +41,7 @@ public class RTimer {
     double elapsed();
   }
 
-  private class NanoTimeTimerImpl implements TimerImpl {
+  private static class NanoTimeTimerImpl implements TimerImpl {
     private long start;
     public void start() {
       start = System.nanoTime();

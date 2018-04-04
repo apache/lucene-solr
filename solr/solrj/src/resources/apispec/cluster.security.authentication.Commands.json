@@ -1,0 +1,12 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/securing-solr.html",
+  "description":"This is a placeholder output when no authentication is configured",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/security/authentication"
+    ]
+  }
+}

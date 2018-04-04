@@ -1,5 +1,5 @@
 
-  <requestHandler name="includedHandler"
+  <requestHandler name="/includedHandler"
                   class="solr.SearchHandler" >
   </requestHandler>
 

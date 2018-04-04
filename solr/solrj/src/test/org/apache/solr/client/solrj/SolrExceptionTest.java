@@ -40,8 +40,7 @@ public class SolrExceptionTest extends LuceneTestCase {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
-      try (HttpSolrClient client = getHttpSolrClient("http://[ff01::114]:11235/solr/", httpClient)) {
-        client.setConnectionTimeout(1);
+      try (HttpSolrClient client = getHttpSolrClient("http://[ff01::114]:11235/solr/", httpClient, 1)) {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }

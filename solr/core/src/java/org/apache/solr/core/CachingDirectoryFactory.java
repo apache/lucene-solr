@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
-  protected class CacheValue {
+  protected static class CacheValue {
     final public String path;
     final public Directory directory;
     // for debug
@@ -395,6 +396,14 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
     maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
     maxWriteMBPerSecDefault = (Double) args.get("maxWriteMBPerSecDefault");
+
+    // override global config
+    if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
+      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME));
+    }
+    if (dataHomePath != null) {
+      log.info(SolrXmlConfig.SOLR_DATA_HOME + "=" + dataHomePath);
+    }
   }
   
   /*

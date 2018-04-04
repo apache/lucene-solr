@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
@@ -60,7 +60,7 @@ public class BoostQParserPlugin extends QParserPlugin {
         } else {
           vs = new QueryValueSource(bq, 0.0f);
         }
-        return new BoostedQuery(q, vs);
+        return FunctionScoreQuery.boostByValue(q, vs.asDoubleValuesSource());
       }
 
 

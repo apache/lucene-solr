@@ -109,6 +109,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   @Override
   boolean start(IndexableField field, boolean first) {
+    super.start(field, first);
     assert field.fieldType().indexOptions() != IndexOptions.NONE;
 
     if (first) {
@@ -224,7 +225,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   void newTerm(final int termID) {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
-    postings.freqs[termID] = 1;
+    postings.freqs[termID] = getTermFreq();
     postings.lastOffsets[termID] = 0;
     postings.lastPositions[termID] = 0;
     
@@ -235,9 +236,23 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   void addTerm(final int termID) {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
-    postings.freqs[termID]++;
+    postings.freqs[termID] += getTermFreq();
 
     writeProx(postings, termID);
+  }
+
+  private int getTermFreq() {
+    int freq = termFreqAtt.getTermFrequency();
+    if (freq != 1) {
+      if (doVectorPositions) {
+        throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": cannot index term vector positions while using custom TermFrequencyAttribute");
+      }
+      if (doVectorOffsets) {
+        throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": cannot index term vector offsets while using custom TermFrequencyAttribute");
+      }
+    }
+
+    return freq;
   }
 
   @Override

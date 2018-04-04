@@ -91,9 +91,6 @@ import java.util.Set;
  */
 public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
@@ -116,7 +113,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return AnalysisRequest containing all the information about what needs to be analyzed, and using what
    *         fields/types
    */
-  FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) {
+  FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws SolrException {
     SolrParams solrParams = req.getParams();
     FieldAnalysisRequest analysisRequest = new FieldAnalysisRequest();
 
@@ -129,8 +126,13 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       analysisRequest.setFieldNames(Arrays.asList(solrParams.get(AnalysisParams.FIELD_NAME).split(",")));
       useDefaultSearchField = false;
     }
-    if (useDefaultSearchField)  {
-      analysisRequest.addFieldName(req.getSchema().getDefaultSearchFieldName());
+    if (useDefaultSearchField) {
+      if (solrParams.get(CommonParams.DF) != null) {
+        analysisRequest.addFieldName(solrParams.get(CommonParams.DF));
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Field analysis request must contain one of analysis.fieldtype, analysis.fieldname or df.");
+      }
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
 

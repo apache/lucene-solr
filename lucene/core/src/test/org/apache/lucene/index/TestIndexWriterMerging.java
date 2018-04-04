@@ -308,7 +308,7 @@ public class TestIndexWriterMerging extends LuceneTestCase {
   
   // Just intercepts all merges & verifies that we are never
   // merging a segment with >= 20 (maxMergeDocs) docs
-  private class MyMergeScheduler extends MergeScheduler {
+  private static class MyMergeScheduler extends MergeScheduler {
     @Override
     synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
 

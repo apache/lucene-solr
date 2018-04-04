@@ -16,20 +16,33 @@
  */
 package org.apache.solr.search;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.lucene.util.TestUtil;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.StrField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
-
 public class TestRangeQuery extends SolrTestCaseJ4 {
+  
+  private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -135,8 +148,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // simple test of a function rather than just the field
     assertQ(req("{!frange l=0 u=2}id"), "*[count(//doc)=3]");
-    assertQ(req("{!frange l=0 u=2}product(id,2)"), "*[count(//doc)=2]");
-    assertQ(req("{!frange l=100 u=102}sum(id,100)"), "*[count(//doc)=3]");
+    assertQ(req("{!frange l=0 u=2}product(id_i,2)"), "*[count(//doc)=2]");
+    assertQ(req("{!frange l=100 u=102}sum(id_i,100)"), "*[count(//doc)=3]");
 
 
     for (Map.Entry<String,String[]> entry : norm_fields.entrySet()) {
@@ -303,7 +316,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // now build some random queries (against *any* field) and validate that using it in a DBQ changes
     // the index by the expected number of docs
-    int numDocsLeftInIndex = numDocs;
+    long numDocsLeftInIndex = numDocs;
     final int numDBQs= atLeast(10);
     for (int i=0; i < numDBQs; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
@@ -337,10 +350,338 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       assertU(commit());
       try (SolrQueryRequest req = req("q","*:*","rows","0","_trace_after_dbq",dbq)) {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
-        final int allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
+        final long allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
         assertEquals(dbq, numDocsLeftInIndex, allDocsFound);
       }
     }
+  }
+  
+  public void testRangeQueryEndpointTO() throws Exception {
+    assertEquals("[to TO to]", QParser.getParser("[to TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[to TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO TO]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[to TO xx]", QParser.getParser("[to TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO xx]", QParser.getParser("[\"TO\" TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO xx]", QParser.getParser("[TO TO xx]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO TO]", req("df", "text")).getQuery().toString("text"));
+  }
+
+  public void testRangeQueryRequiresTO() throws Exception {
+    assertEquals("{a TO b}", QParser.getParser("{A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[a TO b}", QParser.getParser("[A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals("{a TO b]", QParser.getParser("{A TO B]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[a TO b]", QParser.getParser("[A TO B]", req("df", "text")).getQuery().toString("text"));
+
+    // " TO " is required between range endpoints
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B]", req("df", "text")).getQuery());
+
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
+
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
+  }
+
+  public void testCompareTypesRandomRangeQueries() throws Exception {
+    int cardinality = 10000;
+    Map<NumberType,String[]> types = new HashMap<>(); //single and multivalued field types
+    Map<NumberType,String[]> typesMv = new HashMap<>(); // multivalued field types only
+    types.put(NumberType.INTEGER, new String[]{"ti", "ti_dv", "ti_ni_dv", "i_p", "i_ni_p", "i_ndv_p", "tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
+    types.put(NumberType.LONG, new String[]{"tl", "tl_dv", "tl_ni_dv", "l_p", "l_ni_p", "l_ndv_p", "tls", "tls_dv", "tls_ni_dv", "ls_p", "ls_ni_p", "ls_ndv_p"});
+    types.put(NumberType.FLOAT, new String[]{"tf", "tf_dv", "tf_ni_dv", "f_p", "f_ni_p", "f_ndv_p", "tfs", "tfs_dv", "tfs_ni_dv", "fs_p", "fs_ni_p", "fs_ndv_p"});
+    types.put(NumberType.DOUBLE, new String[]{"td", "td_dv", "td_ni_dv", "d_p", "d_ni_p", "d_ndv_p", "tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
+    types.put(NumberType.DATE, new String[]{"tdt", "tdt_dv", "tdt_ni_dv", "dt_p", "dt_ni_p", "dt_ndv_p", "tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
+    typesMv.put(NumberType.INTEGER, new String[]{"tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
+    typesMv.put(NumberType.LONG, new String[]{"tls", "tls_dv", "tls_ni_dv", "ls_p", "ls_ni_p", "ls_ndv_p"});
+    typesMv.put(NumberType.FLOAT, new String[]{"tfs", "tfs_dv", "tfs_ni_dv", "fs_p", "fs_ni_p", "fs_ndv_p"});
+    typesMv.put(NumberType.DOUBLE, new String[]{"tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
+    typesMv.put(NumberType.DATE, new String[]{"tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
+
+    for (int i = 0; i < atLeast(500); i++) {
+      if (random().nextInt(50) == 0) {
+        //have some empty docs
+        assertU(adoc("id", String.valueOf(i)));
+        continue;
+      }
+
+      if (random().nextInt(100) == 0 && i > 0) {
+        //delete some docs
+        assertU(delI(String.valueOf(i - 1)));
+      }
+      SolrInputDocument document = new SolrInputDocument();
+      document.setField("id", i);
+      for (Map.Entry<NumberType,String[]> entry:types.entrySet()) {
+        NumberType type = entry.getKey();
+        String val = null;
+        List<String> vals = null;
+        switch (type) {
+          case DATE:
+            val = randomDate(cardinality);
+            vals = getRandomDates(random().nextInt(10), cardinality);
+            break;
+          case DOUBLE:
+            val = String.valueOf(randomDouble(cardinality));
+            vals = toStringList(getRandomDoubles(random().nextInt(10), cardinality));
+            break;
+          case FLOAT:
+            val = String.valueOf(randomFloat(cardinality));
+            vals = toStringList(getRandomFloats(random().nextInt(10), cardinality));
+            break;
+          case INTEGER:
+            val = String.valueOf(randomInt(cardinality));
+            vals = toStringList(getRandomInts(random().nextInt(10), cardinality));
+            break;
+          case LONG:
+            val = String.valueOf(randomLong(cardinality));
+            vals = toStringList(getRandomLongs(random().nextInt(10), cardinality));
+            break;
+          default:
+            throw new AssertionError();
+
+        }
+        // SingleValue
+        for (String fieldSuffix:entry.getValue()) {
+          document.setField("field_sv_" + fieldSuffix, val);
+        }
+        //  MultiValue
+        for (String fieldSuffix:typesMv.get(type)) {
+          for (String value:vals) {
+            document.addField("field_mv_" + fieldSuffix, value);
+          }
+        }
+      }
+
+      assertU(adoc(document));
+      if (random().nextInt(50) == 0) {
+        assertU(commit());
+      }
+    }
+    assertU(commit());
+
+    String[][] possibleTypes = new String[types.size()][];
+    types.values().toArray(possibleTypes);
+    String[][] possibleTypesMv = new String[typesMv.size()][];
+    typesMv.values().toArray(possibleTypesMv);
+    for (int i = 0; i < atLeast(1000); i++) {
+      doTestQuery(cardinality, false, pickRandom(possibleTypes));
+      doTestQuery(cardinality, true, pickRandom(possibleTypesMv));
+    }
+  }
+
+  private void doTestQuery(int cardinality, boolean mv, String[] types) throws Exception {
+    String[] startOptions = new String[]{"{", "["};
+    String[] endOptions = new String[]{"}", "]"};
+    String[] qRange = getRandomRange(cardinality, types[0]);
+    String start = pickRandom(startOptions);
+    String end = pickRandom(endOptions);
+    long expectedHits = doRangeQuery(mv, start, end, types[0], qRange);
+    for (int i = 1; i < types.length; i++) {
+      assertEquals("Unexpected results from query when comparing " + types[0] + " with " + types[i] + " and query: " +
+          start + qRange[0] + " TO " + qRange[1] + end + "\n", 
+          expectedHits, doRangeQuery(mv, start, end, types[i], qRange));
+    }
+  }
+
+  private long doRangeQuery(boolean mv, String start, String end, String field, String[] qRange) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "field_" + (mv?"mv_":"sv_") + field + ":" + start + qRange[0] + " TO " + qRange[1] + end);
+    SolrQueryRequest req = req(params);
+    try {
+      return (long) h.queryAndResponse("", req).getToLog().get("hits");
+    } finally {
+      req.close();
+    }
+
+  }
+
+  private String[] getRandomRange(int max, String fieldName) {
+    Number[] values = new Number[2];
+    FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
+    if (ft.getNumberType() == null) {
+      assert ft instanceof StrField;
+      values[0] = randomInt(max);
+      values[1] = randomInt(max);
+      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
+    } else {
+      switch (ft.getNumberType()) {
+        case DOUBLE:
+          values[0] = randomDouble(max);
+          values[1] = randomDouble(max);
+          break;
+        case FLOAT:
+          values[0] = randomFloat(max);
+          values[1] = randomFloat(max);
+          break;
+        case INTEGER:
+          values[0] = randomInt(max);
+          values[1] = randomInt(max);
+          break;
+        case LONG:
+          values[0] = randomLong(max);
+          values[1] = randomLong(max);
+          break;
+        case DATE:
+          values[0] = randomMs(max);
+          values[1] = randomMs(max);
+          break;
+        default:
+          throw new AssertionError("Unexpected number type");
+
+      }
+      if (random().nextInt(100) >= 1) {// sometimes don't sort the values. Should result in 0 hits
+        Arrays.sort(values);
+      }
+    }
+    String[] stringValues = new String[2];
+    if (rarely()) {
+      stringValues[0] = "*";
+    } else {
+      if (ft.getNumberType() == NumberType.DATE) {
+        stringValues[0] = dateFormat.format(values[0]);
+      } else {
+        stringValues[0] = String.valueOf(values[0]);
+      }
+    }
+    if (rarely()) {
+      stringValues[1] = "*";
+    } else {
+      if (ft.getNumberType() == NumberType.DATE) {
+        stringValues[1] = dateFormat.format(values[1]);
+      } else {
+        stringValues[1] = String.valueOf(values[1]);
+      }
+    }
+    return stringValues;
+  }
+
+
+  // Helper methods
+  private String randomDate(int cardinality) {
+    return dateFormat.format(new Date(randomMs(cardinality)));
+  }
+
+  private List<String> getRandomDates(int numValues, int cardinality) {
+    List<String> vals = new ArrayList<>(numValues);
+    for (int i = 0; i < numValues;i++) {
+      vals.add(randomDate(cardinality));
+    }
+    return vals;
+  }
+
+  private List<Double> getRandomDoubles(int numValues, int cardinality) {
+    List<Double> vals = new ArrayList<>(numValues);
+    for (int i = 0; i < numValues;i++) {
+      vals.add(randomDouble(cardinality));
+    }
+    return vals;
+  }
+  
+  private List<Float> getRandomFloats(int numValues, int cardinality) {
+    List<Float> vals = new ArrayList<>(numValues);
+    for (int i = 0; i < numValues;i++) {
+      vals.add(randomFloat(cardinality));
+    }
+    return vals;
+  }
+  
+  private List<Integer> getRandomInts(int numValues, int cardinality) {
+    List<Integer> vals = new ArrayList<>(numValues);
+    for (int i = 0; i < numValues;i++) {
+      vals.add(randomInt(cardinality));
+    }
+    return vals;
+  }
+  
+  private List<Long> getRandomLongs(int numValues, int cardinality) {
+    List<Long> vals = new ArrayList<>(numValues);
+    for (int i = 0; i < numValues;i++) {
+      vals.add(randomLong(cardinality));
+    }
+    return vals;
+  }
+
+  <T> List<String> toStringList(List<T> input) {
+    List<String> newList = new ArrayList<>(input.size());
+    for (T element:input) {
+      newList.add(String.valueOf(element));
+    }
+    return newList;
+  }
+
+  long randomMs(int cardinality) {
+    return DATE_START_TIME_RANDOM_TEST + random().nextInt(cardinality) * 1000 * (random().nextBoolean()?1:-1);
+  }
+
+  double randomDouble(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(8);
+      if (num == 0) return Double.NEGATIVE_INFINITY;
+      if (num == 1) return Double.POSITIVE_INFINITY;
+      if (num == 2) return Double.MIN_VALUE;
+      if (num == 3) return Double.MAX_VALUE;
+      if (num == 4) return -Double.MIN_VALUE;
+      if (num == 5) return -Double.MAX_VALUE;
+      if (num == 6) return 0.0d;
+      if (num == 7) return -0.0d;
+    }
+    Double d = Double.NaN;
+    while (d.isNaN()) {
+      d = random().nextDouble();
+    }
+    return d * cardinality * (random().nextBoolean()?1:-1);
+  }
+
+  float randomFloat(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(8);
+      if (num == 0) return Float.NEGATIVE_INFINITY;
+      if (num == 1) return Float.POSITIVE_INFINITY;
+      if (num == 2) return Float.MIN_VALUE;
+      if (num == 3) return Float.MAX_VALUE;
+      if (num == 4) return -Float.MIN_VALUE;
+      if (num == 5) return -Float.MAX_VALUE;
+      if (num == 6) return 0.0f;
+      if (num == 7) return -0.0f;
+    }
+    Float f = Float.NaN;
+    while (f.isNaN()) {
+      f = random().nextFloat();
+    }
+    return f * cardinality * (random().nextBoolean()?1:-1);
+  }
+
+  int randomInt(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(2);
+      if (num == 0) return Integer.MAX_VALUE;
+      if (num == 1) return Integer.MIN_VALUE;
+    }
+    return random().nextInt(cardinality) * (random().nextBoolean()?1:-1);
+  }
+
+  long randomLong(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(2);
+      if (num == 0) return Long.MAX_VALUE;
+      if (num == 1) return Long.MIN_VALUE;
+    }
+    return randomInt(cardinality);
   }
 
   static boolean sameDocs(String msg, DocSet a, DocSet b) {

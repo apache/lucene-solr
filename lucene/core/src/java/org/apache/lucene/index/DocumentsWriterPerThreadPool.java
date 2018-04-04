@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.ThreadInterruptedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
@@ -163,6 +164,9 @@ final class DocumentsWriterPerThreadPool {
     // don't recycle DWPT by default
   }
 
+  // TODO: maybe we should try to do load leveling here: we want roughly even numbers
+  // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
+
   /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
   ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter) {
     ThreadState threadState = null;
@@ -208,9 +212,6 @@ final class DocumentsWriterPerThreadPool {
     state.unlock();
     synchronized (this) {
       freeList.add(state);
-      // In case any thread is waiting, wake one of them up since we just released a thread state; notify() should be sufficient but we do
-      // notifyAll defensively:
-      notifyAll();
     }
   }
   

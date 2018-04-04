@@ -34,7 +34,7 @@ import org.slf4j.MDC;
 /**
  * Set's per thread context info for logging. Nested calls will use the top level parent for all context. The first
  * caller always owns the context until it calls {@link #clear()}. Always call {@link #setCore(SolrCore)} or
- * {@link #setCoreDescriptor(CoreDescriptor)} and then {@link #clear()} in a finally block.
+ * {@link #setCoreDescriptor(CoreContainer, CoreDescriptor)} and then {@link #clear()} in a finally block.
  */
 public class MDCLoggingContext {
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
@@ -105,12 +105,11 @@ public class MDCLoggingContext {
   
   public static void setCore(SolrCore core) {
     if (core != null) {
-      CoreDescriptor cd = core.getCoreDescriptor();
-      setCoreDescriptor(cd);
+      setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
     }
   }
   
-  public static void setCoreDescriptor(CoreDescriptor cd) {
+  public static void setCoreDescriptor(CoreContainer coreContainer, CoreDescriptor cd) {
     if (cd != null) {
       int callDepth = CALL_DEPTH.get();
       CALL_DEPTH.set(callDepth + 1);
@@ -119,9 +118,8 @@ public class MDCLoggingContext {
       }
       
       setCoreName(cd.getName());
-      CoreContainer cc = cd.getCoreContainer();
-      if (cc != null) {
-        ZkController zkController = cc.getZkController();
+      if (coreContainer != null) {
+        ZkController zkController = coreContainer.getZkController();
         if (zkController != null) {
           setNodeName(zkController.getNodeName());
         }

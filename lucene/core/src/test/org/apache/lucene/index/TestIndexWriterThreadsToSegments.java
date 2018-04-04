@@ -39,6 +39,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
@@ -331,7 +332,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
               SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
               si.setCodec(codec);
               SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
-              SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
+              SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, IOContext.DEFAULT);
               try {
                 thread0Count += sr.docFreq(new Term("field", "threadID0"));
                 thread1Count += sr.docFreq(new Term("field", "threadID1"));

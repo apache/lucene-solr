@@ -43,7 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -60,10 +60,17 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-/** @lucene.experimental */
+/**
+ * This class is useful for performing peer to peer synchronization of recently indexed update commands during
+ * recovery process.
+ *
+ * @lucene.experimental
+ */
 public class PeerSync implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
@@ -149,23 +156,25 @@ public class PeerSync implements SolrMetricProducer {
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
     this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
-    this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
+    this.client = core.getCoreContainer().getUpdateShardHandler().getHttpClient();
     this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
     // TODO: close
-    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler(client);
 
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.REPLICATION.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
   }
 
+  public static final String METRIC_SCOPE = "peerSync";
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    syncTime = manager.timer(registry, "time", scope);
-    syncErrors = manager.counter(registry, "errors", scope);
-    syncSkipped = manager.counter(registry, "skipped", scope);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
+    syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
+    syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);
   }
 
   /** optional list of updates we had before possibly receiving new updates */
@@ -180,7 +189,7 @@ public class PeerSync implements SolrMetricProducer {
 
   // start of peersync related debug messages.  includes the core name for correlation.
   private String msg() {
-    ZkController zkController = uhandler.core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = uhandler.core.getCoreContainer().getZkController();
 
     String myURL = "";
 
@@ -255,6 +264,14 @@ public class PeerSync implements SolrMetricProducer {
       // have newer stuff that we also had (assuming updates are going on and are being forwarded).
       for (String replica : replicas) {
         requestVersions(replica);
+      }
+
+      try {
+        // waiting a little bit, there are a chance that an update is sending from leader,
+        // so it will present in the response, but not in our recent updates (SOLR-10126)
+        Thread.sleep(300);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
       try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -402,7 +419,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.params = new ModifiableSolrParams();
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
     sreq.params.set("getFingerprint", String.valueOf(Long.MAX_VALUE));
     
     shardHandler.submit(sreq, replica, sreq.params);
@@ -418,7 +435,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
     sreq.params.set("getVersions",nUpdates);
     sreq.params.set("fingerprint",doFingerprint);
     shardHandler.submit(sreq, replica, sreq.params);
@@ -503,7 +520,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
-    sreq.params.set("distrib", false);
+    sreq.params.set(DISTRIB, false);
     sreq.params.set("checkCanHandleVersionRanges", false);
 
     ShardHandler sh = shardHandlerFactory.getShardHandler(client);
@@ -722,7 +739,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.purpose = 0;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
-    sreq.params.set("distrib", false);
+    sreq.params.set(DISTRIB, false);
     sreq.params.set("getUpdates", versionsAndRanges);
     sreq.params.set("onlyIfActive", onlyIfActive);
     
@@ -797,7 +814,7 @@ public class PeerSync implements SolrMetricProducer {
             cmd.setVersion(version);
             cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
             if (debug) {
-              log.debug(msg() + "add " + cmd + " id " + sdoc.getField("id"));
+              log.debug(msg() + "add " + cmd + " id " + sdoc.getField(ID));
             }
             proc.processAdd(cmd);
             break;
@@ -878,7 +895,7 @@ public class PeerSync implements SolrMetricProducer {
 
   /** Requests and applies recent updates from peers */
   public static void sync(SolrCore core, List<String> replicas, int nUpdates) {
-    ShardHandlerFactory shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    ShardHandlerFactory shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
 
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
    
@@ -887,7 +904,7 @@ public class PeerSync implements SolrMetricProducer {
       sreq.shards = new String[]{replica};
       sreq.params = new ModifiableSolrParams();
       sreq.params.set("qt","/get");
-      sreq.params.set("distrib", false);
+      sreq.params.set(DISTRIB, false);
       sreq.params.set("getVersions",nUpdates);
       shardHandler.submit(sreq, replica, sreq.params);
     }

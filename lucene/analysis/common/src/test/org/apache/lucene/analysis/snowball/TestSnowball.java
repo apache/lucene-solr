@@ -71,7 +71,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     assertEquals(new BytesRef(new byte[]{0,1,2,3}), payloadAtt.getPayload());
   }
   
-  private final class TestTokenStream extends TokenStream {
+  private static final class TestTokenStream extends TokenStream {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);

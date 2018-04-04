@@ -25,35 +25,35 @@ package org.apache.solr.common.params;
  */
 public interface ShardParams {
   /** the shards to use (distributed configuration) */
-  public static final String SHARDS = "shards";
+  String SHARDS = "shards";
   
   /** per-shard start and rows */
-  public static final String SHARDS_ROWS = "shards.rows";
-  public static final String SHARDS_START = "shards.start";
+  String SHARDS_ROWS = "shards.rows";
+  String SHARDS_START = "shards.start";
   
   /** IDs of the shard documents */
-  public static final String IDS = "ids";
+  String IDS = "ids";
   
   /** whether the request goes to a shard */
-  public static final String IS_SHARD = "isShard";
+  String IS_SHARD = "isShard";
   
   /** The requested URL for this shard */
-  public static final String SHARD_URL = "shard.url";
+  String SHARD_URL = "shard.url";
   
   /** The Request Handler for shard requests */
-  public static final String SHARDS_QT = "shards.qt";
+  String SHARDS_QT = "shards.qt";
   
   /** Request detailed match info for each shard (true/false) */
-  public static final String SHARDS_INFO = "shards.info";
+  String SHARDS_INFO = "shards.info";
 
   /** Should things fail if there is an error? (true/false) */
-  public static final String SHARDS_TOLERANT = "shards.tolerant";
+  String SHARDS_TOLERANT = "shards.tolerant";
   
   /** query purpose for shard requests */
-  public static final String SHARDS_PURPOSE = "shards.purpose";
+  String SHARDS_PURPOSE = "shards.purpose";
 
-  public static final String _ROUTE_ = "_route_";
+  String _ROUTE_ = "_route_";
 
   /** Force a single-pass distributed query? (true/false) */
-  public static final String DISTRIB_SINGLE_PASS = "distrib.singlePass";
+  String DISTRIB_SINGLE_PASS = "distrib.singlePass";
 }

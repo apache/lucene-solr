@@ -16,8 +16,14 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
- * Circular area with a center and radius.
+ * Circular area with a center and cutoff angle that represents the latitude and longitude distance
+ * from the center where the planet will be cut. The resulting area is a circle for spherical
+ * planets and an ellipse otherwise.
  *
  * @lucene.experimental
  */
@@ -91,6 +97,25 @@ class GeoStandardCircle extends GeoBaseCircle {
     }
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoStandardCircle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, center.getLatitude());
+    SerializableObject.writeDouble(outputStream, center.getLongitude());
+    SerializableObject.writeDouble(outputStream, cutoffAngle);
+  }
+
   @Override
   public double getRadius() {
     return cutoffAngle;
@@ -137,6 +162,26 @@ class GeoStandardCircle extends GeoBaseCircle {
       return false;
     }
     return circlePlane.intersects(planetModel, p, notablePoints, circlePoints, bounds);
+  }
+
+  @Override
+  public boolean intersects(GeoShape geoShape) {
+    if (circlePlane == null) {
+      return false;
+    }
+    return geoShape.intersects(circlePlane, circlePoints);
+  }
+
+  @Override
+  public int getRelationship(GeoShape geoShape) {
+    if (circlePlane == null) {
+      //same as GeoWorld
+      if (geoShape.getEdgePoints().length > 0) {
+        return WITHIN;
+      }
+      return OVERLAPS;
+    }
+    return super.getRelationship(geoShape);
   }
 
   @Override

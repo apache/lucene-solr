@@ -25,7 +25,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
@@ -94,6 +94,7 @@
       <!-- each set of exclusions is checked independently -->
       <lst name="exclude">
         <str name="typeClass">solr.TrieDateField</str>
+        <str name="typeClass">solr.DatePointField</str>
       </lst>
       <lst name="exclude">
         <str name="fieldRegex">.*HOSS.*</str>
@@ -144,6 +145,7 @@
   <updateRequestProcessorChain name="trim-classes">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
       <str name="typeClass">solr.TrieDateField</str>
+      <str name="typeClass">solr.DatePointField</str>
       <str name="typeClass">solr.StrField</str>
     </processor>
   </updateRequestProcessorChain>

@@ -24,8 +24,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FutureObjects;
 
 /** This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge instances when you ask for the codec readers. */
 class MergeReaderWrapper extends LeafReader {
@@ -71,18 +71,11 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    in.addCoreClosedListener(listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    in.removeCoreClosedListener(listener);
-  }
-
-  @Override
-  public Fields fields() throws IOException {
-    return fields;
+  public Terms terms(String field) throws IOException {
+    ensureOpen();
+    // We could check the FieldInfo IndexOptions but there's no point since
+    //   PostingsReader will simply return null for fields that don't exist or that have no terms index.
+    return fields.terms(field);
   }
 
   @Override
@@ -224,19 +217,17 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
-  
+
   private void checkBounds(int docID) {
-    if (docID < 0 || docID >= maxDoc()) {       
-      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
+    FutureObjects.checkIndex(docID, maxDoc());
   }
 
   @Override
@@ -245,7 +236,7 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return in.getIndexSort();
+  public LeafMetaData getMetaData() {
+    return in.getMetaData();
   }
 }

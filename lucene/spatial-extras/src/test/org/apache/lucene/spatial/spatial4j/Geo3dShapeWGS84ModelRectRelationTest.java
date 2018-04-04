@@ -26,11 +26,20 @@ import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
-public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
+public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestCase {
+
+  PlanetModel planetModel = PlanetModel.WGS84;
 
   public Geo3dShapeWGS84ModelRectRelationTest() {
-    super(PlanetModel.WGS84);
+    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
+    factory.planetModel = planetModel;
+    this.ctx = factory.newSpatialContext();
+    this.maxRadius = 178;
+    ((Geo3dShapeFactory)ctx.getShapeFactory()).setCircleAccuracy(1e-6);
   }
 
   @Test
@@ -92,4 +101,18 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelation
     // (3) The point mentioned is NOT inside the path segment, either.  (I think it should be...)
   }
 
+  @Test
+  public void pointBearingTest(){
+    double radius = 136;
+    double distance = 135.97;
+    double bearing = 188;
+    Point p = ctx.getShapeFactory().pointXY(35, 85);
+    Circle circle = ctx.getShapeFactory().circle(p, radius);
+    Point bPoint = ctx.getDistCalc().pointOnBearing(p, distance, bearing, ctx, (Point) null);
+
+    double d = ctx.getDistCalc().distance(p, bPoint);
+    assertEquals(d, distance, 10-8);
+
+    assertEquals(circle.relate(bPoint), SpatialRelation.CONTAINS);
+  }
 }

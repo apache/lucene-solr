@@ -41,13 +41,13 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.util.CommandOperation.captureErrors;
+import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   String permissions = "{" +
@@ -305,6 +305,21 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "handler", new DumpRequestHandler(),
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
         , FORBIDDEN);
+
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "solr",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new UpdateRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{user-role:{" +
+        "      admin:[admin_role]," +
+        "      update:[update_role]," +
+        "      solr:[read_role]}," +
+        "    permissions:[" +
+        "      {name:update, role:[admin_role,update_role]}," +
+        "      {name:read, role:[admin_role,update_role,read_role]}" +
+        "]}"));
   }
 
   public void testEditRules() throws IOException {
@@ -362,10 +377,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
   private void checkRules(Map<String, Object> values, int expected, Map<String ,Object> permissions) {
     AuthorizationContext context = new MockAuthorizationContext(values);
-    RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin();
-    plugin.init(permissions);
-    AuthorizationResponse authResp = plugin.authorize(context);
-    assertEquals(expected, authResp.statusCode);
+    try (RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin()) {
+      plugin.init(permissions);
+      AuthorizationResponse authResp = plugin.authorize(context);
+      assertEquals(expected, authResp.statusCode);
+    } catch (IOException e) {
+      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+    }
   }
 
   private static class MockAuthorizationContext extends AuthorizationContext {
@@ -438,5 +456,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     }
   }
 
+static String testPerms = "{user-role:{" +
+    "      admin:[admin_role]," +
+    "      update:[update_role]," +
+    "      solr:[read_role]}," +
+    "    permissions:[" +
+    "      {name:update,role:[admin_role,update_role]}," +
+    "      {name:read,role:[admin_role,update_role,read_role]" +
+    "]}";
 
 }

@@ -47,16 +47,13 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
  */
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    SortSpec ss = rb.getSortSpec();
+    SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     final String[] fields = rb.getGroupingSpec().getFields();
-    Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    assert sortWithinGroup != null;
+    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    assert withinGroupSort != null;
 
     final Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>(fields.length, 1.0f);
     final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards = new HashMap<>(fields.length, 1.0f);
@@ -111,7 +108,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
       @SuppressWarnings("unchecked")
       NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
-      final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
+      final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       for (String field : commandSearchGroups.keySet()) {
         final SearchGroupsFieldCommandResult firstPhaseCommandResult = result.get(field);
 
@@ -119,7 +116,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         if (groupCount != null) {
           Integer existingGroupCount = rb.mergedGroupCounts.get(field);
           // Assuming groups don't cross shard boundary...
-          rb.mergedGroupCounts.put(field, existingGroupCount != null ? existingGroupCount + groupCount : groupCount);
+          rb.mergedGroupCounts.put(field, existingGroupCount != null ? Integer.valueOf(existingGroupCount + groupCount) : groupCount);
         }
 
         final Collection<SearchGroup<BytesRef>> searchGroups = firstPhaseCommandResult.getSearchGroups();
@@ -144,7 +141,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     rb.firstPhaseElapsedTime = maxElapsedTime;
     for (String groupField : commandSearchGroups.keySet()) {
       List<Collection<SearchGroup<BytesRef>>> topGroups = commandSearchGroups.get(groupField);
-      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, ss.getOffset(), ss.getCount(), groupSort);
+      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
       if (mergedTopGroups == null) {
         continue;
       }

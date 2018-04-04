@@ -21,23 +21,27 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.schema.SchemaField;
 
 class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
-  final SortedSetDocValues topLevel;
-  final SortedSetDocValues[] subDvs;
-  final MultiDocValues.OrdinalMap ordMap;
+  SortedSetDocValues topLevel;
+  SortedSetDocValues[] subDvs;
+  OrdinalMap ordMap;
   LongValues toGlobal;
   SortedSetDocValues subDv;
 
-  public UniqueMultiDvSlotAcc(FacetContext fcontext, String field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueMultiDvSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext, field, numSlots, factory);
-    SolrIndexSearcher searcher = fcontext.qcontext.searcher();
-    topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, searcher.getSchema().getField(field), null);
+  }
+
+  @Override
+  public void resetIterators() throws IOException {
+    topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, field, null);
     nTerms = (int) topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedSetDocValues) {
       ordMap = ((MultiDocValues.MultiSortedSetDocValues) topLevel).mapping;
@@ -67,10 +71,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void collect(int doc, int slotNum) throws IOException {
-    if (doc > subDv.docID()) {
-      subDv.advance(doc);
-    }
-    if (doc == subDv.docID()) {
+    if (subDv.advanceExact(doc)) {
 
       int segOrd = (int) subDv.nextOrd();
       assert segOrd >= 0;

@@ -83,10 +83,17 @@ public class MiniSolrCloudCluster {
       "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
       "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
       "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">10000</int>\n" +
+      "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n" +
       "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
+      "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +
+      "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n" +
       "  </solrcloud>\n" +
+      "  <metrics>\n" +
+      "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
+      "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
+      "    </reporter>\n" +
+      "  </metrics>\n" +
       "  \n" +
       "</solr>\n";
 
@@ -284,6 +291,13 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  /**
+   * Wait for all Solr nodes to be live
+   *
+   * @param timeout number of seconds to wait before throwing an IllegalStateException
+   * @throws IOException if there was an error communicating with ZooKeeper
+   * @throws InterruptedException if the calling thread is interrupted during the wait operation
+   */
   public void waitForAllNodes(int timeout) throws IOException, InterruptedException {
     waitForAllNodes(jettys.size(), timeout);
   }
@@ -412,7 +426,7 @@ public class MiniSolrCloudCluster {
     return jetty;
   }
 
-  protected JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
+  public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.stop();
     return jetty;
   }
@@ -470,7 +484,11 @@ public class MiniSolrCloudCluster {
       }
     }
   }
-  
+
+  public Path getBaseDir() {
+    return baseDir;
+  }
+
   public CloudSolrClient getSolrClient() {
     return solrClient;
   }
@@ -480,8 +498,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder()
-        .withZkHost(getZkServer().getZkAddress())
+    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .build();
   }
 

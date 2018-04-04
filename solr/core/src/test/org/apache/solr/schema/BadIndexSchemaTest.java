@@ -53,11 +53,6 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-analyzer-class-and-nested.xml", "bad_type");
   }
 
-  public void testBadExternalFileField() throws Exception {
-    doTest("bad-schema-external-filefield.xml",
-           "Only float (TrieFloatField) is currently supported as external field type.");
-  }
-
   public void testUniqueKeyRules() throws Exception {
     doTest("bad-schema-uniquekey-is-copyfield-dest.xml", 
            "can not be the dest of a copyField");
@@ -65,20 +60,30 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be configured with a default value");
     doTest("bad-schema-uniquekey-multivalued.xml", 
            "can not be configured to be multivalued");
+    doTest("bad-schema-uniquekey-uses-points.xml", 
+           "can not be configured to use a Points based FieldType");
   }
 
   public void testMultivaluedCurrency() throws Exception {
     doTest("bad-schema-currency-ft-multivalued.xml", 
            "types can not be multiValued: currency");
     doTest("bad-schema-currency-multivalued.xml", 
-           "Fields can not be multiValued: money");
+           "fields can not be multiValued: money");
     doTest("bad-schema-currency-dynamic-multivalued.xml", 
-           "Fields can not be multiValued: *_c");
+           "fields can not be multiValued: *_c");
+    doTest("bad-schema-currencyfieldtype-ft-multivalued.xml",
+        "types can not be multiValued: currency");
+    doTest("bad-schema-currencyfieldtype-multivalued.xml",
+        "fields can not be multiValued: money");
+    doTest("bad-schema-currencyfieldtype-dynamic-multivalued.xml",
+        "fields can not be multiValued: *_c");
   }
 
   public void testCurrencyOERNoRates() throws Exception {
     doTest("bad-schema-currency-ft-oer-norates.xml", 
            "ratesFileLocation");
+    doTest("bad-schema-currencyfieldtype-ft-oer-norates.xml",
+        "ratesFileLocation");
   }
 
   public void testCurrencyBogusCode() throws Exception {
@@ -86,6 +91,35 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "HOSS");
     doTest("bad-schema-currency-ft-bogus-code-in-xml.xml", 
            "HOSS");
+    doTest("bad-schema-currencyfieldtype-ft-bogus-default-code.xml",
+        "HOSS");
+    doTest("bad-schema-currencyfieldtype-ft-bogus-code-in-xml.xml",
+        "HOSS");
+  }
+  
+  public void testCurrencyDisallowedSuffixParams() throws Exception {
+    doTest("bad-schema-currency-ft-code-suffix.xml", 
+        "Unknown parameter(s)");
+    doTest("bad-schema-currency-ft-amount-suffix.xml",
+        "Unknown parameter(s)");
+  }
+  
+  public void testCurrencyBogusSuffixes() throws Exception {
+    doTest("bad-schema-currencyfieldtype-bogus-code-suffix.xml",
+           "Undefined dynamic field for codeStrSuffix");
+    doTest("bad-schema-currencyfieldtype-bogus-amount-suffix.xml",
+           "Undefined dynamic field for amountLongSuffix");
+    doTest("bad-schema-currencyfieldtype-wrong-code-ft.xml",
+           "Dynamic field for codeStrSuffix=\"_l\" must have type class of (or extending) StrField");
+    doTest("bad-schema-currencyfieldtype-wrong-amount-ft.xml",
+           "Dynamic field for amountLongSuffix=\"_s\" must have type class extending LongValueFieldType");
+  } 
+  
+  public void testCurrencyMissingSuffixes() throws Exception {
+    doTest("bad-schema-currencyfieldtype-missing-code-suffix.xml",
+        "Missing required param codeStrSuffix");
+    doTest("bad-schema-currencyfieldtype-missing-amount-suffix.xml",
+        "Missing required param amountLongSuffix");
   }
 
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
@@ -98,6 +132,21 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   public void testDocValuesUnsupported() throws Exception {
     doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
+  }
+  
+  public void testRootTypeMissmatchWithUniqueKey() throws Exception {
+    doTest("bad-schema-uniquekey-diff-type-root.xml",
+           "using the exact same fieldType as the uniqueKey field (id) uses: string1");
+  }
+  
+  public void testRootTypeDynamicMissmatchWithUniqueKey() throws Exception {
+    // in this case, the core should load fine -- but we should get an error adding docs
+    try {
+      initCore("solrconfig.xml","bad-schema-uniquekey-diff-type-dynamic-root.xml");
+      assertFailedU("Unable to index docs with children", adoc(sdocWithChildren("1","-1")));
+    } finally {
+      deleteCore();
+    }
   }
 
   public void testSweetSpotSimBadConfig() throws Exception {
@@ -127,5 +176,13 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-sim-default-does-not-exist.xml",
            "ft-does-not-exist");
   }
-  
+
+  public void testDefaultOperatorBanned() throws Exception {
+    doTest("bad-schema-default-operator.xml",
+           "default operator in schema (solrQueryParser/@defaultOperator) not supported");
+  }
+
+  public void testSchemaWithDefaultSearchField() throws Exception {
+    doTest("bad-schema-defaultsearchfield.xml", "Setting defaultSearchField in schema not supported since Solr 7");
+  }
 }

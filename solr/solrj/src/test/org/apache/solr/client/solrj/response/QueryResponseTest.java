@@ -43,11 +43,15 @@ public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleRangeFacetResponse.xml")) {
+      assertNotNull(is);
+
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     Assert.assertNotNull(qr);
@@ -100,11 +104,14 @@ public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleGroupResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleGroupResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     assertNotNull(qr);
@@ -202,11 +209,15 @@ public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testSimpleGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleSimpleGroupResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleSimpleGroupResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     assertNotNull(qr);

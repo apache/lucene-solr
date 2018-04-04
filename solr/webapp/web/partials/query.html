@@ -78,6 +78,7 @@ limitations under the License.
           <a rel="help">wt</a>
         </label>
         <select name="wt" ng-model="query.wt" id="wt" title="The writer type (response format).">
+          <option ng-selected="selected" value=''>------</option>
           <option>json</option>
           <option>xml</option>
           <option>python</option>
@@ -86,9 +87,9 @@ limitations under the License.
           <option>csv</option>
         </select>
 
-        <label for="indent" class="checkbox" title="Indent results.">
-          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Indent results." ng-true-value="'on'" ng-false-value="''">
-          indent
+        <label for="indent off" class="checkbox" title="Do not indent results.">
+          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Do not indent results." ng-true-value="'off'" ng-false-value="''">
+          indent off
         </label>
 
         <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">

@@ -54,7 +54,7 @@ cd lucene
 #    1     2            3                                4      5     6   7      8      9
 #                                                                     ^- Dirs start here     
 wget -r -np -l 0 -nH -erobots=off --cut-dirs=5 \
-     --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/lucene/maven/"
+     --reject="*.md5,*.sha1,*.sha512,maven-metadata.xml*,index.html*" "${RC_URL}/lucene/maven/"
 
 cd ..
 
@@ -62,7 +62,7 @@ mkdir solr
 cd solr
 
 wget -r -np -l 0 -nH -erobots=off --cut-dirs=5 \
-     --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/solr/maven/"
+     --reject="*.md5,*.sha1,*.sha512,maven-metadata.xml*,index.html*" "${RC_URL}/solr/maven/"
 
 cd ..
 

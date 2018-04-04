@@ -79,7 +79,7 @@ public class TestSolrQueryResponse extends LuceneTestCase {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("response initial value", null, response.getResponse());
     final Object newValue = (random().nextBoolean()
-        ? (random().nextBoolean() ? new String("answer") : new Integer(42)) : null);
+        ? (random().nextBoolean() ? "answer" : Integer.valueOf(42)) : null);
     response.addResponse(newValue);
     assertEquals("response new value", newValue, response.getResponse());
   }

@@ -36,7 +36,7 @@ public abstract class Normalization {
 
   /** Returns the normalized term frequency.
    * @param len the field length. */
-  public abstract float tfn(BasicStats stats, float tf, float len);
+  public abstract double tfn(BasicStats stats, double tf, double len);
   
   /** Returns an explanation for the normalized term frequency.
    * <p>The default normalization methods use the field length of the document
@@ -44,13 +44,15 @@ public abstract class Normalization {
    * This method provides a generic explanation for such methods.
    * Subclasses that use other statistics must override this method.</p>
    */
-  public Explanation explain(BasicStats stats, float tf, float len) {
+  public Explanation explain(BasicStats stats, double tf, double len) {
     return Explanation.match(
-        tfn(stats, tf, len),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(tf, "tf"),
-        Explanation.match(stats.getAvgFieldLength(), "avgFieldLength"),
-        Explanation.match(len, "len"));
+        (float) tfn(stats, tf, len),
+        getClass().getSimpleName() + ", computed from:",
+        Explanation.match((float) tf,
+            "tf, number of occurrences of term in the document"),
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgfl, average length of field across all documents"),
+        Explanation.match((float) len, "fl, field length of the document"));
   }
 
   /** Implementation used when there is no normalization. */
@@ -60,12 +62,12 @@ public abstract class Normalization {
     public NoNormalization() {}
     
     @Override
-    public final float tfn(BasicStats stats, float tf, float len) {
+    public double tfn(BasicStats stats, double tf, double len) {
       return tf;
     }
 
     @Override
-    public final Explanation explain(BasicStats stats, float tf, float len) {
+    public Explanation explain(BasicStats stats, double tf, double len) {
       return Explanation.match(1, "no normalization");
     }
     

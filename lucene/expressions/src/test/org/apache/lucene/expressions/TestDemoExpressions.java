@@ -16,19 +16,14 @@
  */
 package org.apache.lucene.expressions;
 
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.expressions.js.VariableContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -124,7 +119,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = (float) Math.sqrt(d.score);
       float actual = ((Double)d.fields[0]).floatValue();
-      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+      assertEquals(expected, actual, 0d);
     }
   }
   
@@ -142,7 +137,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
       float actual = ((Double)d.fields[0]).floatValue();
-      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+      assertEquals(expected, actual, 0d);
     }
   }
   
@@ -161,7 +156,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
       float actual = ((Double)d.fields[0]).floatValue();
-      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+      assertEquals(expected, actual, 0d);
     }
   }
   
@@ -181,7 +176,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
       float actual = ((Double)d.fields[0]).floatValue();
-      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+      assertEquals(expected, actual, 0d);
     }
   }
   
@@ -213,7 +208,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = n*d.score;
       float actual = ((Double)d.fields[0]).floatValue();
-      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+      assertEquals(expected, actual, 0d);
     }
   }
   
@@ -252,30 +247,6 @@ public class  TestDemoExpressions extends LuceneTestCase {
     assertEquals(2D, (Double)d.fields[0], 1E-4);
   }
 
-  private static DoubleValuesSource constant(double value) {
-    return new DoubleValuesSource() {
-      @Override
-      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        return new DoubleValues() {
-          @Override
-          public double doubleValue() throws IOException {
-            return value;
-          }
-
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            return true;
-          }
-        };
-      }
-
-      @Override
-      public boolean needsScores() {
-        return false;
-      }
-    };
-  }
-
   public void testDynamicExtendedVariableExample() throws Exception {
     Expression popularity = JavascriptCompiler.compile("doc['popularity'].value + magicarray[0] + fourtytwo");
 
@@ -301,12 +272,12 @@ public class  TestDemoExpressions extends LuceneTestCase {
           }
         } else if (base.equals("magicarray")) {
           if (var.length > 1 && var[1].type == INT_INDEX) {
-            return constant(2048);
+            return DoubleValuesSource.constant(2048);
           } else {
             fail();// error case, magic array isn't an array
           }
         } else if (base.equals("fourtytwo")) {
-          return constant(42);
+          return DoubleValuesSource.constant(42);
         } else {
           fail();// error case (variable doesn't exist)
         }

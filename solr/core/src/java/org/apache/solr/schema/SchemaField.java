@@ -66,7 +66,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     args = prototype.args;
   }
 
- /** Create a new SchemaField with the given name and type,
+  /** Create a new SchemaField with the given name and type,
    * and with the specified properties.  Properties are *not*
    * inherited from the type in this case, so users of this
    * constructor should derive the properties from type.getSolrProperties()
@@ -106,23 +106,24 @@ public final class SchemaField extends FieldProperties implements IndexableField
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
-  public boolean isRequired() { return required; } 
+  public boolean isRequired() { return required; }
+  public boolean isLarge() { return (properties & LARGE_FIELD)!=0;}
   public Map<String,?> getArgs() { return Collections.unmodifiableMap(args); }
 
   // things that should be determined by field type, not set as options
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
-  public IndexableField createField(Object val, float boost) {
-    return type.createField(this,val,boost);
+  public IndexableField createField(Object val) {
+    return type.createField(this,val);
   }
 
-  public List<IndexableField> createFields(Object val, float boost) {
-    return type.createFields(this,val,boost);
+  public List<IndexableField> createFields(Object val) {
+    return type.createFields(this,val);
   }
 
   /**
-   * If true, then use {@link #createFields(Object, float)}, else use {@link #createField} to save an extra allocation
+   * If true, then use {@link #createFields(Object)}, else use {@link #createField} to save an extra allocation
    * @return true if this field is a poly field
    */
   public boolean isPolyField(){
@@ -160,20 +161,21 @@ public final class SchemaField extends FieldProperties implements IndexableField
    * @see FieldType#getSortField
    */
   public void checkSortability() throws SolrException {
-    if (! (indexed() || hasDocValues()) ) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "can not sort on a field which is neither indexed nor has doc values: " 
-                              + getName());
-    }
-    if ( multiValued() ) {
+    if ( multiValued()
+         // if either of these are non-null, then we should not error
+         && null == this.type.getDefaultMultiValueSelectorForSort(this,true)
+         && null == this.type.getDefaultMultiValueSelectorForSort(this,false) ) {
+      
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not sort on multivalued field: " 
-                              + getName());
+                              + getName() + " of type: " + this.type.getTypeName());
     }
-    if (this.type.isPointField() && !hasDocValues()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "can not sort on a PointField without doc values: " 
-                              + getName());
+    if (! hasDocValues() ) {
+      if ( ! ( indexed() && null != this.type.getUninversionType(this) ) ) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                                "can not sort on a field w/o docValues unless it is indexed and supports Uninversion: " 
+                                + getName());
+      }
     }
   }
 
@@ -186,22 +188,18 @@ public final class SchemaField extends FieldProperties implements IndexableField
    * @see FieldType#getValueSource
    */
   public void checkFieldCacheSource() throws SolrException {
-    if (! (indexed() || hasDocValues()) ) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "can not use FieldCache on a field which is neither indexed nor has doc values: " 
-                              + getName());
-    }
     if ( multiValued() ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not use FieldCache on multivalued field: " 
                               + getName());
     }
-    if (this.type.isPointField() && !hasDocValues()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "Point fields can't use FieldCache. Use docValues=true for field: " 
-                              + getName());
+    if (! hasDocValues() ) {
+      if ( ! ( indexed() && null != this.type.getUninversionType(this) ) ) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                                "can not use FieldCache on a field w/o docValues unless it is indexed and supports Uninversion: " 
+                                + getName());
+      }
     }
-    
   }
 
   static SchemaField create(String name, FieldType ft, Map<String,?> props) {
@@ -240,7 +238,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     // that depend on that.
     //
     if (on(falseProps,STORED)) {
-      int pp = STORED | BINARY;
+      int pp = STORED | BINARY | LARGE_FIELD;
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting stored field options:" + props);
       }
@@ -342,6 +340,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(OMIT_POSITIONS), omitPositions());
       properties.add(getPropertyName(STORE_OFFSETS), storeOffsetsWithPositions());
       properties.add(getPropertyName(MULTIVALUED), multiValued());
+      properties.add(getPropertyName(LARGE_FIELD), isLarge());
       if (sortMissingFirst()) {
         properties.add(getPropertyName(SORT_MISSING_FIRST), sortMissingFirst());
       } else if (sortMissingLast()) {

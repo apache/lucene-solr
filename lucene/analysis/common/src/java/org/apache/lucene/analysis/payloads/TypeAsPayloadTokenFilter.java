@@ -17,17 +17,17 @@
 package org.apache.lucene.analysis.payloads;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-
 
 /**
- * Makes the {@link org.apache.lucene.analysis.Token#type()} a payload.
+ * Makes the {@link TypeAttribute} a payload.
  *
  * Encodes the type using {@link String#getBytes(String)} with "UTF-8" as the encoding
  *

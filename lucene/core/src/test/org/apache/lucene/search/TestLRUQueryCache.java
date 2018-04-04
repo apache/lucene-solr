@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,14 +37,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FilterDirectoryReader;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -56,6 +62,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -70,15 +77,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
   };
-
-  public void testFilterRamBytesUsed() {
-    final Query simpleQuery = new TermQuery(new Term("some_field", "some_term"));
-    final long actualRamBytesUsed = RamUsageTester.sizeOf(simpleQuery);
-    final long ramBytesUsed = LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
-    // we cannot assert exactly that the constant is correct since actual
-    // memory usage depends on JVM implementations and settings (eg. UseCompressedOops)
-    assertEquals(actualRamBytesUsed, ramBytesUsed, actualRamBytesUsed / 2);
-  }
 
   public void testConcurrency() throws Throwable {
     final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(20), 1 + random().nextInt(10000), context -> random().nextBoolean());
@@ -139,7 +137,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
                 TotalHitCountCollector collector = new TotalHitCountCollector();
                 searcher.search(q, collector); // will use the cache
                 final int totalHits1 = collector.getTotalHits();
-                final int totalHits2 = searcher.search(q, 1).totalHits; // will not use the cache because of scores
+                final long totalHits2 = searcher.search(q, 1).totalHits; // will not use the cache because of scores
                 assertEquals(totalHits2, totalHits1);
               } finally {
                 mgr.release(searcher);
@@ -276,7 +274,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return queryCache.ramBytesUsed((Query) o);
+          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o instanceof IndexReader || o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not take readers or core cache keys into account
@@ -349,11 +347,16 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
       };
     }
@@ -392,7 +395,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return queryCache.ramBytesUsed((Query) o);
+          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not follow references to core cache keys
@@ -607,12 +610,12 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final int segmentCount2 = reader2.leaves().size();
     final IndexSearcher searcher2 = new IndexSearcher(reader2);
 
-    final Map<Object, Integer> indexId = new HashMap<>();
+    final Map<IndexReader.CacheKey, Integer> indexId = new HashMap<>();
     for (LeafReaderContext ctx : reader1.leaves()) {
-      indexId.put(ctx.reader().getCoreCacheKey(), 1);
+      indexId.put(ctx.reader().getCoreCacheHelper().getKey(), 1);
     }
     for (LeafReaderContext ctx : reader2.leaves()) {
-      indexId.put(ctx.reader().getCoreCacheKey(), 2);
+      indexId.put(ctx.reader().getCoreCacheHelper().getKey(), 2);
     }
 
     final AtomicLong hitCount1 = new AtomicLong();
@@ -657,12 +660,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
       @Override
       protected void onQueryCache(Query query, long ramBytesUsed) {
         super.onQueryCache(query, ramBytesUsed);
+        assertNotNull("cached query is null", query);
         ramBytesUsage.addAndGet(ramBytesUsed);
       }
 
       @Override
       protected void onQueryEviction(Query query, long ramBytesUsed) {
         super.onQueryEviction(query, ramBytesUsed);
+        assertNotNull("evicted query is null", query);
         ramBytesUsage.addAndGet(-ramBytesUsed);
       }
 
@@ -936,11 +941,16 @@ public class TestLRUQueryCache extends LuceneTestCase {
     int[] i = new int[] {42}; // an array so that clone keeps the reference
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
       };
     }
@@ -1131,7 +1141,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     LRUQueryCache cache = new LRUQueryCache(1, Long.MAX_VALUE, context -> true);
 
     // test that the bulk scorer is propagated when a scorer should not be cached
-    Weight weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), false);
+    Weight weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
     weight = cache.doCache(weight, NEVER_CACHE);
     weight.bulkScorer(leaf);
@@ -1141,7 +1151,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     // test that the doc id set is computed using the bulk scorer
     bulkScorerCalled.set(false);
-    weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), false);
+    weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
     weight = cache.doCache(weight, QueryCachingPolicy.ALWAYS_CACHE);
     weight.scorer(leaf);
@@ -1217,5 +1227,323 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  // a reader whose sole purpose is to not be cacheable
+  private static class DummyDirectoryReader extends FilterDirectoryReader {
+
+    public DummyDirectoryReader(DirectoryReader in) throws IOException {
+      super(in, new SubReaderWrapper() {
+        @Override
+        public LeafReader wrap(LeafReader reader) {
+          return new FilterLeafReader(reader) {
+            @Override
+            public CacheHelper getCoreCacheHelper() {
+              return null;
+            }
+            @Override
+            public CacheHelper getReaderCacheHelper() {
+              return null;
+            }
+          };
+        }
+      });
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new DummyDirectoryReader(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
+  }
+
+  public void testReaderNotSuitedForCaching() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    w.addDocument(new Document());
+    DirectoryReader reader = new DummyDirectoryReader(w.getReader());
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    // don't cache if the reader does not expose a cache helper
+    assertNull(reader.leaves().get(0).reader().getCoreCacheHelper());
+    LRUQueryCache cache = new LRUQueryCache(2, 10000, context -> true);
+    searcher.setQueryCache(cache);
+    assertEquals(0, searcher.count(new DummyQuery()));
+    assertEquals(0, cache.getCacheCount());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  // A query that returns null from Weight.getCacheHelper
+  private static class NoCacheQuery extends Query {
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return new Weight(this) {
+        @Override
+        public void extractTerms(Set<Term> terms) {
+
+        }
+
+        @Override
+        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+          return null;
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+      };
+    }
+
+    @Override
+    public String toString(String field) {
+      return "NoCacheQuery";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return sameClassAs(obj);
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+  }
+
+  public void testQueryNotSuitedForCaching() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    w.addDocument(new Document());
+    DirectoryReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    LRUQueryCache cache = new LRUQueryCache(2, 10000, context -> true);
+    searcher.setQueryCache(cache);
+
+    assertEquals(0, searcher.count(new NoCacheQuery()));
+    assertEquals(0, cache.getCacheCount());
+
+    // BooleanQuery wrapping an uncacheable query should also not be cached
+    BooleanQuery bq = new BooleanQuery.Builder()
+        .add(new NoCacheQuery(), Occur.MUST)
+        .add(new TermQuery(new Term("field", "term")), Occur.MUST).build();
+    assertEquals(0, searcher.count(bq));
+    assertEquals(0, cache.getCacheCount());
+
+    reader.close();
+    w.close();
+    dir.close();
+
+  }
+
+  private static class DummyQuery2 extends Query {
+
+    private final AtomicBoolean scorerCreated;
+
+    DummyQuery2(AtomicBoolean scorerCreated) {
+      this.scorerCreated = scorerCreated;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          return scorerSupplier(context).get(Long.MAX_VALUE);
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
+        }
+
+        @Override
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+          final Weight weight = this;
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              scorerCreated.set(true);
+              return new ConstantScoreScorer(weight, boost, DocIdSetIterator.all(1));
+            }
+
+            @Override
+            public long cost() {
+              return 1;
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other);
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "DummyQuery2";
+    }
+
+  }
+
+  public void testPropagatesScorerSupplier() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    w.addDocument(new Document());
+    DirectoryReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+
+    LRUQueryCache cache = new LRUQueryCache(1, 1000);
+    searcher.setQueryCache(cache);
+
+    AtomicBoolean scorerCreated = new AtomicBoolean(false);
+    Query query = new DummyQuery2(scorerCreated);
+    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    ScorerSupplier supplier = weight.scorerSupplier(searcher.getIndexReader().leaves().get(0));
+    assertFalse(scorerCreated.get());
+    supplier.get(random().nextLong() & 0x7FFFFFFFFFFFFFFFL);
+    assertTrue(scorerCreated.get());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  static class DVCacheQuery extends Query {
+
+    final String field;
+
+    AtomicInteger scorerCreatedCount = new AtomicInteger(0);
+
+    DVCacheQuery(String field) {
+      this.field = field;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "DVCacheQuery";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return sameClassAs(obj);
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      return new ConstantScoreWeight(this, 1) {
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          scorerCreatedCount.incrementAndGet();
+          return new ConstantScoreScorer(this, 1, DocIdSetIterator.all(context.reader().maxDoc()));
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return DocValues.isCacheable(ctx, field);
+        }
+
+      };
+    }
+  }
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  public void testDocValuesUpdatesDontBreakCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    //RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(new Document());
+    w.commit();
+    DirectoryReader reader = DirectoryReader.open(w);
+
+    // Don't use newSearcher(), because that will sometimes use an ExecutorService, and
+    // we need to be single threaded to ensure that LRUQueryCache doesn't skip the cache
+    // due to thread contention
+    IndexSearcher searcher = new AssertingIndexSearcher(random(), reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    LRUQueryCache cache = new LRUQueryCache(1, 10000, context -> true);
+    searcher.setQueryCache(cache);
+
+    DVCacheQuery query = new DVCacheQuery("field");
+    assertEquals(1, searcher.count(query));
+    assertEquals(1, query.scorerCreatedCount.get());
+    assertEquals(1, searcher.count(query));
+    assertEquals(1, query.scorerCreatedCount.get());  // should be cached
+
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("field", 1));
+    doc.add(newTextField("text", "text", Store.NO));
+    w.addDocument(doc);
+    reader.close();
+    reader = DirectoryReader.open(w);
+    searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    searcher.setQueryCache(cache);
+
+    assertEquals(2, searcher.count(query));
+    assertEquals(2, query.scorerCreatedCount.get());  // first segment cached
+
+    reader.close();
+    reader = DirectoryReader.open(w);
+    searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    searcher.setQueryCache(cache);
+
+    assertEquals(2, searcher.count(query));
+    assertEquals(2, query.scorerCreatedCount.get());  // both segments cached
+
+
+    w.updateNumericDocValue(new Term("text", "text"), "field", 2l);
+    reader.close();
+    reader = DirectoryReader.open(w);
+    searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    searcher.setQueryCache(cache);
+
+    assertEquals(2, searcher.count(query));
+    assertEquals(3, query.scorerCreatedCount.get());   // second segment no longer cached due to DV update
+
+    assertEquals(2, searcher.count(query));
+    assertEquals(4, query.scorerCreatedCount.get());    // still no caching
+
+    reader.close();
+    w.close();
+    dir.close();
+
   }
 }

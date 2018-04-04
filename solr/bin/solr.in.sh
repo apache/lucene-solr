@@ -34,9 +34,16 @@
 # Comment out SOLR_HEAP if you are using this though, that takes precedence
 #SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 
-# Enable verbose GC logging
+# Enable verbose GC logging...
+#  * If this is unset, various default options will be selected depending on which JVM version is in use
+#  * For Java 8: if this is set, additional params will be added to specify the log file & rotation
+#  * For Java 9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an
+#    output specifier, will have a 'file' output specifier (as well as formatting & rollover options)
+#    appended, using the effective value of the SOLR_LOGS_DIR.
+#
+#GC_LOG_OPTS='-Xlog:gc*'  # (Java 9+)
 #GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
-#-XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
+#  -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE="-XX:NewRatio=3 -XX:SurvivorRatio=4    etc.
@@ -52,6 +59,9 @@
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST="192.168.1.1"
+
+# By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+#SOLR_WAIT_FOR_ZK="30"
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
@@ -79,26 +89,33 @@
 # If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 #SOLR_HOME=
 
-# Solr provides a default Log4J configuration properties file in server/resources
+# Path to a directory that Solr will use as root for data folders for each core.
+# If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
+#SOLR_DATA_HOME=
+
+# Solr provides a default Log4J configuration xml file in server/resources
 # however, you may want to customize the log settings and file appender location
-# so you can point the script to use a different log4j.properties file
-#LOG4J_PROPS=/var/solr/log4j.properties
+# so you can point the script to use a different log4j2.xml file
+#LOG4J_PROPS=/var/solr/log4j2.xml
 
 # Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
-# This is an alternative to changing the rootLogger in log4j.properties
+# This is an alternative to changing the rootLogger in log4j2.xml
 #SOLR_LOG_LEVEL=INFO
 
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation, cleanup, and archiving during start. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
-# time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration.
-# This pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
-#SOLR_LOG_PRESTART_ROTATION=true
+# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
+# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
+# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
+#SOLR_LOG_PRESTART_ROTATION=false
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
 
+# Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+# to enable https module with custom jetty configuration.
+#SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
@@ -131,4 +148,15 @@
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+
+# Settings for common system values that may cause operational imparement when system defaults are used.
+# Solr can use many processes and many file handles. On modern operating systems the savings by leaving
+# these settings low is minuscule, while the consequence can be Solr instability. To turn these checks off, set
+# SOLR_ULIMIT_CHECKS=false either here or as part of your profile.
+
+# Different limits can be set in solr.in.sh or your profile if you prefer as well.
+#SOLR_RECOMMENDED_OPEN_FILES=
+#SOLR_RECOMMENDED_MAX_PROCESSES=
+#SOLR_ULIMIT_CHECKS=
 

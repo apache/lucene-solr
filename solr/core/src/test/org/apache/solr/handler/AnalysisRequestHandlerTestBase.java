@@ -49,7 +49,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
 
   //================================================= Inner Classes ==================================================
 
-  protected class TokenInfo {
+  protected static class TokenInfo {
 
     private String text;
     private String rawText;

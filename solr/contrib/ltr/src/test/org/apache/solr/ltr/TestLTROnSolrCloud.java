@@ -21,6 +21,7 @@ import java.util.SortedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -28,9 +29,11 @@ import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
+import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -51,9 +54,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     int numberOfShards = random().nextInt(4)+1;
     int numberOfReplicas = random().nextInt(2)+1;
-    int maxShardsPerNode = numberOfShards+random().nextInt(4)+1;
+    int maxShardsPerNode = random().nextInt(4)+1;
 
-    int numberOfNodes = numberOfShards * maxShardsPerNode;
+    int numberOfNodes = (numberOfShards*numberOfReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes, maxShardsPerNode);
 
@@ -65,8 +68,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void tearDown() throws Exception {
     restTestHarness.close();
     restTestHarness = null;
-    jetty.stop();
-    jetty = null;
     solrCluster.shutdown();
     super.tearDown();
   }
@@ -91,17 +92,79 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals("8", queryResponse.getResults().get(7).get("id").toString());
+
+    final Float original_result0_score = (Float)queryResponse.getResults().get(0).get("score");
+    final Float original_result1_score = (Float)queryResponse.getResults().get(1).get("score");
+    final Float original_result2_score = (Float)queryResponse.getResults().get(2).get("score");
+    final Float original_result3_score = (Float)queryResponse.getResults().get(3).get("score");
+    final Float original_result4_score = (Float)queryResponse.getResults().get(4).get("score");
+    final Float original_result5_score = (Float)queryResponse.getResults().get(5).get("score");
+    final Float original_result6_score = (Float)queryResponse.getResults().get(6).get("score");
+    final Float original_result7_score = (Float)queryResponse.getResults().get(7).get("score");
 
     final String result0_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","64.0", "c3","2.0");
+        "powpularityS","64.0", "c3","2.0", "original","0.0");
     final String result1_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","49.0", "c3","2.0");
+        "powpularityS","49.0", "c3","2.0", "original","1.0");
     final String result2_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","36.0", "c3","2.0");
+        "powpularityS","36.0", "c3","2.0", "original","2.0");
     final String result3_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","25.0", "c3","2.0");
+        "powpularityS","25.0", "c3","2.0", "original","3.0");
+    final String result4_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","16.0", "c3","2.0", "original","4.0");
+    final String result5_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "9.0", "c3","2.0", "original","5.0");
+    final String result6_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "4.0", "c3","2.0", "original","6.0");
+    final String result7_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "1.0", "c3","2.0", "original","7.0");
 
-    // Test re-rank and feature vectors returned
+
+    // Test feature vectors returned (without re-ranking)
+    query.setFields("*,score,features:[fv store=test]");
+    queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION,query);
+    assertEquals(8, queryResponse.getResults().getNumFound());
+    assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
+    assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
+    assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
+    assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals("8", queryResponse.getResults().get(7).get("id").toString());
+
+    assertEquals(original_result0_score, queryResponse.getResults().get(0).get("score"));
+    assertEquals(original_result1_score, queryResponse.getResults().get(1).get("score"));
+    assertEquals(original_result2_score, queryResponse.getResults().get(2).get("score"));
+    assertEquals(original_result3_score, queryResponse.getResults().get(3).get("score"));
+    assertEquals(original_result4_score, queryResponse.getResults().get(4).get("score"));
+    assertEquals(original_result5_score, queryResponse.getResults().get(5).get("score"));
+    assertEquals(original_result6_score, queryResponse.getResults().get(6).get("score"));
+    assertEquals(original_result7_score, queryResponse.getResults().get(7).get("score"));
+
+    assertEquals(result7_features,
+        queryResponse.getResults().get(0).get("features").toString());
+    assertEquals(result6_features,
+        queryResponse.getResults().get(1).get("features").toString());
+    assertEquals(result5_features,
+        queryResponse.getResults().get(2).get("features").toString());
+    assertEquals(result4_features,
+        queryResponse.getResults().get(3).get("features").toString());
+    assertEquals(result3_features,
+        queryResponse.getResults().get(4).get("features").toString());
+    assertEquals(result2_features,
+        queryResponse.getResults().get(5).get("features").toString());
+    assertEquals(result1_features,
+        queryResponse.getResults().get(6).get("features").toString());
+    assertEquals(result0_features,
+        queryResponse.getResults().get(7).get("features").toString());
+
+    // Test feature vectors returned (with re-ranking)
     query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
     queryResponse =
@@ -119,6 +182,18 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("5", queryResponse.getResults().get(3).get("id").toString());
     assertEquals(result3_features,
         queryResponse.getResults().get(3).get("features").toString());
+    assertEquals("4", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals(result4_features,
+        queryResponse.getResults().get(4).get("features").toString());
+    assertEquals("3", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals(result5_features,
+        queryResponse.getResults().get(5).get("features").toString());
+    assertEquals("2", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals(result6_features,
+        queryResponse.getResults().get(6).get("features").toString());
+    assertEquals("1", queryResponse.getResults().get(7).get("id").toString());
+    assertEquals(result7_features,
+        queryResponse.getResults().get(7).get("features").toString());
   }
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers, int maxShardsPerNode) throws Exception {
@@ -132,9 +207,13 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     createCollection(COLLECTION, "conf1", numShards, numReplicas, maxShardsPerNode);
     indexDocuments(COLLECTION);
-
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-            "/solr", true, extraServlets);
+    for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
+      if (!solrRunner.getCoreContainer().getCores().isEmpty()){
+        String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
+        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
+        break;
+      }
+    }
     loadModelsAndFeatures();
   }
 
@@ -178,25 +257,31 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
   private void loadModelsAndFeatures() throws Exception {
     final String featureStore = "test";
-    final String[] featureNames = new String[] {"powpularityS","c3"};
-    final String jsonModelParams = "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0}}";
+    final String[] featureNames = new String[] {"powpularityS","c3", "original"};
+    final String jsonModelParams = "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0,\"original\":0.1}}";
 
     loadFeature(
             featureNames[0],
-            SolrFeature.class.getCanonicalName(),
+            SolrFeature.class.getName(),
             featureStore,
             "{\"q\":\"{!func}pow(popularity,2)\"}"
     );
     loadFeature(
             featureNames[1],
-            ValueFeature.class.getCanonicalName(),
+            ValueFeature.class.getName(),
             featureStore,
             "{\"value\":2}"
+    );
+    loadFeature(
+            featureNames[2],
+            OriginalScoreFeature.class.getName(),
+            featureStore,
+            null
     );
 
     loadModel(
              "powpularityS-model",
-             LinearModel.class.getCanonicalName(),
+             LinearModel.class.getName(),
              featureNames,
              featureStore,
              jsonModelParams

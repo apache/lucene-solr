@@ -20,9 +20,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -42,26 +41,31 @@ final class GlobalOrdinalsQuery extends Query {
   // All the ords of matching docs found with OrdinalsCollector.
   private final LongBitSet foundOrds;
   private final String joinField;
-  private final MultiDocValues.OrdinalMap globalOrds;
+  private final OrdinalMap globalOrds;
   // Is also an approximation of the docs that will match. Can be all docs that have toField or something more specific.
   private final Query toQuery;
 
   // just for hashcode and equals:
   private final Query fromQuery;
-  private final IndexReader indexReader;
+  // id of the context rather than the context itself in order not to hold references to index readers
+  private final Object indexReaderContextId;
 
-  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReader indexReader) {
+  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, OrdinalMap globalOrds, Query toQuery,
+                      Query fromQuery, Object indexReaderContextId) {
     this.foundOrds = foundOrds;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
-    this.indexReader = indexReader;
+    this.indexReaderContextId = indexReaderContextId;
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+    if (searcher.getTopReaderContext().id() != indexReaderContextId) {
+      throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
+    }
+    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f), boost);
   }
 
   @Override
@@ -74,7 +78,7 @@ final class GlobalOrdinalsQuery extends Query {
     return fromQuery.equals(other.fromQuery) &&
            joinField.equals(other.joinField) &&
            toQuery.equals(other.toQuery) &&
-           indexReader.equals(other.indexReader);
+           indexReaderContextId.equals(other.indexReaderContextId);
   }
 
   @Override
@@ -83,7 +87,7 @@ final class GlobalOrdinalsQuery extends Query {
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
-    result = 31 * result + indexReader.hashCode();
+    result = 31 * result + indexReaderContextId.hashCode();
     return result;
   }
 
@@ -150,6 +154,14 @@ final class GlobalOrdinalsQuery extends Query {
       }
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      // disable caching because this query relies on a top reader context
+      // and holds a bitset of matching ordinals that cannot be accounted in
+      // the memory used by the cache
+      return false;
+    }
+
   }
 
   final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {
@@ -170,11 +182,7 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
+          if (values.advanceExact(approximation.docID())) {
             final long segmentOrd = values.ordValue();
             final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (foundOrds.get(globalOrd)) {
@@ -208,14 +216,8 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
-            if (foundOrds.get(values.ordValue())) {
-              return true;
-            }
+          if (values.advanceExact(approximation.docID()) && foundOrds.get(values.ordValue())) {
+            return true;
           }
           return false;
         }

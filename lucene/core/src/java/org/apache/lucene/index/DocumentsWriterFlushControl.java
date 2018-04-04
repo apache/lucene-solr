@@ -182,21 +182,27 @@ final class DocumentsWriterFlushControl implements Accountable {
           setFlushPending(perThread);
         }
       }
-      final DocumentsWriterPerThread flushingDWPT;
-      if (fullFlush) {
-        if (perThread.flushPending) {
-          checkoutAndBlock(perThread);
-          flushingDWPT = nextPendingFlush();
-        } else {
-          flushingDWPT = null;
-        }
-      } else {
-        flushingDWPT = tryCheckoutForFlush(perThread);
-      }
-      return flushingDWPT;
+      return checkout(perThread, false);
     } finally {
       boolean stalled = updateStallState();
       assert assertNumDocsSinceStalled(stalled) && assertMemory();
+    }
+  }
+
+  private DocumentsWriterPerThread checkout(ThreadState perThread, boolean markPending) {
+    if (fullFlush) {
+      if (perThread.flushPending) {
+        checkoutAndBlock(perThread);
+        return nextPendingFlush();
+      } else {
+        return null;
+      }
+    } else {
+      if (markPending) {
+        assert perThread.isFlushPending() == false;
+        setFlushPending(perThread);
+      }
+      return tryCheckoutForFlush(perThread);
     }
   }
   
@@ -424,22 +430,16 @@ final class DocumentsWriterFlushControl implements Accountable {
     };
   }
 
-  
-
   synchronized void doOnDelete() {
     // pass null this is a global delete no update
     flushPolicy.onDelete(this, null);
   }
 
-  /**
-   * Returns the number of delete terms in the global pool
-   */
-  public int getNumGlobalTermDeletes() {
-    return documentsWriter.deleteQueue.numGlobalTermDeletes() + bufferedUpdatesStream.numTerms();
-  }
-  
+  /** Returns heap bytes currently consumed by buffered deletes/updates that would be
+   *  freed if we pushed all deletes.  This does not include bytes consumed by
+   *  already pushed delete/update packets. */
   public long getDeleteBytesUsed() {
-    return documentsWriter.deleteQueue.ramBytesUsed() + bufferedUpdatesStream.ramBytesUsed();
+    return documentsWriter.deleteQueue.ramBytesUsed();
   }
 
   @Override
@@ -458,10 +458,6 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   public void setApplyAllDeletes() {
     flushDeletes.set(true);
-  }
-  
-  int numActiveDWPT() {
-    return this.perThreadPool.getActiveThreadStateCount();
   }
   
   ThreadState obtainAndLock() {
@@ -501,7 +497,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
       flushingQueue.maxSeqNo = seqNo+1;
 
-      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1, seqNo+1);
+      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation+1, seqNo+1);
 
       documentsWriter.deleteQueue = newQueue;
     }
@@ -640,20 +636,19 @@ final class DocumentsWriterFlushControl implements Accountable {
         try {
           documentsWriter.subtractFlushedNumDocs(dwpt.getNumDocsInRAM());
           dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the flush queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(dwpt);
         }
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
         try {
-          flushingWriters
-              .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
+          flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
           blockedFlush.dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the blocked queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(blockedFlush.dwpt);
         }
@@ -720,6 +715,58 @@ final class DocumentsWriterFlushControl implements Accountable {
   public InfoStream getInfoStream() {
     return infoStream;
   }
-  
-  
+
+  synchronized ThreadState findLargestNonPendingWriter() {
+    ThreadState maxRamUsingThreadState = null;
+    long maxRamSoFar = 0;
+    Iterator<ThreadState> activePerThreadsIterator = allActiveThreadStates();
+    int count = 0;
+    while (activePerThreadsIterator.hasNext()) {
+      ThreadState next = activePerThreadsIterator.next();
+      if (!next.flushPending) {
+        final long nextRam = next.bytesUsed;
+        if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
+          if (infoStream.isEnabled("FP")) {
+            infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.dwpt.getNumDocsInRAM());
+          }
+          count++;
+          if (nextRam > maxRamSoFar) {
+            maxRamSoFar = nextRam;
+            maxRamUsingThreadState = next;
+          }
+        }
+      }
+    }
+    if (infoStream.isEnabled("FP")) {
+      infoStream.message("FP", count + " in-use non-flushing threads states");
+    }
+    return maxRamUsingThreadState;
+  }
+
+  /**
+   * Returns the largest non-pending flushable DWPT or <code>null</code> if there is none.
+   */
+  final DocumentsWriterPerThread checkoutLargestNonPendingWriter() {
+    ThreadState largestNonPendingWriter = findLargestNonPendingWriter();
+    if (largestNonPendingWriter != null) {
+      // we only lock this very briefly to swap it's DWPT out - we don't go through the DWPTPool and it's free queue
+      largestNonPendingWriter.lock();
+      try {
+        synchronized (this) {
+          try {
+            if (largestNonPendingWriter.isInitialized() == false) {
+              return nextPendingFlush();
+            } else {
+              return checkout(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
+            }
+          } finally {
+            updateStallState();
+          }
+        }
+      } finally {
+        largestNonPendingWriter.unlock();
+      }
+    }
+    return null;
+  }
 }

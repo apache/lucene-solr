@@ -176,9 +176,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       Document nextDoc = lineFile.nextDoc();
       String title = nextDoc.getField("title").stringValue();
       int randomWeight = random().nextInt(100);
-      keys.add(new Input(title, randomWeight));
-      if (!mapping.containsKey(title) || mapping.get(title) < randomWeight) {
-          mapping.put(title, Long.valueOf(randomWeight));
+      int maxLen = Math.min(title.length(), 500);
+      String prefix = title.substring(0, maxLen);
+      keys.add(new Input(prefix, randomWeight));
+      if (!mapping.containsKey(prefix) || mapping.get(prefix) < randomWeight) {
+        mapping.put(prefix, Long.valueOf(randomWeight));
       }
     }
     Analyzer indexAnalyzer = new MockAnalyzer(random());
@@ -1109,6 +1111,66 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     IOUtils.close(a, tempDir);
   }
 
+  /**
+   * Adds 50 random keys, that all analyze to the same thing (dog), with the same cost,
+   * and checks that they come back in surface-form order.
+   */
+  public void testTieBreakOnSurfaceForm() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
+
+        return new TokenStreamComponents(tokenizer) {
+          @Override
+          public TokenStream getTokenStream() {
+            return new CannedTokenStream(new Token[] {
+                token("dog", 1, 1)
+              });
+          }
+          @Override
+          protected void setReader(final Reader reader) {
+          }
+        };
+      }
+    };
+
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
+
+    // make 50 inputs all with the same cost of 1, random strings
+    Input[] inputs = new Input[100];
+    for (int i = 0; i < inputs.length; i++) {
+      inputs[i] = new Input(TestUtil.randomSimpleString(random()), 1);
+    }
+
+    suggester.build(new InputArrayIterator(inputs));
+
+    // Try to save/load:
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
+    Path path = tmpDir.resolve("suggester");
+
+    OutputStream os = Files.newOutputStream(path);
+    suggester.store(os);
+    os.close();
+
+    InputStream is = Files.newInputStream(path);
+    suggester.load(is);
+    is.close();
+
+    // now suggest everything, and check that stuff comes back in order
+    List<LookupResult> results = suggester.lookup("", false, 50);
+    assertEquals(50, results.size());
+    for (int i = 1; i < 50; i++) {
+      String previous = results.get(i-1).toString();
+      String current = results.get(i).toString();
+      assertTrue("surface forms out of order: previous=" + previous + ",current=" + current,
+                 current.compareTo(previous) >= 0);
+    }
+
+    IOUtils.close(a, tempDir);
+  }
+
   public void test0ByteKeys() throws Exception {
     final Analyzer a = new Analyzer() {
         @Override
@@ -1252,10 +1314,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       suggester.build(new InputArrayIterator(new Input[] {
             new Input(bigString, 7)}));
       fail("did not hit expected exception");
-    } catch (StackOverflowError soe) {
-      // OK
     } catch (IllegalArgumentException iae) {
       // expected
+      assertTrue(iae.getMessage().contains("input automaton is too large"));
     }
     IOUtils.close(a, tempDir);
   }

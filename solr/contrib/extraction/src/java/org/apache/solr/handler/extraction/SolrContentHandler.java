@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.NumberType;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
@@ -252,15 +252,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       vals=null;
     }
 
-    float boost = getBoost(name);
-
     if (fval != null) {
-      document.addField(name, transformValue(fval, sf), boost);
+      document.addField(name, transformValue(fval, sf));
     }
 
     if (vals != null) {
       for (String val : vals) {
-        document.addField(name, transformValue(val, sf), boost);
+        document.addField(name, transformValue(val, sf));
       }
     }
 
@@ -323,7 +321,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected String transformValue(String val, SchemaField schFld) {
     String result = val;
-    if (schFld != null && schFld.getType() instanceof TrieDateField) {
+    if (schFld != null && NumberType.DATE.equals(schFld.getType().getNumberType())) {
       //try to transform the date
       try {
         Date date = ExtractionDateUtil.parseDate(val, dateFormats); // may throw
@@ -334,17 +332,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       }
     }
     return result;
-  }
-
-
-  /**
-   * Get the value of any boost factor for the mapped name.
-   *
-   * @param name The name of the field to see if there is a boost specified
-   * @return The boost value
-   */
-  protected float getBoost(String name) {
-    return params.getFloat(BOOST_PREFIX + name, 1.0f);
   }
 
   /**

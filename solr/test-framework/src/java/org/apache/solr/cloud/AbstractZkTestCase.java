@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -97,7 +99,9 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/control_collection", Utils.toJSON(zkProps), CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
-
+    // this workaround is acceptable until we remove legacyCloud because we just init a single core here
+    String defaultClusterProps = "{\""+ZkStateReader.LEGACY_CLOUD+"\":\"true\"}";
+    zkClient.makePath(ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", zkClient, solrhome, config, "solrconfig.xml");
     putConfig("conf1", zkClient, solrhome, schema, "schema.xml");

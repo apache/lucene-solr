@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -118,5 +119,17 @@ public class RequestHandlerUtils
       return true;
     }
     return false;
+  }
+
+  /**
+   * @since 6.7
+   */
+  public static void setWt(SolrQueryRequest req, String wt) {
+    SolrParams params = req.getParams();
+    if (params.get(CommonParams.WT) != null) return;//wt is set by user
+    Map<String, String> map = new HashMap<>(1);
+    map.put(CommonParams.WT, wt);
+    map.put("indent", "true");
+    req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
   }
 }

@@ -41,8 +41,8 @@ public class ExternalPaths {
   /* @see #SOURCE_HOME */
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
   /* @see #SOURCE_HOME */
-  public static String SCHEMALESS_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/data_driven_schema_configs/conf").getAbsolutePath();
+  public static String DEFAULT_CONFIGSET =
+      new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
   public static String TECHPRODUCTS_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf").getAbsolutePath();
 
@@ -59,7 +59,7 @@ public class ExternalPaths {
       try {
         file = new File("solr/conf");
         if (!file.exists()) {
-          file = new File(Thread.currentThread().getContextClassLoader().getResource("solr/conf").toURI());
+          file = new File(ExternalPaths.class.getClassLoader().getResource("solr/conf").toURI());
         }
       } catch (Exception e) {
         // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.

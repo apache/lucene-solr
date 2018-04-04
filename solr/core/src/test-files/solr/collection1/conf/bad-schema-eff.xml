@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<schema name="example" version="1.6">
+
+
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+  <field name="eff" type="eff"/>
+
+
+  <!-- Field to use to determine and enforce document uniqueness. 
+       Unless this field is marked with required="false", it will be a required field
+    -->
+  <uniqueKey>id</uniqueKey>
+
+
+  <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <field name="keyfield" type="pint" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  
+  <!-- Our external file field type -->
+  <!-- Begin bad stuff: keyfield is points-based -->
+  <fieldType name="eff" class="solr.ExternalFileField" keyField="keyfield"/>
+  <!-- End bad stuff -->
+
+</schema>

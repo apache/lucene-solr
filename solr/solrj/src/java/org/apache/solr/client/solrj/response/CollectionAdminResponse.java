@@ -16,9 +16,12 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.util.NamedList;
 
 public class CollectionAdminResponse extends SolrResponseBase
@@ -32,6 +35,11 @@ public class CollectionAdminResponse extends SolrResponseBase
   public boolean isSuccess()
   {
     return getResponse().get( "success" ) != null;
+  }
+
+  public String getWarning()
+  {
+    return (String) getResponse().get( "warning" );
   }
 
   // this messages are typically from individual nodes, since
@@ -58,6 +66,21 @@ public class CollectionAdminResponse extends SolrResponseBase
     }
 
     return res;
+  }
+
+  @SuppressWarnings("unchecked")
+  public Map<String, String> getAliases()
+  {
+    NamedList<Object> response = getResponse();
+    if (response.get("aliases") != null) {
+      return ((Map<String, String>)response.get("aliases"));
+    }
+    return Collections.emptyMap();
+  }
+
+  public Map<String, List<String>> getAliasesAsLists() {
+    // TODO we compute on each call... should this be done once & cached?
+    return Aliases.convertMapOfCommaDelimitedToMapOfList(getAliases());
   }
 
   @SuppressWarnings("unchecked")

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -89,7 +88,7 @@ public class SpellingQueryConverter extends QueryConverter  {
     NMTOKEN = "([" + sb.toString() + "]|" + SURROGATE_PAIR + ")+";
   }
 
-  final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|[\\^.]\\d+)))[^^.\\s][\\p{L}_\\-0-9]+";
+  final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|[\\^.]\\d+)))[^^.:(\\s][\\p{L}_\\-0-9]+";
   // previous version: Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
   protected Pattern QUERY_REGEX = Pattern.compile(PATTERN);
   

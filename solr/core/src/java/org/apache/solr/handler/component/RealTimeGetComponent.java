@@ -16,15 +16,19 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,6 +42,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -71,15 +76,17 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +109,21 @@ public class RealTimeGetComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
+    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
 
+    if (cloudDesc != null) {
+      Replica.Type replicaType = cloudDesc.getReplicaType();
+      if (replicaType != null) {
+        if (replicaType == Replica.Type.PULL) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, 
+              String.format(Locale.ROOT, "%s can't handle realtime get requests. Replicas of type %s do not support these type of requests", 
+                  cloudDesc.getCoreNodeName(),
+                  Replica.Type.PULL));
+        } 
+        // non-leader TLOG replicas should not respond to distrib /get requests, but internal requests are OK
+      }
+    }
+    
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
@@ -136,7 +157,7 @@ public class RealTimeGetComponent extends SearchComponent
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            log.debug(req.getCore().getCoreDescriptor()
+            log.debug(req.getCore()
                 .getCoreContainer().getZkController().getNodeName()
                 + " min count to sync to (from most recent searcher view) "
                 + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -235,7 +256,11 @@ public class RealTimeGetComponent extends SearchComponent
                if (oper == UpdateLog.ADD) {
                  doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                } else if (oper == UpdateLog.UPDATE_INPLACE) {
-                 assert entry.size() == 5;
+                 if (ulog instanceof CdcrUpdateLog) {
+                   assert entry.size() == 6;
+                 } else {
+                   assert entry.size() == 5;
+                 }
                  // For in-place update case, we have obtained the partial document till now. We need to
                  // resolve it to a full document to be returned to the user.
                  doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry, null);
@@ -246,7 +271,7 @@ public class RealTimeGetComponent extends SearchComponent
                  throw new SolrException(ErrorCode.INVALID_STATE, "Expected ADD or UPDATE_INPLACE. Got: " + oper);
                }
                if (transformer!=null) {
-                 transformer.transform(doc, -1, 0); // unknown docID
+                 transformer.transform(doc, -1); // unknown docID
                }
               docList.add(doc);
               break;
@@ -273,7 +298,7 @@ public class RealTimeGetComponent extends SearchComponent
          if (rb.getFilters() != null) {
            for (Query raw : rb.getFilters()) {
              Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
-             Scorer scorer = searcherInfo.getSearcher().createWeight(q, false, 1f).scorer(ctx);
+             Scorer scorer = searcherInfo.getSearcher().createWeight(q, ScoreMode.COMPLETE_NO_SCORES, 1f).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
                docid = -1;
@@ -287,14 +312,15 @@ public class RealTimeGetComponent extends SearchComponent
        
        Document luceneDocument = searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
-       searcherInfo.getSearcher().decorateDocValueFields(doc, docid, searcherInfo.getSearcher().getNonStoredDVs(true));
+       SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
+       docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
        if ( null != transformer) {
          if (null == resultContext) {
            // either first pass, or we've re-opened searcher - either way now we setContext
            resultContext = new RTGResultContext(rsp.getReturnFields(), searcherInfo.getSearcher(), req);
            transformer.setContext(resultContext);
          }
-         transformer.transform(doc, docid, 0);
+         transformer.transform(doc, docid);
        }
        docList.add(doc);
      }
@@ -374,7 +400,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
                                            ReturnFields returnFields, SolrInputDocument partialDoc, List logEntry, Set<String> onlyTheseFields) throws IOException {
-    if (idBytes == null || logEntry.size() != 5) {
+    if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
     }
     long prevPointer = (long) logEntry.get(UpdateLog.PREV_POINTER_IDX);
@@ -420,7 +446,8 @@ public class RealTimeGetComponent extends SearchComponent
       }
       Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
       SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      searcher.decorateDocValueFields(doc, docid, searcher.getNonStoredDVs(false));
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+      docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(false));
 
       return doc;
     } finally {
@@ -468,19 +495,19 @@ public class RealTimeGetComponent extends SearchComponent
       }
 
       SolrDocument doc;
-      Set<String> decorateFields = onlyTheseFields == null ? searcher.getNonStoredDVs(false): onlyTheseFields; 
+      Set<String> decorateFields = onlyTheseFields == null ? searcher.getDocFetcher().getNonStoredDVs(false): onlyTheseFields;
       Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
       doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      searcher.decorateDocValueFields(doc, docid, decorateFields);
+      searcher.getDocFetcher().decorateDocValueFields(doc, docid, decorateFields);
 
-      long docVersion = (long) doc.getFirstValue(DistributedUpdateProcessor.VERSION_FIELD);
-      Object partialVersionObj = partialDoc.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD);
+      long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
+      Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
       long partialDocVersion = partialVersionObj instanceof Field? ((Field) partialVersionObj).numericValue().longValue():
         partialVersionObj instanceof Number? ((Number) partialVersionObj).longValue(): Long.parseLong(partialVersionObj.toString());
       if (docVersion > partialDocVersion) {
         return doc;
       }
-      for (String fieldName: (Iterable<String>) partialDoc.getFieldNames()) {
+      for (String fieldName: partialDoc.getFieldNames()) {
         doc.setField(fieldName.toString(), partialDoc.getFieldValue(fieldName));  // since partial doc will only contain single valued fields, this is fine
       }
 
@@ -519,7 +546,11 @@ public class RealTimeGetComponent extends SearchComponent
         }
         switch (oper) {
           case UpdateLog.UPDATE_INPLACE:
-            assert entry.size() == 5;
+            if (ulog instanceof CdcrUpdateLog) {
+              assert entry.size() == 6;
+            } else {
+              assert entry.size() == 5;
+            }
 
             if (resolveFullDocument) {
               SolrInputDocument doc = (SolrInputDocument)entry.get(entry.size()-1);
@@ -601,17 +632,18 @@ public class RealTimeGetComponent extends SearchComponent
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
-        
+
+        SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
         if (avoidRetrievingStoredFields) {
           sid = new SolrInputDocument();
         } else {
-          Document luceneDocument = searcher.doc(docid);
+          Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
         }
         if (onlyTheseNonStoredDVs != null) {
-          searcher.decorateDocValueFields(sid, docid, onlyTheseNonStoredDVs);
+          docFetcher.decorateDocValueFields(sid, docid, onlyTheseNonStoredDVs);
         } else {
-          searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVsWithoutCopyTargets());
+          docFetcher.decorateDocValueFields(sid, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
         }
       }
     } finally {
@@ -621,8 +653,8 @@ public class RealTimeGetComponent extends SearchComponent
     }
 
     if (versionReturned != null) {
-      if (sid.containsKey(DistributedUpdateProcessor.VERSION_FIELD)) {
-        versionReturned.set((long)sid.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD));
+      if (sid.containsKey(VERSION_FIELD)) {
+        versionReturned.set((long)sid.getFieldValue(VERSION_FIELD));
       }
     }
     return sid;
@@ -690,21 +722,49 @@ public class RealTimeGetComponent extends SearchComponent
           List<Object> vals = new ArrayList<>();
           if (f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
             // SORTED_NUMERICS store sortable bits version of the value, need to retrieve the original
-            vals.add(sf.getType().toObject(f));
+            vals.add(sf.getType().toObject(f)); // (will materialize by side-effect)
           } else {
-            vals.add( f );
+            vals.add( materialize(f) );
           }
           out.setField( f.name(), vals );
         }
         else{
-          out.setField( f.name(), f );
+          out.setField( f.name(), materialize(f) );
         }
       }
       else {
-        out.addField( f.name(), f );
+        out.addField( f.name(), materialize(f) );
       }
     }
     return out;
+  }
+
+  /**
+   * Ensure we don't have {@link org.apache.lucene.document.LazyDocument.LazyField} or equivalent.
+   * It can pose problems if the searcher is about to be closed and we haven't fetched a value yet.
+   */
+  private static IndexableField materialize(IndexableField in) {
+    if (in instanceof Field) { // already materialized
+      return in;
+    }
+    return new ClonedField(in);
+  }
+
+  private static class ClonedField extends Field { // TODO Lucene Field has no copy constructor; maybe it should?
+    ClonedField(IndexableField in) {
+      super(in.name(), in.fieldType());
+      this.fieldsData = in.numericValue();
+      if (this.fieldsData == null) {
+        this.fieldsData = in.binaryValue();
+        if (this.fieldsData == null) {
+          this.fieldsData = in.stringValue();
+          if (this.fieldsData == null) {
+            // fallback:
+            assert false : in; // unexpected
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -726,7 +786,7 @@ public class RealTimeGetComponent extends SearchComponent
           out.add(f);
         }
       } else {
-        log.debug("Don't know how to handle field " + f);
+        log.debug("Don't know how to handle field {}", f);
       }
     }
 
@@ -754,7 +814,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
@@ -810,10 +870,10 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: how to avoid hardcoding this and hit the same handler?
     sreq.params.set(ShardParams.SHARDS_QT,"/get");      
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
 
     sreq.params.remove(ShardParams.SHARDS);
-    sreq.params.remove("id");
+    sreq.params.remove(ID);
     sreq.params.remove("ids");
     sreq.params.set("ids", StrUtils.join(ids, ','));
     
@@ -892,7 +952,7 @@ public class RealTimeGetComponent extends SearchComponent
                                                                                                
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -905,18 +965,16 @@ public class RealTimeGetComponent extends SearchComponent
     return Category.QUERY;
   }
 
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  
-  
   public void processGetFingeprint(ResponseBuilder rb) throws IOException {
+    TestInjection.injectFailIndexFingerprintRequests();
+
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
-    
+
     long maxVersion = params.getLong("getFingerprint", Long.MAX_VALUE);
+    if (TestInjection.injectWrongIndexFingerprint())  {
+      maxVersion = -1;
+    }
     IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersion));
     rb.rsp.add("fingerprint", fingerprint);
   }
@@ -1118,7 +1176,7 @@ public class RealTimeGetComponent extends SearchComponent
         return (IdsRequsted)req.getContext().get(contextKey);
       }
       final SolrParams params = req.getParams();
-      final String id[] = params.getParams("id");
+      final String id[] = params.getParams(ID);
       final String ids[] = params.getParams("ids");
       
       if (id == null && ids == null) {

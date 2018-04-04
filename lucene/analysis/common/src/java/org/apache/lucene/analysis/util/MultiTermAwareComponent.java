@@ -21,6 +21,11 @@ package org.apache.lucene.analysis.util;
  * analysis component factory for use with partial terms in prefix queries,
  * wildcard queries, range query endpoints, regex queries, etc.
  *
+ * Components implementing this interface should not add or remove tokens from
+ * the token stream, and should be able to deal with special characters
+ * indicating that multi-term queries are required (eg slashes for regex, wildcard
+ * characters, etc)
+ *
  * @lucene.experimental
  */
 public interface MultiTermAwareComponent {

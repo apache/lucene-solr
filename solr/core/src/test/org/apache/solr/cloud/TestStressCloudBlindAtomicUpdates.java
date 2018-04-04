@@ -56,6 +56,7 @@ import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,9 +138,11 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
+    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
+
     // sanity check no one broke the assumptions we make about our schema
     checkExpectedSchemaType( map("name","long",
-                                 "class","solr.TrieLongField",
+                                 "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Long.class),
                                  "multiValued",Boolean.FALSE,
                                  "indexed",Boolean.FALSE,
                                  "stored",Boolean.FALSE,
@@ -182,6 +185,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(map("name", field,
@@ -192,6 +197,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     checkField(field);
   }
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv_stored() throws Exception {
     String field = "long_dv_stored";
     checkExpectedSchemaField(map("name", field,
@@ -437,13 +444,13 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   
   public static SolrInputField f(String fieldName, Object... values) {
     SolrInputField f = new SolrInputField(fieldName);
-    f.setValue(values, 1.0F);
+    f.setValue(values);
     // TODO: soooooooooo stupid (but currently neccessary because atomic updates freak out
     // if the Map with the "inc" operation is inside of a collection - even if it's the only "value") ...
     if (1 == values.length) {
-      f.setValue(values[0], 1.0F);
+      f.setValue(values[0]);
     } else {
-      f.setValue(values, 1.0F);
+      f.setValue(values);
     }
     return f;
   }

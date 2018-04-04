@@ -34,8 +34,8 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
     assertQ("term query: ",
        req("fl", "id", "q", "nopositionstext:test"),
               "//*[@numFound='2']",
-              "//result/doc[1]/int[@name='id'][.=2]",
-              "//result/doc[2]/int[@name='id'][.=1]"
+              "//result/doc[1]/str[@name='id'][.=2]",
+              "//result/doc[2]/str[@name='id'][.=1]"
     );
   }
   

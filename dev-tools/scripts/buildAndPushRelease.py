@@ -22,6 +22,8 @@ import os
 import sys
 import subprocess
 import textwrap
+import urllib.request, urllib.error, urllib.parse
+import xml.etree.ElementTree as ET
 
 LOG = '/tmp/release.log'
 
@@ -51,15 +53,28 @@ def runAndSendGPGPassword(command, password):
       p.stdin.write((password + '\n').encode('UTF-8'))
       p.stdin.write('\n'.encode('UTF-8'))
 
-  result = p.poll()
-  if result != 0:
-    msg = '    FAILED: %s [see log %s]' % (command, LOG)
+  try:
+    result = p.wait(timeout=120)
+    if result != 0:
+      msg = '    FAILED: %s [see log %s]' % (command, LOG)
+      print(msg)
+      raise RuntimeError(msg)
+  except TimeoutExpired:
+    msg = '    FAILED: %s [timed out after 2 minutes; see log %s]' % (command, LOG)
     print(msg)
     raise RuntimeError(msg)
 
+def load(urlString):
+  try:
+    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+  except Exception as e:
+    print('Retrying download of url %s after exception: %s' % (urlString, e))
+    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+  return content
+
 def getGitRev():
   status = os.popen('git status').read().strip()
-  if 'nothing to commit, working directory clean' not in status:
+  if 'nothing to commit, working directory clean' not in status and 'nothing to commit, working tree clean' not in status:
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
   command = 'git log origin/%s..' % branch
@@ -84,8 +99,11 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  git rev: %s' % rev)
   log('\nGIT rev: %s\n' % rev)
 
-  print('  ant clean test')
-  run('ant clean test')
+  print('  Check DOAP files')
+  checkDOAPfiles(version)
+
+  print('  ant clean test validate documentation-lint')
+  run('ant clean test validate documentation-lint')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
@@ -118,6 +136,57 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  done!')
   print()
   return rev
+
+reVersion1 = re.compile(r'\>(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?/\<', re.IGNORECASE)
+reVersion2 = re.compile(r'-(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?\.zip<', re.IGNORECASE)
+reDoapRevision = re.compile(r'(\d+)\.(\d+)(?:\.(\d+))?(-alpha|-beta)?', re.IGNORECASE)
+def checkDOAPfiles(version):
+  # In Lucene and Solr DOAP files, verify presence of all releases less than the one being produced.
+  errorMessages = []
+  for product in 'lucene', 'solr':
+    url = 'https://archive.apache.org/dist/lucene/%s' % ('java' if product == 'lucene' else product)
+    distpage = load(url)
+    releases = set()
+    for regex in reVersion1, reVersion2:
+      for tup in regex.findall(distpage):
+        if tup[0] in ('1', '2'):                    # Ignore 1.X and 2.X releases
+          continue
+        releases.add(normalizeVersion(tup))
+    doapNS = '{http://usefulinc.com/ns/doap#}'
+    xpathRevision = '{0}Project/{0}release/{0}Version/{0}revision'.format(doapNS)
+    doapFile = "dev-tools/doap/%s.rdf" % product
+    treeRoot = ET.parse(doapFile).getroot()
+    doapRevisions = set()
+    for revision in treeRoot.findall(xpathRevision):
+      match = reDoapRevision.match(revision.text)
+      if (match is not None):
+        if (match.group(1) not in ('0', '1', '2')): # Ignore 0.X, 1.X and 2.X revisions
+          doapRevisions.add(normalizeVersion(match.groups()))
+      else:
+        errorMessages.append('ERROR: Failed to parse revision: %s in %s' % (revision.text, doapFile))
+    missingDoapRevisions = set()
+    for release in releases:
+      if release not in doapRevisions and release < version: # Ignore releases greater than the one being produced
+        missingDoapRevisions.add(release)
+    if len(missingDoapRevisions) > 0:
+      errorMessages.append('ERROR: Missing revision(s) in %s: %s' % (doapFile, ', '.join(sorted(missingDoapRevisions))))
+  if (len(errorMessages) > 0):
+    raise RuntimeError('\n%s\n(Hint: copy/paste from the stable branch version of the file(s).)'
+                       % '\n'.join(errorMessages))
+
+def normalizeVersion(tup):
+  suffix = ''
+  if tup[-1] is not None and tup[-1].lower() == '-alpha':
+    tup = tup[:(len(tup) - 1)]
+    suffix = '-ALPHA'
+  elif tup[-1] is not None and tup[-1].lower() == '-beta':
+    tup = tup[:(len(tup) - 1)]
+    suffix = '-BETA'
+  while tup[-1] in ('', None):
+    tup = tup[:(len(tup) - 1)]
+  while len(tup) < 3:
+    tup = tup + ('0',)
+  return '.'.join(tup) + suffix
 
 def pushLocal(version, root, rev, rcNum, localDir):
   print('Push local [%s]...' % localDir)
@@ -217,9 +286,17 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
+  check_ant()
+
+def check_ant():
   antVersion = os.popen('ant -version').read().strip()
-  if not antVersion.startswith('Apache Ant(TM) version 1.8') and not antVersion.startswith('Apache Ant(TM) version 1.9'):
-    raise RuntimeError('ant version is not 1.8.X: "%s"' % antVersion)
+  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
+    return
+  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
   
 def main():
   check_cmdline_tools()
@@ -229,7 +306,7 @@ def main():
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:
-    os.chdir(root)
+    os.chdir(c.root)
     rev = open('rev.txt', encoding='UTF-8').read()
 
   if c.push_local:

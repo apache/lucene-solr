@@ -62,9 +62,9 @@
  * </ul>
  * 
  * <p>The implementation is two-pass: the first pass ({@link
- *   org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector})
+ *   org.apache.lucene.search.grouping.FirstPassGroupingCollector})
  *   gathers the top groups, and the second pass ({@link
- *   org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector})
+ *   org.apache.lucene.search.grouping.SecondPassGroupingCollector})
  *   gathers documents within those groups.  If the search is costly to
  *   run you may want to use the {@link
  *   org.apache.lucene.search.CachingCollector} class, which
@@ -73,18 +73,17 @@
  *   hold all hits.  Results are returned as a {@link
  *   org.apache.lucene.search.grouping.TopGroups} instance.</p>
  * 
- * <p>
- *   This module abstracts away what defines group and how it is collected. All grouping collectors
- *   are abstract and have currently term based implementations. One can implement
- *   collectors that for example group on multiple fields.
- * </p>
+ * <p>Groups are defined by {@link org.apache.lucene.search.grouping.GroupSelector}
+ *   implementations:</p>
+ *   <ul>
+ *     <li>{@link org.apache.lucene.search.grouping.TermGroupSelector} groups based on
+ *     the value of a {@link org.apache.lucene.index.SortedDocValues} field</li>
+ *     <li>{@link org.apache.lucene.search.grouping.ValueSourceGroupSelector} groups based on
+ *     the value of a {@link org.apache.lucene.queries.function.ValueSource}</li>
+ *   </ul>
  * 
  * <p>Known limitations:</p>
  * <ul>
- *   <li> For the two-pass grouping search, the group field must be a
- *     indexed as a {@link org.apache.lucene.document.SortedDocValuesField}).
- *   <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
- *     implementations for grouping based on terms.
  *   <li> Sharding is not directly supported, though is not too
  *     difficult, if you can merge the top groups and top documents per
  *     group yourself.
@@ -174,14 +173,15 @@
  * have to separately retrieve it (for example using stored
  * fields, <code>FieldCache</code>, etc.).
  * 
- * <p>Another collector is the <code>TermAllGroupHeadsCollector</code> that can be used to retrieve all most relevant
+ * <p>Another collector is the <code>AllGroupHeadsCollector</code> that can be used to retrieve all most relevant
  *    documents per group. Also known as group heads. This can be useful in situations when one wants to compute group
  *    based facets / statistics on the complete query result. The collector can be executed during the first or second
  *    phase. This collector can also be used with the <code>GroupingSearch</code> convenience utility, but when if one only
  *    wants to compute the most relevant documents per group it is better to just use the collector as done here below.</p>
  * 
  * <pre class="prettyprint">
- *   AbstractAllGroupHeadsCollector c = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+ *   TermGroupSelector grouper = new TermGroupSelector(groupField);
+ *   AllGroupHeadsCollector c = AllGroupHeadsCollector.newCollector(grouper, sortWithinGroup);
  *   s.search(new TermQuery(new Term("content", searchTerm)), c);
  *   // Return all group heads as int array
  *   int[] groupHeadsArray = c.retrieveGroupHeads()
@@ -189,12 +189,6 @@
  *   int maxDoc = s.maxDoc();
  *   FixedBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
  * </pre>
- * 
- * <p>For each of the above collector types there is also a variant that works with <code>ValueSource</code> instead of
- *    of fields. Concretely this means that these variants can work with functions. These variants are slower than
- *    there term based counter parts. These implementations are located in the
- *    <code>org.apache.lucene.search.grouping.function</code> package, but can also be used with the
- *   <code>GroupingSearch</code> convenience utility
- * </p>
+ *
  */
 package org.apache.lucene.search.grouping;

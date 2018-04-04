@@ -28,6 +28,21 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
+  String ROLE = "role";
+
+  /** Predefined system collection name. */
+  String SYSTEM_COLL = ".system";
+
+  /**
+   * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore operation).
+   */
+  public static final String CREATE_NODE_SET_PARAM = "createNodeSet";
+
+  /**
+   * A parameter which specifies if the provided list of Solr nodes (via {@linkplain #CREATE_NODE_SET_PARAM})
+   * should be shuffled before being used.
+   */
+  public static final String CREATE_NODE_SET_SHUFFLE_PARAM = "createNodeSet.shuffle";
 
   /**
    * A parameter to specify the name of the index backup strategy to be used.
@@ -50,4 +65,13 @@ public interface CollectionAdminParams {
   public static final Collection<String> INDEX_BACKUP_STRATEGIES =
       Arrays.asList(COPY_FILES_STRATEGY, NO_INDEX_BACKUP_STRATEGY);
 
+  /**
+   * Name of collection property to set
+   */
+  public static final String PROPERTY_NAME = "propertyName";
+
+  /**
+   * Value of collection property to set
+   */
+  public static final String PROPERTY_VALUE = "propertyValue";
 }

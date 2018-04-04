@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.Slf4jReporter;
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +40,15 @@ import org.slf4j.LoggerFactory;
  *   metrics group, eg. <code>solr.jvm</code></li>
  * </ul>
  */
-public class SolrSlf4jReporter extends SolrMetricReporter {
-  // we need this to pass validate-source-patterns
+public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
+
+  @SuppressWarnings("unused") // we need this to pass validate-source-patterns
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private int period = 60;
   private String instancePrefix = null;
   private String logger = null;
-  private String filterPrefix = null;
   private Slf4jReporter reporter;
+  private boolean active;
 
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
@@ -65,23 +65,12 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     this.instancePrefix = prefix;
   }
 
-  public void setFilter(String filter) {
-    this.filterPrefix = filter;
-  }
-
   public void setLogger(String logger) {
     this.logger = logger;
   }
 
-  public void setPeriod(int period) {
-    this.period = period;
-  }
-
   @Override
-  protected void validate() throws IllegalStateException {
-    if (period < 1) {
-      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
-    }
+  protected void doInit() {
     if (instancePrefix == null) {
       instancePrefix = registryName;
     } else {
@@ -92,12 +81,7 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS);
 
-    MetricFilter filter;
-    if (filterPrefix != null) {
-      filter = new SolrMetricManager.PrefixFilter(filterPrefix);
-    } else {
-      filter = MetricFilter.ALL;
-    }
+    final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     if (logger == null || logger.isEmpty()) {
       // construct logger name from Group
@@ -116,6 +100,14 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     builder = builder.outputTo(LoggerFactory.getLogger(logger));
     reporter = builder.build();
     reporter.start(period, TimeUnit.SECONDS);
+    active = true;
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    if (period < 1) {
+      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+    }
   }
 
   @Override
@@ -123,5 +115,11 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     if (reporter != null) {
       reporter.close();
     }
+    active = false;
+  }
+
+  // for unit tests
+  boolean isActive() {
+    return active;
   }
 }

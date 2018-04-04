@@ -34,8 +34,8 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * A generic processor run in the Overseer, used for handling items added
@@ -90,7 +91,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private boolean isClosed;
 
-  private Overseer.Stats stats;
+  private Stats stats;
 
   // Set of tasks that have been picked up for processing but not cleaned up from zk work-queue.
   // It may contain tasks that have completed execution, have been entered into the completed/failed map in zk but not
@@ -121,7 +122,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private OverseerNodePrioritizer prioritizer;
 
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
-                                        Overseer.Stats stats,
+                                        Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
                                         OverseerTaskQueue workQueue,
@@ -256,7 +257,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             }
             if (runningZKTasks.contains(head.getId())) continue;
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
             final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue))
@@ -268,6 +268,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               }
             }
             String operation = message.getStr(Overseer.QUEUE_OPERATION);
+            if (operation == null) {
+              log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+              workQueue.remove(head);
+              continue;
+            }
+            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
             if (lock == null) {
               log.debug("Exclusivity check failed for [{}]", message.toString());
@@ -337,7 +343,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zk.getChildren(OverseerElectionContext.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
+      children = zk.getChildren(Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
     } catch (Exception e) {
       log.warn("error ", e);
       return new ArrayList<>();
@@ -370,12 +376,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static String getLeaderId(SolrZkClient zkClient) throws KeeperException,InterruptedException{
     byte[] data = null;
     try {
-      data = zkClient.getData(OverseerElectionContext.OVERSEER_ELECT + "/leader", null, new Stat(), true);
+      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat(), true);
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
     Map m = (Map) Utils.fromJSON(data);
-    return  (String) m.get("id");
+    return  (String) m.get(ID);
   }
 
   protected LeaderStatus amILeader() {
@@ -384,8 +390,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     boolean success = true;
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
-          OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
-      if (myId.equals(props.getStr("id"))) {
+          Overseer.OVERSEER_ELECT + "/leader", null, null, true));
+      if (myId.equals(props.getStr(ID))) {
         return LeaderStatus.YES;
       }
     } catch (KeeperException e) {

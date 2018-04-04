@@ -31,7 +31,7 @@
   <field name="long_stored_idx"  type="long" indexed="true" stored="true"  docValues="false" />
 
   <fieldType name="string" class="solr.StrField" multiValued="false" indexed="false" stored="false" docValues="false" />
-  <fieldType name="long" class="solr.TrieLongField" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
 
   <!-- unused, but play nice with existing solrconfig so we don't have to create a new one just for this test -->
   <dynamicField name="*" type="string" indexed="true" stored="true" />

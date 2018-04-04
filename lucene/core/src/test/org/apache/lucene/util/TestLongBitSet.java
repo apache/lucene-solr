@@ -218,7 +218,23 @@ public class TestLongBitSet extends LuceneTestCase {
         assertEquals(b1.hashCode(), b2.hashCode());
       }
     }
-  } 
+  }
+
+  public void testTooLarge() {
+    Exception e = expectThrows(IllegalArgumentException.class,
+                               () -> {
+                                 new LongBitSet(LongBitSet.MAX_NUM_BITS + 1);
+                               });
+    assertTrue(e.getMessage().startsWith("numBits must be 0 .. "));
+  }
+
+  public void testNegativeNumBits() {
+    Exception e = expectThrows(IllegalArgumentException.class,
+                               () -> {
+                                 new LongBitSet(-17);
+                               });
+    assertTrue(e.getMessage().startsWith("numBits must be 0 .. "));
+  }
 
   public void testSmallBitSets() {
     // Make sure size 0-10 bit sets are OK:
@@ -344,7 +360,9 @@ public class TestLongBitSet extends LuceneTestCase {
     // ...
     assertEquals(1 << (32-6), LongBitSet.bits2words(1L << 32));
     assertEquals((1 << (32-6)) + 1, LongBitSet.bits2words((1L << 32)) + 1);
-    // ...
-    assertEquals(Integer.MAX_VALUE, LongBitSet.bits2words((1L << 37) - 64));
+
+    // ensure the claimed max num_bits doesn't throw exc; we can't enforce exact values here
+    // because the value variees with JVM:
+    assertTrue(LongBitSet.bits2words(LongBitSet.MAX_NUM_BITS) > 0);
   }
 }

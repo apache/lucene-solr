@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  * <p>
  * The {@code consumeAllTokens} property is optional and defaults to {@code false}.
+ * @since 5.2.0
  */
 public class LimitTokenOffsetFilterFactory extends TokenFilterFactory {
 

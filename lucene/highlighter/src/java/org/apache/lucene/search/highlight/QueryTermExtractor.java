@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 
 /**
  * Utility class used to extract the terms used in a query, plus any weights.
@@ -128,7 +129,7 @@ public final class QueryTermExtractor
       else {
         HashSet<Term> nonWeightedTerms = new HashSet<>();
         try {
-          EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(nonWeightedTerms);
+          EMPTY_INDEXSEARCHER.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES).extractTerms(nonWeightedTerms);
         } catch (IOException bogus) {
           throw new RuntimeException("Should not happen on an empty index", bogus);
         }

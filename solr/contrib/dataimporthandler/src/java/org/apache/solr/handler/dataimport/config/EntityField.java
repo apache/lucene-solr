@@ -30,7 +30,6 @@ import org.w3c.dom.Element;
 public class EntityField {
   private final String column;
   private final String name;
-  private final float boost;
   private final boolean toWrite;
   private final boolean multiValued;
   private final boolean dynamicName;
@@ -40,7 +39,6 @@ public class EntityField {
   public EntityField(Builder b) {
     this.column = b.column;
     this.name = b.name;
-    this.boost = b.boost;
     this.toWrite = b.toWrite;
     this.multiValued = b.multiValued;
     this.dynamicName = b.dynamicName;
@@ -58,10 +56,6 @@ public class EntityField {
 
   public String getColumn() {
     return column;
-  }
-
-  public float getBoost() {
-    return boost;
   }
 
   public boolean isToWrite() {

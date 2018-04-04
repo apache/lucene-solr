@@ -25,7 +25,7 @@ import org.apache.solr.parser.QueryParser;
 public class SolrQueryParser extends QueryParser {
 
   public SolrQueryParser(QParser parser, String defaultField) {
-    super(parser.getReq().getCore().getSolrConfig().luceneMatchVersion, defaultField, parser);
+    super(defaultField, parser);
   }
 
 }

@@ -53,20 +53,19 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.setParam("a", "b");
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
-    doc.addField("desc", "one", 2.0f);
+    doc.addField("desc", "one");
     doc.addField("desc", "1");
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 2);
-    doc.setDocumentBoost(10.0f);
-    doc.addField("desc", "two", 3.0f);
+    doc.addField("desc", "two");
     doc.addField("desc", "2");
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 3);
-    doc.addField("desc", "three", 3.0f);
+    doc.addField("desc", "three");
     doc.addField("desc", "3");
     updateRequest.add(doc);
 
@@ -121,7 +120,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
-    doc.addField("desc", "one", 2.0f);
+    doc.addField("desc", "one");
     // imagine someone adding a custom Bean that implements Iterable 
     // but is not a Collection
     doc.addField("iter", new Iterable<String>() { 
@@ -171,20 +170,19 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.setParam("a", "b");
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
-    doc.addField("desc", "one", 2.0f);
+    doc.addField("desc", "one");
     doc.addField("desc", "1");
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 2);
-    doc.setDocumentBoost(10.0f);
-    doc.addField("desc", "two", 3.0f);
+    doc.addField("desc", "two");
     doc.addField("desc", "2");
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 3);
-    doc.addField("desc", "three", 3.0f);
+    doc.addField("desc", "three");
     doc.addField("desc", "3");
     updateRequest.add(doc);
 
@@ -234,14 +232,10 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
   private void compareDocs(String m, 
                            SolrInputDocument expectedDoc, 
                            SolrInputDocument actualDoc) {
-    Assert.assertEquals(expectedDoc.getDocumentBoost(), 
-                        actualDoc.getDocumentBoost());
 
     for (String s : expectedDoc.getFieldNames()) {
       SolrInputField expectedField = expectedDoc.getField(s);
       SolrInputField actualField = actualDoc.getField(s);
-      Assert.assertEquals(m + ": diff boosts for field: " + s,
-                          expectedField.getBoost(), actualField.getBoost());
       Object expectedVal = expectedField.getValue();
       Object actualVal = actualField.getValue();
       if (expectedVal instanceof Set &&

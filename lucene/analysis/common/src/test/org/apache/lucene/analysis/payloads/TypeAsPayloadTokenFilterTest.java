@@ -47,7 +47,7 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     assertTrue(count + " does not equal: " + 10, count == 10);
   }
 
-  private final class WordTokenFilter extends TokenFilter {
+  private static final class WordTokenFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     

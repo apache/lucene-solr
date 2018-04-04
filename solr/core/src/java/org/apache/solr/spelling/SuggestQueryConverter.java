@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.lucene.analysis.Token;
-
 /**
  * Passes the entire query string to the configured analyzer as-is.
  **/

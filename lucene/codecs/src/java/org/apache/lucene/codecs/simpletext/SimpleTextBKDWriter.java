@@ -26,7 +26,6 @@ import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.MutablePointValues;
-import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -44,7 +43,6 @@ import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.OfflineSorter;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 import org.apache.lucene.util.bkd.HeapPointWriter;
@@ -309,124 +307,6 @@ final class SimpleTextBKDWriter implements Closeable {
     return pointCount;
   }
 
-  private static class MergeReader {
-    final SimpleTextBKDReader bkd;
-    final SimpleTextBKDReader.IntersectState state;
-    final MergeState.DocMap docMap;
-
-    /** Current doc ID */
-    public int docID;
-
-    /** Which doc in this block we are up to */
-    private int docBlockUpto;
-
-    /** How many docs in the current block */
-    private int docsInBlock;
-
-    /** Which leaf block we are up to */
-    private int blockID;
-
-    private final byte[] packedValues;
-
-    public MergeReader(SimpleTextBKDReader bkd, MergeState.DocMap docMap) throws IOException {
-      this.bkd = bkd;
-      state = new SimpleTextBKDReader.IntersectState(bkd.in.clone(),
-                                                     bkd.numDims,
-                                                     bkd.packedBytesLength,
-                                                     bkd.maxPointsInLeafNode,
-                                                     null);
-      this.docMap = docMap;
-      long minFP = Long.MAX_VALUE;
-      //System.out.println("MR.init " + this + " bkdreader=" + bkd + " leafBlockFPs.length=" + bkd.leafBlockFPs.length);
-      for(long fp : bkd.leafBlockFPs) {
-        minFP = Math.min(minFP, fp);
-        //System.out.println("  leaf fp=" + fp);
-      }
-      state.in.seek(minFP);
-      this.packedValues = new byte[bkd.maxPointsInLeafNode * bkd.packedBytesLength];
-    }
-
-    public boolean next() throws IOException {
-      //System.out.println("MR.next this=" + this);
-      while (true) {
-        if (docBlockUpto == docsInBlock) {
-          if (blockID == bkd.leafBlockFPs.length) {
-            //System.out.println("  done!");
-            return false;
-          }
-          //System.out.println("  new block @ fp=" + state.in.getFilePointer());
-          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchDocIDs);
-          assert docsInBlock > 0;
-          docBlockUpto = 0;
-          bkd.visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, docsInBlock, new IntersectVisitor() {
-            int i = 0;
-
-            @Override
-            public void visit(int docID) throws IOException {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void visit(int docID, byte[] packedValue) throws IOException {
-              assert docID == state.scratchDocIDs[i];
-              System.arraycopy(packedValue, 0, packedValues, i * bkd.packedBytesLength, bkd.packedBytesLength);
-              i++;
-            }
-
-            @Override
-            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-              throw new UnsupportedOperationException();
-            }
-
-          });
-
-          blockID++;
-        }
-
-        final int index = docBlockUpto++;
-        int oldDocID = state.scratchDocIDs[index];
-
-        int mappedDocID;
-        if (docMap == null) {
-          mappedDocID = oldDocID;
-        } else {
-          mappedDocID = docMap.get(oldDocID);
-        }
-
-        if (mappedDocID != -1) {
-          // Not deleted!
-          docID = mappedDocID;
-          System.arraycopy(packedValues, index * bkd.packedBytesLength, state.scratchPackedValue, 0, bkd.packedBytesLength);
-          return true;
-        }
-      }
-    }
-  }
-
-  private static class BKDMergeQueue extends PriorityQueue<MergeReader> {
-    private final int bytesPerDim;
-
-    public BKDMergeQueue(int bytesPerDim, int maxSize) {
-      super(maxSize);
-      this.bytesPerDim = bytesPerDim;
-    }
-
-    @Override
-    public boolean lessThan(MergeReader a, MergeReader b) {
-      assert a != b;
-
-      int cmp = StringHelper.compare(bytesPerDim, a.state.scratchPackedValue, 0, b.state.scratchPackedValue, 0);
-      if (cmp < 0) {
-        return true;
-      } else if (cmp > 0) {
-        return false;
-      }
-
-      // Tie break by sorting smaller docIDs earlier:
-      return a.docID < b.docID;
-    }
-  }
-
   /** Write a field from a {@link MutablePointValues}. This way of writing
    *  points is faster than regular writes with {@link BKDWriter#add} since
    *  there is opportunity for reordering points before writing them to
@@ -523,50 +403,6 @@ final class SimpleTextBKDWriter implements Closeable {
         return Relation.CELL_CROSSES_QUERY;
       }
     });
-
-    return oneDimWriter.finish();
-  }
-
-  // TODO: remove this opto: SimpleText is supposed to be simple!
-  
-  /** More efficient bulk-add for incoming {@link SimpleTextBKDReader}s.  This does a merge sort of the already
-   *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
-   *  dimensional values were deleted. */
-  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<SimpleTextBKDReader> readers) throws IOException {
-    assert docMaps == null || readers.size() == docMaps.size();
-
-    BKDMergeQueue queue = new BKDMergeQueue(bytesPerDim, readers.size());
-
-    for(int i=0;i<readers.size();i++) {
-      SimpleTextBKDReader bkd = readers.get(i);
-      MergeState.DocMap docMap;
-      if (docMaps == null) {
-        docMap = null;
-      } else {
-        docMap = docMaps.get(i);
-      }
-      MergeReader reader = new MergeReader(bkd, docMap);
-      if (reader.next()) {
-        queue.add(reader);
-      }
-    }
-
-    OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(out);
-
-    while (queue.size() != 0) {
-      MergeReader reader = queue.top();
-      // System.out.println("iter reader=" + reader);
-
-      // NOTE: doesn't work with subclasses (e.g. SimpleText!)
-      oneDimWriter.add(reader.state.scratchPackedValue, reader.docID);
-
-      if (reader.next()) {
-        queue.updateTop();
-      } else {
-        // This segment was exhausted
-        queue.pop();
-      }
-    }
 
     return oneDimWriter.finish();
   }
@@ -877,11 +713,11 @@ final class SimpleTextBKDWriter implements Closeable {
         };
       }
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc, null, 0) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
-          protected ByteSequencesWriter getWriter(IndexOutput out) {
+          protected ByteSequencesWriter getWriter(IndexOutput out, long count) {
             return new ByteSequencesWriter(out) {
               @Override
               public void write(byte[] bytes, int off, int len) throws IOException {
@@ -1170,7 +1006,8 @@ final class SimpleTextBKDWriter implements Closeable {
 
   /** Called on exception, to check whether the checksum is also corrupt in this source, and add that
    *  information (checksum matched or didn't) as a suppressed exception. */
-  private void verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+  private Error verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+    assert priorException != null;
     // TODO: we could improve this, to always validate checksum as we recurse, if we shared left and
     // right reader after recursing to children, and possibly within recursed children,
     // since all together they make a single pass through the file.  But this is a sizable re-org,
@@ -1181,10 +1018,10 @@ final class SimpleTextBKDWriter implements Closeable {
       try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
         CodecUtil.checkFooter(in, priorException);
       }
-    } else {
-      // We are reading from heap; nothing to add:
-      IOUtils.reThrow(priorException);
     }
+
+    // We are reading from heap; nothing to add:
+    throw IOUtils.rethrowAlways(priorException);
   }
 
   /** Marks bits for the ords (points) that belong in the right sub tree (those docs that have values >= the splitValue). */
@@ -1206,7 +1043,7 @@ final class SimpleTextBKDWriter implements Closeable {
         reader.markOrds(rightCount-1, ordBitSet);
       }
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
+      throw verifyChecksum(t, source.writer);
     }
 
     return scratch1;
@@ -1255,10 +1092,7 @@ final class SimpleTextBKDWriter implements Closeable {
       }
       return new PathSlice(writer, 0, count);
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
-
-      // Dead code but javac disagrees:
-      return null;
+      throw verifyChecksum(t, source.writer);
     }
   }
 
@@ -1564,7 +1398,7 @@ final class SimpleTextBKDWriter implements Closeable {
           leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
           rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
         } catch (Throwable t) {
-          verifyChecksum(t, slices[dim].writer);
+          throw verifyChecksum(t, slices[dim].writer);
         }
       }
 

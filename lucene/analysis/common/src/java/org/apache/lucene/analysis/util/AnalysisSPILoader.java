@@ -48,7 +48,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   }
 
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
-    this(clazz, suffixes, Thread.currentThread().getContextClassLoader());
+    this(clazz, suffixes, null);
   }
   
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {

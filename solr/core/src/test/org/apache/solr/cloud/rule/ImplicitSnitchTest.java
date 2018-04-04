@@ -17,24 +17,30 @@
 
 package org.apache.solr.cloud.rule;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.Sets;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestRuleLimitSysouts;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
-public class ImplicitSnitchTest {
+@TestRuleLimitSysouts.Limit(bytes=32000)
+public class ImplicitSnitchTest extends LuceneTestCase {
 
   private ImplicitSnitch snitch;
   private SnitchContext context;
@@ -130,6 +136,8 @@ public class ImplicitSnitchTest {
 
   @Test
   public void testGetTags_withAllHostNameRequestedTags_returns_all_Tags() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
@@ -149,6 +157,8 @@ public class ImplicitSnitchTest {
 
   @Test
   public void testGetTags_withHostNameRequestedTag_ip3_returns_1_tag() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
@@ -164,6 +174,8 @@ public class ImplicitSnitchTest {
 
   @Test
   public void testGetTags_withHostNameRequestedTag_ip99999_returns_nothing() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
@@ -186,4 +198,43 @@ public class ImplicitSnitchTest {
     assertFalse(snitch.isKnownTag("ip_5"));
   }
 
+  @Test
+  public void testExceptions() throws Exception {
+    ImplicitSnitch implicitSnitch = new ImplicitSnitch();
+    ServerSnitchContext noNodeExceptionSnitch = new ServerSnitchContext(null, null, new HashMap<>(), null)  {
+      @Override
+      public Map getZkJson(String path) throws KeeperException, InterruptedException {
+        throw new KeeperException.NoNodeException();
+      }
+    };
+    implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.ROLE), noNodeExceptionSnitch);
+    Map map = (Map) noNodeExceptionSnitch.retrieve(ZkStateReader.ROLES); // todo it the key really supposed to /roles.json?
+    assertNotNull(map);
+    assertEquals(0, map.size());
+
+    implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.NODEROLE), noNodeExceptionSnitch);
+    map = (Map) noNodeExceptionSnitch.retrieve(ZkStateReader.ROLES); // todo it the key really supposed to /roles.json?
+    assertNotNull(map);
+    assertEquals(0, map.size());
+
+    ServerSnitchContext keeperExceptionSnitch = new ServerSnitchContext(null, null, new HashMap<>(), null)  {
+      @Override
+      public Map getZkJson(String path) throws KeeperException, InterruptedException {
+        throw new KeeperException.ConnectionLossException();
+      }
+    };
+    expectThrows(SolrException.class, KeeperException.ConnectionLossException.class, () -> implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.ROLE), keeperExceptionSnitch));
+    expectThrows(SolrException.class, KeeperException.ConnectionLossException.class, () -> implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.NODEROLE), keeperExceptionSnitch));
+
+    ServerSnitchContext remoteExceptionSnitch = new ServerSnitchContext(null, null, new HashMap<>(), null)  {
+
+      @Override
+      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+        throw new RuntimeException();
+      }
+    };
+    expectThrows(SolrException.class, RuntimeException.class, () -> implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.CORES), remoteExceptionSnitch));
+    expectThrows(SolrException.class, RuntimeException.class, () -> implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.DISK), remoteExceptionSnitch));
+    expectThrows(SolrException.class, RuntimeException.class, () -> implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.SYSPROP + "xyz"), remoteExceptionSnitch));
+  }
 }

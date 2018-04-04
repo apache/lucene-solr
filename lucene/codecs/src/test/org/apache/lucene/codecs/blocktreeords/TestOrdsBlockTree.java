@@ -285,7 +285,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.add(newStringField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
     for(int i=0;i<128;i++) {
@@ -373,7 +373,8 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc = new Document();
       String term = "" + (char) (97+i);
       String term2 = "a" + (char) (97+i);
-      doc.add(newTextField("field", term + " " + term2, Field.Store.NO));
+      doc.add(newStringField("field", term, Field.Store.NO));
+      doc.add(newStringField("field", term2, Field.Store.NO));
       w.addDocument(doc);
     }
 

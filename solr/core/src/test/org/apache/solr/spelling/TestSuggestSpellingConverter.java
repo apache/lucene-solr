@@ -22,11 +22,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
@@ -65,7 +63,11 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   
   public void assertConvertsTo(String text, String expected[]) throws IOException {
     Collection<Token> tokens = converter.convert(text);
-    TokenStream ts = new CannedTokenStream(tokens.toArray(new Token[0]));
-    assertTokenStreamContents(ts, expected);
+    assertEquals(tokens.size(), expected.length);
+    int i = 0;
+    for (Token token : tokens) {
+      assertEquals(token.toString(), expected[i]);
+      i++;
+    }
   }
 }

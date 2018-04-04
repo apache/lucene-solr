@@ -82,6 +82,11 @@ public class GeoBBoxFactory {
     //System.err.println(" not vertical line");
     if (extent >= Math.PI) {
       if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+        if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+          return new GeoDegeneratePoint(planetModel, topLat, 0.0);
+        } else if (Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+          return new GeoDegeneratePoint(planetModel, bottomLat, 0.0);
+        }
         //System.err.println(" wide degenerate line");
         return new GeoWideDegenerateHorizontalLine(planetModel, topLat, leftLon, rightLon);
       }
@@ -94,8 +99,10 @@ public class GeoBBoxFactory {
       return new GeoWideRectangle(planetModel, topLat, bottomLat, leftLon, rightLon);
     }
     if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
-      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION || Math.abs(topLat + Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
         return new GeoDegeneratePoint(planetModel, topLat, 0.0);
+      } else if (Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+        return new GeoDegeneratePoint(planetModel, bottomLat, 0.0);
       }
       //System.err.println(" horizontal line");
       return new GeoDegenerateHorizontalLine(planetModel, topLat, leftLon, rightLon);
@@ -107,6 +114,21 @@ public class GeoBBoxFactory {
     }
     //System.err.println(" rectangle");
     return new GeoRectangle(planetModel, topLat, bottomLat, leftLon, rightLon);
+  }
+
+  /**
+   * Create a geobbox of the right kind given the specified {@link LatLonBounds}.
+   *
+   * @param planetModel is the planet model
+   * @param bounds    are the bounds
+   * @return a GeoBBox corresponding to what was specified.
+   */
+  public static GeoBBox makeGeoBBox(final PlanetModel planetModel, LatLonBounds bounds) {
+    final double topLat = (bounds.checkNoTopLatitudeBound()) ? Math.PI * 0.5 : bounds.getMaxLatitude();
+    final double bottomLat = (bounds.checkNoBottomLatitudeBound()) ? -Math.PI * 0.5 : bounds.getMinLatitude();
+    final double leftLon = (bounds.checkNoLongitudeBound()) ? -Math.PI : bounds.getLeftLongitude();
+    final double rightLon = (bounds.checkNoLongitudeBound()) ? Math.PI : bounds.getRightLongitude();
+    return makeGeoBBox(planetModel, topLat, bottomLat, leftLon, rightLon);
   }
 
 }

@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -38,8 +39,7 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 /** Collects hits for subsequent faceting.  Once you've run
  *  a search and collect hits into this, instantiate one of
@@ -56,24 +56,8 @@ public class FacetsCollector extends SimpleCollector implements Collector {
   private float[] scores;
   private final boolean keepScores;
   private final List<MatchingDocs> matchingDocs = new ArrayList<>();
-  private Docs docs;
+  private DocIdSetBuilder docsBuilder;
   
-  /**
-   * Used during collection to record matching docs and then return a
-   * {@link DocIdSet} that contains them.
-   */
-  protected static abstract class Docs {
-    
-    /** Solr constructor. */
-    public Docs() {}
-    
-    /** Record the given document. */
-    public abstract void addDoc(int docId) throws IOException;
-    
-    /** Return the {@link DocIdSet} which contains all the recorded docs. */
-    public abstract DocIdSet getDocIdSet();
-  }
-
   /**
    * Holds the documents that were matched in the {@link org.apache.lucene.index.LeafReaderContext}.
    * If scores were required, then {@code scores} is not null.
@@ -112,27 +96,6 @@ public class FacetsCollector extends SimpleCollector implements Collector {
     this.keepScores = keepScores;
   }
   
-  /**
-   * Creates a {@link Docs} to record hits. The default uses {@link FixedBitSet}
-   * to record hits and you can override to e.g. record the docs in your own
-   * {@link DocIdSet}.
-   */
-  protected Docs createDocs(final int maxDoc) {
-    return new Docs() {
-      private final FixedBitSet bits = new FixedBitSet(maxDoc);
-      
-      @Override
-      public void addDoc(int docId) throws IOException {
-        bits.set(docId);
-      }
-      
-      @Override
-      public DocIdSet getDocIdSet() {
-        return new BitDocIdSet(bits);
-      }
-    };
-  }
-
   /** True if scores were saved. */
   public final boolean getKeepScores() {
     return keepScores;
@@ -143,9 +106,9 @@ public class FacetsCollector extends SimpleCollector implements Collector {
    * visited segment.
    */
   public List<MatchingDocs> getMatchingDocs() {
-    if (docs != null) {
-      matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
-      docs = null;
+    if (docsBuilder != null) {
+      matchingDocs.add(new MatchingDocs(this.context, docsBuilder.build(), totalHits, scores));
+      docsBuilder = null;
       scores = null;
       context = null;
     }
@@ -155,7 +118,7 @@ public class FacetsCollector extends SimpleCollector implements Collector {
 
   @Override
   public final void collect(int doc) throws IOException {
-    docs.addDoc(doc);
+    docsBuilder.grow(1).add(doc);
     if (keepScores) {
       if (totalHits >= scores.length) {
         float[] newScores = new float[ArrayUtil.oversize(totalHits + 1, 4)];
@@ -168,8 +131,8 @@ public class FacetsCollector extends SimpleCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return true;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE;
   }
 
   @Override
@@ -179,10 +142,10 @@ public class FacetsCollector extends SimpleCollector implements Collector {
     
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
-    if (docs != null) {
-      matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
+    if (docsBuilder != null) {
+      matchingDocs.add(new MatchingDocs(this.context, docsBuilder.build(), totalHits, scores));
     }
-    docs = createDocs(context.reader().maxDoc());
+    docsBuilder = new DocIdSetBuilder(context.reader().maxDoc());
     totalHits = 0;
     if (keepScores) {
       scores = new float[64]; // some initial size
@@ -270,9 +233,10 @@ public class FacetsCollector extends SimpleCollector implements Collector {
                                                  (FieldDoc) after,
                                                  fillFields,
                                                  doDocScores,
-                                                 doMaxScore);
+                                                 doMaxScore,
+                                                 true); // TODO: can we disable exact hit counts
       } else {
-        hitsCollector = TopScoreDocCollector.create(n, after);
+        hitsCollector = TopScoreDocCollector.create(n, after, true);
       }
       searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
     

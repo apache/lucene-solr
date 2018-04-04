@@ -47,7 +47,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
   protected long snapshotCount;
   protected long committedModelClock;
   protected volatile int lastId;
-  protected final String field = "val_l";
+  protected static final String FIELD = "val_l";
   protected Object[] syncArr;
 
   protected Object globalLock = this;

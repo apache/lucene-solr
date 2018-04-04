@@ -100,8 +100,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     String docID = "1112211111";
-    doc.addField( "id", docID, 1.0f );
-    doc.addField( "name", "my name!", 1.0f );
+    doc.addField( "id", docID );
+    doc.addField( "name", "my name!" );
     
     Assert.assertEquals( null, doc.getField("foo") );
     Assert.assertTrue(doc.getField("name").getValue() != null );
@@ -127,28 +127,28 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add a few docs for facet testing...
     List<SolrInputDocument> docs = new ArrayList<>();
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "2", 1.0f );
-    doc2.addField( "inStock", true, 1.0f );
-    doc2.addField( "price", 2, 1.0f );
-    doc2.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc2.addField( "id", "2" );
+    doc2.addField( "inStock", true );
+    doc2.addField( "price", 2 );
+    doc2.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc2);
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField( "id", "3", 1.0f );
-    doc3.addField( "inStock", false, 1.0f );
-    doc3.addField( "price", 3, 1.0f );
-    doc3.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc3.addField( "id", "3" );
+    doc3.addField( "inStock", false );
+    doc3.addField( "price", 3 );
+    doc3.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc3);
     SolrInputDocument doc4 = new SolrInputDocument();
-    doc4.addField( "id", "4", 1.0f );
-    doc4.addField( "inStock", true, 1.0f );
-    doc4.addField( "price", 4, 1.0f );
-    doc4.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc4.addField( "id", "4" );
+    doc4.addField( "inStock", true );
+    doc4.addField( "price", 4 );
+    doc4.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc4);
     SolrInputDocument doc5 = new SolrInputDocument();
-    doc5.addField( "id", "5", 1.0f );
-    doc5.addField( "inStock", false, 1.0f );
-    doc5.addField( "price", 5, 1.0f );
-    doc5.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc5.addField( "id", "5" );
+    doc5.addField( "inStock", false );
+    doc5.addField( "price", 5 );
+    doc5.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc5);
     
     upres = client.add( docs );
@@ -247,13 +247,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc1 = new SolrInputDocument();
-    doc1.addField( "id", "id1", 1.0f );
-    doc1.addField( "name", "doc1", 1.0f );
+    doc1.addField( "id", "id1" );
+    doc1.addField( "name", "doc1" );
     doc1.addField( "price", 10 );
 
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
+    doc2.addField( "id", "id2" );
+    doc2.addField( "name", "h\uD866\uDF05llo" );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<>();
@@ -302,13 +302,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
      
     // Add two docs
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "id1", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "id1" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 10 );
     client.add(doc);
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "id2", 1.0f );
+    doc.addField( "id", "id2" );
     client.add(doc);
     client.commit();
     
@@ -412,7 +412,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
-    query.set(AnalysisParams.FIELD_TYPE, "int");
+    query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
       client.query( query );
@@ -443,9 +443,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     }
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "DOCID", 1.0f);
-    doc.addField("id", "DOCID2", 1.0f);
-    doc.addField("name", "hello", 1.0f);
+    doc.addField("id", "DOCID");
+    doc.addField("id", "DOCID2");
+    doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
       try {
@@ -484,15 +484,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 11 );
     client.add(doc);
     client.commit(); // make sure this gets in first
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "222", 1.0f );
-    doc.addField( "name", "doc2", 1.0f );
+    doc.addField( "id", "222" );
+    doc.addField( "name", "doc2" );
     doc.addField( "price", 22 );
     client.add(doc);
     client.commit();
@@ -539,8 +539,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "json_s", rawJson );
     doc.addField( "xml_s", rawXml );
     client.add(doc);
@@ -689,7 +689,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrInputDocument[] doc = new SolrInputDocument[5];
     for( int i=0; i<doc.length; i++ ) {
       doc[i] = new SolrInputDocument();
-      doc[i].setField( "id", "ID"+i, 1.0f );
+      doc[i].setField( "id", "ID"+i );
       client.add(doc[i]);
     }
     client.commit();
@@ -844,7 +844,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     ArrayList<SolrInputDocument> docs = new ArrayList<>(10);
     for( int i=1; i<=10; i++ ) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.setField( "id", i+"", 1.0f );
+      doc.setField( "id", i+"" );
       if( (i%2)==0 ) {
         doc.addField( "features", "two" );
       }
@@ -1576,8 +1576,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "DOCID", 1.0f );
-    doc.addField( "name", "hello", 1.0f );
+    doc.addField( "id", "DOCID" );
+    doc.addField( "name", "hello" );
     client.add(doc);
     client.commit();  // Since the transaction log is disabled in the example, we need to commit
     
@@ -1613,16 +1613,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("name", "gadget");
-    doc.addField("price_f", 1);
+    doc.addField("price", 1);
     client.add(doc);
     client.commit();
     SolrQuery q = new SolrQuery("*:*");
-    q.setFields("id","price_f","name", "_version_");
+    q.setFields("id","price","name", "_version_");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price"));
 
     //update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>();  //need better api for this???
@@ -1631,7 +1631,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version+1);
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     try {
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
@@ -1650,24 +1650,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version);
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     //update "price", no version
     oper.put("set", 200);
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
@@ -1764,7 +1764,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
-
+    
     int numRootDocs = TestUtil.nextInt(random(), 10, 100);
     int maxDepth = TestUtil.nextInt(random(), 2, 5);
 
@@ -1777,14 +1777,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.commit();
 
     // sanity check
-    SolrQuery q = new SolrQuery("*:*");
+    SolrQuery q = new SolrQuery("q", "*:*", "indent", "true");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match",
         allDocs.size(), resp.getResults().getNumFound());
 
 
     // base check - we know there is an exact number of these root docs
-    q = new SolrQuery("level_i:0");
+    q = new SolrQuery("q","level_i:0", "indent", "true");
     q.setFields("*", "[child parentFilter=\"level_i:0\"]");
     resp = client.query(q);
     assertEquals("topLevel count does not match", numRootDocs,
@@ -1793,6 +1793,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String docId = (String)outDoc.getFieldValue("id");
       SolrInputDocument origDoc = allDocs.get(docId);
       assertNotNull("docId not found: " + docId, origDoc);
+      assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
       assertEquals("kids mismatch", 
                    origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
       if (outDoc.hasChildDocuments()) {
@@ -1813,16 +1814,17 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String childFilter = "level_i:" + kidLevel;
       int maxKidCount = TestUtil.nextInt(random(), 1, 37);
       
-      q = new SolrQuery("*:*");
+      q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"]");
+                  "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
         assertEquals("kids mismatch", 
                      origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
         if (outDoc.hasChildDocuments()) {
@@ -1845,6 +1847,42 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         }
       }
     }
+    
+    // bespoke check - use child transformer twice in one query to get diff kids, with name field in between
+    {
+      q = new SolrQuery("q","level_i:0", "indent", "true");
+      // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
+      q.setFields("id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
+                  "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
+      resp = client.query(q);
+      assertEquals("topLevel count does not match", numRootDocs,
+                   resp.getResults().getNumFound());
+      for (SolrDocument outDoc : resp.getResults()) {
+        String docId = (String)outDoc.getFieldValue("id");
+        SolrInputDocument origDoc = allDocs.get(docId);
+        assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
+        assertEquals("kids mismatch", 
+                     origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
+        if (outDoc.hasChildDocuments()) {
+          for (SolrDocument kid : outDoc.getChildDocuments()) {
+            String kidId = (String)kid.getFieldValue("id");
+            SolrInputDocument origChild = findDecendent(origDoc, kidId);
+            assertNotNull(docId + " doesn't have decendent " + kidId,
+                          origChild);
+          }
+          // the total number of kids should be our direct kids and our grandkids
+          int expectedKidsOut = origDoc.getChildDocuments().size();
+          for (SolrInputDocument origKid : origDoc.getChildDocuments()) {
+            if (origKid.hasChildDocuments()) {
+              expectedKidsOut += origKid.getChildDocuments().size();
+            }
+          }
+          assertEquals("total number of kids and grandkids doesn't match expected",
+                       expectedKidsOut, outDoc.getChildDocuments().size());
+        }
+      }
+    }
 
     // fully randomized
     // verifications are driven only by the results
@@ -1857,20 +1895,21 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String childFilter = "level_i:[" + kidLevelMin + " TO " + kidLevelMax + "]";
       int maxKidCount = TestUtil.nextInt(random(), 1, 7);
       
-      q = new SolrQuery("*:*");
+      q = new SolrQuery("q","*:*", "indent", "true");
       if (random().nextBoolean()) {
         String name = names[TestUtil.nextInt(random(), 0, names.length-1)];
-        q = new SolrQuery("name:" + name);
+        q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"]");
+                  "\" limit=\"" + maxKidCount + "\"],name");
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
         // we can't always assert origHasKids==outHasKids, original kids
         // might not go deep enough for childFilter...
         if (outDoc.hasChildDocuments()) {
@@ -1898,14 +1937,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.deleteByQuery("*:*");
 
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
-    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"));
-    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"));
-    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_ti", "1", "test_tl", "100000", "test_tf", "2000", "type_s", "child"));
-    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_ti", "2", "test_tl", "100000", "test_tf", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"));
+    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"));
+    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"));
+    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_i", "2", "test_l", "100000", "test_f", "200", "type_s", "child"));
 
     server.add(docs);
     server.commit();
@@ -1914,7 +1953,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     msParams.add("q", "*:*");
     msParams.add("fq", "{!collapse field=group_s}");
     msParams.add("defType", "edismax");
-    msParams.add("bf", "field(test_ti)");
+    msParams.add("bf", "field(test_i)");
     msParams.add("expand", "true");
     QueryResponse resp = server.query(msParams);
 

@@ -138,7 +138,12 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     // check response against each writer
 
     // xml & none (default behavior same as XML)
-    String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response>\n<str name=\"content\">test</str><str name=\"foo\">bar</str>\n</response>\n";
+    String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<response>\n" +
+        "\n" +
+        "<str name=\"content\">test</str>\n" +
+        "<str name=\"foo\">bar</str>\n" +
+        "</response>\n";
     StringWriter xmlSout = new StringWriter();
     writerXmlBase.write(xmlSout, req(), rsp);
     assertEquals(xml, xmlSout.toString());
@@ -154,7 +159,9 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
 
     // json
-    String json = "{\"content\":\"test\",\"foo\":\"bar\"}\n";
+    String json = "{\n" +
+        "  \"content\":\"test\",\n" +
+        "  \"foo\":\"bar\"}\n";
     StringWriter jsonSout = new StringWriter();
     writerJsonBase.write(jsonSout, req(), rsp);
     assertEquals(json, jsonSout.toString());

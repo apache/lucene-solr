@@ -31,7 +31,7 @@ import java.util.HashMap;
 
 public class TestNamedListCodec  extends LuceneTestCase {
   public void testSimple() throws Exception{
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
     NamedList nl = new NamedList();
     Float fval = new Float( 10.01f );
     Boolean bval = Boolean.TRUE;
@@ -74,10 +74,14 @@ public class TestNamedListCodec  extends LuceneTestCase {
     list.add(doc);
 
     nl.add("zzz",doc);
-
-    new JavaBinCodec(null).marshal(nl,baos);
-    byte[] arr = baos.toByteArray();
-    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
+    byte[] arr;
+    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      jbc.marshal(nl, baos);
+      arr = baos.toByteArray();
+    }
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+      nl = (NamedList) jbc.unmarshal(bais);
+    }
 
 
     assertEquals(3, nl.size());
@@ -89,7 +93,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   }
 
   public void testIterator() throws Exception{
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    
     NamedList nl = new NamedList();
     Float fval = new Float( 10.01f );
     Boolean bval = Boolean.TRUE;
@@ -114,17 +118,21 @@ public class TestNamedListCodec  extends LuceneTestCase {
     list.add(doc);
 
     nl.add("zzz",list.iterator());
-
-    new JavaBinCodec(null).marshal(nl,baos);
-    byte[] arr = baos.toByteArray();
-    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
+    byte[] arr;
+    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      jbc.marshal(nl, baos);
+      arr = baos.toByteArray();
+    }
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+      nl = (NamedList) jbc.unmarshal(bais);
+    }
 
     List l = (List) nl.get("zzz");
     assertEquals(list.size(), l.size());
   }
 
   public void testIterable() throws Exception {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    
 
     NamedList r = new NamedList();
 
@@ -137,11 +145,14 @@ public class TestNamedListCodec  extends LuceneTestCase {
     r.add("more", "less");
     r.add("values", map.values());
     r.add("finally", "the end");
-    new JavaBinCodec(null).marshal(r,baos);
-    byte[] arr = baos.toByteArray();
+    byte[] arr;
+    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      jbc.marshal(r,baos);
+      arr = baos.toByteArray();
+    }
 
-    try {
-      NamedList result = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+      NamedList result = (NamedList) jbc.unmarshal(bais);
       assertTrue("result is null and it shouldn't be", result != null);
       List keys = (List) result.get("keys");
       assertTrue("keys is null and it shouldn't be", keys != null);
@@ -247,13 +258,16 @@ public class TestNamedListCodec  extends LuceneTestCase {
 
     for (int i=0; i<10000; i++) { // pump up the iterations for good stress testing
       nl = rNamedList(3);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      new JavaBinCodec(null).marshal(nl,baos);
-      byte[] arr = baos.toByteArray();
+      byte[] arr;
+      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        jbc.marshal(nl, baos);
+        arr = baos.toByteArray();
+      }
       // System.out.println(arr.length);
-      res = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
-      cmp = BaseDistributedSearchTestCase.compare(nl, res, 0, null);
-
+      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+        res = (NamedList) jbc.unmarshal(bais);
+        cmp = BaseDistributedSearchTestCase.compare(nl, res, 0, null);
+      }
       if (cmp != null) {
         System.out.println(nl);
         System.out.println(res);
@@ -261,5 +275,4 @@ public class TestNamedListCodec  extends LuceneTestCase {
       }
     }
   }
-
 }

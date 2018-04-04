@@ -16,25 +16,11 @@
  */
 package org.apache.solr.servlet;
 
-import javax.management.MBeanServer;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -42,16 +28,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.jvm.BufferPoolMetricSet;
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -66,17 +62,26 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.AltBufferPoolMetricSet;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrFileCleaningTracker;
+import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -87,6 +92,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile CoreContainer cores;
+  protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
   protected HttpClient httpClient;
@@ -95,6 +101,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   // Effectively immutable
   private Boolean testMode = null;
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+
+  private final String metricTag = Integer.toHexString(hashCode());
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   /**
    * Enum to define action that needs to be processed.
@@ -128,6 +138,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
 
+  public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
+
+  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 
   public static final String SOLR_LOG_LEVEL = "solr.log.level";
@@ -135,11 +149,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
+    SSLConfigurationsFactory.current().init();
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    CoreContainer coresInit = null;
+    try{
 
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
     StartupLoggingUtils.checkLogDir();
+    log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
@@ -147,6 +165,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     String logLevel = System.getProperty(SOLR_LOG_LEVEL);
     if (logLevel != null) {
+      log.info("Log level override, property solr.log.level=" + logLevel);
       StartupLoggingUtils.changeLogLevel(logLevel);
     }
 
@@ -166,10 +185,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
-      this.cores = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
+      coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
-      this.httpClient = cores.getUpdateShardHandler().getHttpClient();
-      setupJvmMetrics();
+      this.httpClient = coresInit.getUpdateShardHandler().getHttpClient();
+      setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -181,20 +200,32 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    log.trace("SolrDispatchFilter.init() done");
+    }finally{
+      log.trace("SolrDispatchFilter.init() done");
+      this.cores = coresInit; // crucially final assignment
+      init.countDown();
+    }
   }
 
-  private void setupJvmMetrics()  {
-    MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-    SolrMetricManager metricManager = cores.getMetricManager();
+  private void setupJvmMetrics(CoreContainer coresInit)  {
+    metricManager = coresInit.getMetricManager();
+    registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
+    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
-      String registry = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm);
-      metricManager.registerAll(registry, new BufferPoolMetricSet(platformMBeanServer), true, "buffers");
-      metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classes");
-      metricManager.registerAll(registry, new OperatingSystemMetricSet(platformMBeanServer), true, "os");
-      metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
-      metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
-      metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
+      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
+      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
+      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
+      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      MetricsMap sysprops = new MetricsMap((detailed, map) -> {
+        System.getProperties().forEach((k, v) -> {
+          if (!hiddenSysProps.contains(k)) {
+            map.put(String.valueOf(k), v);
+          }
+        });
+      });
+      metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
@@ -203,7 +234,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private void logWelcomeBanner() {
     log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
     log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty("solr.install.dir"));
+    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
     log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
   }
 
@@ -233,9 +264,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    cores = new CoreContainer(nodeConfig, extraProperties, true);
-    cores.load();
-    return cores;
+    final CoreContainer coreContainer = new CoreContainer(nodeConfig, extraProperties, true);
+    coreContainer.load();
+    return coreContainer;
   }
 
   /**
@@ -244,27 +275,33 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
-    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
-      log.warn("Solr property solr.solrxml.location is no longer supported. " +
-               "Will automatically load solr.xml from ZooKeeper if it exists");
-    }
-
-    String zkHost = System.getProperty("zkHost");
-    if (!StringUtils.isEmpty(zkHost)) {
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
-        if (zkClient.exists("/solr.xml", true)) {
-          log.info("solr.xml found in ZooKeeper. Loading...");
-          byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
-        }
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+    NodeConfig cfg = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader(), nodeProperties)) {
+      if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+        log.warn("Solr property solr.solrxml.location is no longer supported. " +
+            "Will automatically load solr.xml from ZooKeeper if it exists");
       }
-      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+
+      String zkHost = System.getProperty("zkHost");
+      if (!StringUtils.isEmpty(zkHost)) {
+        int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
+        startUpZkTimeOut *= 1000;
+        try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
+          if (zkClient.exists("/solr.xml", true)) {
+            log.info("solr.xml found in ZooKeeper. Loading...");
+            byte[] data = zkClient.getData("/solr.xml", null, null, true);
+            return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
+          }
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+        }
+        log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+      }
+      cfg = SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath());
+    } catch (IOException e) {
+      // do nothing.
     }
-    return SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath());
+    return cfg;
   }
   
   public CoreContainer getCores() {
@@ -284,6 +321,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       SolrRequestParsers.fileCleaningTracker = null;
     }
 
+    if (metricManager != null) {
+      metricManager.unregisterGauges(registryName, metricTag);
+    }
+
     if (cores != null) {
       try {
         cores.shutdown();
@@ -298,38 +339,43 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     doFilter(request, response, chain, false);
   }
   
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
-    if (!(request instanceof HttpServletRequest)) return;
+  public void doFilter(ServletRequest _request, ServletResponse _response, FilterChain chain, boolean retry) throws IOException, ServletException {
+    if (!(_request instanceof HttpServletRequest)) return;
+    HttpServletRequest request = (HttpServletRequest)_request;
+    HttpServletResponse response = (HttpServletResponse)_response;
+
     try {
 
       if (cores == null || cores.isShutDown()) {
-        log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Error processing the request. CoreContainer is either not initialized or shutting down.");
+        try {
+          init.await();
+        } catch (InterruptedException e) { //well, no wait then
+        }
+        final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
+        if (cores == null || cores.isShutDown()) {
+          log.error(msg);
+          throw new UnavailableException(msg);
+        }
       }
 
-      AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
-      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been
-                                                                     // sent
+      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
+      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
         return;
       }
       if (wrappedRequest.get() != null) {
         request = wrappedRequest.get();
       }
 
-      request = closeShield(request, retry);
-      response = closeShield(response, retry);
-      
       if (cores.getAuthenticationPlugin() != null) {
-        log.debug("User principal: {}", ((HttpServletRequest) request).getUserPrincipal());
+        log.debug("User principal: {}", request.getUserPrincipal());
       }
 
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
-        String requestPath = ((HttpServletRequest) request).getServletPath();
-        String extraPath = ((HttpServletRequest) request).getPathInfo();
-        if (extraPath != null) { // In embedded mode, servlet path is empty - include all post-context path here for
-                                 // testing
+        String requestPath = request.getServletPath();
+        String extraPath = request.getPathInfo();
+        if (extraPath != null) {
+          // In embedded mode, servlet path is empty - include all post-context path here for testing
           requestPath += extraPath;
         }
         for (Pattern p : excludePatterns) {
@@ -341,7 +387,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
+      HttpSolrCall call = getHttpSolrCall(closeShield(request, retry), closeShield(response, retry), retry);
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         Action result = call.call();
@@ -350,10 +396,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             chain.doFilter(request, response);
             break;
           case RETRY:
-            doFilter(request, response, chain, true);
+            doFilter(request, response, chain, true); // RECURSION
             break;
           case FORWARD:
             request.getRequestDispatcher(call.getPath()).forward(request, response);
+            break;
+          case ADMIN:
+          case PROCESS:
+          case REMOTEQUERY:
+          case RETURN:
             break;
         }
       } finally {
@@ -361,7 +412,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
-      consumeInputFully((HttpServletRequest) request);
+      consumeInputFully(request);
     }
   }
   
@@ -388,14 +439,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       path += request.getPathInfo();
     }
 
-    if (isV2Enabled && (path.startsWith("/v2/") || path.equals("/v2"))) {
+    if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
       return new V2HttpCall(this, cores, request, response, false);
     } else {
       return new HttpSolrCall(this, cores, request, response, retry);
     }
   }
 
-  private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
+  private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
     boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
@@ -418,7 +469,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         // upon successful authentication, this should call the chain's next filter.
         requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
-          wrappedRequest.set(req);
+          wrappedRequest.set((HttpServletRequest) req);
         });
       } catch (Exception e) {
         log.info("Error authenticating", e);
@@ -446,9 +497,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param retry If this is an original request or a retry.
    * @return A request object with an {@link InputStream} that will ignore calls to close.
    */
-  private ServletRequest closeShield(ServletRequest request, boolean retry) {
+  private HttpServletRequest closeShield(HttpServletRequest request, boolean retry) {
     if (testMode && !retry) {
-      return new HttpServletRequestWrapper((HttpServletRequest) request) {
+      return new HttpServletRequestWrapper(request) {
         ServletInputStream stream;
         
         @Override
@@ -478,9 +529,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param retry If this response corresponds to an original request or a retry.
    * @return A response object with an {@link OutputStream} that will ignore calls to close.
    */
-  private ServletResponse closeShield(ServletResponse response, boolean retry) {
+  private HttpServletResponse closeShield(HttpServletResponse response, boolean retry) {
     if (testMode && !retry) {
-      return new HttpServletResponseWrapper((HttpServletResponse) response) {
+      return new HttpServletResponseWrapper(response) {
         ServletOutputStream stream;
         
         @Override

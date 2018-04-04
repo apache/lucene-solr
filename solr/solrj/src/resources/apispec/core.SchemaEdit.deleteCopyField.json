@@ -1,0 +1,19 @@
+{
+  "type":"object",
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#delete-a-copy-field-rule",
+  "description": "Deletes a copy field rule. Both sides of the copy rule (source and destination) are required in order to delete the rule.",
+  "properties":{
+    "source": {
+      "type":"string",
+      "description": "The field the copy rule is defined to copy from."
+    },
+    "dest": {
+      "type": "string",
+      "description": "The field the copy rule is defined to copy to."
+    }
+  },
+  "required": [
+    "source",
+    "dest"
+  ]
+}

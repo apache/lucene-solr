@@ -46,11 +46,11 @@
     </lst>
   </requestHandler>
 
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
   </requestDispatcher>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <!-- config for the admin interface -->
   <admin>

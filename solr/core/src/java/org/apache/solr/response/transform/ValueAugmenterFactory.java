@@ -96,7 +96,7 @@ class ValueAugmenter extends DocTransformer
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
     doc.setField( name, value );
   }
 }

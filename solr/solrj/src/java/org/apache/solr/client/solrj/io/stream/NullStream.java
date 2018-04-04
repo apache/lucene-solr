@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  *  The NullStream Iterates over a TupleStream and eats the tuples. It returns the tuple count in the EOF tuple.
  *  Because the NullStreaam eats all the Tuples it see's it can be used as a simple tool for performance analysis of
  *  underlying streams.
+ * @since 6.4.0
  **/
 
 public class NullStream extends TupleStream implements Expressible {

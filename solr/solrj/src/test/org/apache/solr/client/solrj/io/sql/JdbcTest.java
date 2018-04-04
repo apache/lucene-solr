@@ -28,7 +28,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -450,6 +449,25 @@ public class JdbcTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testOneEqualZeroMetadata() throws Exception {
+    // SOLR-8845 - Make sure that 1 = 1 (literal comparison literal) works
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
+        "?collection=" + COLLECTIONORALIAS)) {
+
+      try (Statement stmt = con.createStatement()) {
+        try (ResultSet rs = stmt.executeQuery("select a_s from " + COLLECTIONORALIAS + " where 1 = 0")) {
+          assertFalse(rs.next());
+
+          ResultSetMetaData resultSetMetaData = rs.getMetaData();
+          assertNotNull(resultSetMetaData);
+          assertEquals(1, resultSetMetaData.getColumnCount());
+          assertEquals("a_s", resultSetMetaData.getColumnName(1));
+        }
+      }
+    }
+  }
+
+  @Test
   public void testDriverMetadata() throws Exception {
     String collection = COLLECTIONORALIAS;
 
@@ -536,13 +554,7 @@ public class JdbcTest extends SolrCloudTestCase {
       tables.addAll(collectionsSet);
 
       Aliases aliases = zkStateReader.getAliases();
-      if(aliases != null) {
-        Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
-        if(collectionAliasMap != null) {
-          Set<String> aliasesSet = collectionAliasMap.keySet();
-          tables.addAll(aliasesSet);
-        }
-      }
+      tables.addAll(aliases.getCollectionAliasListMap().keySet());
 
       try(ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
         for(String table : tables) {

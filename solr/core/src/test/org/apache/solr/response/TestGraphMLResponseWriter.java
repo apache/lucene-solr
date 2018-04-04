@@ -84,7 +84,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
 
   }
 
-  private class TestStream extends TupleStream {
+  private static class TestStream extends TupleStream {
 
     private Iterator<Tuple> tuples;
 

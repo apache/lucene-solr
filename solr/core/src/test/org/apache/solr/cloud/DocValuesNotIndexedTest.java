@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -132,11 +133,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         fieldsToTestMulti.size() + fieldsToTestGroupSortFirst.size() + fieldsToTestGroupSortLast.size() +
         4);
 
-    updateList.add(getType("name", "float", "class", "solr.TrieFloatField", "precisionStep", "0"));
+    updateList.add(getType("name", "float", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class)));
 
-    updateList.add(getType("name", "double", "class", "solr.TrieDoubleField", "precisionStep", "0"));
+    updateList.add(getType("name", "double", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Double.class)));
 
-    updateList.add(getType("name", "date", "class", "solr.TrieDateField", "precisionStep", "0"));
+    updateList.add(getType("name", "date", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class)));
 
     updateList.add(getType("name", "boolean", "class", "solr.BoolField"));
 
@@ -223,6 +224,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testGroupingSorting() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -268,6 +270,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingDocAbsent() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(4);
     docs.add(makeGSDoc(2, fieldsToTestGroupSortFirst, null));

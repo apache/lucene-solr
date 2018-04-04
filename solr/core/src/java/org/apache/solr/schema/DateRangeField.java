@@ -39,7 +39,7 @@ import org.apache.solr.util.DateMathParser;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A field for indexed dates and date ranges. It's mostly compatible with TrieDateField.  It has the potential to allow
+ * A field for indexed dates and date ranges. It's mostly compatible with DatePointField.  It has the potential to allow
  * efficient faceting, similar to facet.enum.
  *
  * @see NumberRangePrefixTreeStrategy
@@ -63,10 +63,10 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val) {
     if (val instanceof Date || val instanceof Calendar)//From URP?
       val = tree.toUnitShape(val);
-    return super.createFields(field, val, boost);
+    return super.createFields(field, val);
   }
 
   @Override
@@ -75,7 +75,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
     if (shape instanceof UnitNRShape) {
       UnitNRShape unitShape = (UnitNRShape) shape;
       if (unitShape.getLevel() == tree.getMaxLevels()) {
-        //fully precise date. We can be fully compatible with TrieDateField (incl. 'Z')
+        //fully precise date. We can be fully compatible with DatePointField (incl. 'Z')
         return shape.toString() + 'Z';
       }
     }

@@ -20,8 +20,10 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.util.stats.MetricUtils;
 
 
 public class SystemInfoHandlerTest extends LuceneTestCase {
@@ -36,9 +38,11 @@ public class SystemInfoHandlerTest extends LuceneTestCase {
     info.add( "version", os.getVersion() );
     info.add( "arch", os.getArch() );
 
-    // make another using addMXBeanProperties() 
+    // make another using MetricUtils.addMXBeanMetrics()
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
-    SystemInfoHandler.addMXBeanProperties( os, OperatingSystemMXBean.class, info2 );
+    MetricUtils.addMXBeanMetrics( os, OperatingSystemMXBean.class, null, (k, v) -> {
+      info2.add(k, ((Gauge)v).getValue());
+    } );
 
     // make sure they got the same thing
     for (String p : Arrays.asList("name", "version", "arch")) {

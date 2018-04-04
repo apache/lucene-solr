@@ -210,6 +210,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     document.addField("id", 1);
     document.addField("whitetok", "Jumping Jack");
     document.addField("text", "The Fox Jumped Over The Dogs");
+    document.addField("number_l_p", 88L);
 
     DocumentAnalysisRequest request = new DocumentAnalysisRequest()
             .setQuery("JUMPING")
@@ -221,35 +222,45 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     NamedList<NamedList<NamedList<Object>>> documentResult = (NamedList<NamedList<NamedList<Object>>>) result.get("1");
     assertNotNull("An analysis for document with key '1' should be returned", documentResult);
 
-    // the id field
-    NamedList<NamedList<Object>> idResult = documentResult.get("id");
-    assertNotNull("an analysis for the 'id' field should be returned", idResult);
-
     NamedList<Object> queryResult;
     List<NamedList> tokenList;
     NamedList<Object> indexResult;
     NamedList<List<NamedList>> valueResult;
+    String name;
 
-    /*** Much of this test seems invalid for a numeric "id" field
-    NamedList<Object> queryResult = idResult.get("query");
+    // the id field
+    NamedList<NamedList<Object>> idResult = documentResult.get("id");
+    assertNotNull("an analysis for the 'id' field should be returned", idResult);
+    queryResult = idResult.get("query");
     assertEquals("Only the default analyzer should be applied", 1, queryResult.size());
-    String name = queryResult.getName(0);
+    name = queryResult.getName(0);
     assertTrue("Only the default analyzer should be applied", name.matches("org.apache.solr.schema.FieldType\\$DefaultAnalyzer.*"));
-    List<NamedList> tokenList = (List<NamedList>) queryResult.getVal(0);
+    tokenList = (List<NamedList>) queryResult.getVal(0);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("JUMPING", null, "word", 0, 7, 1, new int[]{1}, null, false));
-    NamedList<Object> indexResult = idResult.get("index");
-
+    indexResult = idResult.get("index");
     assertEquals("The id field has only a single value", 1, indexResult.size());
-    NamedList<List<NamedList>> valueResult = (NamedList<List<NamedList>>) indexResult.get("1");
+    valueResult = (NamedList<List<NamedList>>) indexResult.get("1");
     assertEquals("Only the default analyzer should be applied", 1, valueResult.size());
     name = queryResult.getName(0);
     assertTrue("Only the default analyzer should be applied", name.matches("org.apache.solr.schema.FieldType\\$DefaultAnalyzer.*"));
     tokenList = valueResult.getVal(0);
     assertEquals("The 'id' field value has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("1", null, "word", 0, 1, 1, new int[]{1}, null, false));
-    ***/
-  
+
+    // the number_l_p field
+    NamedList<NamedList<Object>> number_l_p_Result = documentResult.get("number_l_p");
+    assertNotNull("an analysis for the 'number_l_p' field should be returned", number_l_p_Result);
+    indexResult = number_l_p_Result.get("index");
+    assertEquals("The number_l_p field has only a single value", 1, indexResult.size());
+    valueResult = (NamedList<List<NamedList>>) indexResult.get("88");
+    assertEquals("Only the default analyzer should be applied", 1, valueResult.size());
+    name = queryResult.getName(0);
+    assertTrue("Only the default analyzer should be applied", name.matches("org.apache.solr.schema.FieldType\\$DefaultAnalyzer.*"));
+    tokenList = valueResult.getVal(0);
+    assertEquals("The 'number_l_p' field value has only one token", 1, tokenList.size());
+    assertToken(tokenList.get(0), new TokenInfo("88", null, "word", 0, 2, 1, new int[]{1}, null, false));
+
     // the name field
     NamedList<NamedList<Object>> whitetokResult = documentResult.get("whitetok");
     assertNotNull("an analysis for the 'whitetok' field should be returned", whitetokResult);

@@ -32,11 +32,11 @@ public class SerialMergeScheduler extends MergeScheduler {
    * multiple threads, only one merge may run at a time. */
   @Override
   synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
-
     while(true) {
       MergePolicy.OneMerge merge = writer.getNextMerge();
-      if (merge == null)
+      if (merge == null) {
         break;
+      }
       writer.merge(merge);
     }
   }

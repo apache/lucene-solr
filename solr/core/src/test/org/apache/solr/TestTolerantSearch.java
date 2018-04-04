@@ -150,7 +150,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       }
     }
     assertTrue(foundError);
-    assertEquals(1, response.getResults().get(0).getFieldValue("id"));
+    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
     assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
     unIgnoreException("Dummy exception in BadResponseWriter");
   }
@@ -199,7 +199,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     }
     assertTrue(foundError);
     
-    assertEquals(1, response.getResults().get(0).getFieldValue("id"));
+    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
     assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
     unIgnoreException("Dummy exception in BadResponseWriter");
   }

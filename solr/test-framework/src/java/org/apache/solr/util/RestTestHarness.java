@@ -97,7 +97,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
 
   /**
    * Processes a "query" using a URL path (with no context path) + optional query params,
-   * e.g. "/schema/fields?indent=on"
+   * e.g. "/schema/fields?indent=off"
    *
    * @param request the URL path and optional query params
    * @return The response to the query
@@ -181,10 +181,10 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public void reload() throws Exception {
     String coreName = (String)evaluateXPath
-        (adminQuery("/admin/cores?action=STATUS"),
+        (adminQuery("/admin/cores?wt=xml&action=STATUS"),
          "//lst[@name='status']/lst[1]/str[@name='name']",
          XPathConstants.STRING);
-    String xml = checkAdminResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
+    String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }

@@ -63,8 +63,8 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultField() throws Exception {
-    assertJQ(req("defType", "simple", "q", "t2 t9 t12"), "/response/numFound==1");
-    assertJQ(req("defType", "simple", "q", "t3"), "/response/numFound==0");
+    assertJQ(req("defType", "simple", "df", "text0", "q", "t2 t9 t12"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "df", "text0", "q", "t3"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "df", "text1", "q", "t2 t9 t12"), "/response/numFound==3");
     assertJQ(req("defType", "simple", "df", "text1", "q", "t3"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "df", "text-keyword0", "q", "\"kw9 kw10 kw11\""), "/response/numFound==1");

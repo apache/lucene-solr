@@ -17,17 +17,17 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class DivideEvaluatorTest extends LuceneTestCase {
 
@@ -39,7 +39,7 @@ public class DivideEvaluatorTest extends LuceneTestCase {
     
     factory = new StreamFactory()
       .withFunctionName("div", DivideEvaluator.class);
-    values = new HashedMap();
+    values = new HashMap<String,Object>();
   }
     
   @Test
@@ -122,7 +122,7 @@ public class DivideEvaluatorTest extends LuceneTestCase {
   
   @Test(expected = IOException.class)
   public void divManyFieldsWithValues() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("div(a,b,c,d)");
+    factory.constructEvaluator("div(a,b,c,d)");
   }
   
   @Test

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /** A Scorer for queries with a required part and an optional part.
@@ -27,9 +28,15 @@ class ReqOptSumScorer extends Scorer {
   /** The scorers passed from the constructor.
    * These are set to null as soon as their next() or skipTo() returns false.
    */
-  protected final Scorer reqScorer;
-  protected final Scorer optScorer;
-  protected final DocIdSetIterator optIterator;
+  private final Scorer reqScorer;
+  private final Scorer optScorer;
+  private final float reqMaxScore;
+  private final DocIdSetIterator optApproximation;
+  private final TwoPhaseIterator optTwoPhase;
+  private boolean optIsRequired;
+  private final DocIdSetIterator approximation;
+  private final TwoPhaseIterator twoPhase;
+  final MaxScoreSumPropagator maxScorePropagator;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -37,24 +44,144 @@ class ReqOptSumScorer extends Scorer {
    */
   public ReqOptSumScorer(
       Scorer reqScorer,
-      Scorer optScorer)
+      Scorer optScorer) throws IOException
   {
     super(reqScorer.weight);
     assert reqScorer != null;
     assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
-    this.optIterator = optScorer.iterator();
+
+    this.reqMaxScore = reqScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+    this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
+
+    final TwoPhaseIterator reqTwoPhase = reqScorer.twoPhaseIterator();
+    this.optTwoPhase = optScorer.twoPhaseIterator();
+    final DocIdSetIterator reqApproximation;
+    if (reqTwoPhase == null) {
+      reqApproximation = reqScorer.iterator();
+    } else {
+      reqApproximation= reqTwoPhase.approximation();
+    }
+    if (optTwoPhase == null) {
+      optApproximation = optScorer.iterator();
+    } else {
+      optApproximation= optTwoPhase.approximation();
+    }
+
+    approximation = new DocIdSetIterator() {
+
+      private int nextCommonDoc(int reqDoc) throws IOException {
+        int optDoc = optApproximation.docID();
+        if (optDoc > reqDoc) {
+          reqDoc = reqApproximation.advance(optDoc);
+        }
+
+        while (true) { // invariant: reqDoc >= optDoc
+          if (reqDoc == optDoc) {
+            return reqDoc;
+          }
+
+          optDoc = optApproximation.advance(reqDoc);
+          if (optDoc == reqDoc) {
+            return reqDoc;
+          }
+          reqDoc = reqApproximation.advance(optDoc);
+        }
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        int doc = reqApproximation.nextDoc();
+        if (optIsRequired) {
+          doc = nextCommonDoc(doc);
+        }
+        return doc;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        int doc = reqApproximation.advance(target);
+        if (optIsRequired) {
+          doc = nextCommonDoc(doc);
+        }
+        return doc;
+      }
+
+      @Override
+      public int docID() {
+        return reqApproximation.docID();
+      }
+
+      @Override
+      public long cost() {
+        return reqApproximation.cost();
+      }
+
+    };
+
+    if (reqTwoPhase == null && optTwoPhase == null) {
+      this.twoPhase = null;
+    } else {
+      this.twoPhase = new TwoPhaseIterator(approximation) {
+
+        @Override
+        public boolean matches() throws IOException {
+          if (reqTwoPhase != null && reqTwoPhase.matches() == false) {
+            return false;
+          }
+          if (optTwoPhase != null) {
+            if (optIsRequired) {
+              // The below condition is rare and can only happen if we transitioned to optIsRequired=true
+              // after the opt approximation was advanced and before it was confirmed.
+              if (reqScorer.docID() != optApproximation.docID()) {
+                if (optApproximation.docID() < reqScorer.docID()) {
+                  optApproximation.advance(reqScorer.docID());
+                }
+                if (reqScorer.docID() != optApproximation.docID()) {
+                  return false;
+                }
+              }
+              if (optTwoPhase.matches() == false) {
+                // Advance the iterator to make it clear it doesn't match the current doc id
+                optApproximation.nextDoc();
+                return false;
+              }
+            } else if (optApproximation.docID() == reqScorer.docID() && optTwoPhase.matches() == false) {
+              // Advance the iterator to make it clear it doesn't match the current doc id
+              optApproximation.nextDoc();
+            }
+          }
+          return true;
+        }
+
+        @Override
+        public float matchCost() {
+          float matchCost = 1;
+          if (reqTwoPhase != null) {
+            matchCost += reqTwoPhase.matchCost();
+          }
+          if (optTwoPhase != null) {
+            matchCost += optTwoPhase.matchCost();
+          }
+          return matchCost;
+        }
+      };
+    }
   }
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    return reqScorer.twoPhaseIterator();
+    return twoPhase;
   }
 
   @Override
   public DocIdSetIterator iterator() {
-    return reqScorer.iterator();
+    if (twoPhase == null) {
+      return approximation;
+    } else {
+      return TwoPhaseIterator.asDocIdSetIterator(twoPhase);
+    }
   }
 
   @Override
@@ -62,34 +189,41 @@ class ReqOptSumScorer extends Scorer {
     return reqScorer.docID();
   }
 
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until the {@link #iterator()} is advanced the first time.
-   * @return The score of the required scorer, eventually increased by the score
-   * of the optional scorer when it also matches the current document.
-   */
   @Override
   public float score() throws IOException {
     // TODO: sum into a double and cast to float if we ever send required clauses to BS1
     int curDoc = reqScorer.docID();
     float score = reqScorer.score();
 
-    int optScorerDoc = optIterator.docID();
+    int optScorerDoc = optApproximation.docID();
     if (optScorerDoc < curDoc) {
-      optScorerDoc = optIterator.advance(curDoc);
+      optScorerDoc = optApproximation.advance(curDoc);
+      if (optTwoPhase != null && optScorerDoc == curDoc && optTwoPhase.matches() == false) {
+        optScorerDoc = optApproximation.nextDoc();
+      }
     }
-    
     if (optScorerDoc == curDoc) {
       score += optScorer.score();
     }
-    
+
     return score;
   }
 
   @Override
-  public int freq() throws IOException {
-    // we might have deferred advance()
-    score();
-    return optIterator.docID() == reqScorer.docID() ? 2 : 1;
+  public float getMaxScore(int upTo) throws IOException {
+    float maxScore = reqScorer.getMaxScore(upTo);
+    if (optScorer.docID() <= upTo) {
+      maxScore += optScorer.getMaxScore(upTo);
+    }
+    return maxScore;
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float minScore) {
+    // Potentially move to a conjunction
+    if (optIsRequired == false && minScore > reqMaxScore) {
+      optIsRequired = true;
+    }
   }
 
   @Override
@@ -101,4 +235,3 @@ class ReqOptSumScorer extends Scorer {
   }
 
 }
-

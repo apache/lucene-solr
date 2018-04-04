@@ -412,11 +412,15 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     }
     
     ByteArrayOutputStream os = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal(topDocument, os);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(topDocument, os);
+    }
     byte[] buffer = os.toByteArray();
     //now read the Object back
-    InputStream is = new ByteArrayInputStream(buffer);
-    SolrInputDocument result = (SolrInputDocument) new JavaBinCodec().unmarshal(is);
+    SolrInputDocument result;
+    try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
+      result = (SolrInputDocument) jbc.unmarshal(is);
+    }
     assertEquals(2, result.size());
     assertEquals("v1", result.getFieldValue("parent_f1"));
     assertEquals("v2", result.getFieldValue("parent_f2"));

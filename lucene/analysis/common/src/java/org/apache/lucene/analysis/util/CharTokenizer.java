@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
+import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
+
 /**
  * An abstract base class for simple, character-oriented tokenizers.
  * <p>
@@ -50,6 +52,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * Creates a new {@link CharTokenizer} instance
    */
   public CharTokenizer() {
+    this.maxTokenLen = DEFAULT_MAX_WORD_LEN;
   }
   
   /**
@@ -60,6 +63,23 @@ public abstract class CharTokenizer extends Tokenizer {
    */
   public CharTokenizer(AttributeFactory factory) {
     super(factory);
+    this.maxTokenLen = DEFAULT_MAX_WORD_LEN;
+  }
+  
+  /**
+   * Creates a new {@link CharTokenizer} instance
+   *
+   * @param factory the attribute factory to use for this {@link Tokenizer}
+   * @param maxTokenLen maximum token length the tokenizer will emit. 
+   *        Must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
+   * @throws IllegalArgumentException if maxTokenLen is invalid.
+   */
+  public CharTokenizer(AttributeFactory factory, int maxTokenLen) {
+    super(factory);
+    if (maxTokenLen > MAX_TOKEN_LENGTH_LIMIT || maxTokenLen <= 0) {
+      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + maxTokenLen);
+    }
+    this.maxTokenLen = maxTokenLen;
   }
   
   /**
@@ -193,9 +213,10 @@ public abstract class CharTokenizer extends Tokenizer {
   }
   
   private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
-  private static final int MAX_WORD_LEN = 255;
+  public static final int DEFAULT_MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
-  
+  private final int maxTokenLen;
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
@@ -256,7 +277,7 @@ public abstract class CharTokenizer extends Tokenizer {
         }
         end += charCount;
         length += Character.toChars(normalize(c), buffer, length); // buffer it, normalized
-        if (length >= MAX_WORD_LEN) { // buffer overflow! make sure to check for >= surrogate pair could break == test
+        if (length >= maxTokenLen) { // buffer overflow! make sure to check for >= surrogate pair could break == test
           break;
         }
       } else if (length > 0) {           // at non-Letter w/ chars

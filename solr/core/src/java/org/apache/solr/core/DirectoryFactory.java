@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
-import java.util.Collection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -53,6 +54,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
 
   protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
+
+  // May be set by sub classes as data root, in which case getDataHome will use it as base
+  protected Path dataHomePath;
 
   // hint about what the directory contains - default is index directory
   public enum DirContext {DEFAULT, META_DATA}
@@ -105,9 +109,14 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   protected abstract LockFactory createLockFactory(String rawLockType) throws IOException;
   
   /**
-   * Returns true if a Directory exists for a given path.
+   * Returns true if a Directory exists for a given path in the underlying (stable) storage <em>and</em> 
+   * contains at least one file.  
+   * Note that the existence of a {@link Directory} <em>Object</em> as returned by a previous call to the 
+   * {@link #get} method (on the specified <code>path</code>) is not enough to cause this method to return 
+   * true.  Some prior user of that Directory must have written &amp; synced at least one file to that 
+   * Directory (and at least one file must still exist)
+   *
    * @throws IOException If there is a low-level I/O error.
-   * 
    */
   public abstract boolean exists(String path) throws IOException;
   
@@ -316,16 +325,22 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     return false;
   }
 
-  public String getDataHome(CoreDescriptor cd) throws IOException {
-    // by default, we go off the instance directory
-    return cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
-  }
-
   /**
-   * Optionally allow the DirectoryFactory to request registration of some MBeans.
+   * Get the data home folder. If solr.data.home is set, that is used, else base on instanceDir
+   * @param cd core descriptor instance
+   * @return a String with absolute path to data direcotry
    */
-  public Collection<SolrInfoMBean> offerMBeans() {
-    return Collections.emptySet();
+  public String getDataHome(CoreDescriptor cd) throws IOException {
+    String dataDir;
+    if (dataHomePath != null) {
+      String instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1).toString();
+      dataDir = Paths.get(coreContainer.getSolrHome()).resolve(dataHomePath)
+          .resolve(instanceDirLastPath).resolve(cd.getDataDir()).toAbsolutePath().toString();
+    } else {
+      // by default, we go off the instance directory
+      dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
+    }
+    return dataDir;
   }
 
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
@@ -382,6 +397,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   public void initCoreContainer(CoreContainer cc) {
     this.coreContainer = cc;
+    if (cc != null && cc.getConfig() != null) {
+      this.dataHomePath = cc.getConfig().getSolrDataHome();
+    }
   }
   
   // special hack to work with FilterDirectory
@@ -411,13 +429,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
       dirFactory = new NRTCachingDirectoryFactory();
       dirFactory.initCoreContainer(cc);
     }
-    if (config.indexConfig.metricsInfo != null && config.indexConfig.metricsInfo.isEnabled()) {
-      final DirectoryFactory factory = new MetricsDirectoryFactory(cc.getMetricManager(),
-          registryName, dirFactory);
-        factory.init(config.indexConfig.metricsInfo.initArgs);
-      return factory;
-    } else {
-      return dirFactory;
-    }
+    return dirFactory;
   }
 }

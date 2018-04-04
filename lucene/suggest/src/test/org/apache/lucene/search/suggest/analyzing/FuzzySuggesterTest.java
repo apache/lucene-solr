@@ -1118,7 +1118,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   private static final Comparator<CharSequence> CHARSEQUENCE_COMPARATOR = new CharSequenceComparator();
 
-  public class CompareByCostThenAlpha implements Comparator<LookupResult> {
+  public static class CompareByCostThenAlpha implements Comparator<LookupResult> {
     @Override
     public int compare(LookupResult a, LookupResult b) {
       if (a.value > b.value) {

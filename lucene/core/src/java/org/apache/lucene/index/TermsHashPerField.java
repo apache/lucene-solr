@@ -19,12 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRefHash.BytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
-import org.apache.lucene.util.BytesRefHash.BytesStartArray;
 
 abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   private static final int HASH_INIT_SIZE = 4;
@@ -35,6 +36,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   protected final DocumentsWriterPerThread.DocState docState;
   protected final FieldInvertState fieldState;
   TermToBytesRefAttribute termAtt;
+  protected TermFrequencyAttribute termFreqAtt;
 
   // Copied from our perThread
   final IntBlockPool intPool;
@@ -287,6 +289,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
    *  document. */
   boolean start(IndexableField field, boolean first) {
     termAtt = fieldState.termAttribute;
+    termFreqAtt = fieldState.termFreqAttribute;
     if (nextPerField != null) {
       doNextCall = nextPerField.start(field, first);
     }

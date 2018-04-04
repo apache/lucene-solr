@@ -229,6 +229,11 @@ public abstract class Feature extends Query {
         throws IOException;
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc)
         throws IOException {
       final FeatureScorer r = scorer(context);
@@ -293,11 +298,6 @@ public abstract class Feature extends Query {
       }
 
       @Override
-      public int freq() throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public int docID() {
         return itr.docID();
       }
@@ -327,6 +327,10 @@ public abstract class Feature extends Query {
         return constScore;
       }
 
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return constScore;
+      }
     }
 
   }

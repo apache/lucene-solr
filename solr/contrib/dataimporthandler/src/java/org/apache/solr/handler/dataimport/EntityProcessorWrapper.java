@@ -17,6 +17,8 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.Entity;
 
@@ -98,6 +100,9 @@ public class EntityProcessorWrapper extends EntityProcessor {
     for (String aTransArr : transArr) {
       String trans = aTransArr.trim();
       if (trans.startsWith("script:")) {
+        // The script transformer is a potential vulnerability, esp. when the script is
+        // provided from an untrusted source. Check and don't proceed if source is untrusted.
+        checkIfTrusted(trans);
         String functionName = trans.substring("script:".length());
         ScriptTransformer scriptTransformer = new ScriptTransformer();
         scriptTransformer.setFunctionName(functionName);
@@ -124,6 +129,24 @@ public class EntityProcessorWrapper extends EntityProcessor {
       }
     }
 
+  }
+
+  private void checkIfTrusted(String trans) {
+    if (docBuilder != null) {
+      SolrCore core = docBuilder.dataImporter.getCore();
+      boolean trusted = (core != null)? core.getCoreDescriptor().isConfigSetTrusted(): true;
+      if (!trusted) {
+        Exception ex = new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded "
+            + "without any authentication in place,"
+            + " and this transformer is not available for collections with untrusted configsets. To use this transformer,"
+            + " re-upload the configset after enabling authentication and authorization.");
+        String msg = "Transformer: "
+            + trans
+            + ". " + ex.getMessage();
+        log.error(msg);
+        wrapAndThrow(SEVERE, ex, msg);
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")

@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -29,12 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -43,11 +48,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * A test for {@link FieldAnalysisRequestHandler}.
  *
@@ -55,7 +55,7 @@ import java.util.List;
  * @since solr 1.4
  */
 public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestBase {
-
+  
   private FieldAnalysisRequestHandler handler;
 
   @Override
@@ -68,6 +68,20 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+  
+  @Test
+  public void testPointField() throws Exception {
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("pint");
+    request.setFieldValue("5");
+    
+    NamedList<NamedList> nl = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    NamedList pintNL = (NamedList)nl.get("field_types").get("pint");
+    NamedList indexNL = (NamedList)pintNL.get("index");
+    ArrayList analyzerNL = (ArrayList)indexNL.get("org.apache.solr.schema.FieldType$DefaultAnalyzer$1");
+    String text = (String)((NamedList)analyzerNL.get(0)).get("text"); 
+    assertEquals("5", text);
   }
 
   /**
@@ -382,7 +396,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPositionHistoryWithWDF() throws Exception {
+  public void testPositionHistoryWithWDGF() throws Exception {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
@@ -407,12 +421,12 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(1), new TokenInfo("3456-12", null, "word", 4, 11, 2, new int[]{2}, null, false));
     assertToken(tokenList.get(2), new TokenInfo("a", null, "word", 12, 13, 3, new int[]{3}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("Test", null, "word", 14, 18, 4, new int[]{4}, null, false));
-    tokenList = indexPart.get("org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter");
-    assertNotNull("Expcting WordDelimiterFilter analysis breakdown", tokenList);
+    tokenList = indexPart.get("org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter");
+    assertNotNull("Expcting WordDelimiterGraphFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("hi", null, "word", 0, 2, 1, new int[]{1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("Test", null, "word", 14, 18, 5, new int[]{4,5}, null, false));
@@ -420,8 +434,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("hi", null, "word", 0, 2, 1, new int[]{1,1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2,2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2,2}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
@@ -477,6 +491,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     List<NamedList> tokenInfoList = (List<NamedList>) result.findRecursive("index", CustomTokenFilter.class.getName());
     // '1' from CustomTokenFilter plus 900 from CustomFlagsAttributeImpl.
     assertEquals(901, tokenInfoList.get(0).get("org.apache.lucene.analysis.tokenattributes.FlagsAttribute#flags"));
+  }
+
+  @Test(expected = Exception.class)
+  public void testNoDefaultField() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.Q, "fox brown");
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
+    handler.resolveAnalysisRequest(req);
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */

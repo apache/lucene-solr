@@ -40,6 +40,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -56,13 +57,17 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -126,7 +131,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     mi.addField("field", "some terms be here", analyzer);
     IndexSearcher searcher = mi.createSearcher();
     LeafReader reader = (LeafReader) searcher.getIndexReader();
-    TermsEnum terms = reader.fields().terms("field").iterator();
+    TermsEnum terms = reader.terms("field").iterator();
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
     TestUtil.checkReader(reader);
@@ -144,32 +149,32 @@ public class TestMemoryIndex extends LuceneTestCase {
 
     assertEquals(reader.getTermVectors(0).size(), 1);
   }
-  
+
   public void testReaderConsistency() throws IOException {
     Analyzer analyzer = new MockPayloadAnalyzer();
-    
+
     // defaults
     MemoryIndex mi = new MemoryIndex();
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     // all combinations of offsets/payloads options
     mi = new MemoryIndex(true, true);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(true, false);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(false, true);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(false, false);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     analyzer.close();
   }
 
@@ -186,11 +191,18 @@ public class TestMemoryIndex extends LuceneTestCase {
     float n1 = norms.longValue();
 
     // Norms are re-computed when we change the Similarity
-    mi.setSimilarity(new ClassicSimilarity() {
+    mi.setSimilarity(new Similarity() {
+
       @Override
-      public float lengthNorm(FieldInvertState state) {
+      public long computeNorm(FieldInvertState state) {
         return 74;
       }
+
+      @Override
+      public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+        throw new UnsupportedOperationException();
+      }
+
     });
     norms = reader.getNormValues("f1");
     assertEquals(0, norms.nextDoc());
@@ -257,6 +269,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     NumericDocValues numericDocValues = leafReader.getNumericDocValues("numeric");
     assertEquals(0, numericDocValues.nextDoc());
     assertEquals(29L, numericDocValues.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, numericDocValues.nextDoc());
     SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
     assertEquals(0, sortedNumericDocValues.nextDoc());
     assertEquals(5, sortedNumericDocValues.docValueCount());
@@ -265,14 +278,17 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(32L, sortedNumericDocValues.nextValue());
     assertEquals(32L, sortedNumericDocValues.nextValue());
     assertEquals(33L, sortedNumericDocValues.nextValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedNumericDocValues.nextDoc());
     BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("binary");
     assertEquals(0, binaryDocValues.nextDoc());
     assertEquals("a", binaryDocValues.binaryValue().utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, binaryDocValues.nextDoc());
     SortedDocValues sortedDocValues = leafReader.getSortedDocValues("sorted");
     assertEquals(0, sortedDocValues.nextDoc());
     assertEquals("b", sortedDocValues.binaryValue().utf8ToString());
     assertEquals(0, sortedDocValues.ordValue());
     assertEquals("b", sortedDocValues.lookupOrd(0).utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedDocValues.nextDoc());
     SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
     assertEquals(3, sortedSetDocValues.getValueCount());
     assertEquals(0, sortedSetDocValues.nextDoc());
@@ -283,6 +299,47 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals("c", sortedSetDocValues.lookupOrd(0L).utf8ToString());
     assertEquals("d", sortedSetDocValues.lookupOrd(1L).utf8ToString());
     assertEquals("f", sortedSetDocValues.lookupOrd(2L).utf8ToString());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, sortedDocValues.nextDoc());
+  }
+
+  public void testDocValues_resetIterator() throws Exception {
+    Document doc = new Document();
+
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("f")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("d")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("d")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("c")));
+
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 33L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 32L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 32L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 31L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 30L));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
+
+    SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
+    assertEquals(3, sortedSetDocValues.getValueCount());
+    for (int times = 0; times < 3; times++) {
+      assertTrue(sortedSetDocValues.advanceExact(0));
+      assertEquals(0L, sortedSetDocValues.nextOrd());
+      assertEquals(1L, sortedSetDocValues.nextOrd());
+      assertEquals(2L, sortedSetDocValues.nextOrd());
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSetDocValues.nextOrd());
+    }
+
+    SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
+    for (int times = 0; times < 3; times++) {
+      assertTrue(sortedNumericDocValues.advanceExact(0));
+      assertEquals(5, sortedNumericDocValues.docValueCount());
+      assertEquals(30L, sortedNumericDocValues.nextValue());
+      assertEquals(31L, sortedNumericDocValues.nextValue());
+      assertEquals(32L, sortedNumericDocValues.nextValue());
+      assertEquals(32L, sortedNumericDocValues.nextValue());
+      assertEquals(33L, sortedNumericDocValues.nextValue());
+    }
+
   }
 
   public void testInvalidDocValuesUsage() throws Exception {
@@ -422,11 +479,22 @@ public class TestMemoryIndex extends LuceneTestCase {
     }
   }
 
-  public void testPointValuesDoNotAffectBoostPositionsOrOffset() throws Exception {
+  public void testMissingPoints() throws IOException {
+    Document doc = new Document();
+    doc.add(new StoredField("field", 42));
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher indexSearcher = mi.createSearcher();
+    // field that exists but does not have points
+    assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("field"));
+    // field that does not exist
+    assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("some_missing_field"));
+  }
+
+  public void testPointValuesDoNotAffectPositionsOrOffset() throws Exception {
     MemoryIndex mi = new MemoryIndex(true, true);
-    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), analyzer, 5f);
-    mi.addField(new BinaryPoint("text", "quick".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
-    mi.addField(new BinaryPoint("text", "brown".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
+    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), analyzer);
+    mi.addField(new BinaryPoint("text", "quick".getBytes(StandardCharsets.UTF_8)), analyzer);
+    mi.addField(new BinaryPoint("text", "brown".getBytes(StandardCharsets.UTF_8)), analyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
     TermsEnum tenum = leafReader.terms("text").iterator();
 
@@ -482,6 +550,30 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(1, s.count(LongPoint.newRangeQuery("longs", new long[] {10L, 10L}, new long[] {30L, 30L})));
     assertEquals(1, s.count(FloatPoint.newRangeQuery("floats", new float[] {10F, 10F}, new float[] {30F, 30F})));
     assertEquals(1, s.count(DoublePoint.newRangeQuery("doubles", new double[] {10D, 10D}, new double[] {30D, 30D})));
+  }
+
+  public void testMultiValuedPointsSortedCorrectly() throws Exception {
+    Document doc = new Document();
+    doc.add(new IntPoint("ints", 3));
+    doc.add(new IntPoint("ints", 2));
+    doc.add(new IntPoint("ints", 1));
+    doc.add(new LongPoint("longs", 3L));
+    doc.add(new LongPoint("longs", 2L));
+    doc.add(new LongPoint("longs", 1L));
+    doc.add(new FloatPoint("floats", 3F));
+    doc.add(new FloatPoint("floats", 2F));
+    doc.add(new FloatPoint("floats", 1F));
+    doc.add(new DoublePoint("doubles", 3D));
+    doc.add(new DoublePoint("doubles", 2D));
+    doc.add(new DoublePoint("doubles", 1D));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher s = mi.createSearcher();
+
+    assertEquals(1, s.count(IntPoint.newSetQuery("ints", 2)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("longs", 2)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("floats", 2)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("doubles", 2)));
   }
 
   public void testIndexingPointsAndDocValues() throws Exception {

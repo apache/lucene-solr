@@ -35,7 +35,7 @@ public interface AnalysisParams {
   static final String QUERY = PREFIX + ".query";
 
   /**
-   * Set to {@code true} to indicate that the index tokens that match query tokens should be marked as "mateched".
+   * Set to {@code true} to indicate that the index tokens that match query tokens should be marked as "matched".
    */
   static final String SHOW_MATCH = PREFIX + ".showmatch";
 

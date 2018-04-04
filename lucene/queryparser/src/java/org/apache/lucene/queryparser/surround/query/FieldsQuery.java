@@ -28,7 +28,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   private SrndQuery q;
   private List<String> fieldNames;
   private final char fieldOp;
-  private final String OrOperatorName = "OR"; /* for expanded queries, not normally visible */
+  private static final String OR_OPERATOR_NAME = "OR"; /* for expanded queries, not normally visible */
   
   public FieldsQuery(SrndQuery q, List<String> fieldNames, char fieldOp) {
     this.q = q;
@@ -61,7 +61,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
       }
       OrQuery oq = new OrQuery(queries,
                               true /* infix OR for field names */,
-                              OrOperatorName);
+                              OR_OPERATOR_NAME);
       // System.out.println(getClass().toString() + ", fields expanded: " + oq.toString()); /* needs testing */
       return oq.makeLuceneQueryField(null, qf);
     }

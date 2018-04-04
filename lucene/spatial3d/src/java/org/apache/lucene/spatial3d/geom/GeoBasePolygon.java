@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-abstract class GeoBasePolygon extends GeoBaseMembershipShape implements GeoPolygon {
+abstract class GeoBasePolygon extends GeoBaseAreaShape implements GeoPolygon {
 
   /** Constructor.
    *@param planetModel is the planet model to use.

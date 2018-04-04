@@ -1,0 +1,18 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/config-api.html",
+  "description": "Gets the Solr configuration for a collection.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/config",
+      "/config/overlay",
+      "/config/query",
+      "/config/jmx",
+      "/config/requestDispatcher",
+      "/config/znodeVersion",
+      "/config/{plugin}"
+    ]
+  }
+}

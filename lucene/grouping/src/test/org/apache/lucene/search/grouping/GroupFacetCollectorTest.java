@@ -44,7 +44,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
@@ -720,7 +719,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     return null;
   }
 
-  private class IndexContext {
+  private static class IndexContext {
 
     final int numDocs;
     final DirectoryReader indexReader;
@@ -744,7 +743,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     }
   }
 
-  private class GroupedFacetResult {
+  private static class GroupedFacetResult {
 
     final int totalCount;
     final int totalMissingCount;

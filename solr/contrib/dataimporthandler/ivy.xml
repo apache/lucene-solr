@@ -23,7 +23,7 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" conf="test"/>
+    <dependency org="org.hsqldb" name="hsqldb" rev="${/org.hsqldb/hsqldb}" conf="test"/>
     <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" conf="test"/>
 
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>

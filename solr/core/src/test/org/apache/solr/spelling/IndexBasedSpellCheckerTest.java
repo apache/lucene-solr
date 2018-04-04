@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -230,7 +229,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private class TestSpellChecker extends IndexBasedSpellChecker{
+  private static class TestSpellChecker extends IndexBasedSpellChecker{
     @Override
     public SpellChecker getSpellChecker(){
       return spellChecker;

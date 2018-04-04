@@ -20,16 +20,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellCanPrune;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
-import org.apache.lucene.spatial.prefix.tree.LegacyCell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeQuery}.
@@ -52,7 +53,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   protected int prefixGridScanLevel;
 
   //Formerly known as simplifyIndexedCells. Eventually will be removed. Only compatible with RPT
-  // and a LegacyPrefixTree.
+  // and cells implementing CellCanPrune, otherwise ignored.
   protected boolean pruneLeafyBranches = true;
 
   protected boolean multiOverlappingIndexedShapes = true;
@@ -92,8 +93,10 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   /**
-   * An optional hint affecting non-point shapes: it will
-   * prune away a complete set sibling leaves to their parent (recursively), resulting in ~20-50%
+   * An optional hint affecting non-point shapes and tree cells implementing {@link CellCanPrune}, otherwise
+   * ignored.
+   * <p>
+   * It will prune away a complete set sibling leaves to their parent (recursively), resulting in ~20-50%
    * fewer indexed cells, and consequently that much less disk and that much faster indexing.
    * So if it's a quad tree and all 4 sub-cells are there marked as a leaf, then they will be
    * removed (pruned) and the parent is marked as a leaf instead.  This occurs recursively on up.  Unfortunately, the
@@ -121,7 +124,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   @Override
   protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
-    if (shape instanceof Point || !pruneLeafyBranches)
+    if (!pruneLeafyBranches || isGridAlignedShape(shape))
       return super.createCellIteratorToIndex(shape, detailLevel, reuse);
 
     List<Cell> cells = new ArrayList<>(4096);
@@ -131,10 +134,6 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   /** Returns true if cell was added as a leaf. If it wasn't it recursively descends. */
   private boolean recursiveTraverseAndPrune(Cell cell, Shape shape, int detailLevel, List<Cell> result) {
-    // Important: this logic assumes Cells don't share anything with other cells when
-    // calling cell.getNextLevelCells(). This is only true for LegacyCell.
-    if (!(cell instanceof LegacyCell))
-      throw new IllegalStateException("pruneLeafyBranches must be disabled for use with grid "+grid);
 
     if (cell.getLevel() == detailLevel) {
       cell.setLeaf();//FYI might already be a leaf
@@ -153,8 +152,14 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
       if (recursiveTraverseAndPrune(subCell, shape, detailLevel, result))
         leaves++;
     }
+
+    if (!(cell instanceof CellCanPrune)) {
+      //Cannot prune so return false
+      return false;
+    }
+
     //can we prune?
-    if (leaves == ((LegacyCell)cell).getSubCellsSize() && cell.getLevel() != 0) {
+    if (leaves == ((CellCanPrune)cell).getSubCellsSize() && cell.getLevel() != 0) {
       //Optimization: substitute the parent as a leaf instead of adding all
       // children as leaves
 
@@ -177,6 +182,9 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
     if (op == SpatialOperation.Intersects) {
+      if (isGridAlignedShape(args.getShape())) {
+        return makeGridShapeIntersectsQuery(args.getShape());
+      }
       return new IntersectsPrefixTreeQuery(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel);
     } else if (op == SpatialOperation.IsWithin) {
@@ -188,5 +196,37 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
           multiOverlappingIndexedShapes);
     }
     throw new UnsupportedSpatialOperation(op);
+  }
+
+  /**
+   * A quick check of the shape to see if it is perfectly aligned to a grid.
+   * Points always are as they are indivisible.  It's okay to return false
+   * if the shape actually is aligned; this is an optimization hint.
+   */
+  protected boolean isGridAlignedShape(Shape shape) {
+    return isPointShape(shape);
+  }
+
+  /** {@link #makeQuery(SpatialArgs)} specialized for the query being a grid square. */
+  protected Query makeGridShapeIntersectsQuery(Shape gridShape) {
+    assert isGridAlignedShape(gridShape);
+    if (isPointsOnly()) {
+      // Awesome; this will be equivalent to a TermQuery.
+      Iterator<Cell> cellIterator = grid.getTreeCellIterator(gridShape, grid.getMaxLevels());
+      // get last cell
+      Cell cell = cellIterator.next();
+      while (cellIterator.hasNext()) {
+        int prevLevel = cell.getLevel();
+        cell = cellIterator.next();
+        assert prevLevel < cell.getLevel();
+      }
+      assert cell.isLeaf();
+      return new TermQuery(new Term(getFieldName(), cell.getTokenBytesWithLeaf(null)));
+    } else {
+      // Well there could be parent cells. But we can reduce the "scan level" which will be slower for a point query.
+      // TODO: AVPTQ will still scan the bottom nonetheless; file an issue to eliminate that
+      return new IntersectsPrefixTreeQuery(
+          gridShape, getFieldName(), grid, getGrid().getMaxLevels(), getGrid().getMaxLevels() + 1);
+    }
   }
 }

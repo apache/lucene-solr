@@ -28,6 +28,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.muta
  * Base class for processors that want to mutate selected fields to only 
  * keep a subset of the original values.
  * @see #pickSubset
+ * @since 4.0.0
  */
 public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -39,8 +40,7 @@ public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutati
       if (src.getValueCount() <= 1) return src;
 
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(pickSubset(src.getValues()),
-          src.getBoost());
+      result.setValue(pickSubset(src.getValues()));
       return result;
     });
   }

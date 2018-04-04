@@ -56,8 +56,11 @@ public class TestForceMergeForever extends LuceneTestCase {
     final Directory d = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
+    // SMS can cause this test to run indefinitely long:
+    iwc.setMergeScheduler(new ConcurrentMergeScheduler());
 
-    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(analyzer));
+    final MyIndexWriter w = new MyIndexWriter(d, iwc);
 
     // Try to make an index that requires merging:
     w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));
@@ -85,7 +88,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       @Override
       public void run() {
         try {
-          while (!doStop.get()) {
+          while (doStop.get() == false) {
             w.updateDocument(new Term("docid", "" + random().nextInt(numStartDocs)),
                              docs.nextDoc());
             // Force deletes to apply

@@ -19,12 +19,11 @@ package org.apache.solr.search;
 
 
 import java.io.IOException;
-import java.util.TreeSet;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -146,8 +145,8 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       //TODO: Use a priority queue
       TreeSet<TermWithScore> topTerms = new TreeSet<>();
 
-      Terms terms = MultiFields.getFields(searcher.getIndexReader()).terms(field);
-      TermsEnum termsEnum = terms.iterator();
+      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(field);
+      TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       BytesRef term;
       PostingsEnum postingsEnum = null;
 

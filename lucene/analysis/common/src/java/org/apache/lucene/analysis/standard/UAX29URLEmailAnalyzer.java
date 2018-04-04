@@ -66,10 +66,11 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Set maximum allowed token length.  If a token is seen
-   * that exceeds this length then it is discarded.  This
-   * setting only takes effect the next time tokenStream or
-   * tokenStream is called.
+   * Set the max allowed token length.  Tokens larger than this will be chopped
+   * up at this token length and emitted as multiple tokens.  If you need to
+   * skip such large tokens, you could increase this max length, and then
+   * use {@code LengthFilter} to remove long tokens.  The default is
+   * {@link UAX29URLEmailAnalyzer#DEFAULT_MAX_TOKEN_LENGTH}.
    */
   public void setMaxTokenLength(int length) {
     maxTokenLength = length;
@@ -92,6 +93,8 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) {
+        // So that if maxTokenLength was changed, the change takes
+        // effect next time tokenStream is called:
         src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
         super.setReader(reader);
       }

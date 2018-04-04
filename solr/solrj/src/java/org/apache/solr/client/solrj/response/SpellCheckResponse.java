@@ -69,7 +69,7 @@ public class SpellCheckResponse {
           NamedList<Object> expandedCollation = (NamedList<Object>) o;
           String collationQuery
             = (String) expandedCollation.get("collationQuery");
-          int hits = (Integer) expandedCollation.get("hits");
+          long hits = ((Number) expandedCollation.get("hits")).longValue();
           @SuppressWarnings("unchecked")
           NamedList<String> misspellingsAndCorrections
             = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
@@ -211,7 +211,7 @@ public class SpellCheckResponse {
 
   }
 
-  public class Collation {
+  public static class Collation {
     private String collationQueryString;
     private List<Correction> misspellingsAndCorrections = new ArrayList<>();
     private long numberOfHits;
@@ -244,7 +244,7 @@ public class SpellCheckResponse {
 
   }
 
-  public class Correction {
+  public static class Correction {
     private String original;
     private String correction;
 

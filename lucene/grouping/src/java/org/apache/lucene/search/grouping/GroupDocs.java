@@ -39,7 +39,7 @@ public class GroupDocs<T> {
   public final ScoreDoc[] scoreDocs;
 
   /** Total hits within this group */
-  public final int totalHits;
+  public final long totalHits;
 
   /** Matches the groupSort passed to {@link
    *  FirstPassGroupingCollector}. */
@@ -47,7 +47,7 @@ public class GroupDocs<T> {
 
   public GroupDocs(float score,
                    float maxScore,
-                   int totalHits,
+                   long totalHits,
                    ScoreDoc[] scoreDocs,
                    T groupValue,
                    Object[] groupSortValues) {

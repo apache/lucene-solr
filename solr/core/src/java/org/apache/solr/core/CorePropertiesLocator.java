@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class CorePropertiesLocator implements CoresLocator {
       if (Files.exists(propertiesFile))
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 "Could not create a new core in " + cd.getInstanceDir()
-                              + "as another core is already defined there");
+                              + " as another core is already defined there");
       writePropertiesFile(cd, propertiesFile);
     }
   }
@@ -85,13 +86,15 @@ public class CorePropertiesLocator implements CoresLocator {
   private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
     Properties p = buildCoreProperties(cd);
     try {
-      Files.createDirectories(propfile.getParent());
+      FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
       try (Writer os = new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
         p.store(os, "Written by CorePropertiesLocator");
       }
     }
     catch (IOException e) {
       logger.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
   }
 
@@ -113,6 +116,12 @@ public class CorePropertiesLocator implements CoresLocator {
 
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
+    String oldName = newCD.getPersistableStandardProperties().getProperty(CoreDescriptor.CORE_NAME);
+    String newName = newCD.coreProperties.getProperty(CoreDescriptor.CORE_NAME);
+    if (oldName == null ||
+        (newName != null && oldName.equals(newName) == false)) {
+      newCD.getPersistableStandardProperties().put(CoreDescriptor.CORE_NAME, newName);
+    }
     persist(cc, newCD);
   }
 
@@ -134,8 +143,10 @@ public class CorePropertiesLocator implements CoresLocator {
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
-            logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
-            cds.add(cd);
+            if (cd != null) {
+              logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              cds.add(cd);
+            }
             return FileVisitResult.SKIP_SIBLINGS;
           }
           return FileVisitResult.CONTINUE;
@@ -174,7 +185,9 @@ public class CorePropertiesLocator implements CoresLocator {
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      return new CoreDescriptor(cc, name, instanceDir, propMap);
+      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
+      ret.loadExtraProperties();
+      return ret;
     }
     catch (IOException e) {
       logger.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());

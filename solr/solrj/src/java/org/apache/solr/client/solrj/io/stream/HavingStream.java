@@ -23,7 +23,7 @@ import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eval.BooleanEvaluator;
+import org.apache.solr.client.solrj.io.eval.RecursiveBooleanEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * The HavingStream iterates over an internal stream and applies a BooleanOperation to each tuple. If the BooleanOperation
  * evaluates to true then the HavingStream emits the tuple, if it returns false the tuple is not emitted.
+ * @since 6.4.0
  **/
 
 public class HavingStream extends TupleStream implements Expressible {
@@ -42,11 +43,12 @@ public class HavingStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private TupleStream stream;
-  private BooleanEvaluator evaluator;
+  private RecursiveBooleanEvaluator evaluator;
+  private StreamContext streamContext;
 
   private transient Tuple currentGroupHead;
 
-  public HavingStream(TupleStream stream, BooleanEvaluator evaluator) throws IOException {
+  public HavingStream(TupleStream stream, RecursiveBooleanEvaluator evaluator) throws IOException {
     init(stream, evaluator);
   }
 
@@ -54,7 +56,7 @@ public class HavingStream extends TupleStream implements Expressible {
   public HavingStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    List<StreamExpression> evaluatorExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanEvaluator.class);
+    List<StreamExpression> evaluatorExpressions = factory.getExpressionOperandsRepresentingTypes(expression, RecursiveBooleanEvaluator.class);
 
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -70,17 +72,17 @@ public class HavingStream extends TupleStream implements Expressible {
     if(evaluatorExpressions != null && evaluatorExpressions.size() == 1) {
       StreamExpression ex = evaluatorExpressions.get(0);
       evaluator = factory.constructEvaluator(ex);
-      if(!(evaluator instanceof BooleanEvaluator)) {
-        throw new IOException("The HavingStream requires a BooleanEvaluator. A StreamEvaluator was provided.");
+      if(!(evaluator instanceof RecursiveBooleanEvaluator)) {
+        throw new IOException("The HavingStream requires a RecursiveBooleanEvaluator. A StreamEvaluator was provided.");
       }
     } else {
-      throw new IOException("The HavingStream requires a BooleanEvaluator.");
+      throw new IOException("The HavingStream requires a RecursiveBooleanEvaluator.");
     }
 
-    init(factory.constructStream(streamExpressions.get(0)), (BooleanEvaluator)evaluator);
+    init(factory.constructStream(streamExpressions.get(0)), (RecursiveBooleanEvaluator)evaluator);
   }
 
-  private void init(TupleStream stream, BooleanEvaluator evaluator) throws IOException{
+  private void init(TupleStream stream, RecursiveBooleanEvaluator evaluator) throws IOException{
     this.stream = stream;
     this.evaluator = evaluator;
   }
@@ -128,6 +130,7 @@ public class HavingStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     this.stream.setStreamContext(context);
   }
 
@@ -152,7 +155,8 @@ public class HavingStream extends TupleStream implements Expressible {
         return tuple;
       }
 
-      if(evaluator.evaluate(tuple)){
+      streamContext.getTupleContext().clear();
+      if((boolean)evaluator.evaluate(tuple)){
         return tuple;
       }
     }

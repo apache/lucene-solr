@@ -21,7 +21,7 @@ fooaaa,baraaa,bazaaa
 GB,gib,gigabyte,gigabytes
 MB,mib,megabyte,megabytes
 Television, Televisions, TV, TVs
-#notice we use "gib" instead of "GiB" so any WordDelimiterFilter coming
+#notice we use "gib" instead of "GiB" so any WordDelimiterGraphFilter coming
 #after us won't split it into two words.
 
 # Synonym mappings can be used for spelling correction too

@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +91,7 @@ public class SolrSnapshotsTool implements Closeable {
   private final CloudSolrClient solrClient;
 
   public SolrSnapshotsTool(String solrZkEnsemble) {
-    solrClient = (new CloudSolrClient.Builder()).withZkHost(solrZkEnsemble).build();
+    solrClient = new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty()).build();
   }
 
   @Override
@@ -301,11 +302,8 @@ public class SolrSnapshotsTool implements Closeable {
       if (backupRepo.isPresent()) {
         backup.setRepositoryName(backupRepo.get());
       }
-      if (asyncReqId.isPresent()) {
-        backup.setAsyncId(asyncReqId.get());
-      }
-      CollectionAdminResponse resp = backup.process(solrClient);
-      Preconditions.checkState(resp.getStatus() == 0, "The request failed. The status code is " + resp.getStatus());
+      // if asyncId is null, processAsync will block and throw an Exception with any error
+      backup.processAsync(asyncReqId.orElse(null), solrClient);
     } catch (Exception e) {
       log.error("Failed to backup collection meta-data for collection " + collectionName, e);
       System.out.println("Failed to backup collection meta-data for collection " + collectionName

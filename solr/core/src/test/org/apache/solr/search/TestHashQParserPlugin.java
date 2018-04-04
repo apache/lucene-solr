@@ -84,6 +84,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=3 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_s");
     params.add("rows","50");
+    params.add("wt", "xml");
     HashSet set1 = new HashSet();
     String response = h.query(req(params));
 
@@ -91,7 +92,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -102,6 +103,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=1 workers=3 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_s");
     params.add("rows","50");
+    params.add("wt", "xml");
     HashSet set2 = new HashSet();
     response = h.query(req(params));
 
@@ -109,7 +111,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -121,6 +123,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=2 workers=3 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_s");
     params.add("rows","50");
+    params.add("wt", "xml");
     HashSet set3 = new HashSet();
     response = h.query(req(params));
 
@@ -128,7 +131,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set3.add(s);
       }
@@ -151,6 +154,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_i");
     params.add("rows","50");
+    params.add("wt", "xml");
     set1 = new HashSet();
     response = h.query(req(params));
 
@@ -158,7 +162,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -169,6 +173,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=1 workers=2 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_i");
     params.add("rows","50");
+    params.add("wt", "xml");
     set2 = new HashSet();
     response = h.query(req(params));
 
@@ -176,7 +181,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -196,6 +201,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_s,       a_i,      a_l");
     params.add("rows","50");
+    params.add("wt", "xml");
     set1 = new HashSet();
     response = h.query(req(params));
 
@@ -203,7 +209,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -214,6 +220,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=1 workers=2 cost="+getCost(random)+"}");
     params.add("partitionKeys", "a_s, a_i, a_l");
     params.add("rows","50");
+    params.add("wt", "xml");
     set2 = new HashSet();
     response = h.query(req(params));
 
@@ -221,7 +228,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }

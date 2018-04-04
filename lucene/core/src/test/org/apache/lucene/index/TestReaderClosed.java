@@ -79,7 +79,9 @@ public class TestReaderClosed extends LuceneTestCase {
     assertTrue(reader.getRefCount() > 0);
     LeafReader wrappedReader = new ParallelLeafReader(getOnlyLeafReader(reader));
 
-    IndexSearcher searcher = newSearcher(wrappedReader);
+    // We wrap with a OwnCacheKeyMultiReader so that closing the underlying reader
+    // does not terminate the threadpool (if that index searcher uses one)
+    IndexSearcher searcher = newSearcher(new OwnCacheKeyMultiReader(wrappedReader));
 
     TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
     searcher.search(query, 5);
@@ -93,7 +95,9 @@ public class TestReaderClosed extends LuceneTestCase {
           ace = (AlreadyClosedException) t;
         }
       }
-      assertNotNull("Query failed, but not due to an AlreadyClosedException", ace);
+      if (ace == null) {
+        throw new AssertionError("Query failed, but not due to an AlreadyClosedException", e);
+      }
       assertEquals(
         "this IndexReader cannot be used anymore as one of its child readers was closed",
         ace.getMessage()

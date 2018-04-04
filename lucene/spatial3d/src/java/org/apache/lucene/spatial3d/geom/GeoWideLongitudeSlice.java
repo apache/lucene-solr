@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box wider than PI but limited on left and right sides (
  * left lon, right lon).
@@ -75,7 +79,13 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
     while (leftLon > rightLon) {
       rightLon += Math.PI * 2.0;
     }
-    final double middleLon = (leftLon + rightLon) * 0.5;
+    double middleLon = (leftLon + rightLon) * 0.5;
+    while (middleLon > Math.PI) {
+        middleLon -= Math.PI * 2.0;
+    }
+    while (middleLon < -Math.PI) {
+        middleLon += Math.PI * 2.0;
+    }
     this.centerPoint = new GeoPoint(planetModel, 0.0, middleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
@@ -83,6 +93,21 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
     
     this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoWideLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
   }
 
   @Override
@@ -134,6 +159,14 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
+    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
+    return geoShape.intersects(leftPlane, planePoints) ||
+        geoShape.intersects(rightPlane, planePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -142,30 +175,6 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
       .addIntersection(planetModel, leftPlane, rightPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE)
-      return OVERLAPS;
-
-    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape)
-      return OVERLAPS;
-
-    if (path.intersects(leftPlane, planePoints) ||
-        path.intersects(rightPlane, planePoints))
-      return OVERLAPS;
-
-    if (insideRectangle == ALL_INSIDE)
-      return WITHIN;
-
-    if (insideShape)
-      return CONTAINS;
-
-    return DISJOINT;
   }
 
   @Override

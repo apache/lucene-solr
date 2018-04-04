@@ -1,0 +1,57 @@
+o.ar.s.sum=sum(add(int_id,float_fd))
+o.ar.s.sumc=sum(add_if_dd)
+o.ar.s.mean=mean(add(long_ld,double_dd,float_fd))
+o.ar.s.meanc=mean(add_ldf_dd)
+
+o.mr.s.sum=sum(mult(int_id,float_fd))
+o.mr.s.sumc=sum(mult_if_dd)
+o.mr.s.mean=mean(mult(long_ld,double_dd,float_fd))
+o.mr.s.meanc=mean(mult_ldf_dd)
+
+o.dr.s.sum=sum(div(int_id,float_fd))
+o.dr.s.sumc=sum(div_if_dd)
+o.dr.s.mean=mean(div(long_ld,double_dd))
+o.dr.s.meanc=mean(div_ld_dd)
+
+o.pr.s.sum=sum(pow(int_id,float_fd))
+o.pr.s.sumc=sum(pow_if_dd)
+o.pr.s.mean=mean(pow(long_ld,double_dd))
+o.pr.s.meanc=mean(pow_ld_dd)
+
+o.nr.s.sum=sum(neg(int_id))
+o.nr.s.sumc=sum(neg_id)
+o.nr.s.mean=mean(neg(long_ld))
+o.nr.s.meanc=mean(neg_ld)
+
+o.avr.s.sum=sum(abs(neg(int_id)))
+o.avr.s.sumc=sum(int_id)
+o.avr.s.mean=mean(abs(neg(int_id)))
+o.avr.s.meanc=mean(int_id)
+
+o.cnr.s.sum=sum(8)
+o.cnr.s.sumc=sum(const_8_dd)
+o.cnr.s.mean=mean(10)
+o.cnr.s.meanc=mean(const_10_dd)
+
+o.dmr.s.median=median(date_math(date_dtd,"+2YEARS"))
+o.dmr.s.medianc=median(dm_2y_dtd)
+o.dmr.s.max=max(date_math(date_dtd,"+2MONTHS"))
+o.dmr.s.maxc=max(dm_2m_dtd)
+
+o.cdr.s.median=median(1800-06-30T23:59:59Z)
+o.cdr.s.medianc=median(const_00_dtd)
+o.cdr.s.max=max(1804-06-30T23:59:59Z)
+o.cdr.s.maxc=max(const_04_dtd)
+
+o.csr.s.min=min("this is the first")
+o.csr.s.minc=min(const_first_sd)
+o.csr.s.max=max("this is the second")
+o.csr.s.maxc=max(const_second_sd)
+
+o.cr.s.min=concat("this is the first",min(string_sd))
+o.cr.s.minc=min(concat_first_sd)
+o.cr.s.max=concat("this is the second",max(string_sd))
+o.cr.s.maxc=max(concat_second_sd)
+
+o.ms.s.min=min(miss_dd)
+o.ms.s.max=max(miss_dd)

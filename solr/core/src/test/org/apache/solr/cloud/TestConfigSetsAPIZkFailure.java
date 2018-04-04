@@ -290,8 +290,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public List<ACL> convertLong(Long aclL) {
-      return zkdb.convertLong(aclL);
+    public List<ACL> aclForNode(DataNode n) {
+      return zkdb.aclForNode(n);
     }
 
     @Override

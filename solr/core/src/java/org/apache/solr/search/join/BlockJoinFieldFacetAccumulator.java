@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.ArrayUtil;
@@ -50,7 +50,7 @@ class BlockJoinFieldFacetAccumulator {
   // elems are : facet value counter<<32 | last parent doc num 
   private long[] segmentAccums = new long[0];
   // for mapping per-segment ords to global ones
-  private MultiDocValues.OrdinalMap ordinalMap;
+  private OrdinalMap ordinalMap;
   private SchemaField schemaField;
   private SortedDocValues segmentSDV;
   

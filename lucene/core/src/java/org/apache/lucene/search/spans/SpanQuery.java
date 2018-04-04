@@ -23,9 +23,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
@@ -36,28 +37,28 @@ public abstract class SpanQuery extends Query {
   public abstract String getField();
 
   @Override
-  public abstract SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException;
+  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException;
 
   /**
-   * Build a map of terms to termcontexts, for use in constructing SpanWeights
+   * Build a map of terms to {@link TermStates}, for use in constructing SpanWeights
    * @lucene.internal
    */
-  public static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
-    Map<Term, TermContext> terms = new TreeMap<>();
+  public static Map<Term, TermStates> getTermStates(SpanWeight... weights) {
+    Map<Term, TermStates> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
-      w.extractTermContexts(terms);
+      w.extractTermStates(terms);
     }
     return terms;
   }
 
   /**
-   * Build a map of terms to termcontexts, for use in constructing SpanWeights
+   * Build a map of terms to {@link TermStates}, for use in constructing SpanWeights
    * @lucene.internal
    */
-  public static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
-    Map<Term, TermContext> terms = new TreeMap<>();
+  public static Map<Term, TermStates> getTermStates(Collection<SpanWeight> weights) {
+    Map<Term, TermStates> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
-      w.extractTermContexts(terms);
+      w.extractTermStates(terms);
     }
     return terms;
   }

@@ -44,9 +44,6 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
     this.searcher = searcher;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<>();
@@ -69,7 +66,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
           if (group.groupValue != null) {
             groupResult.add(
-                "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString(), 1.0f))
+                "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString()))
             );
           } else {
             groupResult.add("groupValue", null);

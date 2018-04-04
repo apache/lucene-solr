@@ -32,7 +32,7 @@ public class IndependenceSaturated extends Independence {
   public IndependenceSaturated() {}
   
   @Override
-  public float score(float freq, float expected) {
+  public double score(double freq, double expected) {
     return (freq - expected) / expected;
   }
 

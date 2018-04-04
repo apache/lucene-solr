@@ -51,6 +51,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.muta
  * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.0.0
  */
 public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

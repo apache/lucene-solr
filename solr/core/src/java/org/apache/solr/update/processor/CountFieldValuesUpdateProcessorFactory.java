@@ -63,6 +63,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.muta
  * document that had no values for the <code>category</code> field, would also 
  * have no value in the <code>category_count</code> field.
  * </p>
+ * @since 4.0.0
  */
 public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -72,8 +73,7 @@ public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingU
                                             UpdateRequestProcessor next) {
     return mutator(getSelector(), next, src -> {
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(src.getValueCount(),
-          src.getBoost());
+      result.setValue(src.getValueCount());
       return result;
     });
   }

@@ -29,7 +29,6 @@ public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
   Object value = null; 
-  float boost = 1.0f;
   
   public SolrInputField( String n )
   {
@@ -44,9 +43,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * a collection is given, then that collection will be used as the backing
    * collection for the values.
    */
-  public void setValue(Object v, float b) {
-    boost = b;
-
+  public void setValue(Object v) {
     if( v instanceof Object[] ) {
       Object[] arr = (Object[])v;
       Collection<Object> c = new ArrayList<>( arr.length );
@@ -65,26 +62,20 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * will be added individually.
    */
   @SuppressWarnings("unchecked")
-  public void addValue(Object v, float b) {
+  public void addValue(Object v) {
     if( value == null ) {
       if ( v instanceof Collection ) {
         Collection<Object> c = new ArrayList<>( 3 );
         for ( Object o : (Collection<Object>)v ) {
           c.add( o );
         }
-        setValue(c, b);
+        setValue(c);
       } else {
-        setValue(v, b);
+        setValue(v);
       }
 
       return;
     }
-    
-    // The lucene API and solr XML field specification make it possible to set boosts
-    // on multi-value fields even though lucene indexing does not support this.
-    // To keep behavior consistent with what happens in the lucene index, we accumulate
-    // the product of all boosts specified for this field.
-    boost *= b;
     
     Collection<Object> vals = null;
     if( value instanceof Collection ) {
@@ -164,14 +155,6 @@ public class SolrInputField implements Iterable<Object>, Serializable
   
   //---------------------------------------------------------------
   //---------------------------------------------------------------
-  
-  public float getBoost() {
-    return boost;
-  }
-
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
 
   public String getName() {
     return name;
@@ -211,12 +194,11 @@ public class SolrInputField implements Iterable<Object>, Serializable
   @Override
   public String toString()
   {
-    return name + ((boost == 1.0) ? "=" : ("("+boost+")=")) + value;
+    return name + "=" + value;
   }
 
   public SolrInputField deepCopy() {
     SolrInputField clone = new SolrInputField(name);
-    clone.boost = boost;
     // We can't clone here, so we rely on simple primitives
     if (value instanceof Collection) {
       Collection<Object> values = (Collection<Object>) value;

@@ -29,10 +29,6 @@ public class SchemaRepresentation {
 
   private String uniqueKey;
 
-  private String defaultSearchField;
-
-  private String defaultOperator;
-
   private Map<String, Object> similarity;
 
   private List<Map<String, Object>> fields;
@@ -66,22 +62,6 @@ public class SchemaRepresentation {
 
   public void setUniqueKey(String uniqueKey) {
     this.uniqueKey = uniqueKey;
-  }
-
-  public String getDefaultSearchField() {
-    return defaultSearchField;
-  }
-
-  public void setDefaultSearchField(String defaultSearchField) {
-    this.defaultSearchField = defaultSearchField;
-  }
-
-  public String getDefaultOperator() {
-    return defaultOperator;
-  }
-
-  public void setDefaultOperator(String defaultOperator) {
-    this.defaultOperator = defaultOperator;
   }
 
   public Map<String, Object> getSimilarity() {

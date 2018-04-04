@@ -38,8 +38,8 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public void testToLogIds() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="withlog";
-      req = req("indent","true", "qt","withlog",  "q","aa", "rows","2",
+      String handler="/withlog";
+      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
           "fl","id,subject", "responseLog","true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
@@ -55,8 +55,8 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public void testToLogScores() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="withlog";
-      req = req("indent","true", "qt","withlog",  "q","aa", "rows","2",
+      String handler="/withlog";
+      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
           "fl","id,subject,score", "responseLog","true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
@@ -72,8 +72,8 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public void testDisabling() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="withlog";
-      req = req("indent","true", "qt","withlog",  "q","aa", "rows","2", 
+      String handler="/withlog";
+      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
           "fl","id,subject", "responseLog","false");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();

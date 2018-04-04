@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
@@ -54,7 +55,10 @@ import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * Represents a Latitude/Longitude as a 2 dimensional point.  Latitude is <b>always</b> specified first.
+ *
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
   protected static final int LON = 1;
@@ -67,7 +71,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     String externalVal = value.toString();
     //we could have 3 fields (two for the lat & lon, one for storage)
     List<IndexableField> f = new ArrayList<>(3);
@@ -75,16 +79,24 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
       SchemaField subLatSF = subField(field, LAT, schema);
-      f.add(subLatSF.createField(String.valueOf(point.getY()), subLatSF.indexed() && !subLatSF.omitNorms() ? boost : 1f));
+      f.addAll(subLatSF.createFields(String.valueOf(point.getY())));
       //longitude
       SchemaField subLonSF = subField(field, LON, schema);
-      f.add(subLonSF.createField(String.valueOf(point.getX()), subLonSF.indexed() && !subLonSF.omitNorms() ? boost : 1f));
+      f.addAll(subLonSF.createFields(String.valueOf(point.getX())));
     }
 
     if (field.stored()) {
-      f.add(createField(field.getName(), externalVal, StoredField.TYPE, 1f));
+      f.add(createField(field.getName(), externalVal, StoredField.TYPE));
     }
     return f;
+  }
+  
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType 
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException("LatLonType can't have docValues=true in the field definition, use docValues=true in the fieldType definition, or in subFieldType/subFieldSuffix");
+    }
   }
 
 
@@ -245,7 +257,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
@@ -319,6 +331,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       return new SpatialScorer(context, this, score());
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
 
     @Override
@@ -469,8 +486,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public int freq() throws IOException {
-      return 1;
+    public float getMaxScore(int upTo) throws IOException {
+      return Float.POSITIVE_INFINITY;
     }
 
     public Explanation explain(Explanation base, int doc) throws IOException {
@@ -480,7 +497,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       double dist = dist(latVals.doubleVal(doc), lonVals.doubleVal(doc));
 
       String description = SpatialDistanceQuery.this.toString();
-      return Explanation.match((float) (base.getValue() * dist), description + " product of:",
+      return Explanation.match((float) (base.getValue().floatValue() * dist), description + " product of:",
           base, Explanation.match((float) dist, "hsin("+latVals.doubleVal(doc)+","+lonVals.doubleVal(doc)));
     }
 
@@ -521,7 +538,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     // if we were supposed to use bboxQuery, then we should have been rewritten using that query
     assert bboxQuery == null;
     return new SpatialWeight(searcher, boost);

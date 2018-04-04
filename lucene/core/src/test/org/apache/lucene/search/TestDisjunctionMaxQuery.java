@@ -30,7 +30,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -72,9 +71,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public float lengthNorm(FieldInvertState state) {
+    public float lengthNorm(int length) {
       // Disable length norm
-      return state.getBoost();
+      return 1;
     }
     
     @Override
@@ -176,7 +175,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     QueryUtils.check(random(), dq, s);
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
-    final Weight dw = s.createNormalizedWeight(dq, true);
+    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     final boolean skipOk = ds.iterator().advance(3) != DocIdSetIterator.NO_MORE_DOCS;
@@ -192,7 +191,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     QueryUtils.check(random(), dq, s);
-    final Weight dw = s.createNormalizedWeight(dq, true);
+    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     assertTrue("firsttime skipTo found no match",
@@ -508,21 +507,20 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     assertEquals(hits, 1);
     directory.close();
   }
-  
-  public void testNegativeScore() throws Exception {
+
+  public void testRewriteBoolean() throws Exception {
+    Query sub1 = tq("hed", "albino");
+    Query sub2 = tq("hed", "elephant");
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(
         Arrays.asList(
-            new BoostQuery(tq("hed", "albino"), -1f), 
-            new BoostQuery(tq("hed", "elephant"), -1f)
-        ), 0.0f);
-    
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
-
-    assertEquals("all docs should match " + q.toString(), 4, h.length);
-    
-    for (int i = 0; i < h.length; i++) {
-      assertTrue("score should be negative", h[i].score < 0);
-    }
+            sub1, sub2
+        ), 1.0f);
+    Query rewritten = s.rewrite(q);
+    assertTrue(rewritten instanceof BooleanQuery);
+    BooleanQuery bq = (BooleanQuery) rewritten;
+    assertEquals(bq.clauses().size(), 2);
+    assertEquals(bq.clauses().get(0), new BooleanClause(sub1, BooleanClause.Occur.SHOULD));
+    assertEquals(bq.clauses().get(1), new BooleanClause(sub2, BooleanClause.Occur.SHOULD));
   }
   
   /** macro */

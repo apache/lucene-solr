@@ -92,7 +92,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     try (HttpSolrClient solrServer = getHttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"))) {
       solrServer.request(req);
       Thread.sleep(100);
-      ModifiableSolrParams queryAll = params("q", "*");
+      ModifiableSolrParams queryAll = params("q", "*", "df", "desc");
       QueryResponse qres = solrServer.query(queryAll);
       SolrDocumentList results = qres.getResults();
       assertEquals(0, results.getNumFound());
@@ -109,7 +109,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     fail("Commit should have occured but it did not");
   }
   
-  private class SolrInstance {
+  private static class SolrInstance {
     String name;
     Integer port;
     File homeDir;

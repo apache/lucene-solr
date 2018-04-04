@@ -23,6 +23,7 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -67,7 +68,11 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
   }
 
   private synchronized CachedOrds getCachedOrds(LeafReaderContext context) throws IOException {
-    Object cacheKey = context.reader().getCoreCacheKey();
+    IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+    if (cacheHelper == null) {
+      throw new IllegalStateException("Cannot cache ordinals on leaf: " + context.reader());
+    }
+    Object cacheKey = cacheHelper.getKey();
     CachedOrds ords = ordsCache.get(cacheKey);
     if (ords == null) {
       ords = new CachedOrds(source.getReader(context), context.reader().maxDoc());

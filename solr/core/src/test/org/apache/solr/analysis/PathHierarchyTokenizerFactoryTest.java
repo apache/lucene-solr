@@ -54,21 +54,21 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
 
     assertQ(req("{!field f=cat_path}Books/NonFic")
             ,"//*[@numFound='4']"
-            ,"//int[@name='id' and .='40']"
-            ,"//int[@name='id' and .='41']"
-            ,"//int[@name='id' and .='42']"
-            ,"//int[@name='id' and .='43']"
+            ,"//str[@name='id' and .='40']"
+            ,"//str[@name='id' and .='41']"
+            ,"//str[@name='id' and .='42']"
+            ,"//str[@name='id' and .='43']"
             );
     assertQ(req("{!field f=cat_path}Books/NonFic/Law")
             ,"//*[@numFound='2']"
-            ,"//int[@name='id' and .='41']"
-            ,"//int[@name='id' and .='42']"
+            ,"//str[@name='id' and .='41']"
+            ,"//str[@name='id' and .='42']"
             );
 
     assertQ(req("{!field f=cat_path}Books/NonFic/Science")
             ,"//*[@numFound='2']"
-            ,"//int[@name='id' and .='42']"
-            ,"//int[@name='id' and .='43']"
+            ,"//str[@name='id' and .='42']"
+            ,"//str[@name='id' and .='43']"
             );
   }
 
@@ -76,21 +76,21 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
 
     assertQ(req("{!field f=cat_ancestor}Books/NonFic/Science")
             ,"//*[@numFound='2']"
-            ,"//int[@name='id' and .='40']"
-            ,"//int[@name='id' and .='42']"
+            ,"//str[@name='id' and .='40']"
+            ,"//str[@name='id' and .='42']"
             );
     assertQ(req("{!field f=cat_ancestor}Books/NonFic/Law")
             ,"//*[@numFound='3']"
-            ,"//int[@name='id' and .='40']"
-            ,"//int[@name='id' and .='41']"
-            ,"//int[@name='id' and .='42']"
+            ,"//str[@name='id' and .='40']"
+            ,"//str[@name='id' and .='41']"
+            ,"//str[@name='id' and .='42']"
             );
 
     assertQ(req("{!field f=cat_ancestor}Books/NonFic/Science/Physics")
             ,"//*[@numFound='3']"
-            ,"//int[@name='id' and .='40']"
-            ,"//int[@name='id' and .='42']"
-            ,"//int[@name='id' and .='43']"
+            ,"//str[@name='id' and .='40']"
+            ,"//str[@name='id' and .='42']"
+            ,"//str[@name='id' and .='43']"
             );
   }
 }

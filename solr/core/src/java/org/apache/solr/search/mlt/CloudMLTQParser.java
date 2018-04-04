@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,7 +25,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -45,7 +46,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.util.SolrPluginUtils;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 public class CloudMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
@@ -158,7 +162,7 @@ public class CloudMLTQParser extends QParser {
           newQ.add(q, clause.getOccur());
         }
 
-        boostedMLTQuery = newQ.build();
+        boostedMLTQuery = QueryUtils.build(newQ, this);
       }
 
       // exclude current document from results
@@ -178,7 +182,7 @@ public class CloudMLTQParser extends QParser {
     SolrCore core = req.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("id", id);
+    params.add(ID, id);
 
     SolrQueryRequestBase request = new SolrQueryRequestBase(core, params) {
     };

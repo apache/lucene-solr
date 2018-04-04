@@ -19,14 +19,14 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 
 public class TestSegmentTermEnum extends LuceneTestCase {
@@ -80,7 +80,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     addDoc(writer, "aaa bbb");
     writer.close();
     LeafReader reader = getOnlyLeafReader(DirectoryReader.open(dir));
-    TermsEnum terms = reader.fields().terms("content").iterator();
+    TermsEnum terms = reader.terms("content").iterator();
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());
     assertNotNull(terms.next());

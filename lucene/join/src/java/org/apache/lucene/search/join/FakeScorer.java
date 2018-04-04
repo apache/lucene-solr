@@ -25,7 +25,6 @@ class FakeScorer extends Scorer {
 
   float score;
   int doc = -1;
-  int freq = 1;
 
   FakeScorer() {
     super(null);
@@ -42,12 +41,12 @@ class FakeScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    return freq;
+  public float score() throws IOException {
+    return score;
   }
 
   @Override
-  public float score() throws IOException {
-    return score;
+  public float getMaxScore(int upTo) throws IOException {
+    return Float.POSITIVE_INFINITY;
   }
 }

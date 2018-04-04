@@ -1,0 +1,20 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/blob-store-api.html",
+  "description": "Lists blobs in the blob store (the .system collection). The list can be limited by name or name and version.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/blob",
+      "/blob/{name}",
+      "/blob/{name}/{version}"
+    ],
+    "params": {
+      "wt": {
+        "type":"string",
+        "description": "Use the value 'filestream' to get the file content. Use other response writers (such as xml, or json) to fetch only the metadata."
+      }
+    }
+  }
+}

@@ -16,97 +16,37 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.InputStream;
+import java.io.IOException;
 
 /**
- * GeoComposite is a set of GeoMembershipShape's, treated as a unit.
+ * GeoCompositeMembershipShape is a set of GeoMembershipShape's, treated as a unit.
  *
  * @lucene.experimental
  */
-public class GeoCompositeMembershipShape implements GeoMembershipShape {
-  /** The list of shapes. */
-  protected final List<GeoMembershipShape> shapes = new ArrayList<GeoMembershipShape>();
+public class GeoCompositeMembershipShape extends GeoBaseCompositeMembershipShape<GeoMembershipShape> implements GeoMembershipShape {
 
-  /** Constructor.
+  /**
+   * Constructor.
    */
-  public GeoCompositeMembershipShape() {
+  public GeoCompositeMembershipShape(PlanetModel planetModel) {
+    super(planetModel);
   }
 
   /**
-   * Add a shape to the composite.
-   *@param shape is the shape to add.
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
    */
-  public void addShape(final GeoMembershipShape shape) {
-    shapes.add(shape);
-  }
-
-  @Override
-  public boolean isWithin(final Vector point) {
-    return isWithin(point.x, point.y, point.z);
-  }
-
-  @Override
-  public boolean isWithin(final double x, final double y, final double z) {
-    for (GeoMembershipShape shape : shapes) {
-      if (shape.isWithin(x, y, z))
-        return true;
-    }
-    return false;
-  }
-
-  @Override
-  public GeoPoint[] getEdgePoints() {
-    return shapes.get(0).getEdgePoints();
-  }
-
-  @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    for (GeoMembershipShape shape : shapes) {
-      if (shape.intersects(p, notablePoints, bounds))
-        return true;
-    }
-    return false;
-  }
-
-  @Override
-  public void getBounds(Bounds bounds) {
-    for (GeoMembershipShape shape : shapes) {
-      shape.getBounds(bounds);
-    }
-  }
-
-  @Override
-  public double computeOutsideDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
-    return computeOutsideDistance(distanceStyle, point.x, point.y, point.z);
-  }
-
-  @Override
-  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    if (isWithin(x,y,z))
-      return 0.0;
-    double distance = Double.POSITIVE_INFINITY;
-    for (GeoMembershipShape shape : shapes) {
-      final double normalDistance = shape.computeOutsideDistance(distanceStyle, x, y, z);
-      if (normalDistance < distance) {
-        distance = normalDistance;
-      }
-    }
-    return distance;
+  public GeoCompositeMembershipShape(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    super(planetModel, inputStream, GeoMembershipShape.class);
   }
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof GeoCompositeMembershipShape))
       return false;
-    GeoCompositeMembershipShape other = (GeoCompositeMembershipShape) o;
-
-    return super.equals(o) && shapes.equals(other.shapes);
-  }
-
-  @Override
-  public int hashCode() {
-    return super.hashCode() * 31 + shapes.hashCode();//TODO cache
+    return super.equals(o);
   }
 
   @Override

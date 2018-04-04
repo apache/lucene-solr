@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -45,6 +46,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   private long lastVersion;
 
   private final Bits liveDocs;
+  private String segment;
 
   public IDVersionPostingsWriter(Bits liveDocs) {
     this.liveDocs = liveDocs;
@@ -58,6 +60,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
     CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    segment = state.segmentInfo.name;
   }
 
   @Override
@@ -76,7 +79,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void startTerm() {
+  public void startTerm(NumericDocValues norms) {
     lastDocID = -1;
   }
 
@@ -87,7 +90,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
       return;
     }
     if (lastDocID != -1) {
-      throw new IllegalArgumentException("term appears in more than one document");
+      throw new IllegalArgumentException("term appears in more than one document: " + lastDocID + " and " + docID);
     }
     if (termDocFreq != 1) {
       throw new IllegalArgumentException("term appears more than once in the document");

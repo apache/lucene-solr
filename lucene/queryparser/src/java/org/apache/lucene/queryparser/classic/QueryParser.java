@@ -490,19 +490,15 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       case RANGE_QUOTED:
         goop1 = jj_consume_token(RANGE_QUOTED);
         break;
+      case RANGE_TO:
+        goop1 = jj_consume_token(RANGE_TO);
+        break;
       default:
         jj_la1[16] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
-      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case RANGE_TO:
-        jj_consume_token(RANGE_TO);
-        break;
-      default:
-        jj_la1[17] = jj_gen;
-        ;
-      }
+      jj_consume_token(RANGE_TO);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case RANGE_GOOP:
         goop2 = jj_consume_token(RANGE_GOOP);
@@ -510,8 +506,11 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       case RANGE_QUOTED:
         goop2 = jj_consume_token(RANGE_QUOTED);
         break;
+      case RANGE_TO:
+        goop2 = jj_consume_token(RANGE_TO);
+        break;
       default:
-        jj_la1[18] = jj_gen;
+        jj_la1[17] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -524,7 +523,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
         jj_consume_token(RANGEEX_END);
         break;
       default:
-        jj_la1[19] = jj_gen;
+        jj_la1[18] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -534,7 +533,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[20] = jj_gen;
+        jj_la1[19] = jj_gen;
         ;
       }
       boolean startOpen=false;
@@ -566,7 +565,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
                                                         fuzzy=true;
             break;
           default:
-            jj_la1[21] = jj_gen;
+            jj_la1[20] = jj_gen;
             ;
           }
           break;
@@ -579,24 +578,24 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
             boost = jj_consume_token(NUMBER);
             break;
           default:
-            jj_la1[22] = jj_gen;
+            jj_la1[21] = jj_gen;
             ;
           }
           break;
         default:
-          jj_la1[23] = jj_gen;
+          jj_la1[22] = jj_gen;
           jj_consume_token(-1);
           throw new ParseException();
         }
         break;
       default:
-        jj_la1[24] = jj_gen;
+        jj_la1[23] = jj_gen;
         ;
       }
       q = handleQuotedTerm(field, term, fuzzySlop);
       break;
     default:
-      jj_la1[25] = jj_gen;
+      jj_la1[24] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -732,7 +731,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   private boolean jj_lookingAhead = false;
   private boolean jj_semLA;
   private int jj_gen;
-  final private int[] jj_la1 = new int[26];
+  final private int[] jj_la1 = new int[25];
   static private int[] jj_la1_0;
   static private int[] jj_la1_1;
   static {
@@ -740,10 +739,10 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0xfda7c00,0xfda7f00,0xfda7f00,0x120000,0x40000,0xfda6000,0x9d22000,0x200000,0x40000,0x240000,0x240000,0x6000000,0x80000000,0x10000000,0x80000000,0x60000000,0x40000,0x200000,0x40000,0x240000,0x240000,0xfda2000,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0xfda7c00,0xfda7f00,0xfda7f00,0x120000,0x40000,0xfda6000,0x9d22000,0x200000,0x40000,0x240000,0x240000,0x6000000,0x90000000,0x90000000,0x60000000,0x40000,0x200000,0x40000,0x240000,0x240000,0xfda2000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[3];
   private boolean jj_rescan = false;
@@ -755,7 +754,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 26; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -766,7 +765,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     jj_ntk = -1;
     jj_lookingAhead = false;
     jj_gen = 0;
-    for (int i = 0; i < 26; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -776,7 +775,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 26; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -786,7 +785,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 26; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -903,7 +902,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 26; i++) {
+    for (int i = 0; i < 25; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {

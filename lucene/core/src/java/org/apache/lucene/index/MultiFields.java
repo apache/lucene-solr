@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,11 +32,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MergedIterator;
 
 /**
- * Exposes flex API, merged from flex API of sub-segments.
+ * Provides a single {@link Fields} term index view over an
+ * {@link IndexReader}.
  * This is useful when you're interacting with an {@link
  * IndexReader} implementation that consists of sequential
  * sub-readers (eg {@link DirectoryReader} or {@link
- * MultiReader}).
+ * MultiReader}) and you must treat it as a {@link LeafReader}.
  *
  * <p><b>NOTE</b>: for composite readers, you'll get better
  * performance by gathering the sub readers using
@@ -45,7 +47,6 @@ import org.apache.lucene.util.MergedIterator;
  *
  * @lucene.experimental
  */
-
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderSlice[] subSlices;
@@ -64,13 +65,13 @@ public final class MultiFields extends Fields {
     switch (leaves.size()) {
       case 1:
         // already an atomic reader / reader with one leave
-        return leaves.get(0).reader().fields();
+        return new LeafReaderFields(leaves.get(0).reader());
       default:
         final List<Fields> fields = new ArrayList<>(leaves.size());
         final List<ReaderSlice> slices = new ArrayList<>(leaves.size());
         for (final LeafReaderContext ctx : leaves) {
           final LeafReader r = ctx.reader();
-          final Fields f = r.fields();
+          final Fields f = new LeafReaderFields(r);
           fields.add(f);
           slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
         }
@@ -115,9 +116,31 @@ public final class MultiFields extends Fields {
     }
   }
 
-  /**  This method may return null if the field does not exist.*/
+  /** This method may return null if the field does not exist or if it has no terms. */
   public static Terms getTerms(IndexReader r, String field) throws IOException {
-    return getFields(r).terms(field);
+    final List<LeafReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().terms(field);
+    }
+
+    final List<Terms> termsPerLeaf = new ArrayList<>(leaves.size());
+    final List<ReaderSlice> slicePerLeaf = new ArrayList<>(leaves.size());
+
+    for (int leafIdx = 0; leafIdx < leaves.size(); leafIdx++) {
+      LeafReaderContext ctx = leaves.get(leafIdx);
+      Terms subTerms = ctx.reader().terms(field);
+      if (subTerms != null) {
+        termsPerLeaf.add(subTerms);
+        slicePerLeaf.add(new ReaderSlice(ctx.docBase, r.maxDoc(), leafIdx - 1));
+      }
+    }
+
+    if (termsPerLeaf.size() == 0) {
+      return null;
+    } else {
+      return new MultiTerms(termsPerLeaf.toArray(Terms.EMPTY_ARRAY),
+          slicePerLeaf.toArray(ReaderSlice.EMPTY_ARRAY));
+    }
   }
   
   /** Returns {@link PostingsEnum} for the specified field and
@@ -263,6 +286,38 @@ public final class MultiFields extends Fields {
       }
     }
     return fields;
+  }
+
+  private static class LeafReaderFields extends Fields {
+
+    private final LeafReader leafReader;
+    private final List<String> indexedFields;
+
+    LeafReaderFields(LeafReader leafReader) {
+      this.leafReader = leafReader;
+      this.indexedFields = new ArrayList<>();
+      for (FieldInfo fieldInfo : leafReader.getFieldInfos()) {
+        if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+          indexedFields.add(fieldInfo.name);
+        }
+      }
+      Collections.sort(indexedFields);
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return Collections.unmodifiableList(indexedFields).iterator();
+    }
+
+    @Override
+    public int size() {
+      return indexedFields.size();
+    }
+
+    @Override
+    public Terms terms(String field) throws IOException {
+      return leafReader.terms(field);
+    }
   }
 }
 

@@ -64,10 +64,9 @@ public class ClientUtils
 
   public static void writeXML( SolrInputDocument doc, Writer writer ) throws IOException
   {
-    writer.write("<doc boost=\""+doc.getDocumentBoost()+"\">");
+    writer.write("<doc>");
 
     for( SolrInputField field : doc ) {
-      float boost = field.getBoost();
       String name = field.getName();
 
       for( Object v : field ) {
@@ -81,19 +80,14 @@ public class ClientUtils
             if (v instanceof Collection) {
               Collection values = (Collection) v;
               for (Object value : values) {
-                writeVal(writer, boost, name, value, update);
-                boost = 1.0f;
+                writeVal(writer, name, value, update);
               }
             } else  {
-              writeVal(writer, boost, name, v, update);
-              boost = 1.0f;
+              writeVal(writer, name, v, update);
             }
           }
         } else  {
-          writeVal(writer, boost, name, v, update);
-          // only write the boost for the first multi-valued field
-          // otherwise, the used boost is the product of all the boost values
-          boost = 1.0f;
+          writeVal(writer, name, v, update);
         }
       }
     }
@@ -107,7 +101,7 @@ public class ClientUtils
     writer.write("</doc>");
   }
 
-  private static void writeVal(Writer writer, float boost, String name, Object v, String update) throws IOException {
+  private static void writeVal(Writer writer, String name, Object v, String update) throws IOException {
     if (v instanceof Date) {
       v = ((Date)v).toInstant().toString();
     } else if (v instanceof byte[]) {
@@ -119,20 +113,14 @@ public class ClientUtils
     }
 
     if (update == null) {
-      if( boost != 1.0f ) {
-        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost);
-      } else if (v != null) {
+      if (v != null) {
         XML.writeXML(writer, "field", v.toString(), "name", name );
       }
     } else {
-      if( boost != 1.0f ) {
-        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
-      } else {
-        if (v == null)  {
-          XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
-        } else  {
-          XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
-        }
+      if (v == null)  {
+        XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
+      } else  {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
       }
     }
   }
@@ -168,6 +156,35 @@ public class ClientUtils
       }
       sb.append(c);
     }
+    return sb.toString();
+  }
+
+  /**
+   * Returns the value encoded properly so it can be appended after a <pre>name=</pre> local-param.
+   */
+  public static String encodeLocalParamVal(String val) {
+    int len = val.length();
+    int i = 0;
+    if (len > 0 && val.charAt(0) != '$') {
+      for (;i<len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch=='}') break;
+      }
+    }
+
+    if (i>=len) return val;
+
+    // We need to enclose in quotes... but now we need to escape
+    StringBuilder sb = new StringBuilder(val.length() + 4);
+    sb.append('\'');
+    for (i=0; i<len; i++) {
+      char ch = val.charAt(i);
+      if (ch=='\'') {
+        sb.append('\\');
+      }
+      sb.append(ch);
+    }
+    sb.append('\'');
     return sb.toString();
   }
 

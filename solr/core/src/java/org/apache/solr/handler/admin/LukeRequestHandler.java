@@ -16,14 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -85,6 +80,10 @@ import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.index.IndexOptions.DOCS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
  * modeled on Luke, the Lucene Index Browser by Andrzej Bialecki.
@@ -102,7 +101,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final String NUMTERMS = "numTerms";
   public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";
   public static final String DOC_ID = "docId";
-  public static final String ID = "id";
+  public static final String ID = CommonParams.ID;
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
@@ -298,7 +297,6 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      f.add( "boost", field.boost() );
       if (!ftype.isPointField()) {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
         f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
@@ -369,7 +367,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
         fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-      Terms terms = reader.fields().terms(fieldName);
+      Terms terms = reader.terms(fieldName);
       if (terms == null) { // Not indexed, so we need to report what we can (it made it through the fl param if specified)
         finfo.add( fieldName, fieldMap );
         continue;
@@ -475,7 +473,6 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     finfo.add("uniqueKeyField",
         null == uniqueField ? null : uniqueField.getName());
-    finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
     finfo.add("similarity", getSimilarityInfo(schema.getSimilarity()));
     finfo.add("types", types);
     return finfo;
@@ -585,7 +582,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexCommit indexCommit = reader.getIndexCommit();
     String segmentsFileName = indexCommit.getSegmentsFileName();
     indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", getFileLength(indexCommit.getDirectory(), segmentsFileName));
+    indexInfo.add("segmentsFileSizeInBytes", getSegmentsFileLength(indexCommit));
     Map<String,String> userData = indexCommit.getUserData();
     indexInfo.add("userData", userData);
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
@@ -609,15 +606,28 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
 
-
-  private static long getFileLength(Directory dir, String filename) {
+  /**
+   * <p>A helper method that attempts to determine the file length of the the segments file for the 
+   * specified IndexCommit from it's Directory.
+   * </p>
+   * <p>
+   * If any sort of {@link IOException} occurs, this method will return "-1" and swallow the exception since 
+   * this may be normal if the IndexCommit is no longer "on disk".  The specific type of the Exception will 
+   * affect how severely it is logged: {@link NoSuchFileException} is considered more "acceptible" then other 
+   * types of IOException which may indicate an actual problem with the Directory.
+   */
+  private static long getSegmentsFileLength(IndexCommit commit) {
     try {
-      return dir.fileLength(filename);
-    } catch (IOException e) {
-      // Whatever the error is, only log it and return -1.
-      log.warn("Error getting file length for [{}]", filename, e);
-      return -1;
+      return commit.getDirectory().fileLength(commit.getSegmentsFileName());
+    } catch (NoSuchFileException okException) {
+      log.debug("Unable to determine the (optional) fileSize for the current IndexReader's segments file because it is "
+                + "no longer in the Directory, this can happen if there are new commits since the Reader was opened",
+                okException);
+    } catch (IOException strangeException) {
+      log.warn("Ignoring IOException wile attempting to determine the (optional) fileSize stat for the current IndexReader's segments file",
+               strangeException);
     }
+    return -1;
   }
 
   /** Returns the sum of RAM bytes used by each segment */
@@ -706,14 +716,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/LukeRequestHandler") };
-    }
-    catch( MalformedURLException ex ) { return null; }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

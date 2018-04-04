@@ -222,7 +222,7 @@ public class RequestParams implements MapSerializable {
     }
 
     public Long getVersion() {
-      return meta == null ? 0l : (Long) meta.get("v");
+      return meta == null ? Long.valueOf(0l) : (Long) meta.get("v");
     }
 
     @Override

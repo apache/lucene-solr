@@ -255,7 +255,7 @@ final class IndexFileDeleter implements Closeable {
   static void inflateGens(SegmentInfos infos, Collection<String> files, InfoStream infoStream) {
 
     long maxSegmentGen = Long.MIN_VALUE;
-    int maxSegmentName = Integer.MIN_VALUE;
+    long maxSegmentName = Long.MIN_VALUE;
 
     // Confusingly, this is the union of liveDocs, field infos, doc values
     // (and maybe others, in the future) gens.  This is somewhat messy,
@@ -288,7 +288,7 @@ final class IndexFileDeleter implements Closeable {
           continue;
         }
 
-        maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
+        maxSegmentName = Math.max(maxSegmentName, Long.parseLong(segmentName.substring(1), Character.MAX_RADIX));
 
         Long curGen = maxPerSegmentGen.get(segmentName);
         if (curGen == null) {
@@ -341,8 +341,8 @@ final class IndexFileDeleter implements Closeable {
   void ensureOpen() throws AlreadyClosedException {
     writer.ensureOpen(false);
     // since we allow 'closing' state, we must still check this, we could be closing because we hit e.g. OOM
-    if (writer.tragedy != null) {
-      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy);
+    if (writer.tragedy.get() != null) {
+      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy.get());
     }
   }
 
@@ -356,15 +356,11 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
-  public SegmentInfos getLastSegmentInfos() {
-    return lastSegmentInfos;
-  }
-
   /**
    * Remove the CommitPoints in the commitsToDelete List by
    * DecRef'ing all files from each SegmentInfos.
    */
-  private void deleteCommits() {
+  private void deleteCommits() throws IOException {
 
     int size = commitsToDelete.size();
 
@@ -381,15 +377,14 @@ final class IndexFileDeleter implements Closeable {
         try {
           decRef(commit.files);
         } catch (Throwable t) {
-          if (firstThrowable == null) {
-            firstThrowable = t;
-          }
+          firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
         }
       }
       commitsToDelete.clear();
 
-      // NOTE: does nothing if firstThrowable is null
-      IOUtils.reThrowUnchecked(firstThrowable);
+      if (firstThrowable != null) {
+        throw IOUtils.rethrowAlways(firstThrowable);
+      }
 
       // Now compact commits to remove deleted ones (preserving the sort):
       size = commits.size();
@@ -509,9 +504,8 @@ final class IndexFileDeleter implements Closeable {
     assert locked();
 
     assert Thread.holdsLock(writer);
-    long t0 = 0;
+    long t0 = System.nanoTime();
     if (infoStream.isEnabled("IFD")) {
-      t0 = System.nanoTime();
       infoStream.message("IFD", "now checkpoint \"" + writer.segString(writer.toLiveInfos(segmentInfos)) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
@@ -583,43 +577,18 @@ final class IndexFileDeleter implements Closeable {
           toDelete.add(file);
         }
       } catch (Throwable t) {
-        if (firstThrowable == null) {
-          // Save first exception and throw it in the end, but be sure to finish decRef all files
-          firstThrowable = t;
-        }
+        firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
       }
     }
 
     try {
       deleteFiles(toDelete);
     } catch (Throwable t) {
-      if (firstThrowable == null) {
-        // Save first exception and throw it in the end, but be sure to finish decRef all files
-        firstThrowable = t;
-      }
+      firstThrowable = IOUtils.useOrSuppress(firstThrowable, t);
     }
 
-    // NOTE: does nothing if firstThrowable is null
-    IOUtils.reThrow(firstThrowable);
-  }
-
-  /** Decrefs all provided files, ignoring any exceptions hit; call this if
-   *  you are already handling an exception. */
-  void decRefWhileHandlingException(Collection<String> files) {
-    assert locked();
-    Set<String> toDelete = new HashSet<>();
-    for(final String file : files) {
-      try {
-        if (decRef(file)) {
-          toDelete.add(file);
-        }
-      } catch (Throwable t) {
-      }
-    }
-
-    try {
-      deleteFiles(toDelete);
-    } catch (Throwable t) {
+    if (firstThrowable != null) {
+      throw IOUtils.rethrowAlways(firstThrowable);
     }
   }
 
@@ -696,7 +665,9 @@ final class IndexFileDeleter implements Closeable {
     ensureOpen();
 
     if (infoStream.isEnabled("IFD")) {
-      infoStream.message("IFD", "delete " + names + "");
+      if (names.size() > 0) {
+        infoStream.message("IFD", "delete " + names + "");
+      }
     }
 
     // We make two passes, first deleting any segments_N files, second deleting the rest.  We do this so that if we throw exc or JVM

@@ -44,13 +44,12 @@
      </lst>
   </requestHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -58,11 +57,11 @@
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler" >
     <lst name="defaults">
-      <str name="update.chain">lang_id</str>
+      <str name="update.chain">lang_id_tika</str>
     </lst>
   </requestHandler>  
 
-  <updateRequestProcessorChain name="lang_id">
+  <updateRequestProcessorChain name="lang_id_tika">
     <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
       <!-- Can take defaults, invariants and appends just like req handlers-->
       <lst name="defaults">
@@ -79,7 +78,7 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
   
-    <updateRequestProcessorChain name="lang_id_alt">
+  <updateRequestProcessorChain name="lang_id_lang_detect">
     <processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
       <!-- Can take defaults, invariants and appends just like req handlers-->
       <lst name="defaults">
@@ -95,5 +94,22 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
+  <updateRequestProcessorChain name="lang_id_opennlp">
+    <processor class="org.apache.solr.update.processor.OpenNLPLangDetectUpdateProcessorFactory">
+      <!-- Can take defaults, invariants and appends just like req handlers-->
+      <lst name="defaults">
+        <bool name="langid">true</bool>
+        <str name="langid.fl">name,subject</str>
+        <bool name="langid.map">true</bool>
+        <str name="langid.langField">language_s</str>
+        <str name="langid.langsField">language_sm</str>
+        <str name="langid.map.lcmap">th:thai</str>
+        <float name="threshold">0.3</float>
+        <str name="langid.model">opennlp-langdetect.eng-swe-spa-rus-deu.bin</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
 </config>

@@ -65,7 +65,7 @@ public class VerboseFS extends FilterFileSystemProvider {
       if (infoStream.isEnabled("FS")) {
         infoStream.message("FS", text + " (FAILED: " + exception + ")");
       }
-      IOUtils.reThrow(exception);
+      throw IOUtils.rethrowAlways(exception);
     }
   }
   
@@ -164,7 +164,9 @@ public class VerboseFS extends FilterFileSystemProvider {
       if (containsDestructive(options)) {
         sop("newFileChannel" + options + ": " + path(path), exception);
       } else {
-        IOUtils.reThrow(exception);
+        if (exception != null) {
+          throw IOUtils.rethrowAlways(exception);
+        }
       }
     }
     throw new AssertionError();
@@ -181,7 +183,9 @@ public class VerboseFS extends FilterFileSystemProvider {
       if (containsDestructive(options)) {
         sop("newAsynchronousFileChannel" + options + ": " + path(path), exception);
       } else {
-        IOUtils.reThrow(exception);
+        if (exception != null) {
+          throw IOUtils.rethrowAlways(exception);
+        }
       }
     }
     throw new AssertionError();
@@ -198,7 +202,9 @@ public class VerboseFS extends FilterFileSystemProvider {
       if (containsDestructive(options)) {
         sop("newByteChannel" + options + ": " + path(path), exception);
       } else {
-        IOUtils.reThrow(exception);
+        if (exception != null) {
+          throw IOUtils.rethrowAlways(exception);
+        }
       }
     }
     throw new AssertionError();

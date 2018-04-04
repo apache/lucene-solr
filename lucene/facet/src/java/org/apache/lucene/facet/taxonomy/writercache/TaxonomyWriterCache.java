@@ -94,5 +94,7 @@ public interface TaxonomyWriterCache {
    * assume that the cache is still operable after this method returns.
    */
   public void clear();
-  
+
+  /** How many labels are currently stored in the cache. */
+  public int size();
 }

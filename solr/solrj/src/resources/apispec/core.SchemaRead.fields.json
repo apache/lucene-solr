@@ -1,0 +1,34 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#list-fields",
+  "description": "Get only the fields defined in the schema.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/schema/fields",
+      "/schema/fields/{name}"
+    ],
+    "params": {
+      "wt": {
+         "type": "string",
+         "description": "The format of the response. Valid options are xml or json.",
+         "default": "json"
+      },
+      "fl": {
+         "type": "string",
+         "description": "A comma- or space-separated list fields to return. If not specified, all fields will be returned. Note a single field can be requested by adding the field name to the endpoint."
+      },
+      "includeDynamic": {
+        "type": "boolean",
+        "description": "If true, dynamic fields will be returned in the response.",
+        "default": false
+      },
+      "showDefaults": {
+        "type": "boolean",
+        "description": "If true, all field properties from each field's field type will be included in the response, even if they are not explicitly defined on the field. If false, only explicitly defined field properties will be included.",
+        "default": false
+      }
+    }
+  }
+}

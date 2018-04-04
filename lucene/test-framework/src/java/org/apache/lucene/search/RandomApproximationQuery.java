@@ -62,8 +62,8 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight weight = query.createWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight weight = query.createWeight(searcher, scoreMode, boost);
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
 
@@ -109,8 +109,13 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public int freq() throws IOException {
-      return scorer.freq();
+    public int advanceShallow(int target) throws IOException {
+      return scorer.advanceShallow(target);
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return scorer.getMaxScore(upTo);
     }
 
     @Override

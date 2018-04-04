@@ -38,7 +38,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void moreLikeThisBeforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    lrf = h.getRequestFactory("standard", 0, 20 );
   }
 
   @Test
@@ -86,19 +85,19 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
     assertQ("morelikethis - tom cruise",mltreq
-        ,"//result/doc[1]/int[@name='id'][.='46']"
-        ,"//result/doc[2]/int[@name='id'][.='43']");
+        ,"//result/doc[1]/str[@name='id'][.='46']"
+        ,"//result/doc[2]/str[@name='id'][.='43']");
 
     params.set(MoreLikeThisParams.BOOST, "true");
     mltreq.close(); mltreq = new LocalSolrQueryRequest( core, params);
     assertQ("morelikethis - tom cruise",mltreq
-        ,"//result/doc[1]/int[@name='id'][.='46']"
-        ,"//result/doc[2]/int[@name='id'][.='43']");
+        ,"//result/doc[1]/str[@name='id'][.='46']"
+        ,"//result/doc[2]/str[@name='id'][.='43']");
     
     params.set(CommonParams.Q, "id:44");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
-        ,"//result/doc[1]/int[@name='id'][.='45']");
+        ,"//result/doc[1]/str[@name='id'][.='45']");
 
     // test MoreLikeThis debug
     params.set(CommonParams.DEBUG_QUERY, "true");
@@ -115,14 +114,14 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set(CommonParams.Q, "{!field f=id}44");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
-        ,"//result/doc[1]/int[@name='id'][.='45']");
+        ,"//result/doc[1]/str[@name='id'][.='45']");
 
     params.set(CommonParams.Q, "id:42");
     params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelikethis with weights",mltreq
-        ,"//result/doc[1]/int[@name='id'][.='43']"
-        ,"//result/doc[2]/int[@name='id'][.='46']");
+        ,"//result/doc[1]/str[@name='id'][.='43']"
+        ,"//result/doc[2]/str[@name='id'][.='46']");
 
 
     // test that qparser plugins work w/ the MoreLikeThisHandler
@@ -130,14 +129,14 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set(CommonParams.Q, "{!field f=id}44");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
-        ,"//result/doc[1]/int[@name='id'][.='45']");
+        ,"//result/doc[1]/str[@name='id'][.='45']");
 
     // test that debugging works (test for MoreLikeThis*Handler*)
     params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.DEBUG_QUERY, "true");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
-        ,"//result/doc[1]/int[@name='id'][.='45']"
+        ,"//result/doc[1]/str[@name='id'][.='45']"
         ,"//lst[@name='debug']/lst[@name='explain']"
     );
 

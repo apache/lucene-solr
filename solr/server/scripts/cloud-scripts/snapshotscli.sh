@@ -8,9 +8,9 @@ run_solr_snapshot_tool() {
   if [ -n "$LOG4J_PROPS" ]; then
     log4j_config="file:${LOG4J_PROPS}"
   else
-    log4j_config="file:${scriptDir}/log4j.properties"
+    log4j_config="file:${scriptDir}/log4j2.xml"
   fi
-  PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configuration=${log4j_config} \
+  PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
   -classpath "${solrLibPath}" org.apache.solr.core.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
 }
 
@@ -86,7 +86,7 @@ copy_snapshot_files() {
     for shardId in $(hdfs dfs -stat "%n" "${copylisting_dir_path}/*"); do
       oPath="${destPath}/${snapshotName}/snapshot.${shardId}"
       echo "Copying the index files for ${shardId} to ${oPath}"
-      ${distCpCmd} -f " ${copylisting_dir_path}/${shardId}" "${oPath}" > /dev/null
+      ${distCpCmd} -f "${copylisting_dir_path}/${shardId}" "${oPath}" > /dev/null
     done
   else
     echo "Directory ${copylisting_dir_path} does not exist."

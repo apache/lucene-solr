@@ -16,15 +16,16 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.schema.FieldType;
 import org.apache.lucene.search.*;
 
 /**
  * Extra lucene sorting utilities &amp; convenience methods
  *
  *
- *
+ * @deprecated custom {@link FieldType}s should use the helper methods in the base class.  Other usage should leverage th underling lucene {@link SortField} classes directly.
  */
-
+@Deprecated
 public class Sorting {
 
 
@@ -37,14 +38,19 @@ public class Sorting {
    * @param nullLast    true if null should come last, regardless of sort order
    * @param nullFirst   true if null should come first, regardless of sort order
    * @return SortField
+   * @deprecated custom {@link FieldType}s should use {@link FieldType#getSortField}.  Other usage should leverage th underling lucene {@link SortField} classes directly.
    */
+  @Deprecated
   public static SortField getStringSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
     SortField sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
     applyMissingFirstLast(sortField, reverse, nullLast, nullFirst);
     return sortField;
   }
 
-  /** Like {@link #getStringSortField}) except safe for tokenized fields */
+  /** Like {@link #getStringSortField}) except safe for tokenized fields
+   * @deprecated custom {@link FieldType}s should use {@link FieldType#getSortedSetSortField}.  Other usage should leverage th underling lucene {@link SortedSetSortField} classes directly.
+   */
+  @Deprecated
   public static SortField getTextSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
     SortField sortField = new SortedSetSortField(fieldName, reverse);
     applyMissingFirstLast(sortField, reverse, nullLast, nullFirst);

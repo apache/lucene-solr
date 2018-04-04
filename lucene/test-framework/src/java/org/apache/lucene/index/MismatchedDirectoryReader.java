@@ -46,4 +46,9 @@ public class MismatchedDirectoryReader extends FilterDirectoryReader {
   protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
     return new AssertingDirectoryReader(in);
   }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
+  }
 }

@@ -25,6 +25,8 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
@@ -48,6 +50,12 @@ final class ExpressionValueSource extends DoubleValuesSource {
       needsScores |= source.needsScores();
       variables[i] = source;
     }
+    this.needsScores = needsScores;
+  }
+
+  ExpressionValueSource(DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
+    this.variables = variables;
+    this.expression = expression;
     this.needsScores = needsScores;
   }
 
@@ -99,7 +107,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     final int prime = 31;
     int result = 1;
     result = prime * result
-        + ((expression == null) ? 0 : expression.hashCode());
+        + ((expression == null) ? 0 : expression.sourceText.hashCode());
     result = prime * result + (needsScores ? 1231 : 1237);
     result = prime * result + Arrays.hashCode(variables);
     return result;
@@ -121,7 +129,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
       if (other.expression != null) {
         return false;
       }
-    } else if (!expression.equals(other.expression)) {
+    } else if (!expression.sourceText.equals(other.expression.sourceText)) {
       return false;
     }
     if (needsScores != other.needsScores) {
@@ -136,5 +144,42 @@ final class ExpressionValueSource extends DoubleValuesSource {
   @Override
   public boolean needsScores() {
     return needsScores;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    for (DoubleValuesSource v : variables) {
+      if (v.isCacheable(ctx) == false)
+        return false;
+    }
+    return true;
+  }
+
+  @Override
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    Explanation[] explanations = new Explanation[variables.length];
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
+    if (dv.advanceExact(docId) == false) {
+      return Explanation.noMatch(expression.sourceText);
+    }
+    int i = 0;
+    for (DoubleValuesSource var : variables) {
+      explanations[i++] = var.explain(ctx, docId, scoreExplanation);
+    }
+    return Explanation.match(dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    boolean changed = false;
+    DoubleValuesSource[] rewritten = new DoubleValuesSource[variables.length];
+    for (int i = 0; i < variables.length; i++) {
+      rewritten[i] = variables[i].rewrite(searcher);
+      changed |= (rewritten[i] == variables[i]);
+    }
+    if (changed) {
+      return new ExpressionValueSource(rewritten, expression, needsScores);
+    }
+    return this;
   }
 }

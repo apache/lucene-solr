@@ -80,11 +80,11 @@ public abstract class AbstractDataImportHandlerTestCase extends
     }
   }
 
-  protected void runFullImport(String dataConfig) throws Exception {
+  protected String runFullImport(String dataConfig) throws Exception {
     LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
             "debug", "on", "clean", "true", "commit", "true", "dataConfig",
             dataConfig);
-    h.query("/dataimport", request);
+    return h.query("/dataimport", request);
   }
 
   protected void runDeltaImport(String dataConfig) throws Exception {

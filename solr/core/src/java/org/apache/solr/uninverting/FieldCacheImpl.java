@@ -17,7 +17,6 @@
 package org.apache.solr.uninverting;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,13 +30,13 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -82,7 +81,7 @@ public class FieldCacheImpl implements FieldCache {
   }
 
   @Override
-  public synchronized void purgeByCacheKey(Object coreCacheKey) {
+  public synchronized void purgeByCacheKey(IndexReader.CacheKey coreCacheKey) {
     for(Cache c : caches.values()) {
       c.purgeByCacheKey(coreCacheKey);
     }
@@ -95,8 +94,8 @@ public class FieldCacheImpl implements FieldCache {
       final Cache cache = cacheEntry.getValue();
       final Class<?> cacheType = cacheEntry.getKey();
       synchronized(cache.readerCache) {
-        for (final Map.Entry<Object,Map<CacheKey, Accountable>> readerCacheEntry : cache.readerCache.entrySet()) {
-          final Object readerKey = readerCacheEntry.getKey();
+        for (final Map.Entry<IndexReader.CacheKey,Map<CacheKey, Accountable>> readerCacheEntry : cache.readerCache.entrySet()) {
+          final IndexReader.CacheKey readerKey = readerCacheEntry.getKey();
           if (readerKey == null) continue;
           final Map<CacheKey, Accountable> innerCache = readerCacheEntry.getValue();
           for (final Map.Entry<CacheKey, Accountable> mapEntry : innerCache.entrySet()) {
@@ -112,10 +111,14 @@ public class FieldCacheImpl implements FieldCache {
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
-  final SegmentReader.CoreClosedListener purgeCore = FieldCacheImpl.this::purgeByCacheKey;
+  final IndexReader.ClosedListener purgeCore = FieldCacheImpl.this::purgeByCacheKey;
   
   private void initReader(LeafReader reader) {
-    reader.addCoreClosedListener(purgeCore);
+    IndexReader.CacheHelper cacheHelper = reader.getCoreCacheHelper();
+    if (cacheHelper == null) {
+      throw new IllegalStateException("Cannot cache on " + reader);
+    }
+    cacheHelper.addClosedListener(purgeCore);
   }
 
   /** Expert: Internal cache. */
@@ -127,13 +130,13 @@ public class FieldCacheImpl implements FieldCache {
 
     final FieldCacheImpl wrapper;
 
-    final Map<Object,Map<CacheKey,Accountable>> readerCache = new WeakHashMap<>();
+    final Map<IndexReader.CacheKey,Map<CacheKey,Accountable>> readerCache = new WeakHashMap<>();
     
     protected abstract Accountable createValue(LeafReader reader, CacheKey key)
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
-    public void purgeByCacheKey(Object coreCacheKey) {
+    public void purgeByCacheKey(IndexReader.CacheKey coreCacheKey) {
       synchronized(readerCache) {
         readerCache.remove(coreCacheKey);
       }
@@ -142,7 +145,11 @@ public class FieldCacheImpl implements FieldCache {
     /** Sets the key to the value for the provided reader;
      *  if the key is already set then this doesn't change it. */
     public void put(LeafReader reader, CacheKey key, Accountable value) {
-      final Object readerKey = reader.getCoreCacheKey();
+      IndexReader.CacheHelper cacheHelper = reader.getCoreCacheHelper();
+      if (cacheHelper == null) {
+        throw new IllegalStateException("Cannot cache on " + reader);
+      }
+      final IndexReader.CacheKey readerKey = cacheHelper.getKey();
       synchronized (readerCache) {
         Map<CacheKey,Accountable> innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
@@ -163,7 +170,12 @@ public class FieldCacheImpl implements FieldCache {
     public Object get(LeafReader reader, CacheKey key) throws IOException {
       Map<CacheKey,Accountable> innerCache;
       Accountable value;
-      final Object readerKey = reader.getCoreCacheKey();
+      IndexReader.CacheHelper cacheHelper = reader.getCoreCacheHelper();
+      if (cacheHelper == null) {
+        reader.getCoreCacheHelper();
+        throw new IllegalStateException("Cannot cache on " + reader);
+      }
+      final IndexReader.CacheKey readerKey = cacheHelper.getKey();
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
@@ -188,38 +200,11 @@ public class FieldCacheImpl implements FieldCache {
             synchronized (readerCache) {
               innerCache.put(key, progress.value);
             }
-
-            // Only check if key.custom (the parser) is
-            // non-null; else, we check twice for a single
-            // call to FieldCache.getXXX
-            if (key.custom != null && wrapper != null) {
-              final PrintStream infoStream = wrapper.getInfoStream();
-              if (infoStream != null) {
-                printNewInsanity(infoStream, progress.value);
-              }
-            }
           }
           return progress.value;
         }
       }
       return value;
-    }
-
-    private void printNewInsanity(PrintStream infoStream, Object value) {
-      final FieldCacheSanityChecker.Insanity[] insanities = FieldCacheSanityChecker.checkSanity(wrapper);
-      for(int i=0;i<insanities.length;i++) {
-        final FieldCacheSanityChecker.Insanity insanity = insanities[i];
-        final CacheEntry[] entries = insanity.getCacheEntries();
-        for(int j=0;j<entries.length;j++) {
-          if (entries[j].getValue() == value) {
-            // OK this insanity involves our entry
-            infoStream.println("WARNING: new FieldCache insanity created\nDetails: " + insanity.toString());
-            infoStream.println("\nStack:\n");
-            new Throwable().printStackTrace(infoStream);
-            break;
-          }
-        }
-      }
     }
   }
 
@@ -1265,14 +1250,5 @@ public class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private volatile PrintStream infoStream;
-
-  public void setInfoStream(PrintStream stream) {
-    infoStream = stream;
-  }
-
-  public PrintStream getInfoStream() {
-    return infoStream;
-  }
 }
 

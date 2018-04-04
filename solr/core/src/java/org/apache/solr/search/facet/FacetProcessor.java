@@ -161,6 +161,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     // We still calculate them first because we can use it in a parent->child domain change.
     evalFilters();
 
+    handleJoinField();
+    
     boolean appliedFilters = handleBlockJoin();
 
     if (this.filter != null && !appliedFilters) {
@@ -229,6 +231,14 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
+  /** modifies the context base if there is a join field domain change */
+  private void handleJoinField() throws IOException {
+    if (null == freq.domain.joinField) return;
+
+    final Query domainQuery = freq.domain.joinField.createDomainQuery(fcontext);
+    fcontext.base = fcontext.searcher.getDocSet(domainQuery);
+  }
+    
   // returns "true" if filters were applied to fcontext.base already
   private boolean handleBlockJoin() throws IOException {
     boolean appliedFilters = false;
@@ -302,7 +312,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   // note: only called by enum/stream prior to collect
-  void resetStats() {
+  void resetStats() throws IOException {
     countAcc.reset();
     for (SlotAcc acc : accs) {
       acc.reset();
@@ -366,10 +376,9 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result) throws IOException {
-    boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
+  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
-    // TODO: always collect counts or not???
+    boolean needDocSet = (skip==false && freq.getFacetStats().size() > 0) || freq.getSubFacets().size() > 0;
 
     int count;
 
@@ -382,7 +391,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       } else {
         result = fcontext.searcher.getDocSet(q, fcontext.base);
       }
-      count = result.size();
+      count = result.size();  // don't really need this if we are skipping, but it's free.
     } else {
       if (q == null) {
         count = fcontext.base.size();
@@ -392,8 +401,10 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
 
     try {
-      processStats(bucket, result, count);
-      processSubs(bucket, q, result);
+      if (!skip) {
+        processStats(bucket, result, count);
+      }
+      processSubs(bucket, q, result, skip, facetInfo);
     } finally {
       if (result != null) {
         // result.decref(); // OFF-HEAP
@@ -402,7 +413,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
+  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
 
@@ -417,8 +428,18 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         continue;
       }
 
+      Map<String,Object>facetInfoSub = null;
+      if (facetInfo != null) {
+        facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
+      }
+
+      // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+      if (skip && facetInfoSub == null) continue;
+
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
+      subContext.facetInfo = facetInfoSub;
+      if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
       FacetProcessor subProcessor = subRequest.createFacetProcessor(subContext);
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true

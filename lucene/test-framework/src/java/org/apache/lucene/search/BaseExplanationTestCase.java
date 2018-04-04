@@ -85,7 +85,6 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
     doc.add(newStringField(KEY, ""+index, Field.Store.NO));
     doc.add(new SortedDocValuesField(KEY, new BytesRef(""+index)));
     Field f = newTextField(FIELD, docFields[index], Field.Store.NO);
-    f.setBoost(index);
     doc.add(f);
     doc.add(newTextField(ALTFIELD, docFields[index], Field.Store.NO));
     return doc;

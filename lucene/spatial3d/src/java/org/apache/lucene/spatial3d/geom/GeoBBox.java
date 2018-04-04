@@ -23,7 +23,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface GeoBBox extends GeoMembershipShape, GeoSizeable, GeoArea {
+public interface GeoBBox extends GeoAreaShape, GeoSizeable {
 
   /**
    * Expand box by specified angle.

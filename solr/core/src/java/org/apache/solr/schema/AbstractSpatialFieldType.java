@@ -34,16 +34,19 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.spatial4j.Geo3dSpatialContextFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
@@ -129,6 +132,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
           argEntry.setValue("org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
           continue;
         }
+        if (argEntry.getKey().equals(CTX_PARAM) && argEntry.getValue().equals("Geo3D")) {
+          argEntry.setValue(Geo3dSpatialContextFactory.class.getName());
+          continue;
+        }
         // Warn about using old Spatial4j class names
         if (argEntry.getValue().contains(OLD_SPATIAL4J_PREFIX)) {
           log.warn("Replace '" + OLD_SPATIAL4J_PREFIX + "' with '" + NEW_SPATIAL4J_PREFIX + "' in your schema.");
@@ -200,7 +207,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
 
   @Override
-  public final Field createField(SchemaField field, Object val, float boost) {
+  public final Field createField(SchemaField field, Object val) {
     throw new IllegalStateException("instead call createFields() because isPolyField() is true");
   }
 
@@ -210,7 +217,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val) {
     String shapeStr = null;
     Shape shape;
     if (val instanceof Shape) {
@@ -225,7 +232,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
 
     List<IndexableField> result = new ArrayList<>();
-    if (field.indexed()) {
+    if (field.indexed() || field.hasDocValues()) {
       T strategy = getStrategy(field.getName());
       result.addAll(Arrays.asList(strategy.createIndexableFields(shape)));
     }
@@ -237,7 +244,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return result;
   }
 
-  /** Called by {@link #createFields(SchemaField, Object, float)} to get the stored value. */
+  /** Called by {@link #createFields(SchemaField, Object)} to get the stored value. */
   protected String getStoredValue(Shape shape, String shapeStr) {
     return (shapeStr == null) ? shapeToString(shape) : shapeStr;
   }
@@ -356,12 +363,12 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     String scoreParam = (localParams == null ? null : localParams.get(SCORE_PARAM));
 
     //We get the valueSource for the score then the filter and combine them.
-    ValueSource valueSource = getValueSourceFromSpatialArgs(parser, field, spatialArgs, scoreParam, strategy);
+    DoubleValuesSource valueSource = getValueSourceFromSpatialArgs(parser, field, spatialArgs, scoreParam, strategy);
     if (valueSource == null) {
       return strategy.makeQuery(spatialArgs); //assumed constant scoring
     }
 
-    FunctionQuery functionQuery = new FunctionQuery(valueSource);
+    FunctionScoreQuery functionQuery = new FunctionScoreQuery(new MatchAllDocsQuery(), valueSource);
 
     if (localParams != null && !localParams.getBool(FILTER_PARAM, true))
       return functionQuery;
@@ -383,7 +390,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return supportedScoreModes;
   }
 
-  protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String score, T strategy) {
+  protected DoubleValuesSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String score, T strategy) {
     if (score == null) {
       return null;
     }

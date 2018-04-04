@@ -16,6 +16,13 @@
  */
 package org.apache.solr.request;
 
+import java.lang.invoke.MethodHandles;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -28,7 +35,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.request.IntervalFacets.IntervalCompareResult;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RefCounted;
@@ -37,15 +47,17 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-
 public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  
+  private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
+  
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
   }
 
@@ -243,13 +255,14 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   @Slow
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
-    int cardinality = 100000;
+    int cardinality = 10000;
     // Fields to use for interval faceting
     String[] fields = new String[]{
-        "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
-        "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv", "test_s", "test_i", 
-        "test_l", "test_f", "test_d", "test_ss", "test_is", "test_fs", "test_ls", "test_ds",
-        "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p"};
+        "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv", "test_dt_dv",
+        "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv", "test_dts_dv", "test_s", "test_i", 
+        "test_l", "test_f", "test_d", "test_dt", "test_ss", "test_is", "test_fs", "test_ls", "test_ds", "test_dts",
+        "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p", "test_dts_p"
+        };
     for (int i = 0; i < atLeast(500); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
@@ -261,30 +274,34 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         //delete some docs
         assertU(delI(String.valueOf(i - 1)));
       }
-      String[] docFields = new String[(random().nextInt(5)) * 10 + 12];
+      String[] docFields = new String[(random().nextInt(5)) * 12 + 14];
       docFields[0] = "id";
-      docFields[1] = String.valueOf(i);
+      docFields[1] = String.valueOf(i * (random().nextBoolean()?1:-1)); // in the queries we do positive and negative
       docFields[2] = "test_s";
-      docFields[3] = String.valueOf(random().nextInt(cardinality));
+      docFields[3] = String.valueOf(randomInt(cardinality));
       docFields[4] = "test_i";
-      docFields[5] = String.valueOf(random().nextInt(cardinality));
+      docFields[5] = String.valueOf(randomInt(cardinality));
       docFields[6] = "test_l";
-      docFields[7] = String.valueOf(random().nextInt(cardinality));
+      docFields[7] = String.valueOf(randomLong(cardinality));
       docFields[8] = "test_f";
-      docFields[9] = String.valueOf(random().nextFloat() * cardinality);
+      docFields[9] = String.valueOf(randomFloat(cardinality));
       docFields[10] = "test_d";
-      docFields[11] = String.valueOf(random().nextDouble() * cardinality);
-      for (int j = 12; j < docFields.length; ) {
+      docFields[11] = String.valueOf(raondomDouble(cardinality));
+      docFields[12] = "test_dt";
+      docFields[13] = dateFormat.format(new Date(randomMs(cardinality)));
+      for (int j = 14; j < docFields.length; ) {
         docFields[j++] = "test_ss";
-        docFields[j++] = String.valueOf(random().nextInt(cardinality));
+        docFields[j++] = String.valueOf(randomInt(cardinality));
         docFields[j++] = "test_is";
-        docFields[j++] = String.valueOf(random().nextInt(cardinality));
+        docFields[j++] = String.valueOf(randomInt(cardinality));
         docFields[j++] = "test_ls";
-        docFields[j++] = String.valueOf(random().nextInt(cardinality));
+        docFields[j++] = String.valueOf(randomLong(cardinality));
         docFields[j++] = "test_fs";
-        docFields[j++] = String.valueOf(random().nextFloat() * cardinality);
+        docFields[j++] = String.valueOf(randomFloat(cardinality));
         docFields[j++] = "test_ds";
-        docFields[j++] = String.valueOf(random().nextDouble() * cardinality);
+        docFields[j++] = String.valueOf(raondomDouble(cardinality));
+        docFields[j++] = "test_dts";
+        docFields[j++] = dateFormat.format(new Date(randomMs(cardinality)));
       }
       assertU(adoc(docFields));
       if (random().nextInt(50) == 0) {
@@ -293,10 +310,62 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(100); i++) {
+    for (int i = 0; i < atLeast(10000); i++) {
       doTestQuery(cardinality, fields);
     }
 
+  }
+
+  long randomMs(int cardinality) {
+    return DATE_START_TIME_RANDOM_TEST + random().nextInt(cardinality) * 1000 * (random().nextBoolean()?1:-1);
+  }
+
+  double raondomDouble(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(4);
+      if (num == 0) return Double.NEGATIVE_INFINITY;
+      if (num == 1) return Double.POSITIVE_INFINITY;
+      if (num == 2) return Double.MIN_VALUE;
+      if (num == 3) return Double.MAX_VALUE;
+    }
+    Double d = Double.NaN;
+    while (d.isNaN()) {
+      d = random().nextDouble();
+    }
+    return d * cardinality * (random().nextBoolean()?1:-1);
+  }
+
+  float randomFloat(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(4);
+      if (num == 0) return Float.NEGATIVE_INFINITY;
+      if (num == 1) return Float.POSITIVE_INFINITY;
+      if (num == 2) return Float.MIN_VALUE;
+      if (num == 3) return Float.MAX_VALUE;
+    }
+    Float f = Float.NaN;
+    while (f.isNaN()) {
+      f = random().nextFloat();
+    }
+    return f * cardinality * (random().nextBoolean()?1:-1);
+  }
+
+  int randomInt(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(2);
+      if (num == 0) return Integer.MAX_VALUE;
+      if (num == 1) return Integer.MIN_VALUE;
+    }
+    return random().nextInt(cardinality) * (random().nextBoolean()?1:-1);
+  }
+  
+  long randomLong(int cardinality) {
+    if (rarely()) {
+      int num = random().nextInt(2);
+      if (num == 0) return Long.MAX_VALUE;
+      if (num == 1) return Long.MIN_VALUE;
+    }
+    return randomInt(cardinality);
   }
 
   /**
@@ -307,32 +376,37 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void doTestQuery(int cardinality, String[] fields) throws Exception {
     String[] startOptions = new String[]{"(", "["};
     String[] endOptions = new String[]{")", "]"};
-    // the query should match some documents in most cases
-    Integer[] qRange = getRandomRange(cardinality, "id");
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("q", "id:[" + qRange[0] + " TO " + qRange[1] + "]");
+    if (rarely()) {
+      params.set("q", "*:*");
+    } else {
+      // the query should match some documents in most cases
+      String[] qRange = getRandomRange(cardinality, "id");
+      params.set("q", "id:[" + qRange[0] + " TO " + qRange[1] + "]");
+    }
     params.set("facet", "true");
-    String field = fields[random().nextInt(fields.length)]; //choose from any of the fields
+    String field = pickRandom(fields); //choose from any of the fields
     params.set("facet.interval", field);
     // number of intervals
     for (int i = 0; i < 1 + random().nextInt(20); i++) {
-      Integer[] interval = getRandomRange(cardinality, field);
-      String open = startOptions[interval[0] % 2];
-      String close = endOptions[interval[1] % 2];
+      String[] interval = getRandomRange(cardinality, field);
+      String open = pickRandom(startOptions);
+      String close = pickRandom(endOptions);
       params.add("f." + field + ".facet.interval.set", open + interval[0] + "," + interval[1] + close);
       params.add("facet.query", field + ":" + open.replace('(', '{') + interval[0] + " TO " + interval[1] + close.replace(')', '}'));
     }
     SolrQueryRequest req = req(params);
     try {
-      SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+      SolrQueryResponse rsp = h.queryAndResponse("", req);
       NamedList<Object> facetQueries = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_queries");
       NamedList<Object> facetIntervals = (NamedList<Object>) ((NamedList<Object>) (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts"))
           .get("facet_intervals")).get(field);
       assertEquals("Responses don't have the same number of facets: \n" + facetQueries + "\n" + facetIntervals,
-          facetQueries.size(), facetIntervals.size());
+          facetQueries.size(), getCountDistinctIntervals(facetIntervals));
       for (int i = 0; i < facetIntervals.size(); i++) {
-        assertEquals("Interval did not match: " + facetIntervals.getName(i), facetIntervals.getVal(i).toString(),
-            facetQueries.get(field + ":" + facetIntervals.getName(i).replace(",", " TO ").replace('(', '{').replace(')', '}')).toString());
+        assertEquals("Interval did not match: " + field + ": " + facetIntervals.getName(i) + "\nResponse: " + rsp.getValues().get("facet_counts"), 
+            facetQueries.get(field + ":" + facetIntervals.getName(i).replace(",", " TO ").replace('(', '{').replace(')', '}')).toString(),
+            facetIntervals.getVal(i).toString());
       }
     } finally {
       req.close();
@@ -340,24 +414,80 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   }
 
+  private int getCountDistinctIntervals(NamedList<Object> facetIntervals) {
+    Set<String> distinctIntervals = new HashSet<>(facetIntervals.size());
+    for (int i = 0; i < facetIntervals.size(); i++) {
+      distinctIntervals.add(facetIntervals.getName(i));
+    }
+    return distinctIntervals.size();
+  }
+
   /**
    * Returns a random range. It's guaranteed that the first
-   * number will be lower than the second, and both of them
-   * between 0 (inclusive) and <code>max</code> (exclusive).
+   * number will be lower than the second. The range could have values greater than "max", 
+   * for example [Integer/Long/Float/Double].[MIN/MAX_VALUE,POSITIVE/NEGATIVE_INFINITY]
    * If the fieldName is "test_s_dv" or "test_ss_dv" (the
    * two fields used for Strings), the comparison will be done
    * alphabetically
+   * If the field is a Date, a date range will be returned
+   * The range could also contain "*" as beginning and/or end of the range
    */
-  private Integer[] getRandomRange(int max, String fieldName) {
-    Integer[] values = new Integer[2];
-    values[0] = random().nextInt(max);
-    values[1] = random().nextInt(max);
-    if (fieldName.startsWith("test_s")) {
+  private String[] getRandomRange(int max, String fieldName) {
+    Number[] values = new Number[2];
+    FieldType ft = h.getCore().getLatestSchema().getField(fieldName).getType();
+    if (ft.getNumberType() == null) {
+      assert ft instanceof StrField;
+      values[0] = randomInt(max);
+      values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
     } else {
+      switch (ft.getNumberType()) {
+        case DOUBLE:
+          values[0] = raondomDouble(max);
+          values[1] = raondomDouble(max);
+          break;
+        case FLOAT:
+          values[0] = randomFloat(max);
+          values[1] = randomFloat(max);
+          break;
+        case INTEGER:
+          values[0] = randomInt(max);
+          values[1] = randomInt(max);
+          break;
+        case LONG:
+          values[0] = randomLong(max);
+          values[1] = randomLong(max);
+          break;
+        case DATE:
+          values[0] = randomMs(max);
+          values[1] = randomMs(max);
+          break;
+        default:
+          throw new AssertionError("Unexpected number type");
+        
+      }
       Arrays.sort(values);
     }
-    return values;
+    String[] stringValues = new String[2];
+    if (rarely()) {
+      stringValues[0] = "*";
+    } else {
+      if (ft.getNumberType() == NumberType.DATE) {
+        stringValues[0] = dateFormat.format(values[0]);
+      } else {
+        stringValues[0] = String.valueOf(values[0]);
+      }
+    }
+    if (rarely()) {
+      stringValues[1] = "*";
+    } else {
+      if (ft.getNumberType() == NumberType.DATE) {
+        stringValues[1] = dateFormat.format(values[1]);
+      } else {
+        stringValues[1] = String.valueOf(values[1]);
+      }
+    }
+    return stringValues;
   }
 
   @Test
@@ -662,19 +792,27 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(adoc("id", "12", "test_l_dv", String.valueOf(Long.MAX_VALUE - 3)));
     assertU(adoc("id", "13", "test_l_dv", String.valueOf(Long.MAX_VALUE - 2)));
     assertU(adoc("id", "14", "test_l_dv", String.valueOf(Long.MAX_VALUE - 1)));
+    assertU(adoc("id", "15", "test_l_dv", String.valueOf(Long.MAX_VALUE)));
+    assertU(adoc("id", "16", "test_l_dv", String.valueOf(Long.MIN_VALUE)));
     assertU(commit());
 
     assertIntervalQuery("test_l_dv", "[0," + Integer.MAX_VALUE + "]", "10");
-    assertIntervalQuery("test_l_dv", "[" + Integer.MAX_VALUE + "," + Long.MAX_VALUE + "]", "3");
-    assertIntervalQuery("test_l_dv", "[" + Integer.MAX_VALUE + ",*]", "3");
+    assertIntervalQuery("test_l_dv", "(10," + Long.MAX_VALUE + "]", "4");
+    assertIntervalQuery("test_l_dv", "[" + Long.MAX_VALUE + "," + Long.MAX_VALUE + "]", "1");
+    assertIntervalQuery("test_l_dv", "[" + Long.MAX_VALUE + ",*]", "1");
+    assertIntervalQuery("test_l_dv", "(" + Long.MAX_VALUE + ",*]", "0");
+    assertIntervalQuery("test_l_dv", "(*, " + Long.MIN_VALUE + "]", "1");
+    assertIntervalQuery("test_l_dv", "(*, " + Long.MIN_VALUE + ")", "0");
+    assertIntervalQuery("test_l_dv", "(" + (Long.MAX_VALUE - 1) + ",*]", "1");
+    assertIntervalQuery("test_l_dv", "[" + (Long.MAX_VALUE - 1) + ",*]", "2");
   }
 
   @Test
   public void testFloatFields() {
-    doTestFloat("test_f_dv");
+    doTestFloat("test_f_dv", false);
   }
 
-  private void doTestFloat(String field) {
+  private void doTestFloat(String field, boolean testDouble) {
     assertU(adoc("id", "1", field, "0"));
     assertU(adoc("id", "2", field, "1"));
     assertU(adoc("id", "3", field, "2"));
@@ -703,11 +841,70 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "(1,1)", "0");
     assertIntervalQuery(field, "(4,7)", "4");
     assertIntervalQuery(field, "(123,*)", "1");
+
+    clearIndex();
+    assertU(adoc("id", "16", field, "-1.3"));
+    assertU(adoc("id", "17", field, "0.0"));
+    assertU(adoc("id", "18", field, "-0.0"));
+    assertU(adoc("id", "19", field, String.valueOf(Float.MIN_VALUE)));
+    assertU(adoc("id", "20", field, String.valueOf(Float.MAX_VALUE)));
+    assertU(adoc("id", "21", field, String.valueOf(Float.NEGATIVE_INFINITY)));
+    assertU(adoc("id", "22", field, String.valueOf(Float.POSITIVE_INFINITY)));
+    assertU(commit());
+
+    assertIntervalQuery(field, "[*,*]", "7");
+    assertIntervalQuery(field, "(*,*)", "7");
+    assertIntervalQuery(field, "(-1,1)", "3");
+    assertIntervalQuery(field, "(-2,1)", "4");
+    assertIntervalQuery(field, "(-1.3,0)", "1");
+    assertIntervalQuery(field, "[-1.3,0)", "2");
+    assertIntervalQuery(field, "[-1.3,0]", "3");
+    assertIntervalQuery(field, "(" + Float.NEGATIVE_INFINITY + ",0)", "2");
+    assertIntervalQuery(field, "(* ,0)", "3");
+    assertIntervalQuery(field, "[" + Float.NEGATIVE_INFINITY + ",0)", "3");
+    assertIntervalQuery(field, "(0, " + Float.MIN_VALUE + ")", "0");
+    assertIntervalQuery(field, "(0, " + Float.MIN_VALUE + "]", "1");
+    assertIntervalQuery(field, "(0, " + Float.MAX_VALUE + ")", "1");
+    assertIntervalQuery(field, "(0, " + Float.MAX_VALUE + "]", "2");
+    assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + ")", "2");
+    assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + "]", "3");
+    assertIntervalQuery(field, "[-0.0, 0.0]", "2");
+    assertIntervalQuery(field, "[-0.0, 0.0)", "1");
+    assertIntervalQuery(field, "(-0.0, 0.0]", "1");
+
+    if (testDouble) {
+      clearIndex();
+      assertU(adoc("id", "16", field, "-1.3"));
+      assertU(adoc("id", "17", field, "0.0"));
+      assertU(adoc("id", "18", field, "-0.0"));
+      assertU(adoc("id", "19", field, String.valueOf(Double.MIN_VALUE)));
+      assertU(adoc("id", "20", field, String.valueOf(Double.MAX_VALUE)));
+      assertU(adoc("id", "21", field, String.valueOf(Double.NEGATIVE_INFINITY)));
+      assertU(adoc("id", "22", field, String.valueOf(Double.POSITIVE_INFINITY)));
+      assertU(commit());
+
+      assertIntervalQuery(field, "[*,*]", "7");
+      assertIntervalQuery(field, "(*,*)", "7");
+      assertIntervalQuery(field, "(-1,1)", "3");
+      assertIntervalQuery(field, "(-2,1)", "4");
+      assertIntervalQuery(field, "(-1.3,0)", "1");
+      assertIntervalQuery(field, "[-1.3,0)", "2");
+      assertIntervalQuery(field, "[-1.3,0]", "3");
+      assertIntervalQuery(field, "(" + Double.NEGATIVE_INFINITY + ",0)", "2");
+      assertIntervalQuery(field, "(* ,0)", "3");
+      assertIntervalQuery(field, "[" + Double.NEGATIVE_INFINITY + ",0)", "3");
+      assertIntervalQuery(field, "(0, " + Double.MIN_VALUE + ")", "0");
+      assertIntervalQuery(field, "(0, " + Double.MIN_VALUE + "]", "1");
+      assertIntervalQuery(field, "(0, " + Double.MAX_VALUE + ")", "1");
+      assertIntervalQuery(field, "(0, " + Double.MAX_VALUE + "]", "2");
+      assertIntervalQuery(field, "(0, " + Double.POSITIVE_INFINITY + ")", "2");
+      assertIntervalQuery(field, "(0, " + Double.POSITIVE_INFINITY + "]", "3");
+    }
   }
 
   @Test
   public void testDoubleFields() {
-    doTestFloat("test_d_dv");
+    doTestFloat("test_d_dv", true);
   }
 
   @Test

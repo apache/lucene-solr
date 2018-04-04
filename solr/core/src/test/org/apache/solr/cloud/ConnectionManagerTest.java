@@ -153,7 +153,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     }
   }
   
-  private class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
+  private static class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
     int called = 0;
     boolean exceptionThrown = false;
     

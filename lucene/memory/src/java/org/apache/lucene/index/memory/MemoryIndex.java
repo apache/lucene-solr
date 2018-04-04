@@ -38,10 +38,11 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -58,6 +59,7 @@ import org.apache.lucene.util.IntBlockPool.SliceWriter;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -103,7 +105,7 @@ import org.apache.lucene.util.StringHelper;
  * <a target="_blank" 
  * href="http://bobwyman.pubsub.com/main/2005/05/mary_hodder_poi.html">Prospective Search</a>, 
  * Jim Gray's
- * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&pa=showpage&pid=293&page=4">
+ * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&amp;pa=showpage&amp;pid=293&amp;page=4">
  * A Call to Arms - Custom subscriptions</a>, and Tim Bray's
  * <a target="_blank" 
  * href="http://www.tbray.org/ongoing/When/200x/2003/07/30/OnSearchTOC">On Search, the Series</a>.
@@ -275,7 +277,7 @@ public class MemoryIndex {
       throw new IllegalArgumentException("analyzer must not be null");
     
     TokenStream stream = analyzer.tokenStream(fieldName, text);
-    storeTerms(getInfo(fieldName, defaultFieldType), stream, 1.0f,
+    storeTerms(getInfo(fieldName, defaultFieldType), stream,
         analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
 
@@ -358,18 +360,7 @@ public class MemoryIndex {
       }
     };
   }
-  
-  /**
-   * Equivalent to <code>addField(fieldName, stream, 1.0f)</code>.
-   *
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param stream
-   *            the token stream to retrieve tokens from
-   */
-  public void addField(String fieldName, TokenStream stream) {
-    addField(fieldName, stream, 1.0f);
-  }
+
 
   /**
    * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer.
@@ -377,22 +368,8 @@ public class MemoryIndex {
    *
    * @param field the field to add
    * @param analyzer the analyzer to use for term analysis
-   * @throws IllegalArgumentException if the field is a DocValues or Point field, as these
-   *                                  structures are not supported by MemoryIndex
    */
   public void addField(IndexableField field, Analyzer analyzer) {
-    addField(field, analyzer, 1.0f);
-  }
-
-  /**
-   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer.
-   * Also stores doc values based on {@link IndexableFieldType#docValuesType()} if set.
-   *
-   * @param field the field to add
-   * @param analyzer the analyzer to use for term analysis
-   * @param boost a field boost
-   */
-  public void addField(IndexableField field, Analyzer analyzer, float boost) {
 
     Info info = getInfo(field.name(), field.fieldType());
 
@@ -409,7 +386,7 @@ public class MemoryIndex {
       positionIncrementGap = 0;
     }
     if (tokenStream != null) {
-      storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
+      storeTerms(info, tokenStream, positionIncrementGap, offsetGap);
     }
 
     DocValuesType docValuesType = field.fieldType().docValuesType();
@@ -451,13 +428,9 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param stream
    *            the token stream to retrieve tokens from.
-   * @param boost
-   *            the boost factor for hits for this field
-   *  
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost) {
-    addField(fieldName, stream, boost, 0);
+  public void addField(String fieldName, TokenStream stream) {
+    addField(fieldName, stream, 0);
   }
 
 
@@ -472,17 +445,13 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param stream
    *            the token stream to retrieve tokens from.
-   * @param boost
-   *            the boost factor for hits for this field
    *
    * @param positionIncrementGap
    *            the position increment gap if fields with the same name are added more than once
    *
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap) {
-    addField(fieldName, stream, boost, positionIncrementGap, 1);
+  public void addField(String fieldName, TokenStream stream, int positionIncrementGap) {
+    addField(fieldName, stream, positionIncrementGap, 1);
   }
 
   /**
@@ -497,17 +466,14 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param tokenStream
    *            the token stream to retrieve tokens from. It's guaranteed to be closed no matter what.
-   * @param boost
-   *            the boost factor for hits for this field
    * @param positionIncrementGap
    *            the position increment gap if fields with the same name are added more than once
    * @param offsetGap
    *            the offset gap if fields with the same name are added more than once
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
+  public void addField(String fieldName, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
     Info info = getInfo(fieldName, defaultFieldType);
-    storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
+    storeTerms(info, tokenStream, positionIncrementGap, offsetGap);
   }
 
   private Info getInfo(String fieldName, IndexableFieldType fieldType) {
@@ -600,20 +566,13 @@ public class MemoryIndex {
     }
   }
 
-  private void storeTerms(Info info, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
-
-    if (boost <= 0.0f) {
-      throw new IllegalArgumentException("boost factor must be greater than 0.0");
-    }
+  private void storeTerms(Info info, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
 
     int pos = -1;
     int offset = 0;
-    if (info.numTokens == 0) {
-      info.boost = boost;
-    } else if (info.numTokens > 0) {
+    if (info.numTokens > 0) {
       pos = info.lastPosition + positionIncrementGap;
       offset = info.lastOffset + offsetGap;
-      info.boost *= boost;
     }
 
     try (TokenStream stream = tokenStream) {
@@ -639,6 +598,7 @@ public class MemoryIndex {
           info.sliceArray.start[ord] = postingsWriter.startNewSlice();
         }
         info.sliceArray.freq[ord]++;
+        info.maxTermFrequency = Math.max(info.maxTermFrequency, info.sliceArray.freq[ord]);
         info.sumTotalTermFreq++;
         postingsWriter.writeInt(pos);
         if (storeOffsets) {
@@ -741,8 +701,8 @@ public class MemoryIndex {
         }
         
         @Override
-        public boolean needsScores() {
-          return true;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE;
         }
       });
       float score = scores[0];
@@ -846,11 +806,10 @@ public class MemoryIndex {
     
     /** Number of overlapping tokens for this field */
     private int numOverlapTokens;
-    
-    /** Boost factor for hits for this field */
-    private float boost;
 
     private long sumTotalTermFreq;
+    
+    private int maxTermFrequency;
 
     /** the last position encountered in this field for multi field support*/
     private int lastPosition;
@@ -914,20 +873,27 @@ public class MemoryIndex {
 
           final int numDimensions = fieldInfo.getPointDimensionCount();
           final int numBytesPerDimension = fieldInfo.getPointNumBytes();
-          minPackedValue = pointValues[0].bytes.clone();
-          maxPackedValue = pointValues[0].bytes.clone();
-
-          for (int i = 0; i < pointValuesCount; i++) {
-            BytesRef pointValue = pointValues[i];
-            assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
-
-            for (int dim = 0; dim < numDimensions; ++dim) {
-              int offset = dim * numBytesPerDimension;
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
-                System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
-              }
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
-                System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+          if (numDimensions == 1) {
+            // PointInSetQuery.MergePointVisitor expects values to be visited in increasing order,
+            // this is a 1d optimization which has to be done here too. Otherwise we emit values
+            // out of order which causes mismatches.
+            Arrays.sort(pointValues, 0, pointValuesCount);
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[pointValuesCount - 1].bytes.clone();
+          } else {
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[0].bytes.clone();
+            for (int i = 0; i < pointValuesCount; i++) {
+              BytesRef pointValue = pointValues[i];
+              assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
+              for (int dim = 0; dim < numDimensions; ++dim) {
+                int offset = dim * numBytesPerDimension;
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
+                  System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
+                }
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
+                  System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+                }
               }
             }
           }
@@ -938,8 +904,8 @@ public class MemoryIndex {
 
     NumericDocValues getNormDocValues() {
       if (norm == null) {
-        FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
-            numTokens, numOverlapTokens, 0, boost);
+        FieldInvertState invertState = new FieldInvertState(Version.LATEST.major, fieldInfo.name, fieldInfo.getIndexOptions(), lastPosition,
+            numTokens, numOverlapTokens, 0, maxTermFrequency, terms.size());
         final long value = normSimilarity.computeNorm(invertState);
         if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
 
@@ -968,7 +934,7 @@ public class MemoryIndex {
     }
 
     int docId() {
-      return doc > 1 ? NumericDocValues.NO_MORE_DOCS : doc;
+      return doc > 0 ? NumericDocValues.NO_MORE_DOCS : doc;
     }
 
   }
@@ -977,11 +943,11 @@ public class MemoryIndex {
     MemoryDocValuesIterator it = new MemoryDocValuesIterator();
     return new SortedNumericDocValues() {
 
-      int value = 0;
+      int ord = 0;
 
       @Override
       public long nextValue() throws IOException {
-        return values[value++];
+        return values[ord++];
       }
 
       @Override
@@ -991,6 +957,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 
@@ -1121,6 +1088,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 
@@ -1173,23 +1141,13 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private Fields memoryFields = new MemoryFields(fields);
+    private final MemoryFields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
       for (Info info : fields.values()) {
         info.prepareDocValuesAndPointValues();
       }
-    }
-
-    @Override
-    public void addCoreClosedListener(CoreClosedListener listener) {
-      addCoreClosedListenerAsReaderClosedListener(this, listener);
-    }
-
-    @Override
-    public void removeCoreClosedListener(CoreClosedListener listener) {
-      removeCoreClosedListenerAsReaderClosedListener(this, listener);
     }
 
     private Info getInfoForExpectedDocValuesType(String fieldName, DocValuesType expectedType) {
@@ -1273,7 +1231,7 @@ public class MemoryIndex {
     @Override
     public PointValues getPointValues(String fieldName) {
       Info info = fields.get(fieldName);
-      if (info.pointValues == null) {
+      if (info == null || info.pointValues == null) {
         return null;
       }
       return new MemoryIndexPointValues(info);
@@ -1285,8 +1243,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Fields fields() {
-      return memoryFields;
+    public Terms terms(String field) throws IOException {
+      return memoryFields.terms(field);
     }
 
     private class MemoryFields extends Fields {
@@ -1471,6 +1429,11 @@ public class MemoryIndex {
       }
 
       @Override
+      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+        return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1L));
+      }
+
+      @Override
       public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null;
         this.seekExact(((OrdTermState)state).ord);
@@ -1585,6 +1548,7 @@ public class MemoryIndex {
 
       MemoryIndexPointValues(Info info) {
         this.info = Objects.requireNonNull(info);
+        Objects.requireNonNull(info.pointValues, "Field does not have points");
       }
 
       @Override
@@ -1604,12 +1568,7 @@ public class MemoryIndex {
 
       @Override
       public byte[] getMinPackedValue() throws IOException {
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return info.minPackedValue;
-        } else {
-          return null;
-        }
+        return info.minPackedValue;
       }
 
       @Override
@@ -1642,7 +1601,7 @@ public class MemoryIndex {
     @Override
     public Fields getTermVectors(int docID) {
       if (docID == 0) {
-        return fields();
+        return memoryFields;
       } else {
         return null;
       }
@@ -1681,7 +1640,17 @@ public class MemoryIndex {
     }
 
     @Override
-    public Sort getIndexSort() {
+    public LeafMetaData getMetaData() {
+      return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
       return null;
     }
   }

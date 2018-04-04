@@ -38,7 +38,6 @@ public class TestField extends LuceneTestCase {
   public void testDoublePoint() throws Exception {
     Field field = new DoublePoint("foo", 5d);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -58,7 +57,6 @@ public class TestField extends LuceneTestCase {
   public void testDoublePoint2D() throws Exception {
     DoublePoint field = new DoublePoint("foo", 5d, 4d);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -84,7 +82,6 @@ public class TestField extends LuceneTestCase {
   public void testDoubleDocValuesField() throws Exception {
     DoubleDocValuesField field = new DoubleDocValuesField("foo", 5d);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -103,7 +100,6 @@ public class TestField extends LuceneTestCase {
   public void testFloatDocValuesField() throws Exception {
     FloatDocValuesField field = new FloatDocValuesField("foo", 5f);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -122,7 +118,6 @@ public class TestField extends LuceneTestCase {
   public void testFloatPoint() throws Exception {
     Field field = new FloatPoint("foo", 5f);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -142,7 +137,6 @@ public class TestField extends LuceneTestCase {
   public void testFloatPoint2D() throws Exception {
     FloatPoint field = new FloatPoint("foo", 5f, 4f);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -166,7 +160,6 @@ public class TestField extends LuceneTestCase {
   public void testIntPoint() throws Exception {
     Field field = new IntPoint("foo", 5);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -186,7 +179,6 @@ public class TestField extends LuceneTestCase {
   public void testIntPoint2D() throws Exception {
     IntPoint field = new IntPoint("foo", 5, 4);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -210,7 +202,6 @@ public class TestField extends LuceneTestCase {
   public void testNumericDocValuesField() throws Exception {
     NumericDocValuesField field = new NumericDocValuesField("foo", 5L);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -229,7 +220,6 @@ public class TestField extends LuceneTestCase {
   public void testLongPoint() throws Exception {
     Field field = new LongPoint("foo", 5);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -249,7 +239,6 @@ public class TestField extends LuceneTestCase {
   public void testLongPoint2D() throws Exception {
     LongPoint field = new LongPoint("foo", 5, 4);
 
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -273,7 +262,6 @@ public class TestField extends LuceneTestCase {
   public void testSortedBytesDocValuesField() throws Exception {
     SortedDocValuesField field = new SortedDocValuesField("foo", new BytesRef("bar"));
 
-    trySetBoost(field);
     trySetByteValue(field);
     field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
@@ -292,7 +280,6 @@ public class TestField extends LuceneTestCase {
   public void testBinaryDocValuesField() throws Exception {
     BinaryDocValuesField field = new BinaryDocValuesField("foo", new BytesRef("bar"));
 
-    trySetBoost(field);
     trySetByteValue(field);
     field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
@@ -315,7 +302,6 @@ public class TestField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -339,7 +325,6 @@ public class TestField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      field.setBoost(5f);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -353,14 +338,12 @@ public class TestField extends LuceneTestCase {
       field.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
       
       assertEquals("baz", field.stringValue());
-      assertEquals(5f, field.boost(), 0f);
     }
   }
   
   public void testTextFieldReader() throws Exception {
     Field field = new TextField("foo", new StringReader("bar"));
 
-    field.setBoost(5f);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -374,7 +357,6 @@ public class TestField extends LuceneTestCase {
     field.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
       
     assertNotNull(field.readerValue());
-    assertEquals(5f, field.boost(), 0f);
   }
   
   /* TODO: this is pretty expert and crazy
@@ -391,7 +373,6 @@ public class TestField extends LuceneTestCase {
     };
     
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       field.setBytesValue("baz".getBytes(StandardCharsets.UTF_8));
       field.setBytesValue(new BytesRef("baz"));
@@ -410,7 +391,6 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldString() throws Exception {
     Field field = new StoredField("foo", "bar");
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -428,7 +408,6 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldInt() throws Exception {
     Field field = new StoredField("foo", 1);
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -446,7 +425,6 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldDouble() throws Exception {
     Field field = new StoredField("foo", 1D);
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -464,7 +442,6 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldFloat() throws Exception {
     Field field = new StoredField("foo", 1F);
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -482,7 +459,6 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldLong() throws Exception {
     Field field = new StoredField("foo", 1L);
-    trySetBoost(field);
     trySetByteValue(field);
     trySetBytesValue(field);
     trySetBytesRefValue(field);
@@ -583,12 +559,6 @@ public class TestField extends LuceneTestCase {
   private void trySetTokenStreamValue(Field f) {
     expectThrows(IllegalArgumentException.class, () -> {
       f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
-    });
-  }
-  
-  private void trySetBoost(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> {
-      f.setBoost(5.0f);
     });
   }
   

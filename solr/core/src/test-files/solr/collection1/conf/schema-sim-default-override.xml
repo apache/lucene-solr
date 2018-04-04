@@ -50,7 +50,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="sim1text" type="sim-explicit" indexed="true" stored="true"/>
   <field name="sim2text" type="sim-used-as-default-override" indexed="true" stored="true"/>
   <field name="sim3text" type="sim-none-get-default" indexed="true" stored="true"/>
@@ -60,7 +60,7 @@
   <dynamicField name="*_sim2" type="sim-used-as-default-override" indexed="true" stored="true"/>
   <dynamicField name="*_sim3" type="sim-none-get-default" indexed="true" stored="true"/>
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
   <uniqueKey>id</uniqueKey>
   
 </schema>

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+
 import org.apache.http.HttpResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -25,14 +26,14 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient; // jdoc
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.RequestReplicationTracker;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,9 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-
+/**
+ * Used for distributing commands from a shard leader to its replicas.
+ */
 public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 25;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -178,10 +181,12 @@ public class SolrCmdDistributor implements Closeable {
   }
   
   public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
-    distribDelete(cmd, nodes, params, false);
+    distribDelete(cmd, nodes, params, false, null, null);
   }
-  
-  public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync) throws IOException {
+
+  public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync,
+                            RollupRequestReplicationTracker rollupTracker,
+                            LeaderRequestReplicationTracker leaderTracker) throws IOException {
     
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
@@ -192,20 +197,22 @@ public class SolrCmdDistributor implements Closeable {
       } else {
         uReq.deleteByQuery(cmd.query);
       }
-      
-      submit(new Req(cmd, node, uReq, sync), false);
+
+      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), false);
     }
   }
   
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
-    distribAdd(cmd, nodes, params, false, null);
+    distribAdd(cmd, nodes, params, false, null, null);
   }
 
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous) throws IOException {
-    distribAdd(cmd, nodes, params, synchronous, null);
+    distribAdd(cmd, nodes, params, synchronous, null, null);
   }
-  
-  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous, RequestReplicationTracker rrt) throws IOException {  
+
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous,
+                         RollupRequestReplicationTracker rollupTracker,
+                         LeaderRequestReplicationTracker leaderTracker) throws IOException {
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       if (cmd.isLastDocInBatch)
@@ -215,7 +222,7 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isInPlaceUpdate()) {
         params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rrt), false);
+      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), false);
     }
     
   }
@@ -271,7 +278,14 @@ public class SolrCmdDistributor implements Closeable {
       try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
         client.request(req.uReq);
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
+        SolrException.log(log, e);
+        Error error = new Error();
+        error.e = e;
+        error.req = req;
+        if (e instanceof SolrException) {
+          error.statusCode = ((SolrException) e).code();
+        }
+        errors.add(error);
       }
       
       return;
@@ -318,18 +332,22 @@ public class SolrCmdDistributor implements Closeable {
     public int retries;
     public boolean synchronous;
     public UpdateCommand cmd;
-    public RequestReplicationTracker rfTracker;
+    final private RollupRequestReplicationTracker rollupTracker;
+    final private LeaderRequestReplicationTracker leaderTracker;
 
     public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous) {
-      this(cmd, node, uReq, synchronous, null);
+      this(cmd, node, uReq, synchronous, null, null);
     }
-    
-    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker) {
+
+    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous,
+               RollupRequestReplicationTracker rollupTracker,
+               LeaderRequestReplicationTracker leaderTracker) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
       this.cmd = cmd;
-      this.rfTracker = rfTracker;
+      this.rollupTracker = rollupTracker;
+      this.leaderTracker = leaderTracker;
     }
     
     public String toString() {
@@ -338,40 +356,63 @@ public class SolrCmdDistributor implements Closeable {
       sb.append("; node=").append(String.valueOf(node));
       return sb.toString();
     }
-    
-    public void trackRequestResult(HttpResponse resp, boolean success) {      
-      if (rfTracker != null) {
-        Integer rf = null;
-        if (resp != null) {
-          // need to parse out the rf from requests that were forwards to another leader
-          InputStream inputStream = null;
-          try {
-            inputStream = resp.getEntity().getContent();
-            BinaryResponseParser brp = new BinaryResponseParser();
-            NamedList<Object> nl= brp.processResponse(inputStream, null);
-            Object hdr = nl.get("responseHeader");
-            if (hdr != null && hdr instanceof NamedList) {
-              NamedList<Object> hdrList = (NamedList<Object>)hdr;
-              Object rfObj = hdrList.get(UpdateRequest.REPFACT);
-              if (rfObj != null && rfObj instanceof Integer) {
-                rf = (Integer)rfObj;
-              }
+
+    // Called whenever we get results back from a sub-request.
+    // The only ambiguity is if I have _both_ a rollup tracker and a leader tracker. In that case we need to handle
+    // both requests returning from leaders of other shards _and_ from my followers. This happens if a leader happens
+    // to be the aggregator too.
+    //
+    // This isn't really a problem because only responses _from_ some leader will have the "rf" parameter, in which case
+    // we need to add the data to the rollup tracker.
+    //
+    // In the case of a leaderTracker and rollupTracker both being present, then we need to take care when assembling
+    // the final response to check both the rollup and leader trackers on the aggrator node.
+    public void trackRequestResult(HttpResponse resp, boolean success) {
+
+      // Returing Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
+      // our achieved rf if we are a leader, i.e. have a leaderTracker.
+      int rfFromResp = getRfFromResponse(resp);
+
+      if (leaderTracker != null && rfFromResp == Integer.MAX_VALUE) {
+        leaderTracker.trackRequestResult(node, success);
+      }
+
+      if (rollupTracker != null) {
+        rollupTracker.testAndSetAchievedRf(rfFromResp);
+      }
+    }
+
+    private int getRfFromResponse(HttpResponse resp) {
+      if (resp != null) {
+
+        InputStream inputStream = null;
+
+        try {
+          inputStream = resp.getEntity().getContent();
+          BinaryResponseParser brp = new BinaryResponseParser();
+          NamedList<Object> nl = brp.processResponse(inputStream, null);
+          Object hdr = nl.get("responseHeader");
+          if (hdr != null && hdr instanceof NamedList) {
+            NamedList<Object> hdrList = (NamedList<Object>) hdr;
+            Object rfObj = hdrList.get(UpdateRequest.REPFACT);
+            if (rfObj != null && rfObj instanceof Integer) {
+              return (Integer) rfObj;
             }
-          } catch (Exception e) {
-            log.warn("Failed to parse response from "+node+" during replication factor accounting due to: "+e);
-          } finally {
-            if (inputStream != null) {
-              try {
-                inputStream.close();
-              } catch (Exception ignore){}
+          }
+        } catch (Exception e) {
+          log.warn("Failed to parse response from " + node + " during replication factor accounting due to: " + e);
+        } finally {
+          if (inputStream != null) {
+            try {
+              inputStream.close();
+            } catch (Exception ignore) {
             }
           }
         }
-        rfTracker.trackRequestResult(node, success, rf);
       }
+      return Integer.MAX_VALUE;
     }
   }
-    
 
   public static Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
 

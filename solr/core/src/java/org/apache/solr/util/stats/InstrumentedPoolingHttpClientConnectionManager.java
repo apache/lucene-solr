@@ -17,8 +17,6 @@
 
 package org.apache.solr.util.stats;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -31,42 +29,25 @@ import org.apache.solr.metrics.SolrMetricProducer;
  */
 public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientConnectionManager implements SolrMetricProducer {
 
-  protected MetricRegistry metricsRegistry;
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   public InstrumentedPoolingHttpClientConnectionManager(Registry<ConnectionSocketFactory> socketFactoryRegistry) {
     super(socketFactoryRegistry);
   }
 
-  public MetricRegistry getMetricsRegistry() {
-    return metricsRegistry;
-  }
-
-  public void setMetricsRegistry(MetricRegistry metricRegistry) {
-    this.metricsRegistry = metricRegistry;
-  }
-
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    this.metricsRegistry = manager.registry(registry);
-    metricsRegistry.register(SolrMetricManager.mkName("availableConnections", scope),
-        (Gauge<Integer>) () -> {
-          // this acquires a lock on the connection pool; remove if contention sucks
-          return getTotalStats().getAvailable();
-        });
-    metricsRegistry.register(SolrMetricManager.mkName("leasedConnections", scope),
-        (Gauge<Integer>) () -> {
-          // this acquires a lock on the connection pool; remove if contention sucks
-          return getTotalStats().getLeased();
-        });
-    metricsRegistry.register(SolrMetricManager.mkName("maxConnections", scope),
-        (Gauge<Integer>) () -> {
-          // this acquires a lock on the connection pool; remove if contention sucks
-          return getTotalStats().getMax();
-        });
-    metricsRegistry.register(SolrMetricManager.mkName("pendingConnections", scope),
-        (Gauge<Integer>) () -> {
-          // this acquires a lock on the connection pool; remove if contention sucks
-          return getTotalStats().getPending();
-        });
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registry;
+    manager.registerGauge(null, registry, () -> getTotalStats().getAvailable(),
+        tag, true, SolrMetricManager.mkName("availableConnections", scope));
+    // this acquires a lock on the connection pool; remove if contention sucks
+    manager.registerGauge(null, registry, () -> getTotalStats().getLeased(),
+        tag, true, SolrMetricManager.mkName("leasedConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getMax(),
+        tag, true, SolrMetricManager.mkName("maxConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getPending(),
+        tag, true, SolrMetricManager.mkName("pendingConnections", scope));
   }
 }

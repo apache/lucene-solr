@@ -28,13 +28,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 
 
 /**
@@ -60,7 +75,7 @@ public class TestInjection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
-
+  
   private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
 
   /** 
@@ -118,10 +133,18 @@ public class TestInjection {
   public static int randomDelayMaxInCoreCreationInSec = 10;
 
   public static String splitFailureBeforeReplicaCreation = null;
+
+  public static String waitForReplicasInSync = "true:60";
+
+  public static String failIndexFingerprintRequests = null;
+
+  public static String wrongIndexFingerprint = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
   private static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+
+  public static Integer delayBeforeSlaveCommitRefresh=null;
 
   public static void reset() {
     nonGracefullClose = null;
@@ -134,10 +157,44 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+    waitForReplicasInSync = "true:60";
+    failIndexFingerprintRequests = null;
+    wrongIndexFingerprint = null;
+    delayBeforeSlaveCommitRefresh = null;
 
     for (Timer timer : timers) {
       timer.cancel();
     }
+  }
+
+  public static boolean injectWrongIndexFingerprint() {
+    if (wrongIndexFingerprint != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(wrongIndexFingerprint);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static boolean injectFailIndexFingerprintRequests()  {
+    if (failIndexFingerprintRequests != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(failIndexFingerprintRequests);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Random test index fingerprint fail");
+      }
+    }
+    return true;
   }
   
   public static boolean injectRandomDelayInCoreCreation() {
@@ -311,7 +368,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       // Prevent for continuous pause forever
-      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 2) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 1) {
         countPrepRecoveryOpPauseForever.incrementAndGet();
         log.info("inject pause forever for prep recovery op");
         try {
@@ -343,6 +400,52 @@ public class TestInjection {
 
     return true;
   }
+
+  @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
+  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) throws InterruptedException {
+    if (waitForReplicasInSync == null) return true;
+    log.info("Start waiting for replica in sync with leader");
+    long currentTime = System.currentTimeMillis();
+    Pair<Boolean,Integer> pair = parseValue(waitForReplicasInSync);
+    boolean enabled = pair.first();
+    if (!enabled) return true;
+    long t = System.currentTimeMillis() - 200;
+    try {
+      for (int i = 0; i < pair.second(); i++) {
+        if (core.isClosed()) return true;
+        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+            collection, shardId);
+        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl()).build()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.QT, ReplicationHandler.PATH);
+          params.set(COMMAND, CMD_DETAILS);
+
+          NamedList<Object> response = leaderClient.request(new QueryRequest(params));
+          long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
+          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+          try {
+            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+            if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
+            if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
+              log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
+              return true;
+            } else {
+              log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
+              Thread.sleep(500);
+            }
+          } finally {
+            searcher.decref();
+          }
+
+        }
+      }
+
+    } catch (Exception e) {
+      log.error("Exception when wait for replicas in sync with master");
+    }
+
+    return false;
+  }
   
   private static Pair<Boolean,Integer> parseValue(String raw) {
     Matcher m = ENABLED_PERCENT.matcher(raw);
@@ -353,6 +456,18 @@ public class TestInjection {
       percent = m.group(2);
     }
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
+  }
+
+  public static boolean injectDelayBeforeSlaveCommitRefresh() {
+    if (delayBeforeSlaveCommitRefresh!=null) {
+      try {
+        log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
+        Thread.sleep(delayBeforeSlaveCommitRefresh);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
   }
 
 }

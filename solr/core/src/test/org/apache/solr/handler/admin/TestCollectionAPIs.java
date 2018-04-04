@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,11 +26,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -39,15 +42,15 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.apache.solr.util.CommandOperation;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
@@ -58,11 +61,19 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     MockCollectionsHandler collectionsHandler = new MockCollectionsHandler();
     ApiBag apiBag = new ApiBag(false);
     Collection<Api> apis = collectionsHandler.getApis();
-    for (Api api : apis) apiBag.register(api, Collections.EMPTY_MAP);
+    for (Api api : apis) apiBag.register(api, Collections.emptyMap());
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,
         "{name:newcoll, fromApi:'true', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+    
+    compareOutput(apiBag, "/collections", POST,
+        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}", null,
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+    
+    compareOutput(apiBag, "/collections", POST,
+        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}", null,
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
 
     //test a create collection with custom properties
     compareOutput(apiBag, "/collections", POST,
@@ -106,6 +117,21 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}", null,
         "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
     );
+    
+    compareOutput(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}", null,
+        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}"
+    );
+    
+    compareOutput(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}", null,
+        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}"
+    );
+    
+    assertErrorContains(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'foo' }}", null,
+        "Value of enum must be one of"
+    );
 
     compareOutput(apiBag, "/collections/collName", POST,
         "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}", null,
@@ -118,7 +144,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     );
 
     compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : 'replica:*,cores:<5', autoAddReplicas : false} }", null,
+        "{modify : {rule : ['replica:*, cores:<5'], autoAddReplicas : false} }", null,
         "{collection: collName, operation : modifycollection , autoAddReplicas : 'false', rule : [{replica: '*', cores : '<5' }]}"
     );
     compareOutput(apiBag, "/cluster", POST,
@@ -140,6 +166,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }", null,
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}"
     );
+    
+    compareOutput(apiBag, "/collections/coll1", POST,
+        "{set-collection-property : {name: 'foo', value:'bar'} }", null,
+        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}"
+    );
 
   }
 
@@ -150,13 +181,22 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Map expected = (Map) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
-
+  }
+  
+  static void assertErrorContains(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
+      final String payload, final CoreContainer cc, String expectedErrorMsg) throws Exception {
+    try {
+      makeCall(apiBag, path, method, payload, cc);
+      fail("Expected exception");
+    } catch (RuntimeException e) {
+      assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(), e.getMessage().contains(expectedErrorMsg));
+    }
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(final ApiBag apiBag, String path,
                                                                    final SolrRequest.METHOD method,
                                                                    final String payload, final CoreContainer cc) throws Exception {
-    SolrParams queryParams = new MultiMapSolrParams(Collections.EMPTY_MAP);
+    SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);
       path = path.substring(0, path.indexOf('?'));
@@ -170,7 +210,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {
         if (payload == null) return Collections.emptyList();
-        return ApiBag.getCommandOperations(new StringReader(payload), api.getCommandSchema(), true);
+        return ApiBag.getCommandOperations(new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
       }
 
       @Override
@@ -220,7 +260,16 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
                       CoreContainer cores,
                       CollectionParams.CollectionAction action,
                       CollectionOperation operation) throws Exception {
-      Map<String, Object> result = operation.execute(req, rsp, this);
+      Map<String, Object> result = null;
+      if (action == CollectionParams.CollectionAction.COLLECTIONPROP) {
+        //Fake this action, since we don't want to write to ZooKeeper in this test
+        result = new HashMap<>();
+        result.put(NAME, req.getParams().required().get(NAME));
+        result.put(PROPERTY_NAME, req.getParams().required().get(PROPERTY_NAME));
+        result.put(PROPERTY_VALUE, req.getParams().required().get(PROPERTY_VALUE));
+      } else {
+        result = operation.execute(req, rsp, this);
+      }
       if (result != null) {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         rsp.add(ZkNodeProps.class.getName(), new ZkNodeProps(result));

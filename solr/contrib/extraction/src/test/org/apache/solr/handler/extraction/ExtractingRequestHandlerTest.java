@@ -113,7 +113,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("+id:simple2 +t_content:serif"), "//*[@numFound='0']"); // make sure <style> content is excluded
     assertQ(req("+id:simple2 +t_content:blur"), "//*[@numFound='0']"); // make sure <script> content is excluded
 
-    // load again in the exact same way, but boost one field
+    // make sure the fact there is an index-time boost does not fail the parsing
     loadLocal("extraction/simple.html",
       "literal.id","simple3",
       "uprefix", "t_",
@@ -125,7 +125,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     );
 
     assertQ(req("t_href:http"), "//*[@numFound='2']");
-    assertQ(req("t_href:http"), "//doc[1]/str[.='simple3']");
+    assertQ(req("t_href:http"), "//doc[2]/str[.='simple3']");
     assertQ(req("+id:simple3 +t_content_type:[* TO *]"), "//*[@numFound='1']");//test lowercase and then uprefix
 
     loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",

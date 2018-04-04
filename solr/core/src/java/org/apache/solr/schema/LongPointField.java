@@ -17,24 +17,20 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@code PointField} implementation for {@code Long} values.
@@ -42,8 +38,6 @@ import org.slf4j.LoggerFactory;
  * @see LongPoint
  */
 public class LongPointField extends PointField implements LongValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public LongPointField() {
     type = NumberType.LONG;
@@ -69,16 +63,18 @@ public class LongPointField extends PointField implements LongValueFieldType {
     if (min == null) {
       actualMin = Long.MIN_VALUE;
     } else {
-      actualMin = Long.parseLong(min);
+      actualMin = parseLongFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
         actualMin++;
       }
     }
     if (max == null) {
       actualMax = Long.MAX_VALUE;
     } else {
-      actualMax = Long.parseLong(max);
+      actualMax = parseLongFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
         actualMax--;
       }
     }
@@ -102,16 +98,19 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), Long.parseLong(externalVal));
+    return LongPoint.newExactQuery(field.getName(), parseLongFromUser(field.getName(), externalVal));
   }
   
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     long[] values = new long[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Long.parseLong(val);
+      values[i] = parseLongFromUser(field.getName(), val);
       i++;
     }
     return LongPoint.newSetQuery(field.getName(), values);
@@ -126,31 +125,13 @@ public class LongPointField extends PointField implements LongValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Long.BYTES);
     result.setLength(Long.BYTES);
-    LongPoint.encodeDimension(Long.parseLong(val.toString()), result.bytes(), 0);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.LONG, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    LongPoint.encodeDimension(parseLongFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_LONG;
+      return null;
     } else {
       return Type.LONG_POINT;
     }
@@ -169,17 +150,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   }
 
   @Override
-  public LegacyNumericType getNumericType() {
-    return LegacyNumericType.LONG;
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
-    if (!isFieldUsed(field)) return null;
-
-    if (boost != 1.0 && log.isTraceEnabled()) {
-      log.trace("Can't use document/field boost for PointField. Field: " + field.getName() + ", boost: " + boost);
-    }
+  public IndexableField createField(SchemaField field, Object value) {
     long longValue = (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
     return new LongPoint(field.getName(), longValue);
   }

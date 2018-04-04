@@ -60,8 +60,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
-    reader1 = new SegmentReader(info1, newIOContext(random()));
-    reader2 = new SegmentReader(info2, newIOContext(random()));
+    reader1 = new SegmentReader(info1, Version.LATEST.major, newIOContext(random()));
+    reader2 = new SegmentReader(info2, Version.LATEST.major, newIOContext(random()));
   }
 
   @Override
@@ -84,7 +84,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, null, mergedSegment, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,
@@ -97,6 +97,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentReader mergedReader = new SegmentReader(new SegmentCommitInfo(
                                                          mergeState.segmentInfo,
                                                          0, -1L, -1L, -1L),
+                                                   Version.LATEST.major,
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);

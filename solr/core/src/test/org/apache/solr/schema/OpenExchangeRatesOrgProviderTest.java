@@ -40,7 +40,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   @Override
   @Before
   public void setUp() throws Exception {
-    AbstractCurrencyFieldTest.assumeCurrencySupport
+    CurrencyFieldTypeTest.assumeCurrencySupport
       ("USD", "EUR", "MXN", "GBP", "JPY");
 
     super.setUp();

@@ -38,6 +38,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -47,17 +48,18 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.apache.solr.util.JsonSchemaValidator;
-import org.apache.solr.util.PathTrie;
+import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.PathTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.util.PathTrie.getPathSegments;
+import static org.apache.solr.common.util.PathTrie.getPathSegments;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
 public class V2HttpCall extends HttpSolrCall {
@@ -75,12 +77,19 @@ public class V2HttpCall extends HttpSolrCall {
 
   protected void init() throws Exception {
     String path = this.path;
-    String fullPath = path = path.substring(3);//strip off '/v2'
+    final String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
       pieces = getPathSegments(path);
-      if (pieces.size() == 0) {
-        prefix = "c";
-        path = "/c";
+      if (pieces.size() == 0 || (pieces.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
+        api = new Api(null) {
+          @Override
+          public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
+            rsp.add("documentation", "https://lucene.apache.org/solr/guide/v2-api.html");
+            rsp.add("description", "V2 API root path");
+          }
+        };
+        initAdminRequest(path);
+        return;
       } else {
         prefix = pieces.get(0);
       }
@@ -98,36 +107,40 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
-        String collectionName = origCorename = corename = pieces.get(1);
+        origCorename = pieces.get(1);
+
+        collectionsList = resolveCollectionListOrAlias(queryParams.get(COLLECTION_PROP, origCorename));
+        String collectionName = collectionsList.get(0); // first
+        //TODO try the other collections if can't find a local replica of the first?
+
         DocCollection collection = getDocCollection(collectionName);
         if (collection == null) {
-           if ( ! path.endsWith(ApiBag.INTROSPECT)) {
+          if ( ! path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
-          boolean isPreferLeader = false;
-          if (path.endsWith("/update") || path.contains("/update/")) {
-            isPreferLeader = true;
-          }
+          boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {
             //this collection exists , but this node does not have a replica for that collection
-            //todo find a better way to compute remote
-            extractRemotePath(corename, origCorename, 0);
-            return;
+            extractRemotePath(collectionName, origCorename);
+            if (action == REMOTEQUERY) {
+              this.path = path = path.substring(prefix.length() + origCorename.length() + 2);
+              return;
+            }
           }
         }
       } else if ("cores".equals(prefix)) {
-        origCorename = corename = pieces.get(1);
-        core = cores.getCore(corename);
+        origCorename = pieces.get(1);
+        core = cores.getCore(origCorename);
       }
       if (core == null) {
         log.error(">> path: '" + path + "'");
-        if (path.endsWith(ApiBag.INTROSPECT)) {
+        if (path.endsWith(CommonParams.INTROSPECT)) {
           initAdminRequest(path);
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for " + corename);
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for " + origCorename);
         }
       }
 
@@ -141,9 +154,7 @@ public class V2HttpCall extends HttpSolrCall {
       MDCLoggingContext.setCore(core);
       parseRequest();
 
-      if (usingAliases) {
-        processAliases(aliases, collectionsList);
-      }
+      addCollectionParamIfNeeded(getCollectionsList());
 
       action = PROCESS;
       // we are done with a valid handler
@@ -151,7 +162,7 @@ public class V2HttpCall extends HttpSolrCall {
       log.error("Error in init()", rte);
       throw rte;
     } finally {
-      if (api == null) action = PASSTHROUGH;
+      if (action == null && api == null) action = PROCESS;
       if (solrReq != null) solrReq.getContext().put(CommonParams.PATH, path);
     }
   }
@@ -173,17 +184,12 @@ public class V2HttpCall extends HttpSolrCall {
     if (solrReq == null) solrReq = parser.parse(core, path, req);
   }
 
-  protected DocCollection getDocCollection(String collectionName) {
+  protected DocCollection getDocCollection(String collectionName) { // note: don't send an alias; resolve it first
     if (!cores.isZooKeeperAware()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-    if (collection == null) {
-      collectionName = corename = lookupAliases(collectionName);
-      collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-    }
-    return collection;
+    return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
   }
 
   public static Api getApiInfo(PluginBag<SolrRequestHandler> requestHandlers,
@@ -192,7 +198,7 @@ public class V2HttpCall extends HttpSolrCall {
                                Map<String, String> parts) {
     fullPath = fullPath == null ? path : fullPath;
     Api api = requestHandlers.v2lookup(path, method, parts);
-    if (api == null && path.endsWith(ApiBag.INTROSPECT)) {
+    if (api == null && path.endsWith(CommonParams.INTROSPECT)) {
       // the particular http method does not have any ,
       // just try if any other method has this path
       api = requestHandlers.v2lookup(path, null, parts);
@@ -221,6 +227,7 @@ public class V2HttpCall extends HttpSolrCall {
               }
             }
           }
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
         }
       });
       getSubPathApi(requestHandlers,path, fullPath, (CompositeApi) api);
@@ -232,7 +239,7 @@ public class V2HttpCall extends HttpSolrCall {
 
   private static CompositeApi getSubPathApi(PluginBag<SolrRequestHandler> requestHandlers, String path, String fullPath, CompositeApi compositeApi) {
 
-    String newPath = path.endsWith(ApiBag.INTROSPECT) ? path.substring(0, path.length() - ApiBag.INTROSPECT.length()) : path;
+    String newPath = path.endsWith(CommonParams.INTROSPECT) ? path.substring(0, path.length() - CommonParams.INTROSPECT.length()) : path;
     Map<String, Set<String>> subpaths = new LinkedHashMap<>();
 
     getSubPaths(newPath, requestHandlers.getApiBag(), subpaths);
@@ -242,12 +249,12 @@ public class V2HttpCall extends HttpSolrCall {
       @Override
       public void call(SolrQueryRequest req1, SolrQueryResponse rsp) {
         String prefix = null;
-        prefix = fullPath.endsWith(ApiBag.INTROSPECT) ?
-            fullPath.substring(0, fullPath.length() - ApiBag.INTROSPECT.length()) :
+        prefix = fullPath.endsWith(CommonParams.INTROSPECT) ?
+            fullPath.substring(0, fullPath.length() - CommonParams.INTROSPECT.length()) :
             fullPath;
         LinkedHashMap<String, Set<String>> result = new LinkedHashMap<>(subPaths.size());
         for (Map.Entry<String, Set<String>> e : subPaths.entrySet()) {
-          if (e.getKey().endsWith(ApiBag.INTROSPECT)) continue;
+          if (e.getKey().endsWith(CommonParams.INTROSPECT)) continue;
           result.put(prefix + e.getKey(), e.getValue());
         }
 
@@ -300,16 +307,28 @@ public class V2HttpCall extends HttpSolrCall {
 
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
-    api.call(this.solrReq, solrResp);
+    try {
+      api.call(this.solrReq, solrResp);
+    } catch (Exception e) {
+      solrResp.setException(e);
+    }
   }
 
   @Override
   protected void execute(SolrQueryResponse rsp) {
-    try {
-      api.call(solrReq, rsp);
-    } catch (RuntimeException e) {
-      throw e;
+    SolrCore.preDecorateResponse(solrReq, rsp);
+    if (api == null) {
+      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND,
+          "Cannot find correspond api for the path : " + solrReq.getContext().get(CommonParams.PATH)));
+    } else {
+      try {
+        api.call(solrReq, rsp);
+      } catch (Exception e) {
+        rsp.setException(e);
+      }
     }
+
+    SolrCore.postDecorateResponse(handler, solrReq, rsp);
   }
 
   @Override

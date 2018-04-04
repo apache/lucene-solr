@@ -46,10 +46,4 @@ public class MockSearchComponent extends SearchComponent {
   public String getDescription() {
     return "Mock search component for tests";
   }
-
-  @Override
-  public String getSource() {
-    return "";
-  }
-  
 }

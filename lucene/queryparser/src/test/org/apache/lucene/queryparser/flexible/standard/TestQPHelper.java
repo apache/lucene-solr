@@ -350,7 +350,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   //individual CJK chars as terms, like StandardAnalyzer
-  private class SimpleCJKTokenizer extends Tokenizer {
+  private static class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public SimpleCJKTokenizer() {
@@ -368,7 +368,7 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class SimpleCJKAnalyzer extends Analyzer {
+  private static class SimpleCJKAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       return new TokenStreamComponents(new SimpleCJKTokenizer());
@@ -1252,7 +1252,7 @@ public class TestQPHelper extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class CannedTokenizer extends Tokenizer {
+  private static class CannedTokenizer extends Tokenizer {
     private int upto = 0;
     private final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
     private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
@@ -1291,7 +1291,7 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class CannedAnalyzer extends Analyzer {
+  private static class CannedAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String ignored) {
       return new TokenStreamComponents(new CannedTokenizer());

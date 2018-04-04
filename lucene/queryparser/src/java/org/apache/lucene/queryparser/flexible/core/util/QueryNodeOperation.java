@@ -56,7 +56,7 @@ public final class QueryNodeOperation {
       op = ANDOperation.BOTH;
     else if (q1 instanceof AndQueryNode)
       op = ANDOperation.Q1;
-    else if (q1 instanceof AndQueryNode)
+    else if (q2 instanceof AndQueryNode)
       op = ANDOperation.Q2;
     else
       op = ANDOperation.NONE;

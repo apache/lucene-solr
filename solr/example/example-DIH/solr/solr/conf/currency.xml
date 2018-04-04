@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<!-- Example exchange rates file for CurrencyField type named "currency" in example schema -->
+<!-- Example exchange rates file for CurrencyFieldType named "currency" in example schema -->
 
 <currencyConfig version="1.0">
   <rates>

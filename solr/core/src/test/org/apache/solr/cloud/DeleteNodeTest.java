@@ -21,11 +21,17 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,25 +57,61 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(5000);
     CloudSolrClient cloudClient = cluster.getSolrClient();
     String coll = "deletenodetest_coll";
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    ClusterState state = cloudClient.getZkStateReader().getClusterState();
+    Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2);
+    CollectionAdminRequest.Create create = pickRandom(
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
+        // check RF=1
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0)
+        );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
+    state = cloudClient.getZkStateReader().getClusterState();
     String node2bdecommissioned = l.get(0);
+    // check what replicas are on the node, and whether the call should fail
+    boolean shouldFail = false;
+    DocCollection docColl = state.getCollection(coll);
+    log.info("#### DocCollection: " + docColl);
+    List<Replica> replicas = docColl.getReplicas(node2bdecommissioned);
+    if (replicas != null) {
+      for (Replica replica : replicas) {
+        String shard = docColl.getShardId(node2bdecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+        Slice slice = docColl.getSlice(shard);
+        boolean hasOtherNonPullReplicas = false;
+        for (Replica r: slice.getReplicas()) {
+          if (!r.getName().equals(replica.getName()) &&
+              !r.getNodeName().equals(node2bdecommissioned) &&
+              r.getType() != Replica.Type.PULL) {
+            hasOtherNonPullReplicas = true;
+            break;
+          }
+        }
+        if (!hasOtherNonPullReplicas) {
+          shouldFail = true;
+          break;
+        }
+      }
+    }
     new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("003");
-    boolean success = false;
+    CollectionAdminRequest.RequestStatusResponse rsp = null;
     for (int i = 0; i < 200; i++) {
-      CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
-        success = true;
+      rsp = requestStatus.process(cloudClient);
+      if (rsp.getRequestStatus() == RequestStatusState.FAILED || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(50);
     }
-    assertTrue(success);
+    log.info("####### DocCollection after: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    if (shouldFail) {
+      assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
+    } else {
+      assertFalse(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
+    }
   }
 }

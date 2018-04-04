@@ -47,9 +47,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
 
-  protected final String F = "f";
-  protected final String F1 = "f1";
-  protected final String F2 = "f2";
+  protected static final String F = "f";
+  protected static final String F1 = "f1";
+  protected static final String F2 = "f2";
   protected Directory dir;
   protected Analyzer analyzerW;
   protected Analyzer analyzerB;

@@ -120,27 +120,4 @@ public class DeleteStatusTest extends SolrCloudTestCase {
         CollectionAdminRequest.requestStatus(id2).process(client).getRequestStatus());
 
   }
-
-  @Test
-  @SuppressWarnings("deprecation")
-  public void testDeprecatedConstructorValidation() throws Exception {
-
-    final CloudSolrClient client = cluster.getSolrClient();
-
-    try {
-      new CollectionAdminRequest.DeleteStatus().process(client);
-      fail("delete status should have failed");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Either requestid or flush parameter must be specified."));
-    }
-
-    try {
-      new CollectionAdminRequest.DeleteStatus().setFlush(true)
-          .setRequestId("foo")
-          .process(client);
-      fail("delete status should have failed");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Both requestid and flush parameters can not be specified together."));
-    }
-  }
 }

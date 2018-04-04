@@ -35,6 +35,8 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 public class LegacyFacet {
   private SolrParams params;
   private Map<String,Object> json;
@@ -172,7 +174,7 @@ public class LegacyFacet {
     String sort = params.getFieldParam(f, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(f, FacetParams.FACET_PREFIX);
 
-    Map<String,Object> cmd = new HashMap<String,Object>();
+    Map<String,Object> cmd = new HashMap<>();
     cmd.put("field", facetValue);
     if (offset != 0) cmd.put("offset", offset);
     if (limit != 10) cmd.put("limit", limit);
@@ -182,9 +184,9 @@ public class LegacyFacet {
     if (sort.equals("count")) {
       // our default
     } else if (sort.equals("index")) {
-      cmd.put("sort", "index asc");
+      cmd.put(SORT, "index asc");
     } else {
-      cmd.put("sort", sort);  // can be sort by one of our stats
+      cmd.put(SORT, sort);  // can be sort by one of our stats
     }
 
     Map<String,Object> type = new HashMap<>(1);

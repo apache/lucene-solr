@@ -17,53 +17,16 @@
 -->
 
 <schema name="test-non-stored-docvalues" version="1.6">
-  <!-- attribute "name" is the name of this schema and is only used for display purposes.
-       version="x.y" is Solr's version number for the schema syntax and 
-       semantics.  It should not normally be changed by applications.
 
-       1.0: multiValued attribute did not exist, all fields are multiValued 
-            by nature
-       1.1: multiValued attribute introduced, false by default 
-       1.2: omitTermFreqAndPositions attribute introduced, true by default 
-            except for text fields.
-       1.3: removed optional field compress feature
-       1.4: autoGeneratePhraseQueries attribute introduced to drive QueryParser
-            behavior when a single string produces multiple tokens.  Defaults 
-            to off for version >= 1.4
-       1.5: omitNorms defaults to true for primitive field types 
-            (int, float, boolean, string...)
-       1.6: useDocValuesAsStored defaults to true.
-     -->
-
-
-  <!-- field type definitions... note that the "name" attribute is
-       just a label to be used by field definitions.  The "class"
-       attribute and any other attributes determine the real type and
-       behavior of the fieldType.
-    -->
-
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-
-
-  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-
-  <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
-       seconds part (.999) is optional.
-    -->
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0"/>
-  <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6"/>
-  <fieldType name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true"/>
-  <fieldType name="enumField" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
+  <fieldType name="enumField" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

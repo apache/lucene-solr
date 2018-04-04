@@ -29,6 +29,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -42,7 +43,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir, testDoc);
-    reader = new SegmentReader(info, IOContext.READ);
+    reader = new SegmentReader(info, Version.LATEST.major, IOContext.READ);
   }
   
   @Override

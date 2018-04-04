@@ -43,8 +43,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,10 +50,10 @@ import org.junit.Test;
 public class TestCloudRecovery extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
+  private static boolean onlyLeaderIndexes;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    TestInjection.prepRecoveryOpPauseForever = "true:30";
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
@@ -63,17 +61,13 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
+    onlyLeaderIndexes = random().nextBoolean();
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 2, 2)
+        .createCollection(COLLECTION, "config", 2, onlyLeaderIndexes?0:2,onlyLeaderIndexes?2:0,0)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    TestInjection.reset();
   }
 
   @Before
@@ -107,7 +101,12 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
-    assertEquals(4, countReplayLog.get());
+    if (onlyLeaderIndexes) {
+      // Leader election can be kicked off, so 2 tlog replicas will replay its tlog before becoming new leader
+      assertTrue( countReplayLog.get() >=2);
+    } else {
+      assertEquals(4, countReplayLog.get());
+    }
 
     // check metrics
     int replicationCount = 0;
@@ -119,15 +118,19 @@ public class TestCloudRecovery extends SolrCloudTestCase {
           .filter(s -> s.startsWith("solr.core.")).collect(Collectors.toList());
       for (String registry : registryNames) {
         Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-        Timer timer = (Timer)metrics.get("REPLICATION.time");
-        Counter counter = (Counter)metrics.get("REPLICATION.errors");
-        Counter skipped = (Counter)metrics.get("REPLICATION.skipped");
+        Timer timer = (Timer)metrics.get("REPLICATION.peerSync.time");
+        Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
+        Counter skipped = (Counter)metrics.get("REPLICATION.peerSync.skipped");
         replicationCount += timer.getCount();
         errorsCount += counter.getCount();
         skippedCount += skipped.getCount();
       }
     }
-    assertEquals(2, replicationCount);
+    if (onlyLeaderIndexes) {
+      assertTrue(replicationCount >= 2);
+    } else {
+      assertEquals(2, replicationCount);
+    }
   }
 
   @Test

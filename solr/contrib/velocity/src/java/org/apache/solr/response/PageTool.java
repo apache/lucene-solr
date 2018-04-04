@@ -38,15 +38,14 @@ public class PageTool {
     String rows = request.getParams().get("rows");
 
     if (rows != null) {
-      results_per_page = new Integer(rows);
+      results_per_page = Integer.parseInt(rows);
     }
     //TODO: Handle group by results
     Object docs = response.getResponse();
     if (docs != null) {
       if (docs instanceof DocSlice) {
-        DocSlice doc_slice = (DocSlice) docs;
-        results_found = doc_slice.matches();
-        start = doc_slice.offset();
+        results_found = ((DocSlice) docs).matches();
+        start = ((DocSlice) docs).offset();
       } else if(docs instanceof ResultContext) {
         DocList dl = ((ResultContext) docs).getDocList();
         results_found = dl.matches();

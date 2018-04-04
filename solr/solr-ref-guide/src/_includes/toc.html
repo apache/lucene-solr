@@ -1,0 +1,9 @@
+
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+
+<script src="{{ "js/ref-guide-toc.js" }}" type="text/javascript"></script>
+<script type="text/javascript">
+  // based on page variables, build up the list of headers for the top level toc (and any sub-section tocs)
+  do_tocs({{ page.toclevels | default:2 }})
+</script>
+<div id="toc" class="toc toc-{{ page.tocclass | default:'normal' }}"></div>

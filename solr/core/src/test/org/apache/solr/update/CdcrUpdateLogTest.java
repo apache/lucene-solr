@@ -580,8 +580,8 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
     // After fast forward, the parent reader should be position on the doc15
     List o = (List) reader.next();
     assertNotNull(o);
-    assertTrue(o.get(2) instanceof SolrInputDocument);
-    assertEquals("15", ((SolrInputDocument) o.get(2)).getFieldValue("id"));
+    assertTrue("Expected SolrInputDocument but got" + o.toString() ,o.get(3) instanceof SolrInputDocument);
+    assertEquals("15", ((SolrInputDocument) o.get(3)).getFieldValue("id"));
 
     // Finish to read the second tlog, and start to read the third one
     for (int i = 0; i < 6; i++) {

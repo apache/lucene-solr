@@ -205,10 +205,10 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected static class SearchResults {
 
-    public int numFound;
+    public long numFound;
     public List<SearchResult> results;
 
-    public SearchResults(int numFound, List<SearchResult> results) {
+    public SearchResults(long numFound, List<SearchResult> results) {
       this.numFound = numFound;
       this.results = results;
     }

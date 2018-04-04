@@ -51,9 +51,10 @@ public class RTimerTree extends RTimer {
     return new RTimerTree();
   }
 
-  /** Create new subtimer with given name
-   *
-   * Subtimer will be started.
+  /**
+   * Returns a subtimer given its name.
+   * If the subtimer did not exist a new subtimer will be started and returned,
+   * otherwise an existing subtimer will be returned as-is.
    */
   public RTimerTree sub(String desc) {
     RTimerTree child = children.get( desc );

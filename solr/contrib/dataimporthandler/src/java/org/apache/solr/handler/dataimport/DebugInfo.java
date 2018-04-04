@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,35 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
 public class DebugInfo {
-  public List<SolrInputDocument> debugDocuments = new ArrayList<>(0);
+
+  private static final class ChildRollupDocs extends AbstractList<SolrInputDocument> {
+
+    private List<SolrInputDocument> delegate = new ArrayList<>();
+
+    @Override
+    public SolrInputDocument get(int index) {
+      return delegate.get(index);
+    }
+
+    @Override
+    public int size() {
+      return delegate.size();
+    }
+
+    public boolean add(SolrInputDocument e) {
+      SolrInputDocument transformed = e.deepCopy();
+      if (transformed.hasChildDocuments()) {
+        ChildRollupDocs childList = new ChildRollupDocs();
+        childList.addAll(transformed.getChildDocuments());
+        transformed.addField("_childDocuments_", childList);
+        transformed.getChildDocuments().clear();
+      }
+      return delegate.add(transformed);
+    }
+  }
+
+  public List<SolrInputDocument> debugDocuments = new ChildRollupDocs();
+
   public NamedList<String> debugVerboseOutput = null;
   public boolean verbose;
   
@@ -34,3 +63,4 @@ public class DebugInfo {
     debugVerboseOutput = new NamedList<>();
   }
 }
+

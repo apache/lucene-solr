@@ -101,31 +101,6 @@
       </autoCommit>
     -->
 
-
-    <!--
-      The RunExecutableListener executes an external command from a hook
-      such as postCommit or postOptimize. exe - the name of the
-      executable to run dir - dir to use as the current working
-      directory. default="." wait - the calling thread waits until the
-      executable returns. default="true" args - the arguments to pass to
-      the program. default=nothing env - environment variables to set.
-      default=nothing
-    -->
-    <!--
-      A postCommit event is fired after every commit or optimize command
-      <listener event="postCommit" class="solr.RunExecutableListener">
-      <str name="exe">solr/bin/snapshooter</str> <str name="dir">.</str>
-      <bool name="wait">true</bool> <arr name="args"> <str>arg1</str>
-      <str>arg2</str> </arr> <arr name="env"> <str>MYVAR=val1</str>
-      </arr> </listener>
-    -->
-    <!--
-      A postOptimize event is fired only after every optimize command
-      <listener event="postOptimize" class="solr.RunExecutableListener">
-      <str name="exe">snapshooter</str> <str name="dir">solr/bin</str>
-      <bool name="wait">true</bool> </listener>
-    -->
-
   </updateHandler>
 
   <!--
@@ -315,18 +290,13 @@
 
   </query>
 
-  <!--
-    Let the dispatch filter handler /select?qt=XXX handleSelect=true
-    will use consistent error handling for /select and /update
-    handleSelect=false will use solr1.1 style error formatting
-  -->
-  <requestDispatcher handleSelect="true">
+  <requestDispatcher>
     <!--
       Make sure your system has some authentication before enabling
       remote streaming!
     -->
-    <requestParsers enableRemoteStreaming="true"
-      multipartUploadLimitInKB="2048000" />
+    <requestParsers enableRemoteStreaming="false"
+      multipartUploadLimitInKB="-1" />
 
     <!--
       Set HTTP caching related parameters (for proxy caches and
@@ -360,17 +330,7 @@
     </httpCaching>
   </requestDispatcher>
 
-
-  <!--
-    requestHandler plugins... incoming queries will be dispatched to the
-    correct handler based on the path or the 'qt' param.
-    Names starting with a '/' are accessed with the a path equal to the
-    registered name. Names without a leading '/' are accessed with:
-    http://host/app/select?qt=name If no qt is defined, the
-    requestHandler that declares default="true" will be used.
-  -->
-  <requestHandler name="standard" class="solr.SearchHandler"
-    default="true">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <!-- default values for query parameters -->
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -387,7 +347,7 @@
     standard SearchHandler with a default query parser of "dismax". see
     http://wiki.apache.org/solr/DisMaxRequestHandler
   -->
-  <requestHandler name="dismax" class="solr.SearchHandler">
+  <requestHandler name="/dismax" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="defType">dismax</str>
       <str name="echoParams">explicit</str>
@@ -427,7 +387,7 @@
     Note how you can register the same handler multiple times with
     different names (and different init parameters)
   -->
-  <requestHandler name="partitioned" class="solr.SearchHandler">
+  <requestHandler name="/partitioned" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="defType">dismax</str>
       <str name="echoParams">explicit</str>
@@ -568,7 +528,7 @@
     example. You will likely want to add the component to your already
     specified request handlers.
   -->
-  <requestHandler name="tvrh"
+  <requestHandler name="/tvrh"
     class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <bool name="tv">true</bool>

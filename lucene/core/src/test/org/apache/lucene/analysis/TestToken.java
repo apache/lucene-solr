@@ -125,6 +125,7 @@ public class TestToken extends LuceneTestCase {
     t.setFlags(8);
     t.setPositionIncrement(3);
     t.setPositionLength(11);
+    t.setTermFrequency(42);
     TestUtil.assertAttributeReflection(t,
         new HashMap<String, Object>() {{
           put(CharTermAttribute.class.getName() + "#term", "foobar");
@@ -136,6 +137,7 @@ public class TestToken extends LuceneTestCase {
           put(PayloadAttribute.class.getName() + "#payload", null);
           put(TypeAttribute.class.getName() + "#type", TypeAttribute.DEFAULT_TYPE);
           put(FlagsAttribute.class.getName() + "#flags", 8);
+          put(TermFrequencyAttribute.class.getName() + "#termFrequency", 42);
         }});
   }
 }

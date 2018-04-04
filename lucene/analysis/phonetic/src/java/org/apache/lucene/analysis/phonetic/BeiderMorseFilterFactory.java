@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;/filter&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.6.0
  */
 public class BeiderMorseFilterFactory extends TokenFilterFactory {
   private final PhoneticEngine engine;

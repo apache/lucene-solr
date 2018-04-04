@@ -68,7 +68,6 @@
   <dynamicField name="subject_*" type="string" indexed="true" stored="false"/>
 
 
-  <defaultSearchField>name</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
@@ -115,7 +116,7 @@ public class ZkContainer {
               @Override
               public List<CoreDescriptor> getCurrentDescriptors() {
                 List<CoreDescriptor> descriptors = new ArrayList<>(
-                    cc.getCoreNames().size());
+                    cc.getLoadedCoreNames().size());
                 Collection<SolrCore> cores = cc.getCores();
                 for (SolrCore core : cores) {
                   descriptors.add(core.getCoreDescriptor());
@@ -173,11 +174,16 @@ public class ZkContainer {
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
+  public static Predicate<CoreDescriptor> testing_beforeRegisterInZk;
+
   public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
       try {
         try {
+          if (testing_beforeRegisterInZk != null) {
+            testing_beforeRegisterInZk.test(core.getCoreDescriptor());
+          }
           zkController.register(core.getName(), core.getCoreDescriptor(), skipRecovery);
         } catch (InterruptedException e) {
           // Restore the interrupted status
@@ -226,6 +232,8 @@ public class ZkContainer {
         ZkContainer.log.error("", e);
       } catch (InterruptedException e) {
         Thread.interrupted();
+        ZkContainer.log.error("", e);
+      } catch (Exception e) {
         ZkContainer.log.error("", e);
       }
     }

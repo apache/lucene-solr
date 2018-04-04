@@ -27,16 +27,15 @@ import org.apache.solr.update.AddUpdateCommand;
 /**
  * A base class for writing a very simple UpdateProcessor without worrying too much about the API.
  * This is deliberately made to support only the add operation
+ * @since 5.1.0
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
-  protected final String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz
+  private String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz
   protected NamedList initArgs = new NamedList();
   private static ThreadLocal<SolrQueryRequest> REQ = new ThreadLocal<>();
 
   protected SimpleUpdateProcessorFactory() {
-    String simpleName = this.getClass().getSimpleName();
-    int idx = simpleName.indexOf("UpdateProcessorFactory");
-    this.myName = idx == -1 ? simpleName : simpleName.substring(0, idx);
+
   }
 
   @Override
@@ -80,7 +79,17 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   private String _param(String name) {
-    return myName + "." + name;
+    return getMyName() + "." + name;
+  }
+
+  protected String getMyName() {
+    String myName = this.myName;
+    if (myName == null) {
+      String simpleName = this.getClass().getSimpleName();
+      int idx = simpleName.indexOf("UpdateProcessorFactory");
+      this.myName = myName = idx == -1 ? simpleName : simpleName.substring(0, idx);
+    }
+    return myName;
   }
 
 

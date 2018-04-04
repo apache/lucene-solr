@@ -86,11 +86,6 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
       lastSeen = reuse;
       return lastReturned = new CannedTokenStream(new Token("unimportant", 0, 10));
     }
-    
-    @Override
-    public float boost() {
-      return 1;
-    } 
 
     @Override
     public BytesRef binaryValue() {

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.highlight;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -29,7 +28,6 @@ public class TokenGroup {
 
   private static final int MAX_NUM_TOKENS_PER_GROUP = 50;
 
-  private Token[] tokens = new Token[MAX_NUM_TOKENS_PER_GROUP];
   private float[] scores = new float[MAX_NUM_TOKENS_PER_GROUP];
   private int numTokens = 0;
   private int startOffset = 0;
@@ -68,10 +66,7 @@ public class TokenGroup {
           tot += score;
         }
       }
-      Token token = new Token();
-      token.setOffset(termStartOffset, termEndOffset);
-      token.setEmpty().append(termAtt);
-      tokens[numTokens] = token;
+
       scores[numTokens] = score;
       numTokens++;
     }
@@ -84,14 +79,6 @@ public class TokenGroup {
   void clear() {
     numTokens = 0;
     tot = 0;
-  }
-
-  /**
-   * @param index a value between 0 and numTokens -1
-   * @return the "n"th token
-   */
-  public Token getToken(int index) {
-    return tokens[index];
   }
 
   /**

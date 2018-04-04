@@ -20,9 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.spelling.PossibilityIterator;
 import org.junit.Before;
 import org.junit.Test;
 

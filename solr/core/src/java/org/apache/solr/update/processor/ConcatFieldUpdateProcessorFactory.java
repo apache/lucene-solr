@@ -59,6 +59,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.muta
  * &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
  *   &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.0.0
  */
 public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -81,8 +82,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
       if (src.getValueCount() <= 1) return src;
 
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(StringUtils.join(src.getValues(), delimiter),
-          src.getBoost());
+      result.setValue(StringUtils.join(src.getValues(), delimiter));
       return result;
     });
   }

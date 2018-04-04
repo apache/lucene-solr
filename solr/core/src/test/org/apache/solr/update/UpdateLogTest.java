@@ -26,11 +26,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.junit.internal.matchers.StringContains.containsString;
 
 public class UpdateLogTest extends SolrTestCaseJ4 {
@@ -43,11 +43,6 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.tests.intClassName", random().nextBoolean()? "TrieIntField": "IntPointField");
-    System.setProperty("solr.tests.longClassName", random().nextBoolean()? "TrieLongField": "LongPointField");
-    System.setProperty("solr.tests.floatClassName", random().nextBoolean()? "TrieFloatField": "FloatPointField");
-    System.setProperty("solr.tests.doubleClassName", random().nextBoolean()? "TrieDoubleField": "DoublePointField");
-
     initCore("solrconfig-tlog.xml", "schema-inplace-updates.xml");
 
     try (SolrQueryRequest req = req()) {
@@ -58,12 +53,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     }
   }
 
-  @After
-  public void after() {
-    System.clearProperty("solr.tests.intClassName");
-    System.clearProperty("solr.tests.longClassName");
-    System.clearProperty("solr.tests.floatClassName");
-    System.clearProperty("solr.tests.doubleClassName");
+  @AfterClass
+  public static void afterClass() {
+    ulog = null;
   }
 
   @Test
@@ -264,8 +256,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
   public static AddUpdateCommand buildAddUpdateCommand(final SolrQueryRequest req, final SolrInputDocument sdoc) {
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = sdoc;
-    assertTrue("", cmd.solrDoc.containsKey(DistributedUpdateProcessor.VERSION_FIELD));
-    cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD).toString()));
+    assertTrue("", cmd.solrDoc.containsKey(VERSION_FIELD));
+    cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(VERSION_FIELD).toString()));
     return cmd;
   }
 }

@@ -39,4 +39,14 @@ public class AllDeletedFilterReader extends FilterLeafReader {
   public int numDocs() {
     return 0;
   }
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return null;
+  }
 }

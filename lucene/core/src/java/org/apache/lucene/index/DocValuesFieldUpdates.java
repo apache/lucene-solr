@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.index;
 
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.packed.PagedGrowableWriter;
+import org.apache.lucene.util.PriorityQueue;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
- * Holds updates of a single DocValues field, for a set of documents.
+ * Holds updates of a single DocValues field, for a set of documents within one segment.
  * 
  * @lucene.experimental
  */
@@ -54,100 +52,114 @@ abstract class DocValuesFieldUpdates {
      * {@code null} value means that it was unset for this document.
      */
     abstract Object value();
-    
-    /**
-     * Reset the iterator's state. Should be called before {@link #nextDoc()}
-     * and {@link #value()}.
-     */
-    abstract void reset();
-    
+
+    /** Returns delGen for this packet. */
+    abstract long delGen();
   }
 
-  static class Container {
-  
-    final Map<String,NumericDocValuesFieldUpdates> numericDVUpdates = new HashMap<>();
-    final Map<String,BinaryDocValuesFieldUpdates> binaryDVUpdates = new HashMap<>();
-    
-    boolean any() {
-      for (NumericDocValuesFieldUpdates updates : numericDVUpdates.values()) {
-        if (updates.any()) {
-          return true;
+  /** Merge-sorts multiple iterators, one per delGen, favoring the largest delGen that has updates for a given docID. */
+  public static Iterator mergedIterator(Iterator[] subs) {
+
+    if (subs.length == 1) {
+      return subs[0];
+    }
+
+    PriorityQueue<Iterator> queue = new PriorityQueue<Iterator>(subs.length) {
+        @Override
+        protected boolean lessThan(Iterator a, Iterator b) {
+          // sort by smaller docID
+          int cmp = Integer.compare(a.doc(), b.doc());
+          if (cmp == 0) {
+            // then by larger delGen
+            cmp = Long.compare(b.delGen(), a.delGen());
+
+            // delGens are unique across our subs:
+            assert cmp != 0;
+          }
+
+          return cmp < 0;
         }
+      };
+
+    for (Iterator sub : subs) {
+      if (sub.nextDoc() != NO_MORE_DOCS) {
+        queue.add(sub);
       }
-      for (BinaryDocValuesFieldUpdates updates : binaryDVUpdates.values()) {
-        if (updates.any()) {
-          return true;
+    }
+
+    if (queue.size() == 0) {
+      return null;
+    }
+
+    return new Iterator() {
+      private int doc;
+
+      private boolean first = true;
+      
+      @Override
+      public int nextDoc() {
+        // TODO: can we do away with this first boolean?
+        if (first == false) {
+          // Advance all sub iterators past current doc
+          while (true) {
+            if (queue.size() == 0) {
+              doc = NO_MORE_DOCS;
+              break;
+            }
+            int newDoc = queue.top().doc();
+            if (newDoc != doc) {
+              assert newDoc > doc: "doc=" + doc + " newDoc=" + newDoc;
+              doc = newDoc;
+              break;
+            }
+            if (queue.top().nextDoc() == NO_MORE_DOCS) {
+              queue.pop();
+            } else {
+              queue.updateTop();
+            }
+          }
+        } else {
+          doc = queue.top().doc();
+          first = false;
         }
+        return doc;
       }
-      return false;
-    }
-    
-    int size() {
-      return numericDVUpdates.size() + binaryDVUpdates.size();
-    }
-    
-    long ramBytesPerDoc() {
-      long ramBytesPerDoc = 0;
-      for (NumericDocValuesFieldUpdates updates : numericDVUpdates.values()) {
-        ramBytesPerDoc += updates.ramBytesPerDoc();
+        
+      @Override
+      public int doc() {
+        return doc;
       }
-      for (BinaryDocValuesFieldUpdates updates : binaryDVUpdates.values()) {
-        ramBytesPerDoc += updates.ramBytesPerDoc();
+
+      @Override
+      public Object value() {
+        return queue.top().value();
       }
-      return ramBytesPerDoc;
-    }
-    
-    DocValuesFieldUpdates getUpdates(String field, DocValuesType type) {
-      switch (type) {
-        case NUMERIC:
-          return numericDVUpdates.get(field);
-        case BINARY:
-          return binaryDVUpdates.get(field);
-        default:
-          throw new IllegalArgumentException("unsupported type: " + type);
+
+      @Override
+      public long delGen() {
+        throw new UnsupportedOperationException();
       }
-    }
-    
-    DocValuesFieldUpdates newUpdates(String field, DocValuesType type, int maxDoc) {
-      switch (type) {
-        case NUMERIC:
-          assert numericDVUpdates.get(field) == null;
-          NumericDocValuesFieldUpdates numericUpdates = new NumericDocValuesFieldUpdates(field, maxDoc);
-          numericDVUpdates.put(field, numericUpdates);
-          return numericUpdates;
-        case BINARY:
-          assert binaryDVUpdates.get(field) == null;
-          BinaryDocValuesFieldUpdates binaryUpdates = new BinaryDocValuesFieldUpdates(field, maxDoc);
-          binaryDVUpdates.put(field, binaryUpdates);
-          return binaryUpdates;
-        default:
-          throw new IllegalArgumentException("unsupported type: " + type);
-      }
-    }
-    
-    @Override
-    public String toString() {
-      return "numericDVUpdates=" + numericDVUpdates + " binaryDVUpdates=" + binaryDVUpdates;
-    }
+    };
   }
-  
+
   final String field;
   final DocValuesType type;
-  
-  protected DocValuesFieldUpdates(String field, DocValuesType type) {
+  final long delGen;
+  protected boolean finished;
+  protected final int maxDoc;
+    
+  protected DocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
+    this.maxDoc = maxDoc;
+    this.delGen = delGen;
     this.field = field;
     if (type == null) {
       throw new NullPointerException("DocValuesType must not be null");
     }
     this.type = type;
   }
-  
-  /**
-   * Returns the estimated capacity of a {@link PagedGrowableWriter} given the
-   * actual number of stored elements.
-   */
-  protected static int estimateCapacity(int size) {
-    return (int) Math.ceil((double) size / PAGE_SIZE) * PAGE_SIZE;
+
+  public boolean getFinished() {
+    return finished;
   }
   
   /**
@@ -160,19 +172,17 @@ abstract class DocValuesFieldUpdates {
    * Returns an {@link Iterator} over the updated documents and their
    * values.
    */
+  // TODO: also use this for merging, instead of having to write through to disk first
   public abstract Iterator iterator();
-  
-  /**
-   * Merge with another {@link DocValuesFieldUpdates}. This is called for a
-   * segment which received updates while it was being merged. The given updates
-   * should override whatever updates are in that instance.
-   */
-  public abstract void merge(DocValuesFieldUpdates other);
 
+  /** Freezes internal data structures and sorts updates by docID for efficient iteration. */
+  public abstract void finish();
+  
   /** Returns true if this instance contains any updates. */
   public abstract boolean any();
   
-  /** Returns approximate RAM bytes used per document. */
-  public abstract long ramBytesPerDoc();
+  /** Returns approximate RAM bytes used. */
+  public abstract long ramBytesUsed();
 
+  public abstract int size();
 }

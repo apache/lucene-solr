@@ -1,0 +1,12 @@
+{
+  "documentation" : "https://lucene.apache.org/solr/guide/schema-api.html#delete-a-field",
+  "description": "Deletes a field from the schema.",
+  "type":"object",
+  "properties":{
+    "name":{
+     "description" :"The name of the field to delete.",
+      "type" : "string"
+    }
+  },
+  "required" : ["name"]
+}

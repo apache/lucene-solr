@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -25,14 +30,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.CdcrUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
-import java.util.List;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  * The replication logic. Given a {@link org.apache.solr.handler.CdcrReplicatorState}, it reads all the new entries
@@ -75,6 +76,10 @@ public class CdcrReplicator implements Runnable {
       for (int i = 0; i < batchSize; i++) {
         Object o = subReader.next();
         if (o == null) break; // we have reached the end of the update logs, we should close the batch
+
+        if (isTargetCluster(o)) {
+          continue;
+        }
 
         if (isDelete(o)) {
 
@@ -139,6 +144,30 @@ public class CdcrReplicator implements Runnable {
     state.resetConsecutiveErrors();
   }
 
+  /** check whether the update read from TLog is received from source
+   *  or received via solr client
+   */
+  private boolean isTargetCluster(Object o) {
+    List entry = (List) o;
+    int operationAndFlags = (Integer) entry.get(0);
+    int oper = operationAndFlags & UpdateLog.OPERATION_MASK;
+    Boolean isTarget = false;
+    if (oper == UpdateLog.DELETE_BY_QUERY ||  oper == UpdateLog.DELETE) {
+      if (entry.size() == 4) { //back-combat - skip for previous versions
+        isTarget = (Boolean) entry.get(entry.size() - 1);
+      }
+    } else if (oper == UpdateLog.UPDATE_INPLACE) {
+      if (entry.size() == 6) { //back-combat - skip for previous versions
+        isTarget = (Boolean) entry.get(entry.size() - 2);
+      }
+    } else if (oper == UpdateLog.ADD) {
+      if (entry.size() == 4) { //back-combat - skip for previous versions
+        isTarget = (Boolean) entry.get(entry.size() - 2);
+      }
+    }
+    return isTarget;
+  }
+
   private boolean isDelete(Object o) {
     List entry = (List) o;
     int operationAndFlags = (Integer) entry.get(0);
@@ -183,14 +212,14 @@ public class CdcrReplicator implements Runnable {
       case UpdateLog.DELETE: {
         byte[] idBytes = (byte[]) entry.get(2);
         req.deleteById(new String(idBytes, Charset.forName("UTF-8")));
-        req.setParam(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+        req.setParam(VERSION_FIELD, Long.toString(version));
         return req;
       }
 
       case UpdateLog.DELETE_BY_QUERY: {
         String query = (String) entry.get(2);
         req.deleteByQuery(query);
-        req.setParam(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+        req.setParam(VERSION_FIELD, Long.toString(version));
         return req;
       }
 
@@ -206,7 +235,7 @@ public class CdcrReplicator implements Runnable {
   /**
    * Exception to catch update request issues with the target cluster.
    */
-  public class CdcrReplicatorException extends Exception {
+  public static class CdcrReplicatorException extends Exception {
 
     private final UpdateRequest req;
     private final UpdateResponse rsp;

@@ -1,6 +1,6 @@
 This README file is only about this example directory's content.
 
-Please refer to the Solr Reference Guide's section on [Learning To Rank](https://cwiki.apache.org/confluence/display/solr/Learning+To+Rank) section for broader information on Learning to Rank (LTR) with Apache Solr.
+Please refer to the Solr Reference Guide's section on [Learning To Rank](https://lucene.apache.org/solr/guide/learning-to-rank.html) section for broader information on Learning to Rank (LTR) with Apache Solr.
 
 # Start Solr with the LTR plugin enabled
 
@@ -29,7 +29,7 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 4. Search and rerank the results using the trained model
 
 ```
-http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
 ```
 
 # Assemble training data
@@ -101,8 +101,8 @@ hard drive|6H500F0        |0|CLICK_LOGS
 hard drive|F8V7067-APL-KIT|0|CLICK_LOGS
 ```
 
-This is a really trival way to generate a training dataset, and in many settings 
-it might not produce great results. Indeed, it is a well known fact that 
+This is a really trival way to generate a training dataset, and in many settings
+it might not produce great results. Indeed, it is a well known fact that
 clicks are *biased*: users tend to click  on the first
 result proposed for a query, also if it is not relevant. A click on a document in position
 five could be considered more important than a click on a document in position one, because
@@ -128,5 +128,3 @@ Usually a human worker visualizes a query together with a list of results and th
 consists in assigning a relevance label to each document (e.g., Perfect, Excellent, Good, Fair, Not relevant).
 Training data can then be obtained by translating the labels into numeric scores
 (e.g., Perfect = 4, Excellent = 3, Good = 2, Fair = 1, Not relevant = 0).
-
-

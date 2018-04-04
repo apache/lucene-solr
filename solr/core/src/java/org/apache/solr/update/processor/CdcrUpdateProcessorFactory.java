@@ -24,6 +24,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * Factory for {@link org.apache.solr.update.processor.CdcrUpdateProcessor}.
  *
  * @see org.apache.solr.update.processor.CdcrUpdateProcessor
+ * @since 6.0.0
  */
 public class CdcrUpdateProcessorFactory
     extends UpdateRequestProcessorFactory

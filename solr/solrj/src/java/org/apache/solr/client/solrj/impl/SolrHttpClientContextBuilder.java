@@ -77,14 +77,6 @@ public class SolrHttpClientContextBuilder {
     return credentialsProviderProvider;
   }
 
-  /**
-   * @deprecated use {@link #createContext(Object)}
-   */
-  @Deprecated
-  public HttpClientContext createContext() {
-    return createContext(null);
-  }
-  
   public HttpClientContext createContext(Object userToken) {
     HttpClientContext context = new HttpClientContext();
     if (getCredentialsProviderProvider() != null) {

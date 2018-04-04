@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -90,21 +89,10 @@ public class TestParallelTermEnum extends LuceneTestCase {
   public void test1() throws IOException {
     ParallelLeafReader pr = new ParallelLeafReader(ir1, ir2);
 
-    Fields fields = pr.fields();
-    Iterator<String> fe = fields.iterator();
+    assertEquals(3, pr.getFieldInfos().size());
 
-    String f = fe.next();
-    assertEquals("field1", f);
-    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
-
-    f = fe.next();
-    assertEquals("field2", f);
-    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
-
-    f = fe.next();
-    assertEquals("field3", f);
-    checkTerms(fields.terms(f), "dog", "fox", "jumps", "lazy", "over", "the");
-
-    assertFalse(fe.hasNext());
+    checkTerms(pr.terms("field1"), "brown", "fox", "jumps", "quick", "the");
+    checkTerms(pr.terms("field2"), "brown", "fox", "jumps", "quick", "the");
+    checkTerms(pr.terms("field3"), "dog", "fox", "jumps", "lazy", "over", "the");
   }
 }

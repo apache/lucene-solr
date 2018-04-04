@@ -1,0 +1,13 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#delete",
+  "description": "Deletes a collection.",
+  "methods": [
+    "DELETE"
+  ],
+  "url": {
+    "paths": [
+      "/collections/{collection}",
+      "/c/{collection}"
+    ]
+  }
+}

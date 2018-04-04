@@ -21,16 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Reads spatial data from the body field docs from an internally created {@link LineDocSource}.
@@ -102,11 +100,8 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
     Query filterQuery = strategy.makeQuery(args);
     if (score) {
       //wrap with distance computing query
-      ValueSource valueSource = strategy.makeDistanceValueSource(shape.getCenter());
-      return new BooleanQuery.Builder()
-          .add(new FunctionQuery(valueSource), BooleanClause.Occur.MUST)//matches everything and provides score
-          .add(filterQuery, BooleanClause.Occur.FILTER)//filters (score isn't used)
-          .build();
+      DoubleValuesSource valueSource = strategy.makeDistanceValueSource(shape.getCenter());
+      return new FunctionScoreQuery(filterQuery, valueSource);
     } else {
       return filterQuery; // assume constant scoring
     }

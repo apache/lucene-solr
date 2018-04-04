@@ -42,7 +42,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     return new TestAnalyticsQueryParser(query, localParams, params, req);
   }
 
-  class TestAnalyticsQueryParser extends QParser {
+  static class TestAnalyticsQueryParser extends QParser {
 
     public TestAnalyticsQueryParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
@@ -58,7 +58,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     }
   }
 
-  class TestAnalyticsQuery extends AnalyticsQuery {
+  static class TestAnalyticsQuery extends AnalyticsQuery {
 
     private int base;
 
@@ -72,7 +72,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     }
   }
 
-  class TestAnalyticsCollector extends DelegatingCollector {
+  static class TestAnalyticsCollector extends DelegatingCollector {
     ResponseBuilder rb;
     int count;
     int base;
@@ -97,7 +97,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     }
   }
 
-  class TestAnalyticsMergeStrategy implements MergeStrategy {
+  static class TestAnalyticsMergeStrategy implements MergeStrategy {
 
     public boolean mergesIds() {
       return false;
@@ -130,7 +130,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     }
   }
 
-  class TestIterative extends IterativeMergeStrategy  {
+  static class TestIterative extends IterativeMergeStrategy  {
 
     public void process(ResponseBuilder rb, ShardRequest sreq) throws Exception {
       int count = 0;

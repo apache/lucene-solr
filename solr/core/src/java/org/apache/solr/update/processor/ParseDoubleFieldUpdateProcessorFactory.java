@@ -38,8 +38,8 @@ import java.util.Locale;
  * </p>
  * <p>
  * The default selection behavior is to mutate both those fields that don't match
- * a schema field, as well as those fields that match a schema field with a field 
- * type that uses class solr.TrieDoubleField.
+ * a schema field, as well as those fields that match a schema field with a double
+ * field type.
  * </p>
  * <p>
  * If all values are parseable as double (or are already Double), then the field
@@ -64,6 +64,7 @@ import java.util.Locale;
  * See {@link Locale} for a description of acceptable language, country (optional)
  * and variant (optional) values, joined with underscore(s).
  * </p>
+ * @since 4.4.0
  */
 public class ParseDoubleFieldUpdateProcessorFactory extends ParseNumericFieldUpdateProcessorFactory {
 

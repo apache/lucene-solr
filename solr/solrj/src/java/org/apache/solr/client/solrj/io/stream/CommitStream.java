@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Sends a commit message to a SolrCloud collection
+ * @since 6.3.0
  */
 public class CommitStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1L;

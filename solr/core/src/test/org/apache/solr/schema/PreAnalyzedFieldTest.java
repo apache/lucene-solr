@@ -105,7 +105,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     for (int i = 0; i < valid.length; i++) {
       String s = valid[i];
       try {
-        Field f = (Field)paf.fromString(field, s, 1.0f);
+        Field f = (Field)paf.fromString(field, s);
         //System.out.println(" - toString: '" + sb.toString() + "'");
         assertEquals(validParsed[i], parser.toFormattedString(f));
       } catch (Exception e) {
@@ -179,7 +179,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     paf.init(h.getCore().getLatestSchema(), Collections.<String,String>emptyMap());
     for (String s : invalidSimple) {
       try {
-        paf.fromString(field, s, 1.0f);
+        paf.fromString(field, s);
         fail("should fail: '" + s + "'");
       } catch (Exception e) {
         //
@@ -232,7 +232,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     try {
-      Field f = (Field)paf.fromString(field, valid[0], 1.0f);
+      Field f = (Field)paf.fromString(field, valid[0]);
     } catch (Exception e) {
       fail("Should pass: '" + valid[0] + "', exception: " + e);
     }
@@ -240,14 +240,14 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     try {
-      Field f = (Field)paf.fromString(field, valid[0], 1.0f);
+      Field f = (Field)paf.fromString(field, valid[0]);
       fail("Should fail JSON parsing: '" + valid[0] + "'");
     } catch (Exception e) {
     }
     byte[] deadbeef = new byte[]{(byte)0xd, (byte)0xe, (byte)0xa, (byte)0xd, (byte)0xb, (byte)0xe, (byte)0xe, (byte)0xf};
     PreAnalyzedParser parser = new JsonPreAnalyzedParser();
     try {
-      Field f = (Field)paf.fromString(field, jsonValid, 1.0f);
+      Field f = (Field)paf.fromString(field, jsonValid);
       assertEquals(jsonValid, parser.toFormattedString(f));
     } catch (Exception e) {
       fail("Should pass: '" + jsonValid + "', exception: " + e);

@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
 /**
@@ -114,7 +115,7 @@ public class FunctionRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new FunctionRangeWeight(searcher);
   }
 
@@ -152,6 +153,11 @@ public class FunctionRangeQuery extends Query {
       FunctionValues functionValues = valueSource.getValues(vsContext, context);
       // getRangeScorer takes String args and parses them. Weird.
       return functionValues.getRangeScorer(context, lowerVal, upperVal, includeLower, includeUpper);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
   }
 }

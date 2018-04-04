@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
@@ -75,7 +76,7 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation);
+    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
 
     cache = Caffeine.newBuilder()
         .removalListener(listener)
@@ -88,7 +89,7 @@ public class BlockCache {
     cache.invalidate(key);
   }
   
-  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location) {
+  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location, RemovalCause removalCause) {
     if (location == null) {
       return;
     }
@@ -103,7 +104,9 @@ public class BlockCache {
     for (OnRelease onRelease : onReleases) {
       onRelease.release(blockCacheKey);
     }
-    metrics.blockCacheEviction.incrementAndGet();
+    if (removalCause.wasEvicted()) {
+      metrics.blockCacheEviction.incrementAndGet();
+    }
     metrics.blockCacheSize.decrementAndGet();
   }
 
@@ -133,6 +136,7 @@ public class BlockCache {
         // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
         // because no eviction is done first.  The code seems to rely on leaving just a single block empty.
         // TODO: simplest fix would be to leave more than one block empty
+        metrics.blockCacheStoreFail.incrementAndGet();
         return false;
       }
     } else {
@@ -141,6 +145,8 @@ public class BlockCache {
       // purpose (and then our write may overwrite that).  This can happen even if clients never try to update existing blocks,
       // since two clients can try to cache the same block concurrently.  Because of this, the ability to update an existing
       // block has been removed for the time being (see SOLR-10121).
+
+      // No metrics to update: we don't count a redundant store as a store fail.
       return false;
     }
 
@@ -168,6 +174,7 @@ public class BlockCache {
       int blockOffset, int off, int length) {
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
+      metrics.blockCacheMiss.incrementAndGet();
       return false;
     }
 
@@ -181,9 +188,11 @@ public class BlockCache {
     if (location.isRemoved()) {
       // must check *after* the read is done since the bank may have been reused for another block
       // before or during the read.
+      metrics.blockCacheMiss.incrementAndGet();
       return false;
     }
 
+    metrics.blockCacheHit.incrementAndGet();
     return true;
   }
   

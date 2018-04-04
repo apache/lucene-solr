@@ -173,7 +173,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   private void create1ShardCollection(String name, String config, MiniSolrCloudCluster solrCluster) throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create() {
+    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create(name,config,1,1,0,0) {
       @Override
       public SolrParams getParams() {
         ModifiableSolrParams msp = new ModifiableSolrParams(super.getParams());
@@ -181,10 +181,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
         return msp;
       }
     };
-    create.setConfigName(config);
-    create.setCollectionName(name);
-    create.setNumShards(1);
-    create.setReplicationFactor(1);
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
 

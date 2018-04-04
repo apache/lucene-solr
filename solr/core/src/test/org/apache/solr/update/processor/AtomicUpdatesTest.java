@@ -24,7 +24,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.DateMathParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -552,7 +551,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    boolean isPointField = h.getCore().getLatestSchema().getField("dateRemove").getType().isPointField();
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
@@ -565,7 +569,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -577,7 +585,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -587,7 +599,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-01T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -598,7 +614,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    TrieDateField trieDF = new TrieDateField();
     Date tempDate = DateMathParser.parseMath(null, "2014-02-01T12:00:00Z");
     doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
         DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
@@ -912,6 +927,54 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAddDistinct() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", new String[]{"aaa", "ccc"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "4");
+    doc.setField("cat", new String[]{"aaa", "ccc"});
+    assertU(adoc(doc));
+
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']");
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add-distinct", Arrays.asList(new String[]{"bbb", "bbb"})));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]"); //'bbb' already present will not be added again
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5");
+    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']"); //'cat' field not present, do 'add' atomic operation
+  }
+
+  @Test
   public void testSet() throws Exception {
     SolrInputDocument doc;
 
@@ -1026,19 +1089,19 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(req("q", "id:2"),
-        "/response/docs/[0]/id==2",
+        "/response/docs/[0]/id=='2'",
         "/response/docs/[0]/title/[0]=='newtitle2'",
         "/response/docs/[0]/single_i_dvo==101");
 
     assertJQ(req("q", "id:3"),
         1e-4,
-        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/title/[0]=='newtitle3'",
         "/response/docs/[0]/single_d_dvo==4.14");
 
     assertJQ(req("q", "id:4"),
         1e-4,
-        "/response/docs/[0]/id==4",
+        "/response/docs/[0]/id=='4'",
         "/response/docs/[0]/single_s_dvo=='abc'",
         "/response/docs/[0]/single_i_dvo==2");
 
@@ -1047,7 +1110,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertJQ(req("q", "id:3"),
         1e-4,
-        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/title/[0]=='newertitle3'",
         "/response/docs/[0]/single_d_dvo==4.14");
   }
@@ -1062,7 +1125,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     // test that non stored multivalued docvalues was carried forward for a non docvalues update
     assertJQ(req("q", "id:1"),
-        "/response/docs/[0]/id==1",
+        "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/title/[0]=='newtitle1'",
         "/response/docs/[0]/multi_ii_dvo/[0]==100",
         "/response/docs/[0]/multi_ii_dvo/[1]==" + Integer.MAX_VALUE);
@@ -1086,18 +1149,18 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(req("q", "id:101"),
-        "/response/docs/[0]/id==101",
+        "/response/docs/[0]/id=='101'",
         "/response/docs/[0]/title/[0]=='newtitle2'",
         "/response/docs/[0]/single_i_dvn==102");
 
     assertJQ(req("q", "id:102"),
         1e-4,
-        "/response/docs/[0]/id==102",
+        "/response/docs/[0]/id=='102'",
         "/response/docs/[0]/title/[0]=='newtitle3'",
         "/response/docs/[0]/single_d_dvn==5.14");
 
     assertJQ(req("q", "id:103"),
-        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abc'",
         "/response/docs/[0]/single_i_dvn==3");
 
@@ -1106,7 +1169,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "single_i_dvn", ImmutableMap.of("set", 5))));
     assertU(commit());
     assertJQ(req("q", "id:103"),
-        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abcupdate'",
         "/response/docs/[0]/single_i_dvn==5");
   }
@@ -1145,7 +1208,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1160,7 +1223,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1174,7 +1237,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": post commit RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1187,7 +1250,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9838")
   public void testAtomicUpdateOfFieldsWithDefaultValue() {
     // both fields have the same default value (42)
     for (String fieldToUpdate : Arrays.asList("intDefault", "intDvoDefault")) {
@@ -1198,7 +1260,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG#7"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='708']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1212,7 +1274,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": RTG#7 after atomic update"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1227,7 +1289,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG#8"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1237,11 +1299,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "count(//doc/*)=6"
               );
       // do atomic update
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1256,7 +1318,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": doc7 post commit RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1268,7 +1330,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": doc8 post commit RTG"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"

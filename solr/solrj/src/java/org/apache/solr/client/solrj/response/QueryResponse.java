@@ -50,7 +50,7 @@ public class QueryResponse extends SolrResponseBase
   private List<NamedList<Object>> _clusterInfo = null;
   private Map<String,NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
-  private NamedList<NamedList<Number>> _termsInfo = null;
+  private NamedList<NamedList<Object>> _termsInfo = null;
   private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
   private String _cursorMarkNext = null;
 
@@ -166,7 +166,7 @@ public class QueryResponse extends SolrResponseBase
         extractStatsInfo( _statsInfo );
       }
       else if ( "terms".equals( n ) ) {
-        _termsInfo = (NamedList<NamedList<Number>>) res.getVal( i );
+        _termsInfo = (NamedList<NamedList<Object>>) res.getVal( i );
         extractTermsInfo( _termsInfo );
       }
       else if ( "moreLikeThis".equals( n ) ) {
@@ -191,7 +191,7 @@ public class QueryResponse extends SolrResponseBase
     _suggestResponse = new SuggesterResponse(suggestInfo);
   }
 
-  private void extractTermsInfo(NamedList<NamedList<Number>> termsInfo) {
+  private void extractTermsInfo(NamedList<NamedList<Object>> termsInfo) {
     _termsResponse = new TermsResponse(termsInfo);
   }
   
@@ -384,7 +384,7 @@ public class QueryResponse extends SolrResponseBase
         Number between = (Number) values.get("between");
 
         rangeFacet = new RangeFacet.Numeric(facet.getKey(), start, end, gap, before, after, between);
-      } else {
+      } else if (rawGap instanceof String && values.get("start") instanceof Date) {
         String gap = (String) rawGap;
         Date start = (Date) values.get("start");
         Date end = (Date) values.get("end");
@@ -394,8 +394,18 @@ public class QueryResponse extends SolrResponseBase
         Number between = (Number) values.get("between");
 
         rangeFacet = new RangeFacet.Date(facet.getKey(), start, end, gap, before, after, between);
+      } else {
+        String gap = (String) rawGap;
+        String start = (String) values.get("start");
+        String end = (String) values.get("end");
+        
+        Number before = (Number) values.get("before");
+        Number after = (Number) values.get("after");
+        Number between = (Number) values.get("between");
+        
+        rangeFacet = new RangeFacet.Currency(facet.getKey(), start, end, gap, before, after, between);
       }
-
+      
       NamedList<Integer> counts = (NamedList<Integer>) values.get("counts");
       for (Map.Entry<String, Integer> entry : counts)   {
         rangeFacet.addCount(entry.getKey(), entry.getValue());

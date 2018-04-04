@@ -23,7 +23,7 @@
   -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
@@ -43,6 +43,13 @@
   <updateRequestProcessorChain name="parse-date-explicit-not-in-schema-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <bool name="fieldNameMatchesSchemaField">false</bool>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="parse-date-explicit-typeclass-point-selector-no-run-processor">
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <str name="typeClass">solr.DatePointField</str>
       <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
     </processor>
   </updateRequestProcessorChain>

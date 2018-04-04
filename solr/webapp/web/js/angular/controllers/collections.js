@@ -15,7 +15,6 @@
  limitations under the License.
 */
 
-// @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CollectionsController',
     function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
@@ -84,7 +83,8 @@ solrAdminApp.controller('CollectionsController',
           numShards: 1,
           configName: "",
           replicationFactor: 1,
-          maxShardsPerNode: 1
+          maxShardsPerNode: 1,
+          autoAddReplicas: 'false'
         };
       };
 
@@ -138,11 +138,11 @@ solrAdminApp.controller('CollectionsController',
                 numShards: coll.numShards,
                 "collection.configName": coll.configName,
                 replicationFactor: coll.replicationFactor,
-                maxShardsPerNode: coll.maxShardsPerNode
+                maxShardsPerNode: coll.maxShardsPerNode,
+                autoAddReplicas: coll.autoAddReplicas
             };
             if (coll.shards) params.shards = coll.shards;
-            if (coll.routerField) params.routerField = coll.routerField;
-            if (coll.routerName) params.routerName = coll.routerName;
+            if (coll.routerField) params["router.field"] = coll.routerField;
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
@@ -210,6 +210,20 @@ solrAdminApp.controller('CollectionsController',
           $scope.hideAll();
           replica.showRemove = !replica.showRemove;
       };
+      
+      $scope.toggleRemoveShard = function(shard) {
+          $scope.hideAll();
+          shard.showRemove = !shard.showRemove;
+      };
+
+      $scope.deleteShard = function(shard) {
+          Collections.deleteShard({collection: shard.collection, shard:shard.name}, function(data) {
+            shard.deleted = true;
+            $timeout(function() {
+              $scope.refresh();
+            }, 2000);
+          });
+        }
 
       $scope.deleteReplica = function(replica) {
         Collections.deleteReplica({collection: replica.collection, shard:replica.shard, replica:replica.name}, function(data) {

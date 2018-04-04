@@ -29,8 +29,6 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
-
 /**
  * <p>
  * Given a list of possible Spelling Corrections for multiple mis-spelled words
@@ -360,7 +358,7 @@ public class PossibilityIterator implements
     throw new UnsupportedOperationException();
   }
   
-  public class RankedSpellPossibility {
+  public static class RankedSpellPossibility {
     public List<SpellCheckCorrection> corrections;
     public int rank;
     public int index;
@@ -406,7 +404,7 @@ public class PossibilityIterator implements
     }
   }
   
-  private class StartOffsetComparator implements
+  private static class StartOffsetComparator implements
       Comparator<SpellCheckCorrection> {
     @Override
     public int compare(SpellCheckCorrection o1, SpellCheckCorrection o2) {
@@ -414,7 +412,7 @@ public class PossibilityIterator implements
     }
   }
   
-  private class RankComparator implements Comparator<RankedSpellPossibility> {
+  private static class RankComparator implements Comparator<RankedSpellPossibility> {
     // Rank poorer suggestions ahead of better ones for use with a PriorityQueue
     @Override
     public int compare(RankedSpellPossibility r1, RankedSpellPossibility r2) {

@@ -1,0 +1,123 @@
+= Velocity Response Writer
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "_default", "techproducts", and "example/files".
+
+Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:
+
+[source,xml]
+----
+<queryResponseWriter name="velocity" class="solr.VelocityResponseWriter">
+  <str name="template.base.dir">${velocity.template.base.dir:}</str>
+
+<!--
+  <str name="init.properties.file">velocity-init.properties</str>
+  <bool name="params.resource.loader.enabled">true</bool>
+  <bool name="solr.resource.loader.enabled">false</bool>
+  <lst name="tools">
+    <str name="mytool">com.example.MyCustomTool</str>
+  </lst>
+-->
+</queryResponseWriter>
+----
+
+The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. See further below for request-time parameters.
+
+== Configuration & Usage
+
+=== VelocityResponseWriter Initialization Parameters
+
+`template.base.dir`::
+If specified and exists as a file system directory, a file resource loader will be added for this directory. Templates in this directory will override "solr" resource loader templates.
+
+`init.properties.file`:: Specifies a properties file name which must exist in the Solr `conf/` directory (*not* under a `velocity/` subdirectory) or root of a JAR file in a <lib>.
+
+`params.resource.loader.enabled`::
+The "params" resource loader allows templates to be specified in Solr request parameters. For example:
++
+[source,bash]
+http://localhost:8983/solr/gettingstarted/select?q=\*:*&wt=velocity&v.template=custom&v.template.custom=CUSTOM%3A%20%23core_name
++
+where `v.template=custom` says to render a template called "custom" and the value of `v.template.custom` is the custom template. This is `false` by default; it'd be a niche, unusual, use case to need this enabled.
+
+`solr.resource.loader.enabled`::
+The "solr" resource loader is the only template loader registered by default. Templates are served from resources visible to the SolrResourceLoader under a `velocity/` subdirectory. The VelocityResponseWriter itself has some built-in templates (in its JAR file, under `velocity/`) that are available automatically through this loader. These built-in templates can be overridden when the same template name is in conf/velocity/ or by using the `template.base.dir` option.
+
+`tools`::
+External "tools" can be specified as list of string name/value (tool name / class name) pairs. Tools, in the Velocity context, are simply Java objects. Tool classes are constructed using a no-arg constructor (or a single-SolrCore-arg constructor if it exists) and added to the Velocity context with the specified name.
++
+A custom registered tool can override the built-in context objects with the same name, except for `$request`, `$response`, `$page`, and `$debug` (these tools are designed to not be overridden).
+
+=== VelocityResponseWriter Request Parameters
+
+`v.template`::
+Specifies the name of the template to render.
+
+`v.layout`::
+Specifies a template name to use as the layout around the main, `v.template`, specified template.
++
+The main template is rendered into a string value included into the layout rendering as `$content`.
+
+`v.layout.enabled`::
+Determines if the main template should have a layout wrapped around it. The default is `true`, but requires `v.layout` to specified as well.
+
+`v.contentType`::
+Specifies the content type used in the HTTP response. If not specified, the default will depend on whether `v.json` is specified or not.
++
+The default without `v.json=wrf`: `text/html;charset=UTF-8`.
++
+The default with `v.json=wrf`: `application/json;charset=UTF-8`.
+
+`v.json`::
+Specifies a function name to wrap around the response rendered as JSON. If specified, the content type used in the response will be "application/json;charset=UTF-8", unless overridden by `v.contentType`.
++
+Output will be in this format (with `v.json=wrf`):
++
+`wrf("result":"<Velocity generated response string, with quotes and backslashes escaped>")`
+
+`v.locale`::
+Locale to use with the `$resource` tool and other LocaleConfig implementing tools. The default locale is `Locale.ROOT`. Localized resources are loaded from standard Java resource bundles named `resources[_locale-code].properties`.
++
+Resource bundles can be added by providing a JAR file visible by the SolrResourceLoader with resource bundles under a velocity sub-directory. Resource bundles are not loadable under `conf/`, as only the class loader aspect of SolrResourceLoader can be used here.
+
+`v.template._template_name_`:: When the "params" resource loader is enabled, templates can be specified as part of the Solr request.
+
+
+=== VelocityResponseWriter Context Objects
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Context Reference |Description
+|`request` |{solr-javadocs}solr-core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] javadocs
+|`response` |{solr-javadocs}solr-core/org/apache/solr/response/SolrQueryResponse.html[QueryResponse] most of the time, but in some cases where QueryResponse doesn't like the request handler's output (https://wiki.apache.org/solr/AnalysisRequestHandler[AnalysisRequestHandler], for example, causes a ClassCastException parsing "response"), the response will be a SolrResponseBase object.
+|`esc` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#EscapeTool[EscapeTool] instance
+|`date` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ComparisonDateTool[ComparisonDateTool] instance
+|`list` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/apidocs/org/apache/velocity/tools/generic/ListTool.html[ListTool] instance
+|`math` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#MathTool[MathTool] instance
+|`number` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#NumberTool[NumberTool] instance
+|`sort` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#SortTool[SortTool] instance
+|`display` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#DisplayTool[DisplayTool] instance
+|`resource` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ResourceTool[ResourceTool] instance
+|`engine` |The current VelocityEngine instance
+|`page` |An instance of Solr's PageTool (only included if the response is a QueryResponse where paging makes sense)
+|`debug` |A shortcut to the debug part of the response, or null if debug is not on. This is handy for having debug-only sections in a template using `#if($debug)...#end`
+|`content` |The rendered output of the main template, when rendering the layout (`v.layout.enabled=true` and `v.layout=<template>`).
+|[custom tool(s)] |Tools provided by the optional "tools" list of the VelocityResponseWriter registration are available by their specified name.
+|===

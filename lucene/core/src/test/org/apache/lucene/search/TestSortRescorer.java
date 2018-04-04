@@ -42,7 +42,7 @@ public class TestSortRescorer extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setSimilarity(new ClassicSimilarity()));
     
     Document doc = new Document();
     doc.add(newStringField("id", "1", Field.Store.YES));
@@ -105,6 +105,43 @@ public class TestSortRescorer extends LuceneTestCase {
     // Confirm the explanation breaks out the individual
     // sort fields:
     assertTrue(expl, expl.contains("= sort field <int: \"popularity\">! value=20"));
+
+    // Confirm the explanation includes first pass details:
+    assertTrue(expl.contains("= first pass score"));
+    assertTrue(expl.contains("body:contents in"));
+
+  }
+
+  public void testDoubleValuesSourceSort() throws Exception {
+    // create a sort field and sort by it (reverse order)
+    Query query = new TermQuery(new Term("body", "contents"));
+    IndexReader r = searcher.getIndexReader();
+
+    // Just first pass query
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(3, hits.totalHits);
+    assertEquals("3", r.document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("2", r.document(hits.scoreDocs[2].doc).get("id"));
+
+    DoubleValuesSource source = DoubleValuesSource.fromLongField("popularity");
+
+    // Now, rescore:
+    Sort sort = new Sort(source.getSortField(true));
+    Rescorer rescorer = new SortRescorer(sort);
+    hits = rescorer.rescore(searcher, hits, 10);
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", r.document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("3", r.document(hits.scoreDocs[2].doc).get("id"));
+
+    String expl = rescorer.explain(searcher,
+        searcher.explain(query, hits.scoreDocs[0].doc),
+        hits.scoreDocs[0].doc).toString();
+
+    // Confirm the explanation breaks out the individual
+    // sort fields:
+    assertTrue(expl, expl.contains("= sort field <double(popularity)>! value=20.0"));
 
     // Confirm the explanation includes first pass details:
     assertTrue(expl.contains("= first pass score"));

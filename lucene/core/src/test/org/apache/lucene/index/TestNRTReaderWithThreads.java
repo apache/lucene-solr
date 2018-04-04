@@ -53,16 +53,16 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     while ((System.currentTimeMillis() - startTime) < duration) {
       Thread.sleep(100);
     }
-    int delCount = 0;
-    int addCount = 0;
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x].run = false;
       assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);
-      addCount += indexThreads[x].addCount;
-      delCount += indexThreads[x].delCount;
     }
+    int delCount = 0;
+    int addCount = 0;
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x].join();
+      addCount += indexThreads[x].addCount;
+      delCount += indexThreads[x].delCount;
     }
     for (int x=0; x < indexThreads.length; x++) {
       assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);

@@ -78,7 +78,7 @@ abstract class RangeFacetCounts extends Facets {
 
   @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
-    return Collections.singletonList(getTopChildren(topN, null));
+    return Collections.singletonList(getTopChildren(topN, field));
   }
 
   @Override

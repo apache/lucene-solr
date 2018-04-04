@@ -34,13 +34,13 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,11 +119,10 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value,
-          float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     IndexableField f = null;
     try {
-      f = fromString(field, String.valueOf(value), boost);
+      f = fromString(field, String.valueOf(value));
     } catch (Exception e) {
       LOG.warn("Error parsing pre-analyzed field '" + field.getName() + "'", e);
       return null;
@@ -133,8 +132,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-    return Sorting.getTextSortField(field.getName(), top, field.sortMissingLast(), field.sortMissingFirst());
+    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, top,
+                                 SortField.STRING_FIRST, SortField.STRING_LAST);
   }
   
   @Override
@@ -225,7 +224,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
   
   
-  public IndexableField fromString(SchemaField field, String val, float boost) throws Exception {
+  public IndexableField fromString(SchemaField field, String val) throws Exception {
     if (val == null || val.trim().length() == 0) {
       return null;
     }
@@ -268,9 +267,6 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
           type.setTokenized(false);
         }
       }
-    }
-    if (f != null) {
-      f.setBoost(boost);
     }
     return f;
   }

@@ -166,9 +166,6 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
     buffer.reset(input);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public int read(char[] buffer, int offset, int length) throws IOException {
     int read = 0;
@@ -185,9 +182,6 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
     return read == 0 ? -1 : read;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public int read() throws IOException {
     int ic = buffer.get(bufferPosition);

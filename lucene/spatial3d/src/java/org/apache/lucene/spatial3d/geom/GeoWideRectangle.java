@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box wider than PI but limited on four sides (top lat,
  * bottom lat, left lon, right lon).
@@ -74,6 +78,11 @@ class GeoWideRectangle extends GeoBaseBBox {
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
    * Horizontal angle must be greater than or equal to PI.
+   * @param planetModel is the planet model.
+   * @param topLat is the top latitude.
+   * @param bottomLat is the bottom latitude.
+   * @param leftLon is the left longitude.
+   * @param rightLon is the right longitude.
    */
   public GeoWideRectangle(final PlanetModel planetModel, final double topLat, final double bottomLat, final double leftLon, double rightLon) {
     super(planetModel);
@@ -143,6 +152,23 @@ class GeoWideRectangle extends GeoBaseBBox {
     this.edgePoints = new GeoPoint[]{ULHC};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoWideRectangle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, topLat);
+    SerializableObject.writeDouble(outputStream, bottomLat);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     final double newTopLat = topLat + angle;
@@ -205,6 +231,14 @@ class GeoWideRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(topPlane, topPlanePoints, bottomPlane, eitherBound) ||
+        geoShape.intersects(bottomPlane, bottomPlanePoints, topPlane, eitherBound) ||
+        geoShape.intersects(leftPlane, leftPlanePoints, topPlane, bottomPlane) ||
+        geoShape.intersects(rightPlane, rightPlanePoints, topPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -214,44 +248,6 @@ class GeoWideRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane)
       .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" comparing to "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(ULHC);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" both inside each other");
-      return OVERLAPS;
-    }
-
-    if (path.intersects(topPlane, topPlanePoints, bottomPlane, eitherBound) ||
-        path.intersects(bottomPlane, bottomPlanePoints, topPlane, eitherBound) ||
-        path.intersects(leftPlane, leftPlanePoints, topPlane, bottomPlane) ||
-        path.intersects(rightPlane, rightPlanePoints, topPlane, bottomPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" rectangle inside shape");
-      return CONTAINS;
-    }
-
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override

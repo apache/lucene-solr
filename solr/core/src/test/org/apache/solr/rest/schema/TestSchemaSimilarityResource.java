@@ -27,7 +27,7 @@ public class TestSchemaSimilarityResource extends SolrRestletTestBase {
    */
   @Test
   public void testGetSchemaSimilarity() throws Exception {
-    assertQ("/schema/similarity?indent=on&wt=xml",
+    assertQ("/schema/similarity?wt=xml",
             "count(/response/lst[@name='similarity']) = 1",
             "/response/lst[@name='similarity']/str[@name='class'][.='org.apache.solr.search.similarities.SchemaSimilarityFactory']");
   }

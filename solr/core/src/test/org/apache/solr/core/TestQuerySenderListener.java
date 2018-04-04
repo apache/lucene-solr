@@ -75,7 +75,7 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> currentSearcherRef = core.getSearcher();
     SolrIndexSearcher currentSearcher = currentSearcherRef.get();
     qsl.newSearcher(currentSearcher, null);//test new Searcher
-    MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("mock");
+    MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("/mock");
     assertNotNull("Mock is null", mock);
     String evt = mock.req.getParams().get(EventParams.EVENT);
     assertNotNull("Event is null", evt);

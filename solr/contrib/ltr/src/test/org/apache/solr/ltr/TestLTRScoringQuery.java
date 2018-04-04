@@ -35,6 +35,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -67,7 +68,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
@@ -81,22 +82,12 @@ public class TestLTRScoringQuery extends LuceneTestCase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
+          ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
       features.add(f);
     }
     return features;
-  }
-
-  private static Map<String,Object> makeFeatureWeights(List<Feature> features) {
-    final Map<String,Object> nameParams = new HashMap<String,Object>();
-    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
-    for (final Feature feat : features) {
-      modelWeights.put(feat.getName(), 0.1);
-    }
-    nameParams.put("weights", modelWeights);
-    return nameParams;
   }
 
   private LTRScoringQuery.ModelWeight performQuery(TopDocs hits,
@@ -108,7 +99,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = hits.scoreDocs[0].doc - context.docBase;
 
-    final Weight weight = searcher.createNormalizedWeight(model, true);
+    final Weight weight = searcher.createNormalizedWeight(model, ScoreMode.COMPLETE);
     final Scorer scorer = weight.scorer(context);
 
     // rerank using the field final-score
@@ -132,7 +123,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFeatures(
         new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
-    final Map<String,Object> modelParams = makeFeatureWeights(features);
+    final Map<String,Object> modelParams = TestLinearModel.makeFeatureWeights(features);
 
     final LTRScoringModel algorithm1 = TestLinearModel.createLinearModel(
         "testModelName",
@@ -222,7 +213,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
 
     LTRScoringQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel));
@@ -248,7 +239,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     ltrScoringModel = TestLinearModel.createLinearModel("test",
-        features, norms, "test", allFeatures, makeFeatureWeights(features));
+        features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new LTRScoringQuery(ltrScoringModel));
@@ -268,7 +259,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     try {
       ltrScoringModel = TestLinearModel.createLinearModel("test",
-          features, norms, "test", allFeatures, makeFeatureWeights(features));
+          features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
       fail("unexpectedly got here instead of catching "+expectedModelException);
       modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
           new LTRScoringQuery(ltrScoringModel));
@@ -301,7 +292,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
             Collections.nCopies(features.size(),norm));
     final LTRScoringModel normMeta = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new LTRScoringQuery(normMeta));

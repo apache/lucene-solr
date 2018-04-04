@@ -35,7 +35,6 @@ import java.util.Set;
 public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument> implements Iterable<SolrInputField>
 {
   private final Map<String,SolrInputField> _fields;
-  private float _documentBoost = 1.0f;
   private List<SolrInputDocument> _childDocuments;
   
   public SolrInputDocument(String... fields) {
@@ -74,11 +73,16 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * 
    * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
    * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
-   * @see #addField(String, Object, float)
    */
   public void addField(String name, Object value) 
   {
-    addField(name, value, 1.0f );
+    SolrInputField field = _fields.get( name );
+    if( field == null || field.value == null ) {
+      setField(name, value);
+    }
+    else {
+      field.addValue( value );
+    }
   }
   
   /** Get the first value for a field.
@@ -122,44 +126,14 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   
   /** Set a field with implied null value for boost.
    * 
-   * @see #setField(String, Object, float)
    * @param name name of the field to set
    * @param value value of the field
    */
-  public void setField(String name, Object value) 
-  {
-    setField(name, value, 1.0f );
-  }
-  
-  public void setField(String name, Object value, float boost ) 
+  public void setField(String name, Object value ) 
   {
     SolrInputField field = new SolrInputField( name );
     _fields.put( name, field );
-    field.setValue( value, boost );
-  }
-
-  /**
-   * Adds a field with the given name, value and boost.  If a field with the
-   * name already exists, then the given value is appended to the value of that
-   * field, with the new boost. If the value is a collection, then each of its
-   * values will be added to the field.
-   *
-   * The class type of value and the name parameter should match schema.xml. 
-   * schema.xml can be found in conf directory under the solr home by default.
-   * 
-   * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
-   * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
-   * @param boost Boost value for the field
-   */
-  public void addField(String name, Object value, float boost ) 
-  {
-    SolrInputField field = _fields.get( name );
-    if( field == null || field.value == null ) {
-      setField(name, value, boost);
-    }
-    else {
-      field.addValue( value, boost );
-    }
+    field.setValue( value );
   }
 
   /**
@@ -187,14 +161,6 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     return _fields.values().iterator();
   }
   
-  public float getDocumentBoost() {
-    return _documentBoost;
-  }
-
-  public void setDocumentBoost(float documentBoost) {
-    _documentBoost = documentBoost;
-  }
-  
   @Override
   public String toString()
   {
@@ -209,7 +175,6 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     for (Map.Entry<String,SolrInputField> fieldEntry : entries) {
       clone._fields.put(fieldEntry.getKey(), fieldEntry.getValue().deepCopy());
     }
-    clone._documentBoost = _documentBoost;
 
     if (_childDocuments != null) {
       clone._childDocuments = new ArrayList<>(_childDocuments.size());

@@ -21,6 +21,7 @@ import java.util.Collections;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -109,8 +110,14 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   public String query(SolrCore core, SolrQueryRequest req) throws Exception {
     String handler = "standard";
-    if (req.getParams().get("qt") != null)
+    if (req.getParams().get("qt") != null) {
       handler = req.getParams().get("qt");
+    }
+    if (req.getParams().get("wt") == null){
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set("wt", "xml");
+      req.setParams(params);
+    }
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     core.execute(core.getRequestHandler(handler), req, rsp);

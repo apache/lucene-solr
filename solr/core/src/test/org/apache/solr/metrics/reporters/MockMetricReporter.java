@@ -22,7 +22,6 @@ import java.util.NoSuchElementException;
 
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 
@@ -39,8 +38,7 @@ public class MockMetricReporter extends SolrMetricReporter {
   }
 
   @Override
-  public void init(PluginInfo pluginInfo) {
-    super.init(pluginInfo);
+  protected void doInit() {
     didInit = true;
   }
 
@@ -54,6 +52,9 @@ public class MockMetricReporter extends SolrMetricReporter {
     didValidate = true;
     if (configurable == null) {
       throw new IllegalStateException("MockMetricReporter::configurable not defined.");
+    }
+    if (period < 1) {
+      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
   }
 

@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
@@ -35,6 +34,9 @@ import org.apache.lucene.util.Bits;
  * A <code>FilterCodecReader</code> contains another CodecReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality.
+ * <p><b>NOTE</b>: If this {@link FilterCodecReader} does not change the
+ * content the contained reader, you could consider delegating calls to
+ * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterCodecReader extends CodecReader {
   /** 
@@ -101,18 +103,8 @@ public abstract class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return in.getIndexSort();
-  }
-
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    in.addCoreClosedListener(listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    in.removeCoreClosedListener(listener);
+  public LeafMetaData getMetaData() {
+    return in.getMetaData();
   }
 
   @Override

@@ -119,7 +119,7 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
     if (docIds != null && docIds.length > 0) {
       int i = 1;
       for (int docId : docIds) {
-        tests[i++] = "//result/doc/int[@name='id'][.='" + docId + "']";
+        tests[i++] = "//result/doc/str[@name='id'][.='" + docId + "']";
       }
     }
     return tests;

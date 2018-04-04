@@ -305,7 +305,7 @@ public class Geo3DDocValuesField extends Field {
     result.append(name);
     result.append(':');
 
-    long currentValue = Long.valueOf((Long)fieldsData);
+    long currentValue = (Long)fieldsData;
     
     result.append(decodeXValue(currentValue));
     result.append(',');

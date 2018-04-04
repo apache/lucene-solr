@@ -1,0 +1,215 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/config-api.html",
+  "description": "The Config API enables manipulating various aspects of your solrconfig.xml using REST-like API calls. All properties set with this API update a file called configoverlay.json, but not the solrconfig.xml file itself.",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/config"
+    ]
+  },
+  "commands": {
+    "set-property:": {
+      "type": "object",
+      "documentation": "https://lucene.apache.org/solr/guide/config-api.html#commands-to-modify-the-config",
+      "description": "Sets one or more of several pre-defined properties. These properties set cache sizes and classes, commit rules, JMX settings, and request dispatcher settings. See the documentation for the list of properties that are supported. If a property is set that already exists, it will be overwritten.",
+      "additionalProperties": true
+    },
+    "unset-property": {
+      "type":"array",
+      "documentation": "https://lucene.apache.org/solr/guide/config-api.html#commands-to-modify-the-config",
+      "description": "Removes one or more of several pre-defined properties. These properties set cache sizes and classes, commit rules, JMX settings, and request dispatcher settings. See the documentation for the list of properties that are supported. The value of the property does not need to be defined with the list of properties, only the name of the property.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-requesthandler": {
+      "#include":"core.config.Commands.addRequestHandler.properties",
+      "required": [
+        "name",
+        "class"
+      ]
+    },
+    "update-requesthandler": {
+      "#include":"core.config.Commands.addRequestHandler.properties",
+      "required": [
+        "name"
+      ]
+    },
+    "delete-requesthandler": {
+      "type": "array",
+      "description": "Deletes one or more request handlers, using the name given when the request handler was created. Define more than one request handler by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-searchcomponent": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-searchcomponent": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-searchcomponent": {
+      "type": "array",
+      "description": "Deletes one or more search components, using the name given when the search component was created. Define more than one search component by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-initparams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name by which it is added, so that it can be updated by name"
+        }
+      },
+      "additionalProperties": true
+    },
+    "update-initparams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name by which it is added"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "delete-initparams": {
+      "type": "array",
+      "description": "Deletes one or more init params, using the name given when the init param set was created. Define more than one init params by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-queryresponsewriter": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-queryresponsewriter": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-queryresponsewriter": {
+      "type": "array",
+      "description": "Deletes one or more query response writers, using the name given when the response writer was created. Define more than one response writer by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-queryparser": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-queryparser": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-queryparser": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Deletes one or more query parsers, using the name given when the query parser was created. Define more than one query parser by separating the list of names with commas."
+    },
+    "add-valuesourceparser": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-valuesourceparser": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-valuesourceparser": {
+      "type": "array",
+      "description": "Deletes one or more ValueSourceParsers, using the name given when the ValueSourceParser was created. Define more than one ValueSourceParsers by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-transformer": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-transformer": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-transformer": {
+      "type": "array",
+      "description": "Deletes one or more document transformers, using the name given when the document transformer was created. Define more than one document transformers by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-updateprocessor": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-updateprocessor": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-updateprocessor": {
+      "type": "array",
+      "description": "Deletes one or more update processors, using the name given when the update processor was created. Define more than one update processors by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-queryconverter": {
+      "#include": "core.config.Commands.generic"
+    },
+    "update-queryconverter": {
+      "#include": "core.config.Commands.generic"
+    },
+    "delete-queryconverter": {
+      "type": "array",
+      "description": "Deletes one or more query converters, using the name given when the query converter was created. Define more than one query converters by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-listener": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name by which it is added, so that it can be updated by name"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "update-listener": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name by which it is added"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "delete-listener": {
+      "type": "array",
+      "description": "Deletes one or more listeners, using the name given when the listener was created. Define more than one listener by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "add-runtimelib": {
+      "#include": "core.config.Commands.runtimeLib"
+    },
+    "update-runtimelib": {
+      "#include": "core.config.Commands.runtimeLib"
+    },
+    "delete-runtimelib": {
+      "type":"array",
+      "description": "Deletes one or more runtime libraries (runtimeLibs), using the name given when the runtimeLib was created. Define more than one runtimeLibs by separating the list of names with commas.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

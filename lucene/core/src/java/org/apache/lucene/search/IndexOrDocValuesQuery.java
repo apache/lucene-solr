@@ -37,7 +37,7 @@ import org.apache.lucene.index.Term;
  *   String field;
  *   long minValue, maxValue;
  *   Query pointQuery = LongPoint.newRangeQuery(field, minValue, maxValue);
- *   Query dvQuery = SortedNumericDocValuesField.newRangeQuery(field, minValue, maxValue);
+ *   Query dvQuery = SortedNumericDocValuesField.newSlowRangeQuery(field, minValue, maxValue);
  *   Query query = new IndexOrDocValuesQuery(pointQuery, dvQuery);
  * </pre>
  * The above query will be efficient as it will use points in the case that they
@@ -110,9 +110,9 @@ public final class IndexOrDocValuesQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight indexWeight = indexQuery.createWeight(searcher, needsScores, boost);
-    final Weight dvWeight = dvQuery.createWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight indexWeight = indexQuery.createWeight(searcher, scoreMode, boost);
+    final Weight dvWeight = dvQuery.createWeight(searcher, scoreMode, boost);
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -141,13 +141,22 @@ public final class IndexOrDocValuesQuery extends Query {
         }
         return new ScorerSupplier() {
           @Override
-          public Scorer get(boolean randomAccess) throws IOException {
-            return (randomAccess ? dvScorerSupplier : indexScorerSupplier).get(randomAccess);
+          public Scorer get(long leadCost) throws IOException {
+            // At equal costs, doc values tend to be worse than points since they
+            // still need to perform one comparison per document while points can
+            // do much better than that given how values are organized. So we give
+            // an arbitrary 8x penalty to doc values.
+            final long threshold = cost() >>> 3;
+            if (threshold <= leadCost) {
+              return indexScorerSupplier.get(leadCost);
+            } else {
+              return dvScorerSupplier.get(leadCost);
+            }
           }
 
           @Override
           public long cost() {
-            return Math.min(indexScorerSupplier.cost(), dvScorerSupplier.cost());
+            return indexScorerSupplier.cost();
           }
         };
       }
@@ -158,8 +167,16 @@ public final class IndexOrDocValuesQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        // Both index and dv query should return the same values, so we can use
+        // the index query's cachehelper here
+        return indexWeight.isCacheable(ctx);
+      }
+
     };
   }
 

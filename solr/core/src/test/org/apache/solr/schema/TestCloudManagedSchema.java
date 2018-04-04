@@ -62,7 +62,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     NamedList namedListResponse = client.request(request);
     client.setBaseURL(previousBaseURL); // Restore baseURL 
     NamedList status = (NamedList)namedListResponse.get("status");
-    NamedList collectionStatus = (NamedList)status.get("collection1");
+    NamedList collectionStatus = (NamedList)status.getVal(0);
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     // Make sure the upgrade to managed schema happened
     assertEquals("Schema resource name differs from expected name", "managed-schema", collectionSchema);

@@ -413,7 +413,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
    * {@link #or(DocIdSetIterator)} impl that works best when <code>it</code> is dense
    */
   private void orDense(DocIdSetIterator it) throws IOException {
-    assertUnpositioned(it);
+    checkUnpositioned(it);
     // The goal here is to try to take advantage of the ordering of documents
     // to build the data-structure more efficiently
     // NOTE: this heavily relies on the fact that shifts are mod 64
@@ -466,7 +466,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
       // specialize union with another SparseFixedBitSet
       final SparseFixedBitSet other = BitSetIterator.getSparseFixedBitSetOrNull(it);
       if (other != null) {
-        assertUnpositioned(it);
+        checkUnpositioned(it);
         or(other);
         return;
       }

@@ -52,7 +52,7 @@ class CoreParserTestIndexData implements Closeable {
       Document doc = new Document();
       doc.add(LuceneTestCase.newTextField("date", date, Field.Store.YES));
       doc.add(LuceneTestCase.newTextField("contents", content, Field.Store.YES));
-      doc.add(new IntPoint("date3", Integer.valueOf(date)));
+      doc.add(new IntPoint("date3", Integer.parseInt(date)));
       writer.addDocument(doc);
       line = d.readLine();
     }

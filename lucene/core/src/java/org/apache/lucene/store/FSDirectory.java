@@ -215,7 +215,7 @@ public abstract class FSDirectory extends BaseDirectory {
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
       for (Path path : stream) {
         String name = path.getFileName().toString();
-        if (skipNames != null && skipNames.contains(name) == false) {
+        if (skipNames == null || skipNames.contains(name) == false) {
           entries.add(name);
         }
       }

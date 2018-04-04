@@ -36,7 +36,6 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHUNK_STATS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
@@ -161,18 +160,14 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       decompressor = compressionMode.newDecompressor();
       this.merging = false;
       this.state = new BlockState();
-      
-      if (version >= VERSION_CHUNK_STATS) {
-        fieldsStream.seek(maxPointer);
-        numChunks = fieldsStream.readVLong();
-        numDirtyChunks = fieldsStream.readVLong();
-        if (numDirtyChunks > numChunks) {
-          throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
-        }
-      } else {
-        numChunks = numDirtyChunks = -1;
+
+      fieldsStream.seek(maxPointer);
+      numChunks = fieldsStream.readVLong();
+      numDirtyChunks = fieldsStream.readVLong();
+      if (numDirtyChunks > numChunks) {
+        throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
       }
-      
+
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption

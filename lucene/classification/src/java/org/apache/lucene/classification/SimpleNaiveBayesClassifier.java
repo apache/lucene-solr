@@ -98,9 +98,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     this.query = query;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(inputDocument);
@@ -115,9 +112,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return assignedClass;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(text);
@@ -125,9 +119,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return assignedClasses;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignClassNormalizedList(text);

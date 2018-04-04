@@ -96,9 +96,8 @@ solrAdminApp.controller('DataImportController',
         $scope.form = {
             command: "full-import",
             verbose: false,
-            clean: true,
+            clean: false,
             commit: true,
-            optimize: false,
             showDebug: false,
             custom: "",
             core: $routeParams.core

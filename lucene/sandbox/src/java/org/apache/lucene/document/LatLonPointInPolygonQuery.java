@@ -19,25 +19,26 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -75,7 +76,7 @@ final class LatLonPointInPolygonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
@@ -158,6 +159,11 @@ final class LatLonPointInPolygonQuery extends Query {
                          });
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
     };
   }

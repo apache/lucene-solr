@@ -1,0 +1,182 @@
+= Curve Fitting
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+== Polynomial Curve Fitting
+
+
+The `polyfit` function is a general purpose curve fitter used to model
+the *non-linear* relationship between two random variables.
+
+The `polyfit` function is passed *x* and *y* axises and fits a smooth curve to the data.
+If only a single array is provided it is treated as the *y* axis and a sequence is generated
+for the *x* axis.
+
+The `polyfit` function also has a parameter the specifies the degree of the polynomial. The higher
+the degree the more curves that can be modeled.
+
+The example below uses the `polyfit` function to fit a curve to an array using
+a 3 degree polynomial. The fitted curve is then subtracted from the original curve. The output
+shows the error between the fitted curve and the original curve, known as the residuals.
+The output also includes the sum-of-squares of the residuals which provides a measure
+of how large the error is..
+
+[source,text]
+----
+let(echo="residuals, sumSqError",
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=polyfit(y, 3),
+    residuals=ebeSubtract(y, curve),
+    sumSqError=sumSq(residuals))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "residuals": [
+          0.5886274509803899,
+          -0.0746078431372561,
+          -0.49492135315664765,
+          -0.6689571213100631,
+          -0.5933591898297781,
+          0.4352283990519288,
+          0.32016160310277897,
+          1.1647963800904968,
+          0.272488687782805,
+          -0.3534055160525744,
+          0.2904697263520779,
+          -0.7925296272355089,
+          -0.5990476190476182,
+          -0.12572829131652274,
+          0.6307843137254909
+        ],
+        "sumSqError": 4.7294282482223595
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+In the next example the curve is fit using a 5 degree polynomial. Notice that the curve
+is fit closer, shown by the smaller residuals and lower value for the sum-of-squares of the
+residuals. This is because the higher polynomial produced a closer fit.
+
+[source,text]
+----
+let(echo="residuals, sumSqError",
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=polyfit(y, 5),
+    residuals=ebeSubtract(y, curve),
+    sumSqError=sumSq(residuals))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "residuals": [
+          -0.12337461300309674,
+          0.22708978328173413,
+          0.12266015718028167,
+          -0.16502738747320755,
+          -0.41142804563857105,
+          0.2603044014808713,
+          -0.12128970101106162,
+          0.6234168308471704,
+          -0.1754692675745293,
+          -0.5379689969473249,
+          0.4651616185671843,
+          -0.288175756132409,
+          0.027970945463215102,
+          0.18699690402476687,
+          -0.09086687306501587
+        ],
+        "sumSqError": 1.413089480179252
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+
+== Prediction, Derivatives and Integrals
+
+The `polyfit` function returns an array which contains the *y* value data points
+of the fitted curve.
+
+In order to predict values along the curve an interpolation function must be created
+for the curve. Once an interpolation functin has been created the `predict`,
+`derivative` and `integral` functions can be applied to the curve.
+
+In the example below the x axis is included for clarity.
+The `polyfit` function returns an array with the fitted curve.
+A linear inpolation function is then created for the curve with the `lerp` function.
+The `predict` function is then used to predict a value along the curve, in this
+case the prediction is made for the *x* value of .5.
+
+[source,text]
+----
+let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=polyfit(x, y, 5),
+    interp=lerp(x, curve),
+    p=predict(interp, .5))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "p": 0.4481424148606813
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+
+
+

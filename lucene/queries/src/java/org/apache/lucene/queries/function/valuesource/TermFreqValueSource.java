@@ -19,9 +19,8 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -48,8 +47,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
 
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(indexedField);
+    final Terms terms = readerContext.reader().terms(indexedField);
 
     return new IntDocValues(this) {
       PostingsEnum docs ;

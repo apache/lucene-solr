@@ -46,12 +46,12 @@ public class TestCharFilters extends SolrTestCaseJ4 {
     assertQ("Query analysis: ",
        req("fl", "id", "q", "content:ab", "sort", "id asc"),
                 "//*[@numFound='1']",
-                "//result/doc[1]/int[@name='id'][.=1]"
+                "//result/doc[1]/str[@name='id'][.=1]"
     );
     assertQ("Query analysis: ",
         req("fl", "id", "q", "content:aba", "sort", "id asc"),
                  "//*[@numFound='1']",
-                 "//result/doc[1]/int[@name='id'][.=2]"
+                 "//result/doc[1]/str[@name='id'][.=2]"
     );
   }
   
@@ -65,12 +65,12 @@ public class TestCharFilters extends SolrTestCaseJ4 {
     assertQ("Index analysis: ",
        req("fl", "id", "q", "content2:aab", "sort", "id asc"),
                 "//*[@numFound='1']",
-                "//result/doc[1]/int[@name='id'][.=3]"
+                "//result/doc[1]/str[@name='id'][.=3]"
     );
     assertQ("Index analysis: ",
         req("fl", "id", "q", "content2:aabaa", "sort", "id asc"),
                  "//*[@numFound='1']",
-                 "//result/doc[1]/int[@name='id'][.=4]"
+                 "//result/doc[1]/str[@name='id'][.=4]"
     );
   }
 }

@@ -38,7 +38,7 @@ file.query.maker.file=conf/query-terms.txt
 log.queries=false
 log.step.SearchTravRetHighlight=-1
 
-highlighter=HlImpl:NONE:SH_A:UH_A:PH_P:UH_P:UH_PV
+highlighter=HlImpl:NONE:SH_A:UH_A:UH_P:UH_PV
 
 { "Populate"
         CreateIndex
@@ -60,6 +60,6 @@ highlighter=HlImpl:NONE:SH_A:UH_A:PH_P:UH_P:UH_PV
         CloseReader
 
         NewRound
-} : 6
+} : 5
 
 RepSumByPrefRound HL

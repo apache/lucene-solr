@@ -68,12 +68,12 @@ public abstract class ZkClientConnectionStrategy {
   }
   
   public interface DisconnectedListener {
-    public void disconnected();
-  };
+    void disconnected();
+  }
   
   public interface ConnectedListener {
-    public void connected();
-  };
+    void connected();
+  }
   
   
   public synchronized void addDisconnectedListener(DisconnectedListener listener) {
@@ -83,9 +83,9 @@ public abstract class ZkClientConnectionStrategy {
   public synchronized void addConnectedListener(ConnectedListener listener) {
     connectedListeners.add(listener);
   }
-  
-  public static abstract class ZkUpdate {
-    public abstract void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
+
+  public interface ZkUpdate {
+    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
   
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {

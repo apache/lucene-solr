@@ -73,16 +73,17 @@
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
   -->
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime
@@ -104,7 +105,7 @@
                       
          Consult the TrieDateField javadocs for more information.
       -->
-    <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true" omitNorms="true"/>
 
 
     <!-- The "RandomSortField" is not used to store or search any
@@ -146,7 +147,7 @@
       </analyzer>
     </fieldType>
 
-    <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
+    <!-- A text field that uses WordDelimiterGraphFilter to enable splitting and matching of
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
         so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
         Synonyms and stopwords are customized by external files, and stemming is enabled.
@@ -157,20 +158,21 @@
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time
-        <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         -->
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
         <filter class="solr.PorterStemFilterFactory"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+        <filter class="solr.FlattenGraphFilterFactory"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
         <filter class="solr.PorterStemFilterFactory"/>
@@ -182,11 +184,22 @@
     <!-- Less flexible matching, but less false matches.  Probably not ideal for product names,
          but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
     <fieldType name="textTight" class="solr.TextField" positionIncrementGap="100" >
-      <analyzer>
+      <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.EnglishMinimalStemFilterFactory"/>
+        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+        <filter class="solr.FlattenGraphFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
         <filter class="solr.EnglishMinimalStemFilterFactory"/>
@@ -232,24 +245,25 @@
      --> 
     <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
 
-    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
-    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
+    
+    <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble4" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldType name="tint" class="solr.TrieIntField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tfloat" class="solr.TrieFloatField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tlong" class="solr.TrieLongField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdouble" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdouble4" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0"/>
-
-
-    <fieldType name="tints" class="solr.TrieIntField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
-    <fieldType name="tfloats" class="solr.TrieFloatField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
-    <fieldType name="tlongs" class="solr.TrieLongField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
-    <fieldType name="tdoubles" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
-    <fieldType name="tdates" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    
+    <fieldType name="tints" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    <fieldType name="tfloats" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
+    <fieldType name="tlongs" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
+    <fieldType name="tdoubles" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    <fieldType name="tdates" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+ 
 
     <!-- Poly field -->
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
@@ -262,19 +276,12 @@
 valued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
-     <!-- These should pass right through and insure that we can declare external field types -->
-    <fieldType name="eff_float" keyField="id" defVal="0"
+  <!-- eff_tint class can't be randomized, because ExternalFileField disallows point-based keyField.  See SOLR-10846. -->
+  <fieldType name="eff_tint" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  <field name="eff_tint" type="eff_tint" indexed="true" stored="true"/>
+  <fieldType name="eff_tfloat" keyField="eff_tint" defVal="0"
                stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="float"/>
-
-    <fieldType name="eff_tfloat" keyField="eff_ti" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="tfloat"/>
-
-    <!-- Be sure that the valType can be optional Since valType has done nothing up until now, this is preferred -->
-    <fieldType name="eff_none" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField"/>
+               class="solr.ExternalFileField" />
 
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
 
@@ -288,8 +295,8 @@ valued. -->
     </fieldType>  
 
 
-    <!-- EnumType -->
-    <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
+    <!-- Enum type -->
+    <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
@@ -306,8 +313,10 @@ valued. -->
        best performance.
    -->
 
-   <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
-   <field name="id" type="float" indexed="true" stored="true" required="true" />
+   <field name="id" type="string" indexed="true" stored="true" required="true" />
+   <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+   <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+   <copyField source="id" dest="id_i" />
    <field name="text" type="text" indexed="true" stored="false" />
 
    <!-- Test a point field for distances -->
@@ -322,18 +331,43 @@ valued. -->
 
    <field name="text_no_analyzer" type="text_no_analyzer" indexed="true" />
 
-   <field name="_version_" type="${solr.tests.longClass:plong}" indexed="true" stored="true" multiValued="false" />
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
 
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="cat_docValues" type="string"  indexed="true" stored="true" docValues="true" multiValued="true" />
-   <field name="cat_intDocValues" type="${solr.tests.intClass:pint}"  indexed="true" stored="true" docValues="true" multiValued="true" />
-   <field name="cat_floatDocValues" type="${solr.tests.floatClass:pfloat}"  indexed="true" stored="true" docValues="true" multiValued="true" />
+   <field name="cat_intDocValues" type="int"  indexed="true" stored="true" docValues="true" multiValued="true" />
+   <field name="cat_floatDocValues" type="float"  indexed="true" stored="true" docValues="true" multiValued="true" />
    <field name="cat_length" type="text_length" indexed="true" stored="true" multiValued="true"/>
 
+   <!-- see TestMinMaxOnMultiValuedField -->
+   <!-- NOTE: "string" type configured with sortMissingLast="true" 
+        we need a multivalued string for sort testing using sortMissing*="false"
+   -->
+   <field name="val_strs_dv" type="string" indexed="true" stored="true"
+          docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="false" />
+   <!-- specific multivalued fields of each type with sortMissing First/Last -->
+   <field name="val_str_missf_s_dv" type="string" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_str_missl_s_dv" type="string" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_int_missf_s_dv" type="int" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_int_missl_s_dv" type="int" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_long_missf_s_dv" type="long" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_long_missl_s_dv" type="long" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_float_missf_s_dv" type="float" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_float_missl_s_dv" type="float" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_double_missf_s_dv" type="double" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_double_missl_s_dv" type="double" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_date_missf_s_dv" type="date" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_date_missl_s_dv" type="date" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_bool_missf_s_dv" type="boolean" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_bool_missl_s_dv" type="boolean" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   <field name="val_enum_missf_s_dv" type="severityType" docValues="true" multiValued="true" sortMissingFirst="true" sortMissingLast="false" />
+   <field name="val_enum_missl_s_dv" type="severityType" docValues="true" multiValued="true" sortMissingFirst="false" sortMissingLast="true" />
+   
 
-   <!-- EnumType -->
-   <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+   <!-- Enum type -->
+   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
+   
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -345,12 +379,13 @@ valued. -->
    <dynamicField name="*_s_dv"  type="string"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ss"    type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_sS"   type="string"  indexed="false" stored="true"/>
-   <dynamicField name="*_i"    type="${solr.tests.intClass:pint}"    indexed="true"  stored="true"/>
-   <dynamicField name="*_ii"   type="${solr.tests.intClass:pint}"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_l"    type="${solr.tests.longClass:plong}"   indexed="true"  stored="true"/>
-   <dynamicField name="*_f"    type="${solr.tests.floatClass:pfloat}"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"    type="${solr.tests.doubleClass:pdouble}" indexed="true"  stored="true"/>
-
+   <dynamicField name="*_i"    type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ii"   type="int"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_l"    type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_f"    type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"    type="double" indexed="true"  stored="true"/>
+   
+    <!-- Test trie fields explicitly -->
    <dynamicField name="*_ti"      type="tint"    indexed="true"  stored="true"/>
    <dynamicField name="*_ti_dv"   type="tint"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ti_ni_dv"   type="tint"    indexed="false"  stored="true" docValues="true"/>
@@ -400,6 +435,21 @@ valued. -->
    <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_p"      type="pdate"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_dts_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_dts_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
+   <dynamicField name="*_i_ndv_p"    type="pint"    indexed="true"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_is_ndv_p"   type="pint"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_l_ndv_p"    type="plong"    indexed="true"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_ls_ndv_p"   type="plong"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_f_ndv_p"    type="pfloat"    indexed="true"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_fs_ndv_p"   type="pfloat"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_d_ndv_p"    type="pdouble"    indexed="true"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_ds_ndv_p"   type="pdouble"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_dt_ndv_p"    type="pdate"    indexed="true"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_dts_ndv_p"   type="pdate"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
 
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
@@ -413,20 +463,21 @@ valued. -->
      <analyzer type="index">
        <tokenizer class="solr.MockTokenizerFactory"/>
        <!-- in this example, we will only use synonyms at query time
-            <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+            <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
        -->
        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-       <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
        <filter class="solr.LowerCaseFilterFactory"/>
        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
        <filter class="solr.PorterStemFilterFactory"/>
        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+       <filter class="solr.FlattenGraphFilterFactory"/>
      </analyzer>
      <analyzer type="query">
        <tokenizer class="solr.MockTokenizerFactory"/>
-       <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-       <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
        <filter class="solr.LowerCaseFilterFactory"/>
        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
        <filter class="solr.PorterStemFilterFactory"/>
@@ -445,13 +496,45 @@ valued. -->
         unknown fields indexed and/or stored by default --> 
    <!--dynamicField name="*" type="ignored" /-->
    
+  <!-- For testing payload function -->
+  <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
+  <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
+  <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
+  <fieldType name="delimited_payloads_float" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="delimited_payloads_int" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="integer"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="delimited_payloads_string" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="identity"/>
+    </analyzer>
+  </fieldType>
 
+  <!-- See TestMinMaxOnMultiValuedField -->
+  <field name="val_stxt_s_dv" type="whitespace_stxt" multiValued="true"/>
+  <field name="val_stxt_missf_s_dv" type="whitespace_stxt" multiValued="true" sortMissingFirst="true"/>
+  <field name="val_stxt_missl_s_dv" type="whitespace_stxt" multiValued="true" sortMissingLast="true"/>
+  <field name="val_stxt_s_nodv" type="whitespace_stxt" multiValued="true" docValues="false" />
+  <!-- NOTE: explicitly not specifying docValues=true, it should be implicit default -->
+  <fieldType name="whitespace_stxt" class="solr.SortableTextField" indexed="true" stored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  
  <!-- Field to use to determine and enforce document uniqueness. 
       Unless this field is marked with required="false", it will be a required field
    -->
  <uniqueKey>id</uniqueKey>
-
- <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>text</defaultSearchField>
- 
 </schema>

@@ -26,6 +26,7 @@ import java.util.Collections;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override

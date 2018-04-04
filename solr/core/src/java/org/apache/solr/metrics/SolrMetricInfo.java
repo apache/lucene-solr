@@ -17,7 +17,7 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 
 /**
  * Wraps meta-data for a metric.
@@ -25,7 +25,7 @@ import org.apache.solr.core.SolrInfoMBean;
 public final class SolrMetricInfo {
   public final String name;
   public final String scope;
-  public final SolrInfoMBean.Category category;
+  public final SolrInfoBean.Category category;
 
   /**
    * Creates a new instance of {@link SolrMetricInfo}.
@@ -34,7 +34,7 @@ public final class SolrMetricInfo {
    * @param scope    the scope of the metric (e.g. `/admin/ping`)
    * @param name     the name of the metric (e.g. `Requests`)
    */
-  public SolrMetricInfo(SolrInfoMBean.Category category, String scope, String name) {
+  public SolrMetricInfo(SolrInfoBean.Category category, String scope, String name) {
     this.name = name;
     this.scope = scope;
     this.category = category;
@@ -45,18 +45,25 @@ public final class SolrMetricInfo {
       return null;
     }
     String[] names = fullName.split("\\.");
-    if (names.length < 3) { // not a valid info
+    if (names.length < 2) { // not a valid info
       return null;
     }
     // check top-level name for valid category
-    SolrInfoMBean.Category category;
+    SolrInfoBean.Category category;
     try {
-      category = SolrInfoMBean.Category.valueOf(names[0]);
+      category = SolrInfoBean.Category.valueOf(names[0]);
     } catch (IllegalArgumentException e) { // not a valid category
       return null;
     }
-    String scope = names[1];
-    String name = fullName.substring(names[0].length() + names[1].length() + 2);
+    String scope;
+    String name;
+    if (names.length == 2) {
+      scope = null;
+      name = fullName.substring(names[0].length() + 1);
+    } else {
+      scope = names[1];
+      name = fullName.substring(names[0].length() + names[1].length() + 2);
+    }
     return new SolrMetricInfo(category, scope, name);
   }
 

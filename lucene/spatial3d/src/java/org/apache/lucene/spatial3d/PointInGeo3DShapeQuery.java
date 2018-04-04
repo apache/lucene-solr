@@ -18,19 +18,20 @@ package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
 
-import org.apache.lucene.spatial3d.geom.BasePlanetObject;
-import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
-import org.apache.lucene.spatial3d.geom.XYZBounds;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.spatial3d.geom.BasePlanetObject;
+import org.apache.lucene.spatial3d.geom.GeoShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.DocIdSetBuilder;
 
 /** Finds all previously indexed points that fall within the specified polygon.
@@ -60,7 +61,7 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
@@ -103,6 +104,12 @@ final class PointInGeo3DShapeQuery extends Query {
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 

@@ -1,0 +1,17 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/uploading-data-with-index-handlers.html",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/update",
+      "/update/xml",
+      "/update/csv",
+      "/update/json",
+      "/update/bin",
+      "/update/json/commands"
+    ]
+
+  }
+}

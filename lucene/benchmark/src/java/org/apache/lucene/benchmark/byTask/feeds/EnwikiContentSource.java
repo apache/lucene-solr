@@ -101,7 +101,7 @@ public class EnwikiContentSource extends ContentSource {
 
       buffer.append(original.substring(8, 10));
       buffer.append('-');
-      buffer.append(months[Integer.valueOf(original.substring(5, 7)).intValue() - 1]);
+      buffer.append(months[Integer.parseInt(original.substring(5, 7)) - 1]);
       buffer.append('-');
       buffer.append(original.substring(0, 4));
       buffer.append(' ');

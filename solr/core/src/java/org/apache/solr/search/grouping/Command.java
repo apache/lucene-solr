@@ -60,6 +60,6 @@ public interface Command<T> {
   /**
    * @return The sort inside a group
    */
-  Sort getSortWithinGroup();
+  Sort getWithinGroupSort();
 
 }

@@ -102,7 +102,6 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
-      //              at org.apache.solr.schema.TrieField.createField(TrieField.java:725) [...]
       updateJ(jsonAdd(processAdd(sdoc("id","2", "f_dt","2017-01-05"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
@@ -149,7 +148,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
         // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this is fixed in 
         // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call obj.toString(), 
         // Date::toString produces a Date representation that Solr doesn't like, so we convert using Instant::toString
-        cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString(), 1.0f);
+        cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());
       }
       return cmd.solrDoc;
     } finally {

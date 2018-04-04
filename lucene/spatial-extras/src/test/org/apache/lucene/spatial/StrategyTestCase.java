@@ -29,23 +29,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 
 public abstract class StrategyTestCase extends SpatialTestCase {
 
@@ -212,25 +210,18 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   /** scores[] are in docId order */
-  protected void checkValueSource(ValueSource vs, float scores[], float delta) throws IOException {
-    FunctionQuery q = new FunctionQuery(vs);
+  protected void checkValueSource(DoubleValuesSource vs, float scores[], float delta) throws IOException {
 
-//    //TODO is there any point to this check?
-//    int expectedDocs[] = new int[scores.length];//fill with ascending 0....length-1
-//    for (int i = 0; i < expectedDocs.length; i++) {
-//      expectedDocs[i] = i;
-//    }
-//    CheckHits.checkHits(random(), q, "", indexSearcher, expectedDocs);
-
-    //TopDocs is sorted but we actually don't care about the order
-    TopDocs docs = indexSearcher.search(q, 1000);//calculates the score
-    for (int i = 0; i < docs.scoreDocs.length; i++) {
-      ScoreDoc gotSD = docs.scoreDocs[i];
-      float expectedScore = scores[gotSD.doc];
-      assertEquals("Not equal for doc "+gotSD.doc, expectedScore, gotSD.score, delta);
+    for (LeafReaderContext ctx : indexSearcher.getTopReaderContext().leaves()) {
+      DoubleValues v = vs.getValues(ctx, null);
+      int count = ctx.reader().maxDoc();
+      for (int i = 0; i < count; i++) {
+        assertTrue(v.advanceExact(i));
+        int doc = i + ctx.docBase;
+        assertEquals("Not equal for doc " + doc, v.doubleValue(), (double) scores[doc], delta);
+      }
     }
 
-    CheckHits.checkExplanations(q, "", indexSearcher);
   }
 
   protected void testOperation(Shape indexedShape, SpatialOperation operation,

@@ -25,16 +25,17 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.AutomatonQuery;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
@@ -42,6 +43,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
@@ -108,7 +110,7 @@ public class GraphQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     Weight graphWeight = new GraphQueryWeight((SolrIndexSearcher)searcher, boost);
     return graphWeight;
   }
@@ -130,17 +132,22 @@ public class GraphQuery extends Query {
   protected class GraphQueryWeight extends Weight {
     
     final SolrIndexSearcher fromSearcher;
-    private final float boost;
-    private int frontierSize = 0;
     private int currentDepth = -1;
     private Filter filter;
     private DocSet resultSet;
-    
+    SchemaField collectSchemaField;  // the field to collect values from
+    SchemaField matchSchemaField;    // the field to match those values
+
     public GraphQueryWeight(SolrIndexSearcher searcher, float boost) {
       // Grab the searcher so we can run additional searches.
       super(null);
       this.fromSearcher = searcher;
-      this.boost = boost;
+      this.matchSchemaField = searcher.getSchema().getField(fromField);
+      this.collectSchemaField = searcher.getSchema().getField(toField);
+    }
+
+    GraphQuery getGraphQuery() {
+      return GraphQuery.this;
     }
     
     @Override
@@ -175,7 +182,7 @@ public class GraphQuery extends Query {
       // the initial query for the frontier for the first query
       Query frontierQuery = q;
       // Find all documents in this graph that are leaf nodes to speed traversal
-      DocSet leafNodes = resolveLeafNodes(toField);
+      DocSet leafNodes = resolveLeafNodes();
       // Start the breadth first graph traversal.
       
       do {
@@ -187,25 +194,29 @@ public class GraphQuery extends Query {
           // if we've reached the max depth, don't worry about collecting edges.
           fromSet = fromSearcher.getDocSetBits(frontierQuery);
           // explicitly the frontier size is zero now so we can break
-          frontierSize = 0;
+          frontierQuery = null;
         } else {
           // when we're not at the max depth level, we need to collect edges          
           // Create the graph result collector for this level
-          GraphTermsCollector graphResultCollector = new GraphTermsCollector(toField,capacity, resultBits, leafNodes);
+          GraphEdgeCollector graphResultCollector = collectSchemaField.getType().isPointField()
+              ? new GraphPointsCollector(collectSchemaField, new BitDocSet(resultBits), leafNodes)
+              : new GraphTermsCollector(collectSchemaField, new BitDocSet(resultBits), leafNodes);
+
+          fromSet = new BitDocSet(new FixedBitSet(capacity));
+          graphResultCollector.setCollectDocs(fromSet.getBits());
+
           fromSearcher.search(frontierQuery, graphResultCollector);
-          fromSet = graphResultCollector.getDocSet();
-          // All edge ids on the frontier.
-          BytesRefHash collectorTerms = graphResultCollector.getCollectorTerms();
-          frontierSize = collectorTerms.size();
-          // The resulting doc set from the frontier.
-          FrontierQuery fq = buildFrontierQuery(collectorTerms, frontierSize);
-          if (fq == null) {
-            // in case we get null back, make sure we know we're done at this level.
-            frontierSize = 0;
-          } else {
-            frontierQuery = fq.getQuery();
-            frontierSize = fq.getFrontierSize();
+
+          frontierQuery = graphResultCollector.getResultQuery(matchSchemaField, isUseAutn());
+          // If there is a filter to be used while crawling the graph, add that.
+          if (frontierQuery != null && getTraversalFilter() != null) {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.add(frontierQuery, BooleanClause.Occur.MUST);
+            builder.add(getTraversalFilter(), BooleanClause.Occur.MUST);
+            frontierQuery = builder.build();
           }
+
+
         }
         if (currentDepth == 0 && !returnRoot) {
           // grab a copy of the root bits but only if we need it.
@@ -217,7 +228,7 @@ public class GraphQuery extends Query {
         if ((maxDepth != -1 && currentDepth >= maxDepth)) {
           break;
         }
-      } while (frontierSize > 0);
+      } while (frontierQuery != null);
       // helper bit set operations on the final result set
       if (!returnRoot) {
         resultBits.andNot(rootBits);
@@ -232,9 +243,10 @@ public class GraphQuery extends Query {
       }
     }
     
-    private DocSet resolveLeafNodes(String field) throws IOException {
+    private DocSet resolveLeafNodes() throws IOException {
+      String field = collectSchemaField.getName();
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
-      WildcardQuery edgeQuery = new WildcardQuery(new Term(field, "*"));
+      Query edgeQuery = collectSchemaField.hasDocValues() ? new DocValuesFieldExistsQuery(field) : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
       DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
       return leafNodes;
@@ -252,50 +264,7 @@ public class GraphQuery extends Query {
       final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
       return a;    
     }
-    
-    /**
-     * This return a query that represents the documents that match the next hop in the query.
-     * 
-     * collectorTerms - the terms that represent the edge ids for the current frontier.
-     * frontierSize - the size of the frontier query (number of unique edges)
-     *  
-     */
-    public FrontierQuery buildFrontierQuery(BytesRefHash collectorTerms, Integer frontierSize) {
-      if (collectorTerms == null || collectorTerms.size() == 0) {
-        // return null if there are no terms (edges) to traverse.
-        return null;
-      } else {
-        // Create a query
-        Query q = null;
 
-        // TODO: see if we should dynamically select this based on the frontier size.
-        if (useAutn) {
-          // build an automaton based query for the frontier.
-          Automaton autn = buildAutomaton(collectorTerms);
-          AutomatonQuery autnQuery = new AutomatonQuery(new Term(fromField), autn);
-          q = autnQuery;
-        } else {
-          List<BytesRef> termList = new ArrayList<>(collectorTerms.size());
-          for (int i = 0 ; i < collectorTerms.size(); i++) {
-            BytesRef ref = new BytesRef();
-            collectorTerms.get(i, ref);
-            termList.add(ref);
-          }
-          q = new TermInSetQuery(fromField, termList);
-        }
-        
-        // If there is a filter to be used while crawling the graph, add that.
-        if (traversalFilter != null) {
-          BooleanQuery.Builder builder = new BooleanQuery.Builder();
-          builder.add(q, Occur.MUST);
-          builder.add(traversalFilter, Occur.MUST);
-          q = builder.build();
-        } 
-        // return the new query. 
-        FrontierQuery frontier = new FrontierQuery(q, frontierSize);
-        return frontier;
-      }
-    }
     
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -307,7 +276,12 @@ public class GraphQuery extends Query {
       // create a scrorer on the result set, if results from right query are empty, use empty iterator.
       return new GraphScorer(this, readerSet == null ? DocIdSetIterator.empty() : readerSet.iterator(), 1);
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     @Override
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
@@ -315,7 +289,7 @@ public class GraphQuery extends Query {
     
   }
   
-  private class GraphScorer extends Scorer {
+  private static class GraphScorer extends Scorer {
     
     final DocIdSetIterator iter;
     final float score;
@@ -333,6 +307,11 @@ public class GraphQuery extends Query {
     }
 
     @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return score;
+    }
+
+    @Override
     public DocIdSetIterator iterator() {
       return iter;
     }
@@ -342,11 +321,7 @@ public class GraphQuery extends Query {
       // current position of the doc iterator.
       return iter.docID();
     }
-    
-    @Override
-    public int freq() throws IOException {
-      return 1;
-    }
+
   }
   
   /**

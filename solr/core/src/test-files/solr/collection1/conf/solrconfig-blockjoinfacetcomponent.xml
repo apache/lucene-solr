@@ -24,8 +24,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
 
@@ -38,18 +37,18 @@
   <searchComponent name="blockJoinFacet" class="org.apache.solr.search.join.BlockJoinFacetComponent"/>
   <searchComponent name="blockJoinDocSetFacet" class="org.apache.solr.search.join.BlockJoinDocSetFacetComponent"/>
 
-  <requestHandler name="blockJoinFacetRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/blockJoinFacetRH" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
-      <str name="shards.qt">blockJoinFacetRH</str>
+      <str name="shards.qt">/blockJoinFacetRH</str>
     </lst>
     <arr name="last-components">
       <str>blockJoinFacet</str>
     </arr>
   </requestHandler>
   
-    <requestHandler name="blockJoinDocSetFacetRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/blockJoinDocSetFacetRH" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
-      <str name="shards.qt">blockJoinDocSetFacetRH</str>
+      <str name="shards.qt">/blockJoinDocSetFacetRH</str>
     </lst>
     <arr name="last-components">
       <str>blockJoinDocSetFacet</str>

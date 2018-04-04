@@ -142,18 +142,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       if (VERBOSE) {
         System.out.println("  to cache");
       }
-      try {
-        in.deleteFile(name);
-      } catch (IOException ioe) {
-        // This is fine: file may not exist
-      }
       return cache.createOutput(name, context);
     } else {
-      try {
-        cache.deleteFile(name);
-      } catch (IOException ioe) {
-        // This is fine: file may not exist
-      }
       return in.createOutput(name, context);
     }
   }

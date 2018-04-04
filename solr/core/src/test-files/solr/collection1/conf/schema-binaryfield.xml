@@ -27,47 +27,11 @@
 
 <schema name="test" version="1.2">
 
-  <!-- field type definitions... note that the "name" attribute is
-       just a label to be used by field definitions.  The "class"
-       attribute and any other attributes determine the real type and
-       behavior of the fieldType.
-    -->
-
-  <!--
-    Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
-  -->
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
-
-  <!--
-   Numeric field types that index each value at various levels of precision
-   to accelerate range queries when the number of values between the range
-   endpoints is large. See the javadoc for LegacyNumericRangeQuery for internal
-   implementation details.
-
-   Smaller precisionStep values (specified in bits) will lead to more tokens
-   indexed per value, slightly larger index size, and faster range queries.
-   A precisionStep of 0 disables indexing at different precision levels.
-  -->
-  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
-
-
   <fieldType name="binary" class="solr.BinaryField"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
-       seconds part (.999) is optional.
-    -->
-  <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true"/>
-
-
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="data" type="binary" stored="true"/>
 
 

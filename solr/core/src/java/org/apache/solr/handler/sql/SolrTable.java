@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.BooleanEvaluator;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.RecursiveBooleanEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
@@ -51,17 +51,18 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.StreamHandler;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * Table based on a Solr collection
  */
 class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private static final String DEFAULT_QUERY = "*:*";
-  private static final String DEFAULT_VERSION_FIELD = "_version_";
 
   private final String collection;
   private final SolrSchema schema;
@@ -128,7 +129,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         tupleStream = handleSelect(zk, collection, q, fields, orders, limit);
       } else {
         if(buckets.isEmpty()) {
-          tupleStream = handleStats(zk, collection, q, metricPairs);
+          tupleStream = handleStats(zk, collection, q, metricPairs, fields);
         } else {
           if(mapReduce) {
             tupleStream = handleGroupByMapReduce(zk,
@@ -157,6 +158,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(StreamHandler.getClientCache());
+    tupleStream.setStreamContext(streamContext);
 
     final TupleStream finalStream = tupleStream;
 
@@ -272,13 +277,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     String fl = getFields(fields);
 
     if(orders.size() > 0) {
-      params.add(CommonParams.SORT, getSort(orders));
+      params.add(SORT, getSort(orders));
     } else {
       if(limit == null) {
-        params.add(CommonParams.SORT, "_version_ desc");
+        params.add(SORT, "_version_ desc");
         fl = fl+",_version_";
       } else {
-        params.add(CommonParams.SORT, "score desc");
+        params.add(SORT, "score desc");
         if(fl.indexOf("score") == -1) {
           fl = fl + ",score";
         }
@@ -330,22 +335,14 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
   private String getFields(Set<String> fieldSet) {
     StringBuilder buf = new StringBuilder();
-    boolean appendVersion = true;
     for(String field : fieldSet) {
 
       if(buf.length() > 0) {
         buf.append(",");
       }
 
-      if(field.equals("_version_")) {
-        appendVersion = false;
-      }
 
       buf.append(field);
-    }
-
-    if(appendVersion){
-      buf.append(",_version_");
     }
 
     return buf.toString();
@@ -438,6 +435,11 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                              final String limit,
                                              final String havingPredicate) throws IOException {
 
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> entry : fields) {
+      fmap.put(entry.getKey(), entry.getValue());
+    }
+
     int numWorkers = Integer.parseInt(properties.getProperty("numWorkers", "1"));
 
     Bucket[] buckets = buildBuckets(_buckets, fields);
@@ -445,6 +447,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     if(metrics.length == 0) {
       return handleSelectDistinctMapReduce(zk, collection, properties, fields, query, orders, buckets, limit);
+    } else {
+      for(Metric metric : metrics) {
+        Class c = fmap.get(metric.getIdentifier());
+        if(Long.class.equals(c)) {
+          metric.outputLong = true;
+        }
+      }
     }
 
     Set<String> fieldSet = getFieldSet(metrics, fields);
@@ -461,6 +470,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
+    params.set(CommonParams.WT, CommonParams.JAVABIN);
     //Always use the /export handler for Group By Queries because it requires exporting full result sets.
     params.set(CommonParams.QT, "/export");
 
@@ -468,7 +478,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.set("sort", sort);
+    params.set(SORT, sort);
 
     TupleStream tupleStream = null;
 
@@ -487,7 +497,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
         .withFunctionName("not", NotEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
         .withFunctionName("val", RawValueEvaluator.class)
@@ -496,7 +506,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
+      RecursiveBooleanEvaluator booleanOperation = (RecursiveBooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 
@@ -504,7 +514,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
-      ParallelStream parallelStream = new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
+      @SuppressWarnings("resource")
+      final ParallelStream parallelStream = new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
 
 
       parallelStream.setStreamFactory(factory);
@@ -563,6 +574,12 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                          final String lim,
                                          final String havingPredicate) throws IOException {
 
+
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> f : fields) {
+      fmap.put(f.getKey(), f.getValue());
+    }
+
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, query);
 
@@ -571,6 +588,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if(metrics.length == 0) {
       metrics = new Metric[1];
       metrics[0] = new CountMetric();
+    } else {
+      for(Metric metric : metrics) {
+        Class c = fmap.get(metric.getIdentifier());
+        if(Long.class.equals(c)) {
+          metric.outputLong = true;
+        }
+      }
     }
 
     int limit = lim != null ? Integer.parseInt(lim) : 1000;
@@ -610,7 +634,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
         .withFunctionName("not", NotEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("val", RawValueEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
@@ -618,7 +642,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
+      RecursiveBooleanEvaluator booleanOperation = (RecursiveBooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 
@@ -699,6 +723,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
+    params.set(CommonParams.WT, CommonParams.JAVABIN);
     //Always use the /export handler for Distinct Queries because it requires exporting full result sets.
     params.set(CommonParams.QT, "/export");
 
@@ -706,7 +731,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.set("sort", sort);
+    params.set(SORT, sort);
 
     TupleStream tupleStream = null;
 
@@ -716,7 +741,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if(numWorkers > 1) {
       // Do the unique in parallel
       // Maintain the sort of the Tuples coming from the workers.
-      ParallelStream parallelStream = new ParallelStream(zkHost, collection, tupleStream, numWorkers, comp);
+      @SuppressWarnings("resource")
+      final ParallelStream parallelStream = new ParallelStream(zkHost, collection, tupleStream, numWorkers, comp);
 
       StreamFactory factory = new StreamFactory()
           .withFunctionName("search", CloudSolrStream.class)
@@ -773,12 +799,26 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private TupleStream handleStats(String zk,
                                   String collection,
                                   String query,
-                                  List<Pair<String, String>> metricPairs) {
+                                  List<Pair<String, String>> metricPairs,
+                                  List<Map.Entry<String, Class>> fields) {
 
+
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> entry : fields) {
+      fmap.put(entry.getKey(), entry.getValue());
+    }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, query);
     Metric[] metrics = buildMetrics(metricPairs, false).toArray(new Metric[0]);
+
+    for(Metric metric : metrics) {
+      Class c = fmap.get(metric.getIdentifier());
+      if(Long.class.equals(c)) {
+        metric.outputLong = true;
+      }
+    }
+
     return new StatsStream(zk, collection, solrParams, metrics);
   }
 

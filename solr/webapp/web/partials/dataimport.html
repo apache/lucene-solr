@@ -16,7 +16,7 @@ limitations under the License.
 -->
 <div id="dataimport" class="clearfix">
 
-  <div ng-show="!hasHandlers">Sorry, no dataimport-handler defined!</div>
+  <div ng-show="!hasHandlers">The solrconfig.xml file for this index does not have an operational DataImportHandler defined!</div>
   <div id="frame" ng-show="hasHandlers">
 
     <div id="error" ng-show="error"></div>
@@ -50,7 +50,7 @@ limitations under the License.
         </button>
 
       </div>
-    
+
     </div>
 
     <div class="block" id="raw_output" >
@@ -58,7 +58,7 @@ limitations under the License.
       <h2>
         <a class="toggle" ng-click="toggleRawStatus()"><span>Raw Status-Output</span></a>
       </h2>
-        
+
       <div class="message-container" ng-show="showRawStatus">
           <div class="message"></div>
       </div>
@@ -68,7 +68,7 @@ limitations under the License.
         <div id="raw_output_container"><pre class="syntax language-json"><code ng-bind-html="rawStatus | highlight:'json' | unsafe"></code></pre></div>
 
       </div>
-    
+
     </div>
 
     <div class="block" id="config" ng-class="{debug_mode:isDebugMode}">
@@ -78,7 +78,7 @@ limitations under the License.
         <a class="r reload_config" ng-class="{success:reloaded}" ng-click="reload()" title="Reload Configuration">Reload</a>
         <a class="r debug_mode" ng-click="toggleDebug()">Debug-Mode</a>
       </h2>
-        
+
       <div class="message-container" ng-show="showConfiguration">
           <div class="message"></div>
       </div>
@@ -95,13 +95,13 @@ limitations under the License.
           <div class="editable" ng-show="isDebugMode">
 
             <textarea ng-model="config"></textarea>
-          
+
           </div>
 
         </div>
 
       </div>
-    
+
     </div>
 
     <div class="block" id="debug_response" ng-show="form.showDebug">
@@ -109,7 +109,7 @@ limitations under the License.
       <h2>
         <a class="toggle" ng-click="toggleRawDebug()"><span>Raw Debug-Response</span></a>
       </h2>
-        
+
       <div class="message-container" ng-show="showRawDebug">
           <div class="message"></div>
       </div>
@@ -122,9 +122,9 @@ limitations under the License.
             <pre class="syntax language-json"><code ng-bind-html="rawResponse | highlight:'json' | unsafe"></code></pre>
           </span>
       </div>
-    
+
     </div>
-  
+
   </div>
 
   <div id="form" ng-show="hasHandlers">
@@ -203,7 +203,7 @@ limitations under the License.
       <button class="refresh-status" ng-click="refreshStatus()" ng-class="{loader: isStatusLoading, success: statusUpdated}"><span>Refresh Status</span></button>
 
     <p id="auto-refresh-status"><a ng-click="updateAutoRefresh()" ng-class="{on:autorefresh}">Auto-Refresh Status</a></p>
-  
+
   </div>
 
 </div>

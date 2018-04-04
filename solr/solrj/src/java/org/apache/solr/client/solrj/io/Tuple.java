@@ -45,7 +45,13 @@ public class Tuple implements Cloneable, MapWriter {
   public boolean EXCEPTION;
 
   public Map fields = new HashMap();
+  public List<String> fieldNames;
+  public Map<String, String> fieldLabels;
 
+  public Tuple(){
+    // just an empty tuple
+  }
+  
   public Tuple(Map fields) {
     if(fields.containsKey("EOF")) {
       EOF = true;
@@ -84,7 +90,9 @@ public class Tuple implements Cloneable, MapWriter {
     }
 
     if(o instanceof Long) {
-      return (Long)o;
+      return (Long) o;
+    } else if (o instanceof Number) {
+      return ((Number)o).longValue();
     } else {
       //Attempt to parse the long
       return Long.parseLong(o.toString());
@@ -198,12 +206,19 @@ public class Tuple implements Cloneable, MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    fields.forEach((k, v) -> {
-      try {
-        ew.put((String)k,v);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    if(fieldNames == null) {
+      fields.forEach((k, v) -> {
+        try {
+          ew.put((String) k, v);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    } else {
+      for(String fieldName : fieldNames) {
+        String label = fieldLabels.get(fieldName);
+        ew.put(label, fields.get(label));
       }
-    });
+    }
   }
 }

@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,10 +29,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -75,7 +78,7 @@ public class TestCodecs extends LuceneTestCase {
     NUM_TEST_ITER = atLeast(20);
   }
 
-  class FieldData implements Comparable<FieldData> {
+  static class FieldData implements Comparable<FieldData> {
     final FieldInfo fieldInfo;
     final TermData[] terms;
     final boolean omitTF;
@@ -107,7 +110,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class PositionData {
+  static class PositionData {
     int pos;
     BytesRef payload;
 
@@ -117,7 +120,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class TermData implements Comparable<TermData> {
+  static class TermData implements Comparable<TermData> {
     String text2;
     final BytesRef text;
     int[] docs;
@@ -217,7 +220,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     
     this.write(si, fieldInfos, dir, fields);
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random())));
@@ -274,7 +277,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     this.write(si, fieldInfos, dir, fields);
 
     if (VERBOSE) {
@@ -300,7 +303,7 @@ public class TestCodecs extends LuceneTestCase {
     dir.close();
   }
 
-  private class Verify extends Thread {
+  private static class Verify extends Thread {
     final Fields termsDict;
     final FieldData[] fields;
     final SegmentInfo si;
@@ -676,6 +679,10 @@ public class TestCodecs extends LuceneTestCase {
       return new DataPostingsEnum(fieldData.terms[upto]);
     }
 
+    @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 
   private static class DataPostingsEnum extends PostingsEnum {
@@ -752,9 +759,65 @@ public class TestCodecs extends LuceneTestCase {
 
     Arrays.sort(fields);
     FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
+    NormsProducer fakeNorms = new NormsProducer() {
+      
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+      
+      @Override
+      public void close() throws IOException {}
+      
+      @Override
+      public NumericDocValues getNorms(FieldInfo field) throws IOException {
+        return new NumericDocValues() {
+          
+          int doc = -1;
+          
+          @Override
+          public int nextDoc() throws IOException {
+            return advance(doc + 1);
+          }
+          
+          @Override
+          public int docID() {
+            return doc;
+          }
+          
+          @Override
+          public long cost() {
+            return si.maxDoc();
+          }
+          
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= si.maxDoc()) {
+              return doc = NO_MORE_DOCS;
+            } else {
+              return doc = target;
+            }
+          }
+          
+          @Override
+          public boolean advanceExact(int target) throws IOException {
+            doc = target;
+            return true;
+          }
+          
+          @Override
+          public long longValue() throws IOException {
+            return 1;
+          }
+        };
+      }
+      
+      @Override
+      public void checkIntegrity() throws IOException {}
+    };
     boolean success = false;
     try {
-      consumer.write(new DataFields(fields));
+      consumer.write(new DataFields(fields), fakeNorms);
       success = true;
     } finally {
       if (success) {

@@ -16,16 +16,17 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
+public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -102,7 +103,7 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
     args.put(CommonParams.FL, "id");
 
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-            "standard", 0, 200, args);
+            "", 0, 200, args);
 
     assertU(adoc("name", "john smith", "id", "1"));
     assertU(adoc("name", "johathon smith", "id", "2"));
@@ -164,6 +165,15 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
             "//result[@numFound='2']"
     );
 
+    assertQEx("don't parse subqueries",
+        "SyntaxError",
+        sumLRF.makeRequest("_query_:\"{!prefix f=name v=smi}\""), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("don't parse subqueries",
+        "SyntaxError",
+        sumLRF.makeRequest("{!prefix f=name v=smi}"), SolrException.ErrorCode.BAD_REQUEST
+    );
+
   }
 
   @Test
@@ -181,7 +191,7 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
 
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-            "standard", 0, 200, args);
+            "", 0, 200, args);
 
     assertU(adoc("name", "john smith smith john", "id", "1"));
     assertU(adoc("name", "johathon smith smith johathon", "id", "2"));
@@ -198,7 +208,7 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
     );
 
 
-    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    sumLRF = h.getRequestFactory("", 0, 200, args);
     assertQ("PhraseHighlighter=true Test",
             sumLRF.makeRequest("name:\"(john johathon) smith\""),
             "//lst[@name='highlighting']/lst[@name='1']",
@@ -209,7 +219,7 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
 
     args.put(HighlightParams.USE_PHRASE_HIGHLIGHTER, Boolean.FALSE.toString());
-    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    sumLRF = h.getRequestFactory("", 0, 200, args);
     assertQ("PhraseHighlighter=false Test",
             sumLRF.makeRequest("name:\"(john johathon) smith\""),
             "//lst[@name='highlighting']/lst[@name='1']",

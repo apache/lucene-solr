@@ -104,10 +104,9 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldM
                                      srcField.getName(), srcVal.getClass().getSimpleName(), srcVal, 
                                      destVal.getClass().getSimpleName(), destVal));
         }
-        result.addValue(destVal, 1.0F);
+        result.addValue(destVal);
       }
     }
-    result.setBoost(srcField.getBoost());
     
     if (null != messages && log.isDebugEnabled()) {
       for (String message : messages) {

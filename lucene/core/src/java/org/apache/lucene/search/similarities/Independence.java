@@ -38,7 +38,7 @@ public abstract class Independence {
    * @param freq actual term frequency
    * @param expected expected term frequency
    */
-  public abstract float score(float freq, float expected);
+  public abstract double score(double freq, double expected);
   
   // subclasses must provide a name
   @Override

@@ -31,10 +31,11 @@ import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.JDBCStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
@@ -58,10 +59,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   private boolean isCloud = false;
 
   public void inform(SolrCore core) {
-    CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
+    CoreContainer coreContainer = core.getCoreContainer();
 
     if(coreContainer.isZooKeeperAware()) {
-      defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
+      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
     }
@@ -74,6 +75,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+    params = adjustParams(params);
+    req.setParams(params);
+
     String sql = params.get("stmt");
     // Set defaults for parameters
     params.set("numWorkers", params.getInt("numWorkers", 1));
@@ -136,9 +140,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   /*
    * Only necessary for SolrJ JDBC driver since metadata has to be passed back
    */
-  private class SqlHandlerStream extends JDBCStream {
+  private static class SqlHandlerStream extends CalciteJDBCStream {
     private final boolean includeMetadata;
     private boolean firstTuple = true;
+    List<String> metadataFields = new ArrayList<>();
+    Map<String, String> metadataAliases = new HashMap<>();
 
     SqlHandlerStream(String connectionUrl, String sqlQuery, StreamComparator definedSort,
                      Properties connectionProperties, String driverClassName, boolean includeMetadata)
@@ -151,7 +157,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     @Override
     public Tuple read() throws IOException {
       // Return a metadata tuple as the first tuple and then pass through to the JDBCStream.
-      if(includeMetadata && firstTuple) {
+      if(firstTuple) {
         try {
           Map<String, Object> fields = new HashMap<>();
 
@@ -159,8 +165,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
           ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
-          List<String> metadataFields = new ArrayList<>();
-          Map<String, String> metadataAliases = new HashMap<>();
           for(int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             String columnLabel = resultSetMetaData.getColumnLabel(i);
@@ -168,16 +172,30 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
             metadataAliases.put(columnName, columnLabel);
           }
 
-          fields.put("isMetadata", true);
-          fields.put("fields", metadataFields);
-          fields.put("aliases", metadataAliases);
-          return new Tuple(fields);
+          if(includeMetadata) {
+            fields.put("isMetadata", true);
+            fields.put("fields", metadataFields);
+            fields.put("aliases", metadataAliases);
+            return new Tuple(fields);
+          }
         } catch (SQLException e) {
           throw new IOException(e);
         }
-      } else {
-        return super.read();
       }
+
+      Tuple tuple = super.read();
+      if(!tuple.EOF) {
+        tuple.fieldNames = metadataFields;
+        tuple.fieldLabels = metadataAliases;
+      }
+      return tuple;
     }
+  }
+
+  private ModifiableSolrParams adjustParams(SolrParams params) {
+    ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
+    adjustedParams.add(params);
+    adjustedParams.add(CommonParams.OMIT_HEADER, "true");
+    return adjustedParams;
   }
 }

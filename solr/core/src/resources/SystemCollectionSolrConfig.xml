@@ -10,7 +10,7 @@
       <maxDocs>1</maxDocs>
       <openSearcher>true</openSearcher>
     </autoCommit></updateHandler>
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+  <requestHandler name="/select" class="solr.SearchHandler" default="true" />
   <requestHandler name="/blob" class="solr.BlobHandler">
     <lst name="invariants">
       <str name="maxSize">${blob.max.size.mb:5}</str>

@@ -45,9 +45,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
-    addDoc("one", iw, 1f);
-    addDoc("two", iw, 20f);
-    addDoc("three four", iw, 300f);
+    addDoc("one", iw);
+    addDoc("two", iw);
+    addDoc("three four", iw);
     IndexReader ir = DirectoryReader.open(iw);
 
     IndexSearcher is = newSearcher(ir);
@@ -92,10 +92,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertTrue(q1.equals(q2));
   }
   
-  private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
+  private void addDoc(String text, IndexWriter iw) throws IOException {
     Document doc = new Document();
     Field f = newTextField("key", text, Field.Store.YES);
-    f.setBoost(boost);
     doc.add(f);
     iw.addDocument(doc);
   }

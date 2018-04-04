@@ -252,6 +252,15 @@ public class XMLResponseParser extends ResponseParser
           case ARR:    nl.add( name, readArray(     parser ) ); depth--; continue;
           case RESULT: nl.add( name, readDocuments( parser ) ); depth--; continue;
           case DOC:    nl.add( name, readDocument(  parser ) ); depth--; continue;
+          case BOOL:
+          case DATE:
+          case DOUBLE:
+          case FLOAT:
+          case INT:
+          case LONG:
+          case NULL:
+          case STR:
+            break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
         }
@@ -316,6 +325,15 @@ public class XMLResponseParser extends ResponseParser
           case ARR:    vals.add( readArray( parser ) ); depth--; continue;
           case RESULT: vals.add( readDocuments( parser ) ); depth--; continue;
           case DOC:    vals.add( readDocument( parser ) ); depth--; continue;
+          case BOOL:
+          case DATE:
+          case DOUBLE:
+          case FLOAT:
+          case INT:
+          case LONG:
+          case NULL:
+          case STR:
+            break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
         }
@@ -404,21 +422,20 @@ public class XMLResponseParser extends ResponseParser
           throw new RuntimeException( "this must be known type! not: "+parser.getLocalName() );
         }
         
+        if ( type == KnownType.DOC) {
+          doc.addChildDocument(readDocument(parser));
+          depth--; // (nested) readDocument clears out the (nested) 'endElement'
+          continue; // may be more child docs, or other fields
+        }
+
+        // other then nested documents, all other possible nested elements require a name...
+        
         name = null;
         int cnt = parser.getAttributeCount();
         for( int i=0; i<cnt; i++ ) {
           if( "name".equals( parser.getAttributeLocalName( i ) ) ) {
             name = parser.getAttributeValue( i );
             break;
-          }
-        }
-
-        //Nested documents
-        while( type == KnownType.DOC) {
-          doc.addChildDocument(readDocument(parser));
-          int event = parser.next();
-          if (event == XMLStreamConstants.END_ELEMENT) { //Doc ends
-            return doc;
           }
         }
         

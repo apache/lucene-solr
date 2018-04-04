@@ -1,0 +1,174 @@
+= JSON Request API
+:page-children: json-query-dsl
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The JSON Request API allows a JSON body to be passed for the entire search request.
+
+The <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> is part of the JSON Request API, and allows specification of faceted analytics in JSON.
+
+Here's an example of a search request using query parameters only:
+[source,bash]
+curl "http://localhost:8983/solr/techproducts/query?q=memory&fq=inStock:true"
+
+The same request when passed as JSON in the body:
+[source,bash]
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query" : "memory",
+  "filter" : "inStock:true"
+}'
+
+== Passing JSON via Request Parameter
+It may sometimes be more convenient to pass the JSON body as a request parameter rather than in the actual body of the HTTP request. Solr treats a `json` parameter the same as a JSON body.
+
+[source,bash]
+curl http://localhost:8983/solr/techproducts/query -d 'json={"query":"memory"}'
+
+== Smart Merging of Multiple JSON Parameters
+Multiple `json` parameters in a single request are merged before being interpreted.
+
+* Single-valued elements are overwritten by the last value.
+
+* Multi-valued elements like fields and `filter` are appended.
+
+* Parameters of the form `json.<path>=<json_value>` are merged in the appropriate place in the hierarchy. For example a `json.facet` parameter is the same as `facet` within the JSON body.
+
+* A JSON body, or straight `json` parameters are always parsed first, meaning that other request parameters come after, and overwrite single valued elements.
+
+Smart merging gives the best of both worlds…the structure of JSON with the ability to selectively separate out / decompose parts of the request!
+
+=== Simple Example
+[source,bash]
+curl 'http://localhost:8983/solr/techproducts/query?json.limit=5&json.filter="cat:electronics"' -d '
+{
+  query: "memory",
+  limit: 10,
+  filter: "inStock:true"
+}'
+
+Is equivalent to:
+
+[source,bash]
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  query: "memory",
+  limit: 5,     // this single-valued parameter was overwritten.
+  filter: ["inStock:true","cat:electronics"]    // this multi-valued parameter was appended to.
+}'
+
+=== Facet Example
+In fact, you don’t even need to start with a JSON body for smart merging to be very useful. Consider the following request composed entirely of request params:
+
+[source,bash]
+curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
+  json.facet.avg_price="avg(price)"&
+  json.facet.top_cats={type:terms,field:"cat",limit:5}'
+
+That is equivalent to having the following JSON body or `json` parameter:
+
+[source,json]
+{
+  "facet": {
+    "avg_price": "avg(price)",
+    "top_cats": {
+      "type": "terms",
+      "field": "cat",
+      "limit": 5
+    }
+  }
+}
+
+See the <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> for more on faceting and analytics commands in specified in JSON.
+
+
+=== Debugging
+
+If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=true`), and it will come back under the "json" key along with the other debugging information.
+
+== Passing Parameters via JSON
+We can also pass normal query request parameters in the JSON body within the params block:
+
+[source,bash]
+curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
+{
+  params: {
+    q: "memory",
+    rows: 1
+  }
+}'
+
+Which is equivalent to
+
+[source,bash]
+curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
+
+== Parameters Mapping
+Right now only some standard query parameters have JSON equivalents. Unmapped parameters can be passed through request parameters or `params` block as shown above.
+
+.Standard query parameters to JSON field
+|===
+|Query parameters |JSON field equivalent
+
+|`q`
+|`query`
+
+|`fq`
+|`filter`
+
+|`offset`
+|`start`
+
+|`limit`
+|`rows`
+
+|`sort`
+|`sort`
+
+|`json.facet`
+|`facet`
+
+|`json.<param_name>`
+|`<param_name>`
+|===
+
+== Error Detection
+
+Because we didn’t pollute the root body of the JSON request with the normal Solr request parameters (they are all contained in the params block), we now have the ability to validate requests and return an error for unknown JSON keys.
+
+[source,bash]
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  query : "memory",
+  fulter : "inStock:true"  // oops, we misspelled "filter"
+}'
+
+And we get an error back containing the error string:
+
+[source,text]
+"Unknown top-level key in JSON request : fulter"
+
+== Parameter Substitution / Macro Expansion
+Of course request templating via parameter substitution works fully with JSON request bodies or parameters as well.
+For example:
+
+[source,bash]
+curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory&HOWMANY=10" -d '
+{
+  query:"${FIELD}:${TERM}",
+  limit:${HOWMANY}
+}'

@@ -60,8 +60,8 @@
   
 
   <fieldType name="string" class="solr.StrField" multiValued="false" indexed="false" stored="false" docValues="false" />
-  <fieldType name="long" class="solr.${solr.tests.longClassName}" multiValued="false" indexed="false" stored="false" docValues="false"/>
-  <fieldType name="float" class="solr.${solr.tests.floatClassName}" multiValued="false" indexed="false" stored="false" docValues="false"/>
-  <fieldType name="int" class="solr.${solr.tests.intClassName}" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
 
 </schema>

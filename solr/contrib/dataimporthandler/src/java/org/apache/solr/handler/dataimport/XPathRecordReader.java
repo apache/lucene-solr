@@ -145,7 +145,7 @@ public class XPathRecordReader {
     if (!xpath.startsWith("/"))
       throw new RuntimeException("xpath must start with '/' : " + xpath);
     List<String> paths = splitEscapeQuote(xpath);
-    // deal with how split behaves when seperator starts a string!
+    // deal with how split behaves when separator starts a string!
     if ("".equals(paths.get(0).trim()))
       paths.remove(0);
     rootNode.build(paths, name, multiValued, isRecord, flags);
@@ -600,19 +600,19 @@ public class XPathRecordReader {
 
 
   /**
-   * The Xpath is split into segments using the '/' as a seperator. However
+   * The Xpath is split into segments using the '/' as a separator. However
    * this method deals with special cases where there is a slash '/' character
    * inside the attribute value e.g. x/@html='text/html'. We split by '/' but 
    * then reassemble things were the '/' appears within a quoted sub-string.
    *
-   * We have already enforced that the string must begin with a seperator. This
+   * We have already enforced that the string must begin with a separator. This
    * method depends heavily on how split behaves if the string starts with the
-   * seperator or if a sequence of multiple seperator's appear. 
+   * separator or if a sequence of multiple separator's appear. 
    */
   private static List<String> splitEscapeQuote(String str) {
     List<String> result = new LinkedList<>();
     String[] ss = str.split("/");
-    for (int i=0; i<ss.length; i++) { // i=1: skip seperator at start of string
+    for (int i=0; i<ss.length; i++) { // i=1: skip separator at start of string
       StringBuilder sb = new StringBuilder();
       int quoteCount = 0;
       while (true) {

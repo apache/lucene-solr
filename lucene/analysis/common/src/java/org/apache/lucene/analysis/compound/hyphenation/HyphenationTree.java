@@ -89,7 +89,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
     StringBuilder buf = new StringBuilder();
     byte v = vspace.get(k++);
     while (v != 0) {
-      char c = (char) ((v >>> 4) - 1 + '0');
+      char c = (char) (((v & 0xf0 )>>> 4) - 1 + '0');
       buf.append(c);
       c = (char) (v & 0x0f);
       if (c == 0) {
@@ -151,7 +151,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
     StringBuilder buf = new StringBuilder();
     byte v = vspace.get(k++);
     while (v != 0) {
-      char c = (char) ((v >>> 4) - 1);
+      char c = (char) (((v & 0xf0 )>>> 4) - 1);
       buf.append(c);
       c = (char) (v & 0x0f);
       if (c == 0) {

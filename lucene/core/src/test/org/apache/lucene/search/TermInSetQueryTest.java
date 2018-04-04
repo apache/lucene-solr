@@ -29,7 +29,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
@@ -158,7 +157,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
   public void testToString() {
     TermInSetQuery termsQuery = new TermInSetQuery("field1",
         new BytesRef("a"), new BytesRef("b"), new BytesRef("c"));
-    assertEquals("field1:a field1:b field1:c", termsQuery.toString());
+    assertEquals("field1:(a b c)", termsQuery.toString());
   }
 
   public void testDedup() {
@@ -219,30 +218,40 @@ public class TermInSetQueryTest extends LuceneTestCase {
       }
 
       @Override
-      public Fields fields() throws IOException {
-        return new FilterFields(in.fields()) {
+      public Terms terms(String field) throws IOException {
+        Terms terms = super.terms(field);
+        if (terms == null) {
+          return null;
+        }
+        return new FilterTerms(terms) {
           @Override
-          public Terms terms(String field) throws IOException {
-            final Terms in = this.in.terms(field);
-            if (in == null) {
-              return null;
-            }
-            return new FilterTerms(in) {
-              @Override
-              public TermsEnum iterator() throws IOException {
-                counter.incrementAndGet();
-                return super.iterator();
-              }
-            };
+          public TermsEnum iterator() throws IOException {
+            counter.incrementAndGet();
+            return super.iterator();
           }
         };
       }
-      
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null;
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
+
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new TermsCountingDirectoryReaderWrapper(in, counter);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
 
   }
@@ -276,7 +285,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
   
   public void testBinaryToString() {
     TermInSetQuery query = new TermInSetQuery("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe }));
-    assertEquals("field:[ff fe]", query.toString());
+    assertEquals("field:([ff fe])", query.toString());
   }
 
   public void testIsConsideredCostlyByQueryCache() throws IOException {

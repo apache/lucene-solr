@@ -18,11 +18,10 @@ package org.apache.solr.search;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URL;
 import java.util.Map;
 
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.search.SolrCache.State;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -106,10 +105,6 @@ public abstract class SolrCacheBase {
     return Category.CACHE;
   }
 
-  public URL[] getDocs() {
-    return null;
-  }
-  
   public void init(Map<String, String> args, CacheRegenerator regenerator) {
     this.regenerator = regenerator;
     state = State.CREATED;

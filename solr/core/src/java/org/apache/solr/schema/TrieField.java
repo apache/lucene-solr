@@ -30,14 +30,14 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyDoubleField;
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.legacy.LegacyFloatField;
-import org.apache.lucene.legacy.LegacyIntField;
-import org.apache.lucene.legacy.LegacyLongField;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
-import org.apache.lucene.legacy.LegacyNumericType;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyDoubleField;
+import org.apache.solr.legacy.LegacyFieldType;
+import org.apache.solr.legacy.LegacyFloatField;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyLongField;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericType;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
@@ -63,9 +63,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides field types to support for Lucene's {@link
- * org.apache.lucene.legacy.LegacyIntField}, {@link org.apache.lucene.legacy.LegacyLongField}, {@link org.apache.lucene.legacy.LegacyFloatField} and
- * {@link org.apache.lucene.legacy.LegacyDoubleField}.
- * See {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} for more details.
+ * org.apache.solr.legacy.LegacyIntField}, {@link org.apache.solr.legacy.LegacyLongField}, {@link org.apache.solr.legacy.LegacyFloatField} and
+ * {@link org.apache.solr.legacy.LegacyDoubleField}.
+ * See {@link org.apache.solr.legacy.LegacyNumericRangeQuery} for more details.
  * It supports integer, float, long, double and date types.
  * <p>
  * For each number being added to this field, multiple terms are generated as per the algorithm described in the above
@@ -78,9 +78,11 @@ import org.slf4j.LoggerFactory;
  * generated, range search will be no faster than any other number field, but sorting will still be possible.
  *
  *
- * @see org.apache.lucene.legacy.LegacyNumericRangeQuery
+ * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
@@ -158,66 +160,25 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
+  public SortField getSortField(SchemaField field, boolean reverse) {
+    // NOTE: can't use getNumericSort because our multivalued case is special: we use SortedSet
 
-    Object missingValue = null;
-    boolean sortMissingLast  = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    SortField sf;
-
-    switch (type) {
-      case INTEGER:
-        if( sortMissingLast ) {
-          missingValue = top ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-        }
-        else if( sortMissingFirst ) {
-          missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-        }
-        sf = new SortField( field.getName(), SortField.Type.INT, top);
-        sf.setMissingValue(missingValue);
-        return sf;
-      
-      case FLOAT:
-        if( sortMissingLast ) {
-          missingValue = top ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
-        }
-        else if( sortMissingFirst ) {
-          missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
-        }
-        sf = new SortField( field.getName(), SortField.Type.FLOAT, top);
-        sf.setMissingValue(missingValue);
-        return sf;
-      
-      case DATE: // fallthrough
-      case LONG:
-        if( sortMissingLast ) {
-          missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
-        }
-        else if( sortMissingFirst ) {
-          missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
-        }
-        sf = new SortField( field.getName(), SortField.Type.LONG, top);
-        sf.setMissingValue(missingValue);
-        return sf;
-        
-      case DOUBLE:
-        if( sortMissingLast ) {
-          missingValue = top ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-        }
-        else if( sortMissingFirst ) {
-          missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
-        }
-        sf = new SortField( field.getName(), SortField.Type.DOUBLE, top);
-        sf.setMissingValue(missingValue);
-        return sf;
-        
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
+    if (field.multiValued()) {
+      MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
+      if (null != selector) {
+        return getSortedSetSortField(field, selector.getSortedSetSelectorType(),
+                                     // yes: we really want Strings here, regardless of NumberType
+                                     reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
+      }
     }
+    
+    // else...
+    // either single valued, or don't support implicit multi selector
+    // (in which case let getSortField() give the error)
+    NumberType type = getNumberType();
+    return getSortField(field, type.sortType, reverse, type.sortMissingLow, type.sortMissingHigh);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
@@ -337,23 +298,6 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public LegacyNumericType getNumericType() {
-    switch (type) {
-      case INTEGER:
-        return LegacyNumericType.INT;
-      case LONG:
-      case DATE:
-        return LegacyNumericType.LONG;
-      case FLOAT:
-        return LegacyNumericType.FLOAT;
-      case DOUBLE:
-        return LegacyNumericType.DOUBLE;
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
@@ -361,7 +305,7 @@ public class TrieField extends NumericFieldType {
     }
     int ps = precisionStep;
     Query query;
-
+    
     if (field.hasDocValues() && !field.indexed()) {
       return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }
@@ -369,26 +313,26 @@ public class TrieField extends NumericFieldType {
     switch (type) {
       case INTEGER:
         query = LegacyNumericRangeQuery.newIntRange(field.getName(), ps,
-            min == null ? null : Integer.parseInt(min),
-            max == null ? null : Integer.parseInt(max),
+            min == null ? null : parseIntFromUser(field.getName(), min),
+            max == null ? null : parseIntFromUser(field.getName(), max),
             minInclusive, maxInclusive);
         break;
       case FLOAT:
         query = LegacyNumericRangeQuery.newFloatRange(field.getName(), ps,
-            min == null ? null : Float.parseFloat(min),
-            max == null ? null : Float.parseFloat(max),
+            min == null ? null : parseFloatFromUser(field.getName(), min),
+            max == null ? null : parseFloatFromUser(field.getName(), max),
             minInclusive, maxInclusive);
         break;
       case LONG:
         query = LegacyNumericRangeQuery.newLongRange(field.getName(), ps,
-            min == null ? null : Long.parseLong(min),
-            max == null ? null : Long.parseLong(max),
+            min == null ? null : parseLongFromUser(field.getName(), min),
+            max == null ? null : parseLongFromUser(field.getName(), max),
             minInclusive, maxInclusive);
         break;
       case DOUBLE:
         query = LegacyNumericRangeQuery.newDoubleRange(field.getName(), ps,
-            min == null ? null : Double.parseDouble(min),
-            max == null ? null : Double.parseDouble(max),
+            min == null ? null : parseDoubleFromUser(field.getName(), min),
+            max == null ? null : parseDoubleFromUser(field.getName(), max),
             minInclusive, maxInclusive);
         break;
       case DATE:
@@ -400,7 +344,6 @@ public class TrieField extends NumericFieldType {
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
-
     return query;
   }
 
@@ -430,29 +373,24 @@ public class TrieField extends NumericFieldType {
   @Override
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     String s = val.toString();
-    try {
-      switch (type) {
-        case INTEGER:
-          LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(s), 0, result);
-          break;
-        case FLOAT:
-          LegacyNumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
-          break;
-        case LONG:
-          LegacyNumericUtils.longToPrefixCoded(Long.parseLong(s), 0, result);
-          break;
-        case DOUBLE:
-          LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
-          break;
-        case DATE:
-          LegacyNumericUtils.longToPrefixCoded(DateMathParser.parseMath(null, s).getTime(), 0, result);
-          break;
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
-      }
-    } catch (NumberFormatException nfe) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "Invalid Number: " + val);
+    switch (type) {
+      case INTEGER:
+        LegacyNumericUtils.intToPrefixCoded(parseIntFromUser(null, s), 0, result);
+        break;
+      case FLOAT:
+        LegacyNumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(parseFloatFromUser(null, s)), 0, result);
+        break;
+      case LONG:
+        LegacyNumericUtils.longToPrefixCoded(parseLongFromUser(null, s), 0, result);
+        break;
+      case DOUBLE:
+        LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(parseDoubleFromUser(null, s)), 0, result);
+        break;
+      case DATE:
+        LegacyNumericUtils.longToPrefixCoded(DateMathParser.parseMath(null, s).getTime(), 0, result);
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
   }
 
@@ -572,7 +510,7 @@ public class TrieField extends NumericFieldType {
   }
   
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
     boolean docValues = field.hasDocValues();
@@ -647,15 +585,14 @@ public class TrieField extends NumericFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
 
-    f.setBoost(boost);
     return f;
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (sf.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      final IndexableField field = createField(sf, value, boost);
+      final IndexableField field = createField(sf, value);
       fields.add(field);
       
       if (sf.multiValued()) {
@@ -677,7 +614,7 @@ public class TrieField extends NumericFieldType {
       
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value, boost));
+      return Collections.singletonList(createField(sf, value));
     }
   }
 
@@ -708,11 +645,9 @@ public class TrieField extends NumericFieldType {
     return null;
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-  }
 }
 
+@Deprecated
 class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field) {

@@ -32,25 +32,26 @@ public class TestVersion extends LuceneTestCase {
         assertTrue("LATEST must be always onOrAfter("+v+")", Version.LATEST.onOrAfter(v));
       }
     }
-    assertTrue(Version.LUCENE_7_0_0.onOrAfter(Version.LUCENE_6_0_0));;
+    assertTrue(Version.LUCENE_8_0_0.onOrAfter(Version.LUCENE_7_0_0));;
   }
 
   public void testToString() {
-    assertEquals("6.0.0", Version.LUCENE_6_0_0.toString());
     assertEquals("7.0.0", Version.LUCENE_7_0_0.toString());
+    assertEquals("8.0.0", Version.LUCENE_8_0_0.toString());
   }
 
   public void testParseLeniently() throws Exception {
-    assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("6.0"));
-    assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("6.0.0"));
-    assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_60"));
-    assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_6_0"));
-    assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_6_0_0"));
     assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0"));
     assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0.0"));
     assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_70"));
     assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0"));
     assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0_0"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("8.0"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("8.0.0"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("LUCENE_80"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("LUCENE_8_0"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("LUCENE_8_0_0"));
+
     assertEquals(Version.LATEST, Version.parseLeniently("LATEST"));
     assertEquals(Version.LATEST, Version.parseLeniently("latest"));
     assertEquals(Version.LATEST, Version.parseLeniently("LUCENE_CURRENT"));
@@ -74,9 +75,9 @@ public class TestVersion extends LuceneTestCase {
     assertTrue(expected.getMessage().contains("LUCENE61"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parseLeniently("LUCENE_6.0.0");
+      Version.parseLeniently("LUCENE_7.0.0");
     });
-    assertTrue(expected.getMessage().contains("LUCENE_6.0.0"));
+    assertTrue(expected.getMessage().contains("LUCENE_7.0.0"));
   }
 
   public void testParseLenientlyOnAllConstants() throws Exception {
@@ -94,8 +95,8 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testParse() throws Exception {
-    assertEquals(Version.LUCENE_6_0_0, Version.parse("6.0.0"));
     assertEquals(Version.LUCENE_7_0_0, Version.parse("7.0.0"));
+    assertEquals(Version.LUCENE_8_0_0, Version.parse("8.0.0"));
     
     // Version does not pass judgement on the major version:
     assertEquals(1, Version.parse("1.0").major);
@@ -103,69 +104,69 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testForwardsCompatibility() throws Exception {
-    assertTrue(Version.parse("6.10.20").onOrAfter(Version.LUCENE_6_0_0));
+    assertTrue(Version.parse("7.10.20").onOrAfter(Version.LUCENE_7_0_0));
   }
 
   public void testParseExceptions() {
     ParseException expected = expectThrows(ParseException.class, () -> {
-      Version.parse("LUCENE_6_0_0");
+      Version.parse("LUCENE_7_0_0");
     });
-    assertTrue(expected.getMessage().contains("LUCENE_6_0_0"));
+    assertTrue(expected.getMessage().contains("LUCENE_7_0_0"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.256");
+      Version.parse("7.256");
     });
-    assertTrue(expected.getMessage().contains("6.256"));
+    assertTrue(expected.getMessage().contains("7.256"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.-1");
+      Version.parse("7.-1");
     });
-    assertTrue(expected.getMessage().contains("6.-1"));
+    assertTrue(expected.getMessage().contains("7.-1"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.256");
+      Version.parse("7.1.256");
     });
-    assertTrue(expected.getMessage().contains("6.1.256"));
+    assertTrue(expected.getMessage().contains("7.1.256"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.-1");
+      Version.parse("7.1.-1");
     });
-    assertTrue(expected.getMessage().contains("6.1.-1"));
+    assertTrue(expected.getMessage().contains("7.1.-1"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.1.3");
+      Version.parse("7.1.1.3");
     });
-    assertTrue(expected.getMessage().contains("6.1.1.3"));
+    assertTrue(expected.getMessage().contains("7.1.1.3"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.1.-1");
+      Version.parse("7.1.1.-1");
     });
-    assertTrue(expected.getMessage().contains("6.1.1.-1"));
+    assertTrue(expected.getMessage().contains("7.1.1.-1"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.1.1");
+      Version.parse("7.1.1.1");
     });
-    assertTrue(expected.getMessage().contains("6.1.1.1"));
+    assertTrue(expected.getMessage().contains("7.1.1.1"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.1.1.2");
+      Version.parse("7.1.1.2");
     });
-    assertTrue(expected.getMessage().contains("6.1.1.2"));
+    assertTrue(expected.getMessage().contains("7.1.1.2"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.0.0.0");
+      Version.parse("7.0.0.0");
     });
-    assertTrue(expected.getMessage().contains("6.0.0.0"));
+    assertTrue(expected.getMessage().contains("7.0.0.0"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6.0.0.1.42");
+      Version.parse("7.0.0.1.42");
     });
-    assertTrue(expected.getMessage().contains("6.0.0.1.42"));
+    assertTrue(expected.getMessage().contains("7.0.0.1.42"));
 
     expected = expectThrows(ParseException.class, () -> {
-      Version.parse("6..0.1");
+      Version.parse("7..0.1");
     });
-    assertTrue(expected.getMessage().contains("6..0.1"));
+    assertTrue(expected.getMessage().contains("7..0.1"));
   }
   
   public void testDeprecations() throws Exception {

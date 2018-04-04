@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

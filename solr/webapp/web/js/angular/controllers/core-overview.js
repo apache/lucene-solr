@@ -30,18 +30,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
     );
   };
 
-  $scope.optimizeIndex = function(core) {
-    Update.optimize({core: $routeParams.core},
-      function(response) {
-        $scope.refresh();
-        delete $scope.indexMessage;
-      },
-      function(error) {
-        $scope.statisticsDisabled = true;
-        $scope.indexMessage = "Optimize broken.";
-      });
-  };
-
   $scope.refreshReplication = function() {
     Replication.details({core: $routeParams.core},
       function(data) {
@@ -52,41 +40,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
       function(error) {
         $scope.replicationMessage = "Replication is not configured";
       });
-  /*
-      /replication?command=details&wt=json
-
-              if( is_slave )
-              {
-
-                // warnings if slave version|gen doesn't match what's replicable
-                if( data.indexVersion !== master_data.master.replicableVersion )
-                {
-                  $( '.version', details_element )
-                    .addClass( 'diff' );
-                }
-                else
-                {
-                  $( '.version', details_element )
-                    .removeClass( 'diff' );
-                }
-
-                if( data.generation !== master_data.master.replicableGeneration )
-                {
-                  $( '.generation', details_element )
-                    .addClass( 'diff' );
-                }
-                else
-                {
-                  $( '.generation', details_element )
-                    .removeClass( 'diff' );
-                }
-              }
-            },
-
-*/
-  };
-
-  $scope.refreshAdminExtra = function() {
   };
 
   $scope.refreshSystem = function() {
@@ -131,7 +84,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.refresh = function() {
     $scope.refreshIndex();
     $scope.refreshReplication();
-    $scope.refreshAdminExtra();
     $scope.refreshSystem();
     $scope.refreshPing();
   };

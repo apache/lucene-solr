@@ -33,9 +33,9 @@ public class TestCachingCollector extends LuceneTestCase {
     
     @Override
     public float score() throws IOException { return 0; }
-    
+
     @Override
-    public int freq() throws IOException { return 0; }
+    public float getMaxScore(int upTo) throws IOException { return 0; }
 
     @Override
     public int docID() { return 0; }
@@ -52,8 +52,8 @@ public class TestCachingCollector extends LuceneTestCase {
     public void collect(int doc) throws IOException {}
     
     @Override
-    public boolean needsScores() {
-      return false;
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
 
   }
@@ -80,8 +80,8 @@ public class TestCachingCollector extends LuceneTestCase {
         }
         
         @Override
-        public boolean needsScores() {
-          return false;
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
         }
       });
     }

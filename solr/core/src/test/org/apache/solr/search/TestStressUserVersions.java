@@ -203,7 +203,7 @@ public class TestStressUserVersions extends TestRTGBase {
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);
 
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), vfield, Long.toString(version)), null);
+                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), vfield, Long.toString(version)), null);
 
                 // only update model if the version is newer
                 synchronized (model) {
@@ -282,7 +282,7 @@ public class TestStressUserVersions extends TestRTGBase {
                 long foundVer = (Long)(((Map)doclist.get(0)).get(vfield));
 
                 if (isLive) {
-                  long foundVal = (Long)(((Map)doclist.get(0)).get(field));
+                  long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
                   if (foundVer < Math.abs(info.version)
                       || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
                     log.error("ERROR, id=" + id + " found=" + response + " model" + info);
@@ -290,7 +290,7 @@ public class TestStressUserVersions extends TestRTGBase {
                   }
                 } else {
                   // if the doc is deleted (via tombstone), it shouldn't have a value on it.
-                  assertNull( ((Map)doclist.get(0)).get(field) );
+                  assertNull( ((Map)doclist.get(0)).get(FIELD) );
 
                   if (foundVer < Math.abs(info.version)) {
                     log.error("ERROR, id=" + id + " found=" + response + " model" + info);

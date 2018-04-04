@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface GeoDistanceShape extends GeoMembershipShape, GeoDistance {
+public interface GeoDistanceShape extends GeoAreaShape, GeoDistance {
 
   /**
    * Compute a bound based on a provided distance measure.

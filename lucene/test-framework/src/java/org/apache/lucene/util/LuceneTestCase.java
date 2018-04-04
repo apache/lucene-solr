@@ -74,7 +74,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.mockfile.FilterPath;
@@ -86,7 +85,6 @@ import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
-import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -284,19 +282,20 @@ public abstract class LuceneTestCase extends Assert {
   public @interface Slow {}
 
   /**
-   * Annotation for tests that fail frequently and should
-   * be moved to a <a href="https://builds.apache.org/job/Lucene-BadApples-trunk-java7/">"vault" plan in Jenkins</a>.
+   * Annotation for tests that fail frequently and are not executed in Jenkins builds
+   * to not spam mailing lists with false reports.
    *
-   * Tests annotated with this will be turned off by default. If you want to enable
+   * Tests are turned on for developers by default. If you want to disable
    * them, set:
    * <pre>
-   * -Dtests.badapples=true
+   * -Dtests.badapples=false
    * </pre>
+   * (or do this through {@code ~./lucene.build.properties}).
    */
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = SYSPROP_BADAPPLES)
+  @TestGroup(enabled = true, sysProperty = SYSPROP_BADAPPLES)
   public @interface BadApple {
     /** Point to JIRA entry. */
     public String bugUrl();
@@ -429,16 +428,22 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", DEFAULT_LINE_DOCS_FILE);
 
   /** Whether or not {@link Nightly} tests should run. */
-  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, false);
+  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, Nightly.class.getAnnotation(TestGroup.class).enabled());
 
   /** Whether or not {@link Weekly} tests should run. */
-  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, false);
+  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, Weekly.class.getAnnotation(TestGroup.class).enabled());
   
+  /** Whether or not {@link Monster} tests should run. */
+  public static final boolean TEST_MONSTER = systemPropertyAsBoolean(SYSPROP_MONSTER, Monster.class.getAnnotation(TestGroup.class).enabled());
+
   /** Whether or not {@link AwaitsFix} tests should run. */
-  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, false);
+  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, AwaitsFix.class.getAnnotation(TestGroup.class).enabled());
+
+  /** Whether or not {@link BadApple} tests should run. */
+  public static final boolean TEST_BADAPPLES = systemPropertyAsBoolean(SYSPROP_BADAPPLES, BadApple.class.getAnnotation(TestGroup.class).enabled());
 
   /** Whether or not {@link Slow} tests should run. */
-  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, false);
+  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, Slow.class.getAnnotation(TestGroup.class).enabled());
 
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
@@ -990,6 +995,9 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
+    if (rarely(r)) {
+      c.setCheckPendingFlushUpdate(false);
+    }
     return c;
   }
 
@@ -1180,17 +1188,6 @@ public abstract class LuceneTestCase extends Assert {
           }
           c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
         }
-      }
-      didChange = true;
-    }
-    
-    if (rarely(r)) {
-      // change buffered deletes parameters
-      boolean limitBufferedDeletes = r.nextBoolean();
-      if (limitBufferedDeletes) {
-        c.setMaxBufferedDeleteTerms(TestUtil.nextInt(r, 1, 1000));
-      } else {
-        c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       }
       didChange = true;
     }
@@ -1664,7 +1661,7 @@ public abstract class LuceneTestCase extends Assert {
     Random random = random();
       
     for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-      switch(random.nextInt(5)) {
+      switch(random.nextInt(4)) {
       case 0:
         // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
         if (VERBOSE) {
@@ -1675,15 +1672,6 @@ public abstract class LuceneTestCase extends Assert {
         new ParallelCompositeReader((CompositeReader) r);
         break;
       case 1:
-        // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
-        // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
-        // along our reader:
-        if (VERBOSE) {
-          System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with FCInvisibleMultiReader");
-        }
-        r = new FCInvisibleMultiReader(r);
-        break;
-      case 2:
         if (r instanceof LeafReader) {
           final LeafReader ar = (LeafReader) r;
           final List<String> allFields = new ArrayList<>();
@@ -1703,7 +1691,7 @@ public abstract class LuceneTestCase extends Assert {
                                      );
         }
         break;
-      case 3:
+      case 2:
         // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
         // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
         // along our reader:
@@ -1716,7 +1704,7 @@ public abstract class LuceneTestCase extends Assert {
           r = new AssertingDirectoryReader((DirectoryReader)r);
         }
         break;
-      case 4:
+      case 3:
         if (VERBOSE) {
           System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with MismatchedLeaf/DirectoryReader");
         }
@@ -1731,10 +1719,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
-      // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
-      r = new FCInvisibleMultiReader(r);
-    }
     if (VERBOSE) {
       System.out.println("wrapReader wrapped: " +r);
     }
@@ -1900,7 +1884,7 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       int threads = 0;
       final ThreadPoolExecutor ex;
-      if (random.nextBoolean()) {
+      if (r.getReaderCacheHelper() == null || random.nextBoolean()) {
         ex = null;
       } else {
         threads = TestUtil.nextInt(random, 1, 8);
@@ -1914,12 +1898,7 @@ public abstract class LuceneTestCase extends Assert {
        if (VERBOSE) {
          System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
        }
-       r.addReaderClosedListener(new ReaderClosedListener() {
-         @Override
-         public void onClose(IndexReader reader) {
-           TestUtil.shutdownExecutorService(ex);
-         }
-       });
+       r.getReaderCacheHelper().addClosedListener(cacheKey -> TestUtil.shutdownExecutorService(ex));
       }
       IndexSearcher ret;
       if (wrapWithAssertions) {
@@ -2056,15 +2035,9 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
-      assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
-    }
-    if (leftTerms.getSumDocFreq() != -1 && rightTerms.getSumDocFreq() != -1) {
-      assertEquals(info, leftTerms.getSumDocFreq(), rightTerms.getSumDocFreq());
-    }
-    if (leftTerms.getSumTotalTermFreq() != -1 && rightTerms.getSumTotalTermFreq() != -1) {
-      assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
-    }
+    assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
+    assertEquals(info, leftTerms.getSumDocFreq(), rightTerms.getSumDocFreq());
+    assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
     if (leftTerms.size() != -1 && rightTerms.size() != -1) {
       assertEquals(info, leftTerms.size(), rightTerms.size());
     }
@@ -2343,9 +2316,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   public void assertTermStatsEquals(String info, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum) throws IOException {
     assertEquals(info, leftTermsEnum.docFreq(), rightTermsEnum.docFreq());
-    if (leftTermsEnum.totalTermFreq() != -1 && rightTermsEnum.totalTermFreq() != -1) {
-      assertEquals(info, leftTermsEnum.totalTermFreq(), rightTermsEnum.totalTermFreq());
-    }
+    assertEquals(info, leftTermsEnum.totalTermFreq(), rightTermsEnum.totalTermFreq());
   }
   
   /** 
@@ -2696,11 +2667,11 @@ public abstract class LuceneTestCase extends Assert {
       if (expectedType.isInstance(e)) {
         return expectedType.cast(e);
       }
-      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName());
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName() + " but got " + e);
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName());
+    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName() + " but no exception was thrown");
   }
 
   /**

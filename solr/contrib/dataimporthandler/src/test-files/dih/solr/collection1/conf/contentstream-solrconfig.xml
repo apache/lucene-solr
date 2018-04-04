@@ -144,21 +144,21 @@
          and there is a current searcher handling requests (aka registered). -->
     <!-- QuerySenderListener takes an array of NamedList and executes a
          local query request for each NamedList in sequence. -->
-    <listener event="newSearcher" class="solr.QuerySenderListener">
-      <arr name="queries">
-        <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>
-        <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>
-        <lst><str name="q">static newSearcher warming query from solrconfig.xml</str></lst>
-      </arr>
-    </listener>
+    <!--<listener event="newSearcher" class="solr.QuerySenderListener">-->
+      <!--<arr name="queries">-->
+        <!--<lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>-->
+        <!--<lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>-->
+        <!--<lst><str name="q">static newSearcher warming query from solrconfig.xml</str></lst>-->
+      <!--</arr>-->
+    <!--</listener>-->
 
     <!-- a firstSearcher event is fired whenever a new searcher is being
          prepared but there is no current registered searcher to handle
          requests or to gain autowarming data from. -->
-    <listener event="firstSearcher" class="solr.QuerySenderListener">
-      <arr name="queries">
-      </arr>
-    </listener>
+    <!--<listener event="firstSearcher" class="solr.QuerySenderListener">-->
+      <!--<arr name="queries">-->
+      <!--</arr>-->
+    <!--</listener>-->
 
     <!-- If a search request comes in and there is no current registered searcher,
          then immediately register the still warming searcher and use it.  If
@@ -173,15 +173,11 @@
 
   </query>
 
-  <!-- 
-    Let the dispatch filter handler /select?qt=XXX
-    handleSelect=true will use consistent error handling for /select and /update
-    handleSelect=false will use solr1.1 style error formatting
+  <requestDispatcher>
+    <!--Make sure your system has some authentication before enabling remote streaming!
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     -->
-  <requestDispatcher handleSelect="true" >
-    <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
-        
+
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
          To get the behaviour of Solr 1.2 (ie: no caching related headers)
@@ -218,17 +214,8 @@
        <!-- <cacheControl>max-age=30, public</cacheControl> -->
     </httpCaching>
   </requestDispatcher>
-  
-      
-  <!-- requestHandler plugins... incoming queries will be dispatched to the
-     correct handler based on the path or the 'qt' param.
-     Names starting with a '/' are accessed with the a path equal to the 
-     registered name.  Names without a leading '/' are accessed with:
-      http://host/app/select?qt=name
-     If no qt is defined, the requestHandler that declares default="true"
-     will be used.
-  -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true">
+
+  <requestHandler name="/select" class="solr.SearchHandler">
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>

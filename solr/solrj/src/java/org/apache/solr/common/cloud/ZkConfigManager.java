@@ -162,7 +162,7 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-    copyConfigDir(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, null);
+    copyConfigDir(fromConfig, toConfig, null);
   }
 
   /**
@@ -186,7 +186,7 @@ public class ZkConfigManager {
   
   // Order is important here since "confDir" may be
   // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
-  // 2> one of the canned config sets only, e.g. basic_configs
+  // 2> one of the canned config sets only, e.g. _default
   // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
   
   public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {

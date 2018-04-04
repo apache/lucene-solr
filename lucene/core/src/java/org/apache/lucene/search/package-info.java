@@ -226,7 +226,7 @@
  *    <a href="http://en.wikipedia.org/wiki/Information_retrieval#Model_types">models</a>, including:
  *    <ul>
  *      <li><a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model (VSM)</a></li>
- *      <li><a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model">Probablistic Models</a> such as 
+ *      <li><a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model">Probabilistic Models</a> such as 
  *          <a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model_(BM25)">Okapi BM25</a> and
  *          <a href="http://en.wikipedia.org/wiki/Divergence-from-randomness_model">DFR</a></li>
  *      <li><a href="http://en.wikipedia.org/wiki/Language_model">Language models</a></li>
@@ -269,27 +269,8 @@
  *    Fields and the other in one Field may return different scores for the same query due to length
  *    normalization.
  * <h3>Score Boosting</h3>
- * <p>Lucene allows influencing search results by "boosting" at different times:
- *    <ul>                   
- *       <li><b>Index-time boost</b> by calling
- *        {@link org.apache.lucene.document.Field#setBoost(float) Field.setBoost()} before a document is 
- *        added to the index.</li>
- *       <li><b>Query-time boost</b> by applying a boost to a query by wrapping with
- *       {@link org.apache.lucene.search.BoostQuery}.</li>
- *    </ul>    
- * <p>Indexing time boosts are pre-processed for storage efficiency and written to
- *    storage for a field as follows:
- *    <ul>
- *        <li>All boosts of that field (i.e. all boosts under the same field name in that doc) are 
- *            multiplied.</li>
- *        <li>The boost is then encoded into a normalization value by the Similarity
- *            object at index-time: {@link org.apache.lucene.search.similarities.Similarity#computeNorm computeNorm()}.
- *            The actual encoding depends upon the Similarity implementation, but note that most
- *            use a lossy encoding (such as multiplying the boost with document length or similar, packed
- *            into a single byte!).</li>
- *        <li>Decoding of any index-time normalization values and integration into the document's score is also performed 
- *            at search time by the Similarity.</li>
- *     </ul>
+ * <p>Lucene allows influencing the score contribution of various parts of the query by wrapping with
+ *    {@link org.apache.lucene.search.BoostQuery}.</p>
  * 
  * <a name="changingScoring"></a>
  * <h2>Changing Scoring &mdash; Similarity</h2>
@@ -357,7 +338,7 @@
  *         {@link org.apache.lucene.search.Query Query} class has several methods that are important for
  *         derived classes:
  *         <ol>
- *             <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean,float) createWeight(IndexSearcher searcher, boolean needsScores, float boost)} &mdash; A
+ *             <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher,ScoreMode,float) createWeight(IndexSearcher searcher, boolean needsScores, float boost)} &mdash; A
  *                 {@link org.apache.lucene.search.Weight Weight} is the internal representation of the
  *                 Query, so each Query implementation must
  *                 provide an implementation of Weight. See the subsection on <a
@@ -366,7 +347,7 @@
  *             <li>{@link org.apache.lucene.search.Query#rewrite(org.apache.lucene.index.IndexReader) rewrite(IndexReader reader)} &mdash; Rewrites queries into primitive queries. Primitive queries are:
  *                 {@link org.apache.lucene.search.TermQuery TermQuery},
  *                 {@link org.apache.lucene.search.BooleanQuery BooleanQuery}, <span
- *                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean,float) createWeight(IndexSearcher searcher,boolean needsScores, float boost)}</span></li>
+ *                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,ScoreMode,float) createWeight(IndexSearcher searcher,boolean needsScores, float boost)}</span></li>
  *         </ol>
  * <a name="weightClass"></a>
  * <h3>The Weight Interface</h3>
@@ -397,7 +378,7 @@
  *                 scored the way it was.
  *                 Typically a weight such as TermWeight
  *                 that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementation:
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(int, Explanation) SimScorer#explain(int doc, Explanation freq)}.
+ *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(Explanation, long) SimScorer#explain(Explanation freq, long norm)}.
  *             </li>
  *         </ol>
  * <a name="scorerClass"></a>
@@ -421,13 +402,7 @@
  *                 {@link org.apache.lucene.search.Scorer#score score()} &mdash; Return the score of the
  *                 current document. This value can be determined in any appropriate way for an application. For instance, the
  *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the configured Similarity:
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(int, float) SimScorer.score(int doc, float freq)}.
- *             </li>
- *             <li>
- *                 {@link org.apache.lucene.search.Scorer#freq freq()} &mdash; Returns the number of matches
- *                 for the current document. This value can be determined in any appropriate way for an application. For instance, the
- *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the term frequency from the inverted index:
- *                 {@link org.apache.lucene.index.PostingsEnum#freq PostingsEnum.freq()}.
+ *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(float, long) SimScorer.score(float freq, long norm)}.
  *             </li>
  *             <li>
  *                 {@link org.apache.lucene.search.Scorer#getChildren getChildren()} &mdash; Returns any child subscorers
@@ -478,7 +453,7 @@
  * <p>Assuming we are not sorting (since sorting doesn't affect the raw Lucene score),
  *    we call one of the search methods of the IndexSearcher, passing in the
  *    {@link org.apache.lucene.search.Weight Weight} object created by
- *    {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query,boolean)
+ *    {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query,ScoreMode)
  *     IndexSearcher.createNormalizedWeight(Query,boolean)} and the number of results we want.
  *    This method returns a {@link org.apache.lucene.search.TopDocs TopDocs} object,
  *    which is an internal collection of search results. The IndexSearcher creates

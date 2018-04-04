@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.xml;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.xml.builders.LikeThisQueryBuilder;
-import org.apache.lucene.queryparser.xml.builders.BoostingQueryBuilder;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from
@@ -50,7 +49,6 @@ public class CorePlusQueriesParser extends CoreParser {
     super(defaultField, analyzer, parser);
     String fields[] = {"contents"};
     queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
-    queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));
 
   }
 }

@@ -27,9 +27,10 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.FieldValueQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -84,7 +85,7 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (lowerValue == Long.MIN_VALUE && upperValue == Long.MAX_VALUE) {
-      return new FieldValueQuery(field);
+      return new DocValuesFieldExistsQuery(field);
     }
     return super.rewrite(reader);
   }
@@ -92,8 +93,14 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
   abstract SortedNumericDocValues getValues(LeafReader reader, String field) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
+      }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         SortedNumericDocValues values = getValues(context.reader(), field);
@@ -138,6 +145,7 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
         }
         return new ConstantScoreScorer(this, score(), iterator);
       }
+
     };
   }
 

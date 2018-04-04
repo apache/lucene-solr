@@ -85,7 +85,6 @@ abstract class DocValuesUpdate {
     long valueSizeInBytes() {
       return RAW_VALUE_SIZE_IN_BYTES + ((BytesRef) value).bytes.length;
     }
-    
   }
 
   /** An in-place update to a numeric DocValues field */
@@ -99,7 +98,5 @@ abstract class DocValuesUpdate {
     long valueSizeInBytes() {
       return Long.BYTES;
     }
-    
   }
-
 }

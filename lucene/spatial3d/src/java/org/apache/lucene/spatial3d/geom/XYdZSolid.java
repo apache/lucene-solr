@@ -16,12 +16,27 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in Z
  *
  * @lucene.internal
  */
 class XYdZSolid extends BaseXYZSolid {
+
+  /** Min-X */
+  protected final double minX;
+  /** Max-X */
+  protected final double maxX;
+  /** Min-Y */
+  protected final double minY;
+  /** Max-Y */
+  protected final double maxY;
+  /** Z */
+  protected final double Z;
 
   /** Min-X plane */
   protected final SidedPlane minXPlane;
@@ -66,6 +81,12 @@ class XYdZSolid extends BaseXYZSolid {
       throw new IllegalArgumentException("X values in wrong order or identical");
     if (maxY - minY < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Y values in wrong order or identical");
+
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
+    this.Z = Z;
 
     final double worldMinZ = planetModel.getMinimumZValue();
     final double worldMaxZ = planetModel.getMaximumZValue();
@@ -123,6 +144,29 @@ class XYdZSolid extends BaseXYZSolid {
     }
 
     this.edgePoints = glueTogether(minXZ, maxXZ, minYZ, maxYZ, zEdges);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public XYdZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, minX);
+    SerializableObject.writeDouble(outputStream, maxX);
+    SerializableObject.writeDouble(outputStream, minY);
+    SerializableObject.writeDouble(outputStream, maxY);
+    SerializableObject.writeDouble(outputStream, Z);
   }
 
   @Override

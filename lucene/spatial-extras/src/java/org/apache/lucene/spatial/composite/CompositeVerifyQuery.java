@@ -17,32 +17,31 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.spatial.util.ShapeValuesPredicate;
 
 /**
  * A Query that considers an "indexQuery" to have approximate results, and a follow-on
- * {@link ValueSource}/{@link FunctionValues#boolVal(int)} is called to verify each hit
- * from {@link TwoPhaseIterator#matches()}.
+ * ShapeValuesSource is called to verify each hit from {@link TwoPhaseIterator#matches()}.
  *
  * @lucene.experimental
  */
 public class CompositeVerifyQuery extends Query {
-  final Query indexQuery;//approximation (matches more than needed)
-  final ValueSource predicateValueSource;//we call boolVal(doc)
 
-  public CompositeVerifyQuery(Query indexQuery, ValueSource predicateValueSource) {
+  private final Query indexQuery;//approximation (matches more than needed)
+  private final ShapeValuesPredicate predicateValueSource;
+
+  public CompositeVerifyQuery(Query indexQuery, ShapeValuesPredicate predicateValueSource) {
     this.indexQuery = indexQuery;
     this.predicateValueSource = predicateValueSource;
   }
@@ -82,9 +81,8 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Weight indexQueryWeight = indexQuery.createWeight(searcher, false, boost);//scores aren't unsupported
-    final Map valueSourceContext = ValueSource.newContext(searcher);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    final Weight indexQueryWeight = indexQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);//scores aren't unsupported
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -96,22 +94,15 @@ public class CompositeVerifyQuery extends Query {
           return null;
         }
 
-        final FunctionValues predFuncValues = predicateValueSource.getValues(valueSourceContext, context);
-
-        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(indexQueryScorer.iterator()) {
-          @Override
-          public boolean matches() throws IOException {
-            return predFuncValues.boolVal(indexQueryScorer.docID());
-          }
-
-          @Override
-          public float matchCost() {
-            return 100; // TODO: use cost of predFuncValues.boolVal()
-          }
-        };
-
-        return new ConstantScoreScorer(this, score(), twoPhaseIterator);
+        final TwoPhaseIterator predFuncValues = predicateValueSource.iterator(context, indexQueryScorer.iterator());
+        return new ConstantScoreScorer(this, score(), predFuncValues);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return predicateValueSource.isCacheable(ctx);
+      }
+
     };
   }
 }

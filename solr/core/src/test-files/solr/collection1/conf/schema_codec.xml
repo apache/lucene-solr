@@ -50,6 +50,5 @@
   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true"/>
   <dynamicField name="*_memory" type="string_memory" indexed="false" stored="false" docValues="true"/>
 
-  <defaultSearchField>string_f</defaultSearchField>
   <uniqueKey>string_f</uniqueKey>
 </schema>

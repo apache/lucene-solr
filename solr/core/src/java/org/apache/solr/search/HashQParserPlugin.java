@@ -30,6 +30,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
@@ -59,7 +60,7 @@ public class HashQParserPlugin extends QParserPlugin {
     return new HashQParser(query, localParams, params, request);
   }
 
-  private class HashQParser extends QParser {
+  private static class HashQParser extends QParser {
 
     public HashQParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(query, localParams, params, request);
@@ -74,7 +75,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class HashQuery extends ExtendedQueryBase implements PostFilter {
+  private static class HashQuery extends ExtendedQueryBase implements PostFilter {
 
     private String keysParam;
     private int workers;
@@ -112,7 +113,8 @@ public class HashQParserPlugin extends QParserPlugin {
       this.worker = worker;
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
       String[] keys = keysParam.split(",");
       SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher)searcher;
@@ -132,10 +134,10 @@ public class HashQParserPlugin extends QParserPlugin {
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false, boost);
+      return searcher.rewrite(constantScoreQuery).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
 
-    public class BitsFilter extends Filter {
+    public static class BitsFilter extends Filter {
       private FixedBitSet[] bitSets;
       public BitsFilter(FixedBitSet[] bitSets) {
         this.bitSets = bitSets;
@@ -166,7 +168,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
 
-    class SegmentPartitioner implements Runnable {
+    static class SegmentPartitioner implements Runnable {
 
       public LeafReaderContext context;
       private int worker;
@@ -238,7 +240,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class HashCollector extends DelegatingCollector {
+  private static class HashCollector extends DelegatingCollector {
     private int worker;
     private int workers;
     private HashKey hashKey;
@@ -271,7 +273,7 @@ public class HashQParserPlugin extends QParserPlugin {
     public long hashCode(int doc) throws IOException;
   }
 
-  private class BytesHash implements HashKey {
+  private static class BytesHash implements HashKey {
 
     private SortedDocValues values;
     private String field;
@@ -303,7 +305,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class NumericHash implements HashKey {
+  private static class NumericHash implements HashKey {
 
     private NumericDocValues values;
     private String field;
@@ -331,7 +333,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class ZeroHash implements HashKey {
+  private static class ZeroHash implements HashKey {
 
     public long hashCode(int doc) {
       return 0;
@@ -342,7 +344,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class CompositeHash implements HashKey {
+  private static class CompositeHash implements HashKey {
 
     private HashKey key1;
     private HashKey key2;

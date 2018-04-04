@@ -34,6 +34,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
@@ -41,6 +42,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -94,8 +96,9 @@ public class FSTTermsReader extends FieldsProducer {
         int fieldNumber = in.readVInt();
         FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
         long numTerms = in.readVLong();
-        long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : in.readVLong();
-        long sumDocFreq = in.readVLong();
+        long sumTotalTermFreq = in.readVLong();
+        // if frequencies are omitted, sumTotalTermFreq=sumDocFreq and we only write one value
+        long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         int docCount = in.readVInt();
         int longsSize = in.readVInt();
         TermsReader current = new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
@@ -126,7 +129,7 @@ public class FSTTermsReader extends FieldsProducer {
       throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount, in);
     }
     // #positions must be >= #postings
-    if (field.sumTotalTermFreq != -1 && field.sumTotalTermFreq < field.sumDocFreq) {
+    if (field.sumTotalTermFreq < field.sumDocFreq) {
       throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq, in);
     }
     if (previous != null) {
@@ -288,13 +291,19 @@ public class FSTTermsReader extends FieldsProducer {
 
       @Override
       public long totalTermFreq() throws IOException {
-        return state.totalTermFreq;
+        return state.totalTermFreq == -1 ? state.docFreq : state.totalTermFreq;
       }
 
       @Override
       public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         decodeMetaData();
         return postingsReader.postings(fieldInfo, state, reuse, flags);
+      }
+
+      @Override
+      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+        decodeMetaData();
+        return postingsReader.impacts(fieldInfo, state, scorer, flags);
       }
 
       @Override

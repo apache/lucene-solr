@@ -32,7 +32,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/dataimport.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/files.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/index.css?_=${version}">
-  <link rel="stylesheet" type="text/css" href="css/styles/java-properties.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/java-properties.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/logging.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/menu.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/plugins.css?_=${version}">
@@ -41,6 +41,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/stream.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/replication.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/schema.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/suggestions.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/segments.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/chosen.css?_=${version}">
@@ -78,6 +79,8 @@ limitations under the License.
   <script src="js/angular/controllers/replication.js"></script>
   <script src="js/angular/controllers/schema.js"></script>
   <script src="js/angular/controllers/segments.js"></script>
+  <script src="js/angular/controllers/cluster-suggestions.js"></script>
+
 
 </head>
 <body ng-controller="MainController">
@@ -86,7 +89,7 @@ limitations under the License.
 
     <div id="header">
 
-      <a href="./" id="solr"><span>Apache SOLR</span></a>
+      <a href="#/" id="solr"><span>Apache SOLR</span></a>
 
       <p id="environment">&nbsp;</p>
 
@@ -123,10 +126,6 @@ limitations under the License.
         <div class="exception">{{exception.msg}}</div>
       </div>
 
-      <div class="other-ui-link">
-        Use <a class="ul" href="/solr/old.html">original UI</a><a target="_blank" href="http://wiki.apache.org/solr/AngularUI">&nbsp;<span class="help"></span></a>
-      </div>
-
       <div id="content-wrapper">
         <div ng-view id="content">
 
@@ -151,7 +150,7 @@ limitations under the License.
                 <li class="tree" ng-class="{active:page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
                 <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud">Graph</a></li>
                 <li class="rgraph" ng-class="{active:page=='cloud-rgraph'}"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
-                <li class="dump" ng-class="{active:page=='cloud-dump'}"><a ng-click="dumpCloud()">Dump</a></li>
+                <!--<li class="dump" ng-class="{active:page=='cloud-dump'}"><a ng-click="dumpCloud()">Dump</a></li>-->
               </ul>
             </li>
 
@@ -161,6 +160,7 @@ limitations under the License.
             <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
 
             <li id="threads" class="global" ng-class="{active:page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
+            <li ng-show="isCloudEnabled" id="cluster-suggestions" class="global" ng-class="{active:page=='cluster-suggestions'}"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
 
           </ul>
 
@@ -229,7 +229,7 @@ limitations under the License.
           <li class="issues"><a href="http://issues.apache.org/jira/browse/SOLR"><span>Issue Tracker</span></a></li>
           <li class="irc"><a href="http://webchat.freenode.net/?channels=#solr"><span>IRC Channel</span></a></li>
           <li class="mailinglist"><a href="http://wiki.apache.org/solr/UsingMailingLists"><span>Community forum</span></a></li>
-          <li class="wiki-query-syntax"><a href="https://cwiki.apache.org/confluence/display/solr/Query+Syntax+and+Parsing"><span>Solr Query Syntax</span></a></li>
+          <li class="wiki-query-syntax"><a href="https://lucene.apache.org/solr/guide/query-syntax-and-parsing.html"><span>Solr Query Syntax</span></a></li>
 
         </ul>
 

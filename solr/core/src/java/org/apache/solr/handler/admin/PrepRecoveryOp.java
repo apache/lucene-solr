@@ -18,9 +18,10 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -28,15 +29,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,18 +59,20 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
     Boolean onlyIfLeaderActive = params.getBool("onlyIfLeaderActive");
 
-    log.info("Going to wait for coreNodeName: " + coreNodeName + ", state: " + waitForState
-        + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader
-        + ", onlyIfLeaderActive: " + onlyIfLeaderActive);
 
-    int maxTries = 0;
+    CoreContainer coreContainer = it.handler.coreContainer;
+    // wait long enough for the leader conflict to work itself out plus a little extra
+    int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
+    int maxTries = (int) Math.round(conflictWaitMs / 1000) + 3;
+    log.info("Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}, maxTime: {} s",
+        coreNodeName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive, maxTries);
+    
     Replica.State state = null;
     boolean live = false;
     int retry = 0;
     while (true) {
-      CoreContainer coreContainer = it.handler.coreContainer;
       try (SolrCore core = coreContainer.getCore(cname)) {
-        if (core == null && retry == 30) {
+        if (core == null && retry == Math.min(30, maxTries)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:"
               + cname);
         }
@@ -102,15 +100,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
             coreContainer.getZkController().getZkStateReader().forceUpdateCollection(collectionName);
           }
 
-          if (maxTries == 0) {
-            // wait long enough for the leader conflict to work itself out plus a little extra
-            int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
-            maxTries = (int) Math.round(conflictWaitMs / 1000) + 3;
-            log.info("Will wait a max of " + maxTries + " seconds to see " + cname + " (" +
-                cloudDescriptor.getShardId() + " of " +
-                cloudDescriptor.getCollectionName() + ") have state: " + waitForState);
-          }
-
           ClusterState clusterState = coreContainer.getZkController().getClusterState();
           DocCollection collection = clusterState.getCollection(collectionName);
           Slice slice = collection.getSlice(cloudDescriptor.getShardId());
@@ -134,6 +123,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
               if (leaderDoesNotNeedRecovery) {
                 log.warn("Leader " + core.getName() + " ignoring request to be in the recovering state because it is live and active.");
+              }
+
+              ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
+              // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
+              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName) && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
+                // The replica changed it term, then published itself as RECOVERING.
+                // This core already see replica as RECOVERING
+                // so it is guarantees that a live-fetch will be enough for this core to see max term published
+                shardTerms.refreshTerms();
               }
 
               boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && localState != Replica.State.ACTIVE;
@@ -160,6 +158,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
           String collection = null;
           String leaderInfo = null;
           String shardId = null;
+          
           try {
             CloudDescriptor cloudDescriptor =
                 core.getCoreDescriptor().getCloudDescriptor();
@@ -175,40 +174,12 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               "I was asked to wait on state " + waitForState + " for "
                   + shardId + " in " + collection + " on " + nodeName
                   + " but I still do not see the requested state. I see state: "
-                  + state.toString() + " live:" + live + " leader from ZK: " + leaderInfo
-          );
+                  + Objects.toString(state) + " live:" + live + " leader from ZK: " + leaderInfo);
         }
 
         if (coreContainer.isShutDown()) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Solr is shutting down");
-        }
-
-        // solrcloud_debug
-        if (log.isDebugEnabled()) {
-          try {
-            LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
-                new ModifiableSolrParams());
-            CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
-            commitCmd.softCommit = true;
-            core.getUpdateHandler().commit(commitCmd);
-            RefCounted<SolrIndexSearcher> searchHolder = core
-                .getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
-            try {
-              log.debug(core.getCoreDescriptor().getCoreContainer()
-                  .getZkController().getNodeName()
-                  + " to replicate "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits
-                  + " gen:"
-                  + core.getDeletionPolicy().getLatestCommit().getGeneration()
-                  + " data:" + core.getDataDir());
-            } finally {
-              searchHolder.decref();
-            }
-          } catch (Exception e) {
-            log.debug("Error in solrcloud_debug block", e);
-          }
         }
       }
       Thread.sleep(1000);

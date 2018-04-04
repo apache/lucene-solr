@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.io.stream;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -38,7 +39,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
 
+/**
+ * @since 6.0.0
+ */
 public class DaemonStream extends TupleStream implements Expressible {
 
   private TupleStream tupleStream;
@@ -63,7 +68,7 @@ public class DaemonStream extends TupleStream implements Expressible {
 
     TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
 
-    StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, "id");
+    StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, ID);
     StreamExpressionNamedParameter runExpression = factory.getNamedOperand(expression, "runInterval");
     StreamExpressionNamedParameter queueExpression = factory.getNamedOperand(expression, "queueSize");
     StreamExpressionNamedParameter terminateExpression = factory.getNamedOperand(expression, "terminate");
@@ -130,7 +135,7 @@ public class DaemonStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("id", id));
+    expression.addParameter(new StreamExpressionNamedParameter(ID, id));
     expression.addParameter(new StreamExpressionNamedParameter("runInterval", Long.toString(runInterval)));
     expression.addParameter(new StreamExpressionNamedParameter("queueSize", Integer.toString(queueSize)));
     expression.addParameter(new StreamExpressionNamedParameter("terminate", Boolean.toString(terminate)));
@@ -218,7 +223,9 @@ public class DaemonStream extends TupleStream implements Expressible {
     if(closed) {
       return;
     }
-    streamRunner.setShutdown(true);
+    if (streamRunner != null) {
+      streamRunner.setShutdown(true);
+    }
     this.closed = true;
   }
 
@@ -230,7 +237,7 @@ public class DaemonStream extends TupleStream implements Expressible {
 
   public synchronized Tuple getInfo() {
     Tuple tuple = new Tuple(new HashMap());
-    tuple.put("id", id);
+    tuple.put(ID, id);
     tuple.put("startTime", startTime);
     tuple.put("stopTime", stopTime);
     tuple.put("iterations", iterations);

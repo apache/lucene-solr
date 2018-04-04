@@ -62,7 +62,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
 
     // Register the watcher at startup
     try {
-      SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+      SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       watcher = this.initWatcher(zkClient);
       this.setState(CdcrParams.ProcessState.get(zkClient.getData(this.getZnodePath(), watcher, null, true)));
     } catch (KeeperException | InterruptedException e) {
@@ -103,7 +103,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
    * action.
    */
   void synchronize() {
-    SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+    SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
     try {
       zkClient.setData(this.getZnodePath(), this.getState().getBytes(), true);
       // check if nobody changed it in the meantime, and set a new watcher
@@ -114,7 +114,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
   }
 
   private void createStateNode() {
-    SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+    SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
     try {
       if (!zkClient.exists(this.getZnodePath(), true)) {
         if (!zkClient.exists(this.getZnodeBase(), true)) { // Should be a no-op if the node exists
@@ -158,7 +158,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }
-      SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+      SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       try {
         CdcrParams.ProcessState state = CdcrParams.ProcessState.get(zkClient.getData(CdcrProcessStateManager.this.getZnodePath(), watcher, null, true));
         log.info("Received new CDCR process state from watcher: {} @ {}:{}", state, collectionName, shard);

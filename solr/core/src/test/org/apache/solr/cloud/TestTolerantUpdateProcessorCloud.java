@@ -132,9 +132,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       String nodeKey = jettyURL.getHost() + ":" + jettyURL.getPort() + jettyURL.getPath().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection(COLLECTION_NAME);
     ClusterState clusterState = zkStateReader.getClusterState();
-    for (Slice slice : clusterState.getSlices(COLLECTION_NAME)) {
+    for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
       assertNotNull("slice has null leader: " + slice.toString(), leader);
@@ -1036,7 +1036,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   
   public static SolrInputField f(String fieldName, Object... values) {
     SolrInputField f = new SolrInputField(fieldName);
-    f.setValue(values, 1.0F);
+    f.setValue(values);
     return f;
   }
 

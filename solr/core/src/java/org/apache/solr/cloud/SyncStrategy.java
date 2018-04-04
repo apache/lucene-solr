@@ -44,6 +44,8 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 public class SyncStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -258,7 +260,7 @@ public class SyncStrategy {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
     sreq.params.set("getVersions",Integer.toString(nUpdates));
     sreq.params.set("sync",leaderUrl);
     
@@ -290,9 +292,11 @@ public class SyncStrategy {
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);
         
-        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).withHttpClient(SyncStrategy.this.client).build()) {
-          client.setConnectionTimeout(30000);
-          client.setSoTimeout(120000);
+        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
+            .withHttpClient(SyncStrategy.this.client)
+            .withConnectionTimeout(30000)
+            .withSocketTimeout(120000)
+            .build()) {
           client.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);

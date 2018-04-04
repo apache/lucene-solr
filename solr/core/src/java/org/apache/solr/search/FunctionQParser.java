@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.AggValueSource;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ public class FunctionQParser extends QParser {
 
   public static final int FLAG_CONSUME_DELIMITER = 0x01;  // consume delimiter after parsing arg
   public static final int FLAG_IS_AGG = 0x02;
+  public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04; // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving to a real ValueSource
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
   /** @lucene.internal */
@@ -374,8 +376,13 @@ public class FunctionQParser extends QParser {
         } else if ("false".equals(id)) {
           valueSource = new BoolConstValueSource(false);
         } else {
-          SchemaField f = req.getSchema().getField(id);
-          valueSource = f.getType().getValueSource(f, this);
+          if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0) {
+            // Don't try to create a ValueSource for the field, just use a placeholder.
+            valueSource = new FieldNameValueSource(id);
+          } else {
+            SchemaField f = req.getSchema().getField(id);
+            valueSource = f.getType().getValueSource(f, this);
+          }
         }
       }
 

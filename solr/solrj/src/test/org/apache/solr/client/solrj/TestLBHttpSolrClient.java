@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -206,9 +207,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
-      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, s);
-      client.setConnectionTimeout(500);
-      client.setSoTimeout(500);
+      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, 500, 500, s);
       client.setAliveCheckInterval(500);
   
       // Kill a server and test again
@@ -222,7 +221,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       // Start the killed server once again
       solr[1].startJetty();
       // Wait for the alive check to complete
-      waitForServer(30, client, 3, "solr1");
+      waitForServer(30, client, 3, solr[1].name);
     } finally {
       HttpClientUtil.close(myHttpClient);
     }
@@ -230,7 +229,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   
   // wait maximum ms for serverName to come back up
   private void waitForServer(int maxSeconds, LBHttpSolrClient client, int nServers, String serverName) throws Exception {
-    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (! timeout.hasTimedOut()) {
       QueryResponse resp;
       try {
@@ -247,7 +246,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
   }
   
-  private class SolrInstance {
+  private static class SolrInstance {
     String name;
     File homeDir;
     File dataDir;

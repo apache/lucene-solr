@@ -22,6 +22,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
 import org.apache.lucene.util.packed.PagedMutable;
@@ -35,22 +36,24 @@ import org.apache.lucene.util.packed.PagedMutable;
 class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   
   final static class Iterator extends DocValuesFieldUpdates.Iterator {
-    private final PagedGrowableWriter offsets;
     private final int size;
+    private final PagedGrowableWriter offsets;
     private final PagedGrowableWriter lengths;
     private final PagedMutable docs;
     private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
     private int doc = -1;
     private final BytesRef value;
     private int offset, length;
+    private final long delGen;
     
     Iterator(int size, PagedGrowableWriter offsets, PagedGrowableWriter lengths, 
-        PagedMutable docs, BytesRef values) {
+             PagedMutable docs, BytesRef values, long delGen) {
       this.offsets = offsets;
       this.size = size;
       this.lengths = lengths;
       this.docs = docs;
       value = values.clone();
+      this.delGen = delGen;
     }
     
     @Override
@@ -69,6 +72,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       doc = (int) docs.get(idx);
       ++idx;
       while (idx < size && docs.get(idx) == doc) {
+        // scan forward to last update to this doc
         ++idx;
       }
       // idx points to the "next" element
@@ -87,10 +91,8 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     @Override
-    void reset() {
-      doc = -1;
-      offset = -1;
-      idx = 0;
+    long delGen() {
+      return delGen;
     }
   }
 
@@ -100,18 +102,29 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   private int size;
   private final int bitsPerValue;
   
-  public BinaryDocValuesFieldUpdates(String field, int maxDoc) {
-    super(field, DocValuesType.BINARY);
+  public BinaryDocValuesFieldUpdates(long delGen, String field, int maxDoc) {
+    super(maxDoc, delGen, field, DocValuesType.BINARY);
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     offsets = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
     lengths = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
     values = new BytesRefBuilder();
-    size = 0;
   }
-  
+
   @Override
-  public void add(int doc, Object value) {
+  public int size() {
+    return size;
+  }
+
+  // NOTE: we fully consume the incoming BytesRef so caller is free to reuse it after we return:
+  @Override
+  synchronized public void add(int doc, Object value) {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+
+    assert doc < maxDoc: "doc=" + doc + " maxDoc=" + maxDoc;
+
     // TODO: if the Sorter interface changes to take long indexes, we can remove that limitation
     if (size == Integer.MAX_VALUE) {
       throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
@@ -134,11 +147,19 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
-  public Iterator iterator() {
-    final PagedMutable docs = this.docs;
-    final PagedGrowableWriter offsets = this.offsets;
-    final PagedGrowableWriter lengths = this.lengths;
-    final BytesRef values = this.values.get();
+  public void finish() {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+    finished = true;
+
+    // shrink wrap
+    if (size < docs.size()) {
+      docs = docs.resize(size);
+      offsets = offsets.resize(size);
+      lengths = lengths.resize(size);
+    }
+
     new InPlaceMergeSorter() {
       @Override
       protected void swap(int i, int j) {
@@ -157,36 +178,20 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       
       @Override
       protected int compare(int i, int j) {
-        int x = (int) docs.get(i);
-        int y = (int) docs.get(j);
-        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+        // increasing docID order:
+        // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
+        // stable and preserving original order so the last update to that docID wins
+        return Integer.compare((int) docs.get(i), (int) docs.get(j));
       }
     }.sort(0, size);
-    
-    return new Iterator(size, offsets, lengths, docs, values);
   }
 
   @Override
-  public void merge(DocValuesFieldUpdates other) {
-    BinaryDocValuesFieldUpdates otherUpdates = (BinaryDocValuesFieldUpdates) other;
-    if (otherUpdates.size > Integer.MAX_VALUE - size) {
-      throw new IllegalStateException(
-          "cannot support more than Integer.MAX_VALUE doc/value entries; size="
-              + size + " other.size=" + otherUpdates.size);
+  public Iterator iterator() {
+    if (finished == false) {
+      throw new IllegalStateException("call finish first");
     }
-    final int newSize = size  + otherUpdates.size;
-    docs = docs.grow(newSize);
-    offsets = offsets.grow(newSize);
-    lengths = lengths.grow(newSize);
-    for (int i = 0; i < otherUpdates.size; i++) {
-      int doc = (int) otherUpdates.docs.get(i);
-      docs.set(size, doc);
-      offsets.set(size, values.length() + otherUpdates.offsets.get(i)); // correct relative offset
-      lengths.set(size, otherUpdates.lengths.get(i));
-      ++size;
-    }
-
-    values.append(otherUpdates.values);
+    return new Iterator(size, offsets, lengths, docs, values.get(), delGen);
   }
 
   @Override
@@ -195,13 +200,13 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
-  public long ramBytesPerDoc() {
-    long bytesPerDoc = (long) Math.ceil((double) (bitsPerValue) / 8); // docs
-    final int capacity = estimateCapacity(size);
-    bytesPerDoc += (long) Math.ceil((double) offsets.ramBytesUsed() / capacity); // offsets
-    bytesPerDoc += (long) Math.ceil((double) lengths.ramBytesUsed() / capacity); // lengths
-    bytesPerDoc += (long) Math.ceil((double) values.length() / size); // values
-    return bytesPerDoc;
+  public long ramBytesUsed() {
+    return offsets.ramBytesUsed()
+      + lengths.ramBytesUsed()
+      + docs.ramBytesUsed()
+      + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+      + 4 * RamUsageEstimator.NUM_BYTES_INT
+      + 5 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+      + values.bytes().length;
   }
-
 }

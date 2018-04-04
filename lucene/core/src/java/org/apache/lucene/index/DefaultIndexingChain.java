@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,11 +28,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
@@ -116,7 +117,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   @Override
-  public Sorter.DocMap flush(SegmentWriteState state) throws IOException, AbortingException {
+  public Sorter.DocMap flush(SegmentWriteState state) throws IOException {
 
     // NOTE: caller (DocumentsWriterPerThread) handles
     // aborting on any exception from this method
@@ -127,6 +128,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
     }
+    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, IOContext.READ, state.segmentSuffix);
     
     t0 = System.nanoTime();
     writeDocValues(state, sortMap);
@@ -160,7 +162,16 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     }
 
-    termsHash.flush(fieldsToFlush, state, sortMap);
+    try (NormsProducer norms = readState.fieldInfos.hasNorms()
+        ? state.segmentInfo.getCodec().normsFormat().normsProducer(readState)
+        : null) {
+      NormsProducer normsMergeInstance = null;
+      if (norms != null) {
+        // Use the merge instance in order to reuse the same IndexInput for all terms
+        normsMergeInstance = norms.getMergeInstance();
+      }
+      termsHash.flush(fieldsToFlush, state, sortMap, normsMergeInstance);
+    }
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write postings and finish vectors");
     }
@@ -312,17 +323,15 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   @Override
-  public void abort() {
-    storedFieldsConsumer.abort();
-
-    try {
-      // E.g. close any open files in the term vectors writer:
-      termsHash.abort();
-    } catch (Throwable t) {
+  @SuppressWarnings("try")
+  public void abort() throws IOException{
+    // finalizer will e.g. close any open files in the term vectors writer:
+    try (Closeable finalizer = termsHash::abort){
+      storedFieldsConsumer.abort();
+    } finally {
+      Arrays.fill(fieldHash, null);
     }
-
-    Arrays.fill(fieldHash, null);
-  }  
+  }
 
   private void rehash() {
     int newHashSize = (fieldHash.length*2);
@@ -349,26 +358,28 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Calls StoredFieldsWriter.startDocument, aborting the
    *  segment if it hits any exception. */
-  private void startStoredFields(int docID) throws IOException, AbortingException {
+  private void startStoredFields(int docID) throws IOException {
     try {
       storedFieldsConsumer.startDocument(docID);
     } catch (Throwable th) {
-      throw AbortingException.wrap(th);
+      docWriter.onAbortingException(th);
+      throw th;
     }
   }
 
   /** Calls StoredFieldsWriter.finishDocument, aborting the
    *  segment if it hits any exception. */
-  private void finishStoredFields() throws IOException, AbortingException {
+  private void finishStoredFields() throws IOException {
     try {
       storedFieldsConsumer.finishDocument();
     } catch (Throwable th) {
-      throw AbortingException.wrap(th);
+      docWriter.onAbortingException(th);
+      throw th;
     }
   }
 
   @Override
-  public void processDocument() throws IOException, AbortingException {
+  public void processDocument() throws IOException {
 
     // How many indexed field names we've seen (collapses
     // multiple field instances by the same name):
@@ -386,17 +397,12 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash.startDocument();
 
     startStoredFields(docState.docID);
-
-    boolean aborting = false;
     try {
       for (IndexableField field : docState.doc) {
         fieldCount = processField(field, fieldGen, fieldCount);
       }
-    } catch (AbortingException ae) {
-      aborting = true;
-      throw ae;
     } finally {
-      if (aborting == false) {
+      if (docWriter.hasHitAbortingException() == false) {
         // Finish each indexed field name seen in the document:
         for (int i=0;i<fieldCount;i++) {
           fields[i].finish();
@@ -410,11 +416,12 @@ final class DefaultIndexingChain extends DocConsumer {
     } catch (Throwable th) {
       // Must abort, on the possibility that on-disk term
       // vectors are now corrupt:
-      throw AbortingException.wrap(th);
+      docWriter.onAbortingException(th);
+      throw th;
     }
   }
 
-  private int processField(IndexableField field, long fieldGen, int fieldCount) throws IOException, AbortingException {
+  private int processField(IndexableField field, long fieldGen, int fieldCount) throws IOException {
     String fieldName = field.name();
     IndexableFieldType fieldType = field.fieldType();
 
@@ -426,12 +433,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
     // Invert indexed fields:
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      
-      // if the field omits norms, the boost cannot be indexed.
-      if (fieldType.omitNorms() && field.boost() != 1.0f) {
-        throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
-      }
-      
       fp = getOrAddField(fieldName, fieldType, true);
       boolean first = fp.fieldGen != fieldGen;
       fp.invert(field, first);
@@ -457,7 +458,8 @@ final class DefaultIndexingChain extends DocConsumer {
         try {
           storedFieldsConsumer.writeField(fp.fieldInfo, field);
         } catch (Throwable th) {
-          throw AbortingException.wrap(th);
+          docWriter.onAbortingException(th);
+          throw th;
         }
       }
     }
@@ -604,12 +606,8 @@ final class DefaultIndexingChain extends DocConsumer {
       // First time we are seeing this field in this segment
 
       FieldInfo fi = fieldInfos.getOrAdd(name);
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fi.setIndexOptions(fieldType.indexOptions());
-      
-      fp = new PerField(fi, invert);
+      initIndexOptions(fi, fieldType.indexOptions());
+      fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
       totalFieldCount++;
@@ -626,19 +624,28 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
     } else if (invert && fp.invertState == null) {
-      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
-      // PerField.invert to allow for later downgrading of the index options:
-      fp.fieldInfo.setIndexOptions(fieldType.indexOptions());
+      initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
       fp.setInvertState();
     }
 
     return fp;
   }
 
+  private void initIndexOptions(FieldInfo info, IndexOptions indexOptions) {
+    // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
+    // IndexOptions to decide what arrays it must create).
+    assert info.getIndexOptions() == IndexOptions.NONE;
+    // This is the first time we are seeing this field indexed, so we now
+    // record the index options so that any future attempt to (illegally)
+    // change the index options of this field, will throw an IllegalArgExc:
+    fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
+    info.setIndexOptions(indexOptions);
+  }
+
   /** NOTE: not static: accesses at least docState, termsHash. */
   private final class PerField implements Comparable<PerField> {
 
+    final int indexCreatedVersionMajor;
     final FieldInfo fieldInfo;
     final Similarity similarity;
 
@@ -665,7 +672,8 @@ final class DefaultIndexingChain extends DocConsumer {
     // reused
     TokenStream tokenStream;
 
-    public PerField(FieldInfo fieldInfo, boolean invert) {
+    public PerField(int indexCreatedVersionMajor, FieldInfo fieldInfo, boolean invert) {
+      this.indexCreatedVersionMajor = indexCreatedVersionMajor;
       this.fieldInfo = fieldInfo;
       similarity = docState.similarity;
       if (invert) {
@@ -674,7 +682,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     void setInvertState() {
-      invertState = new FieldInvertState(fieldInfo.name);
+      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name, fieldInfo.getIndexOptions());
       termsHashPerField = termsHash.addField(invertState, fieldInfo);
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
@@ -698,6 +706,9 @@ final class DefaultIndexingChain extends DocConsumer {
           normValue = 0;
         } else {
           normValue = similarity.computeNorm(invertState);
+          if (normValue == 0) {
+            throw new IllegalStateException("Similarity " + similarity + " return 0 for non-empty field");
+          }
         }
         norms.addValue(docState.docID, normValue);
       }
@@ -708,7 +719,7 @@ final class DefaultIndexingChain extends DocConsumer {
     /** Inverts one field for one document; first is true
      *  if this is the first time we are seeing this field
      *  name in this document. */
-    public void invert(IndexableField field, boolean first) throws IOException, AbortingException {
+    public void invert(IndexableField field, boolean first) throws IOException {
       if (first) {
         // First time we're seeing this field (indexed) in
         // this document:
@@ -737,7 +748,6 @@ final class DefaultIndexingChain extends DocConsumer {
         stream.reset();
         invertState.setAttributeSource(stream);
         termsHashPerField.start(field, first);
-        CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
 
         while (stream.incrementToken()) {
 
@@ -774,10 +784,12 @@ final class DefaultIndexingChain extends DocConsumer {
           }
           invertState.lastStartOffset = startOffset;
 
-          invertState.length++;
-          if (invertState.length < 0) {
-            throw new IllegalArgumentException("too many tokens in field '" + field.name() + "'");
+          try {
+            invertState.length = Math.addExact(invertState.length, invertState.termFreqAttribute.getTermFrequency());
+          } catch (ArithmeticException ae) {
+            throw new IllegalArgumentException("too many tokens for field \"" + field.name() + "\"");
           }
+          
           //System.out.println("  term=" + invertState.termAttribute);
 
           // If we hit an exception in here, we abort
@@ -799,7 +811,8 @@ final class DefaultIndexingChain extends DocConsumer {
             // Document will be deleted above:
             throw new IllegalArgumentException(msg, e);
           } catch (Throwable th) {
-            throw AbortingException.wrap(th);
+            docWriter.onAbortingException(th);
+            throw th;
           }
         }
 
@@ -823,8 +836,6 @@ final class DefaultIndexingChain extends DocConsumer {
         invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
         invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
-
-      invertState.boost *= field.boost();
     }
   }
 }

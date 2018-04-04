@@ -20,13 +20,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 
 import org.apache.solr.handler.component.HighlightComponent;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HighlighterConfigTest extends AbstractSolrTestCase {
+public class HighlighterConfigTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,7 +62,7 @@ public class HighlighterConfigTest extends AbstractSolrTestCase {
     args.put("df", "t_text");
     args.put("hl.fl", "");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-      "standard", 0, 200, args);
+      "", 0, 200, args);
 
     assertU(adoc("t_text", "a long day's night", "id", "1"));
     assertU(commit());

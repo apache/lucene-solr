@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.UndeclaredThrowableException;
 
 /**
  * An AttributeFactory creates instances of {@link AttributeImpl}s.
@@ -28,8 +29,14 @@ public abstract class AttributeFactory {
   
   /**
    * Returns an {@link AttributeImpl} for the supplied {@link Attribute} interface class.
+   * 
+   * @throws UndeclaredThrowableException A wrapper runtime exception thrown if the 
+   *         constructor of the attribute class throws a checked exception. 
+   *         Note that attributes should not throw or declare 
+   *         checked exceptions; this may be verified and fail early in the future. 
    */
-  public abstract AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass);
+  public abstract AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass)
+      throws UndeclaredThrowableException;
   
   /**
    * Returns a correctly typed {@link MethodHandle} for the no-arg ctor of the given class.
@@ -61,17 +68,18 @@ public abstract class AttributeFactory {
     };
 
     DefaultAttributeFactory() {}
-  
+
     @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       try {
         return (AttributeImpl) constructors.get(attClass).invokeExact();
-      } catch (Throwable t) {
-        rethrow(t);
-        throw new AssertionError();
+      } catch (Error | RuntimeException e) {
+        throw e;
+      } catch (Throwable e) {
+        throw new UndeclaredThrowableException(e);
       }
     }
-    
+
     private Class<? extends AttributeImpl> findImplClass(Class<? extends Attribute> attClass) {
       try {
         return Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader()).asSubclass(AttributeImpl.class);
@@ -138,23 +146,12 @@ public abstract class AttributeFactory {
       protected A createInstance() {
         try {
           return (A) constr.invokeExact();
-        } catch (Throwable t) {
-          rethrow(t);
-          throw new AssertionError();
+        } catch (Error | RuntimeException e) {
+          throw e;
+        } catch (Throwable e) {
+          throw new UndeclaredThrowableException(e);
         }
       }
     };
   }
-  
-  // Hack to rethrow unknown Exceptions from {@link MethodHandle#invoke}:
-  // TODO: remove the impl in test-framework, this one is more elegant :-)
-  static void rethrow(Throwable t) {
-    AttributeFactory.<Error>rethrow0(t);
-  }
-  
-  @SuppressWarnings("unchecked")
-  private static <T extends Throwable> void rethrow0(Throwable t) throws T {
-    throw (T) t;
-  }
-  
 }

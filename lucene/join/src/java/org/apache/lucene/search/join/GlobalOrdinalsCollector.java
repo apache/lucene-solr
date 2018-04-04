@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
@@ -37,9 +37,9 @@ final class GlobalOrdinalsCollector implements Collector {
 
   final String field;
   final LongBitSet collectedOrds;
-  final MultiDocValues.OrdinalMap ordinalMap;
+  final OrdinalMap ordinalMap;
 
-  GlobalOrdinalsCollector(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
+  GlobalOrdinalsCollector(String field, OrdinalMap ordinalMap, long valueCount) {
     this.field = field;
     this.ordinalMap = ordinalMap;
     this.collectedOrds = new LongBitSet(valueCount);
@@ -50,8 +50,8 @@ final class GlobalOrdinalsCollector implements Collector {
   }
 
   @Override
-  public boolean needsScores() {
-    return false;
+  public org.apache.lucene.search.ScoreMode scoreMode() {
+    return org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override
@@ -77,10 +77,7 @@ final class GlobalOrdinalsCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         long segmentOrd = docTermOrds.ordValue();
         long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
         collectedOrds.set(globalOrd);
@@ -102,10 +99,7 @@ final class GlobalOrdinalsCollector implements Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docTermOrds.docID()) {
-        docTermOrds.advance(doc);
-      }
-      if (doc == docTermOrds.docID()) {
+      if (docTermOrds.advanceExact(doc)) {
         collectedOrds.set(docTermOrds.ordValue());
       }
     }

@@ -160,6 +160,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *   &lt;null name="ttlParamName"/&gt;
  *   &lt;str name="expirationFieldName"&gt;_expire_at_&lt;/str&gt;
  * &lt;/processor&gt;</pre> 
+ * @since 4.8.0
  */
 public final class DocExpirationUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory 
@@ -388,7 +389,7 @@ public final class DocExpirationUpdateProcessorFactory
             // No-Op
             return;
           }
-          log.info("Begining periodic deletion of expired docs");
+          log.info("Beginning periodic deletion of expired docs");
 
           UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(deleteChainName);
           UpdateRequestProcessor proc = chain.createProcessor(req, rsp);
@@ -454,7 +455,7 @@ public final class DocExpirationUpdateProcessorFactory
    * </p>
    */
   private boolean iAmInChargeOfPeriodicDeletes() {
-    ZkController zk = core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zk = core.getCoreContainer().getZkController();
 
     if (null == zk) return true;
     
@@ -469,7 +470,7 @@ public final class DocExpirationUpdateProcessorFactory
     CloudDescriptor desc = core.getCoreDescriptor().getCloudDescriptor();
     String col = desc.getCollectionName();
 
-    List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getActiveSlices(col));
+    List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getCollection(col).getActiveSlices());
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
     if (slices.isEmpty()) {
       log.error("Collection {} has no active Slices?", col);

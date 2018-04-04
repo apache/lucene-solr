@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -1000,6 +1002,19 @@ final class SegmentTermsEnum extends TermsEnum {
     //System.out.println("  state=" + currentFrame.state);
     //}
     return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.state, reuse, flags);
+  }
+
+  @Override
+  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    assert !eof;
+    //if (DEBUG) {
+    //System.out.println("BTTR.docs seg=" + segment);
+    //}
+    currentFrame.decodeMetaData();
+    //if (DEBUG) {
+    //System.out.println("  state=" + currentFrame.state);
+    //}
+    return fr.parent.postingsReader.impacts(fr.fieldInfo, currentFrame.state, scorer, flags);
   }
 
   @Override

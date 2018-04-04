@@ -18,28 +18,45 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml;
  * this test is useful for catching regressions in indexing the example docs in collections that
- * use data-driven schema and managed schema features provided by configsets/data_driven_schema_configs.
+ * use data driven functionality and managed schema features of the default configset
+ * (configsets/_default).
  */
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
@@ -57,8 +74,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    File data_driven_schema_configs = new File(ExternalPaths.SCHEMALESS_CONFIGSET);
-    assertTrue(data_driven_schema_configs.getAbsolutePath()+" not found!", data_driven_schema_configs.isDirectory());
+    File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue(defaultConfigs.getAbsolutePath()+" not found!", defaultConfigs.isDirectory());
 
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
@@ -72,8 +89,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         "-shards", "2",
         "-replicationFactor", "2",
         "-confname", testCollectionName,
-        "-confdir", "data_driven_schema_configs",
-        "-configsetsDir", data_driven_schema_configs.getParentFile().getParentFile().getAbsolutePath(),
+        "-confdir", "_default",
+        "-configsetsDir", defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
         "-solrUrl", solrUrl
     };
 
@@ -129,10 +146,16 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       cloudClient.request(req);
     }
     cloudClient.commit();
-    Thread.sleep(1000);
 
-    QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
-    int numFound = (int)qr.getResults().getNumFound();
+    int numFound = 0;
+
+    // give the update a chance to take effect.
+    for (int idx = 0; idx < 100; ++idx) {
+      QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
+      numFound = (int) qr.getResults().getNumFound();
+      if (numFound == expectedXmlDocCount) break;
+      Thread.sleep(100);
+    }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
 
     log.info("Updating Config for " + testCollectionName);
@@ -192,6 +215,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         "-value", maxTime.toString(),
         "-solrUrl", solrUrl
     };
+
+    Map<String, Long> startTimes = getSoftAutocommitInterval(testCollectionName);
+
     SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     log.info("Sending set-property '" + prop + "'=" + maxTime + " to SolrCLI.ConfigTool.");
@@ -201,5 +227,63 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
     assertNotNull(maxTimeFromConfig);
     assertEquals(maxTime, maxTimeFromConfig);
+
+    // Just check that we can access paths with slashes in them both through an intermediate method and explicitly
+    // using atPath.
+    assertEquals("Should have been able to get a value from the /query request handler",
+        "explicit", SolrCLI.asString("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+
+    assertEquals("Should have been able to get a value from the /query request handler",
+        "explicit", SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+
+    log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+
+    // Since it takes some time for this command to complete we need to make sure all the reloads for
+    // all the cores have been done.
+    boolean allGood = false;
+    Map<String, Long> curSoftCommitInterval = null;
+    for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+      curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
+      if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) { // no point in even trying if they're not the same size!
+        allGood = true;
+        for (Map.Entry<String, Long> currEntry : curSoftCommitInterval.entrySet()) {
+          if (currEntry.getValue().equals(maxTime) == false) {
+            allGood = false;
+          }
+        }
+      }
+      if (allGood == false) {
+        Thread.sleep(100);
+      }
+    }
+    assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
   }
+
+  // Collect all of the autoSoftCommit intervals.
+  private Map<String, Long> getSoftAutocommitInterval(String collection) throws Exception {
+    Map<String, Long> ret = new HashMap<>();
+    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collection);
+    for (Slice slice : coll.getActiveSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";
+        Map respMap = getAsMap(cloudClient, uri);
+        Long maxTime = (Long) (getObjectByPath(respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
+        ret.put(replica.getCoreName(), maxTime);
+      }
+    }
+    return ret;
+  }
+
+  private Map getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
+    HttpGet get = new HttpGet(uri);
+    HttpEntity entity = null;
+    try {
+      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
+      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    } finally {
+      EntityUtils.consumeQuietly(entity);
+    }
+  }
+
 }

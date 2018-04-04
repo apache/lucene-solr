@@ -1,0 +1,78 @@
+= Working with Enum Fields
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+EnumFieldType allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric. Examples of this are severity lists, or risk definitions.
+
+.EnumField has been Deprecated
+[WARNING]
+====
+EnumField has been deprecated in favor of EnumFieldType; all configuration examples below use EnumFieldType.
+====
+
+== Defining an EnumFieldType in schema.xml
+
+The EnumFieldType type definition is quite simple, as in this example defining field types for "priorityLevel" and "riskLevel" enumerations:
+
+[source,xml]
+----
+<fieldType name="priorityLevel" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="priority"/>
+<fieldType name="riskLevel"     class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="risk"    />
+----
+
+Besides the `name` and the `class`, which are common to all field types, this type also takes two additional parameters:
+
+`enumsConfig`:: the name of a configuration file that contains the `<enum/>` list of field values and their order that you wish to use with this field type. If a path to the file is not defined specified, the file should be in the `conf` directory for the collection.
+`enumName`:: the name of the specific enumeration in the `enumsConfig` file to use for this type.
+
+Note that `docValues="true"` must be specified either in the EnumFieldType fieldType or field specification.
+
+== Defining the EnumFieldType Configuration File
+
+The file named with the `enumsConfig` parameter can contain multiple enumeration value lists with different names if there are multiple uses for enumerations in your Solr schema.
+
+In this example, there are two value lists defined. Each list is between `enum` opening and closing tags:
+
+[source,xml]
+----
+<?xml version="1.0" ?>
+<enumsConfig>
+  <enum name="priority">
+    <value>Not Available</value>
+    <value>Low</value>
+    <value>Medium</value>
+    <value>High</value>
+    <value>Urgent</value>
+  </enum>
+  <enum name="risk">
+    <value>Unknown</value>
+    <value>Very Low</value>
+    <value>Low</value>
+    <value>Medium</value>
+    <value>High</value>
+    <value>Critical</value>
+  </enum>
+</enumsConfig>
+----
+
+.Changing Values
+[IMPORTANT]
+====
+You cannot change the order, or remove, existing values in an `<enum/>` without reindexing.
+
+You can however add new values to the end.
+====

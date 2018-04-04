@@ -29,7 +29,7 @@ import org.apache.lucene.util.Bits;
 public final class MatchAllDocsQuery extends Query {
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public String toString() {
@@ -39,6 +39,12 @@ public final class MatchAllDocsQuery extends Query {
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         final float score = score();

@@ -68,7 +68,7 @@
 
   
   </query>
-  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler" default="true">
+  <requestHandler name="/mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler" default="true">
     <!-- default values for query parameters -->
 
   </requestHandler>

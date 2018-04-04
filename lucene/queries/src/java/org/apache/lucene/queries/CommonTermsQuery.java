@@ -22,11 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -125,9 +124,9 @@ public class CommonTermsQuery extends Query {
     }
     final List<LeafReaderContext> leaves = reader.leaves();
     final int maxDoc = reader.maxDoc();
-    final TermContext[] contextArray = new TermContext[terms.size()];
+    final TermStates[] contextArray = new TermStates[terms.size()];
     final Term[] queryTerms = this.terms.toArray(new Term[0]);
-    collectTermContext(reader, leaves, contextArray, queryTerms);
+    collectTermStates(reader, leaves, contextArray, queryTerms);
     return buildQuery(maxDoc, contextArray, queryTerms);
   }
   
@@ -147,21 +146,21 @@ public class CommonTermsQuery extends Query {
   }
   
   protected Query buildQuery(final int maxDoc,
-      final TermContext[] contextArray, final Term[] queryTerms) {
+                             final TermStates[] contextArray, final Term[] queryTerms) {
     List<Query> lowFreqQueries = new ArrayList<>();
     List<Query> highFreqQueries = new ArrayList<>();
     for (int i = 0; i < queryTerms.length; i++) {
-      TermContext termContext = contextArray[i];
-      if (termContext == null) {
+      TermStates termStates = contextArray[i];
+      if (termStates == null) {
         lowFreqQueries.add(newTermQuery(queryTerms[i], null));
       } else {
-        if ((maxTermFrequency >= 1f && termContext.docFreq() > maxTermFrequency)
-            || (termContext.docFreq() > (int) Math.ceil(maxTermFrequency
+        if ((maxTermFrequency >= 1f && termStates.docFreq() > maxTermFrequency)
+            || (termStates.docFreq() > (int) Math.ceil(maxTermFrequency
                 * (float) maxDoc))) {
           highFreqQueries
-              .add(newTermQuery(queryTerms[i], termContext));
+              .add(newTermQuery(queryTerms[i], termStates));
         } else {
-          lowFreqQueries.add(newTermQuery(queryTerms[i], termContext));
+          lowFreqQueries.add(newTermQuery(queryTerms[i], termStates));
         }
       }
     }
@@ -209,16 +208,15 @@ public class CommonTermsQuery extends Query {
     return builder.build();
   }
   
-  public void collectTermContext(IndexReader reader,
-      List<LeafReaderContext> leaves, TermContext[] contextArray,
-      Term[] queryTerms) throws IOException {
+  public void collectTermStates(IndexReader reader,
+                                List<LeafReaderContext> leaves, TermStates[] contextArray,
+                                Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : leaves) {
-      final Fields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
-        TermContext termContext = contextArray[i];
-        final Terms terms = fields.terms(term.field());
+        TermStates termStates = contextArray[i];
+        final Terms terms = context.reader().terms(term.field());
         if (terms == null) {
           // field does not exist
           continue;
@@ -228,12 +226,12 @@ public class CommonTermsQuery extends Query {
         
         if (termsEnum == TermsEnum.EMPTY) continue;
         if (termsEnum.seekExact(term.bytes())) {
-          if (termContext == null) {
-            contextArray[i] = new TermContext(reader.getContext(),
+          if (termStates == null) {
+            contextArray[i] = new TermStates(reader.getContext(),
                 termsEnum.termState(), context.ord, termsEnum.docFreq(),
                 termsEnum.totalTermFreq());
           } else {
-            termContext.register(termsEnum.termState(), context.ord,
+            termStates.register(termsEnum.termState(), context.ord,
                 termsEnum.docFreq(), termsEnum.totalTermFreq());
           }
           
@@ -404,10 +402,10 @@ public class CommonTermsQuery extends Query {
    * Builds a new TermQuery instance.
    * <p>This is intended for subclasses that wish to customize the generated queries.</p>
    * @param term term
-   * @param context the TermContext to be used to create the low level term query. Can be <code>null</code>.
+   * @param termStates the TermStates to be used to create the low level term query. Can be <code>null</code>.
    * @return new TermQuery instance
    */
-  protected Query newTermQuery(Term term, TermContext context) {
-    return context == null ? new TermQuery(term) : new TermQuery(term, context);
+  protected Query newTermQuery(Term term, TermStates termStates) {
+    return termStates == null ? new TermQuery(term) : new TermQuery(term, termStates);
   }
 }

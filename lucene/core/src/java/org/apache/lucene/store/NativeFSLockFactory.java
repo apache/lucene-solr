@@ -93,15 +93,27 @@ public final class NativeFSLockFactory extends FSLockFactory {
     
     Path lockFile = lockDir.resolve(lockName);
 
+    IOException creationException = null;
     try {
       Files.createFile(lockFile);
     } catch (IOException ignore) {
       // we must create the file to have a truly canonical path.
       // if it's already created, we don't care. if it cant be created, it will fail below.
+      creationException = ignore;
     }
     
     // fails if the lock file does not exist
-    final Path realPath = lockFile.toRealPath();
+    final Path realPath;
+    try {
+      realPath = lockFile.toRealPath();
+    } catch (IOException e) {
+      // if we couldn't resolve the lock file, it might be because we couldn't create it.
+      // so append any exception from createFile as a suppressed exception, in case its useful
+      if (creationException != null) {
+        e.addSuppressed(creationException);
+      }
+      throw e;
+    }
     
     // used as a best-effort check, to see if the underlying file has changed
     final FileTime creationTime = Files.readAttributes(realPath, BasicFileAttributes.class).creationTime();

@@ -17,12 +17,13 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.cloud.ZkController;
@@ -86,10 +87,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
-      CoreContainer container = info.getReq().getCore().getCoreDescriptor().getCoreContainer();
+      CoreContainer container = info.getReq().getCore().getCoreContainer();
 
       final SolrCore fromCore = container.getCore(fromIndex);
 
@@ -101,12 +102,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final Query joinQuery;
       try {
         joinQuery = JoinUtil.createJoinQuery(fromField, true,
-            toField, fromQuery, fromHolder.get(), scoreMode);
+            toField, fromQuery, fromHolder.get(), this.scoreMode);
       } finally {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(reader);
+      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -156,11 +157,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       final Query jq = JoinUtil.createJoinQuery(fromField, true,
-          toField, fromQuery, info.getReq().getSearcher(), scoreMode);
-      return jq.rewrite(reader);
+          toField, fromQuery, info.getReq().getSearcher(), this.scoreMode);
+      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
     }
 
 
@@ -222,7 +223,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
-          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          CoreContainer container = req.getCore().getCoreContainer();
 
           final String coreName = getCoreName(fromIndex, container);
           final SolrCore fromCore = container.getCore(coreName);
@@ -274,10 +275,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
   public static String getCoreName(final String fromIndex, CoreContainer container) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
-      final String resolved =
-        zkController.getClusterState().hasCollection(fromIndex)
-          ? fromIndex : resolveAlias(fromIndex, zkController);
-      if (resolved == null) {
+      final String resolved = resolveAlias(fromIndex, zkController);
+      // TODO DWS: no need for this since later, clusterState.getCollection will throw a reasonable error
+      if (!zkController.getClusterState().hasCollection(resolved)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
@@ -288,28 +288,21 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   private static String resolveAlias(String fromIndex, ZkController zkController) {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
-    if (aliases != null) {
-      final String resolved;
-      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
-      resolved = (collectionAliases != null) ? collectionAliases.get(fromIndex) : null;
-      if (resolved != null) {
-        if (resolved.split(",").length > 1) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "SolrCloud join: Collection alias '" + fromIndex +
-                  "' maps to multiple collections (" + resolved +
-                  "), which is not currently supported for joins.");
-        }
-        return resolved;
-      }
+    List<String> collections = aliases.resolveAliases(fromIndex); // if not an alias, returns input
+    if (collections.size() != 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: Collection alias '" + fromIndex +
+              "' maps to multiple collections (" + collections +
+              "), which is not currently supported for joins.");
     }
-    return null;
+    return collections.get(0);
   }
 
   private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
-    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: multiple shards not yet supported " + fromIndex);

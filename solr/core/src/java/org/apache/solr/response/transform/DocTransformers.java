@@ -77,6 +77,13 @@ public class DocTransformers extends DocTransformer
     }
   }
 
+  @Override
+  public void transform(SolrDocument doc, int docid) throws IOException {
+    for( DocTransformer a : children ) {
+      a.transform( doc, docid);
+    }
+  }
+
   /** Returns true if and only if at least 1 child transformer returns true */
   @Override
   public boolean needsSolrIndexSearcher() {

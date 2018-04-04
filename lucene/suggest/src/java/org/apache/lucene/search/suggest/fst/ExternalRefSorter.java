@@ -105,7 +105,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
    * Iterate over byte refs in a file.
    */
   // TODO: this class is a bit silly ... sole purpose is to "remove" Closeable from what #iterator returns:
-  class ByteSequenceIterator implements BytesRefIterator {
+  static class ByteSequenceIterator implements BytesRefIterator {
     private final OfflineSorter.ByteSequencesReader reader;
     private BytesRef scratch;
     

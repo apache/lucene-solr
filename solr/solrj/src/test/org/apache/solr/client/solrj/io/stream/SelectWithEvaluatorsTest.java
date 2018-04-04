@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
@@ -92,6 +93,9 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
     
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -101,21 +105,24 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
       .withFunctionName("if", IfThenElseEvaluator.class)
       .withFunctionName("gt", GreaterThanEvaluator.class)
       ;
-    
-    // Basic test
-    clause = "select("
-            +   "id,"
-            +   "add(b_i,c_d) as result,"
-            +   "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")"
-            + ")";
-    stream = factory.constructStream(clause);
-    tuples = getTuples(stream);
-    assertFields(tuples, "id", "result");
-    assertNotFields(tuples, "a_s", "b_i", "c_d", "d_b");
-    assertEquals(1, tuples.size());
-    assertDouble(tuples.get(0), "result", 4.3);
-    assertEquals(4.3, tuples.get(0).get("result"));
-
+    try {
+      // Basic test
+      clause = "select("
+          + "id,"
+          + "add(b_i,c_d) as result,"
+          + "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")"
+          + ")";
+      stream = factory.constructStream(clause);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertFields(tuples, "id", "result");
+      assertNotFields(tuples, "a_s", "b_i", "c_d", "d_b");
+      assertEquals(1, tuples.size());
+      assertDouble(tuples.get(0), "result", 4.3);
+      assertEquals(4.3, tuples.get(0).get("result"));
+    } finally {
+      solrClientCache.close();
+    }
   }
   
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

@@ -1,0 +1,85 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html",
+  "description": "Actions on non-specific cores. See the /cores/{core} endpoint for actions on specific, named, cores.",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cores"
+    ]
+  },
+  "commands": {
+    "create": {
+      "type" : "object",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-create",
+      "description": "Creates a new core. If you are using SolrCloud, you should use the Collections API instead. While a core for a SolrCloud cluster can be created with this API, it is considered an expert-level action. The Collections API has commands for creating new shards and replicas that ensure the safety of those actions within your cluster.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The core name to create. If a core with this name already exists, an error will be returned."
+        },
+        "instanceDir": {
+          "type": "string",
+          "description": "The core instance directory, where files for this core should be stored. While this parameter is not required, if it is not defined it will default to a path relative to Solr Home that includes the name you've given the new core. This location MUST EXIST prior to creating the core, and it must include a conf directory that includes solrconfig.xml and your schema, either as a schema.xml file or using the managed schema feature."
+        },
+        "schema": {
+          "type": "string",
+          "description": "Name of the schema file to use for the core. Please note that if you are using a 'managed schema' (Solr's default behavior) then any value for this property that does not match the effective managedSchemaResourceName will be read once, backed up, and converted for managed schema use. If you are using the default name (schema.xml or the managed schema name), you do not need to define the schema file name."
+        },
+        "dataDir": {
+          "type": "string",
+          "description": "Name of the data directory relative to instanceDir. This is where the index files will be stored."
+        },
+        "config": {
+          "type": "string",
+          "description": "Name of the config file (i.e., solrconfig.xml) relative to instanceDir. If you are using the default name (solrconfig.xml), you do not need to define the config file name."
+        },
+        "configSet": {
+          "type": "string",
+          "documentation": "https://lucene.apache.org/solr/guide/config-sets.html",
+          "description": "The name of a config set to use. The config set must already exist. The solr.xml file defines the location of the configset base directory, and configuration files can be shared between cores by defining sub-directories. The files in the named configSet will be used for the schema and config properties instead of defining them explicitly."
+        },
+        "loadOnStartup": {
+          "type": "boolean",
+          "description": "If true, the core will be loaded on startup. Set to false to enable lazy loading, where the core will only be loaded if it is referenced or called.",
+          "default": "true"
+        },
+        "transient": {
+          "type": "boolean",
+          "description": "Allows Solr to unload the core if resources are required.",
+          "default": "false"
+        },
+        "shard": {
+          "type": "string",
+          "description": "In SolrCloud mode, the shard this core should belong to."
+        },
+        "collection": {
+          "type": "string",
+          "description": "The name of the collection this core belongs to."
+        },
+        "props": {
+          "type": "object",
+          "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
+          "description": "Allows adding core.properties for the collection.",
+          "additionalProperties": true
+        },
+        "coreNodeName": {
+          "type": "string",
+          "description": "The replica name."
+        },
+        "numShards": {
+          "type":"integer",
+          "description":"The number of shards to create for this core."
+        },
+        "async": {
+          "type": "string",
+          "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously when this is defined."
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

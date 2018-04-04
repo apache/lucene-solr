@@ -231,7 +231,7 @@ public class MergeState {
     List<CodecReader> readers = new ArrayList<>(originalReaders.size());
 
     for (CodecReader leaf : originalReaders) {
-      Sort segmentSort = leaf.getIndexSort();
+      Sort segmentSort = leaf.getMetaData().getSort();
 
       if (segmentSort == null) {
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:

@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import java.util.Iterator;
-
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
@@ -33,9 +31,6 @@ import org.apache.lucene.util.InfoStream;
  * <li>Number of RAM resident documents - configured via
  * {@link IndexWriterConfig#setMaxBufferedDocs(int)}</li>
  * </ul>
- * The policy also applies pending delete operations (by term and/or query),
- * given the threshold set in
- * {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)}.
  * <p>
  * {@link IndexWriter} consults the provided {@link FlushPolicy} to control the
  * flushing process. The policy is informed for each added or updated document
@@ -107,31 +102,8 @@ abstract class FlushPolicy {
   protected ThreadState findLargestNonPendingWriter(
       DocumentsWriterFlushControl control, ThreadState perThreadState) {
     assert perThreadState.dwpt.getNumDocsInRAM() > 0;
-    long maxRamSoFar = perThreadState.bytesUsed;
     // the dwpt which needs to be flushed eventually
-    ThreadState maxRamUsingThreadState = perThreadState;
-    assert !perThreadState.flushPending : "DWPT should have flushed";
-    Iterator<ThreadState> activePerThreadsIterator = control.allActiveThreadStates();
-    int count = 0;
-    while (activePerThreadsIterator.hasNext()) {
-      ThreadState next = activePerThreadsIterator.next();
-      if (!next.flushPending) {
-        final long nextRam = next.bytesUsed;
-        if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
-          if (infoStream.isEnabled("FP")) {
-            infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.dwpt.getNumDocsInRAM());
-          }
-          count++;
-          if (nextRam > maxRamSoFar) {
-            maxRamSoFar = nextRam;
-            maxRamUsingThreadState = next;
-          }
-        }
-      }
-    }
-    if (infoStream.isEnabled("FP")) {
-      infoStream.message("FP", count + " in-use non-flushing threads states");
-    }
+    ThreadState maxRamUsingThreadState = control.findLargestNonPendingWriter();
     assert assertMessage("set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;
   }

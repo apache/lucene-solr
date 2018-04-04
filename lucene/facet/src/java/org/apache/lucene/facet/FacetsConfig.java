@@ -105,7 +105,7 @@ public class FacetsConfig {
    *
    *  @return The default configuration to be used for dimensions that 
    *  are not yet set in the {@link FacetsConfig} */
-  protected DimConfig getDefaultDimConfig(){
+  protected DimConfig getDefaultDimConfig() {
     return DEFAULT_DIM_CONFIG;
   }
   

@@ -61,7 +61,9 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   final long MIN_LONG;
 
   public TestDistributedStatsComponentCardinality() {
-    super();
+    // we need DVs on point fields to compute stats
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     // we want some randomness in the shard number, but we don't want multiple iterations
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(3) + 1);
 
@@ -142,13 +144,17 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       Map<String,FieldStatsInfo> stats = rsp.getFieldStatsInfo();
 
-      for (String f : STAT_FIELDS) {
-        // regardless of log2m and regwidth, the estimated cardinality of the 
-        // hashed vs prehashed values should be exactly the same for each field
-
-        assertEquals(f + ": hashed vs prehashed, real="+ numMatches + ", p=" + p,
-                     stats.get(f).getCardinality().longValue(),
-                     stats.get(f+"_prehashed_l").getCardinality().longValue());
+      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+        log.warn("SOLR-10918: can't relying on exact match with pre-hashed values when using points");
+      } else {
+        for (String f : STAT_FIELDS) {
+          // regardless of log2m and regwidth, the estimated cardinality of the 
+          // hashed vs prehashed values should be exactly the same for each field
+          
+          assertEquals(f + ": hashed vs prehashed, real="+ numMatches + ", p=" + p,
+                       stats.get(f).getCardinality().longValue(),
+                       stats.get(f+"_prehashed_l").getCardinality().longValue());
+        }
       }
 
       for (String f : STAT_FIELDS) {
@@ -244,7 +250,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                                               final int highId, 
                                               final int log2m, 
                                               final int regwidth) {
-    ModifiableSolrParams p = params("q", "id:["+lowId+" TO "+highId+"]", 
+    ModifiableSolrParams p = params("q", "id_i1:["+lowId+" TO "+highId+"]", 
                                     "rows", "0", "stats", "true");
     final String prefix = "{!cardinality=true hllLog2m="+log2m+" hllRegwidth="+regwidth;
     for (String f : STAT_FIELDS) {
@@ -267,7 +273,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                                               final int highId, 
                                               final double lowAccuracy,
                                               final double highAccuracy) {
-    ModifiableSolrParams p = params("q", "id:["+lowId+" TO "+highId+"]", 
+    ModifiableSolrParams p = params("q", "id_i1:["+lowId+" TO "+highId+"]", 
                                     "rows", "0", "stats", "true");
     final String[] prefixes = new String[] {
       "{!cardinality=" + lowAccuracy + " key=low_",

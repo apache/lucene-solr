@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate bounding box limited on two sides (top lat, bottom lat).
  *
@@ -97,6 +101,22 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
     this.edgePoints = new GeoPoint[]{centerPoint};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateVerticalLine(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, topLat);
+    SerializableObject.writeDouble(outputStream, bottomLat);
+    SerializableObject.writeDouble(outputStream, longitude);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     final double newTopLat = topLat + angle;
@@ -145,6 +165,11 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, boundingPlane, topPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.addVerticalPlane(planetModel, longitude, plane, boundingPlane, topPlane, bottomPlane)
@@ -154,7 +179,7 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     //System.err.println(this+" relationship to "+path);
-    if (path.intersects(plane, planePoints, boundingPlane, topPlane, bottomPlane)) {
+    if (intersects(path)) {
       //System.err.println(" overlaps");
       return OVERLAPS;
     }

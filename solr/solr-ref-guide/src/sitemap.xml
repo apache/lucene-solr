@@ -1,0 +1,17 @@
+---
+layout: none
+search: exclude
+---
+
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"
+        xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {% for page in site.pages %}
+  {% unless page.search == "exclude" %}
+  <url>
+    <loc>{{site.url}}{{site.solr-attributes.solr-guide-version-path}}{{page.url}}</loc>
+  </url>
+  {% endunless %}
+  {% endfor %}
+</urlset>

@@ -33,4 +33,13 @@ public abstract class PrimitiveFieldType extends FieldType {
       properties |= OMIT_NORMS;
     }
   }
+
+  @Override
+  protected void checkSupportsDocValues() { // primitive types support DocValues
+  }
+
+  @Override
+  public MultiValueSelector getDefaultMultiValueSelectorForSort(SchemaField field, boolean reverse) {
+    return reverse ? MultiValueSelector.MAX : MultiValueSelector.MIN;
+  }
 }

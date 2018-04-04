@@ -24,13 +24,13 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
@@ -51,16 +51,18 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
     this(field, LongValuesSource.fromLongField(field), hits, ranges);
   }
 
-  /** Create {@code RangeFacetCounts}, using the provided
-   *  {@link ValueSource}. */
+  /** Create {@code LongRangeFacetCounts}, using the provided
+   *  {@link LongValuesSource}. */
   public LongRangeFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits, LongRange... ranges) throws IOException {
     this(field, valueSource, hits, null, ranges);
   }
 
-  /** Create {@code RangeFacetCounts}, using the provided
-   *  {@link ValueSource}, and using the provided Filter as
+  /** Create {@code LongRangeFacetCounts}, using the provided
+   *  {@link LongValuesSource}, and using the provided Filter as
    *  a fastmatch: only documents passing the filter are
-   *  checked for the matching ranges.  The filter must be
+   *  checked for the matching ranges, which is helpful when
+   *  the provided {@link LongValuesSource} is costly per-document,
+   *  such as a geo distance.  The filter must be
    *  random access (implement {@link DocIdSet#bits}). */
   public LongRangeFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits, Query fastMatchQuery, LongRange... ranges) throws IOException {
     super(field, ranges, fastMatchQuery);
@@ -83,7 +85,7 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
         final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context);
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
-        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
+        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES);
         Scorer s = fastMatchWeight.scorer(hits.context);
         if (s == null) {
           continue;
@@ -121,7 +123,7 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
 
     missingCount += x;
 
-    //System.out.println("totCount " + totCount + " missingCount " + counter.missingCount);
+    //System.out.println("totCount " + totCount + " x " + x + " missingCount " + missingCount);
     totCount -= missingCount;
   }
 }

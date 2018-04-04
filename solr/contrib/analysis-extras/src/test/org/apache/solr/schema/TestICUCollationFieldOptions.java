@@ -52,9 +52,9 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertQ("Collated TQ: ",
         req("fl", "id", "q", "sort_ignore_punctuation:foobar", "sort", "id asc" ),
                "//*[@numFound='3']",
-               "//result/doc[1]/int[@name='id'][.=1]",
-               "//result/doc[2]/int[@name='id'][.=2]",
-               "//result/doc[3]/int[@name='id'][.=3]"
+               "//result/doc[1]/str[@name='id'][.=1]",
+               "//result/doc[2]/str[@name='id'][.=2]",
+               "//result/doc[3]/str[@name='id'][.=3]"
      );
   }
   
@@ -66,8 +66,8 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertQ("Collated TQ: ",
         req("fl", "id", "q", "sort_ignore_space:\"foo bar\"", "sort", "id asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=2]",
-               "//result/doc[2]/int[@name='id'][.=3]"
+               "//result/doc[1]/str[@name='id'][.=2]",
+               "//result/doc[2]/str[@name='id'][.=3]"
      );
   }
   
@@ -79,8 +79,8 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertQ("Collated sort: ",
         req("fl", "id", "q", "id:[4 TO 5]", "sort", "sort_numerics asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=5]",
-               "//result/doc[2]/int[@name='id'][.=4]"
+               "//result/doc[1]/str[@name='id'][.=5]",
+               "//result/doc[2]/str[@name='id'][.=4]"
      );
   }
   
@@ -92,15 +92,15 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertQ("Collated TQ: ",
         req("fl", "id", "q", "sort_ignore_accents:resume", "sort", "id asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=6]",
-               "//result/doc[2]/int[@name='id'][.=9]"
+               "//result/doc[1]/str[@name='id'][.=6]",
+               "//result/doc[2]/str[@name='id'][.=9]"
      );
     
     assertQ("Collated TQ: ",
         req("fl", "id", "q", "sort_ignore_accents:Resume", "sort", "id asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=7]",
-               "//result/doc[2]/int[@name='id'][.=8]"
+               "//result/doc[1]/str[@name='id'][.=7]",
+               "//result/doc[2]/str[@name='id'][.=8]"
      );
   }
   
@@ -112,8 +112,8 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertQ("Collated sort: ",
         req("fl", "id", "q", "id:6 OR id:8", "sort", "sort_uppercase_first asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=8]",
-               "//result/doc[2]/int[@name='id'][.=6]"
+               "//result/doc[1]/str[@name='id'][.=8]",
+               "//result/doc[2]/str[@name='id'][.=6]"
      );
   }
 }

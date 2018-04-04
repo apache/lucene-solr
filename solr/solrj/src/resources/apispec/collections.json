@@ -1,0 +1,13 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#list",
+  "description": "List all available collections and their properties.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/collections",
+      "/c"
+    ]
+  }
+}

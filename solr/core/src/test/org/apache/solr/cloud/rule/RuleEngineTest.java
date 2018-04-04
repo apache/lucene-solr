@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,12 +29,15 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
+import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.Snitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -73,7 +77,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
             "'replica':'1',shard:'*','node':'*'}," +
             " {'freedisk':'>1'}]");
 
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
@@ -94,8 +98,8 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null) {
 
       @Override
-      protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, CoreContainer cc) {
-        return new ServerSnitchContext(info, node, snitchSession,cc){
+      protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, SolrCloudManager cloudManager) {
+        return new ServerSnitchContext(info, node, snitchSession,cloudManager){
           @Override
           public Map getZkJson(String path) {
             if(ZkStateReader.ROLES.equals(path)){
@@ -147,7 +151,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
             "{node:'!127.0.0.1:49947_'}," +
             "{freedisk:'>1'}]");
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
@@ -188,6 +192,32 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
     assertNotNull(mapping);
+
+    mapping = new ReplicaAssigner(
+        rules,
+        shardVsReplicaCount, Collections.emptyList(),
+        new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), new DelegatingCloudManager(null){
+      @Override
+      public NodeStateProvider getNodeStateProvider() {
+        return new NodeStateProvider() {
+          @Override
+          public void close() throws IOException { }
+
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            return (Map<String, Object>) MockSnitch.nodeVsTags.get(node);
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            return null;
+          }
+        };
+      }
+    }, null).getNodeMappings();
+    assertNotNull(mapping);
+
+
 
     rules = parseRules(
         "[{cores:'<4'}, " +
@@ -236,7 +266,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         "node5:80", makeMap("rack", "182")
     );
     MockSnitch.nodeVsTags = nodeVsTags;
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();

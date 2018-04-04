@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
  * <p>
- * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean)} method
+ * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean, boolean)} method
  * for instantiating a TopFieldCollector.
  *
  * @lucene.experimental
@@ -39,16 +40,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // always compare lower than a real hit; this would
   // save having to check queueFull on each insert
 
-  private static abstract class OneComparatorLeafCollector implements LeafCollector {
+  private static abstract class MultiComparatorLeafCollector implements LeafCollector {
 
     final LeafFieldComparator comparator;
     final int reverseMul;
     final boolean mayNeedScoresTwice;
     Scorer scorer;
 
-    OneComparatorLeafCollector(LeafFieldComparator comparator, int reverseMul, boolean mayNeedScoresTwice) {
-      this.comparator = comparator;
-      this.reverseMul = reverseMul;
+    MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul, boolean mayNeedScoresTwice) {
+      if (comparators.length == 1) {
+        this.reverseMul = reverseMul[0];
+        this.comparator = comparators[0];
+      } else {
+        this.reverseMul = 1;
+        this.comparator = new MultiLeafFieldComparator(comparators, reverseMul);
+      }
       this.mayNeedScoresTwice = mayNeedScoresTwice;
     }
 
@@ -57,78 +63,26 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (mayNeedScoresTwice && scorer instanceof ScoreCachingWrappingScorer == false) {
         scorer = new ScoreCachingWrappingScorer(scorer);
       }
-      this.scorer = scorer;
       comparator.setScorer(scorer);
+      this.scorer = scorer;
     }
   }
 
-  private static abstract class MultiComparatorLeafCollector implements LeafCollector {
-
-    final LeafFieldComparator[] comparators;
-    final int[] reverseMul;
-    final LeafFieldComparator firstComparator;
-    final int firstReverseMul;
-    final boolean mayNeedScoresTwice;
-    Scorer scorer;
-
-    MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul, boolean mayNeedScoresTwice) {
-      this.comparators = comparators;
-      this.reverseMul = reverseMul;
-      firstComparator = comparators[0];
-      firstReverseMul = reverseMul[0];
-      this.mayNeedScoresTwice = mayNeedScoresTwice;
+  static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
+    final SortField[] fields1 = searchSort.getSort();
+    final SortField[] fields2 = indexSort.getSort();
+    // early termination is possible if fields1 is a prefix of fields2
+    if (fields1.length > fields2.length) {
+      return false;
     }
+    return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
+  }
 
-    protected final int compareBottom(int doc) throws IOException {
-      int cmp = firstReverseMul * firstComparator.compareBottom(doc);
-      if (cmp != 0) {
-        return cmp;
-      }
-      for (int i = 1; i < comparators.length; ++i) {
-        cmp = reverseMul[i] * comparators[i].compareBottom(doc);
-        if (cmp != 0) {
-          return cmp;
-        }
-      }
-      return 0;
-    }
-
-    protected final void copy(int slot, int doc) throws IOException {
-      for (LeafFieldComparator comparator : comparators) {
-        comparator.copy(slot, doc);
-      }
-    }
-
-    protected final void setBottom(int slot) throws IOException {
-      for (LeafFieldComparator comparator : comparators) {
-        comparator.setBottom(slot);
-      }
-    }
-
-    protected final int compareTop(int doc) throws IOException {
-      int cmp = firstReverseMul * firstComparator.compareTop(doc);
-      if (cmp != 0) {
-        return cmp;
-      }
-      for (int i = 1; i < comparators.length; ++i) {
-        cmp = reverseMul[i] * comparators[i].compareTop(doc);
-        if (cmp != 0) {
-          return cmp;
-        }
-      }
-      return 0;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-      if (mayNeedScoresTwice && scorer instanceof ScoreCachingWrappingScorer == false) {
-        scorer = new ScoreCachingWrappingScorer(scorer);
-      }
-      for (LeafFieldComparator comparator : comparators) {
-        comparator.setScorer(scorer);
-      }
-    }
+  static int estimateRemainingHits(int hitCount, int doc, int maxDoc) {
+    double hitRatio = (double) hitCount / (doc + 1);
+    int remainingDocs = maxDoc - doc - 1;
+    int remainingHits = (int) (remainingDocs * hitRatio);
+    return remainingHits;
   }
 
   /*
@@ -137,14 +91,17 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    */
   private static class SimpleFieldCollector extends TopFieldCollector {
 
+    final Sort sort;
     final FieldValueHitQueue<Entry> queue;
     final boolean trackDocScores;
     final boolean trackMaxScore;
     final boolean mayNeedScoresTwice;
+    final boolean trackTotalHits;
 
     public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields,
-        boolean trackDocScores, boolean trackMaxScore) {
+        boolean trackDocScores, boolean trackMaxScore, boolean trackTotalHits) {
       super(queue, numHits, fillFields, sort.needsScores() || trackDocScores || trackMaxScore);
+      this.sort = sort;
       this.queue = queue;
       if (trackMaxScore) {
         maxScore = Float.NEGATIVE_INFINITY; // otherwise we would keep NaN
@@ -155,6 +112,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       // we might call scorer.score() several times per doc so wrapping the scorer
       // to cache scores would help
       this.mayNeedScoresTwice = sort.needsScores() && (trackDocScores || trackMaxScore);
+      this.trackTotalHits = trackTotalHits;
     }
 
     @Override
@@ -163,104 +121,69 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       final LeafFieldComparator[] comparators = queue.getComparators(context);
       final int[] reverseMul = queue.getReverseMul();
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyTerminate = trackTotalHits == false &&
+          trackMaxScore == false &&
+          indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
+      final int initialTotalHits = totalHits;
 
-      if (comparators.length == 1) {
-        return new OneComparatorLeafCollector(comparators[0], reverseMul[0], mayNeedScoresTwice) {
+      return new MultiComparatorLeafCollector(comparators, reverseMul, mayNeedScoresTwice) {
 
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = Float.NaN;
-            if (trackMaxScore) {
-              score = scorer.score();
-              if (score > maxScore) {
-                maxScore = score;
+        @Override
+        public void collect(int doc) throws IOException {
+          float score = Float.NaN;
+          if (trackMaxScore) {
+            score = scorer.score();
+            if (score > maxScore) {
+              maxScore = score;
+            }
+          }
+
+          ++totalHits;
+          if (queueFull) {
+            if (reverseMul * comparator.compareBottom(doc) <= 0) {
+              // since docs are visited in doc Id order, if compare is 0, it means
+              // this document is largest than anything else in the queue, and
+              // therefore not competitive.
+              if (canEarlyTerminate) {
+                // scale totalHits linearly based on the number of docs
+                // and terminate collection
+                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
+                earlyTerminated = true;
+                throw new CollectionTerminatedException();
+              } else {
+                // just move to the next doc
+                return;
               }
             }
 
-            ++totalHits;
+            if (trackDocScores && !trackMaxScore) {
+              score = scorer.score();
+            }
+
+            // This hit is competitive - replace bottom element in queue & adjustTop
+            comparator.copy(bottom.slot, doc);
+            updateBottom(doc, score);
+            comparator.setBottom(bottom.slot);
+          } else {
+            // Startup transient: queue hasn't gathered numHits yet
+            final int slot = totalHits - 1;
+
+            if (trackDocScores && !trackMaxScore) {
+              score = scorer.score();
+            }
+
+            // Copy hit into queue
+            comparator.copy(slot, doc);
+            add(slot, doc, score);
             if (queueFull) {
-              if (reverseMul * comparator.compareBottom(doc) <= 0) {
-                // since docs are visited in doc Id order, if compare is 0, it means
-                // this document is largest than anything else in the queue, and
-                // therefore not competitive.
-                return;
-              }
-
-              if (trackDocScores && !trackMaxScore) {
-                score = scorer.score();
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              comparator.copy(bottom.slot, doc);
-              updateBottom(doc, score);
               comparator.setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-
-              if (trackDocScores && !trackMaxScore) {
-                score = scorer.score();
-              }
-
-              // Copy hit into queue
-              comparator.copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                comparator.setBottom(bottom.slot);
-              }
             }
           }
+        }
 
-        };
-      } else {
-        return new MultiComparatorLeafCollector(comparators, reverseMul, mayNeedScoresTwice) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = Float.NaN;
-            if (trackMaxScore) {
-              score = scorer.score();
-              if (score > maxScore) {
-                maxScore = score;
-              }
-            }
-
-            ++totalHits;
-            if (queueFull) {
-              if (compareBottom(doc) <= 0) {
-                // since docs are visited in doc Id order, if compare is 0, it means
-                // this document is largest than anything else in the queue, and
-                // therefore not competitive.
-                return;
-              }
-
-              if (trackDocScores && !trackMaxScore) {
-                score = scorer.score();
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              copy(bottom.slot, doc);
-              updateBottom(doc, score);
-              setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-
-              if (trackDocScores && !trackMaxScore) {
-                score = scorer.score();
-              }
-
-              // Copy hit into queue
-              copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                setBottom(bottom.slot);
-              }
-            }
-          }
-
-        };
-      }
+      };
     }
 
   }
@@ -270,24 +193,30 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    */
   private final static class PagingFieldCollector extends TopFieldCollector {
 
+    final Sort sort;
     int collectedHits;
     final FieldValueHitQueue<Entry> queue;
     final boolean trackDocScores;
     final boolean trackMaxScore;
     final FieldDoc after;
     final boolean mayNeedScoresTwice;
+    final boolean trackTotalHits;
 
     public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
-                                boolean trackDocScores, boolean trackMaxScore) {
+                                boolean trackDocScores, boolean trackMaxScore, boolean trackTotalHits) {
       super(queue, numHits, fillFields, trackDocScores || trackMaxScore || sort.needsScores());
+      this.sort = sort;
       this.queue = queue;
       this.trackDocScores = trackDocScores;
       this.trackMaxScore = trackMaxScore;
       this.after = after;
       this.mayNeedScoresTwice = sort.needsScores() && (trackDocScores || trackMaxScore);
+      this.trackTotalHits = trackTotalHits;
 
       // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
-      maxScore = Float.NEGATIVE_INFINITY;
+      if (trackMaxScore) {
+        maxScore = Float.NEGATIVE_INFINITY;
+      }
 
       FieldComparator<?>[] comparators = queue.comparators;
       // Tell all comparators their top value:
@@ -302,6 +231,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyTerminate = trackTotalHits == false &&
+          trackMaxScore == false &&
+          indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
+      final int initialTotalHits = totalHits;
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul(), mayNeedScoresTwice) {
 
         @Override
@@ -321,14 +256,23 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           if (queueFull) {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
-            final int cmp = compareBottom(doc);
+            final int cmp = reverseMul * comparator.compareBottom(doc);
             if (cmp <= 0) {
               // not competitive since documents are visited in doc id order
-              return;
+              if (canEarlyTerminate) {
+                // scale totalHits linearly based on the number of docs
+                // and terminate collection
+                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
+                earlyTerminated = true;
+                throw new CollectionTerminatedException();
+              } else {
+                // just move to the next doc
+                return;
+              }
             }
           }
 
-          final int topCmp = compareTop(doc);
+          final int topCmp = reverseMul * comparator.compareTop(doc);
           if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
             // Already collected on a previous page
             return;
@@ -336,7 +280,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
           if (queueFull) {
             // This hit is competitive - replace bottom element in queue & adjustTop
-            copy(bottom.slot, doc);
+            comparator.copy(bottom.slot, doc);
 
             // Compute score only if it is competitive.
             if (trackDocScores && !trackMaxScore) {
@@ -344,7 +288,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             }
             updateBottom(doc, score);
 
-            setBottom(bottom.slot);
+            comparator.setBottom(bottom.slot);
           } else {
             collectedHits++;
 
@@ -352,7 +296,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             final int slot = collectedHits - 1;
             //System.out.println("    slot=" + slot);
             // Copy hit into queue
-            copy(slot, doc);
+            comparator.copy(slot, doc);
 
             // Compute score only if it is competitive.
             if (trackDocScores && !trackMaxScore) {
@@ -361,7 +305,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             bottom = pq.add(new Entry(slot, docBase + doc, score));
             queueFull = collectedHits == numHits;
             if (queueFull) {
-              setBottom(bottom.slot);
+              comparator.setBottom(bottom.slot);
             }
           }
         }
@@ -384,6 +328,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
   int docBase;
+  boolean earlyTerminated = false;
   final boolean needsScores;
 
   // Declaring the constructor private prevents extending this class by anyone
@@ -399,8 +344,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   @Override
-  public boolean needsScores() {
-    return needsScores;
+  public ScoreMode scoreMode() {
+    return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   /**
@@ -432,14 +377,16 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          true affects performance as it incurs the score computation on
    *          each result. Also, setting this true automatically sets
    *          <code>trackDocScores</code> to true as well.
+   * @param trackTotalHits
+   *          specifies whether the total number of hits should be tracked. If
+   *          set to false, the value of {@link TopFieldDocs#totalHits} will be
+   *          approximated.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
-   * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore)
-      throws IOException {
-    return create(sort, numHits, null, fillFields, trackDocScores, trackMaxScore);
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore, boolean trackTotalHits) {
+    return create(sort, numHits, null, fillFields, trackDocScores, trackMaxScore, trackTotalHits);
   }
 
   /**
@@ -473,11 +420,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          true affects performance as it incurs the score computation on
    *          each result. Also, setting this true automatically sets
    *          <code>trackDocScores</code> to true as well.
+   * @param trackTotalHits
+   *          specifies whether the total number of hits should be tracked. If
+   *          set to false, the value of {@link TopFieldDocs#totalHits} will be
+   *          approximated.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore) {
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore, boolean trackTotalHits) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -490,7 +441,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, fillFields, trackDocScores, trackMaxScore);
+      return new SimpleFieldCollector(sort, queue, numHits, fillFields, trackDocScores, trackMaxScore, trackTotalHits);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -500,7 +451,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, fillFields, trackDocScores, trackMaxScore);
+      return new PagingFieldCollector(sort, queue, after, numHits, fillFields, trackDocScores, trackMaxScore, trackTotalHits);
     }
   }
 
@@ -557,5 +508,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   @Override
   public TopFieldDocs topDocs() {
     return (TopFieldDocs) super.topDocs();
+  }
+
+  /** Return whether collection terminated early. */
+  public boolean isEarlyTerminated() {
+    return earlyTerminated;
   }
 }

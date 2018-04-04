@@ -56,9 +56,9 @@ public class TestUserTermScoreWithQ extends TestRerankBase {
   @Test
   public void testUserTermScoreWithQ() throws Exception {
     // before();
-    loadFeature("SomeTermQ", SolrFeature.class.getCanonicalName(),
+    loadFeature("SomeTermQ", SolrFeature.class.getName(),
         "{\"q\":\"{!terms f=popularity}88888\"}");
-    loadModel("Term-modelQ", LinearModel.class.getCanonicalName(),
+    loadModel("Term-modelQ", LinearModel.class.getName(),
         new String[] {"SomeTermQ"}, "{\"weights\":{\"SomeTermQ\":1.0}}");
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");

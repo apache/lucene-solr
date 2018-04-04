@@ -132,7 +132,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       
       if (docs.size() > 0 && pauseBetweenUpdates) {
         try {
-          Thread.currentThread().sleep(AbstractFullDistribZkTestBase.random().nextInt(500) + 50);
+          Thread.sleep(AbstractFullDistribZkTestBase.random().nextInt(500) + 50);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

@@ -17,23 +17,22 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.util.ShapeValuesPredicate;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
@@ -41,17 +40,17 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 /**
  * A spatial Intersects predicate that distinguishes an approximated match from an exact match based on which cells
  * are within the query shape. It exposes a {@link TwoPhaseIterator} that will verify a match with a provided
- * predicate in the form of a {@link ValueSource} by calling {@link FunctionValues#boolVal(int)}.
+ * predicate in the form of an ShapeValuesPredicate.
  *
  * @lucene.internal
  */
 public class IntersectsRPTVerifyQuery extends Query {
 
   private final IntersectsDifferentiatingQuery intersectsDiffQuery;
-  private final ValueSource predicateValueSource; // we call FunctionValues.boolVal(doc)
+  private final ShapeValuesPredicate predicateValueSource;
 
   public IntersectsRPTVerifyQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel,
-                                  int prefixGridScanLevel, ValueSource predicateValueSource) {
+                                  int prefixGridScanLevel, ShapeValuesPredicate predicateValueSource) {
     this.predicateValueSource = predicateValueSource;
     this.intersectsDiffQuery = new IntersectsDifferentiatingQuery(queryShape, fieldName, grid, detailLevel,
         prefixGridScanLevel);
@@ -82,8 +81,7 @@ public class IntersectsRPTVerifyQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    final Map valueSourceContext = ValueSource.newContext(searcher);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     return new ConstantScoreWeight(this, boost) {
       @Override
@@ -110,9 +108,10 @@ public class IntersectsRPTVerifyQuery extends Query {
           exactIterator = null;
         }
 
-        final FunctionValues predFuncValues = predicateValueSource.getValues(valueSourceContext, context);
-
         final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approxDISI) {
+
+          final TwoPhaseIterator predFuncValues = predicateValueSource.iterator(context, approxDISI);
+
           @Override
           public boolean matches() throws IOException {
             final int doc = approxDISI.docID();
@@ -124,18 +123,23 @@ public class IntersectsRPTVerifyQuery extends Query {
                 return true;
               }
             }
-
-            return predFuncValues.boolVal(doc);
+            return predFuncValues.matches();
           }
 
           @Override
           public float matchCost() {
-            return 100; // TODO: use cost of exactIterator.advance() and predFuncValues.boolVal()
+            return 100; // TODO: use cost of exactIterator.advance() and predFuncValues.cost()
           }
         };
 
         return new ConstantScoreScorer(this, score(), twoPhaseIterator);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return predicateValueSource.isCacheable(ctx);
+      }
+
     };
   }
 

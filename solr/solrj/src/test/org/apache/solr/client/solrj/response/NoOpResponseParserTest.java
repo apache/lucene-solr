@@ -20,10 +20,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -36,7 +38,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,7 +50,7 @@ import org.junit.Test;
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   private static InputStream getResponse() throws IOException {
-    return new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
+    return new ReaderInputStream(new StringReader("NO-OP test response"), StandardCharsets.UTF_8);
   }
 
   @BeforeClass

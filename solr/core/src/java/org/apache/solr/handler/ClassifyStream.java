@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.*;
  *  The classify expression retrieves a model trained by the train expression and uses it to classify documents from a stream
  *  Syntax:
  *  classif(model(...), anyStream(...), field="body")
+ * @since 6.3.0
  **/
 
 public class ClassifyStream extends TupleStream implements Expressible {
@@ -85,8 +86,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
     if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
-    SolrCore solrCore = (SolrCore) solrCoreObj;
-    analyzer = solrCore.getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
 
     this.docStream.setStreamContext(context);
     this.modelStream.setStreamContext(context);

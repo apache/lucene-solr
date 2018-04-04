@@ -19,21 +19,25 @@ package org.apache.solr.metrics;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
@@ -43,7 +47,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
   private static final String CORE_NAME = "metrics_integration";
   private static final String METRIC_NAME = "requestTimes";
-  private static final String HANDLER_NAME = "standard";
+  private static final String HANDLER_NAME = "/select";
   private static final String[] REPORTER_NAMES = {"reporter1", "reporter2"};
   private static final String UNIVERSAL = "universal";
   private static final String SPECIFIC = "specific";
@@ -51,10 +55,16 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final String MULTIREGISTRY = "multiregistry";
   private static final String[] INITIAL_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, SPECIFIC, MULTIGROUP, MULTIREGISTRY};
   private static final String[] RENAMED_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, MULTIGROUP};
-  private static final SolrInfoMBean.Category HANDLER_CATEGORY = SolrInfoMBean.Category.QUERY;
+  private static final SolrInfoBean.Category HANDLER_CATEGORY = SolrInfoBean.Category.QUERY;
 
   private CoreContainer cc;
   private SolrMetricManager metricManager;
+  private String tag;
+  private int jmxReporter;
+
+  private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
+    assertTrue("Reporter '" + name + "' missing in " + reporters, reporters.containsKey(name + "@" + tag));
+  }
 
   @Before
   public void beforeTest() throws Exception {
@@ -67,20 +77,24 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     cc = createCoreContainer(cfg,
         new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
     h.coreName = DEFAULT_TEST_CORENAME;
+    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
     metricManager = cc.getMetricManager();
+    tag = h.getCore().getCoreMetricManager().getTag();
     // initially there are more reporters, because two of them are added via a matching collection name
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
-    assertEquals(INITIAL_REPORTERS.length, reporters.size());
-    assertTrue(reporters.keySet().containsAll(Arrays.asList(INITIAL_REPORTERS)));
+    assertEquals(INITIAL_REPORTERS.length + jmxReporter, reporters.size());
+    for (String r : INITIAL_REPORTERS) {
+      assertTagged(reporters, r);
+    }
     // test rename operation
     cc.rename(DEFAULT_TEST_CORENAME, CORE_NAME);
     h.coreName = CORE_NAME;
     cfg = cc.getConfig();
-    PluginInfo[] plugins = cfg.getMetricReporterPlugins();
+    PluginInfo[] plugins = cfg.getMetricsConfig().getMetricReporters();
     assertNotNull(plugins);
-    assertEquals(10, plugins.length);
+    assertEquals(10 + jmxReporter, plugins.length);
     reporters = metricManager.getReporters("solr.node");
-    assertEquals(4, reporters.size());
+    assertEquals(4 + jmxReporter, reporters.size());
     assertTrue("Reporter '" + REPORTER_NAMES[0] + "' missing in solr.node", reporters.containsKey(REPORTER_NAMES[0]));
     assertTrue("Reporter '" + UNIVERSAL + "' missing in solr.node", reporters.containsKey(UNIVERSAL));
     assertTrue("Reporter '" + MULTIGROUP + "' missing in solr.node", reporters.containsKey(MULTIGROUP));
@@ -101,7 +115,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName);
+      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
       MockMetricReporter mockReporter = (MockMetricReporter) reporter;
       assertTrue("Reporter " + reporterName + " was not closed: " + mockReporter, mockReporter.didClose);
     }
@@ -113,7 +127,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(coreMetricManager.getRegistryName(), metricName);
+    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
     long initialCount = timer.getCount();
 
@@ -125,12 +139,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     long finalCount = timer.getCount();
     assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-    assertEquals(RENAMED_REPORTERS.length, reporters.size());
+    assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
 
     // SPECIFIC and MULTIREGISTRY were skipped because they were
     // specific to collection1
     for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName);
+      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
       assertNotNull("Reporter " + reporterName + " was not found.", reporter);
       assertTrue(reporter instanceof MockMetricReporter);
 
@@ -138,6 +152,39 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       assertTrue("Reporter " + reporterName + " was not initialized: " + mockReporter, mockReporter.didInit);
       assertTrue("Reporter " + reporterName + " was not validated: " + mockReporter, mockReporter.didValidate);
       assertFalse("Reporter " + reporterName + " was incorrectly closed: " + mockReporter, mockReporter.didClose);
+    }
+  }
+
+  @Test
+  public void testCoreContainerMetrics() throws Exception {
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    assertTrue(cc.getMetricManager().registryNames().toString(), cc.getMetricManager().registryNames().contains(registryName));
+    MetricRegistry registry = cc.getMetricManager().registry(registryName);
+    Map<String, Metric> metrics = registry.getMetrics();
+    assertTrue(metrics.containsKey("CONTAINER.cores.loaded"));
+    assertTrue(metrics.containsKey("CONTAINER.cores.lazy"));
+    assertTrue(metrics.containsKey("CONTAINER.cores.unloaded"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.path"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.spins"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.totalSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.usableSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.path"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.spins"));
+    assertTrue(metrics.containsKey("CONTAINER.version.specification"));
+    assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
+    Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
+    assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
+    boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
+    g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
+    assertEquals(spins, g.getValue());
+    g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
+    if (cc.getConfig().getSolrDataHome() != null) {
+      spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
+      assertEquals(spins, g.getValue());
+    } else {
+      assertEquals(spins, g.getValue());
     }
   }
 }

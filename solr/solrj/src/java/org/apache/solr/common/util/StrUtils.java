@@ -88,6 +88,7 @@ public class StrUtils {
    * @param s  the string to split
    * @param separator the separator to split on
    * @param decode decode backslash escaping
+   * @return not null
    */
   public static List<String> splitSmart(String s, String separator, boolean decode) {
     ArrayList<String> lst = new ArrayList<>(2);
@@ -297,7 +298,7 @@ public class StrUtils {
 
   /**
    * writes chars from item to out, backslash escaping as needed based on separator -- 
-   * but does not append the seperator itself
+   * but does not append the separator itself
    */
   public static void appendEscapedTextToBuilder(StringBuilder out, 
                                                  String item, 

@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * Since {@link KeywordRepeatFilter} emits two tokens for every input token, and any tokens that aren't transformed
  * later in the analysis chain will be in the document twice. Therefore, consider adding
  * {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
+ * @since 4.3.0
  */
 public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
   

@@ -1,0 +1,12 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "description": "Provides list of collection aliases.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/aliases"
+    ]
+  }
+}

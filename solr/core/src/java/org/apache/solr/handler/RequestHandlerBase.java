@@ -17,21 +17,25 @@
 package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,7 +46,6 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +54,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean, SolrMetricProducer, NestedRequestHandler,ApiSupport {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, SolrMetricProducer, NestedRequestHandler,ApiSupport {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -65,13 +68,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numClientErrors = new Meter();
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
+  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
   private Timer requestTimes = new Timer();
+  private Counter totalTime = new Counter();
 
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
+  protected String registryName;
+  protected SolrMetricManager metricManager;
+
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -121,7 +132,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public void init(NamedList args) {
     initArgs = args;
 
-    // Copied from StandardRequestHandler
     if( args != null ) {
       defaults = getSolrParamsFromNamedList(args, "defaults");
       appends = getSolrParamsFromNamedList(args, "appends");
@@ -136,13 +146,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
-    numErrors = manager.meter(registryName, "errors", getCategory().toString(), scope);
-    numServerErrors = manager.meter(registryName, "serverErrors", getCategory().toString(), scope);
-    numClientErrors = manager.meter(registryName, "clientErrors", getCategory().toString(), scope);
-    numTimeouts = manager.meter(registryName, "timeouts", getCategory().toString(), scope);
-    requests = manager.counter(registryName, "requests", getCategory().toString(), scope);
-    requestTimes = manager.timer(registryName, "requestTimes", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
+    this.registry = manager.registry(registryName);
+    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
+    numServerErrors = manager.meter(this, registryName, "serverErrors", getCategory().toString(), scope);
+    numClientErrors = manager.meter(this, registryName, "clientErrors", getCategory().toString(), scope);
+    numTimeouts = manager.meter(this, registryName, "timeouts", getCategory().toString(), scope);
+    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
+    MetricsMap metricsMap = new MetricsMap((detail, map) ->
+      shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
+    manager.registerGauge(this, registryName, metricsMap, tag, true, "shardRequests", getCategory().toString(), scope);
+    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
+    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> handlerStart, tag, true, "handlerStart", getCategory().toString(), scope);
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -162,6 +180,16 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     requests.inc();
+    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
+      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+      if (purpose != 0) {
+        String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
+        for (String n : names) {
+          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
+        }
+      }
+    }
     Timer.Context timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
@@ -209,7 +237,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       }
     } finally {
-      timer.stop();
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
     }
   }
 
@@ -222,24 +251,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public abstract String getDescription();
-  @Override
-  public String getSource() { return null; }
-  
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-  
+
   @Override
   public Category getCategory() {
     return Category.QUERY;
   }
 
   @Override
-  public URL[] getDocs() {
-    return null;  // this can be overridden, but not required
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return registry;
+  }
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
@@ -280,20 +306,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public PluginInfo getPluginInfo(){
     return  pluginInfo;
-  }
-
-
-  @Override
-  public NamedList<Object> getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>();
-    lst.add("handlerStart",handlerStart);
-    lst.add("requests", requests.getCount());
-    lst.add("errors", numErrors.getCount());
-    lst.add("serverErrors", numServerErrors.getCount());
-    lst.add("clientErrors", numClientErrors.getCount());
-    lst.add("timeouts", numTimeouts.getCount());
-    MetricUtils.addMetrics(lst, requestTimes);
-    return lst;
   }
 
   @Override

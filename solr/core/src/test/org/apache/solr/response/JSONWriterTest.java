@@ -51,7 +51,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testTypes() throws IOException {
-    SolrQueryRequest req = req("dummy");
+    SolrQueryRequest req = req("q", "dummy", "indent","off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     QueryResponseWriter w = new PythonResponseWriter();
 
@@ -90,7 +90,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   private void implTestJSON(final String namedListStyle) throws IOException {
-    SolrQueryRequest req = req("wt","json","json.nl",namedListStyle);
+    SolrQueryRequest req = req("wt","json","json.nl",namedListStyle, "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 

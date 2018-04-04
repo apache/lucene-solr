@@ -29,6 +29,6 @@
     </mergePolicyFactory>
   </indexConfig>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
 
 </config>

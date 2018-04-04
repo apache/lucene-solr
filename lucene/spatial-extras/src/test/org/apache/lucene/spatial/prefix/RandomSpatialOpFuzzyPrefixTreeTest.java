@@ -29,14 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeCollection;
-import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -52,6 +44,14 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeCollection;
+import org.locationtech.spatial4j.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
@@ -150,6 +150,31 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   public void testContains() throws IOException {
     setupGrid(-1);
     doTest(SpatialOperation.Contains);
+  }
+
+  @Test
+  public void testPackedQuadPointsOnlyBug() throws IOException {
+    setupQuadGrid(1, true); // packed quad.  maxLevels doesn't matter.
+    setupCtx2D(ctx);
+    ((PrefixTreeStrategy) strategy).setPointsOnly(true);
+    Point point = ctx.makePoint(169.0, 107.0);
+    adoc("0", point);
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, point));
+    assertEquals(1, executeQuery(query, 1).numFound);
+  }
+
+  @Test
+  public void testPointsOnlyOptBug() throws IOException {
+    setupQuadGrid(8, false);
+    setupCtx2D(ctx);
+    ((PrefixTreeStrategy) strategy).setPointsOnly(true);
+    Point point = ctx.makePoint(86, -127.44362190053255);
+    adoc("0", point);
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects,
+        ctx.makeRectangle(point, point)));
+    assertEquals(1, executeQuery(query, 1).numFound);
   }
 
   /** See LUCENE-5062, {@link ContainsPrefixTreeQuery#multiOverlappingIndexedShapes}. */

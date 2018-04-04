@@ -161,6 +161,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * 
  * @see FieldValueSubsetUpdateProcessorFactory
+ * @since 4.0.0
  */
 public class CloneFieldUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory implements SolrCoreAware {
@@ -450,8 +451,7 @@ public class CloneFieldUpdateProcessorFactory
           }
 
           for (Object val : srcFieldValues) {
-            // preserve existing dest boost (multiplicitive), ignore src boost
-            destField.addValue(val, 1.0f);
+            destField.addValue(val);
           }
           // put it in map to avoid concurrent modification...
           destMap.put(resolvedDest, destField);

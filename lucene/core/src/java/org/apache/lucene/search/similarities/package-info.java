@@ -32,13 +32,13 @@
  * <a name="sims"></a>
  * <h2>Summary of the Ranking Methods</h2>
  * 
- * <p>{@link org.apache.lucene.search.similarities.ClassicSimilarity} is the original Lucene
- * scoring function. It is based on a highly optimized 
- * <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model</a>. For more
- * information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.
- * 
  * <p>{@link org.apache.lucene.search.similarities.BM25Similarity} is an optimized
  * implementation of the successful Okapi BM25 model.
+ *
+ * <p>{@link org.apache.lucene.search.similarities.ClassicSimilarity} is the original Lucene
+ * scoring function. It is based on the
+ * <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model</a>. For more
+ * information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.
  * 
  * <p>{@link org.apache.lucene.search.similarities.SimilarityBase} provides a basic
  * implementation of the Similarity contract and exposes a highly simplified
@@ -97,7 +97,7 @@
  * The easiest way to quickly implement a new ranking method is to extend
  * {@link org.apache.lucene.search.similarities.SimilarityBase}, which provides
  * basic implementations for the low level . Subclasses are only required to
- * implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, float, float)}
+ * implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, double, double)}
  * and {@link org.apache.lucene.search.similarities.SimilarityBase#toString()}
  * methods.
  * 

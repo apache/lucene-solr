@@ -22,7 +22,7 @@ package org.apache.lucene.util;
  * @lucene.experimental
  */
 
-public interface Bits {
+public interface  Bits {
   /** 
    * Returns the value of the bit with the specified <code>index</code>.
    * @param index index, should be non-negative and &lt; {@link #length()}.

@@ -17,7 +17,9 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -31,10 +33,13 @@ import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.Bits;
@@ -42,7 +47,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -204,12 +208,15 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.commit();
       reader1 = DirectoryReader.open(dir);
     }
+    System.out.println("TEST: isNRT=" + isNRT + " reader1=" + reader1);
 
     // update doc
     writer.updateBinaryDocValue(new Term("id", "doc-0"), "val", toBytes(10)); // update doc-0's value to 10
     if (!isNRT) {
       writer.commit();
     }
+
+    System.out.println("TEST: now reopen");
     
     // reopen reader and assert only it sees the update
     final DirectoryReader reader2 = DirectoryReader.openIfChanged(reader1);
@@ -545,7 +552,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       long value = rnd + 1;
       writer.updateBinaryDocValue(new Term("key", "doc"), "bdv", toBytes(value));
       
-      if (random.nextDouble() < 0.2) { // randomly delete some docs
+      if (random.nextDouble() < 0.2) { // randomly delete one doc
         writer.deleteDocuments(new Term("id", Integer.toString(random.nextInt(docid))));
       }
       
@@ -621,6 +628,140 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     }
     reader.close();
     dir.close();
+  }
+
+  static class OneSortDoc implements Comparable<OneSortDoc> {
+    public BytesRef value;
+    public final long sortValue;
+    public final int id;
+    public boolean deleted;
+
+    public OneSortDoc(int id, BytesRef value, long sortValue) {
+      this.value = value;
+      this.sortValue = sortValue;
+      this.id = id;
+    }
+
+    @Override
+    public int compareTo(OneSortDoc other) {
+      int cmp = Long.compare(sortValue, other.sortValue);
+      if (cmp == 0) {
+        cmp = Integer.compare(id, other.id);
+        assert cmp != 0;
+      }
+      return cmp;
+    }
+  }
+
+  public void testSortedIndex() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setIndexSort(new Sort(new SortField("sort", SortField.Type.LONG)));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    int valueRange = TestUtil.nextInt(random(), 1, 1000);
+    int sortValueRange = TestUtil.nextInt(random(), 1, 1000);
+
+    int refreshChance = TestUtil.nextInt(random(), 5, 200);
+    int deleteChance = TestUtil.nextInt(random(), 2, 100);
+
+    int idUpto = 0;
+    int deletedCount = 0;
+    
+    List<OneSortDoc> docs = new ArrayList<>();
+    DirectoryReader r = w.getReader();
+
+    int numIters = atLeast(1000);
+    for(int iter=0;iter<numIters;iter++) {
+      BytesRef value = toBytes((long) random().nextInt(valueRange));
+      if (docs.isEmpty() || random().nextInt(3) == 1) {
+        int id = docs.size();
+        // add new doc
+        Document doc = new Document();
+        doc.add(newStringField("id", Integer.toString(id), Field.Store.YES));
+        doc.add(new BinaryDocValuesField("number", value));
+        int sortValue = random().nextInt(sortValueRange);
+        doc.add(new NumericDocValuesField("sort", sortValue));
+        if (VERBOSE) {
+          System.out.println("TEST: iter=" + iter + " add doc id=" + id + " sortValue=" + sortValue + " value=" + value);
+        }
+        w.addDocument(doc);
+
+        docs.add(new OneSortDoc(id, value, sortValue));
+      } else {
+        // update existing doc value
+        int idToUpdate = random().nextInt(docs.size());
+        if (VERBOSE) {
+          System.out.println("TEST: iter=" + iter + " update doc id=" + idToUpdate + " new value=" + value);
+        }
+        w.updateBinaryDocValue(new Term("id", Integer.toString(idToUpdate)), "number", value);
+
+        docs.get(idToUpdate).value = value;
+      }
+
+      if (random().nextInt(deleteChance) == 0) {
+        int idToDelete = random().nextInt(docs.size());
+        if (VERBOSE) {
+          System.out.println("TEST: delete doc id=" + idToDelete);
+        }
+        w.deleteDocuments(new Term("id", Integer.toString(idToDelete)));
+        if (docs.get(idToDelete).deleted == false) {
+          docs.get(idToDelete).deleted = true;
+          deletedCount++;
+        }
+      }
+
+      if (random().nextInt(refreshChance) == 0) {
+        if (VERBOSE) {
+          System.out.println("TEST: now get reader; old reader=" + r);
+        }
+        DirectoryReader r2 = w.getReader();
+        r.close();
+        r = r2;
+
+        if (VERBOSE) {
+          System.out.println("TEST: got reader=" + r);
+        }
+
+        int liveCount = 0;
+
+        for (LeafReaderContext ctx : r.leaves()) {
+          LeafReader leafReader = ctx.reader();
+          BinaryDocValues values = leafReader.getBinaryDocValues("number");
+          NumericDocValues sortValues = leafReader.getNumericDocValues("sort");
+          Bits liveDocs = leafReader.getLiveDocs();
+
+          long lastSortValue = Long.MIN_VALUE;
+          for (int i=0;i<leafReader.maxDoc();i++) {
+
+            Document doc = leafReader.document(i);
+            OneSortDoc sortDoc = docs.get(Integer.parseInt(doc.get("id")));
+
+            assertEquals(i, values.nextDoc());
+            assertEquals(i, sortValues.nextDoc());
+
+            if (liveDocs != null && liveDocs.get(i) == false) {
+              assertTrue(sortDoc.deleted);
+              continue;
+            }
+            assertFalse(sortDoc.deleted);
+        
+            assertEquals(sortDoc.value, values.binaryValue());
+
+            long sortValue = sortValues.longValue();
+            assertEquals(sortDoc.sortValue, sortValue);
+            
+            assertTrue(sortValue >= lastSortValue);
+            lastSortValue = sortValue;
+            liveCount++;
+          }
+        }
+
+        assertEquals(docs.size() - deletedCount, liveCount);
+      }
+    }
+
+    IOUtils.close(r, w, dir);
   }
 
   public void testManyReopensAndFields() throws Exception {
@@ -1283,7 +1424,6 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     dir.close();
   }
 
-  @Test
   public void testIOContext() throws Exception {
     // LUCENE-5591: make sure we pass an IOContext with an approximate
     // segmentSize in FlushInfo

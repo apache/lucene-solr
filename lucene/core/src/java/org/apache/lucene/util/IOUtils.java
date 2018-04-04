@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -82,21 +82,19 @@ public final class IOUtils {
    */
   public static void close(Iterable<? extends Closeable> objects) throws IOException {
     Throwable th = null;
-
     for (Closeable object : objects) {
       try {
         if (object != null) {
           object.close();
         }
       } catch (Throwable t) {
-        addSuppressed(th, t);
-        if (th == null) {
-          th = t;
-        }
+        th = useOrSuppress(th, t);
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
 
   /**
@@ -111,27 +109,31 @@ public final class IOUtils {
   }
   
   /**
-   * Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions.
+   * Closes all given <tt>Closeable</tt>s, suppressing all thrown non {@link VirtualMachineError} exceptions.
+   * Even if a {@link VirtualMachineError} is thrown all given closeable are closed.
    * @see #closeWhileHandlingException(Closeable...)
    */
   public static void closeWhileHandlingException(Iterable<? extends Closeable> objects) {
+    VirtualMachineError firstError = null;
+    Throwable firstThrowable = null;
     for (Closeable object : objects) {
       try {
         if (object != null) {
           object.close();
         }
+      } catch (VirtualMachineError e) {
+        firstError = useOrSuppress(firstError, e);
       } catch (Throwable t) {
+        firstThrowable = useOrSuppress(firstThrowable, t);
       }
     }
-  }
-  
-  /** adds a Throwable to the list of suppressed Exceptions of the first Throwable
-   * @param exception this exception should get the suppressed one added
-   * @param suppressed the suppressed exception
-   */
-  private static void addSuppressed(Throwable exception, Throwable suppressed) {
-    if (exception != null && suppressed != null) {
-      exception.addSuppressed(suppressed);
+    if (firstError != null) {
+      // we ensure that we bubble up any errors. We can't recover from these but need to make sure they are
+      // bubbled up. if a non-VMError is thrown we also add the suppressed exceptions to it.
+      if (firstThrowable != null) {
+        firstError.addSuppressed(firstThrowable);
+      }
+      throw firstError;
     }
   }
   
@@ -221,21 +223,16 @@ public final class IOUtils {
         try {
           dir.deleteFile(name);
         } catch (Throwable t) {
-          addSuppressed(th, t);
-          if (th == null) {
-            th = t;
-          }
+          th = useOrSuppress(th, t);
         }
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
 
-  public static void deleteFiles(Directory dir, String... files) throws IOException {
-    deleteFiles(dir, Arrays.asList(files));
-  }
-  
   /**
    * Deletes all given files, suppressing all thrown IOExceptions.
    * <p>
@@ -286,21 +283,19 @@ public final class IOUtils {
    */
   public static void deleteFilesIfExist(Collection<? extends Path> files) throws IOException {
     Throwable th = null;
-
     for (Path file : files) {
       try {
         if (file != null) {
           Files.deleteIfExists(file);
         }
       } catch (Throwable t) {
-        addSuppressed(th, t);
-        if (th == null) {
-          th = t;
-        }
+        th = useOrSuppress(th, t);
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
   
   /**
@@ -376,37 +371,83 @@ public final class IOUtils {
   }
 
   /**
-   * Simple utility method that takes a previously caught
-   * {@code Throwable} and rethrows either {@code
-   * IOException} or an unchecked exception.  If the
-   * argument is null then this method does nothing.
+   * This utility method takes a previously caught (non-null)
+   * {@code Throwable} and rethrows either the original argument
+   * if it was a subclass of the {@code IOException} or an 
+   * {@code RuntimeException} with the cause set to the argument.
+   * 
+   * <p>This method <strong>never returns any value</strong>, even though it declares
+   * a return value of type {@link Error}. The return value declaration
+   * is very useful to let the compiler know that the code path following
+   * the invocation of this method is unreachable. So in most cases the
+   * invocation of this method will be guarded by an {@code if} and
+   * used together with a {@code throw} statement, as in:
+   * </p>
+   * <pre>{@code
+   *   if (t != null) throw IOUtils.rethrowAlways(t)
+   * }
+   * </pre>
+   * 
+   * @param th The throwable to rethrow, <strong>must not be null</strong>.
+   * @return This method always results in an exception, it never returns any value. 
+   *         See method documentation for detailsa and usage example.
+   * @throws IOException if the argument was an instance of IOException
+   * @throws RuntimeException with the {@link RuntimeException#getCause()} set
+   *         to the argument, if it was not an instance of IOException. 
    */
-  public static void reThrow(Throwable th) throws IOException {
-    if (th != null) {
-      if (th instanceof IOException) {
-        throw (IOException) th;
-      }
-      reThrowUnchecked(th);
+  public static Error rethrowAlways(Throwable th) throws IOException, RuntimeException {
+    if (th == null) {
+      throw new AssertionError("rethrow argument must not be null.");
     }
+
+    if (th instanceof IOException) {
+      throw (IOException) th;
+    }
+
+    if (th instanceof RuntimeException) {
+      throw (RuntimeException) th;
+    }
+
+    if (th instanceof Error) {
+      throw (Error) th;
+    }
+
+    throw new RuntimeException(th);
   }
 
   /**
-   * Simple utility method that takes a previously caught
-   * {@code Throwable} and rethrows it as an unchecked exception.
-   * If the argument is null then this method does nothing.
+   * Rethrows the argument as {@code IOException} or {@code RuntimeException} 
+   * if it's not null.
+   * 
+   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
+   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
+   * (because {@link #rethrowAlways} is not accepting null arguments). 
    */
+  @Deprecated
+  public static void reThrow(Throwable th) throws IOException {
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
+  }
+  
+  /**
+   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
+   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
+   * (because {@link #rethrowAlways} is not accepting null arguments). 
+   */
+  @Deprecated
   public static void reThrowUnchecked(Throwable th) {
     if (th != null) {
-      if (th instanceof RuntimeException) {
-        throw (RuntimeException) th;
-      }
       if (th instanceof Error) {
         throw (Error) th;
       }
+      if (th instanceof RuntimeException) {
+        throw (RuntimeException) th;
+      }
       throw new RuntimeException(th);
-    }
+    }    
   }
-
+  
   /**
    * Ensure that any writes to the given file is written to the storage device that contains it.
    * @param fileToSync the file to fsync
@@ -570,5 +611,38 @@ public final class IOUtils {
     } else {
       return desc;
     }
+  }
+
+  /**
+   * Returns the second throwable if the first is null otherwise adds the second as suppressed to the first
+   * and returns it.
+   */
+  public static <T extends Throwable> T useOrSuppress(T first, T second) {
+    if (first == null) {
+      return second;
+    } else {
+      first.addSuppressed(second);
+    }
+    return first;
+  }
+
+  /**
+   * Applies the consumer to all non-null elements in the collection even if an exception is thrown. The first exception
+   * thrown by the consumer is re-thrown and subsequent exceptions are suppressed.
+   */
+  public static <T> void applyToAll(Collection<T> collection, IOConsumer<T> consumer) throws IOException {
+    IOUtils.close(collection.stream().filter(Objects::nonNull).map(t -> (Closeable) () -> consumer.accept(t))::iterator);
+  }
+
+  /**
+   * An IO operation with a single input.
+   * @see java.util.function.Consumer
+   */
+  @FunctionalInterface
+  public interface IOConsumer<T> {
+    /**
+     * Performs this operation on the given argument.
+     */
+    void accept(T input) throws IOException;
   }
 }

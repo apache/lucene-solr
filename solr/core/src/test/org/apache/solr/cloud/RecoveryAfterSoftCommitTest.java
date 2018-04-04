@@ -33,10 +33,15 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
-
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
   public RecoveryAfterSoftCommitTest() {
     sliceCount = 1;
     fixShardCount(2);
+  }
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   @BeforeClass
@@ -59,10 +64,10 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-                                     String shardList, String solrConfigOverride, String schemaOverride)
+                                     String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception
   {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
 
   @Test

@@ -27,6 +27,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -77,6 +78,7 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
+     prevVersion = -1;
    }
 
    public SolrInputDocument getSolrInputDocument() {
@@ -190,8 +192,8 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
         boolean isVersion = version != 0;
 
         for (SolrInputDocument sdoc : all) {
-          sdoc.setField("_root_", idField);      // should this be a string or the same type as the ID?
-          if(isVersion) sdoc.setField(VersionInfo.VERSION_FIELD, version);
+          sdoc.setField(IndexSchema.ROOT_FIELD_NAME, idField);
+          if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
           // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
           // then we could add this field to the generated lucene document instead.
         }
@@ -219,6 +221,12 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
     List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     recUnwrapp(unwrappedDocs, root);
+    if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
+      throw new SolrException
+        (SolrException.ErrorCode.BAD_REQUEST, "Unable to index docs with children: the schema must " +
+         "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
+         "' field, using the exact same fieldType");
+    }
     return unwrappedDocs;
   }
 

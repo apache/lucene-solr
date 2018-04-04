@@ -32,12 +32,11 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -352,11 +351,11 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.SimWeight stats;
-    private final boolean needsScores;
-    private transient TermContext states[];
+    private final Similarity.SimScorer stats;
+    private final ScoreMode scoreMode;
+    private transient TermStates states[];
 
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
+    public PhraseWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -365,17 +364,27 @@ public class PhraseQuery extends Query {
       } else if (positions[0] != 0) {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
-      this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity(needsScores);
+      this.scoreMode = scoreMode;
+      this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
-      states = new TermContext[terms.length];
+      states = new TermStates[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
+      int termUpTo = 0;
       for (int i = 0; i < terms.length; i++) {
         final Term term = terms[i];
-        states[i] = TermContext.build(context, term);
-        termStats[i] = searcher.termStatistics(term, states[i]);
+        states[i] = TermStates.build(context, term, scoreMode.needsScores());
+        if (scoreMode.needsScores()) {
+          TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+          if (termStatistics != null) {
+            termStats[termUpTo++] = termStatistics;
+          }
+        }
       }
-      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
+      if (termUpTo > 0) {
+        stats = similarity.scorer(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+      } else {
+        stats = null; // no terms at all, we won't use similarity
+      }
     }
 
     @Override
@@ -407,7 +416,7 @@ public class PhraseQuery extends Query {
       
       for (int i = 0; i < terms.length; i++) {
         final Term t = terms[i];
-        final TermState state = states[i].get(context.ord);
+        final TermState state = states[i].get(context);
         if (state == null) { /* term doesnt exist in this segment */
           assert termNotInReader(reader, t): "no termstate found but term exists in reader";
           return null;
@@ -425,15 +434,20 @@ public class PhraseQuery extends Query {
 
       if (slop == 0) {  // optimize exact case
         return new ExactPhraseScorer(this, postingsFreqs,
-                                      similarity.simScorer(stats, context),
-                                      needsScores, totalMatchCost);
+                                      new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE),
+                                      scoreMode, totalMatchCost);
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop,
-                                        similarity.simScorer(stats, context),
-                                        needsScores, totalMatchCost);
+                                        new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE),
+                                        scoreMode.needsScores(), totalMatchCost);
       }
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     // only called from assert
     private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
       return reader.docFreq(term) == 0;
@@ -445,8 +459,8 @@ public class PhraseQuery extends Query {
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
-          float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
+          float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
+          LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
@@ -484,21 +498,20 @@ public class PhraseQuery extends Query {
    *  of processing the occurrences of a term
    *  in a document that contains the term.
    *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
-   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
-    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
-    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    long totalTermFreq = termsEnum.totalTermFreq();
+    float expOccurrencesInMatchingDoc = totalTermFreq / (float) docFreq;
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new PhraseWeight(searcher, needsScores, boost);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new PhraseWeight(searcher, scoreMode, boost);
   }
 
   /** Prints a user-readable version of this query. */

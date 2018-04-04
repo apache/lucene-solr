@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -98,7 +97,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
   /**
    * Simple similarity that encodes maxTermFrequency directly
    */
-  class TestSimilarity extends Similarity {
+  static class TestSimilarity extends Similarity {
 
     @Override
     public long computeNorm(FieldInvertState state) {
@@ -106,12 +105,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   }

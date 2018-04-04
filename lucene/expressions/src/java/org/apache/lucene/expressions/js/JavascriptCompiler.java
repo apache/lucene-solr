@@ -188,15 +188,20 @@ public final class JavascriptCompiler {
   private Expression compileExpression(ClassLoader parent) throws ParseException {
     final Map<String, Integer> externalsMap = new LinkedHashMap<>();
     final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    
-    generateClass(getAntlrParseTree(), classWriter, externalsMap);
-    
+
     try {
+      generateClass(getAntlrParseTree(), classWriter, externalsMap);
+
       final Class<? extends Expression> evaluatorClass = new Loader(parent)
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
 
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
+    } catch (RuntimeException re) {
+      if (re.getCause() instanceof ParseException) {
+        throw (ParseException)re.getCause();
+      }
+      throw re;
     } catch (ReflectiveOperationException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
@@ -209,20 +214,13 @@ public final class JavascriptCompiler {
    * @throws ParseException on failure to parse
    */
   private ParseTree getAntlrParseTree() throws ParseException {
-    try {
-      final ANTLRInputStream antlrInputStream = new ANTLRInputStream(sourceText);
-      final JavascriptErrorHandlingLexer javascriptLexer = new JavascriptErrorHandlingLexer(antlrInputStream);
-      javascriptLexer.removeErrorListeners();
-      final JavascriptParser javascriptParser = new JavascriptParser(new CommonTokenStream(javascriptLexer));
-      javascriptParser.removeErrorListeners();
-      javascriptParser.setErrorHandler(new JavascriptParserErrorStrategy());
-      return javascriptParser.compile();
-    } catch (RuntimeException re) {
-      if (re.getCause() instanceof ParseException) {
-        throw (ParseException)re.getCause();
-      }
-      throw re;
-    }
+    final ANTLRInputStream antlrInputStream = new ANTLRInputStream(sourceText);
+    final JavascriptErrorHandlingLexer javascriptLexer = new JavascriptErrorHandlingLexer(antlrInputStream);
+    javascriptLexer.removeErrorListeners();
+    final JavascriptParser javascriptParser = new JavascriptParser(new CommonTokenStream(javascriptLexer));
+    javascriptParser.removeErrorListeners();
+    javascriptParser.setErrorHandler(new JavascriptParserErrorStrategy());
+    return javascriptParser.compile();
   }
 
   /**
@@ -291,51 +289,56 @@ public final class JavascriptCompiler {
         boolean parens = ctx.LP() != null && ctx.RP() != null;
         Method method = parens ? functions.get(text) : null;
 
-        if (method != null) {
-          int arity = method.getParameterTypes().length;
-
-          if (arguments != arity) {
-            throwChecked(new ParseException(
-                "Invalid expression '" + sourceText + "': Expected (" + 
-                arity + ") arguments for function call (" + text + "), but found (" + arguments + ").", 
-                ctx.start.getStartIndex()));
-          }
-
-          typeStack.push(Type.DOUBLE_TYPE);
-
-          for (int argument = 0; argument < arguments; ++argument) {
-            visit(ctx.expression(argument));
-          }
-
-          typeStack.pop();
-
-          gen.invokeStatic(Type.getType(method.getDeclaringClass()),
-              org.objectweb.asm.commons.Method.getMethod(method));
-
-          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
-        } else if (!parens || arguments == 0 && text.contains(".")) {
-          int index;
-
-          text = normalizeQuotes(ctx.getText());
-
-          if (externalsMap.containsKey(text)) {
-            index = externalsMap.get(text);
+        try {
+          if (method != null) {
+            int arity = method.getParameterTypes().length;
+  
+            if (arguments != arity) {
+              throw new ParseException(
+                  "Invalid expression '" + sourceText + "': Expected (" + 
+                  arity + ") arguments for function call (" + text + "), but found (" + arguments + ").", 
+                  ctx.start.getStartIndex());
+            }
+  
+            typeStack.push(Type.DOUBLE_TYPE);
+  
+            for (int argument = 0; argument < arguments; ++argument) {
+              visit(ctx.expression(argument));
+            }
+  
+            typeStack.pop();
+  
+            gen.invokeStatic(Type.getType(method.getDeclaringClass()),
+                org.objectweb.asm.commons.Method.getMethod(method));
+  
+            gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
+          } else if (!parens || arguments == 0 && text.contains(".")) {
+            int index;
+  
+            text = normalizeQuotes(ctx.getText());
+  
+            if (externalsMap.containsKey(text)) {
+              index = externalsMap.get(text);
+            } else {
+              index = externalsMap.size();
+              externalsMap.put(text, index);
+            }
+  
+            gen.loadArg(0);
+            gen.push(index);
+            gen.arrayLoad(FUNCTION_VALUES_TYPE);
+            gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
+            gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
           } else {
-            index = externalsMap.size();
-            externalsMap.put(text, index);
+            throw new ParseException("Invalid expression '" + sourceText + "': Unrecognized function call (" +
+                text + ").", ctx.start.getStartIndex());
           }
-
-          gen.loadArg(0);
-          gen.push(index);
-          gen.arrayLoad(FUNCTION_VALUES_TYPE);
-          gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
-          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
-        } else {
-          throwChecked(new ParseException("Invalid expression '" + sourceText + "': Unrecognized function call (" +
-              text + ").", ctx.start.getStartIndex()));
+          return null;
+        } catch (ParseException e) {
+          // The API doesn't allow checked exceptions here, so propagate up the stack. This is unwrapped
+          // in getAntlrParseTree. 
+          throw new RuntimeException(e);
         }
-
-        return null;
       }
 
       @Override
@@ -622,16 +625,6 @@ public final class JavascriptCompiler {
           default:
             throw new IllegalStateException("Invalid expected type: " + typeStack.peek());
         }
-      }
-      
-      /** Needed to throw checked ParseException in this visitor (that does not allow it). */
-      private void throwChecked(Throwable t) {
-        this.<Error>throwChecked0(t);
-      }
-      
-      @SuppressWarnings("unchecked")
-      private <T extends Throwable> void throwChecked0(Throwable t) throws T {
-        throw (T) t;
       }
     }.visit(parseTree);
     

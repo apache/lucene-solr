@@ -1,0 +1,12 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "description": "Provides general information about the available nodes of the cluster.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/nodes"
+    ]
+  }
+}

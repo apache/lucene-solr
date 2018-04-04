@@ -568,8 +568,8 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     }
     return changeSet.toArray(new String[changeSet.size()]);
   }
-  
-  class IntChanges {
+
+  static class IntChanges {
     public Integer[] changedKeys;
     public Integer[] deletedKeys;
     public Integer[] addedKeys;

@@ -81,7 +81,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       }
     };
     client.queryDefaults().set("shards", servers.getShards());
-    TestJsonRequest.doJsonRequest(client);
+    TestJsonRequest.doJsonRequest(client, true);
 
   }
 

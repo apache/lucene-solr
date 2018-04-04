@@ -134,7 +134,7 @@ def update_example_solrconfigs(new_version):
   print('  updating example solrconfig.xml files')
   matcher = re.compile('<luceneMatchVersion>')
 
-  paths = ['solr/server/solr/configsets', 'solr/example']
+  paths = ['solr/server/solr/configsets', 'solr/example', 'solr/core/src/test-files/solr/configsets/_default']
   for path in paths:
     if not os.path.isdir(path):
       raise RuntimeError("Can't locate configset dir (layout change?) : " + path)

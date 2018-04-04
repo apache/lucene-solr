@@ -27,9 +27,6 @@ import java.util.List;
 
 /**
  * Utility methods to find a MBeanServer.
- *
- * This was factored out from {@link org.apache.solr.core.JmxMonitoredMap}
- * and can eventually replace the logic used there.
  */
 public final class JmxUtil {
 

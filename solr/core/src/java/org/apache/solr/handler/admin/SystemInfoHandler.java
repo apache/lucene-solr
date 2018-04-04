@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,21 +23,20 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 
+import com.codahale.metrics.Gauge;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -50,7 +45,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.RTimer;
-
+import org.apache.solr.util.RedactionUtils;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +61,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static String REDACT_STRING = RedactionUtils.getRedactString();
 
   /**
    * <p>
@@ -150,7 +148,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
     CoreContainer coreContainer;
     if (core != null) {
-       coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
+       coreContainer = req.getCore().getCoreContainer();
     } else {
       coreContainer = cc;
     }
@@ -203,29 +201,13 @@ public class SystemInfoHandler extends RequestHandlerBase
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.add(NAME, os.getName()); // add at least this one
-    try {
-      // add remaining ones dynamically using Java Beans API
-      addMXBeanProperties(os, OperatingSystemMXBean.class, info);
-    } catch (IntrospectionException | ReflectiveOperationException e) {
-      log.warn("Unable to fetch properties of OperatingSystemMXBean.", e);
-    }
-
-    // There are some additional beans we want to add (not available on all JVMs):
-    for (String clazz : Arrays.asList(
-        "com.sun.management.OperatingSystemMXBean",
-        "com.sun.management.UnixOperatingSystemMXBean", 
-        "com.ibm.lang.management.OperatingSystemMXBean"
-    )) {
-      try {
-        final Class<? extends PlatformManagedObject> intf = Class.forName(clazz)
-            .asSubclass(PlatformManagedObject.class);
-        addMXBeanProperties(os, intf, info);
-      } catch (ClassNotFoundException e) {
-        // ignore
-      } catch (IntrospectionException | ReflectiveOperationException e) {
-        log.warn("Unable to fetch properties of JVM-specific OperatingSystemMXBean.", e);
+    // add remaining ones dynamically using Java Beans API
+    // also those from JVM implementation-specific classes
+    MetricUtils.addMXBeanMetrics(os, MetricUtils.OS_MXBEAN_CLASSES, null, (name, metric) -> {
+      if (info.get(name) == null) {
+        info.add(name, ((Gauge) metric).getValue());
       }
-    }
+    });
 
     // Try some command line things:
     try { 
@@ -238,34 +220,6 @@ public class SystemInfoHandler extends RequestHandlerBase
     } 
     return info;
   }
-  
-  /**
-   * Add all bean properties of a {@link PlatformManagedObject} to the given {@link NamedList}.
-   * <p>
-   * If you are running a OpenJDK/Oracle JVM, there are nice properties in:
-   * {@code com.sun.management.UnixOperatingSystemMXBean} and
-   * {@code com.sun.management.OperatingSystemMXBean}
-   */
-  static <T extends PlatformManagedObject> void addMXBeanProperties(T obj, Class<? extends T> intf, NamedList<Object> info)
-      throws IntrospectionException, ReflectiveOperationException {
-    if (intf.isInstance(obj)) {
-      final BeanInfo beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
-      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
-        final String name = desc.getName();
-        if (info.get(name) == null) {
-          try {
-            final Object v = desc.getReadMethod().invoke(obj);
-            if(v != null) {
-              info.add(name, v);
-            }
-          } catch (InvocationTargetException ite) {
-            // ignore (some properties throw UOE)
-          }
-        }
-      }
-    }
-  }
-  
   
   /**
    * Utility function to execute a function
@@ -373,7 +327,7 @@ public class SystemInfoHandler extends RequestHandlerBase
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
-      jmx.add( "commandLineArgs", mx.getInputArguments());
+      jmx.add( "commandLineArgs", getInputArgumentsRedacted(mx));
 
       jmx.add( "startTime", new Date(mx.getStartTime()));
       jmx.add( "upTimeMS",  mx.getUptime() );
@@ -435,6 +389,18 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
 
     return newSizeAndUnits;
+  }
+
+  private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
+    List<String> list = new LinkedList<>();
+    for (String arg : mx.getInputArguments()) {
+      if (arg.startsWith("-D") && arg.contains("=") && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
+        list.add(String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+      } else {
+        list.add(arg);
+      }
+    }
+    return list;
   }
   
 }

@@ -35,6 +35,7 @@ import org.junit.Test;
 /**
  *
  */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class DistributedQueryElevationComponentTest extends BaseDistributedSearchTestCase {
 
   @BeforeClass
@@ -105,7 +106,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
     assertTrue(response.getResults().getNumFound() > 0);
     SolrDocument document = response.getResults().get(0);
-    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals("6", document.getFieldValue("id"));
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
@@ -121,7 +122,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);
-    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals("6", document.getFieldValue("id"));
     assertEquals(true, document.getFieldValue("[elevated]"));
   }
   

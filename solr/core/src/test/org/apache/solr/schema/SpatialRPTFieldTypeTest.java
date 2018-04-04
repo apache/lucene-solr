@@ -62,12 +62,12 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }
-  
-  final String INDEXED_COORDINATES = "25,82";
-  final String QUERY_COORDINATES = "24,81";
-  final String DISTANCE_DEGREES = "1.3520328";
-  final String DISTANCE_KILOMETERS = "150.33939";
-  final String DISTANCE_MILES = "93.416565";
+
+  static final String INDEXED_COORDINATES = "25,82";
+  static final String QUERY_COORDINATES = "24,81";
+  static final String DISTANCE_DEGREES = "1.3520328";
+  static final String DISTANCE_KILOMETERS = "150.33939";
+  static final String DISTANCE_MILES = "93.416565";
   
   public void testDistanceUnitsDegrees() throws Exception {
     setupRPTField("degrees", "true");
@@ -76,16 +76,16 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertU(commit());
     String q;
     
-    q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
+    q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
     
-    q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
+    q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
     
-    q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
+    q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
     
-    q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
+    q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_MILES+"']");
   }
   
@@ -263,6 +263,10 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
       rptMap.put("geo", geo);
     if(format!=null) {
       rptMap.put("format", format);
+    }
+    if (random().nextBoolean()) {
+      // use Geo3D sometimes
+      rptMap.put("spatialContextFactory", "Geo3D");
     }
     fieldType.init(oldSchema, rptMap);
     fieldType.setTypeName("location_rpt");

@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
@@ -34,12 +35,15 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IOContext;
@@ -267,7 +271,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   private static final int VERSION_START = 1;
   private static final int VERSION_CURRENT = VERSION_START;
 
-  private class MemoryFieldsConsumer extends FieldsConsumer {
+  private static class MemoryFieldsConsumer extends FieldsConsumer {
     private final SegmentWriteState state;
     private final IndexOutput out;
 
@@ -287,7 +291,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(Fields fields, NormsProducer norms) throws IOException {
       for(String field : fields) {
 
         Terms terms = fields.terms(field);
@@ -733,10 +737,10 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       if (!didDecode) {
         buffer.reset(current.output.bytes, current.output.offset, current.output.length);
         docFreq = buffer.readVInt();
-        if (field.getIndexOptions() != IndexOptions.DOCS) {
-          totalTermFreq = docFreq + buffer.readVLong();
+        if (field.getIndexOptions() == IndexOptions.DOCS) {
+          totalTermFreq = docFreq;
         } else {
-          totalTermFreq = -1;
+          totalTermFreq = docFreq + buffer.readVLong();
         }
         postingsSpare.bytes = current.output.bytes;
         postingsSpare.offset = buffer.getPosition();
@@ -815,6 +819,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    }
+
+    @Override
     public BytesRef term() {
       return current.input;
     }
@@ -873,12 +882,15 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       field = fieldInfos.fieldInfo(fieldNumber);
       if (field == null) {
         throw new CorruptIndexException("invalid field number: " + fieldNumber, in);
-      } else if (field.getIndexOptions() != IndexOptions.DOCS) {
-        sumTotalTermFreq = in.readVLong();
       } else {
-        sumTotalTermFreq = -1;
+        sumTotalTermFreq = in.readVLong();
       }
-      sumDocFreq = in.readVLong();
+      // if frequencies are omitted, sumDocFreq = sumTotalTermFreq and we only write one value.
+      if (field.getIndexOptions() == IndexOptions.DOCS) {
+        sumDocFreq = sumTotalTermFreq;
+      } else {
+        sumDocFreq = in.readVLong();
+      }
       docCount = in.readVInt();
       
       fst = new FST<>(in, outputs);

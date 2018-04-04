@@ -332,7 +332,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // that "optimize" the test client construction in a way that would prevent us from finding bugs with
     // regular HttpSolrClient instantiation.
     if (random().nextBoolean()) {
-      return new HttpSolrClient(url);
+      return (new HttpSolrClient.Builder(url)).build();
     } // else...
     return getHttpSolrClient(url);
   }

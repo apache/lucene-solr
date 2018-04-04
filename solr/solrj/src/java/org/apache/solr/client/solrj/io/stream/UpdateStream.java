@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,8 +43,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 /**
  * Sends tuples emitted by a wrapped {@link TupleStream} as updates to a SolrCloud collection.
+ * @since 6.0.0
  */
 public class UpdateStream extends TupleStream implements Expressible {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -258,9 +262,9 @@ public class UpdateStream extends TupleStream implements Expressible {
     if(this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
-      this.cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      this.cloudSolrClient = new Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
     }
   }
@@ -268,7 +272,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
     for (Object field : tuple.fields.keySet()) {
-      if (! ((String)field).equals("_version_")) {
+      if (! field.equals(VERSION_FIELD)) {
         Object value = tuple.get(field);
         if (value instanceof List) {
           addMultivaluedField(doc, (String)field, (List<Object>)value);

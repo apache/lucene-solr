@@ -42,8 +42,9 @@ public class TestParallelWeightCreation extends TestRerankBase{
     query.add("rows", "4");
 
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
+    // SOLR-10710, feature based on query with term w3 now scores higher on doc 4, updated
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");
     aftertest();
   }

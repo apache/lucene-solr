@@ -16,15 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
-
-import java.util.List;
 
 /**
  * A distributed map.
@@ -36,7 +38,7 @@ public class DistributedMap {
 
   protected SolrZkClient zookeeper;
 
-  protected final String prefix = "mn-";
+  protected static final String PREFIX = "mn-";
 
   public DistributedMap(SolrZkClient zookeeper, String dir) {
     this.dir = dir;
@@ -56,15 +58,28 @@ public class DistributedMap {
 
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
-    zookeeper.makePath(dir + "/" + prefix + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+  }
+  
+  /**
+   * Puts an element in the map only if there isn't one with the same trackingId already
+   * @return True if the the element was added. False if it wasn't (because the key already exists)
+   */
+  public boolean putIfAbsent(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+    try {
+      zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true, true);
+      return true;
+    } catch (NodeExistsException e) {
+      return false;
+    }
   }
 
   public byte[] get(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.getData(dir + "/" + prefix + trackingId, null, null, true);
+    return zookeeper.getData(dir + "/" + PREFIX + trackingId, null, null, true);
   }
 
   public boolean contains(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.exists(dir + "/" + prefix + trackingId, true);
+    return zookeeper.exists(dir + "/" + PREFIX + trackingId, true);
   }
 
   public int size() throws KeeperException, InterruptedException {
@@ -80,7 +95,7 @@ public class DistributedMap {
    */
   public boolean remove(String trackingId) throws KeeperException, InterruptedException {
     try {
-      zookeeper.delete(dir + "/" + prefix + trackingId, -1, true);
+      zookeeper.delete(dir + "/" + PREFIX + trackingId, -1, true);
     } catch (KeeperException.NoNodeException e) {
       return false;
     }
@@ -95,6 +110,17 @@ public class DistributedMap {
     for(String childName: childNames) {
       zookeeper.delete(dir + "/" + childName, -1, true);
     }
+
+  }
+  
+  /**
+   * Returns the keys of all the elements in the map
+   */
+  public Collection<String> keys() throws KeeperException, InterruptedException {
+    List<String> childs = zookeeper.getChildren(dir, null, true);
+    final List<String> ids = new ArrayList<>(childs.size());
+    childs.stream().forEach((child) -> ids.add(child.substring(PREFIX.length())));
+    return ids;
 
   }
 

@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import java.util.Collection;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-
-import java.util.Collection;
 
 /**
  * <p>
@@ -81,7 +80,7 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
   }
 
   /**
-   * Returns the Collection of {@link org.apache.lucene.analysis.Token}s for
+   * Returns the Collection of {@link Token}s for
    *         the query. Offsets on the Token should correspond to the correct
    *         offset in the origQuery
    */

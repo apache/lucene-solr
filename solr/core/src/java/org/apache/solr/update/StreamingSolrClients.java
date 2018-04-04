@@ -72,7 +72,13 @@ public class StreamingSolrClients {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
-      client = new ErrorReportingConcurrentUpdateSolrClient(url, httpClient, 100, runnerCount, updateExecutor, true, req);
+      client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, req, errors)
+          .withHttpClient(httpClient)
+          .withQueueSize(100)
+          .withThreadCount(runnerCount)
+          .withExecutorService(updateExecutor)
+          .alwaysStreamDeletes()
+          .build();
       client.setPollQueueTime(Integer.MAX_VALUE); // minimize connections created
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
@@ -115,31 +121,48 @@ public class StreamingSolrClients {
   public ExecutorService getUpdateExecutor() {
     return updateExecutor;
   }
+}
+
+class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final SolrCmdDistributor.Req req;
+  private final List<Error> errors;
   
-  class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
-    private final SolrCmdDistributor.Req req;
+  public ErrorReportingConcurrentUpdateSolrClient(Builder builder) {
+    super(builder);
+    this.req = builder.req;
+    this.errors = builder.errors;
+  }
+  
+  @Override
+  public void handleError(Throwable ex) {
+    req.trackRequestResult(null, false);
+    log.error("error", ex);
+    Error error = new Error();
+    error.e = (Exception) ex;
+    if (ex instanceof SolrException) {
+      error.statusCode = ((SolrException) ex).code();
+    }
+    error.req = req;
+    errors.add(error);
+  }
+  @Override
+  public void onSuccess(HttpResponse resp) {
+    req.trackRequestResult(resp, true);
+  }
+  
+  static class Builder extends ConcurrentUpdateSolrClient.Builder {
+    protected SolrCmdDistributor.Req req;
+    protected List<Error> errors;
     
-    public ErrorReportingConcurrentUpdateSolrClient(String solrServerUrl, HttpClient client, int queueSize,
-        int threadCount, ExecutorService es, boolean streamDeletes, SolrCmdDistributor.Req req) {
-      super(solrServerUrl, client, queueSize, threadCount, es, streamDeletes);
+    public Builder(String baseSolrUrl, SolrCmdDistributor.Req req, List<Error> errors) {
+      super(baseSolrUrl);
       this.req = req;
+      this.errors = errors;
     }
     
-    @Override
-    public void handleError(Throwable ex) {
-      req.trackRequestResult(null, false);
-      log.error("error", ex);
-      Error error = new Error();
-      error.e = (Exception) ex;
-      if (ex instanceof SolrException) {
-        error.statusCode = ((SolrException) ex).code();
-      }
-      error.req = req;
-      errors.add(error);
-    }
-    @Override
-    public void onSuccess(HttpResponse resp) {
-      req.trackRequestResult(resp, true);
+    public ErrorReportingConcurrentUpdateSolrClient build() {
+      return new ErrorReportingConcurrentUpdateSolrClient(this);
     }
   }
 }

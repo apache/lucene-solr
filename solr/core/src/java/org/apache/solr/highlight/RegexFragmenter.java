@@ -60,7 +60,7 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
   @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   { 
-    numRequests++;
+    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     int fragsize  = params.getFieldInt(   fieldName, HighlightParams.FRAGSIZE,  LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE );

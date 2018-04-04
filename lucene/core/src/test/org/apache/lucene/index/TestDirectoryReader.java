@@ -927,14 +927,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer.commit();
     final DirectoryReader reader = writer.getReader();
     final int[] closeCount = new int[1];
-    final IndexReader.ReaderClosedListener listener = new IndexReader.ReaderClosedListener() {
+    final IndexReader.ClosedListener listener = new IndexReader.ClosedListener() {
       @Override
-      public void onClose(IndexReader reader) {
+      public void onClose(IndexReader.CacheKey key) {
         closeCount[0]++;
       }
     };
   
-    reader.addReaderClosedListener(listener);
+    reader.getReaderCacheHelper().addClosedListener(listener);
   
     reader.close();
   
@@ -943,7 +943,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer.close();
   
     DirectoryReader reader2 = DirectoryReader.open(dir);
-    reader2.addReaderClosedListener(listener);
+    reader2.getReaderCacheHelper().addClosedListener(listener);
   
     closeCount[0] = 0;
     reader2.close();

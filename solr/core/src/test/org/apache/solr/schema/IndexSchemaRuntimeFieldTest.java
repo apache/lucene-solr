@@ -57,14 +57,14 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
 
     // Check to see if our copy field made it out safely
     query.setQuery( "dynamic_runtime:aaa" );
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
     clearIndex();
   }

@@ -70,8 +70,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
       fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
       CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool,
             false /* let client shutdown it*/);
-      client1 = getHttpSolrClient(fooUrl, httpClient);
-      client1.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      client1 = getHttpSolrClient(fooUrl, httpClient, DEFAULT_CONNECTION_TIMEOUT);
     }
     final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     

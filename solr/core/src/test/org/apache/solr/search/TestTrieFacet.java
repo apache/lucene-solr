@@ -25,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 
 import org.junit.BeforeClass;
 
+@Deprecated
 public class TestTrieFacet extends SolrTestCaseJ4 {
 
   final static int MIN_VALUE = 20;
@@ -52,6 +53,8 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     initCore("solrconfig-tlog.xml","schema.xml");
 
@@ -69,18 +72,20 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
       SchemaField sf = h.getCore().getLatestSchema().getField(f);
       assertFalse("who changed the schema? test isn't valid: " + f, sf.multiValued());
     }
-    
-    for (String f : P0) {
-      SchemaField sf = h.getCore().getLatestSchema().getField(f);
-      assertEquals("who changed the schema? test isn't valid: " + f,
-                   0, assertCastFieldType(sf).getPrecisionStep());
-    }
-    for (String f : P8) {
-      SchemaField sf = h.getCore().getLatestSchema().getField(f);
-      assertEquals("who changed the schema? test isn't valid: " + f,
-                   8, assertCastFieldType(sf).getPrecisionStep());
-    }
 
+    if (! Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      for (String f : P0) {
+        SchemaField sf = h.getCore().getLatestSchema().getField(f);
+        assertEquals("who changed the schema? test isn't valid: " + f,
+                     0, assertCastFieldType(sf).getPrecisionStep());
+      }
+      for (String f : P8) {
+        SchemaField sf = h.getCore().getLatestSchema().getField(f);
+        assertEquals("who changed the schema? test isn't valid: " + f,
+                     8, assertCastFieldType(sf).getPrecisionStep());
+      }
+    }
+    
     // we don't need a lot of docs -- at least one failure only had ~1000  
     NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
 

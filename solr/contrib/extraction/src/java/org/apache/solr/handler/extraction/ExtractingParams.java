@@ -47,19 +47,6 @@ public interface ExtractingParams {
   public static final String MAP_PREFIX = "fmap.";
 
   /**
-   * The boost value for the name of the field.  The boost can be specified by a name mapping.
-   * <p>
-   * For example
-   * <pre>
-   * map.title=solr.title
-   * boost.solr.title=2.5
-   * </pre>
-   * will boost the solr.title field for this document by 2.5
-   *
-   */
-  public static final String BOOST_PREFIX = "boost.";
-
-  /**
    * Pass in literal values to be added to the document, as in
    * <pre>
    *  literal.myField=Foo 

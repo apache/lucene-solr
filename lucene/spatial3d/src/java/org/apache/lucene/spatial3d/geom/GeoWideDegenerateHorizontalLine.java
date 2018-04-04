@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate bounding box wider than PI and limited on two sides (left lon, right lon).
  *
@@ -114,6 +118,22 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     this.edgePoints = new GeoPoint[]{centerPoint};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoWideDegenerateHorizontalLine(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     final double newTopLat = latitude + angle;
@@ -166,6 +186,13 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
+    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
+    return geoShape.intersects(plane, planePoints, eitherBound);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -176,7 +203,7 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
 
   @Override
   public int getRelationship(final GeoShape path) {
-    if (path.intersects(plane, planePoints, eitherBound)) {
+    if (intersects(path)) {
       return OVERLAPS;
     }
 

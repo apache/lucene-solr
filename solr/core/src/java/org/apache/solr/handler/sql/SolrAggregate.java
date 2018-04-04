@@ -69,16 +69,18 @@ class SolrAggregate extends Aggregate implements SolrRel {
 
     for(Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
 
-
       AggregateCall aggCall = namedAggCall.getKey();
 
       Pair<String, String> metric = toSolrMetric(implementor, aggCall, inNames);
       implementor.addReverseAggMapping(namedAggCall.getValue(), metric.getKey().toLowerCase(Locale.ROOT)+"("+metric.getValue()+")");
       implementor.addMetricPair(namedAggCall.getValue(), metric.getKey(), metric.getValue());
+      /*
       if(aggCall.getName() == null) {
+        System.out.println("AGG:"+namedAggCall.getValue()+":"+ aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
         implementor.addFieldMapping(namedAggCall.getValue(),
-            aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
+          aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
       }
+      */
     }
 
     for(int group : getGroupSet()) {

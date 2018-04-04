@@ -26,21 +26,23 @@ class AssertingLeafCollector extends FilterLeafCollector {
   private final Random random;
   private final int min;
   private final int max;
+  private final ScoreMode scoreMode;
 
   private Scorer scorer;
   private int lastCollected = -1;
 
-  AssertingLeafCollector(Random random, LeafCollector collector, int min, int max) {
+  AssertingLeafCollector(Random random, LeafCollector collector, int min, int max, ScoreMode scoreMode) {
     super(collector);
     this.random = random;
     this.min = min;
     this.max = max;
+    this.scoreMode = scoreMode;
   }
 
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    super.setScorer(AssertingScorer.wrap(random, scorer, true));
+    super.setScorer(AssertingScorer.wrap(random, scorer, scoreMode));
   }
 
   @Override

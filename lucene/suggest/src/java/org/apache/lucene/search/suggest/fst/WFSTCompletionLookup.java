@@ -267,7 +267,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     return Integer.MAX_VALUE - (int)value;
   }
   
-  private final class WFSTInputIterator extends SortedInputIterator {
+  private static final class WFSTInputIterator extends SortedInputIterator {
 
     WFSTInputIterator(Directory tempDir, String tempFileNamePrefix, InputIterator source) throws IOException {
       super(tempDir, tempFileNamePrefix, source);
