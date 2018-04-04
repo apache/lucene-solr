@@ -21,8 +21,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.Header;
@@ -30,7 +28,6 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -43,36 +40,10 @@ import static org.mockito.Mockito.when;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
-  static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {
-    SolrRequestInfo solrRequestInfo;
-
-    Map<String, PublicKey> remoteKeys = new HashMap<>();
-
-    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
-      super(cores, node);
-    }
-
-    @Override
-    boolean disabled() {
-      return false;
-    }
-
-    @Override
-    SolrRequestInfo getRequestInfo() {
-      return solrRequestInfo;
-    }
-
-    @Override
-    PublicKey getRemotePublicKey(String nodename) {
-      return remoteKeys.get(nodename);
-    }
-
-    @Override
-    boolean isSolrThread() {
-      return true;
-    }
+  public TestPKIAuthenticationPlugin() {
   }
 
+  @Test
   public void test() throws Exception {
     assumeWorkingMockito();
 
