@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.BitSet;
 import java.util.Collections;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1426,6 +1427,50 @@ shape:
     int intersection = solid.getRelationship(shape);
     int largeIntersection = solid.getRelationship(largeShape);
     assertTrue(intersection == largeIntersection);
+  }
+
+  @Ignore
+  @Test
+  public void testComplexPolygonPlaneOutsideWorld() {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE,0.5, -0.5));
+    GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    //Large polygon with arbitrary testPoint in set
+    GeoPolygon largePolygon = new GeoComplexPolygon(PlanetModel.SPHERE, Collections.singletonList(points), new GeoPoint(PlanetModel.SPHERE, 0.25, 0), true);
+    //This point is ok
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-8);
+    assertTrue(polygon.isWithin(point1) == largePolygon.isWithin(point1));
+    //This point is ok
+    point1 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-5);
+    assertTrue(polygon.isWithin(point1) == largePolygon.isWithin(point1));
+    //Fails here
+    point1 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-7);
+    assertTrue(polygon.isWithin(point1) == largePolygon.isWithin(point1));
+  }
+
+  @Ignore
+  @Test
+  public void testComplexPolygonDegeneratedVector() {
+    List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE,0.5, -0.5));
+    final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+    //Large polygon with test point in (0,0)
+    final GeoPolygon largePolygon = new GeoComplexPolygon(PlanetModel.SPHERE, Collections.singletonList(points), new GeoPoint(PlanetModel.SPHERE, 0.0, 0), true);
+    //Chooses Plane Z and succeed
+    final GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-5);
+    assertTrue(polygon.isWithin(point1) == largePolygon.isWithin(point1));
+    //Numerically identical
+    final GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-13);
+    assertTrue(polygon.isWithin(point2) == largePolygon.isWithin(point2));
+    //Fails here, chooses plane X
+    final GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, 0, 1e-6);
+    assertTrue(polygon.isWithin(point3) == largePolygon.isWithin(point3));
   }
   
 }
