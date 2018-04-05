@@ -274,7 +274,7 @@ The principles of JDK Collation are the same as those of ICU Collation; you just
 
 *Arguments for `solr.CollationField`, specified as attributes within the `<fieldtype>` element:*
 
-Using a System collator (see http://www.oracle.com/technetwork/java/javase/java8locales-2095355.html[Oracle's list of locales supported in Java 8]):
+Using a System collator (see http://www.oracle.com/technetwork/java/javase/java8locales-2095355.html[Oracle's list of locales supported in Java]):
 
 `language`:: (required) http://www.loc.gov/standards/iso639-2/php/code_list.php[ISO-639] language code
 
@@ -282,17 +282,17 @@ Using a System collator (see http://www.oracle.com/technetwork/java/javase/java8
 
 `variant`:: Vendor or browser-specific code
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See http://docs.oracle.com/javase/8/docs/api/java/text/Collator.html[Oracle Java 8 Collator javadocs] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`. See http://docs.oracle.com/javase/8/docs/api/java/text/Collator.html[Oracle Java 8 Collator javadocs] for more information.
+`decomposition`:: Valid values are `no`, `canonical`, or `full`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
 Using a Tailored ruleset:
 
-`custom`:: (required) Path to a UTF-8 text file containing rules supported by the http://docs.oracle.com/javase/8/docs/api/java/text/RuleBasedCollator.html[`JDK RuleBasedCollator`]
+`custom`:: (required) Path to a UTF-8 text file containing rules supported by the {java-javadocs}java/text/RuleBasedCollator.html[`JDK RuleBasedCollator`]
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See http://docs.oracle.com/javase/8/docs/api/java/text/Collator.html[Oracle Java 8 Collator javadocs] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`. See http://docs.oracle.com/javase/8/docs/api/java/text/Collator.html[Oracle Java 8 Collator javadocs] for more information.
+`decomposition`:: Valid values are `no`, `canonical`, or `full`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
 .A `solr.CollationField` example:
 [source,xml]
