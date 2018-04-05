@@ -111,11 +111,6 @@ final class LatLonPointDistanceQuery extends Query {
       final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field); // TODO is there a way of reporting matches that makes sense here?
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         ScorerSupplier scorerSupplier = scorerSupplier(context);
         if (scorerSupplier == null) {

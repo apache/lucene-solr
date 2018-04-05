@@ -19,14 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.BytesRef;
+import java.util.stream.Collectors;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -37,6 +36,8 @@ import org.apache.lucene.util.BytesRef;
  * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}
  */
 public class Matches {
+
+  public static final Matches MATCH_WITH_NO_TERMS = new Matches(Collections.emptyMap());
 
   private final Map<String, MatchesIterator> matches;
 
@@ -51,30 +52,15 @@ public class Matches {
   }
 
   /**
-   * Create an empty {@link Matches} for a Weight
-   *
-   * If the Weight's parent query does not match this document, returns {@code null},
-   * otherwise returns a {@link Matches} document with an empty iterator on the given
-   * fields
-   */
-  public static Matches emptyMatches(LeafReaderContext context, int doc, Weight weight, String... fields) throws IOException {
-    Scorer scorer = weight.scorer(context);
-    if (scorer == null || scorer.iterator().advance(doc) != doc) {
-      return null;
-    }
-    List<Matches> matches = new ArrayList<>();
-    for (String field : fields) {
-      matches.add(Matches.fromField(field, EMPTY));
-    }
-    return Matches.fromSubMatches(matches);
-  }
-
-  /**
    * Amalgamate a collection of {@link Matches} into a single object
    */
   public static Matches fromSubMatches(List<Matches> subMatches) throws IOException {
     if (subMatches == null || subMatches.size() == 0) {
       return null;
+    }
+    subMatches = subMatches.stream().filter(m -> m != MATCH_WITH_NO_TERMS).collect(Collectors.toList());
+    if (subMatches.size() == 0) {
+      return MATCH_WITH_NO_TERMS;
     }
     if (subMatches.size() == 1) {
       return subMatches.get(0);
@@ -105,13 +91,15 @@ public class Matches {
   }
 
   private Matches(String field, MatchesIterator iterator) {
-    this.matches = new HashMap<>();
-    this.matches.put(field, iterator);
+    this.matches = Collections.singletonMap(field, iterator);
   }
 
   /**
    * Returns a {@link MatchesIterator} over the matches for a single field,
-   * or {@code null} if there are no matches in that field
+   * or {@code null} if there are no matches in that field.
+   *
+   * This method always returns the same iterator, so clients should only
+   * call it once per field
    */
   public MatchesIterator getMatches(String field) {
     return matches.get(field);
@@ -124,38 +112,4 @@ public class Matches {
     return matches.keySet();
   }
 
-  private static final BytesRef EMPTY_BYTES = new BytesRef();
-
-  private static final MatchesIterator EMPTY = new MatchesIterator() {
-
-    @Override
-    public boolean next() throws IOException {
-      return false;
-    }
-
-    @Override
-    public int startPosition() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endPosition() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public BytesRef term() {
-      return EMPTY_BYTES;
-    }
-  };
 }

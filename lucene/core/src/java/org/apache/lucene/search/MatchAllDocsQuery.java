@@ -37,11 +37,6 @@ public final class MatchAllDocsQuery extends Query {
       }
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, "*");
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }

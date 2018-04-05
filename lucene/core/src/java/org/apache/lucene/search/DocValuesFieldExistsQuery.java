@@ -63,11 +63,6 @@ public final class DocValuesFieldExistsQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field);
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         DocIdSetIterator iterator = getDocValuesDocIdSetIterator(field, context.reader());
         if (iterator == null) {

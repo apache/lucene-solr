@@ -28,7 +28,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -66,12 +65,6 @@ public final class FunctionMatchQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     DoubleValuesSource vs = source.rewrite(searcher);
     return new ConstantScoreWeight(this, boost) {
-
-      @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, source.toString());  // TODO is there a way of reporting matches that makes sense here?
-      }
-
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         DoubleValues values = vs.getValues(context, null);

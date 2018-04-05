@@ -29,7 +29,6 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -163,9 +162,4 @@ public abstract class SpanWeight extends Weight {
     return Explanation.noMatch("no matching term");
   }
 
-  @Override
-  public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    // TODO: Composite matches
-    return Matches.emptyMatches(context, doc, this, field);
-  }
 }

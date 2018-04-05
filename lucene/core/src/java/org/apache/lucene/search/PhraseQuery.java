@@ -393,11 +393,6 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return Matches.emptyMatches(context, doc, this, field); // TODO
-    }
-
-    @Override
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
     @Override

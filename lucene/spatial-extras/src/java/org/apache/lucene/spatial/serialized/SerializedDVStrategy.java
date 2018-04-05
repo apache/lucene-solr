@@ -33,7 +33,6 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -139,12 +138,6 @@ public class SerializedDVStrategy extends SpatialStrategy {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
-
-        @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
-        }
-
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());

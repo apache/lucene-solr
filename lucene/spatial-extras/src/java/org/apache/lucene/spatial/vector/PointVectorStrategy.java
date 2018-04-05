@@ -36,7 +36,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -270,13 +269,6 @@ public class PointVectorStrategy extends SpatialStrategy {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       Weight w = inner.createWeight(searcher, scoreMode, 1f);
       return new ConstantScoreWeight(this, boost) {
-
-        @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return Matches.emptyMatches(context, doc, this, fieldNameX, fieldNameY);
-          // TODO is there a way of reporting matches that makes sense here?
-        }
-
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           Scorer in = w.scorer(context);

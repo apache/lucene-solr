@@ -276,11 +276,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           // order to protect highlighters
         }
 
-        @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
-        }
-
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
@@ -618,11 +613,6 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       Filter filter;
-
-      @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
-      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

@@ -38,7 +38,6 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -484,11 +483,6 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         }
         return new DefaultBulkScorer(scorer);
       }
-    }
-
-    @Override
-    public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return Matches.emptyMatches(context, doc, this, field);  // TODO is there a way of reporting matches that makes sense here?
     }
 
     @Override

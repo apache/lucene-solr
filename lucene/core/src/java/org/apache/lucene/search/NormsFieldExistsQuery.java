@@ -65,11 +65,6 @@ public final class NormsFieldExistsQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field);
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         FieldInfos fieldInfos = context.reader().getFieldInfos();
         FieldInfo fieldInfo = fieldInfos.fieldInfo(field);

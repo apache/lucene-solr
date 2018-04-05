@@ -83,11 +83,6 @@ final class FeatureQuery extends Query {
       public void extractTerms(Set<Term> terms) {}
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, fieldName);
-      }
-
-      @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         String desc = "weight(" + getQuery() + " in " + doc + ") [" + function + "]";
 

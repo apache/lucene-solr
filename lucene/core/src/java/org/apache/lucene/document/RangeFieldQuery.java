@@ -351,11 +351,6 @@ abstract class RangeFieldQuery extends Query {
       }
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field);
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         ScorerSupplier scorerSupplier = scorerSupplier(context);
         if (scorerSupplier == null) {
