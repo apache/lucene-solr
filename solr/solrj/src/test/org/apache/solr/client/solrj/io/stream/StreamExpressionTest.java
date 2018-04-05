@@ -2493,41 +2493,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     return true;
   }
 
-  protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
-    for(Tuple tuple : tuples){
-      for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
-          throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
-        }
-      }
-    }
-    return true;
-  }
-  protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
-    for(Tuple tuple : tuples){
-      for(String field : fields){
-        if(tuple.fields.containsKey(field)){
-          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
-        }
-      }
-    }
-    return true;
-  }  
-
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
-    List<?> group = (List<?>)tuple.get("tuples");
-    int i=0;
-    for(int val : ids) {
-      Map<?,?> t = (Map<?,?>)group.get(i);
-      Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
   public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
     long lv = (long)tuple.get(fieldName);
     if(lv != l) {
@@ -2563,23 +2528,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
-  }
-
-  private boolean assertList(List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
-    }
-
     return true;
   }
 
