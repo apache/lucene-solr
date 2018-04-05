@@ -170,6 +170,9 @@ Other Changes
 * SOLR-12176: Improve FORCELEADER to handle the case when a replica win the election but does not present
   in clusterstate (Cao Manh Dat)
 
+* SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
+  javadoc links locally. (hossman)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

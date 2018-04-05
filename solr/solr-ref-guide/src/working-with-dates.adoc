@@ -18,7 +18,7 @@
 
 == Date Formatting
 
-Solr's date fields (`DatePointField`, `DateRangeField` and the deprecated `TrieDateField`) represent "dates" as a point in time with millisecond precision. The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java 8, Solr uses https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
+Solr's date fields (`DatePointField`, `DateRangeField` and the deprecated `TrieDateField`) represent "dates" as a point in time with millisecond precision. The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java date handling, Solr uses {java-javadocs}java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
 
 `YYYY-MM-DDThh:mm:ssZ`
 
@@ -110,7 +110,7 @@ Example:
 
 ==== TZ
 
-By default, all date math expressions are evaluated relative to the UTC TimeZone, but the `TZ` parameter can be specified to override this behaviour, by forcing all date based addition and rounding to be relative to the specified http://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html[time zone].
+By default, all date math expressions are evaluated relative to the UTC TimeZone, but the `TZ` parameter can be specified to override this behaviour, by forcing all date based addition and rounding to be relative to the specified {java-javadocs}java/util/TimeZone.html[time zone].
 
 For example, the following request will use range faceting to facet over the current month, "per day" relative UTC:
 
