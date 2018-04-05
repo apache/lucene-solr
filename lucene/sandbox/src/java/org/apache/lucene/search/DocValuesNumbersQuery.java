@@ -98,6 +98,7 @@ public class DocValuesNumbersQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

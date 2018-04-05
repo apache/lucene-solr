@@ -97,6 +97,7 @@ final class LatLonPointInPolygonQuery extends Query {
     final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createPolygonPredicate(polygons, tree);
 
     return new ConstantScoreWeight(this, boost) {
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();

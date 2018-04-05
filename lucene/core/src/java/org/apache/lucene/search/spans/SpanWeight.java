@@ -161,5 +161,4 @@ public abstract class SpanWeight extends Weight {
 
     return Explanation.noMatch("no matching term");
   }
-
 }

@@ -286,7 +286,7 @@ public class GraphQuery extends Query {
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
     }
-
+    
   }
   
   private static class GraphScorer extends Scorer {

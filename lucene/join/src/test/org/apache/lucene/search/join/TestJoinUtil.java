@@ -525,11 +525,6 @@ public class TestJoinUtil extends LuceneTestCase {
             }
 
             @Override
-            public Matches matches(LeafReaderContext context, int doc) throws IOException {
-              return null;
-            }
-
-            @Override
             public Explanation explain(LeafReaderContext context, int doc) throws IOException {
               return null;
             }

@@ -245,7 +245,7 @@ public class PointVectorStrategy extends SpatialStrategy {
     throw new UnsupportedOperationException("An index is required for this operation.");
   }
 
-  private class DistanceRangeQuery extends Query {
+  private static class DistanceRangeQuery extends Query {
 
     final Query inner;
     final DoubleValuesSource distanceSource;

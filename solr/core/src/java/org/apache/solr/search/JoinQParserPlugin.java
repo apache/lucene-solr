@@ -238,6 +238,7 @@ class JoinQuery extends Query {
     DocSet resultSet;
     Filter filter;
 
+
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       if (filter == null) {

@@ -113,7 +113,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   public Query makeQuery(SpatialArgs args) {
     ShapeValuesSource shapeValueSource = makeShapeValueSource();
     ShapeValuesPredicate predicateValueSource = new ShapeValuesPredicate(shapeValueSource, args.getOperation(), args.getShape());
-    return new PredicateValueSourceQuery(getFieldName(), predicateValueSource);
+    return new PredicateValueSourceQuery(predicateValueSource);
   }
 
   /**
@@ -128,11 +128,9 @@ public class SerializedDVStrategy extends SpatialStrategy {
    */
   static class PredicateValueSourceQuery extends Query {
     private final ShapeValuesPredicate predicateValueSource;
-    private final String field;
 
-    public PredicateValueSourceQuery(String field, ShapeValuesPredicate predicateValueSource) {
+    public PredicateValueSourceQuery(ShapeValuesPredicate predicateValueSource) {
       this.predicateValueSource = predicateValueSource;
-      this.field = field;
     }
 
     @Override

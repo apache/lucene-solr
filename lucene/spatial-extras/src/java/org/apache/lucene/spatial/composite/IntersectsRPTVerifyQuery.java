@@ -48,14 +48,12 @@ public class IntersectsRPTVerifyQuery extends Query {
 
   private final IntersectsDifferentiatingQuery intersectsDiffQuery;
   private final ShapeValuesPredicate predicateValueSource;
-  private final String field;
 
   public IntersectsRPTVerifyQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel,
                                   int prefixGridScanLevel, ShapeValuesPredicate predicateValueSource) {
     this.predicateValueSource = predicateValueSource;
     this.intersectsDiffQuery = new IntersectsDifferentiatingQuery(queryShape, fieldName, grid, detailLevel,
         prefixGridScanLevel);
-    this.field = fieldName;
   }
 
   @Override

@@ -205,11 +205,6 @@ public final class BlockScoreQueryWrapper extends Query {
       }
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return inWeight.matches(context, doc);
-      }
-
-      @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return inWeight.explain(context, doc);
       }

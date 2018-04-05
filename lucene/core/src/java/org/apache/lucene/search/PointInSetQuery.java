@@ -112,6 +112,7 @@ public abstract class PointInSetQuery extends Query {
     // This is an inverted structure and should be used in the first pass:
 
     return new ConstantScoreWeight(this, boost) {
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
