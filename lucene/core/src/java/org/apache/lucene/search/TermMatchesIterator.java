@@ -20,16 +20,25 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.util.BytesRef;
 
-public class TermMatchesIterator implements MatchesIterator {
+/**
+ * A {@link MatchesIterator} over a single term's postings list
+ */
+class TermMatchesIterator implements MatchesIterator {
 
   private int upto;
   private int pos;
   private final PostingsEnum pe;
+  private final BytesRef term;
 
-  public TermMatchesIterator(PostingsEnum pe) throws IOException {
+  /**
+   * Create a new {@link TermMatchesIterator} for the given term and postings list
+   */
+  TermMatchesIterator(BytesRef term, PostingsEnum pe) throws IOException {
     this.pe = pe;
     this.upto = pe.freq();
+    this.term = term;
   }
 
   @Override
@@ -60,4 +69,10 @@ public class TermMatchesIterator implements MatchesIterator {
   public int endOffset() throws IOException {
     return pe.endOffset();
   }
+
+  @Override
+  public BytesRef term() {
+    return term;
+  }
+
 }

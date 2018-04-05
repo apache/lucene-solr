@@ -23,17 +23,26 @@ import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
 
-class DisjunctionMatchesIterator implements MatchesIterator {
+/**
+ * A {@link MatchesIterator} that combines matches from a set of sub-iterators
+ *
+ * Matches are sorted by their start positions, and then by their end positions, so that
+ * prefixes sort first.  Matches may overlap.
+ */
+public class DisjunctionMatchesIterator implements MatchesIterator {
 
+  /**
+   * Create a {@link DisjunctionMatchesIterator} over a list of terms
+   *
+   * Only terms that have at least one match in the given document will be included
+   */
   public static DisjunctionMatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
     return fromTermsEnum(context, doc, field, asBytesRefIterator(terms));
   }
@@ -50,6 +59,11 @@ class DisjunctionMatchesIterator implements MatchesIterator {
     };
   }
 
+  /**
+   * Create a {@link DisjunctionMatchesIterator} over a list of terms extracted from a {@link BytesRefIterator}
+   *
+   * Only terms that have at least one match in the given document will be included
+   */
   public static DisjunctionMatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {
     List<MatchesIterator> mis = new ArrayList<>();
     Terms t = context.reader().terms(field);
@@ -61,7 +75,8 @@ class DisjunctionMatchesIterator implements MatchesIterator {
       if (te.seekExact(term)) {
         PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
         if (pe.advance(doc) == doc) {
-          mis.add(new TermMatchesIterator(pe));
+          // TODO do we want to use the copied term here, or instead create a label that associates all of the TMIs with a single term?
+          mis.add(new TermMatchesIterator(BytesRef.deepCopyOf(term), pe));
           reuse = null;
         }
         else {
@@ -74,7 +89,7 @@ class DisjunctionMatchesIterator implements MatchesIterator {
     return new DisjunctionMatchesIterator(mis);
   }
 
-  public static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {
+  static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {
     if (mis.size() == 0)
       return null;
     if (mis.size() == 1)
@@ -133,6 +148,11 @@ class DisjunctionMatchesIterator implements MatchesIterator {
   @Override
   public int endOffset() throws IOException {
     return queue.top().endOffset();
+  }
+
+  @Override
+  public BytesRef term() {
+    return queue.top().term();
   }
 
 }

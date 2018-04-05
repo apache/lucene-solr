@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.util.BytesRef;
 
 public interface SourceAwareMatchesIterator extends MatchesIterator {
 
@@ -56,6 +57,11 @@ public interface SourceAwareMatchesIterator extends MatchesIterator {
       @Override
       public int endOffset() throws IOException {
         return in.endOffset();
+      }
+
+      @Override
+      public BytesRef term() {
+        return in.term();
       }
     };
   }

@@ -19,11 +19,11 @@ package org.apache.lucene.search;
 
 import java.util.Set;
 
-public class AssertingMatches extends Matches {
+class AssertingMatches extends Matches {
 
   private final Matches in;
 
-  public AssertingMatches(Matches matches) {
+  AssertingMatches(Matches matches) {
     super(null);
     this.in = matches;
   }

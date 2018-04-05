@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -43,38 +43,27 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.MutableBits;
 
 // Used by IndexWriter to hold open SegmentReaders (for
 // searching or merging), plus pending deletes and updates,
 // for a given segment
-class ReadersAndUpdates {
+final class ReadersAndUpdates {
   // Not final because we replace (clone) when we need to
   // change it and it's been shared:
-  public final SegmentCommitInfo info;
+  final SegmentCommitInfo info;
 
   // Tracks how many consumers are using this instance:
   private final AtomicInteger refCount = new AtomicInteger(1);
 
-  private final IndexWriter writer;
-
   // Set once (null, and then maybe set, and never set again):
   private SegmentReader reader;
 
-  // Holds the current shared (readable and writable)
-  // liveDocs.  This is null when there are no deleted
-  // docs, and it's copy-on-write (cloned whenever we need
-  // to change it but it's been shared to an external NRT
-  // reader).
-  private Bits liveDocs;
-
   // How many further deletions we've done against
   // liveDocs vs when we loaded it or last wrote it:
-  private int pendingDeleteCount;
+  private final PendingDeletes pendingDeletes;
 
-  // True if the current liveDocs is referenced by an
-  // external NRT reader:
-  private boolean liveDocsShared;
+  // the major version this index was created with
+  private final int indexCreatedVersionMajor;
 
   // Indicates whether this segment is currently being merged. While a segment
   // is merging, all field updates are also registered in the
@@ -96,25 +85,23 @@ class ReadersAndUpdates {
   // Only set if there are doc values updates against this segment, and the index is sorted:
   Sorter.DocMap sortMap;
 
-  public final AtomicLong ramBytesUsed = new AtomicLong();
-  
-  public ReadersAndUpdates(IndexWriter writer, SegmentCommitInfo info) {
-    this.writer = writer;
+  final AtomicLong ramBytesUsed = new AtomicLong();
+
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info, SegmentReader reader,
+                    PendingDeletes pendingDeletes) {
     this.info = info;
-    liveDocsShared = true;
+    this.pendingDeletes = pendingDeletes;
+    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
+    this.reader = reader;
   }
 
   /** Init from a previously opened SegmentReader.
    *
    * <p>NOTE: steals incoming ref from reader. */
-  public ReadersAndUpdates(IndexWriter writer, SegmentReader reader) {
-    this.writer = writer;
-    this.reader = reader;
-    info = reader.getSegmentInfo();
-    liveDocs = reader.getLiveDocs();
-    liveDocsShared = true;
-    pendingDeleteCount = reader.numDeletedDocs() - info.getDelCount();
-    assert pendingDeleteCount >= 0: "got " + pendingDeleteCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) {
+    this(indexCreatedVersionMajor, reader.getSegmentInfo(), reader, pendingDeletes);
+    assert pendingDeletes.numPendingDeletes() >= 0
+        : "got " + pendingDeletes.numPendingDeletes() + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
   }
 
   public void incRef() {
@@ -134,7 +121,7 @@ class ReadersAndUpdates {
   }
 
   public synchronized int getPendingDeleteCount() {
-    return pendingDeleteCount;
+    return pendingDeletes.numPendingDeletes();
   }
 
   private synchronized boolean assertNoDupGen(List<DocValuesFieldUpdates> fieldUpdates, DocValuesFieldUpdates update) {
@@ -186,6 +173,7 @@ class ReadersAndUpdates {
   // Call only from assert!
   public synchronized boolean verifyDocCounts() {
     int count;
+    Bits liveDocs = pendingDeletes.getLiveDocs();
     if (liveDocs != null) {
       count = 0;
       for(int docID=0;docID<info.info.maxDoc();docID++) {
@@ -197,7 +185,7 @@ class ReadersAndUpdates {
       count = info.info.maxDoc();
     }
 
-    assert info.info.maxDoc() - info.getDelCount() - pendingDeleteCount == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;
+    assert info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() + " pendingDeletes=" + pendingDeletes.numPendingDeletes() + " count=" + count;
     return true;
   }
 
@@ -205,12 +193,9 @@ class ReadersAndUpdates {
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, writer.segmentInfos.getIndexCreatedVersionMajor(), context);
-      if (liveDocs == null) {
-        liveDocs = reader.getLiveDocs();
-      }
+      reader = new SegmentReader(info, indexCreatedVersionMajor, context);
+      pendingDeletes.onNewReader(reader, info);
     }
-    
     // Ref for caller
     reader.incRef();
     return reader;
@@ -222,16 +207,7 @@ class ReadersAndUpdates {
   }
 
   public synchronized boolean delete(int docID) throws IOException {
-    initWritableLiveDocs();
-    assert liveDocs != null;
-    assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + liveDocs.length() + " seg=" + info.info.name + " maxDoc=" + info.info.maxDoc();
-    assert !liveDocsShared;
-    final boolean didDelete = liveDocs.get(docID);
-    if (didDelete) {
-      ((MutableBits) liveDocs).clear(docID);
-      pendingDeleteCount++;
-    }
-    return didDelete;
+    return pendingDeletes.delete(docID);
   }
 
   // NOTE: removes callers ref
@@ -258,10 +234,11 @@ class ReadersAndUpdates {
       getReader(context).decRef();
       assert reader != null;
     }
-    // force new liveDocs in initWritableLiveDocs even if it's null
-    liveDocsShared = true;
+    // force new liveDocs
+    Bits liveDocs = pendingDeletes.getLiveDocs();
+    pendingDeletes.liveDocsShared();
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs, info.info.maxDoc() - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs, info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -270,29 +247,12 @@ class ReadersAndUpdates {
     }
   }
 
-  private synchronized void initWritableLiveDocs() throws IOException {
-    assert info.info.maxDoc() > 0;
-    if (liveDocsShared) {
-      // Copy on write: this means we've cloned a
-      // SegmentReader sharing the current liveDocs
-      // instance; must now make a private clone so we can
-      // change it:
-      LiveDocsFormat liveDocsFormat = info.info.getCodec().liveDocsFormat();
-      if (liveDocs == null) {
-        liveDocs = liveDocsFormat.newLiveDocs(info.info.maxDoc());
-      } else {
-        liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
-      }
-      liveDocsShared = false;
-    }
-  }
 
   public synchronized Bits getLiveDocs() {
-    return liveDocs;
+    return pendingDeletes.getLiveDocs();
   }
 
   public synchronized void dropChanges() {
-    assert Thread.holdsLock(writer);
     // Discard (don't save) changes when we are dropping
     // the reader; this is used only on the sub-readers
     // after a successful merge.  If deletes had
@@ -300,7 +260,7 @@ class ReadersAndUpdates {
     // is running, by now we have carried forward those
     // deletes onto the newly merged segment, so we can
     // discard them on the sub-readers:
-    pendingDeleteCount = 0;
+    pendingDeletes.reset();
     dropMergingUpdates();
   }
 
@@ -308,47 +268,7 @@ class ReadersAndUpdates {
   // _X_N updates files) to the directory; returns true if it wrote any file
   // and false if there were no new deletes or updates to write:
   public synchronized boolean writeLiveDocs(Directory dir) throws IOException {
-    if (pendingDeleteCount == 0) {
-      return false;
-    }
-    
-    // We have new deletes
-    assert liveDocs.length() == info.info.maxDoc();
-    
-    // Do this so we can delete any created files on
-    // exception; this saves all codecs from having to do
-    // it:
-    TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-    
-    // We can write directly to the actual name (vs to a
-    // .tmp & renaming it) because the file is not live
-    // until segments file is written:
-    boolean success = false;
-    try {
-      Codec codec = info.info.getCodec();
-      codec.liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
-      success = true;
-    } finally {
-      if (!success) {
-        // Advance only the nextWriteDelGen so that a 2nd
-        // attempt to write will write to a new file
-        info.advanceNextWriteDelGen();
-        
-        // Delete any partially created file(s):
-        for (String fileName : trackingDir.getCreatedFiles()) {
-          IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
-        }
-      }
-    }
-    
-    // If we hit an exc in the line above (eg disk full)
-    // then info's delGen remains pointing to the previous
-    // (successfully written) del docs:
-    info.advanceDelGen();
-    info.setDelCount(info.getDelCount() + pendingDeleteCount);
-    pendingDeleteCount = 0;
-    
-    return true;
+    return pendingDeletes.writeLiveDocs(dir);
   }
   
   @SuppressWarnings("synthetic-access")
@@ -404,7 +324,6 @@ class ReadersAndUpdates {
               if (fieldInfoIn != fieldInfo) {
                 throw new IllegalArgumentException("wrong fieldInfo");
               }
-              final int maxDoc = reader.maxDoc();
               DocValuesFieldUpdates.Iterator[] subs = new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
               for(int i=0;i<subs.length;i++) {
                 subs[i] = updatesToApply.get(i).iterator();
@@ -623,8 +542,8 @@ class ReadersAndUpdates {
     }
   }
   
-  private synchronized Set<String> writeFieldInfosGen(FieldInfos fieldInfos, Directory dir, DocValuesFormat dvFormat, 
-      FieldInfosFormat infosFormat) throws IOException {
+  private synchronized Set<String> writeFieldInfosGen(FieldInfos fieldInfos, Directory dir,
+                                                      FieldInfosFormat infosFormat) throws IOException {
     final long nextFieldInfosGen = info.getNextFieldInfosGen();
     final String segmentSuffix = Long.toString(nextFieldInfosGen, Character.MAX_RADIX);
     // we write approximately that many bytes (based on Lucene46DVF):
@@ -639,22 +558,15 @@ class ReadersAndUpdates {
     return trackingDir.getCreatedFiles();
   }
 
-  public synchronized boolean writeFieldUpdates(Directory dir, long maxDelGen, InfoStream infoStream) throws IOException {
-
+  public synchronized boolean writeFieldUpdates(Directory dir, FieldInfos.FieldNumbers fieldNumbers, long maxDelGen, InfoStream infoStream) throws IOException {
     long startTimeNS = System.nanoTime();
-    
-    assert Thread.holdsLock(writer);
-
     final Map<Integer,Set<String>> newDVFiles = new HashMap<>();
     Set<String> fieldInfosFiles = null;
     FieldInfos fieldInfos = null;
-
     boolean any = false;
-    int count = 0;
     for (List<DocValuesFieldUpdates> updates : pendingDVUpdates.values()) {
       // Sort by increasing delGen:
-      Collections.sort(updates, (a, b) -> Long.compare(a.delGen, b.delGen));
-      count += updates.size();
+      Collections.sort(updates, Comparator.comparingLong(a -> a.delGen));
       for (DocValuesFieldUpdates update : updates) {
         if (update.delGen <= maxDelGen && update.any()) {
           any = true;
@@ -680,7 +592,7 @@ class ReadersAndUpdates {
       // IndexWriter.commitMergedDeletes).
       final SegmentReader reader;
       if (this.reader == null) {
-        reader = new SegmentReader(info, writer.segmentInfos.getIndexCreatedVersionMajor(), IOContext.READONCE);
+        reader = new SegmentReader(info, indexCreatedVersionMajor, IOContext.READONCE);
       } else {
         reader = this.reader;
       }
@@ -688,7 +600,7 @@ class ReadersAndUpdates {
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file
-        FieldInfos.Builder builder = new FieldInfos.Builder(writer.globalFieldNumberMap);
+        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
         // cannot use builder.add(reader.getFieldInfos()) because it does not
         // clone FI.attributes as well FI.dvGen
         for (FieldInfo fi : reader.getFieldInfos()) {
@@ -713,7 +625,7 @@ class ReadersAndUpdates {
         handleNumericDVUpdates(fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);
         handleBinaryDVUpdates(fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);
 
-        fieldInfosFiles = writeFieldInfosGen(fieldInfos, trackingDir, docValuesFormat, codec.fieldInfosFormat());
+        fieldInfosFiles = writeFieldInfosGen(fieldInfos, trackingDir, codec.fieldInfosFormat());
       } finally {
         if (reader != this.reader) {
           reader.close();
@@ -763,11 +675,12 @@ class ReadersAndUpdates {
 
     // if there is a reader open, reopen it to reflect the updates
     if (reader != null) {
-      SegmentReader newReader = new SegmentReader(info, reader, liveDocs, info.info.maxDoc() - info.getDelCount() - pendingDeleteCount);
+      SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(), info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
       boolean success2 = false;
       try {
         reader.decRef();
         reader = newReader;
+        pendingDeletes.onNewReader(reader, info);
         success2 = true;
       } finally {
         if (success2 == false) {
@@ -792,14 +705,10 @@ class ReadersAndUpdates {
     }
     info.setDocValuesUpdatesFiles(newDVFiles);
 
-    // wrote new files, should checkpoint()
-    writer.checkpointNoSIS();
-
     if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", String.format(Locale.ROOT, "done write field updates for seg=%s; took %.3fs; new files: %s",
                                              info, (System.nanoTime() - startTimeNS)/1000000000.0, newDVFiles));
     }
-
     return true;
   }
 
@@ -829,12 +738,11 @@ class ReadersAndUpdates {
     }
     
     SegmentReader reader = getReader(context);
-    int delCount = pendingDeleteCount + info.getDelCount();
+    int delCount = pendingDeletes.numPendingDeletes() + info.getDelCount();
     if (delCount != reader.numDeletedDocs()) {
-
       // beware of zombies:
       assert delCount > reader.numDeletedDocs(): "delCount=" + delCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs();
-
+      Bits liveDocs = pendingDeletes.getLiveDocs();
       assert liveDocs != null;
       
       // Create a new reader with the latest live docs:
@@ -842,6 +750,7 @@ class ReadersAndUpdates {
       boolean success = false;
       try {
         reader.decRef();
+        pendingDeletes.onNewReader(newReader, info);
         success = true;
       } finally {
         if (success == false) {
@@ -851,7 +760,7 @@ class ReadersAndUpdates {
       reader = newReader;
     }
 
-    liveDocsShared = true;
+    pendingDeletes.liveDocsShared();
 
     assert verifyDocCounts();
 
@@ -877,8 +786,12 @@ class ReadersAndUpdates {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("ReadersAndLiveDocs(seg=").append(info);
-    sb.append(" pendingDeleteCount=").append(pendingDeleteCount);
-    sb.append(" liveDocsShared=").append(liveDocsShared);
+    sb.append(" pendingDeletes=").append(pendingDeletes);
     return sb.toString();
   }
+
+  public synchronized boolean isFullyDeleted() {
+    return pendingDeletes.isFullyDeleted();
+  }
+  
 }

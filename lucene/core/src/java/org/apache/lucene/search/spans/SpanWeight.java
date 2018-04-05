@@ -30,7 +30,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -166,59 +165,7 @@ public abstract class SpanWeight extends Weight {
 
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    Spans spans = getSpans(context, Postings.OFFSETS);
-    if (spans.advance(doc) != doc)
-      return null;
-
-    MatchesIterator mi = new MatchesIterator() {
-
-      SpanCollector offsetCollector = new SpanCollector() {
-        @Override
-        public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
-          startOffset = Math.min(startOffset, postings.startOffset());
-          endOffset = Math.max(endOffset, postings.endOffset());
-        }
-
-        @Override
-        public void reset() {
-          startOffset = Integer.MAX_VALUE;
-          endOffset = Integer.MIN_VALUE;
-        }
-      };
-
-      int startOffset = -1;
-      int endOffset = -1;
-
-      @Override
-      public boolean next() throws IOException {
-        int next = spans.nextStartPosition();
-        if (next == Spans.NO_MORE_POSITIONS)
-          return false;
-        spans.collect(offsetCollector);
-        return true;
-      }
-
-      @Override
-      public int startPosition() {
-        return spans.startPosition();
-      }
-
-      @Override
-      public int endPosition() {
-        return spans.endPosition();
-      }
-
-      @Override
-      public int startOffset() {
-        return startOffset;
-      }
-
-      @Override
-      public int endOffset() {
-        return endOffset;
-      }
-    };
-
-    return Matches.fromField(field, mi);
+    // TODO: Composite matches
+    return Matches.emptyMatches(context, doc, this, field);
   }
 }

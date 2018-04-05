@@ -19,14 +19,16 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-public class AssertingMatchesIterator implements MatchesIterator {
+import org.apache.lucene.util.BytesRef;
+
+class AssertingMatchesIterator implements MatchesIterator {
 
   private final MatchesIterator in;
   private State state = State.UNPOSITIONED;
 
   private enum State { UNPOSITIONED, ITERATING, EXHAUSTED }
 
-  public AssertingMatchesIterator(MatchesIterator in) {
+  AssertingMatchesIterator(MatchesIterator in) {
     this.in = in;
   }
 
@@ -65,5 +67,11 @@ public class AssertingMatchesIterator implements MatchesIterator {
   public int endOffset() throws IOException {
     assert state == State.ITERATING : state;
     return in.endOffset();
+  }
+
+  @Override
+  public BytesRef term() {
+    assert state == State.ITERATING : state;
+    return in.term();
   }
 }
