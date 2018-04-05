@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.BitSet;
 import java.util.Collections;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
