@@ -1450,7 +1450,6 @@ shape:
     assertTrue(polygon.isWithin(point1) == largePolygon.isWithin(point1));
   }
 
-  @Ignore
   @Test
   public void testComplexPolygonDegeneratedVector() {
     List<GeoPoint> points = new ArrayList<>();
