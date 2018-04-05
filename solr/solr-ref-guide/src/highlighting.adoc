@@ -36,7 +36,7 @@ The highlighting implementation to use. Acceptable values are: `unified`, `origi
 See the <<Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
 
 `hl.fl`::
-Specifies a list of fields to highlight, either comma- or space-delimited.
+Specifies a list of fields to highlight, either comma- or space-delimited.  These must be "stored".
 A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible.
 When using `*`, consider adding `hl.requireFieldMatch=true`.
 +
@@ -55,7 +55,7 @@ When setting this, you might also need to set `hl.qparser`.
 The default is the value of the `q` parameter (already parsed).
 
 `hl.qparser`::
-The query parser to use for the `hl.q` query.  It only applies when `hl.q` is set.
+The <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,query parser>> to use for the `hl.q` query.  It only applies when `hl.q` is set.
 +
 The default is the value of the `defType` parameter which in turn defaults to `lucene`.
 
@@ -141,7 +141,7 @@ The `highlighting` section includes the ID of each document, and the field that 
 
 == Choosing a Highlighter
 
-Solr provides a `HighlightComponent` (a `SearchComponent`) and it's in the default list of components for search handlers. It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
+Solr provides a `HighlightComponent` (a <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-components,`SearchComponent`>>) and it's in the default list of components for search handlers. It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
 
 There are many parameters supported by more than one highlighter, and sometimes the implementation details and semantics will be a bit different, so don't expect identical results when switching highlighters. You should use the `hl.method` parameter to choose a highlighter but it's also possible to explicitly configure an implementation by class name in `solrconfig.xml`.
 

@@ -159,7 +159,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
     indexWriterConfig.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
         () -> new MatchAllDocsQuery(),
-        indexWriterConfig.getMergePolicy()));
+        new LogDocMergePolicy()));
     indexWriterConfig.setSoftDeletesField("soft_delete");
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
 
