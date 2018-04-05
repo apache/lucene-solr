@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -483,6 +484,34 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public IndexWriterConfig setCheckPendingFlushUpdate(boolean checkPendingFlushOnUpdate) {
     return (IndexWriterConfig) super.setCheckPendingFlushUpdate(checkPendingFlushOnUpdate);
+  }
+
+  /**
+   * Sets the soft deletes field. A soft delete field in lucene is a doc-values field that marks a document as soft-deleted if a
+   * document has at least one value in that field. If a document is marked as soft-deleted the document is treated as
+   * if it has been hard-deleted through the IndexWriter API ({@link IndexWriter#deleteDocuments(Term...)}.
+   * Merges will reclaim soft-deleted as well as hard-deleted documents and index readers obtained from the IndexWriter
+   * will reflect all deleted documents in it's live docs. If soft-deletes are used documents must be indexed via
+   * {@link IndexWriter#softUpdateDocument(Term, Iterable, Field...)}. Deletes are applied via
+   * {@link IndexWriter#updateDocValues(Term, Field...)}.
+   *
+   * Soft deletes allow to retain documents across merges if the merge policy modifies the live docs of a merge reader.
+   * {@link SoftDeletesRetentionMergePolicy} for instance allows to specify an arbitrary query to mark all documents
+   * that should survive the merge. This can be used to for example keep all document modifications for a certain time
+   * interval or the last N operations if some kind of sequence ID is available in the index.
+   *
+   * Currently there is no API support to un-delete a soft-deleted document. In oder to un-delete the document must be
+   * re-indexed using {@link IndexWriter#softUpdateDocument(Term, Iterable, Field...)}.
+   *
+   * The default value for this is <code>null</code> which disables soft-deletes. If soft-deletes are enabled documents
+   * can still be hard-deleted. Hard-deleted documents will won't considered as soft-deleted even if they have
+   * a value in the soft-deletes field.
+   *
+   * @see #getSoftDeletesField()
+   */
+  public IndexWriterConfig setSoftDeletesField(String softDeletesField) {
+    this.softDeletesField = softDeletesField;
+    return this;
   }
   
 }

@@ -86,4 +86,8 @@ public class MergePolicyWrapper extends MergePolicy {
     return getClass().getSimpleName() + "(" + in + ")";
   }
 
+  @Override
+  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+    return in.keepFullyDeletedSegment(reader);
+  }
 }

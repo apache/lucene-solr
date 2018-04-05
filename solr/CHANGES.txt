@@ -111,6 +111,8 @@ Bug Fixes
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
 
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe)
+
 Optimizations
 ----------------------
 

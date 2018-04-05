@@ -1071,36 +1071,36 @@ def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
                               % (artifact, distFilenames[artifactFilename], project))
 
 def verifyMavenDigests(artifacts):
-  print("    verify Maven artifacts' sha1/sha512 digests...")
+  print("    verify Maven artifacts' md5/sha1 digests...")
   reJarWarPom = re.compile(r'\.(?:[wj]ar|pom)$')
   for project in ('lucene', 'solr'):
     for artifactFile in [a for a in artifacts[project] if reJarWarPom.search(a)]:
+      if artifactFile + '.md5' not in artifacts[project]:
+        raise RuntimeError('missing: MD5 digest for %s' % artifactFile)
       if artifactFile + '.sha1' not in artifacts[project]:
         raise RuntimeError('missing: SHA1 digest for %s' % artifactFile)
-      if artifactFile + '.sha512' not in artifacts[project]:
-        raise RuntimeError('missing: SHA512 digest for %s' % artifactFile)
+      with open(artifactFile + '.md5', encoding='UTF-8') as md5File:
+        md5Expected = md5File.read().strip()
       with open(artifactFile + '.sha1', encoding='UTF-8') as sha1File:
         sha1Expected = sha1File.read().strip()
-      with open(artifactFile + '.sha512', encoding='UTF-8') as sha512File:
-        sha512Expected = sha512File.read().strip()
+      md5 = hashlib.md5()
       sha1 = hashlib.sha1()
-      sha512 = hashlib.sha512()
       inputFile = open(artifactFile, 'rb')
       while True:
         bytes = inputFile.read(65536)
         if len(bytes) == 0:
           break
+        md5.update(bytes)
         sha1.update(bytes)
-        sha512.update(bytes)
       inputFile.close()
+      md5Actual = md5.hexdigest()
       sha1Actual = sha1.hexdigest()
-      sha512Actual = sha512.hexdigest()
+      if md5Actual != md5Expected:
+        raise RuntimeError('MD5 digest mismatch for %s: expected %s but got %s'
+                           % (artifactFile, md5Expected, md5Actual))
       if sha1Actual != sha1Expected:
         raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s'
                            % (artifactFile, sha1Expected, sha1Actual))
-      if sha512Actual != sha512Expected:
-        raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s'
-                           % (artifactFile, sha512Expected, sha512Actual))
 
 def getPOMcoordinate(treeRoot):
   namespace = '{http://maven.apache.org/POM/4.0.0}'
