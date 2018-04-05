@@ -1429,7 +1429,6 @@ shape:
     assertTrue(intersection == largeIntersection);
   }
 
-  @Ignore
   @Test
   public void testComplexPolygonPlaneOutsideWorld() {
     List<GeoPoint> points = new ArrayList<>();
