@@ -111,6 +111,8 @@ Bug Fixes
   
 * SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
+* SOLR-12192: Fixed a solr cli error message when ulimits are unlimited. (Martijn Koster)
+
 Optimizations
 ----------------------
 
