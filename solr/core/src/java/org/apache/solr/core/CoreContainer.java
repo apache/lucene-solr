@@ -1107,7 +1107,7 @@ public class CoreContainer {
   private ConfigSet getConfigSet(CoreDescriptor cd) {
     return coreConfigService.getConfig(cd);
   }
-
+  
   /**
    * Take action when we failed to create a SolrCore. If error is due to corrupt index, try to recover. Various recovery
    * strategies can be specified via system properties "-DCoreInitFailedAction={fromleader, none}"
@@ -1385,7 +1385,7 @@ public class CoreContainer {
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
 
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
-
+    
     if (name != null) {
       // check for core-init errors first
       CoreLoadFailure loadFailure = coreInitFailures.remove(name);
@@ -1402,7 +1402,7 @@ public class CoreContainer {
         return;
       }
     }
-
+      
     if (cd == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
     }
@@ -1681,7 +1681,7 @@ public class CoreContainer {
   public long getStatus() {
     return status;
   }
-
+  
   // Occasaionally we need to access the transient cache handler in places other than coreContainer.
   public TransientSolrCoreCache getTransientCache() {
     return solrCores.getTransientCacheHandler();

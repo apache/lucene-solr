@@ -90,7 +90,7 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
   state (Cao Manh Dat)
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
@@ -110,8 +110,8 @@ Bug Fixes
 
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
-
-* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe)
+  
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
 Optimizations
 ----------------------
@@ -331,7 +331,7 @@ New Features
 
 * SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
 
-* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser.
+* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser. 
   Introducing {!.. filters=$fq excludeTags=t,q} in {!parent} and {!child} (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 Bug Fixes
