@@ -17,21 +17,32 @@
 
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.util.BytesRef;
 
-public interface SourceAwareMatchesIterator extends MatchesIterator {
+public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
   void addSource(byte[] source);
 
   static SourceAwareMatchesIterator wrapOffsets(MatchesIterator in) {
     return new SourceAwareMatchesIterator() {
       @Override
-      public void addSource(byte[] source) {
+      public void close() throws IOException {
+        // no-op
+      }
 
+      @Override
+      public void addSource(byte[] source) {
+        // no-op - offsets already provided
       }
 
       @Override
@@ -66,12 +77,89 @@ public interface SourceAwareMatchesIterator extends MatchesIterator {
     };
   }
 
-  static SourceAwareMatchesIterator fromTokenStream(MatchesIterator in, Analyzer analyzer) {
-    // build a TokenStream in setSource(), adding count * analyzer.getPositionIncrementGap
-    // add an OffsetsAttribute
-    // when in.next() is called, advance the ts until we're at the same position
-    // return the values from the offset attribute
-    return null;
+  static SourceAwareMatchesIterator fromTokenStream(MatchesIterator in, String field, Analyzer analyzer) {
+    return new SourceAwareMatchesIterator() {
+
+      int sourceCount = -1;
+      int tsPosition = 0;
+      TokenStream ts;
+      OffsetAttribute offsetAttribute;
+      PositionIncrementAttribute posIncAttribute;
+
+      int startPosition, endPosition, startOffset, endOffset;
+
+      @Override
+      public void addSource(byte[] source) {
+        sourceCount++;
+        if (sourceCount > 0) {
+          tsPosition += analyzer.getPositionIncrementGap(field);
+        }
+        ts = analyzer.tokenStream(field, new InputStreamReader(new ByteArrayInputStream(source)));
+        offsetAttribute = ts.getAttribute(OffsetAttribute.class);
+        posIncAttribute = ts.getAttribute(PositionIncrementAttribute.class);
+      }
+
+      @Override
+      public boolean next() throws IOException {
+        boolean next = in.next();
+        if (next == false) {
+          return false;
+        }
+        startPosition = in.startPosition();
+        if (advanceTokenStream(startPosition) == false) {
+          return false;
+        }
+        startOffset = offsetAttribute.startOffset();
+        endPosition = in.endPosition();
+        if (advanceTokenStream(endPosition) == false) {
+          return false;
+        }
+        endOffset = offsetAttribute.endOffset();
+        return true;
+      }
+
+      private boolean advanceTokenStream(int targetPos) throws IOException {
+        while (tsPosition < targetPos) {
+          if (ts.incrementToken() == false) {
+            return false;
+          }
+          tsPosition += posIncAttribute.getPositionIncrement();
+        }
+        return true;
+      }
+
+      @Override
+      public int startPosition() {
+        return startPosition;
+      }
+
+      @Override
+      public int endPosition() {
+        return endPosition;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return startOffset;
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return endOffset;
+      }
+
+      @Override
+      public BytesRef term() {
+        return in.term();
+      }
+
+      @Override
+      public void close() throws IOException {
+        if (ts != null) {
+          ts.close();
+        }
+      }
+    };
   }
 
 }

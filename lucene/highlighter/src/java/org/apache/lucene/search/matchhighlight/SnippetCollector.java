@@ -18,18 +18,13 @@
 package org.apache.lucene.search.matchhighlight;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.StoredFieldVisitor;
 
-public class SnippetCollector {
-  public Document getHighlights() {
-    return null;
-  }
+public interface SnippetCollector {
 
-  public boolean needsField(String name) {
-    return false;
-  }
+  Document getHighlights();
 
-  public void collectSnippets(SourceAwareMatches matches, String name, byte[] value) {
+  boolean needsField(String name);
 
-  }
+  void collectSnippets(SourceAwareMatches matches, String name, byte[] value);
+
 }
