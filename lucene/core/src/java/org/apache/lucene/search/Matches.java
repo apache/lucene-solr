@@ -41,7 +41,8 @@ public interface Matches extends Iterable<String> {
   MatchesIterator getMatches(String field) throws IOException;
 
   /**
-   * Indicates a match with no term positions, for example on a Point or DocValues field
+   * Indicates a match with no term positions, for example on a Point or DocValues field,
+   * or a field indexed as docs and freqs only
    */
   Matches MATCH_WITH_NO_TERMS = new Matches() {
     @Override

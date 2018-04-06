@@ -41,12 +41,24 @@ public class TestMatchesIterator extends LuceneTestCase {
   protected Directory directory;
   protected IndexReader reader;
 
-  public static final String FIELD_WITH_OFFSETS = "field_offsets";
-  public static final String FIELD_NO_OFFSETS = "field_no_offsets";
+  private static final String FIELD_WITH_OFFSETS = "field_offsets";
+  private static final String FIELD_NO_OFFSETS = "field_no_offsets";
+  private static final String FIELD_DOCS_ONLY = "field_docs_only";
+  private static final String FIELD_FREQS = "field_freqs";
 
-  public static final FieldType OFFSETS = new FieldType(TextField.TYPE_STORED);
+  private static final FieldType OFFSETS = new FieldType(TextField.TYPE_STORED);
   static {
     OFFSETS.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+  }
+
+  private static final FieldType DOCS = new FieldType(TextField.TYPE_STORED);
+  static {
+    DOCS.setIndexOptions(IndexOptions.DOCS);
+  }
+
+  private static final FieldType DOCS_AND_FREQS = new FieldType(TextField.TYPE_STORED);
+  static {
+    DOCS_AND_FREQS.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
   }
 
   @Override
@@ -66,6 +78,8 @@ public class TestMatchesIterator extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField(FIELD_WITH_OFFSETS, docFields[i], OFFSETS));
       doc.add(newField(FIELD_NO_OFFSETS, docFields[i], TextField.TYPE_STORED));
+      doc.add(newField(FIELD_DOCS_ONLY, docFields[i], DOCS));
+      doc.add(newField(FIELD_FREQS, docFields[i], DOCS_AND_FREQS));
       doc.add(new NumericDocValuesField("id", i));
       doc.add(newField("id", Integer.toString(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
@@ -114,6 +128,22 @@ public class TestMatchesIterator extends LuceneTestCase {
       pos += 4;
     }
     assertEquals(expected.length, pos);
+  }
+
+  void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
+    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
+    for (int i = 0; i < expected.length; i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (expected[i]) {
+        MatchesIterator mi = matches.getMatches(field);
+        assertNull(mi);
+      }
+      else {
+        assertNull(matches);
+      }
+    }
   }
 
   void checkTerms(Query q, String field, String[][] expected) throws IOException {
@@ -169,6 +199,13 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
   }
 
+  public void testTermQueryNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_DOCS_ONLY, FIELD_FREQS }) {
+      Query q = new TermQuery(new Term(field, "w1"));
+      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+    }
+  }
+
   public void testDisjunction() throws IOException {
     Query q = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")), BooleanClause.Occur.SHOULD)
@@ -190,6 +227,16 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
   }
 
+  public void testDisjunctionNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_DOCS_ONLY, FIELD_FREQS }) {
+      Query q = new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(field, "w1")), BooleanClause.Occur.SHOULD)
+          .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD)
+          .build();
+      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+    }
+  }
+
   public void testReqOpt() throws IOException {
     Query q = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")), BooleanClause.Occur.SHOULD)
@@ -202,6 +249,16 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
         { 4 }
     });
+  }
+
+  public void testReqOptNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_DOCS_ONLY, FIELD_FREQS }) {
+      Query q = new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(field, "w1")), BooleanClause.Occur.SHOULD)
+          .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST)
+          .build();
+      checkNoPositionsMatches(q, field, new boolean[]{ true, true, false, true, false });
+    }
   }
 
   public void testMinShouldMatch() throws IOException {
@@ -230,6 +287,21 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
   }
 
+  public void testMinShouldMatchNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
+      Query q = new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD)
+          .add(new BooleanQuery.Builder()
+              .add(new TermQuery(new Term(field, "w1")), BooleanClause.Occur.SHOULD)
+              .add(new TermQuery(new Term(field, "w4")), BooleanClause.Occur.SHOULD)
+              .add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD)
+              .setMinimumNumberShouldMatch(2)
+              .build(), BooleanClause.Occur.SHOULD)
+          .build();
+      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+    }
+  }
+
   public void testExclusion() throws IOException {
     Query q = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.SHOULD)
@@ -244,6 +316,16 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
   }
 
+  public void testExclusionNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
+      Query q = new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD)
+          .add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.MUST_NOT)
+          .build();
+      checkNoPositionsMatches(q, field, new boolean[]{ true, false, false, true, false });
+    }
+  }
+
   public void testConjunction() throws IOException {
     Query q = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.MUST)
@@ -256,6 +338,16 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 3, 3, 9, 11, 5, 5, 15, 17 },
         { 4 }
     });
+  }
+
+  public void testConjunctionNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
+      Query q = new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST)
+          .add(new TermQuery(new Term(field, "w4")), BooleanClause.Occur.MUST)
+          .build();
+      checkNoPositionsMatches(q, field, new boolean[]{ true, false, false, true, false });
+    }
   }
 
   public void testWildcards() throws IOException {
@@ -281,6 +373,13 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
   }
 
+  public void testWildcardsNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
+      Query q = new PrefixQuery(new Term(field, "x"));
+      checkNoPositionsMatches(q, field, new boolean[]{ false, false, true, false, false });
+    }
+  }
+
   public void testSynonymQuery() throws IOException {
     Query q = new SynonymQuery(new Term(FIELD_WITH_OFFSETS, "w1"), new Term(FIELD_WITH_OFFSETS, "w2"));
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
@@ -290,6 +389,13 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
         { 4 }
     });
+  }
+
+  public void testSynonymQueryNoPositions() throws IOException {
+    for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
+      Query q = new SynonymQuery(new Term(field, "w1"), new Term(field, "w2"));
+      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+    }
   }
 
   public void testMultipleFields() throws IOException {

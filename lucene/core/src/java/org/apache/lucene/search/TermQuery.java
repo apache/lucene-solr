@@ -83,6 +83,9 @@ public class TermQuery extends Query {
 
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      if (context.reader().terms(term.field()).hasPositions() == false) {
+        return super.matches(context, doc);
+      }
       TermsEnum te = getTermsEnum(context);
       if (te == null) {
         return null;
