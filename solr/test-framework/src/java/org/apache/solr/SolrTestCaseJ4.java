@@ -320,6 +320,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("urlScheme");
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+      System.clearProperty("host");
+      System.clearProperty("jetty.port");
       HttpClientUtil.resetHttpClientBuilder();
 
       clearNumericTypesProperties();
@@ -828,7 +830,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return port;
   }
-
+  
+  protected static void setHostPortContextFromUrl(URL url) {
+    System.setProperty("host", url.getHost());
+    System.setProperty("jetty.port", String.valueOf(url.getPort()));
+    if (System.getProperty("hostContext") == null)
+      System.setProperty("hostContext", url.getFile().replace("^/", ""));
+    // NOCOMMIT: DEBUG print
+    log.info("Set system properties for host:{}, jetty.port:{}, hostContext:{}",
+        System.getProperty("host"), System.getProperty("jetty.port"), System.getProperty("hostContext"));
+  }
 
   /** Validates an update XML String is successful
    */

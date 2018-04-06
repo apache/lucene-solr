@@ -128,6 +128,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   public void testGetBaseUrlForNodeNameLocal() {
     final MockPKIAuthenticationPlugin mock = new MockPKIAuthenticationPlugin(null, "myName");
     assertEquals("http://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
+    assertEquals("http://my.host:9876/solr2/a", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2%2Fa"));
     System.setProperty("solr.jetty.keystore", "foo");
     assertEquals("https://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
     System.clearProperty("solr.jetty.keystore");

@@ -453,15 +453,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      String requestUri = ((HttpServletRequest) request).getRequestURI();
+      String requestUri = request.getRequestURI();
       log.info("authenticateRequest uri={}", requestUri);
       if (requestUri != null && requestUri.endsWith(PKIAuthenticationPlugin.PATH)) {
-        log.info("/info/key passthrogh");
+        log.debug("/info/key passthrogh");
         return true; // Let /admin/info/key through
       } else {
         log.info("/info/key FAILED requestUri.endsWith(PKIAuthenticationPlugin.PATH)={}", requestUri.endsWith(PKIAuthenticationPlugin.PATH));
       }
-      String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
+      String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
