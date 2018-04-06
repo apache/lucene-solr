@@ -91,6 +91,8 @@ Bug Fixes
   method signatures was required to fix it. Third party components may continue to use the old API
   but should be updated to avoid this bug (Eros Taborelli, Erick Erickson, ab)
 
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure:
+  Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
 
 Optimizations
 ----------------------
