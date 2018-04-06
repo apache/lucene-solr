@@ -76,7 +76,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
+    Weight weight = indexSearcher.createWeight(termQuery, true, 1);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext)indexSearcher.getTopReaderContext();
     BulkScorer ts = weight.bulkScorer(context);
@@ -127,7 +127,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
+    Weight weight = indexSearcher.createWeight(termQuery, true, 1);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context);
@@ -144,7 +144,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
+    Weight weight = indexSearcher.createWeight(termQuery, true, 1);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context);
@@ -193,12 +193,12 @@ public class TestTermScorer extends LuceneTestCase {
     // We don't use newSearcher because it sometimes runs checkIndex which loads norms
     IndexSearcher indexSearcher = new IndexSearcher(forbiddenNorms);
     
-    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
+    Weight weight = indexSearcher.createWeight(termQuery, true, 1);
     expectThrows(AssertionError.class, () -> {
       weight.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
     });
     
-    Weight weight2 = indexSearcher.createNormalizedWeight(termQuery, false);
+    Weight weight2 = indexSearcher.createWeight(termQuery, false, 1);
     // should not fail this time since norms are not necessary
     weight2.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
   }

@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.4.0 =======================
 
+API Changes
+
+* LUCENE-8242: IndexSearcher.createNormalizedWeight() has been deprecated.
+  Instead use IndexSearcher.createWeight(), rewriting the query first.
+  (Alan Woodward)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together

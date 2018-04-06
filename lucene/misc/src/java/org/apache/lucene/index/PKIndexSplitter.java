@@ -105,8 +105,8 @@ public class PKIndexSplitter {
     try {
       final IndexSearcher searcher = new IndexSearcher(reader);
       searcher.setQueryCache(null);
-      final boolean needsScores = false; // scores are not needed, only matching docs
-      final Weight preserveWeight = searcher.createNormalizedWeight(preserveFilter, needsScores);
+      preserveFilter = searcher.rewrite(preserveFilter);
+      final Weight preserveWeight = searcher.createWeight(preserveFilter, false, 1);
       final List<LeafReaderContext> leaves = reader.leaves();
       final CodecReader[] subReaders = new CodecReader[leaves.size()];
       int i = 0;

@@ -198,7 +198,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq1.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq1.add(new PhraseQuery(F2, "search", "engine"), Occur.SHOULD);
 
-    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), true);
+    Weight w1 = scorerSearcher.createWeight(scorerSearcher.rewrite(bq1.build()), true, 1);
     Scorer s1 = w1.scorer(reader.leaves().get(0));
     assertEquals(0, s1.iterator().nextDoc());
     assertEquals(2, s1.getChildren().size());
@@ -207,7 +207,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq2.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
     bq2.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
 
-    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), true);
+    Weight w2 = scorerSearcher.createWeight(scorerSearcher.rewrite(bq2.build()), true, 1);
     Scorer s2 = w2.scorer(reader.leaves().get(0));
     assertEquals(0, s2.iterator().nextDoc());
     assertEquals(1, s2.getChildren().size());
@@ -220,7 +220,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     bq.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
     bq.setMinimumNumberShouldMatch(2);
 
-    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), true);
+    Weight w = scorerSearcher.createWeight(scorerSearcher.rewrite(bq.build()), true, 1);
     Scorer s = w.scorer(reader.leaves().get(0));
     assertEquals(0, s.iterator().nextDoc());
     assertEquals(2, s.getChildren().size());

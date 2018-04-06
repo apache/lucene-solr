@@ -65,8 +65,9 @@ public class QueryWrapperFilter extends Filter {
   public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
     // get a private context that is used to rewrite, createWeight and score eventually
     final LeafReaderContext privateContext = context.reader().getContext();
-    final Weight weight = new IndexSearcher(privateContext).createNormalizedWeight(query, false);
-    
+    final IndexSearcher searcher = new IndexSearcher(privateContext);
+    final Weight weight = searcher.createWeight(searcher.rewrite(query), false, 1);
+
     DocIdSet set = new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {

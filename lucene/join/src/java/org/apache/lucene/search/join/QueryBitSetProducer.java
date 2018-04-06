@@ -70,7 +70,8 @@ public class QueryBitSetProducer implements BitSetProducer {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
       final IndexSearcher searcher = new IndexSearcher(topLevelContext);
       searcher.setQueryCache(null);
-      final Weight weight = searcher.createNormalizedWeight(query, false);
+      final Query rewritten = searcher.rewrite(query);
+      final Weight weight = searcher.createWeight(rewritten, false, 1);
       final Scorer s = weight.scorer(context);
 
       if (s == null) {

@@ -143,7 +143,7 @@ public class UnifiedHighlighter {
    */
   protected static Set<Term> extractTerms(Query query) throws IOException {
     Set<Term> queryTerms = new HashSet<>();
-    EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(queryTerms);
+    EMPTY_INDEXSEARCHER.createWeight(EMPTY_INDEXSEARCHER.rewrite(query), false, 1).extractTerms(queryTerms);
     return queryTerms;
   }
 

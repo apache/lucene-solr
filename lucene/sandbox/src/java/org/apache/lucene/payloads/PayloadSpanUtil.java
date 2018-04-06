@@ -171,7 +171,8 @@ public class PayloadSpanUtil {
     final IndexSearcher searcher = new IndexSearcher(context);
     searcher.setQueryCache(null);
 
-    SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(query, false);
+    query = (SpanQuery) searcher.rewrite(query);
+    SpanWeight w = (SpanWeight) searcher.createWeight(query, false, 1);
 
     PayloadSpanCollector collector = new PayloadSpanCollector();
     for (LeafReaderContext leafReaderContext : context.leaves()) {

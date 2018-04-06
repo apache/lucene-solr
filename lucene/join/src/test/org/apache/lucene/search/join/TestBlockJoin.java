@@ -1111,7 +1111,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createWeight(s.rewrite(q), true, 1);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(1, sc.iterator().advance(1));
     r.close();
@@ -1145,7 +1145,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(s.getIndexReader(), parentFilter);
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createWeight(s.rewrite(q), true, 1);
     Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
     assertEquals(2, sc.iterator().advance(0));
     r.close();
@@ -1197,7 +1197,7 @@ public class TestBlockJoin extends LuceneTestCase {
     CheckJoinIndex.check(r, parentsFilter);
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    Weight weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    Weight weight = searcher.createWeight(searcher.rewrite(childJoinQuery), random().nextBoolean(), 1);
     Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1205,7 +1205,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childQuery = new TermQuery(new Term("bogus", "bogus"));
     childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
-    weight = searcher.createNormalizedWeight(childJoinQuery, random().nextBoolean());
+    weight = searcher.createWeight(searcher.rewrite(childJoinQuery), random().nextBoolean(), 1);
     scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(scorer);
 
@@ -1399,7 +1399,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentFilter);
 
-    Weight weight = s.createNormalizedWeight(parentJoinQuery, random().nextBoolean());
+    Weight weight = s.createWeight(s.rewrite(parentJoinQuery), random().nextBoolean(), 1);
     Scorer advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
     Scorer nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
 

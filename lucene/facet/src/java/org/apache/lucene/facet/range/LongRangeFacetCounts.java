@@ -84,7 +84,7 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
         final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context);
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
-        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
+        final Weight fastMatchWeight = searcher.createWeight(searcher.rewrite(fastMatchQuery), false, 1);
         Scorer s = fastMatchWeight.scorer(hits.context);
         if (s == null) {
           continue;

@@ -119,8 +119,8 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), true);
-    
+    BooleanWeight weight = (BooleanWeight) searcher.createWeight(searcher.rewrite(bq.build()), true, 1);
+
     switch (mode) {
     case DOC_VALUES:
       return new SlowMinShouldMatchScorer(weight, reader, searcher);

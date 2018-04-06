@@ -309,7 +309,8 @@ public class QueryUtils {
             lastDoc[0] = doc;
             try {
               if (scorer == null) {
-                Weight w = s.createNormalizedWeight(q, true);
+                Query rewritten = s.rewrite(q);
+                Weight w = s.createWeight(rewritten, true, 1);
                 LeafReaderContext context = readerContextArray.get(leafPtr);
                 scorer = w.scorer(context);
                 iterator = scorer.iterator();
@@ -374,7 +375,8 @@ public class QueryUtils {
               final LeafReader previousReader = lastReader[0];
               IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
               indexSearcher.setSimilarity(s.getSimilarity(true));
-              Weight w = indexSearcher.createNormalizedWeight(q, true);
+              Query rewritten = indexSearcher.rewrite(q);
+              Weight w = indexSearcher.createWeight(rewritten, true, 1);
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
               Scorer scorer = w.scorer(ctx);
               if (scorer != null) {
@@ -404,7 +406,8 @@ public class QueryUtils {
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           indexSearcher.setSimilarity(s.getSimilarity(true));
-          Weight w = indexSearcher.createNormalizedWeight(q, true);
+          Query rewritten = indexSearcher.rewrite(q);
+          Weight w = indexSearcher.createWeight(rewritten, true, 1);
           LeafReaderContext ctx = previousReader.getContext();
           Scorer scorer = w.scorer(ctx);
           if (scorer != null) {
@@ -430,6 +433,7 @@ public class QueryUtils {
     final int lastDoc[] = {-1};
     final LeafReader lastReader[] = {null};
     final List<LeafReaderContext> context = s.getTopReaderContext().leaves();
+    Query rewritten = s.rewrite(q);
     s.search(q,new SimpleCollector() {
       private Scorer scorer;
       private int leafPtr;
@@ -443,7 +447,7 @@ public class QueryUtils {
         try {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
-            Weight w = s.createNormalizedWeight(q, true);
+            Weight w = s.createWeight(rewritten, true, 1);
             Scorer scorer = w.scorer(context.get(leafPtr));
             Assert.assertTrue("query collected "+doc+" but advance("+i+") says no more docs!",scorer.iterator().advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but advance("+i+") got to "+scorer.docID(),doc,scorer.docID());
@@ -476,7 +480,7 @@ public class QueryUtils {
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           indexSearcher.setSimilarity(s.getSimilarity(true));
-          Weight w = indexSearcher.createNormalizedWeight(q, true);
+          Weight w = indexSearcher.createWeight(rewritten, true, 1);
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
           if (scorer != null) {
             DocIdSetIterator iterator = scorer.iterator();
@@ -504,7 +508,7 @@ public class QueryUtils {
       final LeafReader previousReader = lastReader[0];
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
       indexSearcher.setSimilarity(s.getSimilarity(true));
-      Weight w = indexSearcher.createNormalizedWeight(q, true);
+      Weight w = indexSearcher.createWeight(rewritten, true, 1);
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
       if (scorer != null) {
         DocIdSetIterator iterator = scorer.iterator();
@@ -523,7 +527,8 @@ public class QueryUtils {
 
   /** Check that the scorer and bulk scorer advance consistently. */
   public static void checkBulkScorerSkipTo(Random r, Query query, IndexSearcher searcher) throws IOException {
-    Weight weight = searcher.createNormalizedWeight(query, true);
+    query = searcher.rewrite(query);
+    Weight weight = searcher.createWeight(query, true, 1);
     for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
       final Scorer scorer = weight.scorer(context);
       final BulkScorer bulkScorer = weight.bulkScorer(context);

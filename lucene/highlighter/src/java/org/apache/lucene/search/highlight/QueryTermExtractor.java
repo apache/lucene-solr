@@ -128,7 +128,7 @@ public final class QueryTermExtractor
       else {
         HashSet<Term> nonWeightedTerms = new HashSet<>();
         try {
-          EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(nonWeightedTerms);
+          EMPTY_INDEXSEARCHER.createWeight(EMPTY_INDEXSEARCHER.rewrite(query), false, 1).extractTerms(nonWeightedTerms);
         } catch (IOException bogus) {
           throw new RuntimeException("Should not happen on an empty index", bogus);
         }

@@ -178,7 +178,7 @@ public class SolrFeature extends Feature {
         // leaving nothing for the phrase query to parse.
         if (query != null) {
           queryAndFilters.add(query);
-          solrQueryWeight = searcher.createNormalizedWeight(query, true);
+          solrQueryWeight = searcher.createWeight(searcher.rewrite(query), true, 1);
         } else {
           solrQueryWeight = null;
         }

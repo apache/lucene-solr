@@ -83,7 +83,7 @@ class DrillSidewaysQuery extends Query {
     final Weight baseWeight = baseQuery.createWeight(searcher, needsScores, boost);
     final Weight[] drillDowns = new Weight[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
-      drillDowns[dim] = searcher.createNormalizedWeight(drillDownQueries[dim], false);
+      drillDowns[dim] = searcher.createWeight(searcher.rewrite(drillDownQueries[dim]), false, 1);
     }
 
     return new Weight(DrillSidewaysQuery.this) {

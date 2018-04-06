@@ -79,7 +79,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = hits.scoreDocs[0].doc - context.docBase;
 
-    final Weight weight = searcher.createNormalizedWeight(model, true);
+    final Weight weight = searcher.createWeight(searcher.rewrite(model), true, 1);
     final Scorer scorer = weight.scorer(context);
 
     // rerank using the field final-score

@@ -1141,7 +1141,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     LRUQueryCache cache = new LRUQueryCache(1, Long.MAX_VALUE, context -> true);
 
     // test that the bulk scorer is propagated when a scorer should not be cached
-    Weight weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), false);
+    Weight weight = searcher.createWeight(new MatchAllDocsQuery(), false, 1);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
     weight = cache.doCache(weight, NEVER_CACHE);
     weight.bulkScorer(leaf);
@@ -1151,7 +1151,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     // test that the doc id set is computed using the bulk scorer
     bulkScorerCalled.set(false);
-    weight = searcher.createNormalizedWeight(new MatchAllDocsQuery(), false);
+    weight = searcher.createWeight(new MatchAllDocsQuery(), false, 1);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
     weight = cache.doCache(weight, QueryCachingPolicy.ALWAYS_CACHE);
     weight.scorer(leaf);
@@ -1424,7 +1424,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     AtomicBoolean scorerCreated = new AtomicBoolean(false);
     Query query = new DummyQuery2(scorerCreated);
-    Weight weight = searcher.createNormalizedWeight(query, false);
+    Weight weight = searcher.createWeight(searcher.rewrite(query), false, 1);
     ScorerSupplier supplier = weight.scorerSupplier(searcher.getIndexReader().leaves().get(0));
     assertFalse(scorerCreated.get());
     supplier.get(random().nextLong() & 0x7FFFFFFFFFFFFFFFL);
