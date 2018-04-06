@@ -598,31 +598,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * Returns the QueryResponse from {@link #queryServer}  
    */
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
-    return query(setDistribParams, p, null, null);
-  }
-
-  /**
-   * Returns the QueryResponse from {@link #queryServer}
-   * @param setDistribParams whether to do a distributed request
-   * @param user basic auth username (set to null if not in use)
-   * @param pass basic auth password (set to null if not in use)
-   * @return the query response
-   */
-  protected QueryResponse query(boolean setDistribParams, SolrParams p, String user, String pass) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams(p);
 
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
-    QueryRequest req = generateQueryRequest(params, user, pass);
-    final QueryResponse controlRsp = req.process(controlClient, null);
+    final QueryResponse controlRsp = controlClient.query(params);
     validateControlData(controlRsp);
 
     params.remove("distrib");
     if (setDistribParams) setDistributedParams(params);
-    req = generateQueryRequest(params, user, pass);
 
-    QueryResponse rsp = queryServer(req);
+    QueryResponse rsp = queryServer(params);
 
     compareResponses(rsp, controlRsp);
 
@@ -637,8 +624,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
               int which = r.nextInt(clients.size());
               SolrClient client = clients.get(which);
               try {
-                QueryRequest qreq = generateQueryRequest(new ModifiableSolrParams(params), user, pass);
-                QueryResponse rsp = qreq.process(client, null);
+                QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                 if (verifyStress) {
                   compareResponses(rsp, controlRsp);
                 }
@@ -657,15 +643,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
     return rsp;
   }
-
-  private QueryRequest generateQueryRequest(ModifiableSolrParams params, String user, String pass) {
-    QueryRequest req = new QueryRequest(params);
-    if (user != null && pass != null) {
-      req.setBasicAuthCredentials(user, pass);
-    }
-    return req;
-  }
-
+  
   public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients) throws SolrServerException, IOException {
     return queryAndCompare(params, Arrays.<SolrClient>asList(clients));
   }
