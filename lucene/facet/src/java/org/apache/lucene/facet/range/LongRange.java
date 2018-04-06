@@ -27,7 +27,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -136,11 +135,6 @@ public final class LongRange extends Range {
           : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
 
       return new ConstantScoreWeight(this, boost) {
-        @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return null;
-        }
-
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           final int maxDoc = context.reader().maxDoc();

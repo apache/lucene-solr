@@ -29,7 +29,6 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -100,11 +99,6 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
-      }
-
-      @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, field);
       }
 
       @Override

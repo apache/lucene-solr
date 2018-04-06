@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -88,7 +87,6 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -2223,14 +2221,21 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeAllDeleted() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    AtomicBoolean keepFullyDeletedSegments = new AtomicBoolean();
+    iwc.setMergePolicy(new MergePolicyWrapper(iwc.getMergePolicy()) {
+      @Override
+      public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+        return keepFullyDeletedSegments.get();
+      }
+    });
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
     IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(false);
+          keepFullyDeletedSegments.set(false);
         } else if ("startMergeInit".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(true);
+          keepFullyDeletedSegments.set(true);
         }
       }
     });
@@ -2958,94 +2963,10 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
-  private static Bits getSoftDeletesLiveDocs(LeafReader reader, String field) {
-    try {
-      NumericDocValues softDelete = reader.getNumericDocValues(field);
-      if (softDelete != null) {
-        BitSet bitSet = BitSet.of(softDelete, reader.maxDoc());
-        Bits inLiveDocs = reader.getLiveDocs() == null ? new Bits.MatchAllBits(reader.maxDoc()) : reader.getLiveDocs();
-        Bits newliveDocs = new Bits() {
-          @Override
-          public boolean get(int index) {
-            return inLiveDocs.get(index) && bitSet.get(index) == false;
-          }
-
-          @Override
-          public int length() {
-            return inLiveDocs.length();
-          }
-        };
-        return newliveDocs;
-
-      } else {
-        return reader.getLiveDocs();
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static DirectoryReader wrapSoftDeletes(DirectoryReader reader, String field) throws IOException {
-    return new FilterDirectoryReader(reader, new FilterDirectoryReader.SubReaderWrapper() {
-      @Override
-      public LeafReader wrap(LeafReader reader) {
-        Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, field);
-        int numDocs = getNumDocs(reader, softDeletesLiveDocs);
-        return new FilterLeafReader(reader) {
-
-          @Override
-          public Bits getLiveDocs() {
-            return softDeletesLiveDocs;
-          }
-
-          @Override
-          public CacheHelper getReaderCacheHelper() {
-            return in.getReaderCacheHelper();
-          }
-
-          @Override
-          public CacheHelper getCoreCacheHelper() {
-            return in.getCoreCacheHelper();
-          }
-
-          @Override
-          public int numDocs() {
-            return numDocs;
-          }
-        };
-      }
-    }) {
-      @Override
-      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-        return wrapSoftDeletes(in, field);
-      }
-
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return in.getReaderCacheHelper();
-      }
-    };
-  }
-
-  private static int getNumDocs(LeafReader reader, Bits softDeletesLiveDocs) {
-    int numDocs;
-    if (softDeletesLiveDocs == reader.getLiveDocs()) {
-      numDocs = reader.numDocs();
-    } else {
-      int tmp = 0;
-      for (int i = 0; i < softDeletesLiveDocs.length(); i++) {
-        if (softDeletesLiveDocs.get(i) ) {
-           tmp++;
-        }
-      }
-      numDocs = tmp;
-    }
-    return numDocs;
-  }
 
   public void testSoftUpdateDocuments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("soft_delete"));
     expectThrows(IllegalArgumentException.class, () -> {
       writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
     });
@@ -3071,7 +2992,7 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(new StringField("version", "2", Field.Store.YES));
     Field field = new NumericDocValuesField("soft_delete", 1);
     writer.softUpdateDocument(new Term("id", "1"), doc, field);
-    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    DirectoryReader reader = DirectoryReader.open(writer);
     assertEquals(2, reader.docFreq(new Term("id", "1")));
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
@@ -3112,43 +3033,53 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testSoftUpdatesConcurrently() throws IOException, InterruptedException {
+    softUpdatesConcurrently(false);
+  }
+
+  public void testSoftUpdatesConcurrentlyMixedDeletes() throws IOException, InterruptedException {
+    softUpdatesConcurrently(true);
+  }
+
+  public void softUpdatesConcurrently(boolean mixDeletes) throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setSoftDeletesField("soft_delete");
     AtomicBoolean mergeAwaySoftDeletes = new AtomicBoolean(random().nextBoolean());
-    indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
-      new MergePolicy.OneMerge(towrap.segments) {
-        @Override
-        public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-          if (mergeAwaySoftDeletes.get() == false) {
-            return towrap.wrapForMerge(reader);
+    if (mixDeletes == false) {
+      indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
+          new MergePolicy.OneMerge(towrap.segments) {
+            @Override
+            public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+              if (mergeAwaySoftDeletes.get()) {
+                return towrap.wrapForMerge(reader);
+              } else {
+                CodecReader wrapped = towrap.wrapForMerge(reader);
+                return new FilterCodecReader(wrapped) {
+                  @Override
+                  public CacheHelper getCoreCacheHelper() {
+                    return in.getCoreCacheHelper();
+                  }
+
+                  @Override
+                  public CacheHelper getReaderCacheHelper() {
+                    return in.getReaderCacheHelper();
+                  }
+
+                  @Override
+                  public Bits getLiveDocs() {
+                    return null; // everything is live
+                  }
+
+                  @Override
+                  public int numDocs() {
+                    return maxDoc();
+                  }
+                };
+              }
+            }
           }
-          Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, "soft_delete");
-          int numDocs = getNumDocs(reader, softDeletesLiveDocs);
-          CodecReader wrapped = towrap.wrapForMerge(reader);
-          return new FilterCodecReader(wrapped) {
-            @Override
-            public CacheHelper getCoreCacheHelper() {
-              return in.getCoreCacheHelper();
-            }
-
-            @Override
-            public CacheHelper getReaderCacheHelper() {
-              return in.getReaderCacheHelper();
-            }
-
-            @Override
-            public Bits getLiveDocs() {
-              return softDeletesLiveDocs;
-            }
-
-            @Override
-            public int numDocs() {
-              return numDocs;
-            }
-          };
-        }
-      }
-    ));
+      ));
+    }
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     Thread[] threads = new Thread[2 + random().nextInt(3)];
     CountDownLatch startLatch = new CountDownLatch(1);
@@ -3165,13 +3096,21 @@ public class TestIndexWriter extends LuceneTestCase {
             if (updateSeveralDocs) {
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
-              writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
-                  new NumericDocValuesField("soft_delete", 1));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocuments(new Term("id", id), Arrays.asList(doc, doc));
+              } else {
+                writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
+                    new NumericDocValuesField("soft_delete", 1));
+              }
             } else {
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
-              writer.softUpdateDocument(new Term("id", id), doc,
-                  new NumericDocValuesField("soft_delete", 1));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocument(new Term("id", id), doc);
+              } else {
+                writer.softUpdateDocument(new Term("id", id), doc,
+                    new NumericDocValuesField("soft_delete", 1));
+              }
             }
             ids.add(id);
           }
@@ -3187,7 +3126,7 @@ public class TestIndexWriter extends LuceneTestCase {
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
     }
-    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    DirectoryReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     for (String id : ids) {
       TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
@@ -3217,8 +3156,6 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(1, reader.docFreq(new Term("id", id)));
       }
     }
-
     IOUtils.close(reader, writer, dir);
   }
-
 }

@@ -34,9 +34,10 @@ import org.apache.lucene.util.PriorityQueue;
  * A {@link MatchesIterator} that combines matches from a set of sub-iterators
  *
  * Matches are sorted by their start positions, and then by their end positions, so that
- * prefixes sort first.  Matches may overlap.
+ * prefixes sort first.  Matches may overlap, or be duplicated if they appear in more
+ * than one of the sub-iterators.
  */
-public class DisjunctionMatchesIterator implements MatchesIterator {
+public final class DisjunctionMatchesIterator implements MatchesIterator {
 
   /**
    * Create a {@link DisjunctionMatchesIterator} over a list of terms
@@ -110,8 +111,9 @@ public class DisjunctionMatchesIterator implements MatchesIterator {
       }
     };
     for (MatchesIterator mi : matches) {
-      mi.next();
-      queue.add(mi);
+      if (mi.next()) {
+        queue.add(mi);
+      }
     }
   }
 

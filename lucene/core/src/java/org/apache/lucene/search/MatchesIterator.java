@@ -43,26 +43,36 @@ public interface MatchesIterator {
 
   /**
    * The start position of the current match
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
    */
   int startPosition();
 
   /**
    * The end position of the current match
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
    */
   int endPosition();
 
   /**
    * The starting offset of the current match, or {@code -1} if offsets are not available
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
    */
   int startOffset() throws IOException;
 
   /**
    * The ending offset of the current match, or {@code -1} if offsets are not available
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
    */
   int endOffset() throws IOException;
 
   /**
    * The underlying term of the current match
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
    */
   BytesRef term();
 

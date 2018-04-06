@@ -74,5 +74,4 @@ class TermMatchesIterator implements MatchesIterator {
   public BytesRef term() {
     return term;
   }
-
 }

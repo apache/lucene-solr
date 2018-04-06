@@ -30,7 +30,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -81,11 +80,6 @@ final class FeatureQuery extends Query {
 
       @Override
       public void extractTerms(Set<Term> terms) {}
-
-      @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.emptyMatches(context, doc, this, fieldName);
-      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

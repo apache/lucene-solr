@@ -17,15 +17,12 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -88,20 +85,6 @@ public class CompositeVerifyQuery extends Query {
     final Weight indexQueryWeight = indexQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);//scores aren't unsupported
 
     return new ConstantScoreWeight(this, boost) {
-
-      @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        Scorer scorer = scorer(context);
-        if (scorer == null || scorer.iterator().advance(doc) != doc) {
-          return null;
-        }
-        Matches innerMatches = indexQueryWeight.matches(context, doc);
-        List<Matches> subMatches = new ArrayList<>();
-        for (String field : innerMatches.getMatchFields()) {
-          subMatches.add(Matches.emptyMatches(context, doc, this, field));
-        }
-        return Matches.fromSubMatches(subMatches);  // TODO is there a way of reporting matches that makes sense here?
-      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

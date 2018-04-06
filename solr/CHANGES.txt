@@ -107,7 +107,9 @@ Bug Fixes
   (Susheel Kumar, Aibao Luo, Nikkolay Martinov via Erick Erickson)
 
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
-  memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe) 
+  memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
+  
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
 Optimizations
 ----------------------
@@ -165,6 +167,9 @@ Other Changes
 
 * SOLR-12176: Improve FORCELEADER to handle the case when a replica win the election but does not present
   in clusterstate (Cao Manh Dat)
+
+* SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
+  javadoc links locally. (hossman)
 
 ==================  7.3.0 ==================
 

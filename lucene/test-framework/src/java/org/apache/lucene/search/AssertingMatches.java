@@ -17,7 +17,7 @@
 
 package org.apache.lucene.search;
 
-import java.util.Set;
+import java.util.Iterator;
 
 class AssertingMatches extends Matches {
 
@@ -37,7 +37,7 @@ class AssertingMatches extends Matches {
   }
 
   @Override
-  public Set<String> getMatchFields() {
-    return in.getMatchFields();
+  public Iterator<String> iterator() {
+    return in.iterator();
   }
 }

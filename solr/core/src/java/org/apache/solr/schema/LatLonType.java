@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -338,11 +336,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return false;
-    }
-
-    @Override
-    public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return Matches.emptyMatches(context, doc, this, "*");  // TODO is there a way of reporting matches that makes sense here?
     }
 
     @Override

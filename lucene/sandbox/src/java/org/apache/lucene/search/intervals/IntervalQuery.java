@@ -30,7 +30,6 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -123,11 +122,6 @@ public final class IntervalQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       intervalsSource.extractTerms(field, terms);
-    }
-
-    @Override
-    public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return Matches.emptyMatches(context, doc, this, field);
     }
 
     @Override

@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -77,7 +76,13 @@ public abstract class Weight implements SegmentCacheable {
    * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
    */
-  public abstract Matches matches(LeafReaderContext context, int doc) throws IOException;
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    Scorer scorer = scorer(context);
+    if (scorer.iterator().advance(doc) != doc) {
+      return null;
+    }
+    return Matches.MATCH_WITH_NO_TERMS;
+  }
 
   /**
    * An explanation of the score computation for the named document.

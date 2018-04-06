@@ -31,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Expert: the Weight for BooleanQuery, used to

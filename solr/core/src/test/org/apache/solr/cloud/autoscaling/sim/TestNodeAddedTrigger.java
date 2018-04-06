@@ -80,6 +80,7 @@ public class TestNodeAddedTrigger extends SimSolrCloudTestCase {
 
     try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
       trigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
 
@@ -250,6 +251,7 @@ public class TestNodeAddedTrigger extends SimSolrCloudTestCase {
     // and assert that the new trigger still fires
     NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger");
     trigger.configure(cluster.getLoader(), cluster, props);
+    trigger.init();
     trigger.setProcessor(noFirstRunProcessor);
     trigger.run();
 
@@ -259,6 +261,7 @@ public class TestNodeAddedTrigger extends SimSolrCloudTestCase {
 
     try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("some_different_name"))  {
       newTrigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       try {
         newTrigger.restoreState(trigger);
         fail("Trigger should only be able to restore state from an old trigger of the same name");
@@ -269,6 +272,7 @@ public class TestNodeAddedTrigger extends SimSolrCloudTestCase {
 
     try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger"))  {
       newTrigger.configure(cluster.getLoader(), cluster, props);
+      newTrigger.init();
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {

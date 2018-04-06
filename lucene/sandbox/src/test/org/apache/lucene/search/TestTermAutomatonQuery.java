@@ -585,11 +585,6 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return Matches.emptyMatches(context, doc, this, "*");  // TODO is there a way of reporting matches that makes sense here?
-        }
-
-        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           int maxDoc = context.reader().maxDoc();
           FixedBitSet bits = new FixedBitSet(maxDoc);

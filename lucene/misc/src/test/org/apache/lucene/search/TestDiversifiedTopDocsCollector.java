@@ -525,12 +525,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         public void extractTerms(Set<Term> terms) {
           inner.extractTerms(terms);
         }
-
-        @Override
-        public Matches matches(LeafReaderContext context, int doc) throws IOException {
-          return Matches.emptyMatches(context, doc, this, "*");  // TODO is there a way of reporting matches that makes sense here?
-        }
-
+        
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           Scorer s = scorer(context);

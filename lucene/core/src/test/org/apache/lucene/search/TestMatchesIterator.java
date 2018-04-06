@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -79,7 +80,8 @@ public class TestMatchesIterator extends LuceneTestCase {
       "w1 w2 w3 w4 w5",
       "w1 w3 w2 w3 zz",
       "w1 xx w2 yy w4",
-      "w1 w2 w1 w4 w2 w3"
+      "w1 w2 w1 w4 w2 w3",
+      "nothing matches this document"
   };
 
   void checkMatches(Query q, String field, int[][] expected) throws IOException {
@@ -136,7 +138,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2 },
         { 1, 0, 0, 0, 2 },
         { 2, 0, 0, 0, 2 },
-        { 3, 0, 0, 0, 2, 2, 2, 6, 8 }
+        { 3, 0, 0, 0, 2, 2, 2, 6, 8 },
+        { 4 }
     });
   }
 
@@ -146,7 +149,15 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, -1, -1 },
         { 1, 0, 0, -1, -1 },
         { 2, 0, 0, -1, -1 },
-        { 3, 0, 0, -1, -1, 2, 2, -1, -1 }
+        { 3, 0, 0, -1, -1, 2, 2, -1, -1 },
+        { 4 }
+    });
+    checkTerms(q, FIELD_NO_OFFSETS, new String[][]{
+        { "w1" },
+        { "w1" },
+        { "w1" },
+        { "w1", "w1" },
+        {}
     });
     checkTerms(q, FIELD_NO_OFFSETS, new String[][]{
         { "w1" },
@@ -165,7 +176,15 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 1, 0, 0, 0, 2, 1, 1, 3, 5, 3, 3, 9, 11 },
         { 2, 0, 0, 0, 2 },
-        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 }
+        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
+        { 4 }
+    });
+    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
+        { "w1", "w3" },
+        { "w1", "w3", "w3" },
+        { "w1" },
+        { "w1", "w1", "w3" },
+        {}
     });
     checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
         { "w1", "w3" },
@@ -184,7 +203,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 1, 0, 0, 0, 2, 1, 1, 3, 5, 3, 3, 9, 11 },
         { 2 },
-        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 }
+        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
+        { 4 }
     });
   }
 
@@ -202,7 +222,15 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2, 2, 2, 6, 8, 3, 3, 9, 11 },
         { 1, 1, 1, 3, 5, 3, 3, 9, 11 },
         { 2, 0, 0, 0, 2, 1, 1, 3, 5, 4, 4, 12, 14 },
-        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 3, 3, 9, 11, 5, 5, 15, 17 }
+        { 3, 0, 0, 0, 2, 2, 2, 6, 8, 3, 3, 9, 11, 5, 5, 15, 17 },
+        { 4 }
+    });
+    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
+        { "w1", "w3", "w4" },
+        { "w3", "w3" },
+        { "w1", "xx", "w4" },
+        { "w1", "w1", "w4", "w3" },
+        {}
     });
     checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
         { "w1", "w3", "w4" },
@@ -221,7 +249,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 2, 2, 6, 8 },
         { 1 },
         { 2 },
-        { 3, 5, 5, 15, 17 }
+        { 3, 5, 5, 15, 17 },
+        { 4 }
     });
   }
 
@@ -234,7 +263,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 2, 2, 6, 8, 3, 3, 9, 11 },
         { 1 },
         { 2 },
-        { 3, 3, 3, 9, 11, 5, 5, 15, 17 }
+        { 3, 3, 3, 9, 11, 5, 5, 15, 17 },
+        { 4 }
     });
   }
 
@@ -244,7 +274,11 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0 },
         { 1 },
         { 2, 1, 1, 3, 5 },
-        { 0 }
+        { 3 },
+        { 4 }
+    });
+    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
+        {}, {}, { "xx" }, {}
     });
     checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
         {}, {}, { "xx" }, {}
@@ -255,7 +289,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2, 1, 1, 3, 5 },
         { 1, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 2, 0, 0, 0, 2, 2, 2, 6, 8 },
-        { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 }
+        { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
+        { 4 }
     });
   }
 
@@ -265,7 +300,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 0, 0, 0, 0, 2, 1, 1, 3, 5 },
         { 1, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 2, 0, 0, 0, 2, 2, 2, 6, 8 },
-        { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 }
+        { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
+        { 4 }
     });
   }
 
@@ -283,7 +319,10 @@ public class TestMatchesIterator extends LuceneTestCase {
     checkFieldMatches(m.getMatches(FIELD_WITH_OFFSETS), new int[]{ -1, 1, 1, 3, 5, 3, 3, 9, 11 });
     assertNull(m.getMatches("bogus"));
 
-    Set<String> fields = m.getMatchFields();
+    Set<String> fields = new HashSet<>();
+    for (String field : m) {
+      fields.add(field);
+    }
     assertEquals(2, fields.size());
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));

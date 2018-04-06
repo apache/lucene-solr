@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 /** Holds one hit in {@link TopDocs}. */
 
-public class  ScoreDoc {
+public class ScoreDoc {
 
   /** The score of this document for the query. */
   public float score;

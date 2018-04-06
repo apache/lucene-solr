@@ -33,7 +33,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -287,12 +286,7 @@ public class GraphQuery extends Query {
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
     }
-
-    @Override
-    public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return Matches.emptyMatches(context, doc, this, collectSchemaField.getName());  // TODO is there a way of reporting matches that makes sense here?
-    }
-
+    
   }
   
   private static class GraphScorer extends Scorer {
