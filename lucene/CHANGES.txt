@@ -63,6 +63,11 @@ Build
 
 * LUCENE-8230: Upgrade forbiddenapis to version 2.5.  (Uwe Schindler)
 
+Documentation
+
+* LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
+xo  (Mike Sokolov via Mike McCandless)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
