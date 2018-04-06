@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,11 +32,9 @@ import java.util.stream.Collectors;
  * Reports the positions and optionally offsets of all matching terms in a query
  * for a single document
  *
- * To find all fields that have matches, call {@link #getMatchFields()}
- *
  * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}
  */
-public class Matches {
+public class Matches implements Iterable<String> {
 
   public static final Matches MATCH_WITH_NO_TERMS = new Matches(Collections.emptyMap());
 
@@ -68,7 +67,9 @@ public class Matches {
     Map<String, MatchesIterator> matches = new HashMap<>();
     Set<String> allFields = new HashSet<>();
     for (Matches m : subMatches) {
-      allFields.addAll(m.getMatchFields());
+      for (String field : m) {
+        allFields.add(field);
+      }
     }
     for (String field : allFields) {
       List<MatchesIterator> mis = new ArrayList<>();
@@ -105,11 +106,8 @@ public class Matches {
     return matches.get(field);
   }
 
-  /**
-   * Returns the fields with matches for this document
-   */
-  public Set<String> getMatchFields() {
-    return matches.keySet();
+  @Override
+  public Iterator<String> iterator() {
+    return matches.keySet().iterator();
   }
-
 }

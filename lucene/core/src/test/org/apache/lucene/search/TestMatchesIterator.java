@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -283,7 +284,10 @@ public class TestMatchesIterator extends LuceneTestCase {
     checkFieldMatches(m.getMatches(FIELD_WITH_OFFSETS), new int[]{ -1, 1, 1, 3, 5, 3, 3, 9, 11 });
     assertNull(m.getMatches("bogus"));
 
-    Set<String> fields = m.getMatchFields();
+    Set<String> fields = new HashSet<>();
+    for (String field : m) {
+      fields.add(field);
+    }
     assertEquals(2, fields.size());
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));
