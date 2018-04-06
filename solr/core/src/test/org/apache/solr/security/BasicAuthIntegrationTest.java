@@ -67,6 +67,9 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
+/**
+ * TODO: Migrate to {@link org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory} or similar
+ */
 public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

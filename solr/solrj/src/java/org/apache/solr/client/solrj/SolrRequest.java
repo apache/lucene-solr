@@ -77,15 +77,28 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basicAuthUser, basicAuthPwd;
 
+  /**
+   * @deprecated use a {@link org.apache.solr.client.solrj.impl.SolrHttpClientBuilder} instead 
+   */
+  @Deprecated
   public SolrRequest setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;
     return this;
   }
 
+  /**
+   * @deprecated use a {@link org.apache.solr.client.solrj.impl.SolrHttpClientBuilder} instead 
+   */
+  @Deprecated
   public String getBasicAuthUser(){
     return basicAuthUser;
   }
+
+  /**
+   * @deprecated use a {@link org.apache.solr.client.solrj.impl.SolrHttpClientBuilder} instead 
+   */
+  @Deprecated
   public String getBasicAuthPassword(){
     return basicAuthPwd;
   }

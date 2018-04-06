@@ -66,6 +66,10 @@ Upgrade Notes
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
+* SOLR-12194: If using SolrRequest#setBasicAuthCredentials in SolrJ this way of specifying Basic Authentication is now
+  deprecated and will be removed in 8.0. You should move to specifying your basic authentication credentials through
+  a SolrClientBuilderFactory (janhoy)
+ 
 New Features
 ----------------------
 
@@ -170,6 +174,9 @@ Other Changes
 
 * SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
   javadoc links locally. (hossman)
+
+* SOLR-12194: Deprecate SolrRequest#setBasicAuthCredentials and promote ClientBuilderFactory for basic auth in Solrj
+  (janhoy)
 
 ==================  7.3.0 ==================
 
