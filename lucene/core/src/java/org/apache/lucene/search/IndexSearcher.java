@@ -414,7 +414,8 @@ public class IndexSearcher {
    */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createNormalizedWeight(query, results.scoreMode()), results);
+    query = rewrite(query);
+    search(leafContexts, createWeight(query, results.scoreMode(), 1), results);
   }
 
   /** Search implementation with arbitrary sorting, plus
@@ -553,8 +554,8 @@ public class IndexSearcher {
         // no segments
         scoreMode = ScoreMode.COMPLETE;
       }
-
-      final Weight weight = createNormalizedWeight(query, scoreMode);
+      query = rewrite(query);
+      final Weight weight = createWeight(query, scoreMode, 1);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -651,7 +652,8 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createNormalizedWeight(query, ScoreMode.COMPLETE), doc);
+    query = rewrite(query);
+    return explain(createWeight(query, ScoreMode.COMPLETE, 1), doc);
   }
 
   /** Expert: low-level implementation method
@@ -683,7 +685,11 @@ public class IndexSearcher {
    * afterwards the {@link Weight} is normalized. The returned {@code Weight}
    * can then directly be used to get a {@link Scorer}.
    * @lucene.internal
+   *
+   * @deprecated Clients should rewrite the query and then call {@link #createWeight(Query, ScoreMode, float)}
+   *             with a boost value of 1f
    */
+  @Deprecated
   public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
     query = rewrite(query);
     return createWeight(query, scoreMode, 1f);

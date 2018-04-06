@@ -316,7 +316,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // ... then all shards:
-      final Weight w = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+      final Weight w = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
 
       final TopDocs[] shardHits;
       if (sort == null) {

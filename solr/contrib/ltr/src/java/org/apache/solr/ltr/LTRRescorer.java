@@ -115,7 +115,7 @@ public class LTRRescorer extends Rescorer {
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-        .createNormalizedWeight(scoringQuery, ScoreMode.COMPLETE);
+        .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
     scoreFeatures(searcher, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
@@ -219,8 +219,8 @@ public class LTRRescorer extends Rescorer {
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
-    final Weight modelWeight = searcher.createNormalizedWeight(scoringQuery,
-        ScoreMode.COMPLETE);
+    final Weight modelWeight = searcher.createWeight(searcher.rewrite(scoringQuery),
+        ScoreMode.COMPLETE, 1);
     return modelWeight.explain(context, deBasedDoc);
   }
 

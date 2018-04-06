@@ -159,14 +159,14 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
 
   void assertCacheable(DoubleValuesSource vs, boolean expected) throws Exception {
     Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), vs);
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+    Weight w = searcher.createWeight(q, ScoreMode.COMPLETE, 1);
     LeafReaderContext ctx = reader.leaves().get(0);
     assertEquals(expected, w.isCacheable(ctx));
   }
 
   void assertCacheable(LongValuesSource vs, boolean expected) throws Exception {
     Query q = new FunctionScoreQuery(new MatchAllDocsQuery(), vs.toDoubleValuesSource());
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+    Weight w = searcher.createWeight(q, ScoreMode.COMPLETE, 1);
     LeafReaderContext ctx = reader.leaves().get(0);
     assertEquals(expected, w.isCacheable(ctx));
   }
