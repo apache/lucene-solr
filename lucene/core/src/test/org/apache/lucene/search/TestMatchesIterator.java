@@ -95,6 +95,10 @@ public class TestMatchesIterator extends LuceneTestCase {
         continue;
       }
       MatchesIterator it = matches.getMatches(field);
+      if (expected[i].length == 1) {
+        assertNull(it);
+        return;
+      }
       checkFieldMatches(it, expected[i]);
     }
   }
@@ -123,6 +127,10 @@ public class TestMatchesIterator extends LuceneTestCase {
         continue;
       }
       MatchesIterator it = matches.getMatches(field);
+      if (it == null) {
+        assertEquals(expected[i].length, 0);
+        continue;
+      }
       int pos = 0;
       while (it.next()) {
         assertEquals(expected[i][pos], it.term().utf8ToString());

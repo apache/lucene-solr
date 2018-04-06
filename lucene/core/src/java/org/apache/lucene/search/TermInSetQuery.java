@@ -221,8 +221,8 @@ public class TermInSetQuery extends Query implements Accountable {
       }
 
       @Override
-      public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        return Matches.fromField(field, DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, termData.iterator()));
+      public Matches matches(LeafReaderContext context, int doc) {
+        return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, termData.iterator()));
       }
 
       /**

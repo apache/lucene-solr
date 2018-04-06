@@ -162,7 +162,7 @@ public final class SynonymQuery extends Query {
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
       String field = terms[0].field();
-      return Matches.fromField(field, DisjunctionMatchesIterator.fromTerms(context, doc, field, Arrays.asList(SynonymQuery.this.terms)));
+      return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTerms(context, doc, field, Arrays.asList(SynonymQuery.this.terms)));
     }
 
     @Override

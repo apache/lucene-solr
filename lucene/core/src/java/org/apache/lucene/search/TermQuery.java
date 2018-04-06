@@ -28,8 +28,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -91,7 +91,7 @@ public class TermQuery extends Query {
       if (pe.advance(doc) != doc) {
         return null;
       }
-      return Matches.fromField(term.field(), new TermMatchesIterator(term.bytes(), pe));
+      return Matches.forField(term.field(), () -> new TermMatchesIterator(term.bytes(), pe));
     }
 
     @Override
