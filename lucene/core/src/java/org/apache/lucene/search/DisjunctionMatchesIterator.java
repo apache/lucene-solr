@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -37,14 +38,19 @@ import org.apache.lucene.util.PriorityQueue;
  * prefixes sort first.  Matches may overlap, or be duplicated if they appear in more
  * than one of the sub-iterators.
  */
-public final class DisjunctionMatchesIterator implements MatchesIterator {
+final class DisjunctionMatchesIterator implements MatchesIterator {
 
   /**
    * Create a {@link DisjunctionMatchesIterator} over a list of terms
    *
    * Only terms that have at least one match in the given document will be included
    */
-  public static DisjunctionMatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
+  static MatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
+    for (Term term : terms) {
+      if (Objects.equals(field, term.field()) == false) {
+        throw new IllegalArgumentException("Tried to generate iterator from terms in multiple fields: expected [" + field + "] but got [" + term.field() + "]");
+      }
+    }
     return fromTermsEnum(context, doc, field, asBytesRefIterator(terms));
   }
 
@@ -65,7 +71,7 @@ public final class DisjunctionMatchesIterator implements MatchesIterator {
    *
    * Only terms that have at least one match in the given document will be included
    */
-  public static DisjunctionMatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {
+  static MatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {
     List<MatchesIterator> mis = new ArrayList<>();
     Terms t = context.reader().terms(field);
     if (t == null)
@@ -87,6 +93,8 @@ public final class DisjunctionMatchesIterator implements MatchesIterator {
     }
     if (mis.size() == 0)
       return null;
+    if (mis.size() == 1)
+      return mis.get(0);
     return new DisjunctionMatchesIterator(mis);
   }
 
