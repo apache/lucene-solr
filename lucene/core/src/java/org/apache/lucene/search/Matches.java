@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
  */
 public class Matches implements Iterable<String> {
 
+  /**
+   * Indicates a match with no term positions, for example on a Point or DocValues field
+   */
   public static final Matches MATCH_WITH_NO_TERMS = new Matches(Collections.emptyMap());
 
   private final Map<String, MatchesIterator> matches;
