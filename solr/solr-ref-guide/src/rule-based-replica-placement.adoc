@@ -84,7 +84,7 @@ Tag values come from a plugin called Snitch. If there is a tag named ‘rack’ 
 * *node*: node name
 * *role*: The role of the node. The only supported role is 'overseer'
 * *ip_1, ip_2, ip_3, ip_4*: These are ip fragments for each node. For example, in a host with ip `192.168.1.2`, `ip_1 = 2`, `ip_2 =1`, `ip_3 = 168` and` ip_4 = 192`
-* *sysprop.{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
+* *sysprop.\{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
 
 === How Snitches are Configured
 
