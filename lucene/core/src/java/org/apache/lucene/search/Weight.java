@@ -73,12 +73,15 @@ public abstract class Weight implements SegmentCacheable {
    * Returns {@link Matches} for a specific document, or {@code null} if the document
    * does not match the parent query
    *
+   * A query match that contains no position information (for example, a Point or
+   * DocValues query) will return {@link Matches#MATCH_WITH_NO_TERMS}
+   *
    * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
    */
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
     Scorer scorer = scorer(context);
-    if (scorer.iterator().advance(doc) != doc) {
+    if (scorer == null || scorer.iterator().advance(doc) != doc) {
       return null;
     }
     return Matches.MATCH_WITH_NO_TERMS;

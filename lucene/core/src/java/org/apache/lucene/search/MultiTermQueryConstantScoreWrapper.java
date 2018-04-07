@@ -25,8 +25,8 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -208,7 +208,10 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         if (terms == null) {
           return null;
         }
-        return Matches.fromField(query.field, DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, query.getTermsEnum(terms)));
+        if (terms.hasPositions() == false) {
+          return super.matches(context, doc);
+        }
+        return Matches.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, query.getTermsEnum(terms)));
       }
 
       @Override

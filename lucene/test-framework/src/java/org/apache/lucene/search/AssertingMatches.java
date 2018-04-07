@@ -17,19 +17,19 @@
 
 package org.apache.lucene.search;
 
+import java.io.IOException;
 import java.util.Iterator;
 
-class AssertingMatches extends Matches {
+class AssertingMatches implements Matches {
 
   private final Matches in;
 
   AssertingMatches(Matches matches) {
-    super(null);
     this.in = matches;
   }
 
   @Override
-  public MatchesIterator getMatches(String field) {
+  public MatchesIterator getMatches(String field) throws IOException {
     MatchesIterator mi = in.getMatches(field);
     if (mi == null)
       return null;
