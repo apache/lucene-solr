@@ -222,7 +222,8 @@ public class TermInSetQuery extends Query implements Accountable {
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
-        if (context.reader().terms(field).hasPositions() == false) {
+        Terms terms = context.reader().terms(field);
+        if (terms == null || terms.hasPositions() == false) {
           return super.matches(context, doc);
         }
         return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, termData.iterator()));

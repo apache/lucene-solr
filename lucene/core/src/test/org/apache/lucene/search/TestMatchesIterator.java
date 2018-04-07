@@ -114,6 +114,7 @@ public class TestMatchesIterator extends LuceneTestCase {
         return;
       }
       checkFieldMatches(it, expected[i]);
+      checkFieldMatches(matches.getMatches(field), expected[i]);  // test multiple calls
     }
   }
 
@@ -371,6 +372,14 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
         { 4 }
     });
+
+  }
+
+  public void testNoMatchWildcards() throws IOException {
+    Query nomatch = new PrefixQuery(new Term(FIELD_WITH_OFFSETS, "wibble"));
+    Matches matches = searcher.createWeight(searcher.rewrite(nomatch), ScoreMode.COMPLETE_NO_SCORES, 1)
+        .matches(searcher.leafContexts.get(0), 0);
+    assertNull(matches);
   }
 
   public void testWildcardsNoPositions() throws IOException {

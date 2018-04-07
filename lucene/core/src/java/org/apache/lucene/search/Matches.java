@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,9 @@ import java.util.stream.Collectors;
  * Reports the positions and optionally offsets of all matching terms in a query
  * for a single document
  *
- * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}
+ * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}.
+ * Note that you can call {@link #getMatches(String)} multiple times to retrieve new
+ * iterators, but it is not thread-safe.
  */
 public interface Matches extends Iterable<String> {
 
@@ -108,14 +111,23 @@ public interface Matches extends Iterable<String> {
   /**
    * Create a Matches for a single field
    */
-  static Matches forField(String field, MatchesIteratorSupplier mif) {
+  static Matches forField(String field, MatchesIteratorSupplier mis) throws IOException {
+    MatchesIterator mi = mis.get();
+    if (mi == null) {
+      return null;
+    }
     return new Matches() {
+      boolean cached = true;
       @Override
       public MatchesIterator getMatches(String f) throws IOException {
-        if (field.equals(f) == false) {
+        if (Objects.equals(field, f) == false) {
           return null;
         }
-        return mif.get();
+        if (cached == false) {
+          return mis.get();
+        }
+        cached = false;
+        return mi;
       }
 
       @Override

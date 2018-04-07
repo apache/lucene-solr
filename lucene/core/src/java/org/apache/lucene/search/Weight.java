@@ -81,7 +81,7 @@ public abstract class Weight implements SegmentCacheable {
    */
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
     Scorer scorer = scorer(context);
-    if (scorer.iterator().advance(doc) != doc) {
+    if (scorer == null || scorer.iterator().advance(doc) != doc) {
       return null;
     }
     return Matches.MATCH_WITH_NO_TERMS;

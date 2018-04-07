@@ -16,21 +16,21 @@
  */
 package org.apache.lucene.search;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.Random;
 
 import junit.framework.Assert;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -57,7 +57,7 @@ public class CheckHits {
       if (ignore.contains(Integer.valueOf(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
       Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
                          " doesn't indicate non-match: " + exp.toString(),
@@ -301,6 +301,16 @@ public class CheckHits {
                     (query, defaultFieldName, searcher, deep));
 
   }
+
+  /**
+   * Asserts that the result of calling {@link Weight#matches(LeafReaderContext, int)}
+   * for every document matching a query returns a non-null {@link Matches}
+   * @param query     the query to test
+   * @param searcher  the search to test against
+   */
+  public static void checkMatches(Query query, IndexSearcher searcher) throws IOException {
+    searcher.search(query, new MatchesAsserter(query, searcher));
+  }
   
   private static final Pattern COMPUTED_FROM_PATTERN = Pattern.compile(".*, computed as .* from:");
 
@@ -506,7 +516,7 @@ public class CheckHits {
           ("exception in hitcollector of [["+d+"]] for #"+doc, e);
       }
       
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
       Assert.assertTrue("Explanation of [["+d+"]] for #"+ doc + 
                         " does not indicate match: " + exp.toString(), 
@@ -520,6 +530,36 @@ public class CheckHits {
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE;
+    }
+  }
+
+  /**
+   * Asserts that the {@link Matches} from a query is non-null whenever
+   * the document its created for is a hit
+   */
+  public static class MatchesAsserter extends SimpleCollector {
+
+    private final Weight weight;
+    private LeafReaderContext context;
+
+    public MatchesAsserter(Query query, IndexSearcher searcher) throws IOException {
+      this.weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      this.context = context;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      Matches matches = this.weight.matches(context, doc);
+      assertNotNull("Unexpected null Matches object in doc" + doc + " for query " + this.weight.getQuery(), matches);
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

@@ -83,18 +83,20 @@ public class TermQuery extends Query {
 
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      if (context.reader().terms(term.field()).hasPositions() == false) {
-        return super.matches(context, doc);
-      }
       TermsEnum te = getTermsEnum(context);
       if (te == null) {
         return null;
       }
-      PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
-      if (pe.advance(doc) != doc) {
-        return null;
+      if (context.reader().terms(term.field()).hasPositions() == false) {
+        return super.matches(context, doc);
       }
-      return Matches.forField(term.field(), () -> new TermMatchesIterator(term.bytes(), pe));
+      return Matches.forField(term.field(), () -> {
+        PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
+        if (pe.advance(doc) != doc) {
+          return null;
+        }
+        return new TermMatchesIterator(term.bytes(), pe);
+      });
     }
 
     @Override
