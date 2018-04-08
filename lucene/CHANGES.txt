@@ -39,6 +39,10 @@ Bug Fixes
 * LUCENE-8236: Filter duplicated points when creating GeoPath shapes
   to avoid creation of bogus planes. (Ignacio Vera)
 
+* LUCENE-8243: IndexWriter.addIndexes(Directory[]) did not properly preserve
+  index file names for updated doc values fields (Simon Willnauer,
+  Michael McCandless)
+
 Other
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
