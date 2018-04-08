@@ -49,7 +49,7 @@ Jetty 9.3.14.v20161028
 Bug Fixes
 ----------------------
 
-* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
   (麦 香浓郁, Uwe Schindler)
 
 * SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
