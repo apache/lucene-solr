@@ -100,9 +100,9 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     rsp = req.process(clients.get(0), null);
     if (jettys.size() > 1) {
       assertTrue(rsp.getResults().getNumFound() < 10);
-      rsp = query(true, params, "solr", "SolrRocks");
+    } else {
+      assertEquals(10, rsp.getResults().getNumFound());
     }
-    assertEquals(10, rsp.getResults().getNumFound());
 
     // Disable auth
     for (JettySolrRunner j : jettys) {
