@@ -1332,4 +1332,85 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals("cannot change index sort from <int: \"foo\"> to <string: \"foo\">", message);
     IOUtils.close(r1, dir1, w2, dir2);
   }
+
+  public void testAddIndexesDVUpdateSameSegmentName() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    w1.addDocument(doc);
+    w1.flush();
+
+    w1.updateDocValues(new Term("id", "1"), new NumericDocValuesField("soft_delete", 1));
+    w1.commit();
+    w1.close();
+
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addIndexes(dir1);
+    w2.commit();
+    w2.close();
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now open w3");
+    }
+    IndexWriterConfig iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    if (VERBOSE) {
+      iwc3.setInfoStream(System.out);
+    }        
+    IndexWriter w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+
+    iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+    dir1.close();
+    dir2.close();
+  }
+
+  public void testAddIndexesDVUpdateNewSegmentName() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    w1.addDocument(doc);
+    w1.flush();
+
+    w1.updateDocValues(new Term("id", "1"), new NumericDocValuesField("soft_delete", 1));
+    w1.commit();
+    w1.close();
+
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addDocument(new Document());
+    w2.commit();
+    
+    w2.addIndexes(dir1);
+    w2.commit();
+    w2.close();
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now open w3");
+    }
+    IndexWriterConfig iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    if (VERBOSE) {
+      iwc3.setInfoStream(System.out);
+    }        
+    IndexWriter w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+
+    iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+    dir1.close();
+    dir2.close();
+  }
 }
