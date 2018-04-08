@@ -24,7 +24,7 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class Plane extends Vector {
   /** For plane envelopes, we need a small distance that can't lead to numerical confusion. */
-  public final static double MINIMUM_PLANE_OFFSET = MINIMUM_RESOLUTION * 1.5;
+  public final static double MINIMUM_PLANE_OFFSET = MINIMUM_RESOLUTION * 1.1;
   /** An array with no points in it */
   public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
