@@ -58,7 +58,7 @@ The core functionality of atomically updating a document requires that all field
 
 If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields. If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
-There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. CurrencyFieldType also uses derived fields.  These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
+There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types, such as BBoxField and LatLonType, use derived fields. CurrencyFieldType also uses derived fields. These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
 
 === Example Updating Part of a Document
 
@@ -188,30 +188,61 @@ When the client resubmits a changed document to Solr, the `\_version_` can be in
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
 
-For example:
+Following are some examples using `versions=true` in queries:
 
-[source]
+[source,bash]
 ----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true' --data-binary '
 [ { "id" : "aaa" },
   { "id" : "bbb" } ]'
+----
+[source,json]
+----
 {"responseHeader":{"status":0,"QTime":6},
  "adds":["aaa",1498562471222312960,
          "bbb",1498562471225458688]}
+----
+
+In this example, we have added 2 documents "aaa" and "bbb". Because we added `versions=true` to the request, the response shows the document version for each document.
+
+[source,bash]
+----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true' --data-binary '
 [{ "id" : "aaa",
    "foo_s" : "update attempt with wrong existing version" }]'
+----
+[source,json]
+----
 {"responseHeader":{"status":409,"QTime":3},
  "error":{"msg":"version conflict for aaa expected=999999 actual=1498562471222312960",
           "code":409}}
+----
+
+
+In this example, we've attempted to update document "aaa" but specified the wrong version in the request: `_version_=999999` doesn't match the document version we just got when we added the document. We get an error in response.
+
+[source,bash]
+----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=1498562471222312960&versions=true&commit=true' --data-binary '
 [{ "id" : "aaa",
    "foo_s" : "update attempt with correct existing version" }]'
+----
+[source,json]
+----
 {"responseHeader":{"status":0,"QTime":5},
  "adds":["aaa",1498562624496861184]}
+----
+
+Now we've sent an update with a value for `\_version_` that matches the value in the index, and it succeeds. Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
+
+[source,bash]
+----
 $ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_'
+----
+[source,json]
+----
 {
   "responseHeader":{
     "status":0,
@@ -229,11 +260,13 @@ $ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_'
   }}
 ----
 
-For more information, please also see https://www.youtube.com/watch?v=WYVM6Wz-XTw[Yonik Seeley's presentation on NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
+Finally, we can issue a query that requests the `\_version_` field be included in the response, and we can see that for the two documents in our example index.
+
+For more information, please also see Yonik Seeley's presentation on https://www.youtube.com/watch?v=WYVM6Wz-XTw[NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
 
 == Document Centric Versioning Constraints
 
-Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, In some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
+Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
 The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 

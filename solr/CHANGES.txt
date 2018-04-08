@@ -111,6 +111,9 @@ Bug Fixes
   
 * SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+  Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
+
 Optimizations
 ----------------------
 

@@ -65,7 +65,7 @@ If you have a `/var/solr/solr.in.sh` file for your existing Solr install, runnin
 
 Open `/etc/default/solr.in.sh` with a text editor and verify that the following variables are set correctly, or add them bottom of the include file as needed:
 
-[source]
+[source,properties]
 ZK_HOST=
 SOLR_HOST=
 SOLR_PORT=
