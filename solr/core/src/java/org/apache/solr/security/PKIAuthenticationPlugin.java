@@ -81,8 +81,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public PKIAuthenticationPlugin(CoreContainer cores, String nodeName) {
     this.cores = cores;
     myNodeName = nodeName;
-    // NOCOMMIT: DEBUGGING
-    log.info("PKI initialized with nodeName={}, zk={}", nodeName, cores.isZooKeeperAware());
   }
 
   @Override

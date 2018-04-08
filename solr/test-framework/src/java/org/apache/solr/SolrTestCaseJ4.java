@@ -836,8 +836,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("jetty.port", String.valueOf(url.getPort()));
     if (System.getProperty("hostContext") == null)
       System.setProperty("hostContext", url.getFile().replace("^/", ""));
-    // NOCOMMIT: DEBUG print
-    log.info("Set system properties for host:{}, jetty.port:{}, hostContext:{}",
+    log.debug("Set system properties for host:{}, jetty.port:{}, hostContext:{}",
         System.getProperty("host"), System.getProperty("jetty.port"), System.getProperty("hostContext"));
   }
 
