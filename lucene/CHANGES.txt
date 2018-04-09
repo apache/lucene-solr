@@ -131,7 +131,7 @@ Bug Fixes
 
 * LUCENE-8243: IndexWriter.addIndexes(Directory[]) did not properly preserve
   index file names for updated doc values fields (Simon Willnauer,
-  Michael McCandless)
+  Michael McCandless, Nhat Nguyen)
 
 Other
 
