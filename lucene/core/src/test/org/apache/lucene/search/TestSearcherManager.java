@@ -487,7 +487,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
     FilterDirectoryReader reader = new MyFilterDirectoryReader(nrtReader);
     assertEquals(nrtReader, reader.getDelegate());
-    assertEquals(nrtReader, FilterDirectoryReader.unwrap(reader));
+    assertEquals(FilterDirectoryReader.unwrap(nrtReader), FilterDirectoryReader.unwrap(reader));
 
     SearcherManager mgr = new SearcherManager(reader, null);
     for(int i=0;i<10;i++) {
