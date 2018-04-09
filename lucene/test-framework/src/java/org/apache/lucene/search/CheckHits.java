@@ -30,6 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -535,12 +536,15 @@ public class CheckHits {
 
   /**
    * Asserts that the {@link Matches} from a query is non-null whenever
-   * the document its created for is a hit
+   * the document its created for is a hit.
+   *
+   * Also checks that the previous non-matching document has a {@code null} {@link Matches}
    */
   public static class MatchesAsserter extends SimpleCollector {
 
     private final Weight weight;
     private LeafReaderContext context;
+    int lastCheckedDoc = -1;
 
     public MatchesAsserter(Query query, IndexSearcher searcher) throws IOException {
       this.weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
@@ -549,12 +553,18 @@ public class CheckHits {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.context = context;
+      this.lastCheckedDoc = -1;
     }
 
     @Override
     public void collect(int doc) throws IOException {
       Matches matches = this.weight.matches(context, doc);
       assertNotNull("Unexpected null Matches object in doc" + doc + " for query " + this.weight.getQuery(), matches);
+      if (lastCheckedDoc != doc - 1) {
+        assertNull("Unexpected non-null Matches object in non-matching doc" + doc + " for query " + this.weight.getQuery(),
+            this.weight.matches(context, doc - 1));
+      }
+      lastCheckedDoc = doc;
     }
 
     @Override
