@@ -31,6 +31,10 @@ New Features
   to selectively carry over soft_deleted document across merges for retention
   policies (Simon Willnauer, Mike McCandless, Robert Muir)
 
+* LUCENE-8237: Add a SoftDeletesDirectoryReaderWrapper that allows to respect
+  soft deletes if the reader is opened form a directory. (Simon Willnauer,
+  Mike McCandless, Uwe Schindler, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
