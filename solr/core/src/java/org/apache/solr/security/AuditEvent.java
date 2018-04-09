@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,9 @@ public class AuditEvent {
   private EventType eventType;
   private AuthorizationResponse autResponse;
   private String requestType;
+  private double QTime = -1;
+  private int status = 0;
+  private Throwable exception;
 
   /* Predefined event types. Custom types can be made through constructor */
   public enum EventType {
@@ -65,7 +69,8 @@ public class AuditEvent {
     ANONYMOUS_REJECTED("AnonymousRejected", "Request from unknown user rejected", Level.WARN),
     AUTHORIZED("Authorized", "Authorization succeeded", Level.INFO),
     UNAUTHORIZED("Unauthorized", "Authorization failed", Level.WARN),
-    ERROR("Error", "Request failed due to an error", Level.ERROR);
+    COMPLETED("Completed", "Request completed", Level.INFO),
+    ERROR("Error", "Request was not executed due to an error", Level.ERROR);
     
     private final String message;
     private String explanation;
@@ -91,14 +96,19 @@ public class AuditEvent {
     this.message = eventType.message;
   }
 
+  public AuditEvent(EventType eventType, HttpServletRequest httpRequest) {
+    this(eventType, null, httpRequest);
+  }
+  
   /**
    * Event based on an HttpServletRequest, typically used during authentication. 
    * Solr will fill in details such as ip, http method etc from the request, and
    * username if Principal exists on the request.
    * @param eventType a predefined or custom EventType
+   * @param exception
    * @param httpRequest the request to initialize from
    */
-  public AuditEvent(EventType eventType, HttpServletRequest httpRequest) {
+  public AuditEvent(EventType eventType, Throwable exception, HttpServletRequest httpRequest) {
     this(eventType);
     this.solrHost = httpRequest.getLocalName();
     this.solrPort = httpRequest.getLocalPort();
@@ -108,6 +118,7 @@ public class AuditEvent {
     this.httpMethod = httpRequest.getMethod();
     this.queryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
+    setException(exception);
 
     Principal principal = httpRequest.getUserPrincipal();
     if (principal != null) {
@@ -121,20 +132,48 @@ public class AuditEvent {
   }
 
   /**
-   * Event based on an AuthorizationContext and reponse. Solr will fill in details
-   * such as collections, , ip, http method etc from the context.
+   * Event based on request and AuthorizationContext. Solr will fill in details
+   * such as collections, ip, http method etc from the context.
    * @param eventType a predefined or custom EventType
+   * @param httpRequest the request to initialize from
    * @param authorizationContext the context to initialize from
    */
-  public AuditEvent(EventType eventType, HttpServletRequest httpRequest, AuthorizationContext authorizationContext, AuthorizationResponse authResponse) {
+  public AuditEvent(EventType eventType, HttpServletRequest httpRequest, AuthorizationContext authorizationContext) {
     this(eventType, httpRequest);
     this.collections = authorizationContext.getCollectionRequests()
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     this.resource = authorizationContext.getResource();
     this.requestType = authorizationContext.getRequestType().toString();
     authorizationContext.getParams().getAll(this.solrParams);
-    this.autResponse = authResponse;
   }
+
+  /**
+   * Event to log completed requests. Takes time and status. Solr will fill in details
+   * such as collections, ip, http method etc from the HTTP request and context.
+   *
+   * @param eventType            a predefined or custom EventType
+   * @param httpRequest          the request to initialize from
+   * @param authorizationContext the context to initialize from
+   * @param qTime                query time
+   * @param exception            exception from query response, or null if OK
+   */
+  public AuditEvent(EventType eventType, HttpServletRequest httpRequest, AuthorizationContext authorizationContext, double qTime, Throwable exception) {
+    this(eventType, httpRequest, authorizationContext);
+    setQTime(qTime);
+    setException(exception);
+  }
+
+  private int statusFromException(Throwable exception) {
+    int status = 0;
+    if (exception != null ) {
+      if (exception instanceof SolrException)
+        status = ((SolrException)exception).code();
+      else
+        status = 500;
+    }
+    return status;
+  }
+
 
   private HashMap<String, String> getHeadersFromRequest(HttpServletRequest httpRequest) {
     HashMap<String, String> h = new HashMap<>();
@@ -224,6 +263,18 @@ public class AuditEvent {
     return autResponse;
   }
 
+  public long getStatus() {
+    return status;
+  }
+
+  public double getQTime() {
+    return QTime;
+  }
+  
+  public Throwable getException() {
+    return exception;
+  }
+  
   // Setters, builder style
   
   public AuditEvent setSession(String session) {
@@ -320,4 +371,18 @@ public class AuditEvent {
     this.requestType = requestType;
     return this;
   }
+
+  public void setQTime(double QTime) {
+    this.QTime = QTime;
+  }
+
+  public void setStatus(int status) {
+    this.status = status;
+  }
+
+  public void setException(Throwable exception) {
+    this.exception = exception;
+    setStatus(statusFromException(exception));
+  }
+
 }

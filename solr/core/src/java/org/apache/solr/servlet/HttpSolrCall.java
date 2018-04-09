@@ -486,16 +486,16 @@ public class HttpSolrCall {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
-          auditIfConfigured(new AuditEvent(EventType.REJECTED, req, context, authResponse));
+          auditIfConfigured(new AuditEvent(EventType.REJECTED, req, context));
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
-          auditIfConfigured(new AuditEvent(EventType.UNAUTHORIZED, req, context, authResponse));
+          auditIfConfigured(new AuditEvent(EventType.UNAUTHORIZED, req, context));
           return RETURN;
         }
-        auditIfConfigured(new AuditEvent(EventType.AUTHORIZED, req, context, authResponse));
+        auditIfConfigured(new AuditEvent(EventType.AUTHORIZED, req, context));
       }
 
       HttpServletResponse resp = response;
@@ -521,6 +521,7 @@ public class HttpSolrCall {
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
+            auditIfConfigured(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -535,6 +536,7 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
+      auditIfConfigured(new AuditEvent(EventType.ERROR, ex, req));
       sendError(ex);
       // walk the the entire cause chain to search for an Error
       Throwable t = ex;
@@ -738,6 +740,7 @@ public class HttpSolrCall {
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
+    auditIfConfigured(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
   }
 
   protected QueryResponseWriter getResponseWriter() {

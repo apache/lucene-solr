@@ -25,17 +25,18 @@ import org.junit.Test;
 
 public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
   private SolrLogAuditLoggerPlugin plugin;
+  private HashMap<String, Object> config;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
     plugin = new SolrLogAuditLoggerPlugin();
+    config = new HashMap<>();
+    plugin.init(config);
   }
 
   @Test
   public void init() {
-    HashMap<String, Object> config = new HashMap<>();
-    plugin.init(config);
     plugin.audit(new AuditEvent(AuditEvent.EventType.REJECTED)
         .setUsername("Jan")
         .setHttpMethod("POST")
