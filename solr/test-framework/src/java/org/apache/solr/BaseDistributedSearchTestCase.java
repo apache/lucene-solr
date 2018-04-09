@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -556,6 +557,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
     return rsp;
+  }
+
+  protected QueryResponse queryServer(QueryRequest req) throws IOException, SolrServerException {
+    int which = r.nextInt(clients.size());
+    SolrClient client = clients.get(which);
+    return req.process(client, null);
   }
 
   /**

@@ -202,7 +202,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     }finally{
       log.trace("SolrDispatchFilter.init() done");
-      this.cores = coresInit; // crucially final assignment 
+      this.cores = coresInit; // crucially final assignment
       init.countDown();
     }
   }
@@ -343,7 +343,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = (HttpServletRequest)_request;
     HttpServletResponse response = (HttpServletResponse)_response;
-    
+
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -453,11 +453,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      // /admin/info/key must be always open. see SOLR-9188
-      // tests work only w/ getPathInfo
-      //otherwise it's just enough to have getServletPath()
-      if (PKIAuthenticationPlugin.PATH.equals(request.getServletPath()) ||
-          PKIAuthenticationPlugin.PATH.equals(request.getPathInfo())) return true;
+      String requestUri = request.getRequestURI();
+      log.info("authenticateRequest uri={}", requestUri);
+      if (requestUri != null && requestUri.endsWith(PKIAuthenticationPlugin.PATH)) {
+        log.debug("/info/key passthrogh");
+        return true; // Let /admin/info/key through
+      } else {
+        log.info("/info/key FAILED requestUri.endsWith(PKIAuthenticationPlugin.PATH)={}", requestUri.endsWith(PKIAuthenticationPlugin.PATH));
+      }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();

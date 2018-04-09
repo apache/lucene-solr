@@ -78,6 +78,8 @@ New Features
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
   (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
+* SOLR-9640: Support PKI authentication in standalone mode (janhoy)
+
 Bug Fixes
 ----------------------
 

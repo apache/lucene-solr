@@ -522,7 +522,9 @@ public class CoreContainer {
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
-    if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName());
+    pkiAuthenticationPlugin = isZooKeeperAware() ?
+        new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName()) :
+        new PKIAuthenticationPlugin(this, getNodeNameLocal());
 
     MDCLoggingContext.setNode(this);
 
@@ -700,6 +702,14 @@ public class CoreContainer {
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
   }
 
+
+  // Builds a node name to be used with PKIAuth when running in standalone mode.
+  private String getNodeNameLocal() {
+    String host = System.getProperty("host");
+    String port = System.getProperty("jetty.port");
+    String context = System.getProperty("hostContext","solr");
+    return String.format(Locale.ROOT, "%s:%s_%s", host, port, context.replace("^/", "").replace("/", "%2F"));
+  }
 
   public void securityNodeChanged() {
     log.info("Security node changed, reloading security.json");
@@ -966,8 +976,8 @@ public class CoreContainer {
 
       return core;
     } catch (Exception ex) {
-      // First clean up any core descriptor, there should never be an existing core.properties file for any core that 
-      // failed to be created on-the-fly. 
+      // First clean up any core descriptor, there should never be an existing core.properties file for any core that
+      // failed to be created on-the-fly.
       coresLocator.delete(this, cd);
       if (isZooKeeperAware() && !preExisitingZkEntry) {
         try {
