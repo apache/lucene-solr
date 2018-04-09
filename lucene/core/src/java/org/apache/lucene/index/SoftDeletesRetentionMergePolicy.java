@@ -99,29 +99,36 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
     }, reader.maxDoc() - reader.numDocs());
     Scorer scorer = getScorer(softDeleteField, retentionQuery, wrappedReader);
     if (scorer != null) {
-      FixedBitSet mutableBits;
-      if (liveDocs instanceof FixedBitSet) {
-        mutableBits = ((FixedBitSet) liveDocs).clone();
-      } else { // mainly if we have asserting codec
-        mutableBits = new FixedBitSet(liveDocs.length());
-        for (int i = 0; i < liveDocs.length(); i++) {
-          if (liveDocs.get(i)) {
-            mutableBits.set(i);
-          }
-        }
-      }
+      FixedBitSet cloneLiveDocs = cloneLiveDocs(liveDocs);
       DocIdSetIterator iterator = scorer.iterator();
       int numExtraLiveDocs = 0;
       while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        if (mutableBits.getAndSet(iterator.docID()) == false) {
+        if (cloneLiveDocs.getAndSet(iterator.docID()) == false) {
           // if we bring one back to live we need to account for it
           numExtraLiveDocs++;
         }
       }
       assert reader.numDocs() + numExtraLiveDocs <= reader.maxDoc() : "numDocs: " + reader.numDocs() + " numExtraLiveDocs: " + numExtraLiveDocs + " maxDoc: " + reader.maxDoc();
-      return wrapLiveDocs(reader, mutableBits, reader.numDocs() + numExtraLiveDocs);
+      return wrapLiveDocs(reader, cloneLiveDocs, reader.numDocs() + numExtraLiveDocs);
     } else {
       return reader;
+    }
+  }
+
+  /**
+   * Clones the given live docs
+   */
+  static FixedBitSet cloneLiveDocs(Bits liveDocs) {
+    if (liveDocs instanceof FixedBitSet) {
+      return ((FixedBitSet) liveDocs).clone();
+    } else { // mainly if we have asserting codec
+      FixedBitSet mutableBits = new FixedBitSet(liveDocs.length());
+      for (int i = 0; i < liveDocs.length(); i++) {
+        if (liveDocs.get(i)) {
+          mutableBits.set(i);
+        }
+      }
+      return mutableBits;
     }
   }
 

@@ -381,7 +381,7 @@ public class RandomIndexWriter implements Closeable {
     if (r.nextInt(20) == 2) {
       doRandomForceMerge();
     }
-    if (!applyDeletions || r.nextBoolean() || w.getConfig().getSoftDeletesField() != null) {
+    if (!applyDeletions || r.nextBoolean()) {
       // if we have soft deletes we can't open from a directory
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
@@ -396,7 +396,12 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       if (r.nextBoolean()) {
-        return DirectoryReader.open(w.getDirectory());
+        DirectoryReader reader = DirectoryReader.open(w.getDirectory());
+        if (w.getConfig().getSoftDeletesField() != null) {
+          return new SoftDeletesDirectoryReaderWrapper(reader, w.getConfig().getSoftDeletesField());
+        } else {
+          return reader;
+        }
       } else {
         return w.getReader(applyDeletions, writeAllDeletes);
       }
