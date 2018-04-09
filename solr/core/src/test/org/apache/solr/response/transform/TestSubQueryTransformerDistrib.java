@@ -16,7 +16,11 @@
  */
 package org.apache.solr.response.transform;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -26,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,10 +43,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@org.apache.solr.SolrTestCaseJ4.SuppressSSL()
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
   private static final String support = "These guys help customers";
@@ -92,7 +100,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
   @SuppressWarnings("serial")
   @Test
-  public void test() throws SolrServerException, IOException {
+  public void test() throws Exception {
     int peopleMultiplier = atLeast(1);
     int deptMultiplier = atLeast(1);
     
@@ -100,24 +108,26 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     
     Random random1 = random();
     
+    final ModifiableSolrParams params = params(
+        new String[]{"q","name_s:dave", "indent","true",
+            "fl","*,depts:[subquery "+((random1.nextBoolean() ? "" : "separator=,"))+"]",
+            "rows","" + peopleMultiplier,
+            "depts.q","{!terms f=dept_id_s v=$row.dept_ss_dv "+((random1.nextBoolean() ? "" : "separator=,"))+"}",
+            "depts.fl","text_t"+(differentUniqueId?",id:notid":""),
+            "depts.indent","true",
+            "depts.collection","departments",
+            differentUniqueId ? "depts.distrib.singlePass":"notnecessary","true",
+            "depts.rows",""+(deptMultiplier*2),
+            "depts.logParamsList","q,fl,rows,row.dept_ss_dv",
+            random().nextBoolean()?"depts.wt":"whatever",anyWt(),
+            random().nextBoolean()?"wt":"whatever",anyWt()});
+
+    final SolrDocumentList hits;
     {
-     
-      final QueryRequest  qr = new QueryRequest(params(
-          new String[]{"q","name_s:dave", "indent","true",
-          "fl","*,depts:[subquery "+((random1.nextBoolean() ? "" : "separator=,"))+"]", 
-          "rows","" + peopleMultiplier,
-          "depts.q","{!terms f=dept_id_s v=$row.dept_ss_dv "+((random1.nextBoolean() ? "" : "separator=,"))+"}", 
-          "depts.fl","text_t"+(differentUniqueId?",id:notid":""),
-          "depts.indent","true",
-          "depts.collection","departments",
-          differentUniqueId ? "depts.distrib.singlePass":"notnecessary","true",
-          "depts.rows",""+(deptMultiplier*2),
-          "depts.logParamsList","q,fl,rows,row.dept_ss_dv",
-          random().nextBoolean()?"depts.wt":"whatever",anyWt(),
-          random().nextBoolean()?"wt":"whatever",anyWt()}));
+      final QueryRequest qr = new QueryRequest(params);
       final QueryResponse  rsp = new QueryResponse();
-      rsp.setResponse(cluster.getSolrClient().request(qr, people));
-      final SolrDocumentList hits = rsp.getResults();
+      rsp.setResponse(cluster.getSolrClient().request(qr, people+","+depts));
+      hits = rsp.getResults();
       
       assertEquals(peopleMultiplier, hits.getNumFound());
       
@@ -139,6 +149,21 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         }
       }
       assertEquals(hits.toString(), engineerCount, supportCount); 
+    }
+
+    params.set("wt", "json");
+    final URL node = new URL(cluster.getRandomJetty(random()).getBaseUrl().toString()
+     +"/"+people+"/select"+params.toQueryString());
+
+    try(final InputStream jsonResponse = node.openStream()){
+      final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+      IOUtils.copy(jsonResponse, outBuffer);
+
+      final Object expected = ((SolrDocumentList) hits.get(0).getFieldValue("depts")).get(0).get("text_t");
+      final String err = JSONTestUtil.match("/response/docs/[0]/depts/docs/[0]/text_t"
+          ,outBuffer.toString(Charset.forName("UTF-8").toString()),
+          "\""+expected+"\"");
+      assertNull(err,err);
     }
     
   }
