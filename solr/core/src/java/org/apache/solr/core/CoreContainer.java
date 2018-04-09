@@ -708,7 +708,7 @@ public class CoreContainer {
     String host = System.getProperty("host");
     String port = System.getProperty("jetty.port");
     String context = System.getProperty("hostContext","solr");
-    return String.format("%s:%s_%s", host, port, context.replace("^/", "").replace("/", "%2F"));
+    return String.format(Locale.ROOT, "%s:%s_%s", host, port, context.replace("^/", "").replace("/", "%2F"));
   }
 
   public void securityNodeChanged() {
