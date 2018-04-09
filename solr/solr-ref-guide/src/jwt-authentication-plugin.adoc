@@ -16,9 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token]] (JWT) based Bearer authentication for users with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external service by validating that the JWT  is digitally signed by the Identity service. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect].
-
-Authorization plugins are also available to configure Solr with permissions to perform various activities in the system. The authorization plugins are described in the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (JWT) based Bearer authentication for users with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external service by validating that the JWT  is digitally signed by the Identity service. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect].
 
 == Enable JWT Authentication
 
@@ -58,7 +56,7 @@ A more complex configuration:
 ----
 {
   "authentication": {
-    "class": "solr.JWTAuthenticationPlugin", <1>
+    "class": "solr.JWTAuthPlugin", <1>
     "block_unknown": true, <2>
     "jwk": { <3>
       "e": "AQAB",
@@ -103,7 +101,7 @@ require_exp      ; Makes `exp` (expiry time) mandatory                     ; `tr
 alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; (any)
 jwk_cache_dur    ; Duration of JWK cache in seconds                        ; 3600 (1h)
 principal_claim  ; What claim id to pull principal from                    ; `sub`
-roles_claim      ; What claim id to pull roles from. If specified, all request MUST supply this claim ;
+roles_claim      ; What claim id to pull roles from. If specified, all requests MUST supply this claim ;
 claims_match     ; JSON object of claims (key) that must match a regular expression (value).  ; (none)
 |===
 
