@@ -74,13 +74,14 @@ solr-attributes: &solr-attributes-ref
   solr-guide-version: "${solr-guide-version}"
   solr-guide-version-path: "${solr-guide-version-path}"
   solr-docs-version: "${solr-docs-version}"
-  solr-javadocs: "${solr-javadocs}"
-  lucene-javadocs: "${lucene-javadocs}"
+  java-javadocs: "${javadoc.link}"
+  solr-javadocs: "${html-solr-javadocs}"
+  lucene-javadocs: "${html-lucene-javadocs}"
   build-date: "${DSTAMP}"
   build-year: "${current.year}"
   ivy-commons-codec-version: "${ivyversions./commons-codec/commons-codec}"
   ivy-dropwizard-version: "${ivyversions.io.dropwizard.metrics.version}"
-  ivy-log4j-version: "${ivyversions.org.log4j.major.version}"
+  ivy-log4j-version: "${ivyversions.org.apache.logging.log4j.version}"
   ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
   ivy-tika-version: "${ivyversions.org.apache.tika.version}"
   ivy-velocity-tools-version: "${ivyversions./org.apache.velocity/velocity-tools}"
@@ -90,6 +91,7 @@ asciidoctor:
   safe: 0
   attributes:
     <<: *solr-attributes-ref
+    attribute-missing: "warn"
     icons: "font"
     source-highlighter: "pygments"
     pygments-css: "style"

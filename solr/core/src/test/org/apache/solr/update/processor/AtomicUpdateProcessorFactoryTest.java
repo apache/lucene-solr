@@ -198,7 +198,6 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   }
 
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10734")
   public void testMultipleThreads() throws Exception {
     clearIndex();
     String[] strings = new String[5];
@@ -227,7 +226,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           ));
 
           cmd.solrDoc = new SolrInputDocument();
-          cmd.solrDoc.addField("id", 10); //hardcoded id=2
+          cmd.solrDoc.addField("id", 10); //hardcoded id=10
           cmd.solrDoc.addField("cat", strings[index]);
           cmd.solrDoc.addField("int_i", index);
 
@@ -258,7 +257,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     }
 
     assertQ("Check the total number of docs",
-        req("q", "cat:" + queryString.toString())
+        req("q", "cat:(" + queryString.toString() + ")")
         , "//result[@numFound=1]");
 
     assertQ("Check the total number of docs",

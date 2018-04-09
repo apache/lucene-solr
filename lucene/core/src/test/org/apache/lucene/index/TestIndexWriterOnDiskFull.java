@@ -501,11 +501,14 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
           .setMergeScheduler(new SerialMergeScheduler())
           .setReaderPooling(true)
-          .setMergePolicy(newLogMergePolicy(2))
+          .setMergePolicy(new MergePolicyWrapper(newLogMergePolicy(2)) {
+            @Override
+            public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+              // we can do this because we add/delete/add (and dont merge to "nothing")
+              return true;
+            }
+          })
     );
-    // we can do this because we add/delete/add (and dont merge to "nothing")
-    w.setKeepFullyDeletedSegments(true);
-
     Document doc = new Document();
 
     doc.add(newTextField("f", "doctor who", Field.Store.NO));

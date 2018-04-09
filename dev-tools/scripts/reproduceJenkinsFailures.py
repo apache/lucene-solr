@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import argparse
+import http.client
 import os
 import re
 import subprocess

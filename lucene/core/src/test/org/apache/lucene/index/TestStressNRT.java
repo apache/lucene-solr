@@ -73,6 +73,7 @@ public class TestStressNRT extends LuceneTestCase {
     final int ndocs = atLeast(50);
     final int nWriteThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
     final int maxConcurrentCommits = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+    final boolean useSoftDeletes = random().nextInt(10) < 3;
     
     final boolean tombstones = random().nextBoolean();
 
@@ -106,10 +107,14 @@ public class TestStressNRT extends LuceneTestCase {
 
     Directory dir = newMaybeVirusCheckingDirectory();
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())), useSoftDeletes);
     writer.setDoRandomForceMergeAssert(false);
     writer.commit();
-    reader = DirectoryReader.open(dir);
+    if (useSoftDeletes) {
+      reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), writer.w.getConfig().getSoftDeletesField());
+    } else {
+      reader = DirectoryReader.open(dir);
+    }
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {

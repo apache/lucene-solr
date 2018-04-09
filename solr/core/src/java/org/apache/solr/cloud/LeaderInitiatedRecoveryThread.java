@@ -237,12 +237,12 @@ public class LeaderInitiatedRecoveryThread extends Thread {
             continueTrying = false;
           }
 
-          if (CloudUtil.replicaExists(zkController.getClusterState(), collection, shardId, replicaCoreNodeName)) {
-            SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover, wasCommError:"+wasCommError, t);
-          } else {
+          if (rootCause.getMessage().contains("Unable to locate core")) {
             log.info("Replica {} is removed, hence remove its lir state", replicaCoreNodeName);
             removeLIRState(replicaCoreNodeName);
             break;
+          } else {
+            SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover, wasCommError:"+wasCommError, t);
           }
         }
       }

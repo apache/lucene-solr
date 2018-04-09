@@ -53,21 +53,31 @@ import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 public class MetricTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String metric;
-  private final Number above, below;
-  private final String collection, shard, node, preferredOp;
+  private String metric;
+  private Number above, below;
+  private String collection, shard, node, preferredOp;
 
   private final Map<String, Long> lastNodeEvent = new ConcurrentHashMap<>();
 
-  public MetricTrigger(String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager cloudManager) {
-    super(TriggerEventType.METRIC, name, properties, loader, cloudManager);
+  public MetricTrigger(String name) {
+    super(TriggerEventType.METRIC, name);
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, METRIC);
+    TriggerUtils.validProperties(validProperties, ABOVE, BELOW, PREFERRED_OP,
+        AutoScalingParams.COLLECTION,
+        AutoScalingParams.SHARD,
+        AutoScalingParams.NODE);
+  }
+
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
     this.metric = (String) properties.get(METRIC);
     this.above = (Number) properties.get(ABOVE);
     this.below = (Number) properties.get(BELOW);
     this.collection = (String) properties.getOrDefault(AutoScalingParams.COLLECTION, Policy.ANY);
     shard = (String) properties.getOrDefault(AutoScalingParams.SHARD, Policy.ANY);
     if (collection.equals(Policy.ANY) && !shard.equals(Policy.ANY)) {
-      throw new IllegalArgumentException("When 'shard' is other than #ANY then collection name must be also other than #ANY");
+      throw new TriggerValidationException("shard", "When 'shard' is other than #ANY then collection name must be also other than #ANY");
     }
     node = (String) properties.getOrDefault(AutoScalingParams.NODE, Policy.ANY);
     preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());

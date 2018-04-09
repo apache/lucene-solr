@@ -224,6 +224,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testGroupingSorting() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
 

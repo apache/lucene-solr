@@ -83,9 +83,25 @@
     </filterchain>
   </loadresource>
 
-  <property name="solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
-  <property name="lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
-
+  <!-- where we link to javadocs from the html guide, and if we validate them, is all dependent
+       on the 'local.javadocs' sysprop -->
+  <condition property="check-all-relative-links" value="-check-all-relative-links" else="">
+    <isset property="local.javadocs" />
+  </condition>
+  <condition property="html-solr-javadocs"
+             value="link:../../docs/"
+             else="https://lucene.apache.org/solr/${solr-docs-version-path}/">
+    <isset property="local.javadocs" />
+  </condition>
+  <condition property="html-lucene-javadocs"
+             value="link:../../../../lucene/build/docs/"
+             else="https://lucene.apache.org/core/${solr-docs-version-path}/">
+    <isset property="local.javadocs" />
+  </condition>
+  <!-- for the PDF guide, we always use absolute javadoc urls -->
+  <property name="pdf-solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
+  <property name="pdf-lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
+  
   <property name="build.content.dir" location="${build.dir}/content" />
   <property name="main-page" value="index" />
   <property name="pdf-filename" value="apache-solr-ref-guide-${solr-guide-version}.pdf" />
@@ -175,6 +191,8 @@
     <attribute name="sourceDocumentName"/>
     <attribute name="outputDirectory"/>
     <attribute name="backend"/>
+    <attribute name="solr-javadocs" default="${pdf-solr-javadocs}" />
+    <attribute name="lucene-javadocs" default="#{pdf-lucene-javadocs}" />
     <attribute name="headerFooter" default="true" />
     <sequential>
       <!-- NOTE: we have our own variant on the asciidoctor-ant task, so that sourceDocumentName=""
@@ -195,6 +213,7 @@
                    imagesDir="${build.content.dir}"
                    doctype="book"
                    safemode="unsafe">
+        <attribute key="attribute-missing" value="warn" />
         <attribute key="section-toc" value='' /><!-- we don't use these in the pdf -->
         <attribute key="icons" value="font" />
         <attribute key="icon-set" value="fa" />
@@ -212,8 +231,9 @@
         <attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />
         <attribute key="solr-guide-version" value="${solr-guide-version}" />
         <attribute key="solr-docs-version" value="${solr-docs-version}" />
-        <attribute key="solr-javadocs" value="${solr-javadocs}" />
-        <attribute key="lucene-javadocs" value="${lucene-javadocs}" />
+        <attribute key="java-javadocs" value="${javadoc.link}" />
+        <attribute key="solr-javadocs" value="@{solr-javadocs}" />
+        <attribute key="lucene-javadocs" value="@{lucene-javadocs}" />
         <attribute key="build-date" value="${DSTAMP}" />
         <attribute key="build-year" value="${current.year}" />
         <attribute key="ivy-commons-codec-version" value="${ivyversions./commons-codec/commons-codec}" />
@@ -269,6 +289,7 @@
           fork="true">
       <classpath refid="tools-run-classpath"/>
       <arg value="${build.dir}/html-site"/>
+      <arg value="${check-all-relative-links}" />
     </java>
     <echo>Ready to browse site: ${build.dir}/html-site/${main-page}.html</echo>
   </target>
@@ -296,6 +317,8 @@
                          outputDirectory="${build.dir}/bare-bones-html"
                          headerFooter="false"
                          backend="html5"
+                         solr-javadocs="${html-solr-javadocs}"
+                         lucene-javadocs="${html-lucene-javadocs}"
                          />
 
     <java classname="CheckLinksAndAnchors"
@@ -303,7 +326,8 @@
           fork="true">
       <classpath refid="tools-run-classpath"/>
       <arg value="${build.dir}/bare-bones-html"/>
-      <arg value="true" />
+      <arg value="-bare-bones" />
+      <arg value="${check-all-relative-links}" />
     </java>
     <echo>Validated Links &amp; Anchors via: ${build.dir}/bare-bones-html/</echo>
   </target>

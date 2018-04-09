@@ -190,8 +190,8 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
       'X-Compile-Source-JDK: 8',
-      # Make sure 1.8 or 1.9 ant was used to build release bits: (this will match 1.8.x, 1.9.x)
-      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9'),
+      # Make sure 1.8, 1.9 or 1.10 ant was used to build release bits: (this will match 1.8.x, 1.9.x, 1.10.x)
+      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9', 'Ant-Version: Apache Ant 1.10'),
       # Make sure .class files are 1.8 format:
       'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
@@ -296,7 +296,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
-  expectedSigs.extend(['md5', 'sha1'])
+  expectedSigs.extend(['sha1', 'sha512'])
   
   artifacts = []
   for text, subURL in ents:
@@ -547,31 +547,31 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print('    verify md5/sha1 digests')
-  md5Expected, t = load(urlString + '.md5').strip().split()
-  if t != '*'+artifact:
-    raise RuntimeError('MD5 %s.md5 lists artifact %s but expected *%s' % (urlString, t, artifact))
-  
+  print('    verify sha1/sha512 digests')
   sha1Expected, t = load(urlString + '.sha1').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
+
+  sha512Expected, t = load(urlString + '.sha512').strip().split()
+  if t != '*'+artifact:
+    raise RuntimeError('SHA512 %s.sha512 lists artifact %s but expected *%s' % (urlString, t, artifact))
   
-  m = hashlib.md5()
   s = hashlib.sha1()
+  s512 = hashlib.sha512()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
     if len(x) == 0:
       break
-    m.update(x)
     s.update(x)
+    s512.update(x)
   f.close()
-  md5Actual = m.hexdigest()
   sha1Actual = s.hexdigest()
-  if md5Actual != md5Expected:
-    raise RuntimeError('MD5 digest mismatch for %s: expected %s but got %s' % (artifact, md5Expected, md5Actual))
+  sha512Actual = s512.hexdigest()
   if sha1Actual != sha1Expected:
     raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
+  if sha512Actual != sha512Expected:
+    raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s' % (artifact, sha512Expected, sha512Actual))
 
 def getDirEntries(urlString):
   if urlString.startswith('file:/') and not urlString.startswith('file://'):

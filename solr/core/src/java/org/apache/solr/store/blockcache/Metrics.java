@@ -56,10 +56,14 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   private MetricsMap metricsMap;
   private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricManager metricManager;
+  private String registryName;
   private long previous = System.nanoTime();
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
     registry = manager.registry(registryName);
     metricsMap = new MetricsMap((detailed, map) -> {
       long now = System.nanoTime();
@@ -104,7 +108,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
       previous = now;
 
     });
-    manager.registerGauge(this, registryName, metricsMap, true, getName(), getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, metricsMap, tag, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {

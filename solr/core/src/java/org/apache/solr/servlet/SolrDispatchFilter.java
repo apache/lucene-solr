@@ -105,6 +105,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private Boolean testMode = null;
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
+  private final String metricTag = Integer.toHexString(hashCode());
+  private SolrMetricManager metricManager;
+  private String registryName;
+
   /**
    * Enum to define action that needs to be processed.
    * PASSTHROUGH: Pass through to Restlet via webapp.
@@ -156,6 +160,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
     StartupLoggingUtils.checkLogDir();
+    log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
@@ -206,16 +211,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private void setupJvmMetrics(CoreContainer coresInit)  {
-    SolrMetricManager metricManager = coresInit.getMetricManager();
+    metricManager = coresInit.getMetricManager();
+    registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
-      String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
-      metricManager.registerAll(registry, new AltBufferPoolMetricSet(), true, "buffers");
-      metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classes");
-      metricManager.registerAll(registry, new OperatingSystemMetricSet(), true, "os");
-      metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
-      metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
-      metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
+      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
+      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
+      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
+      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
       MetricsMap sysprops = new MetricsMap((detailed, map) -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
@@ -223,7 +228,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           }
         });
       });
-      metricManager.registerGauge(null, registry, sysprops, true, "properties", "system");
+      metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
@@ -317,6 +322,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       log.warn("Exception closing FileCleaningTracker", e);
     } finally {
       SolrRequestParsers.fileCleaningTracker = null;
+    }
+
+    if (metricManager != null) {
+      metricManager.unregisterGauges(registryName, metricTag);
     }
 
     if (cores != null) {

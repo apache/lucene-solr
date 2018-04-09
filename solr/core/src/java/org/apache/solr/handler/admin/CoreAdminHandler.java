@@ -119,8 +119,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
-    super.initializeMetrics(manager, registryName, scope);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    super.initializeMetrics(manager, registryName, tag, scope);
     parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, manager.registry(registryName),
         SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
   }
@@ -406,7 +406,16 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public interface Invocable {
     Map<String, Object> invoke(SolrQueryRequest req);
   }
+  
   interface CoreAdminOp {
+   /**
+    * @param it request/response object
+    *
+    * If the request is invalid throw a SolrException with SolrException.ErrorCode.BAD_REQUEST ( 400 )
+    * If the execution of the command fails throw a SolrException with SolrException.ErrorCode.SERVER_ERROR ( 500 )
+    * 
+    * Any non-SolrException's are wrapped at a higher level as a SolrException with SolrException.ErrorCode.SERVER_ERROR.
+    */
     void execute(CallInfo it) throws Exception;
   }
 }

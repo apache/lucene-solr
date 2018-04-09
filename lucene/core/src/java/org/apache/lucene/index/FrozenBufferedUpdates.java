@@ -412,7 +412,7 @@ class FrozenBufferedUpdates {
         writer.checkpoint();
       }
 
-      if (writer.keepFullyDeletedSegments == false && result.allDeleted != null) {
+      if (result.allDeleted != null) {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "drop 100% deleted segments: " + writer.segString(result.allDeleted));
         }

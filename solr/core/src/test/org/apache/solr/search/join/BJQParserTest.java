@@ -31,6 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -289,10 +290,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() throws IOException {
 
-    MetricsMap parentFilterCache = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.perSegFilter");
-    MetricsMap filterCache = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache");
+    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.perSegFilter")).getGauge();
+    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
 
 
     Map<String,Object> parentsBefore = parentFilterCache.getValue();

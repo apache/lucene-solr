@@ -155,9 +155,12 @@ The terms facet (or field facet) buckets the domain based on the unique terms / 
 ----
 curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
 json.facet={
-  categories:{ terms: {
-    field : cat,    // bucket documents based on the "cat" field
-    limit : 5       // retrieve the top 5 buckets ranked by the number of docs in each bucket
+  categories:{
+    terms: {
+      field : cat,    // bucket documents based on the "cat" field
+      limit : 5       // retrieve the top 5 buckets ranked by the number of docs in each bucket
+    }
+  }
 }'
 ----
 

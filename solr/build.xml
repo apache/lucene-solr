@@ -188,7 +188,12 @@
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
           depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
   <target name="documentation" description="Generate all documentation"
-    depends="javadocs,changes-to-html,process-webpages"/>
+          depends="javadocs,changes-to-html,process-webpages">
+    <ant dir="solr-ref-guide" target="bare-bones-html-validation" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <property name="local.javadocs" value="true" />
+    </ant>
+  </target>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
 
   <target name="documentation-online" description="Generate a link to the online documentation"
@@ -590,7 +595,7 @@
                   includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
-                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
+                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1 **/*.sha512" />
       <tarfileset dir="${javadoc-online.dir}"
                   prefix="${fullnamever}/docs" />
     </tar>

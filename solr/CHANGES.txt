@@ -36,6 +36,11 @@ Upgrade Notes
   when a negative value is produced. This change is due to the fact that
   Lucene now requires scores to be positive. (Adrien Grand)
 
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components that use this API
+  need to be updated. (Eros Taborelli, Erick Erickson, ab)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -52,6 +57,15 @@ Jetty 9.4.8.v20171121
 Upgrade Notes
 ----------------------
 
+* SOLR-7887: Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files.
+  This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging
+  implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr
+  start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either (SOLR-12144).
+
+* SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication.
+  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
+  handler configuration, or pass it to the fetchindex command.
+
 New Features
 ----------------------
 
@@ -60,6 +74,9 @@ New Features
 
 * SOLR-12015: Add support "add-distinct" in AtomicURP so that we can use the 'add-distict' as a request parameter e.g:
   atomic.<multival-field-name>=add-distict (Amrit Sarkar via noble)
+
+* SOLR-7887: Upgrade Solr to use Log4J 2.11
+  (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
 * SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
 
@@ -76,6 +93,29 @@ Bug Fixes
 * SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down
   state (Cao Manh Dat)
 
+* SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
+
+* SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
+  Tomás Fernández Löbbe)
+
+* SOLR-10734: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent updates for the same
+  document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
+  (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
+
+* SOLR-11673: By default slave doesn't commit empty index when completely new index appears on master.
+  See Upgrade Notes to find a way to get back to the previous behavior. (Mikhail Khludnev)
+
+* SOLR-9399: Delete requests do not send credentials & fails for Basic Authentication
+  (Susheel Kumar, Aibao Luo, Nikkolay Martinov via Erick Erickson)
+
+* SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
+  memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
+  
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
+
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+  Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
+
 Optimizations
 ----------------------
 
@@ -88,6 +128,10 @@ Optimizations
 
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
+
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -109,6 +153,28 @@ Other Changes
   Varun Thacker, Uwe Schindler)
 
 * SOLR-12118: Solr Ref-Guide can now use some ivy version props directly as attributes in content (hossman)
+
+* SOLR-12152: Split up TriggerIntegrationTest into multiple tests to isolate and increase reliability. (shalin)
+
+* SOLR-12133: Fix race conditions that caused TriggerIntegrationTest.testEventQueue and testNodeMarkersRegistration
+  to fail. (Mark Miller, shalin)
+
+* SOLR-12169: Fix ComputePlanActionTest.testSelectedCollections fails on jenkins by aggressively cleaning up
+  trigger state left by other test methods in the test setup. (shalin)
+
+* SOLR-12144: SOLR_LOG_PRESTART_ROTATION now defaults to false, we leverage log4j2 for log rotation on startup (janhoy)
+
+* SOLR-12095: AutoScalingHandler validates trigger configurations before updating Zookeeper. (ab)
+
+* SOLR-12165: Ref Guide: DisMax default mm param value is improperly documented as 100%. (Steve Rowe)
+
+* SOLR-12154: Disallow explicit usage of Log4j2 logger via forbidden APIs. (Varun Thacker, Tomás Fernández Löbbe)
+
+* SOLR-12176: Improve FORCELEADER to handle the case when a replica win the election but does not present
+  in clusterstate (Cao Manh Dat)
+
+* SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
+  javadoc links locally. (hossman)
 
 ==================  7.3.0 ==================
 
@@ -322,7 +388,7 @@ Bug Fixes
 
 * SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
 
-* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
   (麦 香浓郁, Uwe Schindler)
 
 * SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)
@@ -361,6 +427,10 @@ Bug Fixes
 * SOLR-12110: Replica which failed to register in Zk can become leader (Cao Manh Dat)
 
 * SOLR-12129: After the core is reloaded, term of the core will not be watched (Cao Manh Dat)
+
+* SOLR-12141: Fix "bin/solr" shell scripts (Windows/Linux/Mac) to correctly detect major Java version
+  and use numerical version comparison to enforce minimum requirements. Also remove obsolete "UseParNewGC" option.
+  This allows to start Solr with Java 10 or later. (Uwe Schindler)
 
 Optimizations
 ----------------------

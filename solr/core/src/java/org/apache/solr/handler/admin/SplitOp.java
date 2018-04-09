@@ -145,11 +145,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
-
     } catch (Exception e) {
       log.error("ERROR executing split:", e);
-      throw new RuntimeException(e);
-
+      throw e;
     } finally {
       if (req != null) req.close();
       if (core != null) core.close();

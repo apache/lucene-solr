@@ -18,12 +18,14 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -41,13 +43,14 @@ import org.apache.lucene.util.TestUtil;
 
 public class RandomIndexWriter implements Closeable {
 
-  public IndexWriter w;
+  public final IndexWriter w;
   private final Random r;
   int docCount;
   int flushAt;
   private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
   private final Analyzer analyzer; // only if WE created it (then we close it)
+  private final double softDeletesRatio;
 
   /** Returns an indexwriter that randomly mixes up thread scheduling (by yielding at test points) */
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
@@ -94,7 +97,7 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, new MockAnalyzer(r)), true);
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, new MockAnalyzer(r)), true, r.nextBoolean());
   }
   
   /** create a RandomIndexWriter with a random config */
@@ -104,12 +107,23 @@ public class RandomIndexWriter implements Closeable {
   
   /** create a RandomIndexWriter with the provided config */
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
-    this(r, dir, c, false);
+    this(r, dir, c, false, r.nextBoolean());
+  }
+
+  /** create a RandomIndexWriter with the provided config */
+  public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c, boolean useSoftDeletes) throws IOException {
+    this(r, dir, c, false, useSoftDeletes);
   }
       
-  private RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c, boolean closeAnalyzer) throws IOException {
+  private RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c, boolean closeAnalyzer, boolean useSoftDeletes) throws IOException {
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.r = new Random(r.nextLong());
+    if (useSoftDeletes) {
+      c.setSoftDeletesField("___soft_deletes");
+      softDeletesRatio = 1.d / (double)1 + r.nextInt(10);
+    } else {
+      softDeletesRatio = 0d;
+    }
     w = mockIndexWriter(dir, c, r);
     flushAt = TestUtil.nextInt(r, 10, 1000);
     if (closeAnalyzer) {
@@ -218,9 +232,18 @@ public class RandomIndexWriter implements Closeable {
 
   public long updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    long seqNo = w.updateDocuments(delTerm, docs);
+    long seqNo;
+    if (useSoftDeletes()) {
+      seqNo = w.softUpdateDocuments(delTerm, docs, new NumericDocValuesField(w.getConfig().getSoftDeletesField(), 1));
+    } else {
+      seqNo = w.updateDocuments(delTerm, docs);
+    }
     maybeFlushOrCommit();
     return seqNo;
+  }
+
+  private boolean useSoftDeletes() {
+    return r.nextDouble() < softDeletesRatio;
   }
 
   /**
@@ -229,38 +252,19 @@ public class RandomIndexWriter implements Closeable {
    */
   public <T extends IndexableField> long updateDocument(Term t, final Iterable<T> doc) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    long seqNo;
-    if (r.nextInt(5) == 3) {
-      seqNo = w.updateDocuments(t, new Iterable<Iterable<T>>() {
-
-        @Override
-        public Iterator<Iterable<T>> iterator() {
-          return new Iterator<Iterable<T>>() {
-            boolean done;
-            
-            @Override
-            public boolean hasNext() {
-              return !done;
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Iterable<T> next() {
-              if (done) {
-                throw new IllegalStateException();
-              }
-              done = true;
-              return doc;
-            }
-          };
-        }
-        });
+    final long seqNo;
+    if (useSoftDeletes()) {
+      if (r.nextInt(5) == 3) {
+        seqNo = w.softUpdateDocuments(t, Arrays.asList(doc), new NumericDocValuesField(w.getConfig().getSoftDeletesField(), 1));
+      } else {
+        seqNo = w.softUpdateDocument(t, doc, new NumericDocValuesField(w.getConfig().getSoftDeletesField(), 1));
+      }
     } else {
-      seqNo = w.updateDocument(t, doc);
+      if (r.nextInt(5) == 3) {
+        seqNo = w.updateDocuments(t, Arrays.asList(doc));
+      } else {
+        seqNo = w.updateDocument(t, doc);
+      }
     }
     maybeFlushOrCommit();
 
@@ -378,6 +382,7 @@ public class RandomIndexWriter implements Closeable {
       doRandomForceMerge();
     }
     if (!applyDeletions || r.nextBoolean()) {
+      // if we have soft deletes we can't open from a directory
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
@@ -391,7 +396,12 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       if (r.nextBoolean()) {
-        return DirectoryReader.open(w.getDirectory());
+        DirectoryReader reader = DirectoryReader.open(w.getDirectory());
+        if (w.getConfig().getSoftDeletesField() != null) {
+          return new SoftDeletesDirectoryReaderWrapper(reader, w.getConfig().getSoftDeletesField());
+        } else {
+          return reader;
+        }
       } else {
         return w.getReader(applyDeletions, writeAllDeletes);
       }

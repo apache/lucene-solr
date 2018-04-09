@@ -99,7 +99,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   {
     // By default do nothing
   }
-  
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

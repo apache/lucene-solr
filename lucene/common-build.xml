@@ -80,7 +80,7 @@
   </condition>
 
   <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
-  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
+  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,**/*.sha512,ext/*.jar" />
 
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
@@ -187,7 +187,8 @@
   <property name="javadoc.noindex" value="true"/>
 
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
-  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
+  <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -proc:none"/>
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
@@ -279,6 +280,12 @@
   <fail message="Minimum supported ANT version is 1.8.2. Yours: ${ant.version}">
     <condition>
       <not><antversion atleast="1.8.2" /></not>
+    </condition>
+  </fail>
+
+  <fail message="Cannot run with ANT version 1.10.2 - see https://issues.apache.org/jira/browse/LUCENE-8189">
+    <condition>
+      <antversion exactly="1.10.2"/>
     </condition>
   </fail>
 
@@ -2292,8 +2299,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="file"/>
     <sequential>
       <echo>Building checksums for '@{file}'</echo>
-      <checksum file="@{file}" algorithm="md5" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
-      <checksum file="@{file}" algorithm="sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="sha1" fileext=".sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="SHA-512" fileext=".sha512" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
     </sequential>
   </macrodef>
 
@@ -2412,7 +2419,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.13"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.15"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2426,7 +2433,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.4.1"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.5"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

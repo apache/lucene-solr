@@ -296,7 +296,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.2.0-cfs",
     "7.2.0-nocfs",
     "7.2.1-cfs",
-    "7.2.1-nocfs"
+    "7.2.1-nocfs",
+    "7.3.0-cfs",
+    "7.3.0-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -308,7 +310,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.7.0.1",
     "sorted.7.1.0",
     "sorted.7.2.0",
-    "sorted.7.2.1"
+    "sorted.7.2.1",
+    "sorted.7.3.0"
   };
 
   public static String[] getOldSortedNames() {

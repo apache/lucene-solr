@@ -95,22 +95,15 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     MockAnalyzer analyzer = new MockAnalyzer(random());
     LeafReader leafReader = getRandomIndex(analyzer, 100);
     try {
-      long trainStart = System.currentTimeMillis();
       CachingNaiveBayesClassifier simpleNaiveBayesClassifier = new CachingNaiveBayesClassifier(leafReader,
           analyzer, null, categoryFieldName, textFieldName);
-      long trainEnd = System.currentTimeMillis();
-      long trainTime = trainEnd - trainStart;
-      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
 
-      long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
           simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
-      long evaluationEnd = System.currentTimeMillis();
-      long evaluationTime = evaluationEnd - evaluationStart;
-      assertTrue("evaluation took more than 1m: " + evaluationTime / 1000 + "s", evaluationTime < 60000);
+
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
-      assertTrue(5000 > avgClassificationTime);
+      assertTrue(avgClassificationTime >= 0);
       double accuracy = confusionMatrix.getAccuracy();
       assertTrue(accuracy >= 0d);
       assertTrue(accuracy <= 1d);

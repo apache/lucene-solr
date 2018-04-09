@@ -2222,12 +2222,7 @@ public class TestIndexSorting extends LuceneTestCase {
 
   // pits index time sorting against query time sorting
   public void testRandom3() throws Exception {
-    int numDocs;
-    if (TEST_NIGHTLY) {
-      numDocs = atLeast(100000);
-    } else {
-      numDocs = atLeast(1000);
-    }
+    int numDocs = atLeast(1000);
     List<RandomDoc> docs = new ArrayList<>();
 
     Sort sort = randomSort();

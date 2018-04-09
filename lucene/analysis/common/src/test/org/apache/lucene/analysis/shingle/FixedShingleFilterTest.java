@@ -43,7 +43,7 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
         new int[]{13, 18, 27, 32, 41,},
         new String[]{"shingle", "shingle", "shingle", "shingle", "shingle",},
         new int[]{1, 1, 1, 1, 1,},
-        new int[]{2, 2, 2, 2, 2});
+        new int[]{1, 1, 1, 1, 1});
 
   }
 
@@ -195,6 +195,34 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
           new int[] {    0,        0,      0,       0,       2,        2,     },
           new int[] {    5,        5,      5,       5,       7,        7,     },
           new int[] {    1,        0,      0,       0,       1,        0,     });
+  }
+
+  public void testParameterLimits() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 1);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 1", e.getMessage());
+    IllegalArgumentException e2 = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 5);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
+  }
+
+  public void testShingleCountLimits() {
+
+    Token[] tokens = new Token[5000];
+    tokens[0] = new Token("term", 1, 0, 1);
+    tokens[1] = new Token("term1", 1, 2, 3);
+    for (int i = 2; i < 5000; i++) {
+      tokens[i] = new Token("term" + i, 0, 2, 3);
+    }
+
+    Exception e = expectThrows(IllegalStateException.class, () -> {
+      TokenStream ts = new FixedShingleFilter(new CannedTokenStream(tokens), 2);
+      ts.reset();
+      while (ts.incrementToken()) {}
+    });
+    assertEquals("Too many shingles (> 1000) at term [term]", e.getMessage());
   }
 
 }

@@ -84,7 +84,7 @@ When specifying `mm` values, keep in mind the following:
 * No matter what number the calculation arrives at, Solr will never use a value greater than the number of optional clauses, or a value less than 1. In other words, no matter how low or how high the calculated result, the minimum number of required matches will never be less than 1 or greater than the number of clauses.
 * When searching across multiple fields that are configured with different query analyzers, the number of optional clauses may differ between the fields. In such a case, the value specified by mm applies to the maximum number of optional clauses. For example, if a query clause is treated as stopword for one of the fields, the number of optional clauses for that field will be smaller than for the other fields. A query with such a stopword clause would not return a match in that field if mm is set to 100% because the removed clause does not count as matched.
 
-The default value of `mm` is 100% (meaning that all clauses must match).
+The default value of `mm` is 0% (all clauses optional), unless `q.op` is specified as "AND", in which case `mm` defaults to 100% (all clauses required).  
 
 
 === pf (Phrase Fields) Parameter

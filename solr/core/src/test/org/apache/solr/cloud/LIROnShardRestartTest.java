@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -45,11 +46,15 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly
 @LuceneTestCase.Slow
 @Deprecated
 public class LIROnShardRestartTest extends SolrCloudTestCase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -132,6 +137,9 @@ public class LIROnShardRestartTest extends SolrCloudTestCase {
     // now expire each node
     for (Replica replica : docCollection.getReplicas()) {
       try {
+        // todo remove the condition for skipping leader after SOLR-12166 is fixed
+        if (newLeader.getName().equals(replica.getName())) continue;
+
         cluster.getZkClient().makePath("/collections/" + collection + "/leader_initiated_recovery/shard1/" + replica.getName(),
             znodeData, true);
       } catch (KeeperException.NodeExistsException e) {
@@ -153,7 +161,14 @@ public class LIROnShardRestartTest extends SolrCloudTestCase {
       if (electionNodes.isEmpty()) break;
     }
     assertFalse("Timeout waiting for replicas rejoin election", timeOut.hasTimedOut());
-    waitForState("Timeout waiting for active replicas", collection, clusterShape(1, 3));
+    try {
+      waitForState("Timeout waiting for active replicas", collection, clusterShape(1, 3));
+    } catch (Throwable th) {
+      String electionPath = "/collections/allReplicasInLIR/leader_elect/shard1/election/";
+      List<String> children = zkClient().getChildren(electionPath, null, true);
+      LOG.info("Election queue {}", children);
+      throw th;
+    }
 
     assertEquals(103, cluster.getSolrClient().query(collection, new SolrQuery("*:*")).getResults().getNumFound());
 

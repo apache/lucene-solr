@@ -245,6 +245,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected Meter applyingBufferedOpsMeter;
   protected Meter replayOpsMeter;
   protected Meter copyOverOldUpdatesMeter;
+  protected SolrMetricManager metricManager;
+  protected String registryName;
 
   public static class LogPtr {
     final long pointer;
@@ -345,13 +347,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     this.uhandler = uhandler;
 
     if (dataDir.equals(lastDataDir)) {
+      versionInfo.reload();
+      core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+
       if (debug) {
         log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id, " this is a reopen... nothing else to do.");
       }
-
-      versionInfo.reload();
-
-      // on a normal reopen, we currently shouldn't have to do anything
       return;
     }
     lastDataDir = dataDir;
@@ -416,7 +417,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registry;
     bufferedOpsGauge = () -> {
       if (tlog == null) {
         return 0;
@@ -431,13 +434,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     };
 
-    manager.registerGauge(null, registry, bufferedOpsGauge, true, "ops", scope, "buffered");
-    manager.registerGauge(null, registry, () -> logs.size(), true, "logs", scope, "replay", "remaining");
-    manager.registerGauge(null, registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
+    manager.registerGauge(null, registry, bufferedOpsGauge, tag, true, "ops", scope, "buffered");
+    manager.registerGauge(null, registry, () -> logs.size(), tag, true, "logs", scope, "replay", "remaining");
+    manager.registerGauge(null, registry, () -> getTotalLogsSize(), tag, true, "bytes", scope, "replay", "remaining");
     applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
     copyOverOldUpdatesMeter = manager.meter(null, registry, "ops", scope, "copyOverOldUpdates");
-    manager.registerGauge(null, registry, () -> state.getValue(), true, "state", scope);
+    manager.registerGauge(null, registry, () -> state.getValue(), tag, true, "state", scope);
   }
 
   /**

@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -62,21 +60,37 @@ public final class DocValuesFieldExistsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        FieldInfos fieldInfos = context.reader().getFieldInfos();
-        FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        if (fieldInfo == null) {
+        DocIdSetIterator iterator = getDocValuesDocIdSetIterator(field, context.reader());
+        if (iterator == null) {
           return null;
         }
-        DocValuesType dvType = fieldInfo.getDocValuesType();
-        LeafReader reader = context.reader();
-        DocIdSetIterator iterator;
-        switch(dvType) {
+        return new ConstantScoreScorer(this, score(), iterator);
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
+      }
+
+    };
+  }
+
+  /**
+   * Returns a {@link DocIdSetIterator} from the given field or null if the field doesn't exist
+   * in the reader or if the reader has no doc values for the field.
+   */
+  public static DocIdSetIterator getDocValuesDocIdSetIterator(String field, LeafReader reader) throws IOException {
+    FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+    final DocIdSetIterator iterator;
+    if (fieldInfo != null) {
+      switch (fieldInfo.getDocValuesType()) {
         case NONE:
-          return null;
+          iterator = null;
+          break;
         case NUMERIC:
           iterator = reader.getNumericDocValues(field);
           break;
@@ -94,16 +108,9 @@ public final class DocValuesFieldExistsQuery extends Query {
           break;
         default:
           throw new AssertionError();
-        }
-
-        return new ConstantScoreScorer(this, score(), iterator);
       }
-
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return DocValues.isCacheable(ctx, field);
-      }
-
-    };
+      return iterator;
+    }
+    return null;
   }
 }

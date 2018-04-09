@@ -62,10 +62,10 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String toName = "to-" + TestUtil.randomSimpleString(r, 1, 10);
     // register test metrics
     for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
-      metricManager.register(null, fromName, entry.getValue(), false, entry.getKey(), "metrics1");
+      metricManager.registerMetric(null, fromName, entry.getValue(), false, entry.getKey(), "metrics1");
     }
     for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
-      metricManager.register(null, toName, entry.getValue(), false, entry.getKey(), "metrics2");
+      metricManager.registerMetric(null, toName, entry.getValue(), false, entry.getKey(), "metrics2");
     }
     assertEquals(metrics1.size(), metricManager.registry(fromName).getMetrics().size());
     assertEquals(metrics2.size(), metricManager.registry(toName).getMetrics().size());
@@ -125,13 +125,13 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
 
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.register(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "bar");
+      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "bar");
     }
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.register(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "baz");
+      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "baz");
     }
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.register(null, registryName, entry.getValue(), false, entry.getKey(), "foo");
+      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo");
     }
 
     assertEquals(metrics.size() * 3, metricManager.registry(registryName).getMetrics().size());
