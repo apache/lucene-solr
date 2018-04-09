@@ -52,9 +52,11 @@ public class MatchHighlighter {
       int contextOrd = ReaderUtil.subIndex(doc.doc, searcher.getIndexReader().leaves());
       LeafReaderContext ctx = searcher.getIndexReader().leaves().get(contextOrd);
       Matches matches = weight.matches(ctx, doc.doc - ctx.docBase);
-      HighlightingFieldVisitor visitor = new HighlightingFieldVisitor(new SourceAwareMatches(matches, analyzer), collectorSupplier.get());
-      ctx.reader().document(doc.doc, visitor);
-      highlights[i++] = new HighlightDoc(doc.doc, visitor.getHighlights());
+      try (SourceAwareMatches m = new SourceAwareMatches(matches, analyzer)) {
+        HighlightingFieldVisitor visitor = new HighlightingFieldVisitor(m, collectorSupplier.get());
+        ctx.reader().document(doc.doc, visitor);
+        highlights[i++] = new HighlightDoc(doc.doc, visitor.getHighlights());
+      }
     }
     return new TopHighlights(highlights);
   }
@@ -80,7 +82,7 @@ public class MatchHighlighter {
 
     @Override
     public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
-      collector.collectSnippets(matches, fieldInfo.name, value);
+      collector.collectSnippets(matches, fieldInfo, new String(value));
     }
   }
 

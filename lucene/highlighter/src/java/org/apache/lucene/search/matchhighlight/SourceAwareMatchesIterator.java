@@ -17,10 +17,9 @@
 
 package org.apache.lucene.search.matchhighlight;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,7 +30,7 @@ import org.apache.lucene.util.BytesRef;
 
 public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
-  void addSource(byte[] source);
+  void addSource(String source) throws IOException;
 
   static SourceAwareMatchesIterator wrapOffsets(MatchesIterator in) {
     return new SourceAwareMatchesIterator() {
@@ -41,7 +40,7 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
       }
 
       @Override
-      public void addSource(byte[] source) {
+      public void addSource(String source) {
         // no-op - offsets already provided
       }
 
@@ -89,14 +88,15 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
       int startPosition, endPosition, startOffset, endOffset;
 
       @Override
-      public void addSource(byte[] source) {
+      public void addSource(String source) throws IOException {
         sourceCount++;
         if (sourceCount > 0) {
           tsPosition += analyzer.getPositionIncrementGap(field);
         }
-        ts = analyzer.tokenStream(field, new InputStreamReader(new ByteArrayInputStream(source)));
+        ts = analyzer.tokenStream(field, new StringReader(source));
         offsetAttribute = ts.getAttribute(OffsetAttribute.class);
         posIncAttribute = ts.getAttribute(PositionIncrementAttribute.class);
+        ts.reset();
       }
 
       @Override

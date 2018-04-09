@@ -17,7 +17,10 @@
 
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
 
 public interface SnippetCollector {
 
@@ -25,6 +28,6 @@ public interface SnippetCollector {
 
   boolean needsField(String name);
 
-  void collectSnippets(SourceAwareMatches matches, String name, byte[] value);
+  void collectSnippets(SourceAwareMatches matches, FieldInfo field, String text) throws IOException;
 
 }
