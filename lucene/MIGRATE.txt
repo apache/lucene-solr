@@ -37,3 +37,9 @@ Changing index options on the fly is now going to result into an
 IllegalArgumentException. If a field is indexed
 (FieldType.indexOptions() != IndexOptions.NONE) then all documents must have
 the same index options for that field.
+
+
+## IndexSearcher.createNormalizedWeight() removed (LUCENE-8242) ##
+
+Instead use IndexSearcher.createWeight(), rewriting the query first, and using
+a boost of 1f.

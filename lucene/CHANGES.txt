@@ -38,6 +38,9 @@ API Changes
 * LUCENE-8113: TermContext has been renamed to TermStates, and can now be
   constructed lazily if term statistics are not required (Alan Woodward)
 
+* LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
+  been removed (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

@@ -680,22 +680,6 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a normalized weight for a top-level {@link Query}.
-   * The query is rewritten by this method and {@link Query#createWeight} called,
-   * afterwards the {@link Weight} is normalized. The returned {@code Weight}
-   * can then directly be used to get a {@link Scorer}.
-   * @lucene.internal
-   *
-   * @deprecated Clients should rewrite the query and then call {@link #createWeight(Query, ScoreMode, float)}
-   *             with a boost value of 1f
-   */
-  @Deprecated
-  public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
-    query = rewrite(query);
-    return createWeight(query, scoreMode, 1f);
-  }
-
-  /**
    * Creates a {@link Weight} for the given query, potentially adding caching
    * if possible and configured.
    * @lucene.experimental
