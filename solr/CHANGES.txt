@@ -94,6 +94,9 @@ Bug Fixes
 * SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure:
   Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
 
+* SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
+  (Munendra S N, Mikhail Khludnev via Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 

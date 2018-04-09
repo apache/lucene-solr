@@ -22,7 +22,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -130,9 +133,9 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJSONSolrDocument() throws IOException {
+  public void testJSONSolrDocument() throws Exception {
     SolrQueryRequest req = req(CommonParams.WT,"json",
-                               CommonParams.FL,"id,score");
+                               CommonParams.FL,"id,score,_children_,path");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
@@ -141,11 +144,22 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     StringWriter buf = new StringWriter();
 
+    SolrDocument childDoc = new SolrDocument();
+    childDoc.addField("id", "2");
+    childDoc.addField("score", "0.4");
+    childDoc.addField("path", Arrays.asList("a>b", "a>b>c"));
+
+    SolrDocumentList childList = new SolrDocumentList();
+    childList.setNumFound(1);
+    childList.setStart(0);
+    childList.add(childDoc);
+
     SolrDocument solrDoc = new SolrDocument();
     solrDoc.addField("id", "1");
     solrDoc.addField("subject", "hello2");
     solrDoc.addField("title", "hello3");
     solrDoc.addField("score", "0.7");
+    solrDoc.setField("_children_", childList);
 
     SolrDocumentList list = new SolrDocumentList();
     list.setNumFound(1);
@@ -163,8 +177,12 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
                 result.contains("\"title\""));
     assertTrue("response doesn't contain expected fields: " + result, 
                result.contains("\"id\"") &&
-               result.contains("\"score\""));
+               result.contains("\"score\"") && result.contains("_children_"));
 
+    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7,'docs':[{'id':'1', 'score':'0.7'," +
+        " '_children_':{'numFound':1,'start':0,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String error = JSONTestUtil.match(result, "=="+expectedResult);
+    assertNull("response validation failed with error: " + error, error);
 
     req.close();
   }
