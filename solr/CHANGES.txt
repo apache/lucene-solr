@@ -78,6 +78,9 @@ New Features
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
   (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
+* SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
+  (Andrey Kudryavtsev, David Smiley)
+
 Bug Fixes
 ----------------------
 
