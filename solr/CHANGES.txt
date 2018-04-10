@@ -59,6 +59,8 @@ New Features
 * SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
   (Mano Kovacs via Mark Miller)
 
+* SOLR-12036: Factor out DefaultStreamFactory solrj class. (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
