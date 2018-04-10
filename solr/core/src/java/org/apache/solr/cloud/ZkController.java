@@ -1028,9 +1028,9 @@ public class ZkController {
     ZkNodeProps ourProps = new ZkNodeProps(props);
 
     LeaderElector leaderElector = new LeaderElector(zkClient, contextKey, electionContexts);
-    log.info("Joining election for leader. Session Id and ZkNode parent version will be {}, {}", zkSessionId, leaderZkParentVersion);
+    log.info("Joining election for leader. Node parent version will be  {}", leaderZkParentVersion);
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
-        collection, coreNodeName, ourProps, this, cc, leaderZkParentVersion, zkSessionId);
+        collection, coreNodeName, ourProps, this, cc, leaderZkParentVersion);
 
     leaderElector.setup(context);
     electionContexts.put(contextKey, context);
@@ -1717,7 +1717,7 @@ public class ZkController {
         final ShardLeaderElectionContextBase prevShardLeaderContextBase = (ShardLeaderElectionContextBase) prevContext;
         LeaderElector elect = prevShardLeaderContextBase!=null? prevShardLeaderContextBase.getLeaderElector(): new LeaderElector(zkClient);
         ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
-            coreNodeName, zkProps, this, getCoreContainer(), prevShardLeaderContextBase!=null? prevShardLeaderContextBase.getLeaderZkNodeParentVersion(): null, prevShardLeaderContextBase!=null? prevShardLeaderContextBase.getZkSessionId(): null);
+            coreNodeName, zkProps, this, getCoreContainer(), prevShardLeaderContextBase!=null? prevShardLeaderContextBase.getLeaderZkNodeParentVersion(): null);
             
         context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
         elect.setup(context);

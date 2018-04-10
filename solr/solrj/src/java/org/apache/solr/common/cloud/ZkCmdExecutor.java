@@ -19,13 +19,17 @@ package org.apache.solr.common.cloud;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ZkCmdExecutor {
   private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
   private int retryCount;
   private double timeouts;
-  
+
+  private static final Logger log = LoggerFactory.getLogger(ZkCmdExecutor.class);
+
   /**
    * TODO: At this point, this should probably take a SolrZkClient in
    * its constructor.
@@ -96,6 +100,7 @@ public class ZkCmdExecutor {
     try {
       zkClient.makePath(path, data, createMode, null, true, true, skipPathParts);
     } catch (NodeExistsException e) {
+      log.warn("Unable to create node that should exist " + path, e);
       // it's okay if another beats us creating the node
     }
     

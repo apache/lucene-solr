@@ -16,15 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,6 +29,15 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Leader Election process. This class contains the logic by which a
@@ -259,7 +259,7 @@ public  class LeaderElector {
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
-        log.debug("Joined leadership election with path: {}", leaderSeqPath);
+        log.info("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
@@ -359,6 +359,7 @@ public  class LeaderElector {
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
+    log.info("Setting zookeeper nodes for leader election");
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     if (context instanceof OverseerElectionContext) {
       zkCmdExecutor.ensureExists(electZKPath, zkClient);
