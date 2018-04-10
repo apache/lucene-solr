@@ -25,10 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -367,7 +368,8 @@ class JSONWriter extends TextResponseWriter {
 
       // SolrDocument will now have multiValued fields represented as a Collection,
       // even if only a single value is returned for this document.
-      if (val instanceof List) {
+      // For SolrDocumentList, use writeVal instead of writeArray
+      if (!(val instanceof SolrDocumentList) && val instanceof List) {
         // shortcut this common case instead of going through writeVal again
         writeArray(name,((Iterable)val).iterator());
       } else {

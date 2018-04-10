@@ -78,6 +78,9 @@ New Features
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
   (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
+* SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
+  (Andrey Kudryavtsev, David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -113,6 +116,9 @@ Bug Fixes
 
 * SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
   Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
+
+* SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
+  (Munendra S N, Mikhail Khludnev via Ishan Chattopadhyaya)
 
 Optimizations
 ----------------------
@@ -386,7 +392,7 @@ Bug Fixes
 
 * SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
 
-* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
   (麦 香浓郁, Uwe Schindler)
 
 * SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)

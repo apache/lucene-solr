@@ -201,9 +201,9 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
     PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
-    ConstantScoreQuery q = new ConstantScoreQuery(pq);
+    Query q = searcher.rewrite(new ConstantScoreQuery(pq));
 
-    final Weight weight = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(q, ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertNotNull(scorer.twoPhaseIterator());
 
@@ -215,14 +215,14 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testExtractTerms() throws Exception {
     final IndexSearcher searcher = newSearcher(new MultiReader());
     final TermQuery termQuery = new TermQuery(new Term("foo", "bar"));
-    final ConstantScoreQuery csq = new ConstantScoreQuery(termQuery);
+    final Query csq = searcher.rewrite(new ConstantScoreQuery(termQuery));
 
     final Set<Term> scoringTerms = new HashSet<>();
-    searcher.createNormalizedWeight(csq, ScoreMode.COMPLETE).extractTerms(scoringTerms);
+    searcher.createWeight(csq, ScoreMode.COMPLETE, 1).extractTerms(scoringTerms);
     assertEquals(Collections.emptySet(), scoringTerms);
 
     final Set<Term> matchingTerms = new HashSet<>();
-    searcher.createNormalizedWeight(csq, ScoreMode.COMPLETE_NO_SCORES).extractTerms(matchingTerms);
+    searcher.createWeight(csq, ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(matchingTerms);
     assertEquals(Collections.singleton(new Term("foo", "bar")), matchingTerms);
   }
 }

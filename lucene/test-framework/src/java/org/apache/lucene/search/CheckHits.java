@@ -16,21 +16,20 @@
  */
 package org.apache.lucene.search;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.Random;
 
 import junit.framework.Assert;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -541,8 +540,9 @@ public class CheckHits {
   }
 
   private static void doCheckMaxScores(Random random, Query query, IndexSearcher searcher) throws IOException {
-    Weight w1 = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
-    Weight w2 = searcher.createNormalizedWeight(query, ScoreMode.TOP_SCORES);
+    query = searcher.rewrite(query);
+    Weight w1 = searcher.createWeight(query, ScoreMode.COMPLETE, 1);
+    Weight w2 = searcher.createWeight(query, ScoreMode.TOP_SCORES, 1);
 
     // Check boundaries and max scores when iterating all matches
     for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
