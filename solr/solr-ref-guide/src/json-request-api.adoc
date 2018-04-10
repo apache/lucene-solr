@@ -98,7 +98,8 @@ See the <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> for more on faceting
 
 === Debugging
 
-If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=true`), and it will come back under the "json" key along with the other debugging information.
+If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=timing`), and it will come back under the "json" key along with the other debugging information. 
+Note: `debug=true` as well as `debugQuery=true` might have too much performance implication and `debug=query` makes no effect on JSON facet in SolrCloud.
 
 == Passing Parameters via JSON
 We can also pass normal query request parameters in the JSON body within the params block:
