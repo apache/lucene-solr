@@ -86,6 +86,8 @@ New Features
 
 * SOLR-12036: Factor out DefaultStreamFactory solrj class. (Christine Poerschke)
 
+* SOLR-12151: Add abstract MultiSolrCloudTestCase class. (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
