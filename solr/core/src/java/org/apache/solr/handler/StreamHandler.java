@@ -29,9 +29,9 @@ import java.util.Map;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -65,7 +65,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   static SolrClientCache clientCache = new SolrClientCache();
   static ModelCache modelCache = null;
-  private StreamFactory streamFactory = new StreamFactory();
+  private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private Map<String,DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
@@ -105,8 +105,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           defaultZkhost,
           clientCache);
     }
-
-    Lang.register(streamFactory);
 
     /*
     * Add the core functions. These are functions that rely directly on either Lucene or Solr
