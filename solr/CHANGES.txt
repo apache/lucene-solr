@@ -103,6 +103,8 @@ Bug Fixes
 * SOLR-12207: Just rethrowing AssertionError caused by jdk bug in reflection with invocation details.
  (ab, Dawid Weiss, Mikhail Khludnev)
 
+* SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait. (Mikhail Khludnev)
+ 
 Optimizations
 ----------------------
 
