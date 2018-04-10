@@ -79,12 +79,12 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
   public void testCoplanarityTilePolygon() {
     //POLYGON((-90.55764 -0.34907,-90.55751 -0.34868,-90.55777 -0.34842,-90.55815 -0.34766,-90.55943 -0.34842, -90.55918 -0.34842,-90.55764 -0.34907))
     List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34907), Geo3DUtil.fromDegrees(-90.55764)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34868), Geo3DUtil.fromDegrees(-90.55751)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55777)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34766), Geo3DUtil.fromDegrees(-90.55815)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55943)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55918)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34907), fromDegrees(-90.55764)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34868), fromDegrees(-90.55751)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55777)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34766), fromDegrees(-90.55815)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55943)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55918)));
     GeoCompositePolygon polygon = (GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     assertTrue(polygon.size() == 3);
   }
@@ -174,7 +174,7 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
         buffer = buffer.append("\nLarge polygon: " + largePolygon.toString() +"\n");
         buffer = buffer.append("\nPoint: " + point.toString() +"\n");
         buffer.append("\nWKT: " + getWKT(orderedPoints));
-        buffer.append("\nWKT: POINT(" + Math.toDegrees(point.getLongitude()) + " " + Math.toDegrees(point.getLatitude()) + ")\n");
+        buffer.append("\nWKT: POINT(" + toDegrees(point.getLongitude()) + " " + toDegrees(point.getLatitude()) + ")\n");
         buffer.append("normal polygon: " +withIn1 + "\n");
         buffer.append("large polygon: " + withIn2 + "\n");
       }
@@ -211,9 +211,9 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
   private String getWKT(List<GeoPoint> points) {
     StringBuffer buffer = new StringBuffer("POLYGON((");
     for (GeoPoint point : points) {
-      buffer.append(Math.toDegrees(point.getLongitude()) + " " + Math.toDegrees(point.getLatitude()) + ",");
+      buffer.append(toDegrees(point.getLongitude()) + " " + toDegrees(point.getLatitude()) + ",");
     }
-    buffer.append(Math.toDegrees(points.get(0).getLongitude()) + " " + Math.toDegrees(points.get(0).getLatitude()) + "))\n");
+    buffer.append(toDegrees(points.get(0).getLongitude()) + " " + toDegrees(points.get(0).getLatitude()) + "))\n");
     return buffer.toString();
   }
 
@@ -225,4 +225,18 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
     }
     return false;
   }
+  
+  final private static double DEGREES_PER_RADIAN = 180.0 / Math.PI;
+  final private static double RADIANS_PER_DEGREE = Math.PI / 180.0;
+
+  /** Converts radians to degrees */
+  private static double toDegrees(final double radians) {
+    return radians * DEGREES_PER_RADIAN;
+  }
+
+  /** Converts radians to degrees */
+  private static double fromDegrees(final double degrees) {
+    return degrees * RADIANS_PER_DEGREE;
+  }
+
 }
