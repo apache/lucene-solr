@@ -35,6 +35,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
@@ -44,6 +45,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.uninverting.DocTermOrds;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +108,7 @@ public class UnInvertedField extends DocTermOrds {
   private SolrIndexSearcher.DocsEnumState deState;
   private final SolrIndexSearcher searcher;
 
-  private static UnInvertedField uifPlaceholder = new UnInvertedField();
+  private static final UnInvertedField uifPlaceholder = new UnInvertedField();
 
   private UnInvertedField() { // Dummy for synchronization.
     super("fake", 0, 0); // cheapest initialization I can find.
@@ -185,6 +187,8 @@ public class UnInvertedField extends DocTermOrds {
         // small.
         searcher.maxDoc()/20 + 2,
         DEFAULT_INDEX_INTERVAL_BITS);
+
+    assert TestInjection.injectUIFOutOfMemoryError();
 
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
@@ -556,16 +560,17 @@ public class UnInvertedField extends DocTermOrds {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
 
+  @SuppressWarnings("unchecked")
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache<String,UnInvertedField> cache = searcher.getFieldValueCache();
+    SolrCache cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
-    UnInvertedField uif = null;
+
     Boolean doWait = false;
     synchronized (cache) {
-      uif = cache.get(field);
-      if (uif == null) {
+      final Object val = cache.get(field);
+      if (val == null || (val instanceof Throwable)) {
         /**
          * We use this place holder object to pull the UninvertedField construction out of the sync
          * so that if many fields are accessed in a short time, the UninvertedField can be
@@ -573,8 +578,8 @@ public class UnInvertedField extends DocTermOrds {
          */
         cache.put(field, uifPlaceholder);
       } else {
-        if (uif != uifPlaceholder) {
-          return uif;
+        if (val != uifPlaceholder) {
+          return (UnInvertedField) val;
         }
         doWait = true; // Someone else has put the place holder in, wait for that to complete.
       }
@@ -582,35 +587,53 @@ public class UnInvertedField extends DocTermOrds {
     while (doWait) {
       try {
         synchronized (cache) {
-          uif = cache.get(field); // Should at least return the placeholder, NPE if not is OK.
-          if (uif != uifPlaceholder) { // OK, another thread put this in the cache we should be good.
-            return uif;
+          final Object val = cache.get(field);
+          if (val != uifPlaceholder) { // OK, another thread put this in the cache we should be good.
+            if (val instanceof Throwable) {
+              rethrowAsSolrException(field, (Throwable) val);
+            } else {
+              return (UnInvertedField) val;
+            }
           }
           cache.wait();
         }
       } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted in getUninvertedField.");
+        rethrowAsSolrException(field, e);
       }
     }
 
-    uif = new UnInvertedField(field, searcher);
+    UnInvertedField uif = null;
+    try {
+      uif = new UnInvertedField(field, searcher);
+    }catch(Throwable e) {
+      synchronized (cache) {
+        cache.put(field, e); // signaling the failure
+        cache.notifyAll();
+      }
+      rethrowAsSolrException(field, e);
+    }
     synchronized (cache) {
       cache.put(field, uif); // Note, this cleverly replaces the placeholder.
       cache.notifyAll();
     }
-
     return uif;
   }
 
+  protected static void rethrowAsSolrException(String field, Throwable e) {
+    throw new SolrException(ErrorCode.SERVER_ERROR, 
+            "Exception occurs during uninverting "+field, e);
+  }
+
   // Returns null if not already populated
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public static UnInvertedField checkUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
+    SolrCache cache = searcher.getFieldValueCache();
     if (cache == null) {
       return null;
     }
-    UnInvertedField uif = cache.get(field);  // cache is already synchronized, so no extra sync needed
+    Object uif = cache.get(field);  // cache is already synchronized, so no extra sync needed
     // placeholder is an implementation detail, keep it hidden and return null if that is what we got
-    return uif==uifPlaceholder ? null : uif;
+    return uif==uifPlaceholder || !(uif instanceof UnInvertedField)? null : (UnInvertedField) uif;
   }
 
 }
