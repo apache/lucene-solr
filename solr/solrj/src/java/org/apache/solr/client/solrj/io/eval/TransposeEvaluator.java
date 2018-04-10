@@ -42,9 +42,9 @@ public class TransposeEvaluator extends RecursiveObjectEvaluator implements OneV
     } else if(value instanceof Matrix) {
       Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
-      Array2DRowRealMatrix amatrix = new Array2DRowRealMatrix(data);
+      Array2DRowRealMatrix amatrix = new Array2DRowRealMatrix(data, false);
       Array2DRowRealMatrix tmatrix = (Array2DRowRealMatrix)amatrix.transpose();
-      Matrix newMatrix = new Matrix(tmatrix.getData());
+      Matrix newMatrix = new Matrix(tmatrix.getDataRef());
       //Switch the row and column labels
       newMatrix.setColumnLabels(matrix.getRowLabels());
       newMatrix.setRowLabels(matrix.getColumnLabels());
