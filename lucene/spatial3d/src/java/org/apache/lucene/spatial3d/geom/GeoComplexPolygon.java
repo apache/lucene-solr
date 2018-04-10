@@ -935,8 +935,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Some edges are going to be given to us even when there's no real intersection, so do that as a sanity check, first.
       final GeoPoint[] planeCrossings = plane.findIntersections(planetModel, edge.plane, bound, edge.startPlane, edge.endPlane);
       if (planeCrossings != null && planeCrossings.length == 0) {
-        // No actual crossing
-        return true;
+        // Sometimes on the hairy edge an intersection will be missed.  This check finds those.
+        if (!plane.evaluateIsZero(edge.startPoint) && !plane.evaluateIsZero(edge.endPoint)) {
+          return true;
+        }
       }
       
       // Determine crossings of this edge against all inside/outside planes.  There's no further need to look at the actual travel plane itself.
@@ -1021,8 +1023,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Some edges are going to be given to us even when there's no real intersection, so do that as a sanity check, first.
       final GeoPoint[] planeCrossings = plane.findIntersections(planetModel, edge.plane, bound1, bound2, edge.startPlane, edge.endPlane);
       if (planeCrossings != null && planeCrossings.length == 0) {
-        // No actual crossing
-        return true;
+        // Sometimes on the hairy edge an intersection will be missed.  This check finds those.
+        if (!plane.evaluateIsZero(edge.startPoint) && !plane.evaluateIsZero(edge.endPoint)) {
+          return true;
+        }
       }
       
       // Determine crossings of this edge against all inside/outside planes.  There's no further need to look at the actual travel plane itself.
@@ -1248,8 +1252,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       seenEdges.add(edge);
       
-      //System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
-      
       // We've never seen this edge before.  Evaluate it in the context of inner and outer planes.
       computeInsideOutside();
 
@@ -1273,14 +1275,36 @@ class GeoComplexPolygon extends GeoBasePolygon {
       System.out.println("");
       */
       
+      //System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
+
       // Some edges are going to be given to us even when there's no real intersection, so do that as a sanity check, first.
       final GeoPoint[] travelCrossings = travelPlane.findIntersections(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       if (travelCrossings != null && travelCrossings.length == 0) {
         final GeoPoint[] testPointCrossings = testPointPlane.findIntersections(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
         if (testPointCrossings != null && testPointCrossings.length == 0) {
-          return true;
+          // As a last resort, see if the edge endpoints are on either plane.  This is sometimes necessary because the
+          // intersection computation logic might not detect near-miss edges otherwise.
+          if (!travelPlane.evaluateIsZero(edge.startPoint) && !travelPlane.evaluateIsZero(edge.endPoint) &&
+            !testPointPlane.evaluateIsZero(edge.startPoint) && !testPointPlane.evaluateIsZero(edge.endPoint)) {
+            return true;
+          }
         }
       }
+
+      /*
+      System.out.println(
+        " start point travel dist="+travelPlane.evaluate(edge.startPoint)+"; end point travel dist="+travelPlane.evaluate(edge.endPoint));
+      System.out.println(
+        " start point travel above dist="+travelAbovePlane.evaluate(edge.startPoint)+"; end point travel above dist="+travelAbovePlane.evaluate(edge.endPoint));
+      System.out.println(
+        " start point travel below dist="+travelBelowPlane.evaluate(edge.startPoint)+"; end point travel below dist="+travelBelowPlane.evaluate(edge.endPoint));
+      System.out.println(
+        " start point testpoint dist="+testPointPlane.evaluate(edge.startPoint)+"; end point testpoint dist="+testPointPlane.evaluate(edge.endPoint));
+      System.out.println(
+        " start point testpoint above dist="+testPointAbovePlane.evaluate(edge.startPoint)+"; end point testpoint above dist="+testPointAbovePlane.evaluate(edge.endPoint));
+      System.out.println(
+        " start point testpoint below dist="+testPointBelowPlane.evaluate(edge.startPoint)+"; end point testpoint below dist="+testPointBelowPlane.evaluate(edge.endPoint));
+      */
       
       // Determine crossings of this edge against all inside/outside planes.  There's no further need to look at the actual travel plane itself.
       final GeoPoint[] travelInnerCrossings = travelInsidePlane.findCrossings(planetModel, edge.plane, checkPointCutoffPlane, insideTravelCutoffPlane, edge.startPlane, edge.endPlane);
@@ -1294,13 +1318,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
       
       if (travelInnerCrossings != null) {
         for (final GeoPoint crossing : travelInnerCrossings) {
-          //System.out.println("  Travel inner point "+crossing);
+          //System.out.println("  Travel inner point "+crossing+"; edgeplane="+edge.plane.evaluate(crossing)+"; travelInsidePlane="+travelInsidePlane.evaluate(crossing)+"; edgestartplane="+edge.startPlane.evaluate(crossing)+"; edgeendplane="+edge.endPlane.evaluate(crossing));
           countingHash.add(crossing);
         }
       }
       if (testPointInnerCrossings != null) {
         for (final GeoPoint crossing : testPointInnerCrossings) {
-          //System.out.println("  Test point inner point "+crossing);
+          //System.out.println("  Test point inner point "+crossing+"; edgeplane="+edge.plane.evaluate(crossing)+"; testPointInsidePlane="+testPointInsidePlane.evaluate(crossing)+"; edgestartplane="+edge.startPlane.evaluate(crossing)+"; edgeendplane="+edge.endPlane.evaluate(crossing));
           countingHash.add(crossing);
         }
       }
@@ -1310,13 +1334,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
       countingHash.clear();
       if (travelOuterCrossings != null) {
         for (final GeoPoint crossing : travelOuterCrossings) {
-          //System.out.println("  Travel outer point "+crossing);
+          //System.out.println("  Travel outer point "+crossing+"; edgeplane="+edge.plane.evaluate(crossing)+"; travelOutsidePlane="+travelOutsidePlane.evaluate(crossing)+"; edgestartplane="+edge.startPlane.evaluate(crossing)+"; edgeendplane="+edge.endPlane.evaluate(crossing));
           countingHash.add(crossing);
         }
       }
       if (testPointOuterCrossings != null) {
         for (final GeoPoint crossing : testPointOuterCrossings) {
-          //System.out.println("  Test point outer point "+crossing);
+          //System.out.println("  Test point outer point "+crossing+"; edgeplane="+edge.plane.evaluate(crossing)+"; testPointOutsidePlane="+testPointOutsidePlane.evaluate(crossing)+"; edgestartplane="+edge.startPlane.evaluate(crossing)+"; edgeendplane="+edge.endPlane.evaluate(crossing));
           countingHash.add(crossing);
         }
       }
