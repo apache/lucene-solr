@@ -3241,6 +3241,37 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testMonteCarloWithVariables() throws Exception {
+    String cexpr = "let(a=constantDistribution(10), " +
+                "       b=constantDistribution(20), " +
+                "       c=monteCarlo(d=sample(a),"+
+                "                    e=sample(b),"+
+                "                    add(d, add(e, 10)), " +
+                "                    10))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertTrue(out.size()==10);
+    assertEquals(out.get(0).doubleValue(), 40.0, .0);
+    assertEquals(out.get(1).doubleValue(), 40.0, .0);
+    assertEquals(out.get(2).doubleValue(), 40.0, .0);
+    assertEquals(out.get(3).doubleValue(), 40.0, .0);
+    assertEquals(out.get(4).doubleValue(), 40.0, .0);
+    assertEquals(out.get(5).doubleValue(), 40.0, .0);
+    assertEquals(out.get(6).doubleValue(), 40.0, .0);
+    assertEquals(out.get(7).doubleValue(), 40.0, .0);
+    assertEquals(out.get(8).doubleValue(), 40.0, .0);
+    assertEquals(out.get(9).doubleValue(), 40.0, .0);
+  }
+
+  @Test
   public void testWeibullDistribution() throws Exception {
     String cexpr = "let(echo=true, " +
                        "a=describe(sample(weibullDistribution(.1, 10),10000)), " +
