@@ -115,7 +115,8 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
       @Override
       protected boolean lessThan(MatchesIterator a, MatchesIterator b) {
         return a.startPosition() < b.startPosition() ||
-            (a.startPosition() == b.startPosition() && a.endPosition() < b.endPosition());
+            (a.startPosition() == b.startPosition() && a.endPosition() < b.endPosition()) ||
+            (a.startPosition() == b.startPosition() && a.endPosition() == b.endPosition() && a.term().compareTo(b.term()) < 0);
       }
     };
     for (MatchesIterator mi : matches) {
