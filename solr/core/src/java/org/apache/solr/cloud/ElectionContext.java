@@ -16,26 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -45,17 +31,20 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.OpResult.SetDataResult;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -84,11 +73,11 @@ public abstract class ElectionContext implements Closeable {
   public void cancelElection() throws InterruptedException, KeeperException {
     if (leaderSeqPath != null) {
       try {
-        log.debug("Canceling election {}", leaderSeqPath);
+        log.debug("Cancelling election {}", leaderSeqPath);
         zkClient.delete(leaderSeqPath, -1, true);
       } catch (NoNodeException e) {
         // fine
-        log.debug("cancelElection did not find election node to remove {}", leaderSeqPath);
+        log.warn("cancelElection did not find election node to remove {}", leaderSeqPath);
       }
     } else {
       log.debug("cancelElection skipped as this context has not been initialized");
@@ -113,13 +102,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected String collection;
   protected LeaderElector leaderElector;
   private Integer leaderZkNodeParentVersion;
+  private Long zkSessionId;
 
   // Prevents a race between cancelling and becoming leader.
   private final Object lock = new Object();
 
   public ShardLeaderElectionContextBase(LeaderElector leaderElector,
       final String shardId, final String collection, final String coreNodeName,
-      ZkNodeProps props, ZkStateReader zkStateReader) {
+      ZkNodeProps props, ZkStateReader zkStateReader, Integer leaderZkNodeParentVersion, Long zkSessionId) {
     super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
         + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
         collection, shardId), props, zkStateReader.getZkClient());
@@ -127,6 +117,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
+    this.leaderZkNodeParentVersion = leaderZkNodeParentVersion;
+    this.zkSessionId = zkSessionId;
   }
   
   @Override
@@ -134,17 +126,48 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     super.cancelElection();
     synchronized (lock) {
       if (leaderZkNodeParentVersion != null) {
+          removeLeaderNode(leaderZkNodeParentVersion);
+          leaderZkNodeParentVersion = null;
+      } else {
+        log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
+          final Stat currentLeaderStat = nodeStats(leaderPath);
+          if(currentLeaderStat==null) {
+              log.info("Couldn't get leader node");
+          }
+          if(zkSessionId==null){
+              log.info("No Session id stored");
+          }
+          if(currentLeaderStat !=null && currentLeaderStat.getEphemeralOwner()==0){
+              log.info("Coudn't read ephemeralOwner from leader stats");
+          }
+
+          if(currentLeaderStat!=null && zkSessionId!=null && currentLeaderStat.getEphemeralOwner()==zkSessionId){
+              final String parentPath = new Path(leaderPath).getParent().toString();
+              final Stat parentStat = nodeStats(parentPath);
+              if(parentStat!=null) {
+                  log.info("Parent version was missing but should have been {}. Restoring parent version and retrying removing leader registration", parentStat.getVersion());
+                  removeLeaderNode(parentStat.getVersion());
+              }
+          }
+          else{
+              log.info("Ephemeral node found but we are not the owner. Skipping...");
+          }
+      }
+    }
+  }
+
+    private void removeLeaderNode(int version) throws InterruptedException {
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
           // We do this by using a multi and ensuring the parent znode of the leader registration node
           // matches the version we expect - there is a setData call that increments the parent's znode
           // version whenever a leader registers.
-          log.debug("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
+          log.debug("Removing leader registration node on cancel: {} {}", leaderPath, version);
           List<Op> ops = new ArrayList<>(2);
-          ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+          ops.add(Op.check(new Path(leaderPath).getParent().toString(), version));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
-        } catch (KeeperException.NoNodeException nne) {
+        } catch (NoNodeException nne) {
           // no problem
           log.debug("No leader registration node found to remove: {}", leaderPath);
         } catch (KeeperException.BadVersionException bve) {
@@ -155,14 +178,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         } catch (Exception e) {
           SolrException.log(log, e);
         }
-        leaderZkNodeParentVersion = null;
-      } else {
-        log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
-      }
     }
-  }
-  
-  @Override
+
+
+    @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
@@ -199,7 +218,13 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               SetDataResult dresult = (SetDataResult) result;
               Stat stat = dresult.getStat();
               leaderZkNodeParentVersion = stat.getVersion();
-              return;
+                final Stat leaderNodeStat = nodeStats(leaderPath);
+
+                if(leaderNodeStat!=null) {
+                    this.zkSessionId = leaderNodeStat.getEphemeralOwner();
+                    log.info("Reading session id from node {}", zkSessionId);
+                }
+              break;
             }
           }
           assert leaderZkNodeParentVersion != null;
@@ -223,13 +248,29 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
   }
 
-  public LeaderElector getLeaderElector() {
+    private Stat nodeStats(String path) {
+      log.info("Getting stats for {}", path);
+      try {
+          return zkClient.exists(path, null, false);
+      } catch (Exception e){
+          log.warn("Unable to read leader node {}", path);
+          return null;
+      }
+    }
+
+    public LeaderElector getLeaderElector() {
     return leaderElector;
   }
 
   Integer getLeaderZkNodeParentVersion() {
     synchronized (lock) {
       return leaderZkNodeParentVersion;
+    }
+  }
+
+    Long getZkSessionId() {
+    synchronized (lock) {
+      return zkSessionId;
     }
   }
 }
@@ -246,9 +287,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   
   public ShardLeaderElectionContext(LeaderElector leaderElector, 
       final String shardId, final String collection,
-      final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
+      final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc, Integer leaderZkNodeParentVersion, Long zkSessionId) {
     super(leaderElector, shardId, collection, coreNodeName, props,
-        zkController.getZkStateReader());
+        zkController.getZkStateReader(), leaderZkNodeParentVersion, zkSessionId);
     this.zkController = zkController;
     this.cc = cc;
     syncStrategy = new SyncStrategy(cc);
@@ -275,7 +316,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc, getLeaderZkNodeParentVersion(), getZkSessionId());
   }
   
   /* 
