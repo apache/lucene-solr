@@ -100,6 +100,9 @@ Bug Fixes
 * SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
   (Munendra S N, Mikhail Khludnev via Ishan Chattopadhyaya)
 
+* SOLR-12207: Just rethrowing AssertionError caused by jdk bug in reflection with invocation details.
+ (ab, Dawid Weiss, Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
