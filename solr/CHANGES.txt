@@ -80,6 +80,9 @@ New Features
 
 * SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
   (Andrey Kudryavtsev, David Smiley)
+  
+* SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
+  (Mano Kovacs via Mark Miller)
 
 Bug Fixes
 ----------------------

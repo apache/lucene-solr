@@ -114,6 +114,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
             "rows","" + peopleMultiplier,
             "depts.q","{!terms f=dept_id_s v=$row.dept_ss_dv "+((random1.nextBoolean() ? "" : "separator=,"))+"}",
             "depts.fl","text_t"+(differentUniqueId?",id:notid":""),
+            "depts.sort", "dept_id_i desc",
             "depts.indent","true",
             "depts.collection","departments",
             differentUniqueId ? "depts.distrib.singlePass":"notnecessary","true",
