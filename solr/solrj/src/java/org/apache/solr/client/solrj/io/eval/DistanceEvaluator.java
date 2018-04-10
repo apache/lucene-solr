@@ -136,9 +136,9 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
 
   private Matrix distance(DistanceMeasure distanceMeasure, Matrix matrix) {
     double[][] data = matrix.getData();
-    RealMatrix realMatrix = new Array2DRowRealMatrix(data);
-    realMatrix = realMatrix.transpose();
-    data = realMatrix.getData();
+    Array2DRowRealMatrix realMatrix = new Array2DRowRealMatrix(data, false);
+    realMatrix = (Array2DRowRealMatrix)realMatrix.transpose();
+    data = realMatrix.getDataRef();
     double[][] distanceMatrix = new double[data.length][data.length];
     for(int i=0; i<data.length; i++) {
       double[] row = data[i];
