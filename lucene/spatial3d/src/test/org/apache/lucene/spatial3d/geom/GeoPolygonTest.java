@@ -25,7 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.junit.Test;
 
-
 public class GeoPolygonTest extends LuceneTestCase {
 
   @Test
@@ -1429,6 +1428,7 @@ shape:
   }
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testComplexPolygonPlaneOutsideWorld() {
     List<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, -0.5));
@@ -1503,6 +1503,7 @@ shape:
   }
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testLUCENE8245() {
     //POLYGON((-70.19447784626787 -83.117346007187,0.0 2.8E-322,-139.99870438810106 7.994601469571884,-143.14292702670522 -18.500141088122664,-158.7373186858464 -35.42942085357812,-70.19447784626787 -83.117346007187))
     final List<GeoPoint> points = new ArrayList<>();
@@ -1537,7 +1538,6 @@ shape:
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testLUCENE8245_case3() {
     //POLYGON((144.76249846857021 8.828705232593283,166.00162989841027 -8.5E-322,157.03429484830787 64.92565566857392,108.64696979831984 39.10241638996957,102.54234512410089 20.471658760034586,144.76249846857021 8.828705232593283))
     final List<GeoPoint> points = new ArrayList<>();
