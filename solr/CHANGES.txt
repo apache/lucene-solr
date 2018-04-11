@@ -111,6 +111,9 @@ Bug Fixes
  (ab, Dawid Weiss, Mikhail Khludnev)
 
 * SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait. (Mikhail Khludnev)
+
+* SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
+  (Steve Rowe)
  
 Optimizations
 ----------------------
