@@ -14,20 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
+
+package org.apache.lucene.util;
+
+import java.io.IOException;
 
 /**
- * Enum that represents trigger event types.
+ * This is a result supplier that is allowed to throw an IOException.
+ *
+ * @see java.util.function.Supplier
+ * @param <T> the suppliers result type.
  */
-public enum TriggerEventType {
-  NODEADDED,
-  NODELOST,
-  REPLICALOST,
-  MANUAL,
-  SCHEDULED,
-  SEARCHRATE,
-  INDEXRATE,
-  INVALID,
-  METRIC,
-  INDEXSIZE
+@FunctionalInterface
+public interface IOSupplier<T>{
+
+  /**
+   * Gets the result.
+   * @return the result
+   * @throws IOException if producing the result throws an {@link IOException}
+   */
+  T get() throws IOException;
 }

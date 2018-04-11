@@ -108,6 +108,7 @@ public class QueryUtils {
    * @see #checkSkipTo
    * @see #checkExplanations
    * @see #checkEqual
+   * @see CheckHits#checkMatches(Query, IndexSearcher)
    */
   public static void check(Random random, Query q1, IndexSearcher s) {
     check(random, q1, s, true);
@@ -125,6 +126,7 @@ public class QueryUtils {
           check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
+        CheckHits.checkMatches(q1, s);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

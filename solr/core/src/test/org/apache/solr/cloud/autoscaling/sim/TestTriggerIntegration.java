@@ -1192,7 +1192,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 //      solrClient.query(COLL1, query);
 //    }
 
-    cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, true);
+    cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, false, true);
 
     boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);

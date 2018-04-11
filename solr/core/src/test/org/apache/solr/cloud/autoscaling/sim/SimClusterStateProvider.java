@@ -47,6 +47,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.api.collections.AddReplicaCmd;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -57,6 +59,7 @@ import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -241,7 +244,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @return true if a node existed and was removed
    */
   public boolean simRemoveNode(String nodeId) throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       Set<String> collections = new HashSet<>();
       // mark every replica on that node as down
@@ -296,14 +299,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     liveNodes.add(nodeId);
     createEphemeralLiveNode(nodeId);
     Set<String> collections = new HashSet<>();
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       setReplicaStates(nodeId, Replica.State.RECOVERING, collections);
     } finally {
       lock.unlock();
     }
     cloudManager.getTimeSource().sleep(1000);
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       setReplicaStates(nodeId, Replica.State.ACTIVE, collections);
     } finally {
@@ -389,7 +392,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new Exception("Wrong node (not " + nodeId + "): " + replicaInfo);
     }
 
-    lock.lock();
+    lock.lockInterruptibly();
     try {
 
       opDelay(replicaInfo.getCollection(), CollectionParams.CollectionAction.ADDREPLICA.name());
@@ -435,7 +438,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    */
   public void simRemoveReplica(String nodeId, String coreNodeName) throws Exception {
     List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, n -> new ArrayList<>());
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       for (int i = 0; i < replicas.size(); i++) {
         if (coreNodeName.equals(replicas.get(i).getName())) {
@@ -638,6 +641,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           replicaNum.getAndIncrement());
       try {
         replicaProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
+        replicaProps.put("SEARCHER.searcher.deletedDocs", 0);
+        replicaProps.put("SEARCHER.searcher.numDocs", 0);
+        replicaProps.put("SEARCHER.searcher.maxDoc", 0);
         ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
             coreName, collectionName, pos.shard, pos.type, pos.node, replicaProps);
         cloudManager.submit(() -> {
@@ -662,6 +668,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
       });
     });
+    // force recreation of collection states
+    collectionsStatesRef.set(null);
     simRunLeaderElection(Collections.singleton(collectionName), true);
     if (waitForFinalState) {
       boolean finished = finalStateLatch.await(cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, 60, TimeUnit.MILLISECONDS),
@@ -680,11 +688,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param async async id
    * @param results results of the operation
    */
-  public void simDeleteCollection(String collection, String async, NamedList results) throws IOException {
+  public void simDeleteCollection(String collection, String async, NamedList results) throws Exception {
     if (async != null) {
       results.add(CoreAdminParams.REQUESTID, async);
     }
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       collProperties.remove(collection);
       sliceProperties.remove(collection);
@@ -722,7 +730,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Remove all collections.
    */
   public void simDeleteAllCollections() throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       nodeReplicaMap.clear();
       collProperties.clear();
@@ -797,7 +805,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     String collectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     ClusterState clusterState = getClusterState();
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       ZkWriteCommand cmd = new CollectionMutator(cloudManager).createShard(clusterState, message);
       if (cmd.noop) {
@@ -865,6 +873,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     AtomicReference<String> sliceName = new AtomicReference<>();
     sliceName.set(message.getStr(SHARD_ID_PROP));
     String splitKey = message.getStr("split.key");
+
+    // always invalidate cached collection states to get up-to-date metrics
+    collectionsStatesRef.set(null);
+
     ClusterState clusterState = getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice parentSlice = SplitShardCmd.getParentSlice(clusterState, collectionName, sliceName, splitKey);
@@ -887,6 +899,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
     if (sessionWrapper != null) sessionWrapper.release();
 
+    // adjust numDocs / deletedDocs / maxDoc
+    Replica leader = parentSlice.getLeader();
+    // XXX leader election may not have happened yet - should we require it?
+    if (leader == null) {
+      leader = parentSlice.getReplicas().iterator().next();
+    }
+    String numDocsStr = leader.getStr("SEARCHER.searcher.numDocs", "0");
+    long numDocs = Long.parseLong(numDocsStr);
+    long newNumDocs = numDocs / subSlices.size();
+    long remainder = numDocs % subSlices.size();
+    String remainderSlice = null;
+
     for (ReplicaPosition replicaPosition : replicaPositions) {
       String subSliceName = replicaPosition.shard;
       String subShardNodeName = replicaPosition.node;
@@ -897,15 +921,32 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       replicaProps.put(ZkStateReader.REPLICA_TYPE, replicaPosition.type.toString());
       replicaProps.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(subShardNodeName, "http"));
 
+      long replicasNumDocs = newNumDocs;
+      if (remainderSlice == null) {
+        remainderSlice = subSliceName;
+      }
+      if (remainderSlice.equals(subSliceName)) { // only add to one sub slice
+        replicasNumDocs += remainder;
+      }
+      replicaProps.put("SEARCHER.searcher.numDocs", replicasNumDocs);
+      replicaProps.put("SEARCHER.searcher.maxDoc", replicasNumDocs);
+      replicaProps.put("SEARCHER.searcher.deletedDocs", 0);
+
       ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
           solrCoreName, collectionName, replicaPosition.shard, replicaPosition.type, subShardNodeName, replicaProps);
       simAddReplica(replicaPosition.node, ri, false);
     }
     // mark the old slice as inactive
-    Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
-        .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
-    props.put(ZkStateReader.STATE_PROP, Slice.State.INACTIVE.toString());
-    props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
+          .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
+      props.put(ZkStateReader.STATE_PROP, Slice.State.INACTIVE.toString());
+      props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
+      // XXX also mark replicas as down? currently SplitShardCmd doesn't do this
+    } finally {
+      lock.unlock();
+    }
     // add slice props
     for (int i = 0; i < subRanges.size(); i++) {
       String subSlice = subSlices.get(i);
@@ -915,8 +956,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       sliceProps.put(Slice.RANGE, range);
       sliceProps.put(Slice.PARENT, sliceName.get());
       sliceProps.put(ZkStateReader.STATE_PROP, Slice.State.ACTIVE.toString());
-      props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
+      sliceProps.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
     }
+    collectionsStatesRef.set(null);
     simRunLeaderElection(Collections.singleton(collectionName), true);
     results.add("success", "");
 
@@ -945,7 +987,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     opDelay(collectionName, CollectionParams.CollectionAction.DELETESHARD.name());
 
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       sliceProperties.computeIfAbsent(collectionName, coll -> new ConcurrentHashMap<>()).remove(sliceName);
       nodeReplicaMap.forEach((n, replicas) -> {
@@ -964,6 +1006,122 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     } finally {
       lock.unlock();
     }
+  }
+
+  /**
+   * Simulate an update by modifying replica metrics.
+   * The following core metrics are updated:
+   * <ul>
+   *   <li><code>SEARCHER.searcher.numDocs</code> - increased by added docs, decreased by deleteById and deleteByQuery</li>
+   *   <li><code>SEARCHER.searcher.deletedDocs</code> - decreased by deleteById and deleteByQuery by up to <code>numDocs</code></li>
+   *   <li><code>SEARCHER.searcher.maxDoc</code> - always increased by the number of added docs.</li>
+   * </ul>
+   * <p>IMPORTANT limitations:</p>
+   * <ul>
+   *   <li>document replacements are always counted as new docs</li>
+   *   <li>delete by ID always succeeds (unless numDocs == 0)</li>
+   *   <li>deleteByQuery is not supported unless the query is <code>*:*</code></li>
+   * </ul>
+   * @param req update request. This request MUST have the <code>collection</code> param set.
+   * @return {@link UpdateResponse}
+   * @throws SolrException on errors, such as nonexistent collection or unsupported deleteByQuery
+   */
+  public UpdateResponse simUpdate(UpdateRequest req) throws SolrException, InterruptedException, IOException {
+    String collection = req.getCollection();
+    if (collection == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not set");
+    }
+    if (!simListCollections().contains(collection)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + collection + "' doesn't exist");
+    }
+    // always reset first to get the current metrics - it's easier than to keep matching
+    // Replica with ReplicaInfo where the current real counts are stored
+    collectionsStatesRef.set(null);
+    DocCollection coll = getClusterState().getCollection(collection);
+    DocRouter router = coll.getRouter();
+
+    boolean modified = false;
+
+    lock.lockInterruptibly();
+    try {
+      List<String> deletes = req.getDeleteById();
+      if (deletes != null && !deletes.isEmpty()) {
+        for (String id : deletes) {
+          Slice s = router.getTargetSlice(id, null, null, req.getParams(), coll);
+          // NOTE: we don't use getProperty because it uses PROPERTY_PROP_PREFIX
+          String numDocsStr = s.getLeader().getStr("SEARCHER.searcher.numDocs");
+          if (numDocsStr == null) {
+            LOG.debug("-- no docs in " + s.getLeader());
+            continue;
+          }
+          long numDocs = Long.parseLong(numDocsStr);
+          if (numDocs == 0) {
+            LOG.debug("-- attempting to delete nonexistent doc " + id + " from " + s.getLeader());
+            continue;
+          }
+          if (numDocsStr != null) {
+            modified = true;
+            try {
+              simSetShardValue(collection, s.getName(), "SEARCHER.searcher.deletedDocs", 1, true, false);
+              simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", -1, true, false);
+            } catch (Exception e) {
+              throw new IOException(e);
+            }
+          }
+        }
+      }
+      deletes = req.getDeleteQuery();
+      if (deletes != null && !deletes.isEmpty()) {
+        for (String q : deletes) {
+          if (!"*:*".equals(q)) {
+            throw new UnsupportedOperationException("Only '*:*' query is supported in deleteByQuery");
+          }
+          for (Slice s : coll.getSlices()) {
+            String numDocsStr = s.getLeader().getStr("SEARCHER.searcher.numDocs");
+            if (numDocsStr == null) {
+              continue;
+            }
+            long numDocs = Long.parseLong(numDocsStr);
+            if (numDocs == 0) {
+              continue;
+            }
+            modified = true;
+            try {
+              simSetShardValue(collection, s.getName(), "SEARCHER.searcher.deletedDocs", numDocs, false, false);
+              simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", 0, false, false);
+            } catch (Exception e) {
+              throw new IOException(e);
+            }
+          }
+        }
+      }
+      List<SolrInputDocument> docs = req.getDocuments();
+      if (docs != null && !docs.isEmpty()) {
+        for (SolrInputDocument doc : docs) {
+          String id = (String) doc.getFieldValue("id");
+          if (id == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Document without id: " + doc);
+          }
+          Slice s = router.getTargetSlice(id, null, null, req.getParams(), coll);
+          modified = true;
+          try {
+            simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", 1, true, false);
+            simSetShardValue(collection, s.getName(), "SEARCHER.searcher.maxDoc", 1, true, false);
+            // Policy reuses this value and expects it to be in GB units!!!
+            // the idea here is to increase the index size by 500 bytes with each doc
+            // simSetShardValue(collection, s.getName(), "INDEX.sizeInBytes", 500, true, false);
+          } catch (Exception e) {
+            throw new IOException(e);
+          }
+        }
+      }
+      if (modified) {
+        collectionsStatesRef.set(null);
+      }
+    } finally {
+      lock.unlock();
+    }
+    return new UpdateResponse();
   }
 
   /**
@@ -988,7 +1146,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param properties properties to set
    */
   public void simSetClusterProperties(Map<String, Object> properties) throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       clusterProperties.clear();
       if (properties != null) {
@@ -1007,7 +1165,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param value property value
    */
   public void simSetClusterProperty(String key, Object value) throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       if (value != null) {
         clusterProperties.put(key, value);
@@ -1026,7 +1184,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param properties properties
    */
   public void simSetCollectionProperties(String coll, Map<String, Object> properties) throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       if (properties == null) {
         collProperties.remove(coll);
@@ -1049,7 +1207,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    */
   public void simSetCollectionProperty(String coll, String key, String value) throws Exception {
     Map<String, Object> props = collProperties.computeIfAbsent(coll, c -> new HashMap<>());
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       if (value == null) {
         props.remove(key);
@@ -1070,7 +1228,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    */
   public void simSetSliceProperties(String coll, String slice, Map<String, Object> properties) throws Exception {
     Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(coll, c -> new HashMap<>()).computeIfAbsent(slice, s -> new HashMap<>());
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       sliceProps.clear();
       if (properties != null) {
@@ -1089,7 +1247,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param value property value
    */
   public void simSetCollectionValue(String collection, String key, Object value) throws Exception {
-    simSetCollectionValue(collection, key, value, false);
+    simSetCollectionValue(collection, key, value, false, false);
   }
 
   /**
@@ -1100,8 +1258,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param divide if the value is a {@link Number} and this param is true, then the value will be evenly
    *               divided by the number of replicas.
    */
-  public void simSetCollectionValue(String collection, String key, Object value, boolean divide) throws Exception {
-    simSetShardValue(collection, null, key, value, divide);
+  public void simSetCollectionValue(String collection, String key, Object value, boolean delta, boolean divide) throws Exception {
+    simSetShardValue(collection, null, key, value, delta, divide);
   }
 
   /**
@@ -1112,7 +1270,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param value property value
    */
   public void simSetShardValue(String collection, String shard, String key, Object value) throws Exception {
-    simSetShardValue(collection, shard, key, value, false);
+    simSetShardValue(collection, shard, key, value, false, false);
   }
 
   /**
@@ -1121,10 +1279,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param shard shard name. If null then all shards will be affected.
    * @param key property name
    * @param value property value
+   * @param delta if true then treat the numeric value as delta to add to the existing value
+   *              (or set the value to delta if missing)
    * @param divide if the value is a {@link Number} and this is true, then the value will be evenly
    *               divided by the number of replicas.
    */
-  public void simSetShardValue(String collection, String shard, String key, Object value, boolean divide) throws Exception {
+  public void simSetShardValue(String collection, String shard, String key, Object value, boolean delta, boolean divide) throws Exception {
     List<ReplicaInfo> infos = new ArrayList<>();
     nodeReplicaMap.forEach((n, replicas) -> {
       replicas.forEach(r -> {
@@ -1140,14 +1300,38 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection " + collection + " doesn't exist.");
     }
     if (divide && value != null && (value instanceof Number)) {
-      value = ((Number)value).doubleValue() / infos.size();
+      if ((value instanceof Long) || (value instanceof Integer)) {
+        value = ((Number) value).longValue() / infos.size();
+      } else {
+        value = ((Number) value).doubleValue() / infos.size();
+      }
     }
     for (ReplicaInfo r : infos) {
       synchronized (r) {
         if (value == null) {
           r.getVariables().remove(key);
         } else {
-          r.getVariables().put(key, value);
+          if (delta) {
+            Object prevValue = r.getVariables().get(key);
+            if (prevValue != null) {
+              if ((prevValue instanceof Number) && (value instanceof Number)) {
+                if (((prevValue instanceof Long) || (prevValue instanceof Integer)) &&
+                    ((value instanceof Long) || (value instanceof Integer))) {
+                  Long newValue = ((Number)prevValue).longValue() + ((Number)value).longValue();
+                  r.getVariables().put(key, newValue);
+                } else {
+                  Double newValue = ((Number)prevValue).doubleValue() + ((Number)value).doubleValue();
+                  r.getVariables().put(key, newValue);
+                }
+              } else {
+                throw new UnsupportedOperationException("delta cannot be applied to non-numeric values: " + prevValue + " and " + value);
+              }
+            } else {
+              r.getVariables().put(key, value);
+            }
+          } else {
+            r.getVariables().put(key, value);
+          }
         }
       }
     }
@@ -1172,9 +1356,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * List collections.
    * @return list of existing collections.
    */
-  public List<String> simListCollections() {
+  public List<String> simListCollections() throws InterruptedException {
     final Set<String> collections = new HashSet<>();
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       nodeReplicaMap.forEach((n, replicas) -> {
         replicas.forEach(ri -> collections.add(ri.getCollection()));
@@ -1216,6 +1400,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     return state;
   }
 
+  // this method uses a simple cache in collectionsStatesRef. Operations that modify
+  // cluster state should always reset this cache so that the changes become visible
   private Map<String, DocCollection> getCollectionStates() {
     Map<String, DocCollection> collectionStates = collectionsStatesRef.get();
     if (collectionStates != null) {
@@ -1263,7 +1449,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           slices.put(s, slice);
         });
         Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());
-        DocCollection dc = new DocCollection(coll, slices, collProps, DocRouter.DEFAULT, clusterStateVersion, ZkStateReader.CLUSTER_STATE);
+        Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
+        DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
+        DocCollection dc = new DocCollection(coll, slices, collProps, router, clusterStateVersion, ZkStateReader.CLUSTER_STATE);
         res.put(coll, dc);
       });
       collectionsStatesRef.set(res);

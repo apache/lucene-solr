@@ -14,20 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
 
-/**
- * Enum that represents trigger event types.
- */
-public enum TriggerEventType {
-  NODEADDED,
-  NODELOST,
-  REPLICALOST,
-  MANUAL,
-  SCHEDULED,
-  SEARCHRATE,
-  INDEXRATE,
-  INVALID,
-  METRIC,
-  INDEXSIZE
+package org.apache.lucene.search;
+
+import java.io.IOException;
+import java.util.Iterator;
+
+class AssertingMatches implements Matches {
+
+  private final Matches in;
+
+  AssertingMatches(Matches matches) {
+    this.in = matches;
+  }
+
+  @Override
+  public MatchesIterator getMatches(String field) throws IOException {
+    MatchesIterator mi = in.getMatches(field);
+    if (mi == null)
+      return null;
+    return new AssertingMatchesIterator(mi);
+  }
+
+  @Override
+  public Iterator<String> iterator() {
+    return in.iterator();
+  }
 }

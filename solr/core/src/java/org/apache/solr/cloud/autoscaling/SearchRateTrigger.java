@@ -181,10 +181,11 @@ public class SearchRateTrigger extends TriggerBase {
         } else {
           Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
           List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
-          info.getVariables().put(AutoScalingParams.RATE, rate);
+          info = (ReplicaInfo)info.clone();
+          info.getVariables().put(AutoScalingParams.RATE, ((Number)rate).doubleValue());
           perShard.add(info);
           AtomicDouble perNode = nodeRates.computeIfAbsent(node, s -> new AtomicDouble());
-          perNode.addAndGet((Double)rate);
+          perNode.addAndGet(((Number)rate).doubleValue());
         }
       });
     }
