@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -42,17 +43,17 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyLongField;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyLongField;
+import org.apache.solr.legacy.LegacyNumericUtils;
 
 // TODO:
 //   - test w/ del docs
@@ -144,6 +145,9 @@ public class TestDocTermOrds extends LuceneTestCase {
   @Nightly
   public void testTriggerUnInvertLimit() throws IOException {
     final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
+
+    assumeFalse("Don't run this massive test with MemoryPostingsFormat, as it can OOM",
+        Objects.equals(Codec.getDefault().postingsFormat().getName(), "Memory"));
 
     // Ensure enough terms inside of a single UnInvert-pass-structure to trigger the limit
     final int REF_LIMIT = (int) Math.pow(2, 24); // Maximum number of references within a single pass-structure

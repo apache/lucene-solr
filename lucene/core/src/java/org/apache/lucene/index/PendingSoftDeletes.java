@@ -73,7 +73,7 @@ final class PendingSoftDeletes extends PendingDeletes {
         this.pendingDeleteCount = 0;
       } else {
         assert info.info.maxDoc() > 0 : "maxDoc is 0";
-        applyUpdates(iterator);
+        pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
       }
       dvGeneration = info.getDocValuesGen();
     }
@@ -94,19 +94,26 @@ final class PendingSoftDeletes extends PendingDeletes {
     hardDeletes.reset();
   }
 
-  private void applyUpdates(DocIdSetIterator iterator) throws IOException {
-    final MutableBits mutableBits = getMutableBits();
+  /**
+   * Clears all bits in the given bitset that are set and are also in the given DocIdSetIterator.
+   *
+   * @param iterator the doc ID set iterator for apply
+   * @param bits the bit set to apply the deletes to
+   * @return the number of bits changed by this function
+   */
+  static int applySoftDeletes(DocIdSetIterator iterator, MutableBits bits) throws IOException {
+    assert iterator != null;
     int newDeletes = 0;
     int docID;
     while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (mutableBits.get(docID)) { // doc is live - clear it
-        mutableBits.clear(docID);
+      if (bits.get(docID)) { // doc is live - clear it
+        bits.clear(docID);
         newDeletes++;
         // now that we know we deleted it and we fully control the hard deletes we can do correct accounting
         // below.
       }
     }
-    pendingDeleteCount += newDeletes;
+    return newDeletes;
   }
 
   @Override
@@ -118,7 +125,7 @@ final class PendingSoftDeletes extends PendingDeletes {
         subs[i] = updatesToApply.get(i).iterator();
       }
       DocValuesFieldUpdates.Iterator iterator = DocValuesFieldUpdates.mergedIterator(subs);
-      applyUpdates(new DocIdSetIterator() {
+      pendingDeleteCount += applySoftDeletes(new DocIdSetIterator() {
         int docID = -1;
         @Override
         public int docID() {
@@ -139,7 +146,7 @@ final class PendingSoftDeletes extends PendingDeletes {
         public long cost() {
           throw new UnsupportedOperationException();
         }
-      });
+      }, getMutableBits());
       dvGeneration = info.getDocValuesGen();
     }
   }

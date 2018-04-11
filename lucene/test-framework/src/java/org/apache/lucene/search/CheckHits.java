@@ -591,8 +591,9 @@ public class CheckHits {
   }
 
   private static void doCheckMaxScores(Random random, Query query, IndexSearcher searcher) throws IOException {
-    Weight w1 = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
-    Weight w2 = searcher.createNormalizedWeight(query, ScoreMode.TOP_SCORES);
+    query = searcher.rewrite(query);
+    Weight w1 = searcher.createWeight(query, ScoreMode.COMPLETE, 1);
+    Weight w2 = searcher.createWeight(query, ScoreMode.TOP_SCORES, 1);
 
     // Check boundaries and max scores when iterating all matches
     for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {

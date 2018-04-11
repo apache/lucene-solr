@@ -38,6 +38,9 @@ API Changes
 * LUCENE-8113: TermContext has been renamed to TermStates, and can now be
   constructed lazily if term statistics are not required (Alan Woodward)
 
+* LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
+  been removed (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -95,6 +98,12 @@ Optimizations
 
 ======================= Lucene 7.4.0 =======================
 
+API Changes
+
+* LUCENE-8242: IndexSearcher.createNormalizedWeight() has been deprecated.
+  Instead use IndexSearcher.createWeight(), rewriting the query first.
+  (Alan Woodward)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together
@@ -121,6 +130,10 @@ New Features
   to selectively carry over soft_deleted document across merges for retention
   policies (Simon Willnauer, Mike McCandless, Robert Muir)
 
+* LUCENE-8237: Add a SoftDeletesDirectoryReaderWrapper that allows to respect
+  soft deletes if the reader is opened form a directory. (Simon Willnauer,
+  Mike McCandless, Uwe Schindler, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
@@ -128,6 +141,10 @@ Bug Fixes
 
 * LUCENE-8236: Filter duplicated points when creating GeoPath shapes to
   avoid creation of bogus planes. (Ignacio Vera)
+
+* LUCENE-8243: IndexWriter.addIndexes(Directory[]) did not properly preserve
+  index file names for updated doc values fields (Simon Willnauer,
+  Michael McCandless, Nhat Nguyen)
 
 Other
 
@@ -152,6 +169,11 @@ Build
   publishing .md5 hashes since the algorithm is broken (janhoy)
 
 * LUCENE-8230: Upgrade forbiddenapis to version 2.5.  (Uwe Schindler)
+
+Documentation
+
+* LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
+xo  (Mike Sokolov via Mike McCandless)
 
 ======================= Lucene 7.3.0 =======================
 
