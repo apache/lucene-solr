@@ -120,6 +120,12 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        // We need to check a single doc, so the dv query should perform better
+        return dvWeight.matches(context, doc);
+      }
+
+      @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         // We need to check a single doc, so the dv query should perform better
         return dvWeight.explain(context, doc);

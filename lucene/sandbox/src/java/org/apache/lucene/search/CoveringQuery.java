@@ -137,6 +137,28 @@ public final class CoveringQuery extends Query {
     }
 
     @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      LongValues minMatchValues = minimumNumberMatch.getValues(context, null);
+      if (minMatchValues.advanceExact(doc) == false) {
+        return null;
+      }
+      final long minimumNumberMatch = Math.max(1, minMatchValues.longValue());
+      long matchCount = 0;
+      List<Matches> subMatches = new ArrayList<>();
+      for (Weight weight : weights) {
+        Matches matches = weight.matches(context, doc);
+        if (matches != null) {
+          matchCount++;
+          subMatches.add(matches);
+        }
+      }
+      if (matchCount < minimumNumberMatch) {
+        return null;
+      }
+      return Matches.fromSubMatches(subMatches);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       LongValues minMatchValues = minimumNumberMatch.getValues(context, null);
       if (minMatchValues.advanceExact(doc) == false) {

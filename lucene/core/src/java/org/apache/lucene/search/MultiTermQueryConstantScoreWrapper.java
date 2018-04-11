@@ -203,6 +203,18 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       }
 
       @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        final Terms terms = context.reader().terms(query.field);
+        if (terms == null) {
+          return null;
+        }
+        if (terms.hasPositions() == false) {
+          return super.matches(context, doc);
+        }
+        return Matches.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, query.getTermsEnum(terms)));
+      }
+
+      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final WeightOrDocIdSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
