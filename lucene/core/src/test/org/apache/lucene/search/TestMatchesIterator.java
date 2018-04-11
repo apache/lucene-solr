@@ -99,7 +99,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   };
 
   void checkMatches(Query q, String field, int[][] expected) throws IOException {
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(expected[i][0], searcher.leafContexts));
       int doc = expected[i][0] - ctx.docBase;
@@ -132,7 +132,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
@@ -148,7 +148,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   void checkTerms(Query q, String field, String[][] expected) throws IOException {
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
@@ -412,7 +412,7 @@ public class TestMatchesIterator extends LuceneTestCase {
         .add(new TermQuery(new Term("id", "1")), BooleanClause.Occur.SHOULD)
         .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.MUST)
         .build();
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
 
     LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(1, searcher.leafContexts));
     Matches m = w.matches(ctx, 1 - ctx.docBase);
