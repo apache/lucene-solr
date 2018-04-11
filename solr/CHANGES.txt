@@ -90,6 +90,9 @@ New Features
 
 * SOLR-12181: Add index size autoscaling trigger, based on document count or size in bytes. (ab)
 
+* SOLR-11982: Add possibility to define replica order with the shards.preference parameter to e.g. prefer PULL replicas
+  for distributed queries. (Ere Maijala, Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
