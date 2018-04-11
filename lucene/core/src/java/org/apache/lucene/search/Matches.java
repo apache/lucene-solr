@@ -112,6 +112,12 @@ public interface Matches extends Iterable<String> {
    * Create a Matches for a single field
    */
   static Matches forField(String field, MatchesIteratorSupplier mis) throws IOException {
+
+    // The indirection here, using a Supplier object rather than a MatchesIterator
+    // directly, is to allow for multiple calls to Matches.getMatches() to return
+    // new iterators.  We still need to call MatchesIteratorSupplier.get() eagerly
+    // to work out if we have a hit or not.
+
     MatchesIterator mi = mis.get();
     if (mi == null) {
       return null;
