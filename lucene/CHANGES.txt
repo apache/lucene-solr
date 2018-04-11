@@ -134,6 +134,11 @@ New Features
   soft deletes if the reader is opened form a directory. (Simon Willnauer,
   Mike McCandless, Uwe Schindler, Adrien Grand)
 
+* LUCENE-8229: Add a method Weight.matches(LeafReaderContext, doc) that returns
+  an iterator over matching positions for a given query and document.  This
+  allows exact hit extraction and will enable implementation of accurate 
+  highlighters. (Alan Woodward, Adrien Grand, David Smiley)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for

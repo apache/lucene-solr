@@ -678,6 +678,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
       in.extractTerms(terms);
     }
 
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return in.matches(context, doc);
+    }
+
     private boolean cacheEntryHasReasonableWorstCaseSize(int maxDoc) {
       // The worst-case (dense) is a bit set which needs one bit per document
       final long worstCaseRamUsage = maxDoc / 8;

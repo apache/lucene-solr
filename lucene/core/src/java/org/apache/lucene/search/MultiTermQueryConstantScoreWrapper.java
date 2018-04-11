@@ -25,8 +25,8 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -200,6 +200,18 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
           }
           return new DefaultBulkScorer(scorer);
         }
+      }
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        final Terms terms = context.reader().terms(query.field);
+        if (terms == null) {
+          return null;
+        }
+        if (terms.hasPositions() == false) {
+          return super.matches(context, doc);
+        }
+        return Matches.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, query.getTermsEnum(terms)));
       }
 
       @Override
