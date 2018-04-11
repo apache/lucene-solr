@@ -626,9 +626,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * the index hasn't changed. See SOLR-9036
    */
   @Test
-  //Commented out 24-Feb 2018. JIRA marked as fixed.
-  // Still fails 26-Feb on master.
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
   public void doTestIndexFetchOnMasterRestart() throws Exception  {
     useFactory(null);
     try {
@@ -663,9 +660,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
       assertEquals(null, cmp);
 
-      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")));
+      int timesReplicated = Integer.parseInt(getSlaveDetails("timesIndexReplicated"));
       String timesFailed = getSlaveDetails("timesFailed");
-      assertEquals(0, Integer.parseInt(timesFailed != null ?  timesFailed : "0"));
+      if (null == timesFailed) {
+        timesFailed = "0";
+      }
+      int previousTimesFailed = Integer.parseInt(timesFailed);
+      // Sometimes replication will fail because master's core is still loading; make sure there was one success
+      assertEquals(1, timesReplicated - previousTimesFailed);
 
       masterJetty.stop();
 
@@ -683,7 +685,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertEquals(nDocs, numFound(slaveQueryRsp));
 
       int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
-      assertTrue(failed > 0);
+      assertTrue(failed > previousTimesFailed);
       assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
     } finally {
       resetFactory();
