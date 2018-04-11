@@ -466,7 +466,10 @@ public class Policy implements MapWriter {
 
   static {
     ops.put(CollectionAction.ADDREPLICA, () -> new AddReplicaSuggester());
+    ops.put(CollectionAction.DELETEREPLICA, () -> new UnsupportedSuggester(CollectionAction.DELETEREPLICA));
     ops.put(CollectionAction.MOVEREPLICA, () -> new MoveReplicaSuggester());
+    ops.put(CollectionAction.SPLITSHARD, () -> new SplitShardSuggester());
+    ops.put(CollectionAction.MERGESHARDS, () -> new UnsupportedSuggester(CollectionAction.MERGESHARDS));
   }
 
   public Map<String, List<Clause>> getPolicies() {

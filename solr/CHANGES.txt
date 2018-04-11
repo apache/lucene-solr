@@ -88,6 +88,8 @@ New Features
 
 * SOLR-12151: Add abstract MultiSolrCloudTestCase class. (Christine Poerschke)
 
+* SOLR-12181: Add index size autoscaling trigger, based on document count or size in bytes. (ab)
+
 Bug Fixes
 ----------------------
 

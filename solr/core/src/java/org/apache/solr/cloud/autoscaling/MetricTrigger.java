@@ -203,12 +203,12 @@ public class MetricTrigger extends TriggerBase {
       List<Op> ops = new ArrayList<>(hotNodes.size());
       for (String n : hotNodes.keySet()) {
         Op op = new Op(CollectionParams.CollectionAction.get(preferredOp));
-        op.setHint(Suggester.Hint.SRC_NODE, n);
+        op.addHint(Suggester.Hint.SRC_NODE, n);
         if (!collection.equals(Policy.ANY)) {
           if (!shard.equals(Policy.ANY)) {
-            op.setHint(Suggester.Hint.COLL_SHARD, new Pair<>(collection, shard));
+            op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(collection, shard));
           } else {
-            op.setHint(Suggester.Hint.COLL, collection);
+            op.addHint(Suggester.Hint.COLL, collection);
           }
         }
         ops.add(op);
