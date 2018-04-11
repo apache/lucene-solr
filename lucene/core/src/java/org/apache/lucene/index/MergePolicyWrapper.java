@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.util.IOSupplier;
+
 /**
  * A wrapper for {@link MergePolicy} instances.
  *
@@ -89,5 +91,10 @@ public class MergePolicyWrapper extends MergePolicy {
   @Override
   public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
     return in.keepFullyDeletedSegment(reader);
+  }
+
+  @Override
+  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    return in.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
   }
 }

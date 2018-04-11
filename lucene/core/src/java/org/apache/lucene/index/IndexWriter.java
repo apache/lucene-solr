@@ -5223,4 +5223,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return false;
   }
 
+
+  /**
+   * Returns the number of deletes a merge would claim back if the given segment is merged.
+   * @see MergePolicy#numDeletesToMerge(SegmentCommitInfo, int, org.apache.lucene.util.IOSupplier)
+   * @param info the segment to get the number of deletes for
+   * @lucene.experimental
+   */
+  public final int numDeletesToMerge(SegmentCommitInfo info) throws IOException {
+    MergePolicy mergePolicy = config.getMergePolicy();
+    final ReadersAndUpdates rld = readerPool.get(info, false);
+    int numDeletesToMerge;
+    if (rld != null) {
+      numDeletesToMerge = rld.numDeletesToMerge(mergePolicy);
+    } else {
+      numDeletesToMerge = mergePolicy.numDeletesToMerge(info,  0, null);
+    }
+    assert numDeletesToMerge <= info.info.maxDoc() :
+    "numDeletesToMerge: " + numDeletesToMerge + " > maxDoc: " + info.info.maxDoc();
+    return numDeletesToMerge;
+  }
 }

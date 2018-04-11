@@ -32,6 +32,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOSupplier;
 
 /**
  * This {@link MergePolicy} allows to carry over soft deleted documents across merges. The policy wraps
@@ -166,4 +167,30 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
         return numDocs;
       }
     };
-  }}
+  }
+
+  @Override
+  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    int numDeletesToMerge = super.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
+    if (numDeletesToMerge != 0) {
+      final CodecReader reader = readerSupplier.get();
+      if (reader.getLiveDocs() != null) {
+        Scorer scorer = getScorer(field, retentionQuerySupplier.get(), wrapLiveDocs(reader, null, reader.maxDoc()));
+        if (scorer != null) {
+          DocIdSetIterator iterator = scorer.iterator();
+          Bits liveDocs = reader.getLiveDocs();
+          int numDeletedDocs = reader.numDeletedDocs();
+          while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs.get(iterator.docID()) == false) {
+              numDeletedDocs--;
+            }
+          }
+          return numDeletedDocs;
+        }
+      }
+    }
+    assert numDeletesToMerge >= 0 : "numDeletesToMerge: " + numDeletesToMerge;
+    assert numDeletesToMerge <= info.info.maxDoc() : "numDeletesToMerge: " + numDeletesToMerge + " maxDoc:" + info.info.maxDoc();
+    return numDeletesToMerge;
+  }
+}
