@@ -21,7 +21,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 
 import junit.framework.Assert;
 import org.apache.lucene.index.IndexReader;
@@ -29,9 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static junit.framework.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -85,7 +82,6 @@ public class CheckHits {
   /**
    * Tests that a query matches the an expected set of documents using a
    * HitCollector.
-   * <p>
    * <p>
    * Note that when using the HitCollector API, documents will be collected
    * if they "match" regardless of what their score is.
@@ -159,7 +155,6 @@ public class CheckHits {
 
   /**
    * Tests that a query matches the an expected set of documents using Hits.
-   * <p>
    * <p>
    * Note that when using the Hits API, documents will only be returned
    * if they have a positive normalized score.
