@@ -119,7 +119,9 @@ public interface CollectionParams {
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
-    NONE(false, LockLevel.NONE)
+    NONE(false, LockLevel.NONE),
+    // TODO: not implemented yet
+    MERGESHARDS(true, LockLevel.SHARD)
     ;
     public final boolean isWrite;
 

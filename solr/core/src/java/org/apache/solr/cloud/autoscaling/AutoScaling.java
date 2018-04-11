@@ -180,6 +180,9 @@ public class AutoScaling {
         case SCHEDULED:
           t = new ScheduledTrigger(name);
         break;
+        case INDEXSIZE:
+          t = new IndexSizeTrigger(name);
+          break;
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }

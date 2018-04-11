@@ -17,9 +17,13 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -49,11 +53,17 @@ public class TriggerEvent implements MapWriter {
 
     public Op(CollectionParams.CollectionAction action, Suggester.Hint hint, Object hintValue) {
       this.action = action;
-      this.hints.put(hint, hintValue);
+      addHint(hint, hintValue);
     }
 
-    public void setHint(Suggester.Hint hint, Object value) {
-      hints.put(hint, value);
+    public void addHint(Suggester.Hint hint, Object value) {
+      hint.validator.accept(value);
+      if (hint.multiValued) {
+        Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
+        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
+      } else {
+        hints.put(hint, value == null ? null : String.valueOf(value));
+      }
     }
 
     public CollectionParams.CollectionAction getAction() {

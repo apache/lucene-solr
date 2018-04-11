@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Simulated {@link NodeStateProvider}.
  * Note: in order to setup node-level metrics use {@link #simSetNodeValues(String, Map)}. However, in order
- * to setup core-level metrics use {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean)}.
+ * to setup core-level metrics use {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)}.
  */
 public class SimNodeStateProvider implements NodeStateProvider {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -204,7 +204,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
 
   /**
    * Simulate getting replica metrics values. This uses per-replica properties set in
-   * {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean)} and
+   * {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)} and
    * similar methods.
    * @param node node id
    * @param tags metrics names

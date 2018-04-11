@@ -66,6 +66,10 @@ public class ReplicaInfo implements MapWriter {
     this.node = node;
   }
 
+  public Object clone() {
+    return new ReplicaInfo(name, core, collection, shard, type, node, variables);
+  }
+
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(name, (MapWriter) ew1 -> {
