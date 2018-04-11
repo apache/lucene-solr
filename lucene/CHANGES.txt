@@ -139,6 +139,10 @@ New Features
   allows exact hit extraction and will enable implementation of accurate 
   highlighters. (Alan Woodward, Adrien Grand, David Smiley)
 
+* LUCENE-8246: Allow to customize the number of deletes a merge claims. This
+  helps merge policies in the soft-delete case to correctly implement retention
+  policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for

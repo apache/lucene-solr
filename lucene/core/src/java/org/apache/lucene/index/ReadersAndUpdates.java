@@ -41,6 +41,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -86,6 +87,10 @@ final class ReadersAndUpdates {
   Sorter.DocMap sortMap;
 
   final AtomicLong ramBytesUsed = new AtomicLong();
+
+  // if set to true the pending deletes must be marked as shared next time the reader is
+  // returned from #getReader()
+  private boolean liveDocsSharedPending = false;
 
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
                     PendingDeletes pendingDeletes) {
@@ -196,12 +201,15 @@ final class ReadersAndUpdates {
       // We steal returned ref:
       reader = new SegmentReader(info, indexCreatedVersionMajor, context);
       pendingDeletes.onNewReader(reader, info);
+    } else if (liveDocsSharedPending) {
+      markAsShared();
     }
+
     // Ref for caller
     reader.incRef();
     return reader;
   }
-  
+
   public synchronized void release(SegmentReader sr) throws IOException {
     assert info == sr.getSegmentInfo();
     sr.decRef();
@@ -221,6 +229,7 @@ final class ReadersAndUpdates {
       } finally {
         reader = null;
       }
+      liveDocsSharedPending = false;
     }
 
     decRef();
@@ -237,7 +246,7 @@ final class ReadersAndUpdates {
     }
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
-    pendingDeletes.liveDocsShared();
+    markAsShared();
     if (liveDocs != null) {
       return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs,
           info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
@@ -247,6 +256,22 @@ final class ReadersAndUpdates {
       reader.incRef();
       return reader;
     }
+  }
+
+  synchronized int numDeletesToMerge(MergePolicy policy) throws IOException {
+    IOSupplier<CodecReader> readerSupplier = () -> {
+      if (this.reader == null) {
+        // get a reader and dec the ref right away we just make sure we have a reader
+        getReader(IOContext.READ).decRef();
+      }
+      if (reader.getLiveDocs() != pendingDeletes.getLiveDocs()
+          || reader.numDeletedDocs() != info.getDelCount() - pendingDeletes.numPendingDeletes()) {
+        // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
+        swapNewReaderWithLatestLiveDocs();
+      }
+      return reader;
+    };
+    return policy.numDeletesToMerge(info, pendingDeletes.numPendingDeletes(), readerSupplier);
   }
 
 
@@ -676,18 +701,7 @@ final class ReadersAndUpdates {
 
     // if there is a reader open, reopen it to reflect the updates
     if (reader != null) {
-      SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(), info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
-      boolean success2 = false;
-      try {
-        pendingDeletes.onNewReader(newReader, info);
-        reader.decRef();
-        reader = newReader;
-        success2 = true;
-      } finally {
-        if (success2 == false) {
-          newReader.decRef();
-        }
-      }
+      swapNewReaderWithLatestLiveDocs();
     }
 
     // writing field updates succeeded
@@ -711,6 +725,28 @@ final class ReadersAndUpdates {
                                              info, (System.nanoTime() - startTimeNS)/1000000000.0, newDVFiles));
     }
     return true;
+  }
+
+  private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
+    assert reader != null;
+    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
+        info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+    boolean success2 = false;
+    try {
+      pendingDeletes.onNewReader(newReader, info);
+      reader.decRef();
+      success2 = true;
+    } finally {
+      if (success2 == false) {
+        newReader.decRef();
+      }
+    }
+    return newReader;
+  }
+
+  private void swapNewReaderWithLatestLiveDocs() throws IOException {
+    reader = createNewReaderWithLatestLiveDocs(reader);
+    liveDocsSharedPending = true;
   }
 
   synchronized public void setIsMerging() {
@@ -743,26 +779,11 @@ final class ReadersAndUpdates {
     if (delCount != reader.numDeletedDocs()) {
       // beware of zombies:
       assert delCount > reader.numDeletedDocs(): "delCount=" + delCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs();
-      Bits liveDocs = pendingDeletes.getLiveDocs();
-      assert liveDocs != null;
-      
-      // Create a new reader with the latest live docs:
-      SegmentReader newReader = new SegmentReader(info, reader, liveDocs, info.info.maxDoc() - delCount);
-      boolean success = false;
-      try {
-        reader.decRef();
-        pendingDeletes.onNewReader(newReader, info);
-        success = true;
-      } finally {
-        if (success == false) {
-          newReader.close();
-        }
-      }
-      reader = newReader;
+      assert pendingDeletes.getLiveDocs() != null;
+      reader = createNewReaderWithLatestLiveDocs(reader);
     }
 
-    pendingDeletes.liveDocsShared();
-
+    markAsShared();
     assert verifyDocCounts();
 
     return reader;
@@ -793,6 +814,12 @@ final class ReadersAndUpdates {
 
   public synchronized boolean isFullyDeleted() {
     return pendingDeletes.isFullyDeleted();
+  }
+
+  private final void markAsShared() {
+    assert Thread.holdsLock(this);
+    liveDocsSharedPending = false;
+    pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
   
 }

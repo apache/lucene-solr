@@ -150,7 +150,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  #setCalibrateSizeByDeletes} is set. */
   protected long sizeDocs(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     if (calibrateSizeByDeletes) {
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.numDeletesToMerge(info);
       assert delCount <= info.info.maxDoc();
       return (info.info.maxDoc() - (long)delCount);
     } else {
@@ -388,7 +388,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     assert writer != null;
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = segmentInfos.info(i);
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.numDeletesToMerge(info);
       if (delCount > 0) {
         if (verbose(writer)) {
           message("  segment " + info.info.name + " has deletions", writer);
