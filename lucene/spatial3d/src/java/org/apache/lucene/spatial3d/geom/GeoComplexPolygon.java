@@ -603,6 +603,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
     //System.out.println(" Computing crossings between "+envelopePlane+" and ["+edge.startPoint+"->"+edge.endPoint+"]");
     
     final GeoPoint[] unboundedIntersectionPoints = envelopePlane.findIntersections(planetModel, edge.plane);
+    if (unboundedIntersectionPoints == null) {
+      return null;
+    }
     // Go through the intersection points one at a time.  Notes:
     // (1) So that we don't double-count, we can only include at most one point in the result per intersection.
     // (2) Single-solution results imply that the plane was not crossed.  The only time we consider them is if the edge ends on the plane, in which case we count it as a crossing.
