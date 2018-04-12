@@ -24,8 +24,6 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
 import org.junit.Test;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
-
 /**
  * Random test for polygons.
  */
