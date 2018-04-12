@@ -32,7 +32,9 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.CdcrParams;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,19 +187,20 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       // ATOMIC UPDATES
       req = new UpdateRequest();
       doc = new SolrInputDocument();
+      String atomicFieldName = "abc";
       ImmutableMap.of("", "");
       String atomicUpdateId = "cluster2_" + random().nextInt(numDocs_c2);
       doc.addField("id", atomicUpdateId);
       doc.addField("xyz", ImmutableMap.of("delete", ""));
-      doc.addField("abc", ImmutableMap.of("set", "ABC"));
+      doc.addField(atomicFieldName, ImmutableMap.of("set", "ABC"));
       req.add(doc);
       req.process(cluster2SolrClient);
       cluster2SolrClient.commit();
 
       String atomicQuery = "id:" + atomicUpdateId;
       response = cluster2SolrClient.query(new SolrQuery(atomicQuery));
-      assertEquals("cluster 2 wrong doc", "ABC", response.getResults().get(0).get("abc"));
-      assertEquals("cluster 1 wrong doc", "ABC", getDocFieldValue(cluster1SolrClient, atomicQuery, "ABC"));
+      assertEquals("cluster 2 wrong doc", "ABC", response.getResults().get(0).get(atomicFieldName));
+      assertEquals("cluster 1 wrong doc", "ABC", getDocFieldValue(cluster1SolrClient, atomicQuery, "ABC", atomicFieldName ));
 
 
       // logging cdcr clusters queue response
@@ -218,17 +221,16 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
     }
   }
 
-  private String getDocFieldValue(CloudSolrClient clusterSolrClient, String query, String match) throws Exception {
-    long start = System.nanoTime();
-    QueryResponse response = null;
-    while (System.nanoTime() - start <= TimeUnit.NANOSECONDS.convert(120, TimeUnit.SECONDS)) {
+  private String getDocFieldValue(CloudSolrClient clusterSolrClient, String query, String match, String field) throws Exception {
+    TimeOut waitTimeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!waitTimeOut.hasTimedOut()) {
       clusterSolrClient.commit();
-      response = clusterSolrClient.query(new SolrQuery(query));
-      if (match.equals(response.getResults().get(0).get("abc"))) {
-        break;
+      QueryResponse response = clusterSolrClient.query(new SolrQuery(query));
+      if (response.getResults().size() > 0 && match.equals(response.getResults().get(0).get(field))) {
+        return (String) response.getResults().get(0).get(field);
       }
       Thread.sleep(1000);
     }
-    return response != null ? (String) response.getResults().get(0).get("abc") : "";
+    return null;
   }
 }
