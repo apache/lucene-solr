@@ -45,7 +45,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testDeleteSoft() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()); // no soft delete field hier
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()); // no soft delete field here
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -97,8 +97,20 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, 0, 0);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, -1, -1, -1);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    for (int i = 0; i < si.maxDoc(); i++) {
+      writer.addDocument(new Document());
+    }
+    writer.forceMerge(1);
+    writer.commit();
+    DirectoryReader reader = writer.getReader();
+    assertEquals(1, reader.leaves().size());
+    SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     PendingSoftDeletes deletes = newPendingDeletes(commitInfo);
+    deletes.onNewReader(segmentReader, commitInfo);
+    reader.close();
+    writer.close();
     FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10));
@@ -152,10 +164,9 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    PendingSoftDeletes deletes = newPendingDeletes(segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getDocValuesGen(), Collections.emptyMap(), 0, 0);
+    PendingDeletes deletes = newPendingDeletes(segmentInfo);
+    deletes.onNewReader(segmentReader, segmentInfo);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3));
     deletes.onDocValuesUpdate(fieldInfo, updates);
