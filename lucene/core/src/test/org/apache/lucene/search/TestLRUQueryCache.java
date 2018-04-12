@@ -1480,16 +1480,15 @@ public class TestLRUQueryCache extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testDocValuesUpdatesDontBreakCache() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
-    //RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
     w.commit();
     DirectoryReader reader = DirectoryReader.open(w);
 
+    // IMPORTANT:
     // Don't use newSearcher(), because that will sometimes use an ExecutorService, and
     // we need to be single threaded to ensure that LRUQueryCache doesn't skip the cache
     // due to thread contention
@@ -1511,7 +1510,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.addDocument(doc);
     reader.close();
     reader = DirectoryReader.open(w);
-    searcher = newSearcher(reader);
+    searcher = new AssertingIndexSearcher(random(), reader); // no newSearcher(reader) - see comment above
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     searcher.setQueryCache(cache);
 
@@ -1520,7 +1519,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     reader.close();
     reader = DirectoryReader.open(w);
-    searcher = newSearcher(reader);
+    searcher = new AssertingIndexSearcher(random(), reader); // no newSearcher(reader) - see comment above
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     searcher.setQueryCache(cache);
 
@@ -1531,7 +1530,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.updateNumericDocValue(new Term("text", "text"), "field", 2l);
     reader.close();
     reader = DirectoryReader.open(w);
-    searcher = newSearcher(reader);
+    searcher = new AssertingIndexSearcher(random(), reader); // no newSearcher(reader) - see comment above
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     searcher.setQueryCache(cache);
 
