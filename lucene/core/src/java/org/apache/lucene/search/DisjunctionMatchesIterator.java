@@ -93,11 +93,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
         }
       }
     }
-    if (mis.size() == 0)
-      return null;
-    if (mis.size() == 1)
-      return mis.get(0);
-    return new DisjunctionMatchesIterator(mis);
+    return fromSubIterators(mis);
   }
 
   static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {

@@ -32,6 +32,8 @@ import org.apache.lucene.util.BytesRef;
  * Matches are ordered by start position, and then by end position.  Match intervals may overlap.
  *
  * @see Weight#matches(LeafReaderContext, int)
+ *
+ * @lucene.experimental
  */
 public interface MatchesIterator {
 

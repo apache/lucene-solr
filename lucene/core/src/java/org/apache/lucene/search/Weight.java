@@ -78,6 +78,7 @@ public abstract class Weight implements SegmentCacheable {
    *
    * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
+   * @lucene.experimental
    */
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
     Scorer scorer = scorer(context);
