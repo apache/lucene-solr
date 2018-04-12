@@ -52,6 +52,18 @@ public interface ShardParams {
   /** query purpose for shard requests */
   String SHARDS_PURPOSE = "shards.purpose";
 
+  /** Shards sorting rules */
+  String SHARDS_PREFERENCE = "shards.preference";
+
+  /** Replica type sort rule */
+  String SHARDS_PREFERENCE_REPLICA_TYPE = "replica.type";
+
+  /** Replica location sort rule */
+  String SHARDS_PREFERENCE_REPLICA_LOCATION = "replica.location";
+
+  /** Value denoting local replicas */
+  String REPLICA_LOCAL = "local";
+
   String _ROUTE_ = "_route_";
 
   /** Force a single-pass distributed query? (true/false) */

@@ -138,6 +138,46 @@ For example, a deadlock might occur in the case of two shards, each with just a 
 
 == preferLocalShards Parameter
 
+Deprecated, use `shards.preference=replica.location:local` instead (see below).
+
 Solr allows you to pass an optional boolean parameter named `preferLocalShards` to indicate that a distributed query should prefer local replicas of a shard when available. In other words, if a query includes `preferLocalShards=true`, then the query controller will look for local replicas to service the query instead of selecting replicas at random from across the cluster. This is useful when a query requests many fields or large fields to be returned per document because it avoids moving large amounts of data over the network when it is available locally. In addition, this feature can be useful for minimizing the impact of a problematic replica with degraded performance, as it reduces the likelihood that the degraded replica will be hit by other healthy replicas.
 
 Lastly, it follows that the value of this feature diminishes as the number of shards in a collection increases because the query controller will have to direct the query to non-local replicas for most of the shards. In other words, this feature is mostly useful for optimizing queries directed towards collections with a small number of shards and many replicas. Also, this option should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's CloudSolrClient will do. If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.
+
+== shards.preference Parameter
+
+Solr allows you to pass an optional string parameter named `shards.preference` to indicate that a distributed query should sort the available replicas in the given order of precedence within each shard. The syntax is: `shards.preference=property:value`. The order of the properties and the values are significant meaning that the first one is the primary sort, second one is secondary etc.
+
+IMPORTANT: `shards.preference` only works for distributed queries, i.e. queries targeting multiple shards. Not implemented yet for single shard scenarios
+
+The properties that can be specified are as follows:
+
+`replica.type`::
+One or more replica types that are preferred. Any combination of PULL, TLOG and NRT is allowed.
+
+`replica.location`::
+One or more replica locations that are preferred. A location starts with `http://hostname:port`. Matching is done for the given string as a prefix, so it's possible to e.g. leave out the port. `local` may be used as special value to denote any local replica running on the same Solr instance as the one handling the query. This is useful when a query requests many fields or large fields to be returned per document because it avoids moving large amounts of data over the network when it is available locally. In addition, this feature can be useful for minimizing the impact of a problematic replica with degraded performance, as it reduces the likelihood that the degraded replica will be hit by other healthy replicas.
+
+The value of `replica.location:local` diminishes as the number of shards (that have no locally-available replicas) in a collection increases because the query controller will have to direct the query to non-local replicas for most of the shards. In other words, this feature is mostly useful for optimizing queries directed towards collections with a small number of shards and many replicas. Also, this option should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's CloudSolrClient will do. If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.
+
+Examples:
+
+ * Prefer PULL replicas:
+   `shards.preference=replica.type:PULL`
+
+ * Prefer PULL replicas, or TLOG replicas if PULL replicas not available:
+   `shards.preference=replica.type:PULL,replica.type:TLOG`   
+
+ * Prefer any local replicas:
+   `shards.preference=replica.location:local`
+
+ * Prefer any replicas on a host called "server1" with "server2" as the secondary option:
+   `shards.preference=replica.location:http://server1,replica.location:http://server2`
+
+ * Prefer PULL replicas if available, otherwise TLOG replicas, and local ones among those:
+   `shards.preference=replica.type:PULL,replica.type:TLOG,replica.location:local`
+
+ * Prefer local replicas, and among them PULL replicas when available TLOG otherwise:
+   `shards.preference=replica.location:local,replica.type:PULL,replica.type:TLOG`
+
+Note that if you provide the settings in a query string, they need to be properly URL-encoded.

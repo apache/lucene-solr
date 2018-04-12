@@ -24,6 +24,10 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -96,6 +100,121 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     } finally {
       if (factory != null) factory.close();
       if (cc != null) cc.shutdown();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  public void testNodePreferenceRulesComparator() throws Exception {
+    List<Replica> replicas = new ArrayList<Replica>();
+    replicas.add(
+      new Replica(
+        "node1",
+        map(
+          ZkStateReader.BASE_URL_PROP, "http://host1:8983/solr",
+          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.CORE_NAME_PROP, "collection1",
+          ZkStateReader.REPLICA_TYPE, "NRT"
+        )
+      )
+    );
+    replicas.add(
+      new Replica(
+        "node2",
+        map(
+          ZkStateReader.BASE_URL_PROP, "http://host2:8983/solr",
+          ZkStateReader.NODE_NAME_PROP, "node2",
+          ZkStateReader.CORE_NAME_PROP, "collection1",
+          ZkStateReader.REPLICA_TYPE, "TLOG"
+        )
+      )
+    );
+    replicas.add(
+      new Replica(
+        "node3",
+        map(
+          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
+          ZkStateReader.NODE_NAME_PROP, "node3",
+          ZkStateReader.CORE_NAME_PROP, "collection1",
+          ZkStateReader.REPLICA_TYPE, "PULL"
+        )
+      )
+    );
+
+    // Simple replica type rule
+    List<String> rules = StrUtils.splitSmart(
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", 
+      ','
+    );
+    HttpShardHandlerFactory.NodePreferenceRulesComparator comparator = 
+      new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node2", replicas.get(1).getNodeName());
+
+    // Another simple replica type rule
+    rules = StrUtils.splitSmart(
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT", 
+      ','
+    );
+    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node2", replicas.get(0).getNodeName());
+    assertEquals("node1", replicas.get(1).getNodeName());
+
+    // replicaLocation rule
+    rules = StrUtils.splitSmart(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983", ',');
+    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node2", replicas.get(0).getNodeName());
+    assertEquals("node1", replicas.get(1).getNodeName());
+
+    // Add a replica so that sorting by replicaType:TLOG can cause a tie
+    replicas.add(
+      new Replica(
+        "node4",
+        map(
+          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
+          ZkStateReader.NODE_NAME_PROP, "node4",
+          ZkStateReader.CORE_NAME_PROP, "collection1",
+          ZkStateReader.REPLICA_TYPE, "TLOG"
+        )
+      )
+    );
+
+    // replicaType and replicaLocation combined rule
+    rules = StrUtils.splitSmart(
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2", 
+      ','
+    );
+    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node4", replicas.get(1).getNodeName());
+    assertEquals("node2", replicas.get(2).getNodeName());
+    assertEquals("node3", replicas.get(3).getNodeName());
+
+    // Bad rule
+    rules = StrUtils.splitSmart(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, ',');
+    try {
+      comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+      replicas.sort(comparator);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals("Invalid shards.preference rule: " + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, e.getMessage());
+    }
+
+    // Unknown rule
+    rules = StrUtils.splitSmart("badRule:test", ',');
+    try {
+      comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
+      replicas.sort(comparator);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals("Invalid shards.preference type: badRule", e.getMessage());
     }
   }
 
