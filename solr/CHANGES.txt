@@ -139,6 +139,9 @@ Bug Fixes
 
 * SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
   (Steve Rowe)
+
+* SOLR-12190: Need to properly escape output in GraphMLResponseWriter. (yonik)
+
  
 Optimizations
 ----------------------
