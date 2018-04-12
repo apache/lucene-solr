@@ -266,7 +266,9 @@ For more information, please also see Yonik Seeley's presentation on https://www
 
 == Document Centric Versioning Constraints
 
-Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
+Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field.
+However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version.
+In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
 The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
@@ -277,6 +279,7 @@ The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure 
 </processor>
 ----
 
+Note that `versionField` is a comma delimited list of fields to check for version numbers.
 Once configured, this update processor will reject (HTTP error code 409) any attempt to update an existing document where the value of the `my_version_l` field in the "new" document is not greater then the value of that field in the existing document.
 
 .versionField vs `\_version_`
@@ -288,6 +291,9 @@ The `\_version_` field used by Solr for its normal optimistic concurrency also h
 `DocBasedVersionConstraintsProcessorFactory` supports two additional configuration params which are optional:
 
 * `ignoreOldUpdates` - A boolean option which defaults to `false`. If set to `true` then instead of rejecting updates where the `versionField` is too low, the update will be silently ignored (and return a status 200 to the client).
-* `deleteVersionParam` - A String parameter that can be specified to indicate that this processor should also inspect Delete By Id commands. The value of this configuration option should be the name of a request parameter that the processor will now consider mandatory for all attempts to Delete By Id, and must be be used by clients to specify a value for the `versionField` which is greater then the existing value of the document to be deleted. When using this request param, any Delete By Id command with a high enough document version number to succeed will be internally converted into an Add Document command that replaces the existing document with a new one which is empty except for the Unique Key and `versionField` to keeping a record of the deleted version so future Add Document commands will fail if their "new" version is not high enough.
+* `deleteVersionParam` - A String parameter that can be specified to indicate that this processor should also inspect Delete By Id commands.
+The value of this configuration option should be the name of a request parameter that the processor will now consider mandatory for all attempts to Delete By Id, and must be be used by clients to specify a value for the `versionField` which is greater then the existing value of the document to be deleted.
+When using this request param, any Delete By Id command with a high enough document version number to succeed will be internally converted into an Add Document command that replaces the existing document with a new one which is empty except for the Unique Key and `versionField` to keeping a record of the deleted version so future Add Document commands will fail if their "new" version is not high enough.
+If `versionField` is specified as a list, then this parameter too must be specified as a comma delimited list of the same size so that the parameters correspond with the fields.
 
 Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml;hb=HEAD[test solrconfig.xml file] for additional information and example usages.

@@ -68,6 +68,9 @@ New Features
 * SOLR-11982: Add possibility to define replica order with the shards.preference parameter to e.g. prefer PULL replicas
   for distributed queries. (Ere Maijala, Tomás Fernández Löbbe)
 
+* SOLR-11336: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports a list of versioned fields.
+  (versionField config may now be a comma-delimited list). (Michael Braun via David Smiley)
+
 Bug Fixes
 ----------------------
 
