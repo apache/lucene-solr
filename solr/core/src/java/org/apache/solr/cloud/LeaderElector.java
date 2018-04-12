@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Leader Election process. This class contains the logic by which a
@@ -54,7 +56,7 @@ import java.util.regex.Pattern;
  * 
  */
 public  class LeaderElector {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final String ELECTION_NODE = "/election";
   
@@ -106,9 +108,12 @@ public  class LeaderElector {
     sortSeqs(seqs);
 
     String leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
-    if (!seqs.contains(leaderSeqNodeName)) {
-      log.warn("Our node is no longer in line to be leader");
-      return;
+    if (seqs.stream().noneMatch(s -> s.equalsIgnoreCase(leaderSeqNodeName))) {
+        log.info("None of the seqs{} contains this node name: {}", seqs.stream().collect(Collectors.joining(",", "[", "]")), leaderSeqNodeName);
+        log.warn("Our node is no longer in line to be leader");
+        final String diffs = seqs.stream().map(s -> StringUtils.difference(s, leaderSeqNodeName)).collect(Collectors.joining(",", "[", "]"));
+        log.info("Seq differences {}", diffs);
+        return;
     }
 
     // If any double-registrations exist for me, remove all but this latest one!
@@ -238,8 +243,9 @@ public  class LeaderElector {
     while (cont) {
       try {
         if(joinAtHead){
-          log.debug("Node {} trying to join election at the head", id);
+          log.info("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
+          log.info("Found nodes to join election {}", nodes.stream().collect(Collectors.joining("\n", "{", "}")));
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
                 CreateMode.EPHEMERAL_SEQUENTIAL, false);
