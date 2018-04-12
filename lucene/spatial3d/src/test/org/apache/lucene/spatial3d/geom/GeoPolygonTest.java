@@ -1428,7 +1428,7 @@ shape:
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testComplexPolygonPlaneOutsideWorld() {
     List<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, -0.5));
