@@ -67,7 +67,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   void onNewReader(SegmentReader reader, SegmentCommitInfo info) throws IOException {
     super.onNewReader(reader, info);
     hardDeletes.onNewReader(reader, info);
-    if (dvGeneration != info.getDocValuesGen()) { // only re-calculate this if we haven't seen this generation
+    if (dvGeneration < info.getDocValuesGen()) { // only re-calculate this if we haven't seen this generation
       final DocIdSetIterator iterator = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(field, reader);
       if (iterator == null) { // nothing is deleted we don't have a soft deletes field in this segment
         this.pendingDeleteCount = 0;
@@ -120,6 +120,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   void onDocValuesUpdate(FieldInfo info, List<DocValuesFieldUpdates> updatesToApply) throws IOException {
     if (field.equals(info.name)) {
       assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
+      assert dvGeneration != -2 : "docValues generation is still uninitialized";
       DocValuesFieldUpdates.Iterator[] subs = new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
       for(int i=0; i<subs.length; i++) {
         subs[i] = updatesToApply.get(i).iterator();
