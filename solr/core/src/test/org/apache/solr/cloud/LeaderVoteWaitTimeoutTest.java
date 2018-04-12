@@ -90,7 +90,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void basicTest() throws Exception {
     final String collectionName = "basicTest";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
@@ -127,7 +126,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testMostInSyncReplicasCanWinElection() throws Exception {
     final String collectionName = "collection1";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
@@ -187,15 +185,18 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(2)).reopen();
     cluster.getJettySolrRunner(0).stop();
 
-    // even replica2 joined election at the end of the queue, but it is the one with highest term
-    waitForState("Timeout waiting for new leader", collectionName, new CollectionStatePredicate() {
-      @Override
-      public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
+    try {
+      // even replica2 joined election at the end of the queue, but it is the one with highest term
+      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState) -> {
         Replica newLeader = collectionState.getSlice("shard1").getLeader();
         return newLeader.getName().equals(replica2.getName());
-      }
-    });
-
+      });
+    } catch (Exception e) {
+      List<String> children = zkClient().getChildren("/collections/"+collectionName+"/leader_elect/shard1/election",
+          null, true);
+      LOG.info("{} election nodes:{}", collectionName, children);
+      throw e;
+    }
     cluster.getJettySolrRunner(0).start();
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
 
