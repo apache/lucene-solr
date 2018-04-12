@@ -971,12 +971,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       */
     private int countCrossings(final Edge edge,
       final Plane envelopePlane, final Membership envelopeBound) {
-      final GeoPoint[] intersections = edge.plane.findIntersections(planetModel, envelopePlane, edge.startPlane, edge.endPlane, envelopeBound);
+      final GeoPoint[] intersections = edge.plane.findIntersections(planetModel, envelopePlane, envelopeBound);
       int crossings = 0;
       if (intersections != null) {
         for (final GeoPoint intersection : intersections) {
-          // It's unique, so assess it
-          crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
+            // It's unique, so assess it
+            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          }
         }
       }
       return crossings;
@@ -1062,12 +1064,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       */
     private int countCrossings(final Edge edge,
       final Plane envelopePlane, final Membership envelopeBound1, final Membership envelopeBound2) {
-      final GeoPoint[] intersections = edge.plane.findIntersections(planetModel, envelopePlane, edge.startPlane, edge.endPlane, envelopeBound1, envelopeBound2);
+      final GeoPoint[] intersections = edge.plane.findIntersections(planetModel, envelopePlane, envelopeBound1, envelopeBound2);
       int crossings = 0;
       if (intersections != null) {
         for (final GeoPoint intersection : intersections) {
-          // It's unique, so assess it
-          crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
+            // It's unique, so assess it
+            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          }
         }
       }
       return crossings;
@@ -1381,35 +1385,39 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private int countCrossings(final Edge edge,
       final Plane travelEnvelopePlane, final Membership travelEnvelopeBound1, final Membership travelEnvelopeBound2,
       final Plane testPointEnvelopePlane, final Membership testPointEnvelopeBound1, final Membership testPointEnvelopeBound2) {
-      final GeoPoint[] travelIntersections = edge.plane.findIntersections(planetModel, travelEnvelopePlane, edge.startPlane, edge.endPlane, travelEnvelopeBound1, travelEnvelopeBound2);
-      final GeoPoint[] testPointIntersections = edge.plane.findIntersections(planetModel, testPointEnvelopePlane, edge.startPlane, edge.endPlane, testPointEnvelopeBound1, testPointEnvelopeBound2);
+      final GeoPoint[] travelIntersections = edge.plane.findIntersections(planetModel, travelEnvelopePlane, travelEnvelopeBound1, travelEnvelopeBound2);
+      final GeoPoint[] testPointIntersections = edge.plane.findIntersections(planetModel, testPointEnvelopePlane, testPointEnvelopeBound1, testPointEnvelopeBound2);
       int crossings = 0;
       if (travelIntersections != null) {
         for (final GeoPoint intersection : travelIntersections) {
-          // Make sure it's not a dup
-          boolean notDup = true;
-          if (testPointIntersections != null) {
-            for (final GeoPoint otherIntersection : testPointIntersections) {
-              if (intersection.isNumericallyIdentical(otherIntersection)) {
-                //System.out.println("  Points "+intersection+" and "+otherIntersection+" are duplicates");
-                notDup = false;
-                break;
+          if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
+            // Make sure it's not a dup
+            boolean notDup = true;
+            if (testPointIntersections != null) {
+              for (final GeoPoint otherIntersection : testPointIntersections) {
+                if (edge.startPlane.strictlyWithin(otherIntersection) && edge.endPlane.strictlyWithin(otherIntersection) && intersection.isNumericallyIdentical(otherIntersection)) {
+                  //System.out.println("  Points "+intersection+" and "+otherIntersection+" are duplicates");
+                  notDup = false;
+                  break;
+                }
               }
             }
+            if (!notDup) {
+              continue;
+            }
+            // It's unique, so assess it
+            //System.out.println("  Assessing travel envelope intersection point "+intersection+"...");
+            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
           }
-          if (!notDup) {
-            continue;
-          }
-          // It's unique, so assess it
-          //System.out.println("  Assessing travel envelope intersection point "+intersection+"...");
-          crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
         }
       }
       if (testPointIntersections != null) {
         for (final GeoPoint intersection : testPointIntersections) {
-          // It's unique, so assess it
-          //System.out.println("  Assessing testpoint envelope intersection point "+intersection+"...");
-          crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
+            // It's unique, so assess it
+            //System.out.println("  Assessing testpoint envelope intersection point "+intersection+"...");
+            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+          }
         }
       }
       return crossings;

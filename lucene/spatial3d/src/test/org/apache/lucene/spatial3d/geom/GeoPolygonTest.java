@@ -1428,7 +1428,6 @@ shape:
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testComplexPolygonPlaneOutsideWorld() {
     List<GeoPoint> points = new ArrayList<>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.5, -0.5));
@@ -1503,7 +1502,6 @@ shape:
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   public void testLUCENE8245() {
     //POLYGON((-70.19447784626787 -83.117346007187,0.0 2.8E-322,-139.99870438810106 7.994601469571884,-143.14292702670522 -18.500141088122664,-158.7373186858464 -35.42942085357812,-70.19447784626787 -83.117346007187))
     final List<GeoPoint> points = new ArrayList<>();
