@@ -24,6 +24,8 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
 import org.junit.Test;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
+
 /**
  * Random test for polygons.
  */
@@ -92,7 +94,7 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    * biased doubles.
    */
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8245")
   @Repeat(iterations = 10)
   public void testComparePolygons() {
     final PlanetModel planetModel = randomPlanetModel();

@@ -234,6 +234,18 @@ public class SidedPlane extends Plane implements Membership {
     return sigNum == this.sigNum;
   }
 
+  public boolean strictlyWithin(final Vector v) {
+    double evalResult = evaluate(v.x, v.y, v.z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
+  public boolean strictlyWithin(double x, double y, double z) {
+    double evalResult = evaluate(x, y, z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
