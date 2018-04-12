@@ -81,37 +81,37 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.testPointFixedZPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
     
     Plane fixedYAbovePlane = new Plane(testPointFixedYPlane, true);
-    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumYValue() - fixedYAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
         fixedYAbovePlane = null;
     }
     this.testPointFixedYAbovePlane = fixedYAbovePlane;
     
     Plane fixedYBelowPlane = new Plane(testPointFixedYPlane, false);
-    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumYValue() - fixedYBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 ||  planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
         fixedYBelowPlane = null;
     }
     this.testPointFixedYBelowPlane = fixedYBelowPlane;
     
     Plane fixedXAbovePlane = new Plane(testPointFixedXPlane, true);
-    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumXValue() - fixedXAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
         fixedXAbovePlane = null;
     }
     this.testPointFixedXAbovePlane = fixedXAbovePlane;
     
     Plane fixedXBelowPlane = new Plane(testPointFixedXPlane, false);
-    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumXValue() - fixedXBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
         fixedXBelowPlane = null;
     }
     this.testPointFixedXBelowPlane = fixedXBelowPlane;
     
     Plane fixedZAbovePlane = new Plane(testPointFixedZPlane, true);
-    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumZValue() - fixedZAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 ||planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
         fixedZAbovePlane = null;
     }
     this.testPointFixedZAbovePlane = fixedZAbovePlane;
     
     Plane fixedZBelowPlane = new Plane(testPointFixedZPlane, false);
-    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumZValue() - fixedZBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
         fixedZBelowPlane = null;
     }
     this.testPointFixedZBelowPlane = fixedZBelowPlane;
@@ -234,32 +234,32 @@ class GeoComplexPolygon extends GeoBasePolygon {
       final Plane travelPlaneFixedZ = new Plane(0.0, 0.0, 1.0, -z);
 
       Plane fixedYAbovePlane = new Plane(travelPlaneFixedY, true);
-      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumYValue() - fixedYAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
           fixedYAbovePlane = null;
       }
       
       Plane fixedYBelowPlane = new Plane(travelPlaneFixedY, false);
-      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumYValue() - fixedYBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
           fixedYBelowPlane = null;
       }
       
       Plane fixedXAbovePlane = new Plane(travelPlaneFixedX, true);
-      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumXValue() - fixedXAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
           fixedXAbovePlane = null;
       }
       
       Plane fixedXBelowPlane = new Plane(travelPlaneFixedX, false);
-      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumXValue() - fixedXBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
           fixedXBelowPlane = null;
       }
       
       Plane fixedZAbovePlane = new Plane(travelPlaneFixedZ, true);
-      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumZValue() - fixedZAbovePlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
           fixedZAbovePlane = null;
       }
       
       Plane fixedZBelowPlane = new Plane(travelPlaneFixedZ, false);
-      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() >= Vector.MINIMUM_RESOLUTION || planetModel.getMinimumZValue() - fixedZBelowPlane.D >= Vector.MINIMUM_RESOLUTION) {
+      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
           fixedZBelowPlane = null;
       }
 
@@ -1208,12 +1208,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
           travelOutsidePlane = travelAbovePlane;
           testPointOutsidePlane = testPointAbovePlane;
           insideInsidePoints = belowBelow;
-        } else {
+        } else if (belowAbove.length > 0) {
           travelInsidePlane = travelBelowPlane;
           testPointInsidePlane = testPointAbovePlane;
           travelOutsidePlane = travelAbovePlane;
           testPointOutsidePlane = testPointBelowPlane;
           insideInsidePoints = belowAbove;
+        } else {
+          throw new IllegalStateException("Can't find traversal intersection among: "+travelAbovePlane+", "+testPointAbovePlane+", "+travelBelowPlane+", "+testPointBelowPlane);
         }
         
         // Get the inside-inside intersection point
@@ -1297,7 +1299,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // We've never seen this edge before.  Evaluate it in the context of inner and outer planes.
       computeInsideOutside();
 
-      /* 
+      /*
       System.out.println("\nThe following edges should intersect the travel/testpoint planes:");
       Edge thisEdge = edge;
       while (true) {
@@ -1314,8 +1316,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
           break;
         }
       }
-      */
-      /*
+
       System.out.println("");
       System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
       */
@@ -1390,6 +1391,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
           if (testPointIntersections != null) {
             for (final GeoPoint otherIntersection : testPointIntersections) {
               if (intersection.isNumericallyIdentical(otherIntersection)) {
+                //System.out.println("  Points "+intersection+" and "+otherIntersection+" are duplicates");
                 notDup = false;
                 break;
               }
@@ -1399,14 +1401,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
             continue;
           }
           // It's unique, so assess it
-          //System.out.println("  Assessing travel intersection point "+intersection+"...");
+          //System.out.println("  Assessing travel envelope intersection point "+intersection+"...");
           crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
         }
       }
       if (testPointIntersections != null) {
         for (final GeoPoint intersection : testPointIntersections) {
           // It's unique, so assess it
-          //System.out.println("  Assessing testpoint intersection point "+intersection+"...");
+          //System.out.println("  Assessing testpoint envelope intersection point "+intersection+"...");
           crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
         }
       }
