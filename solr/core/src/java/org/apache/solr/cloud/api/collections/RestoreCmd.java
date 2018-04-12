@@ -258,7 +258,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           propMap.put(ASYNC, asyncId);
         }
         ocmh.addPropertyParams(message, propMap);
-
         ocmh.addReplica(clusterState, new ZkNodeProps(propMap), new NamedList(), null);
       }
 
@@ -272,10 +271,30 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         params.set(NAME, "snapshot." + slice.getName());
         params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
         params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-
         ocmh.sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
       }
       ocmh.processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
+
+
+      for (Slice s: restoreCollection.getSlices()) {
+        for (Replica r : s.getReplicas()) {
+          String nodeName = r.getNodeName();
+          String coreNodeName = r.getCoreName();
+          Replica.State stateRep  = r.getState();
+
+          log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}"
+              , nodeName, coreNodeName, stateRep.name());
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+          params.set(CoreAdminParams.NAME, coreNodeName);
+
+          ocmh.sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
+        }
+
+        ocmh.processResponses(new NamedList(), shardHandler, true, "REQUESTAPPLYUPDATES calls did not succeed", asyncId, requestMap);
+
+      }
 
       //Mark all shards in ACTIVE STATE
       {
@@ -287,9 +306,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         }
         inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
       }
-
-      //refresh the location copy of collection state
-      restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
       if (totalReplicasPerShard > 1) {
         log.info("Adding replicas to restored collection={}", restoreCollection);
