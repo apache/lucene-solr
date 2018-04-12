@@ -142,6 +142,7 @@ Bug Fixes
 
 * SOLR-12190: Need to properly escape output in GraphMLResponseWriter. (yonik)
 
+* SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
  
 Optimizations
 ----------------------
