@@ -619,6 +619,7 @@ final class ReadersAndUpdates {
       final SegmentReader reader;
       if (this.reader == null) {
         reader = new SegmentReader(info, indexCreatedVersionMajor, IOContext.READONCE);
+        pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;
       }

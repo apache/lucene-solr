@@ -52,7 +52,10 @@ class PendingDeletes {
   }
 
   PendingDeletes(SegmentCommitInfo info) {
-    this(info, null, false);
+    this(info, null, info.hasDeletions() == false);
+    // if we don't have deletions we can mark it as initialized since we might receive deletes on a segment
+    // without having a reader opened on it ie. after a merge when we apply the deletes that IW received while merging.
+    // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
   }
 
   private PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
@@ -65,6 +68,9 @@ class PendingDeletes {
 
 
   protected MutableBits getMutableBits() throws IOException {
+    // if we pull mutable bits but we haven't been initialized something is completely off.
+    // this means we receive deletes without having the bitset that is on-disk ready to be cloned
+    assert liveDocsInitialized : "can't delete if liveDocs are not initialized";
     if (liveDocsShared) {
       // Copy on write: this means we've cloned a
       // SegmentReader sharing the current liveDocs
