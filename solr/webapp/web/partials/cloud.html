@@ -48,6 +48,54 @@ limitations under the License.
 
     </div>
 
+    <div id="nodes-content" class="content clearfix" ng-show="showNodes">
+      <table id="nodes-table">
+          <tr>
+              <th>Node</th>
+              <th>Uptime</th>
+              <th>Load</th>
+              <th>CPU</th>
+              <th>Heap</th>
+              <th>Disk</th>
+              <th>Collections</th>
+              <th>Cores</th>
+          </tr>
+          <tr ng-if="nodes.length==0">
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+              <td>NA</td>
+          </tr>
+          <tr ng-repeat="(key, n) in nodes | orderBy:'key.order'">
+              <td>
+                <div class="node-name"><a href="{{n.base_url}}">{{key}}</a></div>
+                <div class="node-spec">Ubuntu 8cpu 64Gb Uptime: 3d</div>
+              </td>
+              <td><div class="node-uptime">5h</div></td>
+              <td><div class="node-load">1.3</div></td>
+              <td><div class="node-cpu">12%</div></td>
+              <td>
+                <div class="node-ram">60%</div>
+              </td>
+              <td><div class="node-disk">30%</div></td>
+              <td>
+                <div ng-repeat="c in n.collections">
+                  {{ c }}
+                </div>
+              </td>
+              <td>
+                <div ng-repeat="core in n.cores">
+                  <a href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.core }}</a> ({{core.leader ? "leader" : "replica"}})
+                </div>                
+              </td>
+          </tr>
+      </table>
+    </div>
+    
     <div graph data="graphData" leaf-count="leafCount" helper-data="helperData" is-radial="isRadial" id="graph-content" class="content clearfix" ng-show="showGraph">
 
       <div id="canvas"></div>

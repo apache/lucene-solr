@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants) {
+    function($scope, $location, Zookeeper, Constants, Nodes, Collections) {
 
         $scope.showDebug = false;
 
@@ -26,9 +26,9 @@ solrAdminApp.controller('CloudController',
 
         $scope.closeDebug = function() {
             $scope.showDebug = false;
-        }
+        };
 
-        var view = $location.search().view ? $location.search().view : "graph";
+        var view = $location.search().view ? $location.search().view : "nodes";
         if (view == "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
@@ -38,9 +38,102 @@ solrAdminApp.controller('CloudController',
         } else if (view == "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
+        } else if (view == "nodes") {
+            $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
+            nodesSubController($scope, Zookeeper, Nodes, Collections);
         }
     }
 );
+
+function getOrCreateObj(name, object) {
+    if (name in object) {
+        entry = object[name];
+    } else {
+        entry = {};
+        object[name] = entry;
+    }
+    return entry;
+}
+
+function getOrCreateList(name, object) {
+    if (name in object) {
+        entry = object[name];
+    } else {
+        entry = [];
+        object[name] = entry;
+    }
+    return entry;
+}
+
+function ensureInList(string, list) {
+    if (list.indexOf(string) === -1) {
+        list.push(string);
+    }
+}
+
+var nodesSubController = function($scope, Zookeeper, Nodes, Collections) {
+    $scope.showNodes = true;
+    $scope.showTree = false;
+    $scope.showGraph = false;
+    $scope.showData = false;
+  
+    // Collections.status({}, function(data) {
+    //   console.log("Clusterstatus: " + JSON.stringify(data, undefined, 2)); 
+    // });
+
+    Collections.status(function (data) {
+        var nodes = {};
+        var hosts = {};
+
+        for (var name in data.cluster.collections) {
+            var collection = data.cluster.collections[name];
+            collection.name = name;
+            var shards = collection.shards;
+            collection.shards = [];
+            for (var shardName in shards) {
+                var shard = shards[shardName];
+                shard.name = shardName;
+                shard.collection = collection.name;
+                var replicas = shard.replicas;
+                shard.replicas = [];
+                for (var replicaName in replicas) {
+                    var core = replicas[replicaName];
+                    core.name = replicaName;
+                    core.collection = collection.name;
+                    core.shard = shard.name;
+                    core.shard_state = shard.state;
+                    
+                    var node_name = core['node_name']; 
+                    var node = getOrCreateObj(node_name, nodes);
+                    var cores = getOrCreateList("cores", node);
+                    cores.push(core);
+                    node['base_url'] = core.base_url;
+                    var collections = getOrCreateList("collections", node);
+                    ensureInList(core.collection, collections);
+                    var host_name = node_name.split(":")[0];
+                    var host = getOrCreateObj(host_name, hosts);
+                    var host_nodes = getOrCreateList("nodes", host);
+                    ensureInList(node_name, host_nodes);
+                }
+            }
+        }
+
+        console.log("Nodes:\n" + JSON.stringify(nodes, undefined, 2));
+        // console.log("Hosts:\n" + JSON.stringify(hosts, undefined, 2));
+        
+        $scope.live_nodes = data.cluster.live_nodes;
+        all_nodes = [];
+        for (n in data.cluster.live_nodes) {
+            if (!(data.cluster.live_nodes[n] in nodes)) {
+                nodes[data.cluster.live_nodes[n]] = {};
+            }
+        }
+        $scope.nodes = nodes;
+        $scope.hosts = hosts;
+        
+    });
+    
+};                 
 
 var treeSubController = function($scope, Zookeeper) {
     $scope.showTree = true;
@@ -114,7 +207,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                 live_nodes[data.tree[0].children[c].data.title] = true;
             }
 
-            var params = {view: "graph"};
+            var params = {view: "nodes"};
             if ($scope.rows) {
                 params.start = $scope.pos;
                 params.rows = $scope.rows;

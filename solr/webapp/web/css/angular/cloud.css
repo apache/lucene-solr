@@ -434,3 +434,42 @@ limitations under the License.
 {
   stroke: #e9e9e9;
 }
+
+/* Nodes tab */
+#nodes-table {
+  border-collapse: collapse;
+}
+
+#nodes-table td, #nodes-table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+#nodes-table th {
+  font-weight: bolder;
+  font-stretch: extra-expanded;
+}
+#content #cloud #nodes-content #nodes-table
+{
+  border-top: 1px solid #c0c0c0;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+#content #cloud #nodes-content .node-name a
+{
+  font-weight: bold;
+  font-size: larger;
+}
+#content #cloud #nodes-content .node-spec
+{
+  font-style: italic;
+}
+#content #cloud #nodes-content .node-uptime,
+#content #cloud #nodes-content .node-load,
+#content #cloud #nodes-content .node-cpu,
+#content #cloud #nodes-content .node-ram,
+#content #cloud #nodes-content .node-disk
+{
+  font-weight: bolder;
+  font-size: 25px;
+}
