@@ -99,6 +99,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   // This is a fairly complete test where we set many options and see that it both affected the created
   //  collection and that the alias metadata was saved accordingly
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testV2() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
@@ -180,6 +181,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testV1() throws Exception {
     final String aliasName = getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -223,6 +225,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   // TZ should not affect the first collection name if absolute date given for start
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testTimezoneAbsoluteDate() throws Exception {
     final String aliasName = getTestName();
     try (SolrClient client = getCloudSolrClient(cluster)) {
@@ -241,6 +244,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testCollectionNamesMustBeAbsent() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "_default", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "_default", 1, 1).process(cluster.getSolrClient());
