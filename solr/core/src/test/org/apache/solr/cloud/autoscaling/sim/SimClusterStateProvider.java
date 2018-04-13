@@ -1049,9 +1049,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         for (String id : deletes) {
           Slice s = router.getTargetSlice(id, null, null, req.getParams(), coll);
           // NOTE: we don't use getProperty because it uses PROPERTY_PROP_PREFIX
-          String numDocsStr = s.getLeader().getStr("SEARCHER.searcher.numDocs");
+          Replica leader = s.getLeader();
+          if (leader == null) {
+            LOG.debug("-- no leader in " + s);
+            continue;
+          }
+          String numDocsStr = leader.getStr("SEARCHER.searcher.numDocs");
           if (numDocsStr == null) {
-            LOG.debug("-- no docs in " + s.getLeader());
+            LOG.debug("-- no docs in " + leader);
             continue;
           }
           long numDocs = Long.parseLong(numDocsStr);
