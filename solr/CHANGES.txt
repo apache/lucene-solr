@@ -136,6 +136,9 @@ Bug Fixes
 * SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
 
 * SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
  
 Optimizations
 ----------------------
