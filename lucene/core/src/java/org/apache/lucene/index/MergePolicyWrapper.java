@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.util.IOSupplier;
-
 /**
  * A wrapper for {@link MergePolicy} instances.
  * @deprecated replace with FilterMergePolicy
