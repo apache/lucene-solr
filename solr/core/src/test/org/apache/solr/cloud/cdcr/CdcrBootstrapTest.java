@@ -105,7 +105,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 
         // setup the target cluster
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
-        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 2)
+            .setMaxShardsPerNode(2)
             .process(target.getSolrClient());
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
@@ -118,6 +119,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         log.info("Cdcr queue response: " + response.getResponse());
         long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
+        assertTrue(CdcrTestsUtil.assertShardInSync("cdcr-target", "shard1", targetSolrClient)); // with more than 1 replica
 
         params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.COLLECTIONCHECKPOINT.toString());
@@ -300,5 +302,4 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       target.shutdown();
     }
   }
-
 }
