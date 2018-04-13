@@ -25,6 +25,7 @@
       - icu: Analyzers that use functionality from ICU
       - kuromoji: Japanese Morphological Analyzer
       - morfologik: Morfologik Stemmer
+      - nori: Korean Morphological Analyzer
       - smartcn: Smart Analyzer for Simplified Chinese Text
       - stempel: Algorithmic Stemmer for Polish
       - uima: UIMA Analysis module
@@ -65,6 +66,10 @@
     <ant dir="morfologik" />
   </target>
 
+  <target name="nori">
+    <ant dir="nori" />
+  </target>
+
   <target name="opennlp">
     <ant dir="opennlp" />
   </target>
@@ -86,7 +91,7 @@
   </target>
 
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,icu,kuromoji,morfologik,opennlp,phonetic,smartcn,stempel,uima" />
+  <target name="compile" depends="common,icu,kuromoji,morfologik,nori,opennlp,phonetic,smartcn,stempel,uima" />
 
   <target name="clean">
     <forall-analyzers target="clean"/>
