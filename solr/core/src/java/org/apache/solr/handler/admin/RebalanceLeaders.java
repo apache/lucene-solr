@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
@@ -173,21 +172,38 @@ class RebalanceLeaders {
       // watching the leader node..
 
       String firstWatcher = electionNodes.get(1);
+      log.info("Nodes are {} and first watcher is {}", electionNodes.stream().collect(Collectors.joining(",","[", "]")), firstWatcher);
 
-      if (LeaderElector.getNodeName(firstWatcher).equals(replica.getName()) == false) {
+      final Integer firstWatcherSeq = LeaderElector.getSeq(firstWatcher);
+
+      final boolean sameSeqAsFirstWatcher = electionNodes.stream()
+              .filter(watcher-> LeaderElector.getNodeName(watcher).equals(replica.getName()))
+              .findFirst()
+              .map(LeaderElector::getSeq)
+              .map(firstWatcherSeq::equals)
+              .orElse(false);
+
+      if(sameSeqAsFirstWatcher){
+        log.info("We {} might be the first watcher. Sending to tail any nodes with the same Sequence", replica.getName());
+        this.queueNodesWithSameSequence(collectionName, slice, replica, firstWatcherSeq);
+      }
+      //if we aren't the first watcher, become the first watcher
+      else if (!LeaderElector.getNodeName(firstWatcher).equals(replica.getName())) {
+        log.info("We {} are not the first watcher. Becoming first watcher", replica.getName());
         makeReplicaFirstWatcher(collectionName, slice, replica);
       }
+      else log.info("We {} are already the first watcher. Adding Core1 to the tail", replica.getName());
 
       String coreName = slice.getReplica(LeaderElector.getNodeName(electionNodes.get(0))).getStr(CORE_NAME_PROP);
       log.info("Core {} rejoining election", coreName);
       rejoinElection(collectionName, slice, electionNodes.get(0), coreName, false);
       log.info("Core {} waiting for node change", coreName);
-      waitForNodeChange(collectionName, slice, electionNodes.get(0), null);
-
+      waitForNodeChange(collectionName, slice, electionNodes.get(0));
 
       return; // Done with this slice, skip the rest of the replicas.
     }
   }
+
   // Put the replica in at the head of the queue and send all nodes with the same sequence number to the back of the list
   void makeReplicaFirstWatcher(String collectionName, Slice slice, Replica replica)
       throws KeeperException, InterruptedException {
@@ -197,7 +213,7 @@ class RebalanceLeaders {
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
     log.info("First, queue up the preferred leader at the head of the queue");
-    String newNode = null;
+    int  newSeq = -1;
     String myElectionNode = "";
     for (String electionNode : electionNodes) {
       myElectionNode = electionNode;
@@ -205,15 +221,22 @@ class RebalanceLeaders {
         log.info("Rejoining election for node {}", myElectionNode);
         String coreName = slice.getReplica(LeaderElector.getNodeName(electionNode)).getStr(CORE_NAME_PROP);
         rejoinElection(collectionName, slice, electionNode, coreName, true);
-        newSeq = waitForNodeChange(collectionName, slice, electionNode);
+        log.info("Waiting for node {} to change", myElectionNode);
+          newSeq = waitForNodeChange(collectionName, slice, electionNode);
         break;
       }
     }
     if (newSeq == -1) {
+      log.info("We were waiting for electionNode {} to change but it timed out. Are we offline?", myElectionNode);
       return; // let's not continue if we didn't get what we expect. Possibly we're offline etc..
     }
+    log.info("Got new Sequence {} for node {}", newSeq, myElectionNode);
+    queueNodesWithSameSequence(collectionName, slice, replica, newSeq);
+  }
 
-    // Now find other nodes that have the same sequence number as this node and re-queue them at the end of the queue.
+  private void queueNodesWithSameSequence(String collectionName, Slice slice, Replica replica, int newSeq) throws KeeperException, InterruptedException {
+    final ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+    List<String> electionNodes;// Now find other nodes that have the same sequence number as this node and re-queue them at the end of the queue.
     electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
@@ -228,10 +251,12 @@ class RebalanceLeaders {
       }
       if (LeaderElector.getSeq(thisNode) == newSeq) {
         log.info("The node {} has the same sequence number as the leader. Requeing it...", thisNode);
-        log.info("Leader status: "+ leaderExists.get());
         String coreName = slice.getReplica(LeaderElector.getNodeName(thisNode)).getStr(CORE_NAME_PROP);
+        log.info("Rejoining election for node {}", thisNode);
         rejoinElection(collectionName, slice, thisNode, coreName, false);
+        log.info("Waiting for node {} to change", thisNode);
         waitForNodeChange(collectionName, slice, thisNode);
+        log.info("Got node change");
       }
     }
   }
@@ -250,10 +275,10 @@ class RebalanceLeaders {
           return LeaderElector.getSeq(testNode);
         }
       }
-
-      Thread.sleep(100);
-    }
-    return -1;
+        Thread.sleep(100);
+      }
+      log.info("Waited long enough. Couldn't find updated node");
+      return -1;
   }
   
   private void rejoinElection(String collectionName, Slice slice, String electionNode, String core,

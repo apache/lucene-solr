@@ -111,7 +111,7 @@ public  class LeaderElector {
     String leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
     if (seqs.stream().noneMatch(s -> s.equalsIgnoreCase(leaderSeqNodeName))) {
         log.info("None of the seqs{} contains this node name: {}", seqs.stream().collect(Collectors.joining(",", "[", "]")), leaderSeqNodeName);
-        log.warn("Our node is no longer in line to be leader");
+        log.warn("Our node is no longer in line to be leader {}");
         final String diffs = seqs.stream().map(s -> StringUtils.difference(s, leaderSeqNodeName)).collect(Collectors.joining(",", "[", "]"));
         log.info("Seq differences {}", diffs);
         return;
@@ -231,9 +231,8 @@ public  class LeaderElector {
      *
      * @return sequential node number
      */
-  public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+  public int joinElection(ElectionContext context, boolean replacement, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     context.joinedElectionFired();
-    
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -252,7 +251,7 @@ public  class LeaderElector {
                 CreateMode.EPHEMERAL_SEQUENTIAL, false);
           } else {
             String firstInLine = nodes.get(1);
-            log.debug("The current head: {}", firstInLine);
+            log.info("The current head: {}", firstInLine);
             Matcher m = LEADER_SEQ.matcher(firstInLine);
             if (!m.matches()) {
               throw new IllegalStateException("Could not find regex match in:"

@@ -827,14 +827,15 @@ public class ZkController {
       ZkNodeProps leaderProps = new ZkNodeProps(props);
       
       try {
-        // If we're a preferred leader, insert ourselves at the head of the queue
+        // If we're a preferred leader, we'll trigger a rebalance after the replica has been added
         boolean joinAtHead = false;
         Replica replica = zkStateReader.getClusterState().getReplica(desc.getCloudDescriptor().getCollectionName(),
             coreZkNodeName);
         if (replica != null) {
           joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         }
-        joinElection(desc, afterExpiration, joinAtHead);
+        //we should only join at head with rebalanced leaders
+        joinElection(desc, afterExpiration, false);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -849,7 +850,7 @@ public class ZkController {
       String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
       
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are " + ourUrl + " and leader is " + leaderUrl);
+      log.info("We are " + ourUrl + " and leader is " + leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       
       try (SolrCore core = cc.getCore(desc.getName())) {
