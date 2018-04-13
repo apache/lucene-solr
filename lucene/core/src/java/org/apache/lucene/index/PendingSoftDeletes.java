@@ -88,10 +88,10 @@ final class PendingSoftDeletes extends PendingDeletes {
   }
 
   @Override
-  void reset() {
-    dvGeneration = -2;
-    super.reset();
-    hardDeletes.reset();
+  void dropChanges() {
+    // don't reset anything here - this is called after a merge (successful or not) to prevent
+    // rewriting the deleted docs to disk. we only pass it on and reset the number of pending deletes
+    hardDeletes.dropChanges();
   }
 
   /**
