@@ -145,12 +145,12 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
     assertU(adoc("id", "0", fld, ptOrig));
     assertU(commit());
-    // retrieve it (probably less precision
+    // retrieve it (probably less precision)
     String ptDecoded1 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     // now write it back
     assertU(adoc("id", "0", fld, ptDecoded1));
     assertU(commit());
-    // retrieve it and hopefully the same
+    // retrieve it; assert that it's the same as written
     String ptDecoded2 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     assertEquals("orig:" + ptOrig, ptDecoded1, ptDecoded2);
 
@@ -158,13 +158,13 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     final Point ptOrigObj = SpatialUtils.parsePoint(ptOrig, SpatialContext.GEO);
     final Point ptDecodedObj = SpatialUtils.parsePoint(ptDecoded1, SpatialContext.GEO);
     double deltaCentimeters = SpatialContext.GEO.calcDistance(ptOrigObj, ptDecodedObj) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //See javadocs of LatLonDocValuesField
-//    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
-//    double deltaCentimetersMax
-//        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //  equals 1.0420371840922256   which is a bit lower than what we're able to do
+    //See javadocs of LatLonDocValuesField for these constants
+    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
+    double deltaCentimetersMax
+        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
+    assertEquals(1.0420371840922256, deltaCentimetersMax, 0.0);// just so that we see it in black & white in the test
 
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.33);
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters <= deltaCentimetersMax);
   }
 
   @Test
