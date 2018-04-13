@@ -41,12 +41,6 @@ API Changes
 * LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
   been removed (Alan Woodward)
 
-New Features
-
-* LUCENE-8231: A new analysis module (nori) similar to Kuromoji
-  but to handle Korean using mecab-ko-dic and morphological analysis.
-  (Robert Muir, Jim Ferenczi)
-
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -148,6 +142,10 @@ New Features
 * LUCENE-8246: Allow to customize the number of deletes a merge claims. This
   helps merge policies in the soft-delete case to correctly implement retention
   policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
+
+* LUCENE-8231: A new analysis module (nori) similar to Kuromoji
+  but to handle Korean using mecab-ko-dic and morphological analysis.
+  (Robert Muir, Jim Ferenczi)
 
 Bug Fixes
 
