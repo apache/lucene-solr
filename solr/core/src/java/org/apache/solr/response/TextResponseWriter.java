@@ -36,10 +36,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
@@ -127,8 +127,9 @@ public abstract class TextResponseWriter implements PushWriter {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
+    //    (see a patch on LUCENE-3041 for inspiration)
 
-    // go in order of most common to least common
+    // go in order of most common to least common, however some of the more general types like Map belong towards the end
     if (val == null) {
       writeNull(name);
     } else if (val instanceof String) {
@@ -170,20 +171,25 @@ public abstract class TextResponseWriter implements PushWriter {
     // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
       writeSolrDocumentList(name, (SolrDocumentList)val, returnFields);
-    } else if (val instanceof Map) {
-      writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);
-    } else if (val instanceof Iterable) {
+    } else if (val instanceof MapWriter) {
+      writeMap((MapWriter) val);
+    } else if (val instanceof MapSerializable) {
+      //todo find a better way to reuse the map more efficiently
+      writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
+    } else if (val instanceof Map) {
+      writeMap(name, (Map)val, false, true);
+    } else if (val instanceof Iterator) { // very generic; keep towards the end
+      writeArray(name, (Iterator) val);
+    } else if (val instanceof Iterable) { // very generic; keep towards the end
       writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {
       writeArray(name,(Object[])val);
-    } else if (val instanceof Iterator) {
-      writeArray(name, (Iterator) val);
     } else if (val instanceof byte[]) {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
@@ -194,13 +200,8 @@ public abstract class TextResponseWriter implements PushWriter {
       writeStr(name, val.toString(), true);
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
-    } else if (val instanceof MapWriter) {
-      writeMap((MapWriter) val);
-    } else if (val instanceof MapSerializable) {
-      //todo find a better way to reuse the map more efficiently
-      writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else {
-      // default... for debugging only
+      // default... for debugging only.  Would be nice to "assert false" ?
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
     }
   }

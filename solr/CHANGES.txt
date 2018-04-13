@@ -71,6 +71,9 @@ New Features
 * SOLR-11336: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports a list of versioned fields.
   (versionField config may now be a comma-delimited list). (Michael Braun via David Smiley)
 
+* SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
+  using it for convenience. (David Smiley, Tapan Vaishnav)
+
 Bug Fixes
 ----------------------
 
