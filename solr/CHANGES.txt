@@ -96,6 +96,9 @@ New Features
 * SOLR-11336: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports a list of versioned fields.
   (versionField config may now be a comma-delimited list). (Michael Braun via David Smiley)
 
+* SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
+  using it for convenience. (David Smiley, Tapan Vaishnav)
+
 Bug Fixes
 ----------------------
 
@@ -151,6 +154,8 @@ Bug Fixes
   (Rohit, Varun Thacker)
 
 * SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
+
+* SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
  
 Optimizations
 ----------------------
