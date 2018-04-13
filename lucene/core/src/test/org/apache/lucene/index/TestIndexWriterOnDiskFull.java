@@ -501,7 +501,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
           .setMergeScheduler(new SerialMergeScheduler())
           .setReaderPooling(true)
-          .setMergePolicy(new MergePolicyWrapper(newLogMergePolicy(2)) {
+          .setMergePolicy(new FilterMergePolicy(newLogMergePolicy(2)) {
             @Override
             public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
               // we can do this because we add/delete/add (and dont merge to "nothing")

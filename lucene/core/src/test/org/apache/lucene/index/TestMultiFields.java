@@ -49,7 +49,7 @@ public class TestMultiFields extends LuceneTestCase {
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                             .setMergePolicy(new MergePolicyWrapper(NoMergePolicy.INSTANCE) {
+                                             .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
                                                @Override
                                                public boolean keepFullyDeletedSegment(CodecReader reader) {
                                                  // we can do this because we use NoMergePolicy (and dont merge to "nothing")

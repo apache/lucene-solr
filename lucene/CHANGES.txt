@@ -11,6 +11,9 @@ API Changes
   Instead use IndexSearcher.createWeight(), rewriting the query first.
   (Alan Woodward)
 
+* LUCENE-8248: MergePolicyWrapper is renamed to FilterMergePolicy and now
+  also overrides getMaxCFSSegmentSizeMB (Mike Sokolov via Mike McCandless)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together

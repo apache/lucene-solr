@@ -48,7 +48,7 @@ import java.util.HashMap;
   * @lucene.experimental
   * @see IndexUpgrader
   */
-public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
+public class UpgradeIndexMergePolicy extends FilterMergePolicy {
 
   /** Wrap the given {@link MergePolicy} and intercept forceMerge requests to
    * only upgrade segments written with previous Lucene versions. */
