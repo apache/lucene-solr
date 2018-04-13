@@ -92,7 +92,7 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    * biased doubles.
    */
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8251")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8251")
   @Repeat(iterations = 10)
   public void testComparePolygons() {
     final PlanetModel planetModel = randomPlanetModel();

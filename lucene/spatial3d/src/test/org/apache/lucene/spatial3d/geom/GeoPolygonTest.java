@@ -1569,4 +1569,22 @@ shape:
     assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
   }
   
+  @Test
+  public void testLUCENE8251() {
+    //POLYGON((135.63207358036593 -51.43541696593334,113.00782694696038 -58.984559858566556,0.0 -3.68E-321,-66.33598777585381 -7.382056816201731,135.63207358036593 -51.43541696593334))
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-51.43541696593334), Geo3DUtil.fromDegrees(135.63207358036593)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-58.984559858566556), Geo3DUtil.fromDegrees(113.00782694696038)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-3.68E-321), Geo3DUtil.fromDegrees(0.0)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-7.382056816201731), Geo3DUtil.fromDegrees(-66.33598777585381)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-51.43541696593334), Geo3DUtil.fromDegrees(135.63207358036593)));
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, description);
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, Collections.singletonList(description));
+
+    //POINT(0.005183505059185348 1.98E-321)
+    final GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(1.98E-321), Geo3DUtil.fromDegrees(0.005183505059185348));
+    assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+  }
+  
 }
