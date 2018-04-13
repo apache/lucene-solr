@@ -1146,12 +1146,17 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.intersectionPoint = intersectionPoint;
       
       //System.out.println("Intersection point = "+intersectionPoint);
-        
+      //System.out.println("TestPoint plane: "+testPoint+" -> "+intersectionPoint);
+      //System.out.println("Travel plane: ["+thePointX+","+thePointY+","+thePointZ+"] -> "+intersectionPoint);
+      
       assert travelPlane.evaluateIsZero(intersectionPoint) : "intersection point must be on travel plane";
       assert testPointPlane.evaluateIsZero(intersectionPoint) : "intersection point must be on test point plane";
-        
+      
+      //System.out.println("Test point distance to intersection point: "+intersectionPoint.linearDistance(testPoint));
+      //System.out.println("Check point distance to intersection point: "+intersectionPoint.linearDistance(thePointX, thePointY, thePointZ));
+
       assert !testPoint.isNumericallyIdentical(intersectionPoint) : "test point is the same as intersection point";
-      assert !intersectionPoint.isNumericallyIdentical(thePointX, thePointY, thePointZ) : "check point is same is intersection point";
+      assert !intersectionPoint.isNumericallyIdentical(thePointX, thePointY, thePointZ) : "check point is same as intersection point";
 
       this.testPointCutoffPlane = new SidedPlane(intersectionPoint, testPointPlane, testPoint);
       this.checkPointCutoffPlane = new SidedPlane(intersectionPoint, travelPlane, thePointX, thePointY, thePointZ);
@@ -1324,7 +1329,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       System.out.println("");
       System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
       */
-      
+
       // Some edges are going to be given to us even when there's no real intersection, so do that as a sanity check, first.
       final GeoPoint[] travelCrossings = travelPlane.findIntersections(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       if (travelCrossings != null && travelCrossings.length == 0) {
@@ -1442,7 +1447,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   }
   
-    
+  /** This is the amount we go, roughly, in both directions, to find adjoining points to test.  If we go too far,
+    * we might miss a transition, but if we go too little, we might not see it either due to numerical issues.
+    */
+  private final static double DELTA_DISTANCE = Vector.MINIMUM_RESOLUTION;// * 0.5;
   
   /** Given a point on the plane and the ellipsoid, this method looks for a pair of adjoining points on either side of the plane, which are
    * about MINIMUM_RESOLUTION away from the given point.  This only works for planes which go through the center of the world.
@@ -1451,12 +1459,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // Compute a normalized perpendicular vector
     final Vector perpendicular = new Vector(plane, pointOnPlane);
     // Compute two new points along this vector from the original
-    final GeoPoint pointA = planetModel.createSurfacePoint(pointOnPlane.x + perpendicular.x * Vector.MINIMUM_RESOLUTION,
-      pointOnPlane.y + perpendicular.y * Vector.MINIMUM_RESOLUTION,
-      pointOnPlane.z + perpendicular.z * Vector.MINIMUM_RESOLUTION);
-    final GeoPoint pointB = planetModel.createSurfacePoint(pointOnPlane.x - perpendicular.x * Vector.MINIMUM_RESOLUTION,
-      pointOnPlane.y - perpendicular.y * Vector.MINIMUM_RESOLUTION,
-      pointOnPlane.z - perpendicular.z * Vector.MINIMUM_RESOLUTION);
+    final GeoPoint pointA = planetModel.createSurfacePoint(pointOnPlane.x + perpendicular.x * DELTA_DISTANCE,
+      pointOnPlane.y + perpendicular.y * DELTA_DISTANCE,
+      pointOnPlane.z + perpendicular.z * DELTA_DISTANCE);
+    final GeoPoint pointB = planetModel.createSurfacePoint(pointOnPlane.x - perpendicular.x * DELTA_DISTANCE,
+      pointOnPlane.y - perpendicular.y * DELTA_DISTANCE,
+      pointOnPlane.z - perpendicular.z * DELTA_DISTANCE);
     //System.out.println("Distance: "+computeSquaredDistance(rval[0], pointOnPlane)+" and "+computeSquaredDistance(rval[1], pointOnPlane));
     return new GeoPoint[]{pointA, pointB};
   }
