@@ -63,6 +63,7 @@ public  class LeaderElector {
   public final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
   private final static Pattern  NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
+    public static final int MAX_LEADER_ELECTION_TRIES = 200;
 
   protected SolrZkClient zkClient;
   
@@ -283,7 +284,7 @@ public  class LeaderElector {
         }
         if (!foundId) {
           cont = true;
-          if (tries++ > 20) {
+          if (tries++ > MAX_LEADER_ELECTION_TRIES) {
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
           }
@@ -297,7 +298,7 @@ public  class LeaderElector {
       } catch (KeeperException.NoNodeException e) {
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
-        if (tries++ > 20) {
+        if (tries++ > MAX_LEADER_ELECTION_TRIES) {
           context = null;
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "", e);
@@ -308,6 +309,13 @@ public  class LeaderElector {
         } catch (InterruptedException e2) {
           Thread.currentThread().interrupt();
         }
+      }
+      catch (Exception e){
+          log.warn("Unknown exception while trying to set leader elector. logging it and then we'll continue", e);
+          cont = true;
+          if (tries++ > MAX_LEADER_ELECTION_TRIES) {
+              throw e;
+          }
       }
     }
     checkIfIamLeader(context, replacement);
