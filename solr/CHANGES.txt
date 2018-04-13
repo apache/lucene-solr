@@ -45,6 +45,9 @@ Bug Fixes
 * SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
   (Rohit, Varun Thacker)
 
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
