@@ -977,15 +977,18 @@ class GeoComplexPolygon extends GeoBasePolygon {
         for (final GeoPoint intersection : intersections) {
           if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
             // It's unique, so assess it
-            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+            crossings += edgeCrossesEnvelope(edge.plane, intersection, envelopePlane)?1:0;
           }
         }
       }
       return crossings;
     }
 
-    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint) {
-      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint);
+    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint, final Plane envelopePlane) {
+      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint, envelopePlane);
+      if (adjoiningPoints == null) {
+        return true;
+      }
       int withinCount = 0;
       for (final GeoPoint adjoining : adjoiningPoints) {
         if (plane.evaluateIsZero(adjoining) && bound.isWithin(adjoining)) {
@@ -1070,15 +1073,18 @@ class GeoComplexPolygon extends GeoBasePolygon {
         for (final GeoPoint intersection : intersections) {
           if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
             // It's unique, so assess it
-            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+            crossings += edgeCrossesEnvelope(edge.plane, intersection, envelopePlane)?1:0;
           }
         }
       }
       return crossings;
     }
 
-    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint) {
-      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint);
+    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint, final Plane envelopePlane) {
+      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint, envelopePlane);
+      if (adjoiningPoints == null) {
+        return true;
+      }
       int withinCount = 0;
       for (final GeoPoint adjoining : adjoiningPoints) {
         if (plane.evaluateIsZero(adjoining) && bound1.isWithin(adjoining) && bound2.isWithin(adjoining)) {
@@ -1325,10 +1331,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           break;
         }
       }
-
-      System.out.println("");
-      System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
       */
+      
+      //System.out.println("");
+      //System.out.println("Considering edge "+(edge.startPoint)+" -> "+(edge.endPoint));
 
       // Some edges are going to be given to us even when there's no real intersection, so do that as a sanity check, first.
       final GeoPoint[] travelCrossings = travelPlane.findIntersections(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
@@ -1411,8 +1417,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
               continue;
             }
             // It's unique, so assess it
-            //System.out.println("  Assessing travel envelope intersection point "+intersection+"...");
-            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+            //System.out.println("  Assessing travel envelope intersection point "+intersection+", travelPlane distance="+travelPlane.evaluate(intersection)+"...");
+            crossings += edgeCrossesEnvelope(edge.plane, intersection, travelEnvelopePlane)?1:0;
           }
         }
       }
@@ -1420,8 +1426,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         for (final GeoPoint intersection : testPointIntersections) {
           if (edge.startPlane.strictlyWithin(intersection) && edge.endPlane.strictlyWithin(intersection)) {
             // It's unique, so assess it
-            //System.out.println("  Assessing testpoint envelope intersection point "+intersection+"...");
-            crossings += edgeCrossesEnvelope(edge.plane, intersection)?1:0;
+            //System.out.println("  Assessing testpoint envelope intersection point "+intersection+", testPointPlane distance="+testPointPlane.evaluate(intersection)+"...");
+            crossings += edgeCrossesEnvelope(edge.plane, intersection, testPointEnvelopePlane)?1:0;
           }
         }
       }
@@ -1430,16 +1436,20 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
     /** Return true if the edge crosses the envelope plane, given the envelope intersection point.
       */
-    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint) {
-      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint);
+    private boolean edgeCrossesEnvelope(final Plane edgePlane, final GeoPoint intersectionPoint, final Plane envelopePlane) {
+      final GeoPoint[] adjoiningPoints = findAdjoiningPoints(edgePlane, intersectionPoint, envelopePlane);
+      if (adjoiningPoints == null) {
+        // Couldn't find good adjoining points, so just assume there is a crossing.
+        return true;
+      }
       int withinCount = 0;
       for (final GeoPoint adjoining : adjoiningPoints) {
         if ((travelPlane.evaluateIsZero(adjoining) && checkPointCutoffPlane.isWithin(adjoining) && checkPointOtherCutoffPlane.isWithin(adjoining)) ||
           (testPointPlane.evaluateIsZero(adjoining) && testPointCutoffPlane.isWithin(adjoining) && testPointOtherCutoffPlane.isWithin(adjoining))) {
-          //System.out.println("   Adjoining point "+adjoining+" (dist = "+intersectionPoint.linearDistance(adjoining)+") is within");
+          //System.out.println("   Adjoining point "+adjoining+" (intersection dist = "+intersectionPoint.linearDistance(adjoining)+") is within");
           withinCount++;
         } else {
-          //System.out.println("   Adjoining point "+adjoining+" (dist = "+intersectionPoint.linearDistance(adjoining)+") is not within");
+          //System.out.println("   Adjoining point "+adjoining+" (intersection dist = "+intersectionPoint.linearDistance(adjoining)+"; travelPlane dist="+travelPlane.evaluate(adjoining)+"; testPointPlane dist="+testPointPlane.evaluate(adjoining)+") is not within");
         }
       }
       return (withinCount & 1) != 0;
@@ -1450,23 +1460,39 @@ class GeoComplexPolygon extends GeoBasePolygon {
   /** This is the amount we go, roughly, in both directions, to find adjoining points to test.  If we go too far,
     * we might miss a transition, but if we go too little, we might not see it either due to numerical issues.
     */
-  private final static double DELTA_DISTANCE = Vector.MINIMUM_RESOLUTION;// * 0.5;
+  private final static double DELTA_DISTANCE = Vector.MINIMUM_RESOLUTION;
+  /** This is the maximum number of iterations.  If we get this high, effectively the planes are parallel, and we
+    * treat that as a crossing.
+    */
+  private final static int MAX_ITERATIONS = 100;
+  /** This is the amount off of the envelope plane that we count as "enough" for a valid crossing assessment. */
+  private final static double OFF_PLANE_AMOUNT = Vector.MINIMUM_RESOLUTION * 0.1;
   
   /** Given a point on the plane and the ellipsoid, this method looks for a pair of adjoining points on either side of the plane, which are
    * about MINIMUM_RESOLUTION away from the given point.  This only works for planes which go through the center of the world.
+   * Returns null if the planes are effectively parallel and reasonable adjoining points cannot be determined.
    */
-  private GeoPoint[] findAdjoiningPoints(final Plane plane, final GeoPoint pointOnPlane) {
+  private GeoPoint[] findAdjoiningPoints(final Plane plane, final GeoPoint pointOnPlane, final Plane envelopePlane) {
     // Compute a normalized perpendicular vector
     final Vector perpendicular = new Vector(plane, pointOnPlane);
-    // Compute two new points along this vector from the original
-    final GeoPoint pointA = planetModel.createSurfacePoint(pointOnPlane.x + perpendicular.x * DELTA_DISTANCE,
-      pointOnPlane.y + perpendicular.y * DELTA_DISTANCE,
-      pointOnPlane.z + perpendicular.z * DELTA_DISTANCE);
-    final GeoPoint pointB = planetModel.createSurfacePoint(pointOnPlane.x - perpendicular.x * DELTA_DISTANCE,
-      pointOnPlane.y - perpendicular.y * DELTA_DISTANCE,
-      pointOnPlane.z - perpendicular.z * DELTA_DISTANCE);
-    //System.out.println("Distance: "+computeSquaredDistance(rval[0], pointOnPlane)+" and "+computeSquaredDistance(rval[1], pointOnPlane));
-    return new GeoPoint[]{pointA, pointB};
+    double distanceFactor = 0.0;
+    for (int i = 0; i < MAX_ITERATIONS; i++) {
+      distanceFactor += DELTA_DISTANCE;
+      // Compute two new points along this vector from the original
+      final GeoPoint pointA = planetModel.createSurfacePoint(pointOnPlane.x + perpendicular.x * distanceFactor,
+        pointOnPlane.y + perpendicular.y * distanceFactor,
+        pointOnPlane.z + perpendicular.z * distanceFactor);
+      final GeoPoint pointB = planetModel.createSurfacePoint(pointOnPlane.x - perpendicular.x * distanceFactor,
+        pointOnPlane.y - perpendicular.y * distanceFactor,
+        pointOnPlane.z - perpendicular.z * distanceFactor);
+      if (Math.abs(envelopePlane.evaluate(pointA)) > OFF_PLANE_AMOUNT && Math.abs(envelopePlane.evaluate(pointB)) > OFF_PLANE_AMOUNT) {
+        //System.out.println("Distance: "+computeSquaredDistance(rval[0], pointOnPlane)+" and "+computeSquaredDistance(rval[1], pointOnPlane));
+        return new GeoPoint[]{pointA, pointB};
+      }
+      // Loop back around and use a bigger delta
+    }
+    // Had to abort, so return null.
+    return null;
   }
 
   private static double computeSquaredDistance(final GeoPoint checkPoint, final GeoPoint intersectionPoint) {
