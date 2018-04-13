@@ -2222,7 +2222,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     AtomicBoolean keepFullyDeletedSegments = new AtomicBoolean();
-    iwc.setMergePolicy(new MergePolicyWrapper(iwc.getMergePolicy()) {
+    iwc.setMergePolicy(new FilterMergePolicy(iwc.getMergePolicy()) {
       @Override
       public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
         return keepFullyDeletedSegments.get();

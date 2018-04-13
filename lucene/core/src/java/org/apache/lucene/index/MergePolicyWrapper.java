@@ -17,80 +17,25 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.util.IOSupplier;
 
 /**
  * A wrapper for {@link MergePolicy} instances.
- *
+ * @deprecated replace with FilterMergePolicy
  * @lucene.experimental
  */
-public class MergePolicyWrapper extends MergePolicy {
-
-  /** The wrapped {@link MergePolicy}. */
-  protected final MergePolicy in;
+@Deprecated
+public class MergePolicyWrapper extends FilterMergePolicy {
+  // placeholder for backwards compatibility
 
   /**
-   * Creates a new merge policy instance.
+   * Creates a new merge policy instance wrapping another.
    *
    * @param in the wrapped {@link MergePolicy}
    */
   public MergePolicyWrapper(MergePolicy in) {
-    this.in = in;
-  }
-
-  @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
-      throws IOException {
-    return in.findMerges(mergeTrigger, segmentInfos, writer);
-  }
-
-  @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-      Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
-    return in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer);
-  }
-
-  @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return in.findForcedDeletesMerges(segmentInfos, writer);
-  }
-
-  @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer)
-      throws IOException {
-    return in.useCompoundFile(infos, mergedInfo, writer);
-  }
-
-  @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    return in.size(info, writer);
-  }
-
-  @Override
-  public double getNoCFSRatio() {
-    return in.getNoCFSRatio();
-  }
-
-  @Override
-  public final void setNoCFSRatio(double noCFSRatio) {
-    in.setNoCFSRatio(noCFSRatio);
-  }
-
-  @Override
-  public final void setMaxCFSSegmentSizeMB(double v) {
-    in.setMaxCFSSegmentSizeMB(v);
-  }
-
-  @Override
-  public String toString() {
-    return getClass().getSimpleName() + "(" + in + ")";
-  }
-
-  @Override
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
-    return in.keepFullyDeletedSegment(reader);
+    super(in);
   }
 
   @Override

@@ -590,7 +590,7 @@ public abstract class MergePolicy {
   }
 
   /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
+  public double getMaxCFSSegmentSizeMB() {
     return maxCFSSegmentSize/1024/1024.;
   }
 

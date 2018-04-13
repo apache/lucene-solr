@@ -54,17 +54,22 @@ public final class NoMergePolicy extends MergePolicy {
   protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     return Long.MAX_VALUE;
   }
-  
+
   @Override
   public double getNoCFSRatio() {
     return super.getNoCFSRatio();
   }
-  
+
+  @Override
+  public double getMaxCFSSegmentSizeMB() {
+    return super.getMaxCFSSegmentSizeMB();
+  }
+
   @Override
   public void setMaxCFSSegmentSizeMB(double v) {
     super.setMaxCFSSegmentSizeMB(v);
   }
-  
+
   @Override
   public void setNoCFSRatio(double noCFSRatio) {
     super.setNoCFSRatio(noCFSRatio);
