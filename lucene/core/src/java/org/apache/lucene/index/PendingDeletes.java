@@ -166,7 +166,7 @@ class PendingDeletes {
   /**
    * Resets the pending docs
    */
-  void reset() {
+  void dropChanges() {
     pendingDeleteCount = 0;
   }
 
@@ -223,7 +223,7 @@ class PendingDeletes {
     // (successfully written) del docs:
     info.advanceDelGen();
     info.setDelCount(info.getDelCount() + pendingDeleteCount);
-    reset();
+    dropChanges();
     return true;
   }
 
