@@ -287,7 +287,7 @@ final class ReadersAndUpdates {
     // is running, by now we have carried forward those
     // deletes onto the newly merged segment, so we can
     // discard them on the sub-readers:
-    pendingDeletes.reset();
+    pendingDeletes.dropChanges();
     dropMergingUpdates();
   }
 
