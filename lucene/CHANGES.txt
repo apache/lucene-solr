@@ -50,6 +50,10 @@ New Features
   helps merge policies in the soft-delete case to correctly implement retention
   policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
 
+* LUCENE-8231: A new analysis module (nori) similar to Kuromoji
+  but to handle Korean using mecab-ko-dic and morphological analysis.
+  (Robert Muir, Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
