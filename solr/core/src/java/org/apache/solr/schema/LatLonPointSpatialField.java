@@ -87,10 +87,10 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   public static String decodeDocValueToString(long value) {
     final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
     final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
-    // This # decimal places maximizes our available precision to just over a centimeter; we have a test for it.
+    // This # decimal places gets us close to our available precision to 1.37cm; we have a test for it.
     // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
     //   reverses the "floor" that occurred when we encoded.
-    final int DECIMAL_PLACES = 8;
+    final int DECIMAL_PLACES = 7;
     final RoundingMode ROUND_MODE = CEILING;
     BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
     BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
