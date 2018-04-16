@@ -2221,7 +2221,6 @@ public class TestIndexSorting extends LuceneTestCase {
   }
 
   // pits index time sorting against query time sorting
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testRandom3() throws Exception {
     int numDocs = atLeast(1000);
     List<RandomDoc> docs = new ArrayList<>();
