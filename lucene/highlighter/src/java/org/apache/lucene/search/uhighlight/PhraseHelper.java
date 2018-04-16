@@ -227,7 +227,7 @@ public class PhraseHelper {
       }
     };
     for (Query query : spanQueries) {
-      Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+      Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
       Scorer scorer = weight.scorer(leafReader.getContext());
       if (scorer == null) {
         continue;

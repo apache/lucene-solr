@@ -46,6 +46,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
    * Only terms that have at least one match in the given document will be included
    */
   static MatchesIterator fromTerms(LeafReaderContext context, int doc, String field, List<Term> terms) throws IOException {
+    Objects.requireNonNull(field);
     for (Term term : terms) {
       if (Objects.equals(field, term.field()) == false) {
         throw new IllegalArgumentException("Tried to generate iterator from terms in multiple fields: expected [" + field + "] but got [" + term.field() + "]");
@@ -72,6 +73,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
    * Only terms that have at least one match in the given document will be included
    */
   static MatchesIterator fromTermsEnum(LeafReaderContext context, int doc, String field, BytesRefIterator terms) throws IOException {
+    Objects.requireNonNull(field);
     List<MatchesIterator> mis = new ArrayList<>();
     Terms t = context.reader().terms(field);
     if (t == null)
@@ -91,11 +93,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
         }
       }
     }
-    if (mis.size() == 0)
-      return null;
-    if (mis.size() == 1)
-      return mis.get(0);
-    return new DisjunctionMatchesIterator(mis);
+    return fromSubIterators(mis);
   }
 
   static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {
@@ -115,7 +113,8 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
       @Override
       protected boolean lessThan(MatchesIterator a, MatchesIterator b) {
         return a.startPosition() < b.startPosition() ||
-            (a.startPosition() == b.startPosition() && a.endPosition() < b.endPosition());
+            (a.startPosition() == b.startPosition() && a.endPosition() < b.endPosition()) ||
+            (a.startPosition() == b.startPosition() && a.endPosition() == b.endPosition() && a.term().compareTo(b.term()) < 0);
       }
     };
     for (MatchesIterator mi : matches) {

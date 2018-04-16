@@ -197,7 +197,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
               if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()) {
                 // only DV updates
-                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs());
+                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs(), false); // this is not an NRT reader!
               } else {
                 // both DV and liveDocs have changed
                 newReaders[i] = new SegmentReader(commitInfo, oldReader);

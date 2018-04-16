@@ -26,7 +26,7 @@ import java.util.function.UnaryOperator;
  *
  * @lucene.experimental
  */
-public class OneMergeWrappingMergePolicy extends MergePolicyWrapper {
+public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
 
   private final UnaryOperator<OneMerge> wrapOneMerge;
 

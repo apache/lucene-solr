@@ -146,6 +146,8 @@ public class TestInjection {
 
   public static Integer delayBeforeSlaveCommitRefresh=null;
 
+  public static boolean uifOutOfMemoryError = false;
+
   public static void reset() {
     nonGracefullClose = null;
     failReplicaRequests = null;
@@ -161,6 +163,7 @@ public class TestInjection {
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
+    uifOutOfMemoryError = false;
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -466,6 +469,13 @@ public class TestInjection {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
+    }
+    return true;
+  }
+
+  public static boolean injectUIFOutOfMemoryError() {
+    if (uifOutOfMemoryError ) {
+      throw new OutOfMemoryError("Test Injection");
     }
     return true;
   }

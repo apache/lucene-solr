@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -37,6 +38,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -46,6 +48,60 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
+
+  public void testForceMergeFullyDeleted() throws IOException {
+    Directory dir = newDirectory();
+    AtomicBoolean letItGo = new AtomicBoolean(false);
+    MergePolicy policy = new SoftDeletesRetentionMergePolicy("soft_delete",
+        () -> letItGo.get() ? new MatchNoDocsQuery() : new MatchAllDocsQuery(), new LogDocMergePolicy());
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig().setMergePolicy(policy)
+        .setSoftDeletesField("soft_delete");
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    writer.addDocument(doc);
+    writer.commit();
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    writer.addDocument(doc);
+    DirectoryReader reader = writer.getReader();
+    {
+      assertEquals(2, reader.leaves().size());
+      final SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
+      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
+    }
+    {
+      SegmentReader segmentReader = (SegmentReader) reader.leaves().get(1).reader();
+      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
+      writer.forceMerge(1);
+      reader.close();
+    }
+    reader = writer.getReader();
+    {
+      assertEquals(1, reader.leaves().size());
+      SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
+      assertEquals(2, reader.maxDoc());
+      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
+    }
+    writer.forceMerge(1); // make sure we don't merge this
+    assertNull(DirectoryReader.openIfChanged(reader));
+
+    writer.forceMergeDeletes(); // make sure we don't merge this
+    assertNull(DirectoryReader.openIfChanged(reader));
+    letItGo.set(true);
+    writer.forceMergeDeletes(); // make sure we don't merge this
+    DirectoryReader directoryReader = DirectoryReader.openIfChanged(reader);
+    assertNotNull(directoryReader);
+    assertEquals(0, directoryReader.numDeletedDocs());
+    assertEquals(0, directoryReader.maxDoc());
+    IOUtils.close(directoryReader, reader, writer, dir);
+  }
 
   public void testKeepFullyDeletedSegments() throws IOException {
     Directory dir = newDirectory();

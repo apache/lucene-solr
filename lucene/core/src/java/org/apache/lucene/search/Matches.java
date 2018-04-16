@@ -26,6 +26,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -34,6 +39,8 @@ import java.util.stream.Collectors;
  * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}.
  * Note that you can call {@link #getMatches(String)} multiple times to retrieve new
  * iterators, but it is not thread-safe.
+ *
+ * @lucene.experimental
  */
 public interface Matches extends Iterable<String> {
 
@@ -73,16 +80,11 @@ public interface Matches extends Iterable<String> {
     if (sm.size() == 1) {
       return sm.get(0);
     }
-    Set<String> fields = new HashSet<>();
-    for (Matches m : sm) {
-      for (String field : m) {
-        fields.add(field);
-      }
-    }
+
     return new Matches() {
       @Override
       public MatchesIterator getMatches(String field) throws IOException {
-        List<MatchesIterator> subIterators = new ArrayList<>();
+        List<MatchesIterator> subIterators = new ArrayList<>(sm.size());
         for (Matches m : sm) {
           MatchesIterator it = m.getMatches(field);
           if (it != null) {
@@ -94,7 +96,8 @@ public interface Matches extends Iterable<String> {
 
       @Override
       public Iterator<String> iterator() {
-        return fields.iterator();
+        // for each sub-match, iterate its fields (it's an Iterable of the fields), and return the distinct set
+        return sm.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
       }
     };
   }
@@ -112,6 +115,12 @@ public interface Matches extends Iterable<String> {
    * Create a Matches for a single field
    */
   static Matches forField(String field, MatchesIteratorSupplier mis) throws IOException {
+
+    // The indirection here, using a Supplier object rather than a MatchesIterator
+    // directly, is to allow for multiple calls to Matches.getMatches() to return
+    // new iterators.  We still need to call MatchesIteratorSupplier.get() eagerly
+    // to work out if we have a hit or not.
+
     MatchesIterator mi = mis.get();
     if (mi == null) {
       return null;

@@ -30,7 +30,7 @@ import org.apache.lucene.index.SegmentInfos;
  *
  * @lucene.experimental
  */
-public final class ForceMergePolicy extends MergePolicyWrapper {
+public final class ForceMergePolicy extends FilterMergePolicy {
 
   /** Create a new {@code ForceMergePolicy} around the given {@code MergePolicy} */
   public ForceMergePolicy(MergePolicy in) {

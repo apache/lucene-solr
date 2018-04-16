@@ -238,7 +238,6 @@
             <quiet>true</quiet>
             <additionalparam>-Xdoclint:all</additionalparam>
             <additionalparam>-Xdoclint:-missing</additionalparam>
-            <additionalparam>-proc:none</additionalparam>
           </configuration>
         </plugin>
         <plugin>

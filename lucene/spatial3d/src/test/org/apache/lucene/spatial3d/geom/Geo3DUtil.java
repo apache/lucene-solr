@@ -40,6 +40,8 @@ class Geo3DUtil {
   final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
   /** How many radians are in one degree */
   final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
+  /** How many degrees in a radian */
+  final static double DEGREES_PER_RADIAN = 180.0 / Math.PI;
   
   private static final double MAX_VALUE = PlanetModel.WGS84.getMaximumMagnitude();
   private static final int BITS = 32;
@@ -112,6 +114,11 @@ class Geo3DUtil {
   /** Converts degress to radians */
   static double fromDegrees(final double degrees) {
     return degrees * RADIANS_PER_DEGREE;
+  }
+
+  /** Converts radians to degrees */
+  static double toDegrees(final double radians) {
+    return radians * DEGREES_PER_RADIAN;
   }
   
   /** Converts earth-surface meters to radians */

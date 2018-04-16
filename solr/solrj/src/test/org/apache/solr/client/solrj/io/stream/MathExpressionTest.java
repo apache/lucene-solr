@@ -2354,6 +2354,31 @@ public class MathExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testValueAt() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "               b=array(1,2,3,4), " +
+        "               c=matrix(array(5,6,7), " +
+        "                        array(8,9,10)), " +
+        "               d=valueAt(b, 3)," +
+        "               e=valueAt(c, 1, 0))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number value1 = (Number)tuples.get(0).get("d");
+    Number value2 = (Number)tuples.get(0).get("e");
+    assertEquals(value1.intValue(), 4);
+    assertEquals(value2.intValue(), 8);
+  }
+
+
   @Test
   public void testBetaDistribution() throws Exception {
     String cexpr = "let(a=sample(betaDistribution(1, 5), 50000), b=hist(a, 11), c=col(b, N))";
@@ -3238,6 +3263,37 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(7).doubleValue(), 30.0, .0);
     assertEquals(out.get(8).doubleValue(), 30.0, .0);
     assertEquals(out.get(9).doubleValue(), 30.0, .0);
+  }
+
+  @Test
+  public void testMonteCarloWithVariables() throws Exception {
+    String cexpr = "let(a=constantDistribution(10), " +
+                "       b=constantDistribution(20), " +
+                "       c=monteCarlo(d=sample(a),"+
+                "                    e=sample(b),"+
+                "                    add(d, add(e, 10)), " +
+                "                    10))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertTrue(out.size()==10);
+    assertEquals(out.get(0).doubleValue(), 40.0, .0);
+    assertEquals(out.get(1).doubleValue(), 40.0, .0);
+    assertEquals(out.get(2).doubleValue(), 40.0, .0);
+    assertEquals(out.get(3).doubleValue(), 40.0, .0);
+    assertEquals(out.get(4).doubleValue(), 40.0, .0);
+    assertEquals(out.get(5).doubleValue(), 40.0, .0);
+    assertEquals(out.get(6).doubleValue(), 40.0, .0);
+    assertEquals(out.get(7).doubleValue(), 40.0, .0);
+    assertEquals(out.get(8).doubleValue(), 40.0, .0);
+    assertEquals(out.get(9).doubleValue(), 40.0, .0);
   }
 
   @Test

@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
-  private StreamFactory streamFactory = new StreamFactory();
+  private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
 
@@ -85,8 +85,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
     }
-
-    Lang.register(streamFactory);
 
     // This pulls all the overrides and additions from the config
     Object functionMappingsObj = initArgs.get("streamFunctions");

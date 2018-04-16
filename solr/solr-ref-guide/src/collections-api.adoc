@@ -480,26 +480,27 @@ http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anoth
 [[createalias]]
 == CREATEALIAS: Create or Modify an Alias for a Collection
 
-The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name
-already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command. Aliases
-come in 2 flavors: routed and non-routed.
+The `CREATEALIAS` action will create a new alias pointing to one or more collections.
+Aliases come in 2 flavors: standard and routed.
 
-Non-routed aliases are simpler and can serve to rename a collection or to distribute queries across several collections.
-While it is possible to send updates to an alias spanning multiple collections, non-routed alias have no logic for
-distributing documents among the referenced collections so all updates will go to the first collection in the list.
+*Standard aliases* are simple:  CREATEALIAS registers the alias name with the names of one or more collections provided
+  by the command.
+If an existing alias exists, it is replaced/updated.
+A standard alias can serve to have the appearance of renaming a collection, and can be used to atomically swap
+which backing/underlying collection is "live" for various purposes.
+When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an
+  aggregated whole.
+While it is possible to send updates to an alias spanning multiple collections, standard aliases have no logic for
+  distributing documents among the referenced collections so all updates will go to the first collection in the list.
 
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
 
-Routed aliases are more complex to configure, but include logic for automatically inspecting a field on the document
-and using the value in that field to select a destination collection. Additionally, the routed alias automates the
-partitioning of data across a series of collections by creating new collections periodically. This feature allows for
-indefinite indexing of data without degradation of performance otherwise experienced due to the continuous growth of
-an index. As new data arrives, a field on the document is inspected and the document is then potentially re-routed to
-another collection. The underlying collections can can be queried independently but usually the alias will be used.
-These collections are created automatically on the fly as new data arrives based on the parameters supplied in this
-command. For very high volume use cases or for use cases requiring only a limited span of data to be retained,
-collections older than a given age can be deleted. This delete of old collections only occurs if new documents are
-sent to the alias.
+*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection -- routing
+  updates to the correct collection.
+Since the only routing strategy at present is time oriented, these are also called *Time Routed Aliases* (TRAs).
+A TRA manages an alias and a time sequential series of collections that it will both create and optionally delete on-demand.
+See <<time-routed-aliases.adoc#time-routed-aliases,Time Routed Aliases>> for some important high-level information
+  before getting started.
 
 NOTE: Presently this is only supported for temporal fields stored as a
 <<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
@@ -541,14 +542,16 @@ requirements for collection naming.
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
 
-==== Non-Routed Alias Parameters
+==== Standard Alias Parameters
 
 `collections`::
 A comma-separated list of collections to be aliased. The collections must already exist in the cluster.
-This parameter signals the creation of a simple (non-routed) alias. If it is present all routing parameters are
+This parameter signals the creation of a standard alias. If it is present all routing parameters are
 prohibited. If routing parameters are present this parameter is prohibited.
 
 ==== Routed Alias Parameters
+
+Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
 `router.start`::
 The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"

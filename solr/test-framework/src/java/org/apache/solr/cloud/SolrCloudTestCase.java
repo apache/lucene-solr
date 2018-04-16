@@ -87,7 +87,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Builder class for a MiniSolrCloudCluster
    */
-  protected static class Builder {
+  public static class Builder {
 
     private final int nodeCount;
     private final Path baseDir;
@@ -187,7 +187,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public void configure() throws Exception {
-      cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
+      cluster = build();
+    }
+
+    /**
+     * Configure, run and return the {@link MiniSolrCloudCluster}
+     * @throws Exception if an error occurs on startup
+     */
+    public MiniSolrCloudCluster build() throws Exception {
+      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
@@ -199,6 +207,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }
       }
+      return cluster;
     }
 
   }
@@ -272,7 +281,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and replicas
+   * number of active shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {

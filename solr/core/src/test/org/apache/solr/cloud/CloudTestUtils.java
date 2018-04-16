@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -113,19 +114,30 @@ public class CloudTestUtils {
    * number of shards and replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
+    return clusterShape(expectedShards, expectedReplicas, false);
+  }
+
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive) {
     return (liveNodes, collectionState) -> {
-      if (collectionState == null)
+      if (collectionState == null) {
+        log.debug("-- null collection");
         return false;
-      if (collectionState.getSlices().size() != expectedShards)
+      }
+      Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
+      if (slices.size() != expectedShards) {
+        log.debug("-- wrong number of active slices, expected=" + expectedShards + ", found=" + collectionState.getSlices().size());
         return false;
-      for (Slice slice : collectionState) {
+      }
+      for (Slice slice : slices) {
         int activeReplicas = 0;
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
             activeReplicas++;
         }
-        if (activeReplicas != expectedReplicas)
+        if (activeReplicas != expectedReplicas) {
+          log.debug("-- wrong number of active replicas in slice " + slice.getName() + ", expected=" + expectedReplicas + ", found=" + activeReplicas);
           return false;
+        }
       }
       return true;
     };

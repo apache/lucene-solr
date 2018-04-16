@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -24,28 +28,25 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import java.util.*;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
 
 /**
  * <p>
@@ -210,18 +211,18 @@ public class DataImportHandler extends RequestHandlerBase implements
     rsp.add("statusMessages", importer.getStatusMessages());
   }
 
+  /** The value is converted to a String or {@code List<String>} if multi-valued. */
   private Map<String, Object> getParamsMap(SolrParams params) {
-    Iterator<String> names = params.getParameterNamesIterator();
     Map<String, Object> result = new HashMap<>();
-    while (names.hasNext()) {
-      String s = names.next();
-      String[] val = params.getParams(s);
-      if (val == null || val.length < 1)
-        continue;
-      if (val.length == 1)
-        result.put(s, val[0]);
-      else
-        result.put(s, Arrays.asList(val));
+    for (Map.Entry<String, String[]> pair : params){
+        String s = pair.getKey();
+        String[] val = pair.getValue();
+        if (val == null || val.length < 1)
+          continue;
+        if (val.length == 1)
+          result.put(s, val[0]);
+        else
+          result.put(s, Arrays.asList(val));
     }
     return result;
   }

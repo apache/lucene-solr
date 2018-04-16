@@ -451,6 +451,28 @@
     <property name="analyzers-morfologik-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-nori.jar" value="${common.dir}/build/analysis/nori/lucene-analyzers-nori-${version}.jar"/>
+  <target name="check-analyzers-nori-uptodate" unless="analyzers-nori.uptodate">
+    <module-uptodate name="analysis/nori" jarfile="${analyzers-nori.jar}" property="analyzers-nori.uptodate"/>
+  </target>
+  <target name="jar-analyzers-nori" unless="analyzers-nori.uptodate" depends="check-analyzers-nori-uptodate">
+    <ant dir="${common.dir}/analysis/nori" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-nori.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-nori-javadoc.jar" value="${common.dir}/build/analysis/nori/lucene-analyzers-nori-${version}-javadoc.jar"/>
+  <target name="check-analyzers-nori-javadocs-uptodate" unless="analyzers-nori-javadocs.uptodate">
+    <module-uptodate name="analysis/nori" jarfile="${analyzers-nori-javadoc.jar}" property="analyzers-nori-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-nori" unless="analyzers-nori-javadocs.uptodate" depends="check-analyzers-nori-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/nori" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-nori-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="codecs.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}.jar"/>
   <target name="check-codecs-uptodate" unless="codecs.uptodate">
     <module-uptodate name="codecs" jarfile="${codecs.jar}" property="codecs.uptodate"/>

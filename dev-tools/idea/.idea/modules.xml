@@ -13,6 +13,7 @@
 
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/common/analysis-common.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/icu/icu.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/nori/nori.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/kuromoji/kuromoji.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/morfologik/morfologik.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/opennlp/opennlp.iml" />
