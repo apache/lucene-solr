@@ -720,16 +720,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.scorerSupplier(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.scorerSupplier(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cache helper
         return in.scorerSupplier(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.scorerSupplier(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -800,16 +801,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.bulkScorer(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.bulkScorer(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cacheHelper
         return in.bulkScorer(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.bulkScorer(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);

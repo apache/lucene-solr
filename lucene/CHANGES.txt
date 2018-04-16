@@ -4,7 +4,12 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.3.1 =======================
-(No Changes)
+
+Bug fixes
+
+* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
+  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
+  Adrien Grand)
 
 ======================= Lucene 7.3.0 =======================
 
