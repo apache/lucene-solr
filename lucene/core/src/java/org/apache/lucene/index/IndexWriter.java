@@ -1594,7 +1594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (softDeletes == null || softDeletes.length == 0) {
       throw new IllegalArgumentException("at least one soft delete must be present");
     }
-    return updateDocuments(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes, false)), docs);
+    return updateDocuments(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes)), docs);
   }
 
   /** Expert: attempts to delete by document ID, as long as
@@ -1831,7 +1831,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (softDeletes == null || softDeletes.length == 0) {
       throw new IllegalArgumentException("at least one soft delete must be present");
     }
-    return updateDocument(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes, false)), doc);
+    return updateDocument(DocumentsWriterDeleteQueue.newNode(buildDocValuesUpdate(term, softDeletes)), doc);
   }
 
 
@@ -1940,7 +1940,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public long updateDocValues(Term term, Field... updates) throws IOException {
     ensureOpen();
-    DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates, true);
+    DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates);
     try {
       long seqNo = docWriter.updateDocValues(dvUpdates);
       if (seqNo < 0) {
@@ -1954,7 +1954,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  private DocValuesUpdate[] buildDocValuesUpdate(Term term, Field[] updates, boolean enforceFieldExistence) {
+  private DocValuesUpdate[] buildDocValuesUpdate(Term term, Field[] updates) {
     DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
     for (int i = 0; i < updates.length; i++) {
       final Field f = updates[i];
@@ -1965,7 +1965,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
-      if (enforceFieldExistence && !globalFieldNumberMap.contains(f.name(), dvType)) {
+      if (!globalFieldNumberMap.contains(f.name(), dvType) && f.name().equals(config.softDeletesField) == false) {
         throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
       }
       if (config.getIndexSortFields().contains(f.name())) {
@@ -5230,15 +5230,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public final int numDeletesToMerge(SegmentCommitInfo info) throws IOException {
     MergePolicy mergePolicy = config.getMergePolicy();
-    final ReadersAndUpdates rld = readerPool.get(info, false);
-    int numDeletesToMerge;
-    if (rld != null) {
-      numDeletesToMerge = rld.numDeletesToMerge(mergePolicy);
-    } else {
-      numDeletesToMerge = mergePolicy.numDeletesToMerge(info,  0, null);
+    final ReadersAndUpdates rld = readerPool.get(info, true);
+    try {
+      int numDeletesToMerge = rld.numDeletesToMerge(mergePolicy);
+      assert numDeletesToMerge <= info.info.maxDoc() :
+          "numDeletesToMerge: " + numDeletesToMerge + " > maxDoc: " + info.info.maxDoc();
+      return numDeletesToMerge;
+    } finally {
+      readerPool.release(rld);
     }
-    assert numDeletesToMerge <= info.info.maxDoc() :
-    "numDeletesToMerge: " + numDeletesToMerge + " > maxDoc: " + info.info.maxDoc();
-    return numDeletesToMerge;
+
   }
 }

@@ -142,7 +142,7 @@ final class ReadersAndUpdates {
 
   /** Adds a new resolved (meaning it maps docIDs to new values) doc values packet.  We buffer these in RAM and write to disk when too much
    *  RAM is used or when a merge needs to kick off, or a commit/refresh. */
-  public synchronized void addDVUpdate(DocValuesFieldUpdates update) {
+  public synchronized void addDVUpdate(DocValuesFieldUpdates update) throws IOException {
     if (update.getFinished() == false) {
       throw new IllegalArgumentException("call finish first");
     }
@@ -166,6 +166,7 @@ final class ReadersAndUpdates {
       }
       fieldUpdates.add(update);
     }
+    pendingDeletes.onDocValuesUpdate(update.field, update.iterator());
   }
 
   public synchronized long getNumDVUpdates() {
@@ -271,9 +272,8 @@ final class ReadersAndUpdates {
       }
       return reader;
     };
-    return policy.numDeletesToMerge(info, pendingDeletes.numPendingDeletes(), readerSupplier);
+    return pendingDeletes.numDeletesToMerge(policy, readerSupplier);
   }
-
 
   public synchronized Bits getLiveDocs() {
     return pendingDeletes.getLiveDocs();
@@ -344,7 +344,7 @@ final class ReadersAndUpdates {
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
-        pendingDeletes.onDocValuesUpdate(fieldInfo, updatesToApply);
+        pendingDeletes.onDocValuesUpdate(fieldInfo);
         // write the numeric updates to a new gen'd docvalues file
         fieldsConsumer.addNumericField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
@@ -480,7 +480,7 @@ final class ReadersAndUpdates {
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
         // write the binary updates to a new gen'd docvalues file
-        pendingDeletes.onDocValuesUpdate(fieldInfo, updatesToApply);
+        pendingDeletes.onDocValuesUpdate(fieldInfo);
         fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
             public BinaryDocValues getBinary(FieldInfo fieldInfoIn) throws IOException {

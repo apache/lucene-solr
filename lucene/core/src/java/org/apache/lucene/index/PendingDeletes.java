@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -26,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
@@ -135,7 +135,7 @@ class PendingDeletes {
   /**
    * Called once a new reader is opened for this segment ie. when deletes or updates are applied.
    */
-  void onNewReader(SegmentReader reader, SegmentCommitInfo info) throws IOException {
+  void onNewReader(CodecReader reader, SegmentCommitInfo info) throws IOException {
     if (liveDocsInitialized == false) {
       if (reader.hasDeletions()) {
         // we only initialize this once either in the ctor or here
@@ -235,10 +235,21 @@ class PendingDeletes {
   }
 
   /**
-   * Called before the given DocValuesFieldUpdates are applied
+   * Called before the given DocValuesFieldUpdates are written to disk
    * @param info the field to apply
-   * @param fieldUpdates the field updates
    */
-  void onDocValuesUpdate(FieldInfo info, List<DocValuesFieldUpdates> fieldUpdates) throws IOException {
+  void onDocValuesUpdate(FieldInfo info) {
+  }
+
+  /**
+   * Called for every field update for the given field
+   * @param field the field that's updated
+   * @param iterator the values to apply
+   */
+  void onDocValuesUpdate(String field, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+  }
+
+  int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    return policy.numDeletesToMerge(info, numPendingDeletes(), readerIOSupplier);
   }
 }

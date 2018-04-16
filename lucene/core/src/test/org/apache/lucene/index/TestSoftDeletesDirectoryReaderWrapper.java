@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -195,5 +196,36 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     assertEquals(1, dirCalled.get());
     assertEquals(1, leafCalled.get());
     IOUtils.close(reader, writer, dir);
+  }
+
+  public void testForceMergeDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_delete");
+    config.setMergePolicy(newMergePolicy(random(), false)); // no mock MP it might not select segments for force merge
+    if (random().nextBoolean()) {
+      config.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+          () -> new MatchNoDocsQuery(), config.getMergePolicy()));
+    }
+    IndexWriter writer = new IndexWriter(dir, config);
+    // The first segment includes d1 and d2
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+      writer.addDocument(d);
+    }
+    writer.flush();
+    // The second segment includes only the tombstone
+    Document tombstone = new Document();
+    tombstone.add(new NumericDocValuesField("soft_delete", 1));
+    writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
+    // Internally, forceMergeDeletes will call flush to flush pending updates
+    // Thus, we will have two segments - both having soft-deleted documents.
+    // We expect any MP to merge these segments into one segment
+    // when calling forceMergeDeletes.
+    writer.forceMergeDeletes(true);
+    assertEquals(1, writer.maxDoc());
+    assertEquals(1, writer.segmentInfos.asList().size());
+    writer.close();
+    dir.close();
   }
 }

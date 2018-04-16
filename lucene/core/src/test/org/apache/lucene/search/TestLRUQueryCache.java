@@ -1541,7 +1541,53 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
 
+
+  public void testQueryCacheSoftUpdate() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setSoftDeletesField("soft_delete");
+    IndexWriter w = new IndexWriter(dir, iwc);
+    LRUQueryCache queryCache = new LRUQueryCache(10, 1000 * 1000, ctx -> true);
+    IndexSearcher.setDefaultQueryCache(queryCache);
+    IndexSearcher.setDefaultQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    SearcherManager sm = new SearcherManager(w, new SearcherFactory());
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", org.apache.lucene.document.Field.Store.YES));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new StringField("id", "2", org.apache.lucene.document.Field.Store.YES));
+    w.addDocument(doc);
+
+    sm.maybeRefreshBlocking();
+
+    IndexSearcher searcher = sm.acquire();
+    Query query = new BooleanQuery.Builder().add(new TermQuery(new Term("id", "1")), BooleanClause.Occur.FILTER).build();
+    assertEquals(1, searcher.count(query));
+    assertEquals(1, queryCache.getCacheSize());
+    assertEquals(0, queryCache.getEvictionCount());
+
+    boolean softDelete = true;
+    if (softDelete) {
+      Document tombstone = new Document();
+      tombstone.add(new NumericDocValuesField("soft_delete", 1));
+      w.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
+      w.softUpdateDocument(new Term("id", "2"), tombstone, new NumericDocValuesField("soft_delete", 1));
+    } else {
+      w.deleteDocuments(new Term("id", "1"));
+      w.deleteDocuments(new Term("id", "2"));
+    }
+    sm.maybeRefreshBlocking();
+    // All docs in the first segment are deleted - we should drop it with the default merge policy.
+    sm.release(searcher);
+    assertEquals(0, queryCache.getCacheSize());
+    assertEquals(1, queryCache.getEvictionCount());
+    sm.close();
+    w.close();
+    dir.close();
   }
 
   public void testBulkScorerLocking() throws Exception {
