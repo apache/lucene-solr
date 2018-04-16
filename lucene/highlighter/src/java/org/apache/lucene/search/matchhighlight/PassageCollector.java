@@ -75,14 +75,14 @@ public class PassageCollector implements SnippetCollector {
       }
       // append to the current snippet
       snippet.append(text.substring(passageStart, mi.startOffset()));
-      snippet.append("<B>");  // TODO make configurable
+      snippet.append("<b>");  // TODO make configurable
       snippet.append(text.substring(mi.startOffset(), mi.endOffset()));
-      snippet.append("</B>");
-      passageStart = mi.endOffset() + 1;
+      snippet.append("</b>");
+      passageStart = mi.endOffset();
     }
 
     if (snippet.length() > 0) {
-      snippet.append(text.substring(snippetEnd, passageEnd));
+      snippet.append(text.substring(passageStart, passageEnd));
       document.add(new TextField(field.name, snippet.toString(), Field.Store.YES));
     }
   }

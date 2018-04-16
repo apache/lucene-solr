@@ -80,7 +80,35 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     assertEquals(2, highlights.docs.length);
     assertEquals("Just a test <b>highlighting</b> from postings. ", highlights.docs[0].fields.get("body"));
-    assertEquals("<b>Highlighting</b> the first term. ", highlights.docs[0].fields.get("body"));
+    assertEquals("<b>Highlighting</b> the first term. ", highlights.docs[1].fields.get("body"));
+
+    ir.close();
+  }
+
+  // simple test highlighting last word.
+  public void testHighlightLastWord() throws Exception {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+
+    Field body = new Field("body", "", TextField.TYPE_STORED);
+    Document doc = new Document();
+    doc.add(body);
+
+    body.setStringValue("This is a test");
+    iw.addDocument(doc);
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    Query query = new TermQuery(new Term("body", "test"));
+
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+
+    MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
+    TopHighlights highlights = highlighter.highlight(query, topDocs, () -> new PassageCollector(Collections.singleton("body")));
+    assertEquals(1, highlights.docs.length);
+    assertEquals("This is a <b>test</b>", highlights.docs[0].fields.get("body"));
 
     ir.close();
   }

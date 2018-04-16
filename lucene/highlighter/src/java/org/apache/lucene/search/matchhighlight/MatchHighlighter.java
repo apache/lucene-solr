@@ -46,7 +46,7 @@ public class MatchHighlighter {
 
   public TopHighlights highlight(Query query, TopDocs docs, Supplier<SnippetCollector> collectorSupplier) throws IOException {
     HighlightDoc[] highlights = new HighlightDoc[docs.scoreDocs.length];
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
     int i = 0;
     for (ScoreDoc doc : docs.scoreDocs) {
       int contextOrd = ReaderUtil.subIndex(doc.doc, searcher.getIndexReader().leaves());

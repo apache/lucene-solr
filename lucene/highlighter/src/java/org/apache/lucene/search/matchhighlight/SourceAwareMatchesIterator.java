@@ -80,7 +80,7 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
     return new SourceAwareMatchesIterator() {
 
       int sourceCount = -1;
-      int tsPosition = 0;
+      int tsPosition = -1;
       TokenStream ts;
       OffsetAttribute offsetAttribute;
       PositionIncrementAttribute posIncAttribute;
