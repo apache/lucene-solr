@@ -62,7 +62,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -1479,7 +1478,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
   }
 
-  @Test
   public void testDocValuesUpdatesDontBreakCache() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
@@ -1544,5 +1542,66 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.close();
     dir.close();
 
+  }
+
+  public void testBulkScorerLocking() throws Exception {
+
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    final int numDocs = atLeast(10);
+    Document emptyDoc = new Document();
+    for (int d = 0; d < numDocs; ++d) {
+      for (int i = random().nextInt(5000); i >= 0; --i) {
+        w.addDocument(emptyDoc);
+      }
+      Document doc = new Document();
+      for (String value : Arrays.asList("foo", "bar", "baz")) {
+        if (random().nextBoolean()) {
+          doc.add(new StringField("field", value, Store.NO));
+        }
+      }
+    }
+    for (int i = TestUtil.nextInt(random(), 3000, 5000); i >= 0; --i) {
+      w.addDocument(emptyDoc);
+    }
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+
+    DirectoryReader reader = DirectoryReader.open(w);
+    DirectoryReader noCacheReader = new DummyDirectoryReader(reader);
+
+    LRUQueryCache cache = new LRUQueryCache(1, 100000, context -> true);
+    IndexSearcher searcher = new AssertingIndexSearcher(random(), reader);
+    searcher.setQueryCache(cache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    Query query = new ConstantScoreQuery(new BooleanQuery.Builder()
+        .add(new BoostQuery(new TermQuery(new Term("field", "foo")), 3), Occur.SHOULD)
+        .add(new BoostQuery(new TermQuery(new Term("field", "bar")), 3), Occur.SHOULD)
+        .add(new BoostQuery(new TermQuery(new Term("field", "baz")), 3), Occur.SHOULD)
+        .build());
+
+    searcher.search(query, 1);
+
+    IndexSearcher noCacheHelperSearcher = new AssertingIndexSearcher(random(), noCacheReader);
+    noCacheHelperSearcher.setQueryCache(cache);
+    noCacheHelperSearcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    noCacheHelperSearcher.search(query, 1);
+
+    Thread t = new Thread(() -> {
+      try {
+        noCacheReader.close();
+        w.close();
+        dir.close();
+      }
+      catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+    t.start();
+    t.join();
   }
 }
