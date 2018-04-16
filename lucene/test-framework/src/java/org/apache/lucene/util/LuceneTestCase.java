@@ -1049,7 +1049,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static MergePolicy newMergePolicy(Random r) {
-    if (rarely(r)) {
+    return newMergePolicy(r, true);
+  }
+
+  public static MergePolicy newMergePolicy(Random r, boolean includeMockMP) {
+    if (includeMockMP && rarely(r)) {
       return new MockRandomMergePolicy(r);
     } else if (r.nextBoolean()) {
       return newTieredMergePolicy(r);
