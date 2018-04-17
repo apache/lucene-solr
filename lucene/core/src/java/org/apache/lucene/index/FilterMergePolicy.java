@@ -94,8 +94,8 @@ public class FilterMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
-    return in.keepFullyDeletedSegment(reader);
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    return in.keepFullyDeletedSegment(readerIOSupplier);
   }
 
   @Override

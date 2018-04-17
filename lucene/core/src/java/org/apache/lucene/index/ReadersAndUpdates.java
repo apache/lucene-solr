@@ -41,7 +41,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -260,19 +259,20 @@ final class ReadersAndUpdates {
   }
 
   synchronized int numDeletesToMerge(MergePolicy policy) throws IOException {
-    IOSupplier<CodecReader> readerSupplier = () -> {
-      if (this.reader == null) {
-        // get a reader and dec the ref right away we just make sure we have a reader
-        getReader(IOContext.READ).decRef();
-      }
-      if (reader.getLiveDocs() != pendingDeletes.getLiveDocs()
-          || reader.numDeletedDocs() != info.getDelCount() - pendingDeletes.numPendingDeletes()) {
-        // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
-        swapNewReaderWithLatestLiveDocs();
-      }
-      return reader;
-    };
-    return pendingDeletes.numDeletesToMerge(policy, readerSupplier);
+    return pendingDeletes.numDeletesToMerge(policy, this::getLatestReader);
+  }
+
+  private CodecReader getLatestReader() throws IOException {
+    if (this.reader == null) {
+      // get a reader and dec the ref right away we just make sure we have a reader
+      getReader(IOContext.READ).decRef();
+    }
+    if (reader.getLiveDocs() != pendingDeletes.getLiveDocs()
+        || reader.numDeletedDocs() != info.getDelCount() - pendingDeletes.numPendingDeletes()) {
+      // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
+      swapNewReaderWithLatestLiveDocs();
+    }
+    return reader;
   }
 
   public synchronized Bits getLiveDocs() {
@@ -813,8 +813,8 @@ final class ReadersAndUpdates {
     return sb.toString();
   }
 
-  public synchronized boolean isFullyDeleted() {
-    return pendingDeletes.isFullyDeleted();
+  public synchronized boolean isFullyDeleted() throws IOException {
+    return pendingDeletes.isFullyDeleted(this::getLatestReader);
   }
 
   private final void markAsShared() {
@@ -822,5 +822,8 @@ final class ReadersAndUpdates {
     liveDocsSharedPending = false;
     pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
-  
+
+  boolean keepFullyDeletedSegment(MergePolicy mergePolicy) throws IOException {
+    return mergePolicy.keepFullyDeletedSegment(this::getLatestReader);
+  }
 }

@@ -90,6 +90,7 @@ import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -2224,7 +2225,7 @@ public class TestIndexWriter extends LuceneTestCase {
     AtomicBoolean keepFullyDeletedSegments = new AtomicBoolean();
     iwc.setMergePolicy(new FilterMergePolicy(iwc.getMergePolicy()) {
       @Override
-      public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
         return keepFullyDeletedSegments.get();
       }
     });
