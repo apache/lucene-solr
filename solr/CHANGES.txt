@@ -99,6 +99,9 @@ New Features
 * SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
   using it for convenience. (David Smiley, Tapan Vaishnav)
 
+* SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
+  in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)
+
 Bug Fixes
 ----------------------
 
