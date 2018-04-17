@@ -222,22 +222,6 @@ public class ZkContainer {
   public ZkController getZkController() {
     return zkController;
   }
-  
-  public void publishCoresAsDown(List<SolrCore> cores) {
-    
-    for (SolrCore core : cores) {
-      try {
-        zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
-      } catch (KeeperException e) {
-        ZkContainer.log.error("", e);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        ZkContainer.log.error("", e);
-      } catch (Exception e) {
-        ZkContainer.log.error("", e);
-      }
-    }
-  }
 
   public void close() {
     

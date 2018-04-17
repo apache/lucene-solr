@@ -58,9 +58,6 @@ import org.slf4j.LoggerFactory;
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static ZkStateReaderAccessor accessor;
-  private static int overseerLeaderIndex;
-
   // used by MoveReplicaHDFSTest
   protected boolean inPlaceMove = true;
 
@@ -76,14 +73,12 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       JettySolrRunner jetty = cluster.getJettySolrRunner(i);
       if (jetty.getNodeName().equals(overseerLeader)) {
         overseerJetty = jetty;
-        overseerLeaderIndex = i;
         break;
       }
     }
     if (overseerJetty == null) {
       fail("no overseer leader!");
     }
-    accessor = new ZkStateReaderAccessor(overseerJetty.getCoreContainer().getZkController().getZkStateReader());
   }
 
   protected String getSolrXml() {
@@ -134,8 +129,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         shardId = slice.getName();
       }
     }
-
-    Set<CollectionStateWatcher> watchers = new HashSet<>(accessor.getStateWatchers(coll));
 
     int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll);
     int targetNumCores = getNumOfCores(cloudClient, targetNode, coll);
@@ -199,9 +192,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
-    Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
-
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
@@ -241,8 +231,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
     assertTrue("replica never fully recovered", recovered);
-    newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
@@ -255,8 +243,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-
-    Set<CollectionStateWatcher> watchers = new HashSet<>(accessor.getStateWatchers(coll));
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     create.setAutoAddReplicas(false);
@@ -300,9 +286,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       Thread.sleep(500);
     }
     assertFalse(success);
-
-    Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
 
     log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
