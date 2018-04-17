@@ -41,6 +41,12 @@ Upgrade Notes
   method signatures was required to fix it. Third party components that use this API
   need to be updated. (Eros Taborelli, Erick Erickson, ab)
 
+New Features
+----------------------
+
+* SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
+  in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman via Dennis Gove)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
