@@ -164,6 +164,8 @@ Bug Fixes
 
 * SOLR-10169: PeerSync will hit an NPE on no response errors when looking for fingerprint. (Erick Erickson)
 
+* SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
+
 Optimizations
 ----------------------
 

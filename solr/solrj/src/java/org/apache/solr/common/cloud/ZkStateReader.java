@@ -1572,8 +1572,12 @@ public class ZkStateReader implements Closeable {
         return v;
       });
       for (CollectionStateWatcher watcher : watchers) {
-        if (watcher.onStateChanged(liveNodes, collectionState)) {
-          removeCollectionStateWatcher(collection, watcher);
+        try {
+          if (watcher.onStateChanged(liveNodes, collectionState)) {
+            removeCollectionStateWatcher(collection, watcher);
+          }
+        } catch (Throwable throwable) {
+          LOG.warn("Error on calling watcher", throwable);
         }
       }
     }
