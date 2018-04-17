@@ -18,9 +18,8 @@
 package org.apache.lucene.search.matchhighlight;
 
 import java.io.IOException;
-import java.text.BreakIterator;
-import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,9 +32,13 @@ public class PassageCollector implements SnippetCollector {
   private final Document document = new Document();
 
   private final Set<String> fields;
+  private final int maxPassagesPerField;
+  private final Function<String, PassageBuilder> passageSource;
 
-  public PassageCollector(Set<String> fields) {
+  public PassageCollector(Set<String> fields, int maxPassagesPerField, Function<String, PassageBuilder> passageSource) {
     this.fields = fields;
+    this.maxPassagesPerField = maxPassagesPerField;
+    this.passageSource = passageSource;
   }
 
   @Override
@@ -51,40 +54,16 @@ public class PassageCollector implements SnippetCollector {
   @Override
   public void collectSnippets(SourceAwareMatches matches, FieldInfo field, String text) throws IOException {
 
-    BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
-    breakIterator.setText(text); // nocommit is there a nicer way of doing this?
-
-    StringBuilder snippet = new StringBuilder();
-    int passageStart = breakIterator.first();
-    int passageEnd = breakIterator.next();
-    int snippetEnd = 0;
     MatchesIterator mi = matches.getMatches(field, text);
-
+    PassageBuilder passageBuilder = passageSource.apply(text);
     while (mi.next()) {
-      if (mi.startOffset() >= passageEnd) {
-        // finish the current snippet and advance the BreakIterator until we're surrounding the current match
-        if (snippet.length() > 0) {
-          snippet.append(text.substring(snippetEnd, passageEnd));
-          document.add(new TextField(field.name, snippet.toString(), Field.Store.YES));
-          snippet = new StringBuilder();
-        }
-        while (passageEnd < mi.startOffset()) {
-          passageStart = passageEnd;
-          passageEnd = breakIterator.next();
-        }
-      }
-      // append to the current snippet
-      snippet.append(text.substring(passageStart, mi.startOffset()));
-      snippet.append("<b>");  // TODO make configurable
-      snippet.append(text.substring(mi.startOffset(), mi.endOffset()));
-      snippet.append("</b>");
-      passageStart = mi.endOffset();
+      passageBuilder.addMatch(mi.term(), mi.startOffset(), mi.endOffset());
     }
 
-    if (snippet.length() > 0) {
-      snippet.append(text.substring(passageStart, passageEnd));
-      document.add(new TextField(field.name, snippet.toString(), Field.Store.YES));
+    for (String snippet : passageBuilder.getTopPassages(maxPassagesPerField)) {
+      document.add(new TextField(field.name, snippet, Field.Store.YES));
     }
+
   }
 
 }

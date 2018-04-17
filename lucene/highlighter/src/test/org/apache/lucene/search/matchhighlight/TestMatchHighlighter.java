@@ -76,7 +76,8 @@ public class TestMatchHighlighter extends LuceneTestCase {
     assertEquals(2, topDocs.totalHits);
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
-    TopHighlights highlights = highlighter.highlight(query, topDocs, () -> new PassageCollector(Collections.singleton("body")));
+    TopHighlights highlights = highlighter.highlight(query, topDocs,
+        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
 
     assertEquals(2, highlights.docs.length);
     assertEquals("Just a test <b>highlighting</b> from postings. ", highlights.docs[0].fields.get("body"));
@@ -106,7 +107,8 @@ public class TestMatchHighlighter extends LuceneTestCase {
     assertEquals(1, topDocs.totalHits);
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
-    TopHighlights highlights = highlighter.highlight(query, topDocs, () -> new PassageCollector(Collections.singleton("body")));
+    TopHighlights highlights = highlighter.highlight(query, topDocs,
+        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
     assertEquals(1, highlights.docs.length);
     assertEquals("This is a <b>test</b>", highlights.docs[0].fields.get("body"));
 
