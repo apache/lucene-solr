@@ -269,6 +269,8 @@ IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
 IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
 IF "%SCRIPT_CMD%"=="delete" goto delete_usage
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
+IF "%SCRIPT_CMD%"=="auth" goto auth_usage
+IF "%SCRIPT_CMD%"=="status" goto status_usage
 goto done
 
 :script_usage
@@ -302,6 +304,9 @@ goto done
 @echo   -h host       Specify the hostname for this Solr instance
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
+@echo "                  The specified port (SOLR_PORT) will also be used to determine the stop port"
+@echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
+@echo "                  For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
 @echo.
 @echo   -d dir        Specify the Solr server directory; defaults to server
 @echo.
@@ -317,9 +322,9 @@ goto done
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
 @echo                   on which example is run. The default value is server/solr. If passed a relative dir
-@echo                   validation with the current dir will be done before trying the default server/<dir>
+@echo                   validation with the current dir will be done before trying the default server/^<dir^>
 @echo.
-@echo   -t dir        Sets the solr.data.home system property, used as root for ^<instance_dir^>/data directories.
+@echo   -t dir        Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
@@ -342,13 +347,21 @@ goto done
 @echo.
 @echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
-@echo   -V            Verbose messages from this script
+@echo   -V/-verbose   Verbose messages from this script
+@echo.
+goto done
+
+:status_usage
+@echo.
+@echo Usage: solr status
+@echo.
+@echo   NOTE: This command will show the status of all running Solr servers
 @echo.
 goto done
 
 :stop_usage
 @echo.
-@echo Usage: solr stop [-k key] [-p port]
+@echo Usage: solr stop [-k key] [-p port] [-V]
 @echo.
 @echo  -k key      Stop key; default is solrrocks
 @echo.
@@ -356,11 +369,15 @@ goto done
 @echo.
 @echo  -all        Find and stop all running Solr servers on this host
 @echo.
+@echo  -V/-verbose Verbose messages from this script
+@echo.
+@echo  NOTE: To see if any Solr servers are running, do: solr status
+@echo.
 goto done
 
 :healthcheck_usage
 @echo.
-@echo Usage: solr healthcheck [-c collection] [-z zkHost]
+@echo Usage: solr healthcheck [-c collection] [-z zkHost] [-V] 
 @echo.
 @echo Can be run from remote (non-Solr^) hosts, as long as a proper ZooKeeper connection is provided
 @echo.
@@ -390,7 +407,7 @@ goto done
 
 :delete_usage
 echo.
-echo Usage: solr delete [-c name] [-deleteConfig boolean] [-p port] [-V]
+echo Usage: solr delete [-c name] [-deleteConfig true^|false] [-p port] [-V]
 echo.
 echo  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
 echo  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also
@@ -399,26 +416,26 @@ echo  You can override this behavior by passing -deleteConfig false when running
 echo.
 echo  Can be run on remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd
 echo.
-echo   -c name     Name of core to create
+echo   -c name     Name of core to delete
 echo.
 echo   -deleteConfig boolean Delete the configuration directory from Zookeeper; default is true
 echo.
-echo   -p port     Port of a local Solr instance where you want to create the new core
+echo   -p port     Port of a local Solr instance where you want to delete the core/collection
 echo                 If not specified, the script will search the local system for a running
 echo                 Solr instance and will use the port of the first server it finds.
 echo.
-echo   -V            Enable more verbose output.
+echo   -V            Enables more verbose output.
 echo.
 goto done
 
 :create_core_usage
 echo.
-echo Usage: solr create_core [-c name] [-d confdir] [-p port] [-V]
+echo Usage: solr create_core [-c ^<core^>] [-d confdir] [-p port] [-V]
 echo.
 echo When a configSet is used, this can be run from any host.  If pointing at a non-configSet directory, this
 echo must be run from the host that you wish to create the core on.
 echo.
-echo   -c name     Name of core to create
+echo   -c ^<core^>     Name of core to create
 echo.
 echo   -d confdir  Configuration directory to copy when creating the new core, built-in options are:
 echo.
@@ -441,13 +458,13 @@ goto done
 
 :create_collection_usage
 echo.
-echo Usage: solr create_collection [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port] [-V]
+echo Usage: solr create_collection [-c collection] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port] [-V]
 echo.
 echo Can be run from remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd.
 echo.
-echo   -c name               Name of collection to create
+echo   -c ^<collection^>         Name of collection to create
 echo.
-echo   -d confdir            Configuration directory to copy when creating the new collection, built-in options are:
+echo   -d ^<confdir^>            Configuration directory to copy when creating the new collection, built-in options are:
 echo.
 echo       _default: Minimal configuration, which supports enabling/disabling field-guessing support
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
@@ -467,9 +484,9 @@ echo                             will be uploaded to Zookeeper using the collect
 echo                             to use an existing directory or override the name of the configuration in
 echo                              Zookeeper, then use the -c option.
 echo.
-echo   -shards #             Number of shards to split the collection into
+echo   -shards #             Number of shards to split the collection into; default is 1
 echo.
-echo   -replicationFactor #  Number of copies of each document in the collection
+echo   -replicationFactor #  Number of copies of each document in the collection, default is 1 (no replication)
 echo.
 echo   -p port               Port of a local Solr instance where you want to create the new collection
 echo                           If not specified, the script will search the local system for a running
@@ -510,18 +527,19 @@ echo.
 echo.             ^<src^>, ^<dest^> : [file:][/]path/to/local/file or zk:/path/to/zk/node
 echo                              NOTE: ^<src^> and ^<dest^> may both be Zookeeper resources prefixed by 'zk:'
 echo             When ^<src^> is a zk resource, ^<dest^> may be '.'
+echo             If ^<dest^> ends with '/', then ^<dest^> will be a local folder or parent znode and the last
 echo             element of the ^<src^> path will be appended unless ^<src^> also ends in a slash. 
 echo             ^<dest^> may be zk:, which may be useful when using the cp -r form to backup/restore 
-echo              the entire zk state.
-echo              You must enclose local paths that end in a wildcard in quotes or just
-echo              end the local path in a slash. That is,
-echo              'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to
-echo              'bin/solr zk cp -r ^"/some/dir/*^" zk:/ -z localhost:2181'
-echo              but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error
-echo .
-echo              here's an example of backup/restore for a ZK configuration:
-echo              to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'
-echo              to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'
+echo             the entire zk state.
+echo             You must enclose local paths that end in a wildcard in quotes or just
+echo             end the local path in a slash. That is,
+echo             'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to
+echo             'bin/solr zk cp -r ^"/some/dir/*^" zk:/ -z localhost:2181'
+echo             but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error.
+echo.
+echo             Here's an example of backup/restore for a ZK configuration:
+echo             to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'
+echo             to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'
 echo.
 echo             The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and
 echo             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute.
@@ -580,37 +598,37 @@ IF "%ZK_FULL%"=="true" (
 goto done
 
 :auth_usage
-echo Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>] [-V]
-echo        solr auth enable [-type basicAuth] -prompt ^<true|false^> [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>] [-V]
-echo        solr auth disable [-updateIncludeFileOnly ^<true|false^>] [-V]
-echo
+echo Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown ^<true^|false^>] [-updateIncludeFileOnly ^<true^|false^>] [-V]
+echo        solr auth enable [-type basicAuth] -prompt ^<true^|false^> [-blockUnknown ^<true^|false^>] [-updateIncludeFileOnly ^<true^|false^>] [-V]
+echo        solr auth disable [-updateIncludeFileOnly ^<true^|false^>] [-V]
+echo.
 echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
-echo
+echo.
 echo   -type ^<type^>                 The authentication mechanism to enable. Defaults to 'basicAuth'.
-echo
+echo.
 echo   -credentials ^<user:pass^>     The username and password of the initial user
 echo                                Note: only one of -prompt or -credentials must be provided
-echo
-echo   -prompt ^<true|false^>         Prompts the user to provide the credentials
+echo.
+echo   -prompt ^<true^|false^>         Prompts the user to provide the credentials
 echo                                Note: only one of -prompt or -credentials must be provided
-echo
-echo   -blockUnknown ^<true|false^>   When true, this blocks out access to unauthenticated users. When not provided,
+echo.
+echo   -blockUnknown ^<true^|false^>   When true, this blocks out access to unauthenticated users. When not provided,
 echo                                this defaults to false (i.e. unauthenticated users can access all endpoints, except the
-echo                                operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference
+echo                                operations like collection-edit, security-edit, core-admin-edit etc.^). Check the reference
 echo                                guide for Basic Authentication for more details.
-echo
-echo   -updateIncludeFileOnly ^<true|false^>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-echo                                          authentication (i.e. don't update security.json)"
-echo
+echo.
+echo   -updateIncludeFileOnly ^<true^|false^>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+echo                                          authentication (i.e. don't update security.json^)"
+echo.
 echo   -z zkHost                    Zookeeper connection string
-echo
-echo   -d <dir>                     Specify the Solr server directory"
-echo 
-echo   -s <dir>                     Specify the Solr home directory. This is where any credentials or authentication"
-echo                                configuration files (e.g. basicAuth.conf) would be placed."
-echo
+echo.
+echo   -d ^<dir^>                     Specify the Solr server directory"
+echo.
+echo   -s ^<dir^>                     Specify the Solr home directory. This is where any credentials or authentication"
+echo                                configuration files (e.g. basicAuth.conf^) would be placed."
+echo.
 echo   -V                           Enable more verbose output
-echo 
+echo.
 goto done
 
 REM Really basic command-line arg parsing
@@ -1885,6 +1903,10 @@ IF "%FIRST_ARG%"=="start" (
   goto create_collection_usage
 ) ELSE IF "%FIRST_ARG%"=="zk" (
   goto zk_short_usage
+) ELSE IF "%FIRST_ARG%"=="auth" (
+  goto auth_usage
+) ELSE IF "%FIRST_ARG%"=="status" (
+  goto status_usage
 ) ELSE (
   goto script_usage
 )
