@@ -159,6 +159,8 @@ Bug Fixes
 
 * SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
   (Amrit Sarkar, Varun Thacker)
+
+* SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
  
 Optimizations
 ----------------------
