@@ -18,8 +18,10 @@
 package org.apache.lucene.search.matchhighlight;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,13 +30,12 @@ import org.apache.lucene.index.FieldInfo;
 
 public class PassageCollector implements HighlightCollector {
 
-  private final Document document = new Document();
-
   private final Set<String> fields;
   private final int maxPassagesPerField;
-  private final Function<String, PassageBuilder> passageSource;
+  private final Supplier<PassageBuilder> passageSource;
+  private final Map<String, PassageBuilder> builders = new HashMap<>();
 
-  public PassageCollector(Set<String> fields, int maxPassagesPerField, Function<String, PassageBuilder> passageSource) {
+  public PassageCollector(Set<String> fields, int maxPassagesPerField, Supplier<PassageBuilder> passageSource) {
     this.fields = fields;
     this.maxPassagesPerField = maxPassagesPerField;
     this.passageSource = passageSource;
@@ -42,6 +43,12 @@ public class PassageCollector implements HighlightCollector {
 
   @Override
   public Document getHighlights() {
+    Document document = new Document();
+    for (Map.Entry<String, PassageBuilder> passages : builders.entrySet()) {
+      for (String snippet : passages.getValue().getTopPassages(maxPassagesPerField)) {
+        document.add(new TextField(passages.getKey(), snippet, Field.Store.YES));
+      }
+    }
     return document;
   }
 
@@ -54,15 +61,13 @@ public class PassageCollector implements HighlightCollector {
   public void collectHighlights(SourceAwareMatches matches, FieldInfo field, String text) throws IOException {
 
     SourceAwareMatchesIterator mi = matches.getMatches(field, text);
-    PassageBuilder passageBuilder = passageSource.apply(text);
+    PassageBuilder passageBuilder = builders.computeIfAbsent(field.name, t -> passageSource.get());
+    passageBuilder.addSource(text);
+
     while (mi.next()) {
       if (passageBuilder.addMatch(mi.term(), mi.startOffset(), mi.endOffset()) == false) {
         break;
       }
-    }
-
-    for (String snippet : passageBuilder.getTopPassages(maxPassagesPerField)) {
-      document.add(new TextField(field.name, snippet, Field.Store.YES));
     }
 
   }

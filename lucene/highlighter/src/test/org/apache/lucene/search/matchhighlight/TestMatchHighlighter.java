@@ -134,13 +134,18 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
     TopHighlights highlights = highlighter.highlight(query, topDocs,
-        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
+        () -> new PassageCollector(Collections.singleton("body"), 3, SentencePassageBuilder::new));
     assertEquals(1, highlights.docs.length);
     String[] values = highlights.docs[0].fields.getValues("body");
     assertEquals(3, values.length);
     assertEquals("This is the first <b>sentence</b>, and a fine <b>sentence</b> it is too", values[0]);
     assertEquals("And this is the second <b>sentence</b>", values[1]);
     assertEquals("And a third <b>sentence</b> too!", values[2]);
+
+    // again, this time with only one passage per field
+    highlights = highlighter.highlight(query, topDocs,
+        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
+    assertEquals(1, highlights.docs[0].fields.getValues("body").length);
 
     ir.close();
   }

@@ -27,18 +27,25 @@ import org.apache.lucene.util.BytesRef;
 public class SentencePassageBuilder implements PassageBuilder {
 
   private final BreakIterator breakIterator;
-  private final String source;
+
   private final List<String> passages = new ArrayList<>();
 
   private StringBuilder currentPassage = new StringBuilder();
   private int matchStart = 0;
   private int matchEnd;
+  private String source;
 
-  public SentencePassageBuilder(String source) {
+  public SentencePassageBuilder() {
     this.breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
+  }
+
+  @Override
+  public void addSource(String source) {
+    finishPassage();
     this.breakIterator.setText(source);
     this.source = source;
     this.matchEnd = this.breakIterator.next();
+    this.matchStart = 0;
   }
 
   @Override
@@ -73,6 +80,6 @@ public class SentencePassageBuilder implements PassageBuilder {
   @Override
   public Iterable<String> getTopPassages(int topN) {
     finishPassage();
-    return passages;
+    return passages.subList(0, topN);
   }
 }
