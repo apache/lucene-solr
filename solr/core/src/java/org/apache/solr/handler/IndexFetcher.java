@@ -1037,8 +1037,9 @@ public class IndexFetcher {
       boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
       LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-        if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed) {
-          File localFile = new File(indexDirPath, filename);
+        File localFile = new File(indexDirPath, filename);
+        if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed
+            && localFile.exists()) {
           LOG.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
               localFile.getAbsolutePath(), file.get(CHECKSUM));
           // A hard link here should survive the eventual directory move, and should be more space efficient as
