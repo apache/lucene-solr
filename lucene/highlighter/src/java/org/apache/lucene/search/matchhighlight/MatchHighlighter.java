@@ -44,7 +44,7 @@ public class MatchHighlighter {
     this.analyzer = analyzer;
   }
 
-  public TopHighlights highlight(Query query, TopDocs docs, Supplier<SnippetCollector> collectorSupplier) throws IOException {
+  public TopHighlights highlight(Query query, TopDocs docs, Supplier<HighlightCollector> collectorSupplier) throws IOException {
     HighlightDoc[] highlights = new HighlightDoc[docs.scoreDocs.length];
     Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
     int i = 0;
@@ -64,9 +64,9 @@ public class MatchHighlighter {
   private class HighlightingFieldVisitor extends StoredFieldVisitor {
 
     final SourceAwareMatches matches;
-    final SnippetCollector collector;
+    final HighlightCollector collector;
 
-    private HighlightingFieldVisitor(SourceAwareMatches matches, SnippetCollector collector) {
+    private HighlightingFieldVisitor(SourceAwareMatches matches, HighlightCollector collector) {
       this.matches = matches;
       this.collector = collector;
     }
@@ -82,7 +82,7 @@ public class MatchHighlighter {
 
     @Override
     public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
-      collector.collectSnippets(matches, fieldInfo, new String(value));
+      collector.collectHighlights(matches, fieldInfo, new String(value));
     }
   }
 

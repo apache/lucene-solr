@@ -25,9 +25,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.search.MatchesIterator;
 
-public class PassageCollector implements SnippetCollector {
+public class PassageCollector implements HighlightCollector {
 
   private final Document document = new Document();
 
@@ -52,12 +51,14 @@ public class PassageCollector implements SnippetCollector {
   }
 
   @Override
-  public void collectSnippets(SourceAwareMatches matches, FieldInfo field, String text) throws IOException {
+  public void collectHighlights(SourceAwareMatches matches, FieldInfo field, String text) throws IOException {
 
-    MatchesIterator mi = matches.getMatches(field, text);
+    SourceAwareMatchesIterator mi = matches.getMatches(field, text);
     PassageBuilder passageBuilder = passageSource.apply(text);
     while (mi.next()) {
-      passageBuilder.addMatch(mi.term(), mi.startOffset(), mi.endOffset());
+      if (passageBuilder.addMatch(mi.term(), mi.startOffset(), mi.endOffset()) == false) {
+        break;
+      }
     }
 
     for (String snippet : passageBuilder.getTopPassages(maxPassagesPerField)) {

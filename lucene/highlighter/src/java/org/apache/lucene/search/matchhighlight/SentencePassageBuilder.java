@@ -42,7 +42,10 @@ public class SentencePassageBuilder implements PassageBuilder {
   }
 
   @Override
-  public void addMatch(BytesRef term, int startOffset, int endOffset) {
+  public boolean addMatch(BytesRef term, int startOffset, int endOffset) {
+    if (startOffset > source.length()) {
+      return false;
+    }
     if (startOffset > this.matchEnd) {
       finishPassage();
       while (matchEnd <= startOffset) {
@@ -55,6 +58,7 @@ public class SentencePassageBuilder implements PassageBuilder {
     currentPassage.append(this.source.substring(startOffset, endOffset));
     currentPassage.append("</b>");
     matchStart = endOffset;
+    return true;
   }
 
   private void finishPassage() {

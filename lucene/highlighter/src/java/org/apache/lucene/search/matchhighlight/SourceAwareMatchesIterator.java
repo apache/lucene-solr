@@ -34,6 +34,7 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
   static SourceAwareMatchesIterator wrapOffsets(MatchesIterator in) {
     return new SourceAwareMatchesIterator() {
+
       @Override
       public void close() throws IOException {
         // no-op
@@ -81,17 +82,22 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
       int sourceCount = -1;
       int tsPosition = -1;
+      int offsetGap = 0;
       TokenStream ts;
       OffsetAttribute offsetAttribute;
       PositionIncrementAttribute posIncAttribute;
 
       int startPosition, endPosition, startOffset, endOffset;
+      boolean cached;
+      boolean restarted;
 
       @Override
       public void addSource(String source) throws IOException {
         sourceCount++;
         if (sourceCount > 0) {
+          ts.close();
           tsPosition += analyzer.getPositionIncrementGap(field);
+          offsetGap += analyzer.getOffsetGap(field) - 1;
         }
         ts = analyzer.tokenStream(field, new StringReader(source));
         offsetAttribute = ts.getAttribute(OffsetAttribute.class);
@@ -101,17 +107,28 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
       @Override
       public boolean next() throws IOException {
-        boolean next = in.next();
-        if (next == false) {
-          return false;
+        if (cached) {
+          cached = false;
+          return true;
+        }
+        if (restarted == false) {
+          boolean next = in.next();
+          if (next == false) {
+            return false;
+          }
+        }
+        else {
+          restarted = false;
         }
         startPosition = in.startPosition();
         if (advanceTokenStream(startPosition) == false) {
+          restarted = true;
           return false;
         }
         startOffset = offsetAttribute.startOffset();
         endPosition = in.endPosition();
         if (advanceTokenStream(endPosition) == false) {
+          restarted = true;
           return false;
         }
         endOffset = offsetAttribute.endOffset();
@@ -140,12 +157,12 @@ public interface SourceAwareMatchesIterator extends MatchesIterator, Closeable {
 
       @Override
       public int startOffset() throws IOException {
-        return startOffset;
+        return startOffset - offsetGap;
       }
 
       @Override
       public int endOffset() throws IOException {
-        return endOffset;
+        return endOffset - offsetGap;
       }
 
       @Override

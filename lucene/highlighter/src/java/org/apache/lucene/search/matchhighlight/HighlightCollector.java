@@ -22,12 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 
-public interface SnippetCollector {
+public interface HighlightCollector {
 
   Document getHighlights();
 
   boolean needsField(String name);
 
-  void collectSnippets(SourceAwareMatches matches, FieldInfo field, String text) throws IOException;
+  void collectHighlights(SourceAwareMatches matches, FieldInfo field, String text) throws IOException;
 
 }

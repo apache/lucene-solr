@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.util.IOUtils;
 
 class SourceAwareMatches implements Closeable {
@@ -41,7 +40,7 @@ class SourceAwareMatches implements Closeable {
     this.analyzer = analyzer;
   }
 
-  MatchesIterator getMatches(FieldInfo fi, String source) throws IOException {
+  SourceAwareMatchesIterator getMatches(FieldInfo fi, String source) throws IOException {
     if (iterators.containsKey(fi) == false) {
       if (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
         iterators.put(fi, SourceAwareMatchesIterator.wrapOffsets(in.getMatches(fi.name)));
