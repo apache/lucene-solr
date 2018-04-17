@@ -188,7 +188,8 @@ class DocumentsWriterFlushQueue {
     protected final void publishFlushedSegment(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates globalPacket)
         throws IOException {
       assert newSegment != null;
-      assert newSegment.segmentInfo != null;
+      SegmentCommitInfo segmentInfo = newSegment.segmentInfo;
+      assert segmentInfo != null;
       final FrozenBufferedUpdates segmentUpdates = newSegment.segmentUpdates;
       if (indexWriter.infoStream.isEnabled("DW")) {
         indexWriter.infoStream.message("DW", "publishFlushedSegment seg-private updates=" + segmentUpdates);  
@@ -198,7 +199,7 @@ class DocumentsWriterFlushQueue {
         indexWriter.infoStream.message("DW", "flush: push buffered seg private updates: " + segmentUpdates);
       }
       // now publish!
-      indexWriter.publishFlushedSegment(newSegment.segmentInfo, segmentUpdates, globalPacket, newSegment.sortMap);
+      indexWriter.publishFlushedSegment(segmentInfo, newSegment.fieldInfos, segmentUpdates, globalPacket, newSegment.sortMap);
     }
     
     protected final void finishFlush(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates bufferedUpdates)

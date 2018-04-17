@@ -230,7 +230,7 @@ class PendingDeletes {
   /**
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
-  boolean isFullyDeleted() {
+  boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
   }
 

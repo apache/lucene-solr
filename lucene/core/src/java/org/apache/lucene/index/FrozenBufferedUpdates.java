@@ -339,7 +339,6 @@ class FrozenBufferedUpdates {
                                                messagePrefix + "done inner apply del packet (%s) to %d segments; %d new deletes/updates; took %.3f sec",
                                                this, segStates.length, delCount, (System.nanoTime() - iterStartNS) / 1000000000.));
       }
-      
       if (privateSegment != null) {
         // No need to retry for a segment-private packet: the merge that folds in our private segment already waits for all deletes to
         // be applied before it kicks off, so this private segment must already not be in the set of merging segments

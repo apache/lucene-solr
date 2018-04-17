@@ -70,7 +70,8 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
   }
 
   @Override
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    CodecReader reader = readerIOSupplier.get();
     /* we only need a single hit to keep it no need for soft deletes to be checked*/
     Scorer scorer = getScorer(retentionQuerySupplier.get(), wrapLiveDocs(reader, null, reader.maxDoc()));
     if (scorer != null) {
@@ -78,7 +79,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
       boolean atLeastOneHit = iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
       return atLeastOneHit;
     }
-    return super.keepFullyDeletedSegment(reader) ;
+    return super.keepFullyDeletedSegment(readerIOSupplier) ;
   }
 
   // pkg private for testing

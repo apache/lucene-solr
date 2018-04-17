@@ -168,6 +168,11 @@ final class PendingSoftDeletes extends PendingDeletes {
 
   @Override
   int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    ensureInitialized(readerIOSupplier); // initialize to ensure we have accurate counts
+    return super.numDeletesToMerge(policy, readerIOSupplier);
+  }
+
+  private void ensureInitialized(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     if (dvGeneration == -2) {
       FieldInfos fieldInfos = readFieldInfos();
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
@@ -183,7 +188,12 @@ final class PendingSoftDeletes extends PendingDeletes {
         dvGeneration = fieldInfo == null ? -1 : fieldInfo.getDocValuesGen();
       }
     }
-    return super.numDeletesToMerge(policy, readerIOSupplier);
+  }
+
+  @Override
+  boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    ensureInitialized(readerIOSupplier); // initialize to ensure we have accurate counts - only needed in the soft-delete case
+    return super.isFullyDeleted(readerIOSupplier);
   }
 
   private FieldInfos readFieldInfos() throws IOException {
