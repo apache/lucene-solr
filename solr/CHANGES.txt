@@ -161,7 +161,9 @@ Bug Fixes
   (Amrit Sarkar, Varun Thacker)
 
 * SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
- 
+
+* SOLR-10169: PeerSync will hit an NPE on no response errors when looking for fingerprint. (Erick Erickson)
+
 Optimizations
 ----------------------
 
