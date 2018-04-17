@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,6 +27,7 @@ import org.junit.Test;
 /**
  * Tests for SegmentsInfoRequestHandler. Plugin entry, returning data of created segment.
  */
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8253")
 public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   private static final int DOC_COUNT = 5;
   
