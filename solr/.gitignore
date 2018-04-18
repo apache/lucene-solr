@@ -26,5 +26,7 @@
 /server/solr-webapp
 /server/start.jar
 
+/webapp/angular/node_modules
+
 *.out
 *.err
