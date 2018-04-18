@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Nodes, Collections) {
+    function($scope, $location, Zookeeper, Constants, Nodes, Collections, SystemRemote) {
 
         $scope.showDebug = false;
 
@@ -40,7 +40,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view == "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Zookeeper, Nodes, Collections);
+            nodesSubController($scope, Zookeeper, Nodes, Collections, SystemRemote);
         }
     }
 );
@@ -71,20 +71,21 @@ function ensureInList(string, list) {
     }
 }
 
-var nodesSubController = function($scope, Zookeeper, Nodes, Collections) {
+var nodesSubController = function($scope, Zookeeper, Nodes, Collections, SystemRemote) {
     $scope.showNodes = true;
     $scope.showTree = false;
     $scope.showGraph = false;
     $scope.showData = false;
-  
-    // Collections.status({}, function(data) {
-    //   console.log("Clusterstatus: " + JSON.stringify(data, undefined, 2)); 
-    // });
-
+    
     Collections.status(function (data) {
         var nodes = {};
         var hosts = {};
-
+        var live_nodes = [];
+        $scope.nodes = nodes;
+        $scope.hosts = hosts;
+        $scope.live_nodes = live_nodes;        
+        
+        // Fetch cluster state from collections API and invert to a nodes structure
         for (var name in data.cluster.collections) {
             var collection = data.cluster.collections[name];
             collection.name = name;
@@ -118,21 +119,36 @@ var nodesSubController = function($scope, Zookeeper, Nodes, Collections) {
             }
         }
 
-        console.log("Nodes:\n" + JSON.stringify(nodes, undefined, 2));
-        // console.log("Hosts:\n" + JSON.stringify(hosts, undefined, 2));
-        
-        $scope.live_nodes = data.cluster.live_nodes;
-        all_nodes = [];
+        live_nodes = data.cluster.live_nodes;
         for (n in data.cluster.live_nodes) {
             if (!(data.cluster.live_nodes[n] in nodes)) {
                 nodes[data.cluster.live_nodes[n]] = {};
             }
         }
-        $scope.nodes = nodes;
-        $scope.hosts = hosts;
         
+        for (var n in live_nodes) {
+            var nodeName = live_nodes[n];
+            var $data;
+            
+            // SystemRemote.info(nodeName, function(result) {
+            //     console.log("Inner result: " + JSON.stringify(result, undefined, 2));
+            //     $scope.nodes[nodeName]['info'] = result;
+            //     $scope.nodes[nodeName]['solr_version'] = result.lucene.solr-spec-version;
+            //     $scope.nodes[nodeName]['java_version'] = result.jvm.jre.version;
+            // });
+            
+            console.log("Getting results for node " + nodeName);
+            var result = SystemRemote.info(nodeName);
+            
+            console.log("Result: " + JSON.stringify(result, undefined, 2));
+            // $scope.nodes[nodeName]['info'] = result;
+            // $scope.nodes[nodeName]['solr_version'] = result.lucene.solr-spec-version;
+            // $scope.nodes[nodeName]['java_version'] = result.jvm.jre.version;
+        }
+
+        console.log("Nodes=" + JSON.stringify(nodes, undefined, 2));
+        console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
     });
-    
 };                 
 
 var treeSubController = function($scope, Zookeeper) {

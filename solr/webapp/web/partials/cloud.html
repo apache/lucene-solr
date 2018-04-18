@@ -89,7 +89,7 @@ limitations under the License.
               </td>
               <td>
                 <div ng-repeat="core in n.cores">
-                  <a href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.core }}</a> ({{core.leader ? "leader" : "replica"}})
+                  <a href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.core }}</a> {{core.leader ? "(leader)" : ""}}
                 </div>                
               </td>
           </tr>
