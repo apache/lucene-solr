@@ -175,7 +175,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     QueryUtils.check(random(), dq, s);
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
-    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
+    final Weight dw = s.createWeight(s.rewrite(dq), ScoreMode.COMPLETE, 1);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     final boolean skipOk = ds.iterator().advance(3) != DocIdSetIterator.NO_MORE_DOCS;
@@ -191,7 +191,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
 
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     QueryUtils.check(random(), dq, s);
-    final Weight dw = s.createNormalizedWeight(dq, ScoreMode.COMPLETE);
+    final Weight dw = s.createWeight(s.rewrite(dq), ScoreMode.COMPLETE, 1);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context);
     assertTrue("firsttime skipTo found no match",

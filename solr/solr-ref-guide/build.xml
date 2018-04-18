@@ -213,6 +213,7 @@
                    imagesDir="${build.content.dir}"
                    doctype="book"
                    safemode="unsafe">
+        <attribute key="attribute-missing" value="warn" />
         <attribute key="section-toc" value='' /><!-- we don't use these in the pdf -->
         <attribute key="icons" value="font" />
         <attribute key="icon-set" value="fa" />
@@ -230,6 +231,7 @@
         <attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />
         <attribute key="solr-guide-version" value="${solr-guide-version}" />
         <attribute key="solr-docs-version" value="${solr-docs-version}" />
+        <attribute key="java-javadocs" value="${javadoc.link}" />
         <attribute key="solr-javadocs" value="@{solr-javadocs}" />
         <attribute key="lucene-javadocs" value="@{lucene-javadocs}" />
         <attribute key="build-date" value="${DSTAMP}" />

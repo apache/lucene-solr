@@ -323,7 +323,7 @@ This tokenizer creates synonyms from file path hierarchies.
 
 This tokenizer uses a Java regular expression to break the input text stream into tokens. The expression provided by the pattern argument can be interpreted either as a delimiter that separates tokens, or to match patterns that should be extracted from the text as tokens.
 
-See http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[the Javadocs for `java.util.regex.Pattern`] for more information on Java regular expression syntax.
+See {java-javadocs}java/util/regex/Pattern.html[the Javadocs for `java.util.regex.Pattern`] for more information on Java regular expression syntax.
 
 *Factory class:* `solr.PatternTokenizerFactory`
 
@@ -470,7 +470,7 @@ Simple tokenizer that splits the text stream on whitespace and returns sequences
 `rule`::
 Specifies how to define whitespace for the purpose of tokenization. Valid values:
 
-* `java`: (Default) Uses https://docs.oracle.com/javase/8/docs/api/java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
+* `java`: (Default) Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
 * `unicode`: Uses Unicode's WHITESPACE property
 
 *Example:*

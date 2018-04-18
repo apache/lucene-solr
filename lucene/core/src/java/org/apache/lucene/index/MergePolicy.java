@@ -30,8 +30,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.IOSupplier;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -310,7 +312,7 @@ public abstract class MergePolicy {
      * input total size. This is only set once the merge is
      * initialized by IndexWriter.
      */
-    public long totalBytesSize() throws IOException {
+    public long totalBytesSize() {
       return totalMergeBytes;
     }
 
@@ -318,7 +320,7 @@ public abstract class MergePolicy {
      * Returns the total number of documents that are included with this merge.
      * Note that this does not indicate the number of documents after the merge.
      * */
-    public int totalNumDocs() throws IOException {
+    public int totalNumDocs() {
       int total = 0;
       for (SegmentCommitInfo info : segments) {
         total += info.info.maxDoc();
@@ -551,7 +553,7 @@ public abstract class MergePolicy {
    *  non-deleted documents is set. */
   protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     long byteSize = info.sizeInBytes();
-    int delCount = writer.numDeletedDocs(info);
+    int delCount = writer.numDeletesToMerge(info);
     double delRatio = info.info.maxDoc() <= 0 ? 0.0f : (float) delCount / (float) info.info.maxDoc();
     assert delRatio <= 1.0;
     return (info.info.maxDoc() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
@@ -562,7 +564,7 @@ public abstract class MergePolicy {
    *  writer, and matches the current compound file setting */
   protected final boolean isMerged(SegmentInfos infos, SegmentCommitInfo info, IndexWriter writer) throws IOException {
     assert writer != null;
-    boolean hasDeletions = writer.numDeletedDocs(info) > 0;
+    boolean hasDeletions = writer.numDeletesToMerge(info) > 0;
     return !hasDeletions &&
       info.info.dir == writer.getDirectory() &&
       useCompoundFile(infos, info, writer) == info.info.getUseCompoundFile();
@@ -588,7 +590,7 @@ public abstract class MergePolicy {
   }
 
   /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
+  public double getMaxCFSSegmentSizeMB() {
     return maxCFSSegmentSize/1024/1024.;
   }
 
@@ -609,7 +611,24 @@ public abstract class MergePolicy {
    * Returns true if the segment represented by the given CodecReader should be keep even if it's fully deleted.
    * This is useful for testing of for instance if the merge policy implements retention policies for soft deletes.
    */
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return false;
+  }
+
+  /**
+   * Returns the number of deletes that a merge would claim on the given segment. This method will by default return
+   * the sum of the del count on disk and the pending delete count. Yet, subclasses that wrap merge readers
+   * might modify this to reflect deletes that are carried over to the target segment in the case of soft deletes.
+   *
+   * Soft deletes all deletes to survive across merges in order to control when the soft-deleted data is claimed.
+   * @see IndexWriter#softUpdateDocument(Term, Iterable, Field...)
+   * @see IndexWriterConfig#setSoftDeletesField(String)
+   * @param info the segment info that identifies the segment
+   * @param pendingDeleteCount the number of pending deletes for this segment
+   * @param readerSupplier a supplier that allows to obtain a {@link CodecReader} for this segment
+   */
+  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount,
+                               IOSupplier<CodecReader> readerSupplier) throws IOException {
+    return info.getDelCount() + pendingDeleteCount;
   }
 }

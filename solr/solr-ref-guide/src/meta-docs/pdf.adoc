@@ -141,5 +141,5 @@ These attributes use variables that are inserted by Ant during the PDF creation 
 `<attribute key="solr-docs-version" value="${solr-docs-version}" />`:: The version of Solr covered by this guide.
 `<attribute key="solr-javadocs" value="${solr-javadocs}" />`:: Sets the path for Solr javadoc links to include the right path for the current release version.
 `<attribute key="lucene-javadocs" value="${lucene-javadocs}" />`:: Sets the path for Lucene javadoc links to the right path for the current release version.
-`<attribute key="build-date" value="${DSTAMP}" />`:: Sets the date of the build to add the date to the footer of each page of the PDF.
+`<attribute key="build-date" value="$\{DSTAMP}" />`:: Sets the date of the build to add the date to the footer of each page of the PDF.
 `<attribute key="build-year" value="${current.year}" />`:: Sets the year of the build to add the date to the copyright notice.

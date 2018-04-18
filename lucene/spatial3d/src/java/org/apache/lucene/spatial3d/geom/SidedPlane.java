@@ -234,6 +234,30 @@ public class SidedPlane extends Plane implements Membership {
     return sigNum == this.sigNum;
   }
 
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param v is the point.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(final Vector v) {
+    double evalResult = evaluate(v.x, v.y, v.z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param x is the point x value.
+   * @param y is the point y value.
+   * @param z is the point z value.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(double x, double y, double z) {
+    double evalResult = evaluate(x, y, z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

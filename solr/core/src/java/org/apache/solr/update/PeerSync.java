@@ -388,9 +388,13 @@ public class PeerSync implements SolrMetricProducer {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
       if (srsp == null) break;
 
-      Object replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      Object replicaFingerprint = null;
+      if (srsp.getSolrResponse() != null && srsp.getSolrResponse().getResponse() != null) {
+        replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      }
+
       if (replicaFingerprint == null) {
-        log.warn("Replica did not return a fingerprint - possibly an older Solr version");
+        log.warn("Replica did not return a fingerprint - possibly an older Solr version or exception");
         continue;
       }
       
@@ -402,7 +406,7 @@ public class PeerSync implements SolrMetricProducer {
           return true;
         }
       } catch(IOException e) {
-        log.warn("Could not cofirm if we are already in sync. Continue with PeerSync");
+        log.warn("Could not confirm if we are already in sync. Continue with PeerSync");
       }
     }
     

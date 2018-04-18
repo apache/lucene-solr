@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.ml.distance.CanberraDistance;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.ml.distance.EarthMoversDistance;
@@ -136,9 +135,9 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
 
   private Matrix distance(DistanceMeasure distanceMeasure, Matrix matrix) {
     double[][] data = matrix.getData();
-    RealMatrix realMatrix = new Array2DRowRealMatrix(data);
-    realMatrix = realMatrix.transpose();
-    data = realMatrix.getData();
+    Array2DRowRealMatrix realMatrix = new Array2DRowRealMatrix(data, false);
+    realMatrix = (Array2DRowRealMatrix)realMatrix.transpose();
+    data = realMatrix.getDataRef();
     double[][] distanceMatrix = new double[data.length][data.length];
     for(int i=0; i<data.length; i++) {
       double[] row = data[i];

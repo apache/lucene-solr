@@ -43,6 +43,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -1012,6 +1013,59 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     expectThrows(IllegalStateException.class, () -> {
       DirectoryReader.openIfChanged(r);
     });
+  }
+
+  public void testReuseUnchangedLeafReaderOnDVUpdate() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("some_docvalue", 2));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    writer.addDocument(doc);
+    writer.commit();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(2, reader.numDocs());
+    assertEquals(2, reader.maxDoc());
+    assertEquals(0, reader.numDeletedDocs());
+
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "2", Field.Store.YES));
+    writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("some_docvalue", 1));
+    writer.commit();
+    DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
+    assertNotSame(newReader, reader);
+    reader.close();
+    reader = newReader;
+    assertEquals(2, reader.numDocs());
+    assertEquals(2, reader.maxDoc());
+    assertEquals(0, reader.numDeletedDocs());
+
+    doc = new Document();
+    doc.add(new StringField("id", "3", Field.Store.YES));
+    doc.add(new StringField("version", "3", Field.Store.YES));
+    writer.updateDocument(new Term("id", "3"), doc);
+    writer.commit();
+
+    newReader = DirectoryReader.openIfChanged(reader);
+    assertNotSame(newReader, reader);
+    assertEquals(2, newReader.getSequentialSubReaders().size());
+    assertEquals(1, reader.getSequentialSubReaders().size());
+    assertSame(reader.getSequentialSubReaders().get(0), newReader.getSequentialSubReaders().get(0));
+    reader.close();
+    reader = newReader;
+    assertEquals(3, reader.numDocs());
+    assertEquals(3, reader.maxDoc());
+    assertEquals(0, reader.numDeletedDocs());
+    IOUtils.close(reader, writer, dir);
   }
 }
 

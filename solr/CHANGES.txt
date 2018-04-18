@@ -78,7 +78,31 @@ New Features
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
   (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
 
+* SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
+  (Andrey Kudryavtsev, David Smiley)
+  
+* SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
+  (Mano Kovacs via Mark Miller)
+
+* SOLR-12036: Factor out DefaultStreamFactory solrj class. (Christine Poerschke)
+
+* SOLR-12151: Add abstract MultiSolrCloudTestCase class. (Christine Poerschke)
+
+* SOLR-12181: Add index size autoscaling trigger, based on document count or size in bytes. (ab)
+
+* SOLR-11982: Add possibility to define replica order with the shards.preference parameter to e.g. prefer PULL replicas
+  for distributed queries. (Ere Maijala, Tomás Fernández Löbbe)
+
+* SOLR-11336: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports a list of versioned fields.
+  (versionField config may now be a comma-delimited list). (Michael Braun via David Smiley)
+
+* SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
+  using it for convenience. (David Smiley, Tapan Vaishnav)
+
 * SOLR-12121: JWT Token authentication plugin (janhoy)
+
+* SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
+  in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)
 
 Bug Fixes
 ----------------------
@@ -110,6 +134,42 @@ Bug Fixes
 
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
+  
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
+
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+  Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
+
+* SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
+  (Munendra S N, Mikhail Khludnev via Ishan Chattopadhyaya)
+
+* SOLR-12207: Just rethrowing AssertionError caused by jdk bug in reflection with invocation details.
+ (ab, Dawid Weiss, Mikhail Khludnev)
+
+* SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait. (Mikhail Khludnev)
+
+* SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
+  (Steve Rowe)
+
+* SOLR-12190: Need to properly escape output in GraphMLResponseWriter. (yonik)
+
+* SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
+
+* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
+  (Rohit, Varun Thacker)
+
+* SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
+
+* SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
+
+* SOLR-10169: PeerSync will hit an NPE on no response errors when looking for fingerprint. (Erick Erickson)
+
+* SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -119,7 +179,7 @@ Optimizations
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
 * SOLR-11731: LatLonPointSpatialField can now decode points from docValues when stored=false docValues=true,
-  albeit with maximum precision of 1.33cm (Karthik Ramachandran, David Smiley)
+  albeit with maximum precision of 1.37cm (Karthik Ramachandran, David Smiley)
 
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
@@ -167,6 +227,9 @@ Other Changes
 
 * SOLR-12176: Improve FORCELEADER to handle the case when a replica win the election but does not present
   in clusterstate (Cao Manh Dat)
+
+* SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
+  javadoc links locally. (hossman)
 
 ==================  7.3.0 ==================
 
@@ -380,7 +443,7 @@ Bug Fixes
 
 * SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
 
-* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
   (麦 香浓郁, Uwe Schindler)
 
 * SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)
@@ -1955,7 +2018,7 @@ Bug Fixes
 
 * SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
 
-* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit via Erick Erickson)
 
 * SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
   them all to the transient lists. (Erick Erickson)

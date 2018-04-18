@@ -110,7 +110,11 @@ public class TestStressNRT extends LuceneTestCase {
     final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())), useSoftDeletes);
     writer.setDoRandomForceMergeAssert(false);
     writer.commit();
-    reader = useSoftDeletes ? writer.getReader() : DirectoryReader.open(dir);
+    if (useSoftDeletes) {
+      reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), writer.w.getConfig().getSoftDeletesField());
+    } else {
+      reader = DirectoryReader.open(dir);
+    }
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
@@ -136,7 +140,7 @@ public class TestStressNRT extends LuceneTestCase {
                   }
 
                   DirectoryReader newReader;
-                  if (rand.nextInt(100) < softCommitPercent || useSoftDeletes) {
+                  if (rand.nextInt(100) < softCommitPercent) {
                     // assertU(h.commit("softCommit","true"));
                     if (random().nextBoolean()) {
                       if (VERBOSE) {

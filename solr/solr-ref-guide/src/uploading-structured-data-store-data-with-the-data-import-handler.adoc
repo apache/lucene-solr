@@ -306,7 +306,7 @@ For MySQL driver, which doesn't honor fetchSize and pulls whole resultSet, which
 +
 In this case, set `batchSize=-1` that pass setFetchSize(Integer.MIN_VALUE), and switch result set to pull row by row
 
-All of them substitute properties via `${placeholders}`.
+All of them substitute properties via `$\{placeholders}`.
 
 === URLDataSource
 
@@ -868,7 +868,7 @@ DateFormatTransformer applies only on the fields with an attribute `dateTimeForm
 This transformer recognizes the following attributes:
 
 dateTimeFormat::
-The format used for parsing this field. This must comply with the syntax of the http://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html[Java SimpleDateFormat] class.
+The format used for parsing this field. This must comply with the syntax of the {java-javadocs}java/text/SimpleDateFormat.html[Java SimpleDateFormat] class.
 
 sourceColName::
 The column on which the dateFormat is to be applied. If this is absent source and target are same.
@@ -993,7 +993,7 @@ Note that this transformer can be used to either split a string into tokens base
 
 === The ScriptTransformer
 
-The script transformer allows arbitrary transformer functions to be written in any scripting language supported by Java, such as Javascript, JRuby, Jython, Groovy, or BeanShell. Javascript is integrated into Java 8; you'll need to integrate other languages yourself.
+The script transformer allows arbitrary transformer functions to be written in any scripting language supported by Java, such as Javascript, JRuby, Jython, Groovy, or BeanShell. Javascript is integrated into Java by default; you'll need to integrate other languages yourself.
 
 Each function you write must accept a row variable (which corresponds to a `Java Map<String,Object>`, thus permitting `get,put,remove` operations). Thus you can modify the value of an existing field or add new fields. The return value of the function is the returned object.
 

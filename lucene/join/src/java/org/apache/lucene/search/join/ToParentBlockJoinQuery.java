@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -150,6 +151,28 @@ public class ToParentBlockJoinQuery extends Query {
         return scorer.explain(context, in);
       }
       return Explanation.noMatch("Not a match");
+    }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      // The default implementation would delegate to the joinQuery's Weight, which
+      // matches on children.  We need to match on the parent instead
+      Scorer scorer = scorer(context);
+      if (scorer == null) {
+        return null;
+      }
+      final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
+      if (twoPhase == null) {
+        if (scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+      }
+      else {
+        if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
+          return null;
+        }
+      }
+      return Matches.MATCH_WITH_NO_TERMS;
     }
   }
 

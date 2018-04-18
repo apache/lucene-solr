@@ -242,8 +242,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out 26-Mar-2018
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testHistory() throws Exception {
     waitForState("Timed out wait for collection be active", COLL_NAME,
         clusterShape(1, 3));

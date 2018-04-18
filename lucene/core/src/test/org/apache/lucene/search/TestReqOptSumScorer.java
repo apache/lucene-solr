@@ -62,7 +62,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
         .add(new ConstantScoreQuery(new TermQuery(new Term("f", "foo"))), Occur.MUST)
         .add(new ConstantScoreQuery(new TermQuery(new Term("f", "bar"))), Occur.SHOULD)
         .build();
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.TOP_SCORES);
+    Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1);
     LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
     Scorer scorer = weight.scorer(context);

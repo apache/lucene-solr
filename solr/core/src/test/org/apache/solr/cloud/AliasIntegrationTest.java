@@ -240,6 +240,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testModifyPropertiesV1() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();

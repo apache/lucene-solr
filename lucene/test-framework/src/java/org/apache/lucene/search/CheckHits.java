@@ -16,21 +16,22 @@
  */
 package org.apache.lucene.search;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.Random;
 
 import junit.framework.Assert;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -57,7 +58,7 @@ public class CheckHits {
       if (ignore.contains(Integer.valueOf(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
       Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
                          " doesn't indicate non-match: " + exp.toString(),
@@ -301,6 +302,16 @@ public class CheckHits {
                     (query, defaultFieldName, searcher, deep));
 
   }
+
+  /**
+   * Asserts that the result of calling {@link Weight#matches(LeafReaderContext, int)}
+   * for every document matching a query returns a non-null {@link Matches}
+   * @param query     the query to test
+   * @param searcher  the search to test against
+   */
+  public static void checkMatches(Query query, IndexSearcher searcher) throws IOException {
+    searcher.search(query, new MatchesAsserter(query, searcher));
+  }
   
   private static final Pattern COMPUTED_FROM_PATTERN = Pattern.compile(".*, computed as .* from:");
 
@@ -506,7 +517,7 @@ public class CheckHits {
           ("exception in hitcollector of [["+d+"]] for #"+doc, e);
       }
       
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
       Assert.assertTrue("Explanation of [["+d+"]] for #"+ doc + 
                         " does not indicate match: " + exp.toString(), 
@@ -520,6 +531,45 @@ public class CheckHits {
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE;
+    }
+  }
+
+  /**
+   * Asserts that the {@link Matches} from a query is non-null whenever
+   * the document its created for is a hit.
+   *
+   * Also checks that the previous non-matching document has a {@code null} {@link Matches}
+   */
+  public static class MatchesAsserter extends SimpleCollector {
+
+    private final Weight weight;
+    private LeafReaderContext context;
+    int lastCheckedDoc = -1;
+
+    public MatchesAsserter(Query query, IndexSearcher searcher) throws IOException {
+      this.weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      this.context = context;
+      this.lastCheckedDoc = -1;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      Matches matches = this.weight.matches(context, doc);
+      assertNotNull("Unexpected null Matches object in doc" + doc + " for query " + this.weight.getQuery(), matches);
+      if (lastCheckedDoc != doc - 1) {
+        assertNull("Unexpected non-null Matches object in non-matching doc" + doc + " for query " + this.weight.getQuery(),
+            this.weight.matches(context, doc - 1));
+      }
+      lastCheckedDoc = doc;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 
@@ -541,8 +591,9 @@ public class CheckHits {
   }
 
   private static void doCheckMaxScores(Random random, Query query, IndexSearcher searcher) throws IOException {
-    Weight w1 = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
-    Weight w2 = searcher.createNormalizedWeight(query, ScoreMode.TOP_SCORES);
+    query = searcher.rewrite(query);
+    Weight w1 = searcher.createWeight(query, ScoreMode.COMPLETE, 1);
+    Weight w2 = searcher.createWeight(query, ScoreMode.TOP_SCORES, 1);
 
     // Check boundaries and max scores when iterating all matches
     for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {

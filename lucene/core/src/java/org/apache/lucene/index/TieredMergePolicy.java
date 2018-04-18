@@ -597,7 +597,7 @@ public class TieredMergePolicy extends MergePolicy {
     final List<SegmentCommitInfo> eligible = new ArrayList<>();
     final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
     for(SegmentCommitInfo info : infos) {
-      double pctDeletes = 100.*((double) writer.numDeletedDocs(info))/info.info.maxDoc();
+      double pctDeletes = 100.*((double) writer.numDeletesToMerge(info))/info.info.maxDoc();
       if (pctDeletes > forceMergeDeletesPctAllowed && !merging.contains(info)) {
         eligible.add(info);
       }

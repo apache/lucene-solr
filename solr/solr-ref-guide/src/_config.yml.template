@@ -74,6 +74,7 @@ solr-attributes: &solr-attributes-ref
   solr-guide-version: "${solr-guide-version}"
   solr-guide-version-path: "${solr-guide-version-path}"
   solr-docs-version: "${solr-docs-version}"
+  java-javadocs: "${javadoc.link}"
   solr-javadocs: "${html-solr-javadocs}"
   lucene-javadocs: "${html-lucene-javadocs}"
   build-date: "${DSTAMP}"
@@ -90,6 +91,7 @@ asciidoctor:
   safe: 0
   attributes:
     <<: *solr-attributes-ref
+    attribute-missing: "warn"
     icons: "font"
     source-highlighter: "pygments"
     pygments-css: "style"

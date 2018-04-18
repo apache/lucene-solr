@@ -24,8 +24,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -42,8 +44,11 @@ import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -55,6 +60,7 @@ import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -240,6 +246,67 @@ public class SimCloudManager implements SolrCloudManager {
     return values;
   }
 
+  public String dumpClusterState(boolean withCollections) throws Exception {
+    StringBuilder sb = new StringBuilder();
+    sb.append("#######################################\n");
+    sb.append("############ CLUSTER STATE ############\n");
+    sb.append("#######################################\n");
+    sb.append("## Live nodes:\t\t" + getLiveNodesSet().size() + "\n");
+    int emptyNodes = 0;
+    int maxReplicas = 0;
+    int minReplicas = Integer.MAX_VALUE;
+    Map<String, Map<Replica.State, AtomicInteger>> replicaStates = new TreeMap<>();
+    int numReplicas = 0;
+    for (String node : getLiveNodesSet().get()) {
+      List<ReplicaInfo> replicas = getSimClusterStateProvider().simGetReplicaInfos(node);
+      numReplicas += replicas.size();
+      if (replicas.size() > maxReplicas) {
+        maxReplicas = replicas.size();
+      }
+      if (minReplicas > replicas.size()) {
+        minReplicas = replicas.size();
+      }
+      for (ReplicaInfo ri : replicas) {
+        replicaStates.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
+            .computeIfAbsent(ri.getState(), s -> new AtomicInteger())
+            .incrementAndGet();
+      }
+      if (replicas.isEmpty()) {
+        emptyNodes++;
+      }
+    }
+    if (minReplicas == Integer.MAX_VALUE) {
+      minReplicas = 0;
+    }
+    sb.append("## Empty nodes:\t" + emptyNodes + "\n");
+    Set<String> deadNodes = getSimNodeStateProvider().simGetDeadNodes();
+    sb.append("## Dead nodes:\t\t" + deadNodes.size() + "\n");
+    deadNodes.forEach(n -> sb.append("##\t\t" + n + "\n"));
+    sb.append("## Collections:\t" + getSimClusterStateProvider().simListCollections() + "\n");
+    if (withCollections) {
+      ClusterState state = clusterStateProvider.getClusterState();
+      state.forEachCollection(coll -> sb.append(coll.toString() + "\n"));
+    }
+    sb.append("## Max replicas per node:\t" + maxReplicas + "\n");
+    sb.append("## Min replicas per node:\t" + minReplicas + "\n");
+    sb.append("## Total replicas:\t\t" + numReplicas + "\n");
+    replicaStates.forEach((c, map) -> {
+      AtomicInteger repCnt = new AtomicInteger();
+      map.forEach((s, cnt) -> repCnt.addAndGet(cnt.get()));
+      sb.append("## * " + c + "\t\t" + repCnt.get() + "\n");
+      map.forEach((s, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-12s  %4d", s, cnt.get()) + "\n"));
+    });
+    sb.append("######### Solr op counts ##########\n");
+    simGetOpCounts().forEach((k, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get()) + "\n"));
+    sb.append("######### Autoscaling event counts ###########\n");
+    Map<String, Map<String, AtomicInteger>> counts = simGetEventCounts();
+    counts.forEach((trigger, map) -> {
+      sb.append("## * Trigger: " + trigger + "\n");
+      map.forEach((s, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-11s  %4d", s, cnt.get()) + "\n"));
+    });
+    return sb.toString();
+  }
+
   /**
    * Get the instance of {@link SolrResourceLoader} that is used by the cluster components.
    */
@@ -333,6 +400,17 @@ public class SimCloudManager implements SolrCloudManager {
     return new SolrClient() {
       @Override
       public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
+        if (collection != null) {
+          if (request instanceof AbstractUpdateRequest) {
+            ((AbstractUpdateRequest)request).setParam("collection", collection);
+          } else if (request instanceof QueryRequest) {
+            ModifiableSolrParams params = new ModifiableSolrParams(request.getParams());
+            params.set("collection", collection);
+            request = new QueryRequest(params);
+          } else {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "when collection != null only UpdateRequest and QueryRequest are supported: request=" + request + ", collection=" + collection);
+          }
+        }
         SolrResponse rsp = SimCloudManager.this.request(request);
         return rsp.getResponse();
       }
@@ -508,14 +586,17 @@ public class SimCloudManager implements SolrCloudManager {
       incrementCount("update");
       // support only updates to the system collection
       UpdateRequest ureq = (UpdateRequest)req;
-      if (ureq.getCollection() == null || !ureq.getCollection().equals(CollectionAdminParams.SYSTEM_COLL)) {
-        throw new UnsupportedOperationException("Only .system updates are supported but got: " + req);
+      String collection = ureq.getCollection();
+      if (collection != null && !collection.equals(CollectionAdminParams.SYSTEM_COLL)) {
+        // simulate an update
+        return clusterStateProvider.simUpdate(ureq);
+      } else {
+        List<SolrInputDocument> docs = ureq.getDocuments();
+        if (docs != null) {
+          systemColl.addAll(docs);
+        }
+        return new UpdateResponse();
       }
-      List<SolrInputDocument> docs = ureq.getDocuments();
-      if (docs != null) {
-        systemColl.addAll(docs);
-      }
-      return new UpdateResponse();
     }
     // support only a specific subset of collection admin ops
     if (!(req instanceof CollectionAdminRequest)) {
@@ -560,8 +641,12 @@ public class SimCloudManager implements SolrCloudManager {
           }
           break;
         case DELETE:
-          clusterStateProvider.simDeleteCollection(req.getParams().get(CommonParams.NAME),
-              req.getParams().get(CommonAdminParams.ASYNC), results);
+          try {
+            clusterStateProvider.simDeleteCollection(req.getParams().get(CommonParams.NAME),
+                req.getParams().get(CommonAdminParams.ASYNC), results);
+          } catch (Exception e) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          }
           break;
         case LIST:
           results.add("collections", clusterStateProvider.simListCollections());

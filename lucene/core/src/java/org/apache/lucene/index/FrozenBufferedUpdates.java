@@ -340,7 +340,6 @@ class FrozenBufferedUpdates {
                                                messagePrefix + "done inner apply del packet (%s) to %d segments; %d new deletes/updates; took %.3f sec",
                                                this, segStates.length, delCount, (System.nanoTime() - iterStartNS) / 1000000000.));
       }
-      
       if (privateSegment != null) {
         // No need to retry for a segment-private packet: the merge that folds in our private segment already waits for all deletes to
         // be applied before it kicks off, so this private segment must already not be in the set of merging segments
@@ -685,7 +684,8 @@ class FrozenBufferedUpdates {
         }
         final IndexSearcher searcher = new IndexSearcher(readerContext.reader());
         searcher.setQueryCache(null);
-        final Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+        query = searcher.rewrite(query);
+        final Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
         final Scorer scorer = weight.scorer(readerContext);
         if (scorer != null) {
           final DocIdSetIterator it = scorer.iterator();

@@ -267,6 +267,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testDeletionsTriggerWatches() throws Exception {
     CollectionAdminRequest.createCollection("tobedeleted", "config", 1, 1)
         .process(cluster.getSolrClient());
