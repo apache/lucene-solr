@@ -29,23 +29,6 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.8.v20171121
 
-
-(No Changes)
-
-
-==================  7.3.1 ==================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-
-Versions of Major Components
----------------------
-Apache Tika 1.17
-Carrot2 3.15.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.11
-Jetty 9.4.8.v20171121
-
 Bug Fixes
 ----------------------
 
