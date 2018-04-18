@@ -56,7 +56,7 @@
     -->
     <init-param>
       <param-name>excludePatterns</param-name>
-      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/tpl/.+</param-value>
+      <param-value>/admin-ui/.+</param-value>
     </init-param>
   </filter>
 
@@ -141,7 +141,7 @@
 
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
-    <url-pattern>/index.html</url-pattern>
+    <url-pattern>index.html</url-pattern>
   </servlet-mapping>
 
   <servlet-mapping>
@@ -156,7 +156,7 @@
   </mime-mapping>
 
   <welcome-file-list>
-    <welcome-file>index.html</welcome-file>
+    <welcome-file>admin-ui/index.html</welcome-file>
   </welcome-file-list>
 
   <!-- Get rid of error message -->

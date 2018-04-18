@@ -27,7 +27,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 export class SolrService {
 
   // TODO: nocommit
-  private noCommitBaseUrl = 'http://localhost:8984';
+  private noCommitBaseUrl = '';
   private noCommitAuthHeader = ('Basic ' + btoa('user:password'));
 
   private httpOptions = {

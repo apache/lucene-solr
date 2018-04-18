@@ -410,6 +410,9 @@
     <delete dir="example/cloud" />
     <delete dir="example/techproducts" />
     <delete dir="example/schemaless" />
+  	<delete dir="webapp/angular/dist" />
+  	<delete dir="webapp/angular/node_modules" />
+  	<delete file="webapp/angular/package-lock.json" />
     <delete includeemptydirs="true">
       <fileset dir="bin">
         <include name="*.pid" />
