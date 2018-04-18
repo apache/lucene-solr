@@ -56,6 +56,21 @@
         <include name="solr-core-${version}.jar" />
       </fileset>
     </copy>
+  	<exec dir="${common-solr.dir}/webapp/angular" executable="npm">
+  		<arg value="install" />
+  	</exec>
+  	<exec dir="${common-solr.dir}/webapp/angular" executable="ng">
+  		<arg value="build" />
+  		<arg value="--base-href=/solr-admin-dist" />
+  		<arg value="--prod" />
+  		<arg value="--build-optimizer" />
+  	</exec>
+  	<mkdir dir="${server.dir}/solr-webapp/webapp/web/solr-admin-dist"/>
+  	<copy todir="${server.dir}/solr-webapp/webapp/web/solr-admin-dist">
+  		<fileset dir="${common-solr.dir}/webapp/angular/dist">
+  			<include name="**/**" />
+  		</fileset>
+  	</copy>
   </target>
 
   <!-- nothing to do -->
