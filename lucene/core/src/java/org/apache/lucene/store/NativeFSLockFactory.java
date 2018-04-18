@@ -17,7 +17,7 @@
 package org.apache.lucene.store;
 
 
-import java.nio.channels.FileChannel;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -119,10 +119,10 @@ public final class NativeFSLockFactory extends FSLockFactory {
     final FileTime creationTime = Files.readAttributes(realPath, BasicFileAttributes.class).creationTime();
     
     if (LOCK_HELD.add(realPath.toString())) {
-      FileChannel channel = null;
+      AsynchronousFileChannel channel = null;
       FileLock lock = null;
       try {
-        channel = FileChannel.open(realPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        channel = AsynchronousFileChannel.open(realPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         lock = channel.tryLock();
         if (lock != null) {
           return new NativeFSLock(lock, channel, realPath, creationTime);
@@ -152,12 +152,12 @@ public final class NativeFSLockFactory extends FSLockFactory {
 
   static final class NativeFSLock extends Lock {
     final FileLock lock;
-    final FileChannel channel;
+    final AsynchronousFileChannel channel;
     final Path path;
     final FileTime creationTime;
     volatile boolean closed;
     
-    NativeFSLock(FileLock lock, FileChannel channel, Path path, FileTime creationTime) {
+    NativeFSLock(FileLock lock, AsynchronousFileChannel channel, Path path, FileTime creationTime) {
       this.lock = lock;
       this.channel = channel;
       this.path = path;
@@ -199,7 +199,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
       }
       // NOTE: we don't validate, as unlike SimpleFSLockFactory, we can't break others locks
       // first release the lock, then the channel
-      try (FileChannel channel = this.channel;
+      try (AsynchronousFileChannel channel = this.channel;
            FileLock lock = this.lock) {
         assert lock != null;
         assert channel != null;
