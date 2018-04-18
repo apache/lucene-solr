@@ -27,6 +27,8 @@
 /server/start.jar
 
 /webapp/angular/node_modules
+/webapp/angular/dist
+/webapp/angular/package-lock.json
 
 *.out
 *.err
