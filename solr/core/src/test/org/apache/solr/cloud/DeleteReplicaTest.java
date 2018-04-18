@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -309,16 +310,17 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       ZkContainer.testing_beforeRegisterInZk = null;
     }
 
-    while (true) {
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut.waitFor("Timeout adding replica to shard", () -> {
       try {
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
             .process(cluster.getSolrClient());
-        break;
+        return true;
       } catch (Exception e) {
         // expected, when the node is not fully started
-        Thread.sleep(500);
+        return false;
       }
-    }
+    });
     waitForState("Expected 1x2 collections", collectionName, clusterShape(1, 2));
 
     String leaderJettyNodeName = leaderJetty.getNodeName();

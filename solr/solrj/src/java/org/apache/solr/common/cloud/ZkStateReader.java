@@ -1626,8 +1626,8 @@ public class ZkStateReader implements Closeable {
           if (watcher.onStateChanged(liveNodes, collectionState)) {
             removeCollectionStateWatcher(collection, watcher);
           }
-        } catch (Throwable throwable) {
-          LOG.warn("Error on calling watcher", throwable);
+        } catch (Exception exception) {
+          LOG.warn("Error on calling watcher", exception);
         }
       }
     }
