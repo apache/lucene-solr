@@ -166,6 +166,8 @@ import org.slf4j.LoggerFactory;
  *     &lt;str name="source"&gt;summary&lt;/str&gt;
  *     &lt;str name="dest"&gt;summary_{EntityType}_s&lt;/str&gt;
  *   &lt;/processor&gt;
+ *   &lt;processor class="solr.LogUpdateProcessorFactory" /&gt;
+ *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
  * &lt;/updateRequestProcessorChain&gt;
  * </pre>
  *
