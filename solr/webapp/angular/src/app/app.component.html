@@ -16,7 +16,7 @@ limitations under the License.
 -->
 <div id="wrapper">
     <div id="header">
-      <a href="#/" id="solr"><span>Apache SOLR</span></a>
+      <a href="/" id="solr"><span>Apache SOLR</span></a>
       <p id="environment">&nbsp;</p>
     </div>
     
@@ -28,7 +28,7 @@ limitations under the License.
           </ul>
           <p>Please check your logs for more information</p>
       </div>
-      <div id="loading" class="loader universal-loader" *ngIf="globals.loading">&nbsp;</div>
+      <div id="loading" class="loader universal-loader" *ngIf="loading">&nbsp;</div>
       <div id="connection-box">
         <div id="connection-status-modal">
       </div>
@@ -52,24 +52,24 @@ limitations under the License.
       <div id="menu-wrapper">
         <div>
           <ul id="menu">
-            <li id="index" [ngClass]="{'global': true, 'active': globals.page=='dashboard'}"><p><a href="#/">Dashboard</a></p></li>
-            <li id="logging" [ngClass]="{'global': true, 'active': globals.page=='logging'}"><p><a href="#/~logging">Logging</a></p>
+            <li id="index" class="global" routerLinkActive="active"><p><a routerLink="/dashboard">Dashboard</a></p></li>
+            <li id="logging" class="global" routerLinkActive="active"><p><a href="#/~logging">Logging</a></p>
               <ul *ngIf="showingLogging">
-                <li [ngClass]="{'level': true, 'active': globals.page=='logging-levels'}"><a href="#/~logging/level">Level</a></li>
+                <li class="global" routerLinkActive="active"><a href="#/~logging/level">Level</a></li>
               </ul>
             </li>
-            <li id="cloud" [ngClass]="{'global': true, 'optional': true, 'active': globals.page=='cloud'}" *ngIf="isCloudEnabled"><p><a href="#/~cloud">Cloud</a></p>
+            <li id="cloud"  class="global" routerLinkActive="active" *ngIf="isCloudEnabled"><p><a href="#/~cloud">Cloud</a></p>
               <ul *ngIf="showingCloud">
-                <li [ngClass]="{'tree': true, 'active': globals.page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
-                <li [ngClass]="{'graph': true, 'active': globals.page=='cloud-graph'}"><a href="#/~cloud">Graph</a></li>
-                <li [ngClass]="{'rgraph': true, 'active': globals.page=='cloud-rgraph'}"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
+                <li class="global" routerLinkActive="active"><a href="#/~cloud?view=tree">Tree</a></li>
+                <li class="global" routerLinkActive="active"><a href="#/~cloud">Graph</a></li>
+                <li class="global" routerLinkActive="active"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
               </ul>
             </li>
-            <li *ngIf="isCloudEnabled" id="collections" [ngClass]="{'global': true, 'active': globals.page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
-            <li *ngIf="!isCloudEnabled" id="cores" [ngClass]="{'global': true, 'active': globals.page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
-            <li id="java-properties" [ngClass]="{'global': true, 'active': globals.page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
-            <li id="threads" [ngClass]="{'global': true, 'active': globals.page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
-            <li *ngIf="isCloudEnabled" id="cluster-suggestions" [ngClass]="{'global': true, 'active': globals.page=='cluster-suggestions'}"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
+            <li *ngIf="isCloudEnabled" id="collections" class="global" routerLinkActive="active"><p><a routerLink="/collections">Collections</a></p></li>
+            <li *ngIf="!isCloudEnabled" id="cores" class="global" routerLinkActive="active"><p><a routerLink="/cores">Core Admin</a></p></li>
+            <li id="java-properties" class="global" routerLinkActive="active"><p><a href="#/~java-properties">Java Properties</a></li>
+            <li id="threads" class="global" routerLinkActive="active"><p><a href="#/~threads">Thread Dump</a></p></li>
+            <li *ngIf="isCloudEnabled" id="cluster-suggestions" class="global" routerLinkActive="active"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
           </ul>
 
           <div id="collection-selector" *ngIf="isCloudEnabled">
@@ -81,7 +81,7 @@ limitations under the License.
                       ng-options="collection.name for collection in collections"></select>
             </div>
             
-            <p id="has-no-collections" *ngIf="collections.length==0"><a href="#/~collections">
+            <p id="has-no-collections" *ngIf="collections.length==0"><a routerLink="/collections">
               No collections available
               <span>Go and create one</span>
             </a></p>
@@ -107,7 +107,7 @@ limitations under the License.
                       ng-change="showCore(currentCore)"
                       ng-options="core.name for core in cores"></select>
             </div>
-            <p id="has-no-cores" *ngIf="cores.length==0"><a href="#/~cores">
+            <p id="has-no-cores" *ngIf="cores.length==0"><a routerLink="/cores">
               No cores available
               <span>Go and create one</span>
             </a></p>

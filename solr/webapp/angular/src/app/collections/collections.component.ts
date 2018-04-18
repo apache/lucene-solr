@@ -15,21 +15,23 @@
  limitations under the License.
 */
 
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { CollectionsComponent } from './collections/collections.component';
-import { CoresComponent } from './cores/cores.component';
+import { Component, OnInit } from '@angular/core';
+import { SolrService } from '../solr.service';
 
-const routes: Routes = [  
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'collections', component: CollectionsComponent },
-  { path: 'cores', component: CoresComponent },
-  { path: '', redirectTo: '/dashboard', pathMatch: 'prefix' },
-];
-
-@NgModule({
-  imports: [ RouterModule.forRoot(routes) ],
-  exports: [ RouterModule ]
+@Component({
+  selector: 'app-collections',
+  templateUrl: './collections.component.html'
 })
-export class AppRoutingModule { }
+export class CollectionsComponent implements OnInit {
+
+  constructor() { }
+
+  refresh() {
+    
+  }
+
+  ngOnInit() {
+    this.refresh();
+  }
+
+}

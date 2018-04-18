@@ -17,7 +17,6 @@
 
 import {Component} from '@angular/core';
 import {ViewEncapsulation} from '@angular/core';
-import {Globals} from './globals';
 
 @Component({
   selector: 'app-root',
@@ -42,11 +41,7 @@ export class AppComponent {
   showInitFailures = false; //true;
   initFailures = []; //{core: 'sample core', error: 'sample error' }];
   pingMS = 1234567890;
-
-  constructor(public globals: Globals) {
-    globals.loading = true;
-  }
-
+  loading=true;
 }
 
 

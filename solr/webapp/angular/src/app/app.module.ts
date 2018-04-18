@@ -21,22 +21,25 @@ import {BrowserModule} from '@angular/platform-browser';
 import {HttpClientModule} from '@angular/common/http';
 import {TimeAgoPipe} from 'time-ago-pipe';
 import {AppComponent} from './app.component';
+import { CollectionsComponent } from './collections/collections.component';
 import { SolrService } from './solr.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
-import {Globals} from './globals';
+import { CoresComponent } from './cores/cores.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     TimeAgoPipe,
-    DashboardComponent
+    DashboardComponent,
+    CollectionsComponent,
+    CoresComponent
   ],
   imports: [
     BrowserModule,
     HttpClientModule,
     AppRoutingModule
   ],
-  providers: [SolrService, Globals],
+  providers: [SolrService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

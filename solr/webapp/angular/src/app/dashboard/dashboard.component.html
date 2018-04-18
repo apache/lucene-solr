@@ -20,7 +20,7 @@ limitations under the License.
       <div class="block" id="instance">
           <h2><span>Instance</span></h2>
           <div class="content">
-            <ul class="data" *ngIf="system">
+            <ul class="data">
               <li class="start_time"><dl class="clearfix">
                 <dt><span>Start</span></dt>
                   <dd class="timeAgo">{{system.jvm.jmx.startTime | timeAgo}}</dd>
@@ -61,7 +61,7 @@ limitations under the License.
     </h2>
           <a class="reload" (click)="refresh()"><span>reload</span></a>
           <div class="content">
-            <div id="physical-memory-bar" *ngIf="system.system.totalPhysicalMemorySize && system.system.freePhysicalMemorySize">
+            <div id="physical-memory-bar">
               <p data-desc="physical-memory-bar">Physical Memory
          <small class="bar-desc">{{system.system.memory.percentage}}</small>
         </p>

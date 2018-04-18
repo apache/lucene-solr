@@ -15,15 +15,17 @@
  limitations under the License.
 */
 
-import { Injectable } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
-@Injectable()
-export class Globals {
-  page: string = null;
-  loading: boolean = null;
+@Component({
+  selector: 'app-cores',
+  templateUrl: './cores.component.html'
+})
+export class CoresComponent implements OnInit {
 
-  public delay(ms: number) {
-   return new Promise( resolve => setTimeout(resolve, ms) );
+  constructor() { }
+
+  ngOnInit() {
   }
 
 }

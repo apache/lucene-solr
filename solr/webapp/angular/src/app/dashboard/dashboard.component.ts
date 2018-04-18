@@ -18,7 +18,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SystemInfo } from '../systemInfo';
 import { SolrService } from '../solr.service';
-import {Globals} from '../globals';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,14 +26,11 @@ import {Globals} from '../globals';
 export class DashboardComponent implements OnInit {
   system: SystemInfo;
 
-  constructor(private solrService: SolrService, private globals: Globals) { }
+  constructor(private solrService: SolrService) { }
 
   refresh() {
-    this.globals.page = 'dashboard';
-    this.globals.loading = true;
     this.solrService.getSystemInfo().subscribe(system => {
       this.system = system;
-      this.globals.loading = false;
     });
   }
 
