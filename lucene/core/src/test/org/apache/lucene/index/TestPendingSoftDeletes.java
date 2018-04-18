@@ -152,7 +152,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testUpdateAppliedOnlyOnce() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("_soft_deletes"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        .setMaxBufferedDocs(3) // make sure we write one segment
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
