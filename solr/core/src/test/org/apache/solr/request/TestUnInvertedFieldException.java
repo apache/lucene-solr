@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
@@ -78,10 +79,11 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
   @Test
   public void testConcurrentInit() throws Exception {
     final SolrQueryRequest req = req("*:*");
+    final SolrIndexSearcher searcher = req.getSearcher();
 
     List<Callable<UnInvertedField>> initCallables = new ArrayList<>();
     for (int i=0;i< TestUtil.nextInt(random(), 10, 30);i++) {
-      initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), req.getSearcher()));
+      initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), searcher));
     }
 
     final ThreadPoolExecutor pool  = new MDCAwareThreadPoolExecutor(3, 
@@ -101,7 +103,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
             assertEquals(ErrorCode.SERVER_ERROR.code, solrException.code());
             assertSame(solrException.getCause().getClass(), OutOfMemoryError.class);
           }
-          assertNull(UnInvertedField.checkUnInvertedField(proto.field(), req.getSearcher()));
+          assertNull(UnInvertedField.checkUnInvertedField(proto.field(), searcher));
         }
         TestInjection.uifOutOfMemoryError = false;
       }
@@ -111,7 +113,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
       for (Future<UnInvertedField> uifuture : futures) {
         final UnInvertedField uif = uifuture.get();
         assertNotNull(uif);
-        assertSame(uif, UnInvertedField.checkUnInvertedField(proto.field(), req.getSearcher()));
+        assertSame(uif, UnInvertedField.checkUnInvertedField(proto.field(), searcher));
         if (prev != null) {
           assertSame(prev, uif);
         }
