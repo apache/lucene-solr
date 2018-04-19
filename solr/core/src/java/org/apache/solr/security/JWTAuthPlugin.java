@@ -200,11 +200,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
             return authResponse.getPrincipal();
           }
         };
+        if (log.isDebugEnabled())
+          log.debug("Authentication SUCCESS");
         filterChain.doFilter(wrapper, response);
         return true;
 
       case PASS_THROUGH:
-        log.debug("Unknown user, but allow due to block_unknown=false");
+        if (log.isDebugEnabled())
+          log.debug("Unknown user, but allow due to block_unknown=false");
         filterChain.doFilter(request, response);
         return true;
 
@@ -220,7 +223,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       case PRINCIPAL_MISSING:
         log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
         if (authResponse.getJwtException() != null) {
-          log.info("Exception: {}", authResponse.getJwtException().getMessage());
+          log.warn("Exception: {}", authResponse.getJwtException().getMessage());
         }
         authenticationFailure(response, authResponse.getAuthCode().msg, HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
