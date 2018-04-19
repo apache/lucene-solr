@@ -28,7 +28,6 @@
 
 /webapp/angular/node_modules
 /webapp/angular/dist
-/webapp/angular/package-lock.json
 /webapp/angular/.project
 /webapp/angular/.settings
 
