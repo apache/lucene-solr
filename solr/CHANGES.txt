@@ -230,6 +230,8 @@ Other Changes
 * SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
   javadoc links locally. (hossman)
 
+* SOLR-12142: EmbeddedSolrServer should use req.getContentWriter (noble)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
