@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.store.FileID;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -45,8 +46,8 @@ import org.apache.lucene.util.IOUtils;
  * could be left when the JVM exits abnormally.</p>
  *
  * <p>The primary benefit of {@link NativeFSLockFactory} is
- * that locks (not the lock file itsself) will be properly
- * removed (by the OS) if the JVM has an abnormal exit.</p>
+ * that locks (not the lock file itself) will be properly
+ * removed (by the OS) even if the JVM exits abnormally.</p>
  * 
  * <p>Note that, unlike {@link SimpleFSLockFactory}, the existence of
  * leftover lock files in the filesystem is fine because the OS
@@ -67,7 +68,7 @@ import org.apache.lucene.util.IOUtils;
  * test it by using {@link VerifyingLockFactory}, {@link
  * LockVerifyServer} and {@link LockStressTest}.</p>
  * 
- * <p>This is a singleton, you have to use {@link #INSTANCE}.
+ * <p>This is a singleton, you have to use {@link #INSTANCE}.</p>
  *
  * @see LockFactory
  */
@@ -116,7 +117,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
     }
     
     // used as a best-effort check, to see if the underlying file has changed
-    final FileTime creationTime = Files.readAttributes(realPath, BasicFileAttributes.class).creationTime();
+    final FileID fileID = new FileID(realPath);
     
     if (LOCK_HELD.add(realPath.toString())) {
       FileChannel channel = null;
@@ -125,7 +126,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         channel = FileChannel.open(realPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         lock = channel.tryLock();
         if (lock != null) {
-          return new NativeFSLock(lock, channel, realPath, creationTime);
+          return new NativeFSLock(lock, channel, realPath, fileID);
         } else {
           throw new LockObtainFailedException("Lock held by another program: " + realPath);
         }
@@ -154,14 +155,14 @@ public final class NativeFSLockFactory extends FSLockFactory {
     final FileLock lock;
     final FileChannel channel;
     final Path path;
-    final FileTime creationTime;
+    final FileID fileID;
     volatile boolean closed;
     
-    NativeFSLock(FileLock lock, FileChannel channel, Path path, FileTime creationTime) {
+    NativeFSLock(FileLock lock, FileChannel channel, Path path, FileID fileID) {
       this.lock = lock;
       this.channel = channel;
       this.path = path;
-      this.creationTime = creationTime;
+      this.fileID = fileID;
     }
 
     @Override
@@ -183,12 +184,16 @@ public final class NativeFSLockFactory extends FSLockFactory {
       if (size != 0) {
         throw new AlreadyClosedException("Unexpected lock file size: " + size + ", (lock=" + this + ")");
       }
-      // try to validate the backing file name, that it still exists,
-      // and has the same creation time as when we obtained the lock. 
-      // if it differs, someone deleted our lock file (and we are ineffective)
-      FileTime ctime = Files.readAttributes(path, BasicFileAttributes.class).creationTime(); 
-      if (!creationTime.equals(ctime)) {
-        throw new AlreadyClosedException("Underlying file changed by an external force at " + ctime + ", (lock=" + this + ")");
+      // try to validate the backing file …
+      //  a) still exists at the same path and
+      //  b) the same file is residing at the path of the lock file (file has not been deleted and recreated)
+      //
+      // if either is condition isn't met, there is no guarantee that no one else hase acquired a lock to the
+      // same index. thus further operations on the index should be refused.
+      FileID fileID = new FileID(path);
+      if (!this.fileID.isSameFileAs(fileID)) {
+        throw new AlreadyClosedException("Underlying file has been changed by an external force: " + fileID +
+            ", (lock=" + this + "). Ensure all Solr instances are using this index use the same locking mechanism.");
       }
     }
 
@@ -211,7 +216,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
 
     @Override
     public String toString() {
-      return "NativeFSLock(path=" + path + ",impl=" + lock + ",creationTime=" + creationTime + ")"; 
+      return "NativeFSLock(path=" + path + ",impl=" + lock + ",fileID=" + fileID + ")";
     }
   }
 }

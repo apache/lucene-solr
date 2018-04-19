@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 
+import org.apache.lucene.store.FileID;
+
 /**
  * <p>Implements {@link LockFactory} using {@link
  * Files#createFile}.</p>
@@ -53,7 +55,7 @@ import java.nio.file.attribute.FileTime;
  * test it by using {@link VerifyingLockFactory}, {@link
  * LockVerifyServer} and {@link LockStressTest}.</p>
  * 
- * <p>This is a singleton, you have to use {@link #INSTANCE}.
+ * <p>This is a singleton, you have to use {@link #INSTANCE}.</p>
  *
  * @see LockFactory
  */
@@ -86,19 +88,19 @@ public final class SimpleFSLockFactory extends FSLockFactory {
     }
     
     // used as a best-effort check, to see if the underlying file has changed
-    final FileTime creationTime = Files.readAttributes(lockFile, BasicFileAttributes.class).creationTime();
-    
-    return new SimpleFSLock(lockFile, creationTime);
+    final FileID fileID = new FileID(lockFile);
+
+    return new SimpleFSLock(lockFile, fileID);
   }
   
   static final class SimpleFSLock extends Lock {
     private final Path path;
-    private final FileTime creationTime;
+    private final FileID fileID;
     private volatile boolean closed;
 
-    SimpleFSLock(Path path, FileTime creationTime) throws IOException {
+    SimpleFSLock(Path path, FileID fileID) throws IOException {
       this.path = path;
-      this.creationTime = creationTime;
+      this.fileID = fileID;
     }
 
     @Override
@@ -106,12 +108,16 @@ public final class SimpleFSLockFactory extends FSLockFactory {
       if (closed) {
         throw new AlreadyClosedException("Lock instance already released: " + this);
       }
-      // try to validate the backing file name, that it still exists,
-      // and has the same creation time as when we obtained the lock. 
-      // if it differs, someone deleted our lock file (and we are ineffective)
-      FileTime ctime = Files.readAttributes(path, BasicFileAttributes.class).creationTime(); 
-      if (!creationTime.equals(ctime)) {
-        throw new AlreadyClosedException("Underlying file changed by an external force at " + ctime + ", (lock=" + this + ")");
+      // try to validate the backing file …
+      //  a) still exists at the same path and
+      //  b) the same file is residing at the path of the lock file (file has not been deleted and recreated)
+      //
+      // if either is condition isn't met, there is no guarantee that no one else has acquired a lock to the
+      // same index. thus further operations on the index should be refused.
+      FileID fileID = new FileID(path);
+      if (!this.fileID.isSameFileAs(fileID)) {
+        throw new AlreadyClosedException("Underlying file has been changed by an external force: " + fileID +
+            ", (lock=" + this + "). Ensure all Solr instances are using this index use the same locking mechanism.");
       }
     }
 
@@ -144,7 +150,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
 
     @Override
     public String toString() {
-      return "SimpleFSLock(path=" + path + ",creationTime=" + creationTime + ")";
+      return "SimpleFSLock(path=" + path + ",fileID=" + fileID + ")";
     }
   }
 }
