@@ -70,7 +70,7 @@ limitations under the License.
                 <div class="bar-max bar">
                   <span *ngIf="system != null" class="bar-max val">{{system.system.memory.maxDisplay}}</span>
                   <div class="bar-total bar" [ngStyle]="{'width': system==null ? '0' : system.system.memory.percentage}">
-                    <span *ngIf="system != null" class="bar-total val" title="raw: {{system.system.memory.total}}B">{{!system.system.memory.totalDisplay}}</span>
+                    <span *ngIf="system != null" class="bar-total val" title="raw: {{system.system.memory.total}}B">{{system.system.memory.totalDisplay}}</span>
                   </div>
                 </div>
               </div>

@@ -17,7 +17,6 @@
 
 import {Component} from '@angular/core';
 import {ViewEncapsulation} from '@angular/core';
-import { SharedService } from './shared.service';
 
 @Component({
   selector: 'app-root',
@@ -30,9 +29,6 @@ import { SharedService } from './shared.service';
 })
 export class AppComponent {
     
-  constructor(private sharedService: SharedService) { }
-  
-  title = 'app1';
   showingLogging = false;
   showingCloud = false;
   isCloudEnabled = true;
