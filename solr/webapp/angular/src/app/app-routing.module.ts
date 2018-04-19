@@ -23,6 +23,7 @@ import { CoresComponent } from './cores/cores.component';
 
 const routes: Routes = [  
   { path: 'dashboard', component: DashboardComponent },
+  { path: 'collections/:name', component: CollectionsComponent },
   { path: 'collections', component: CollectionsComponent },
   { path: 'cores', component: CoresComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'prefix' },

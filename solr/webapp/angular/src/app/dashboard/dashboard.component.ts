@@ -17,7 +17,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import { SystemInfo } from '../systemInfo';
-import { SolrService } from '../solr.service';
+import { SystemInfoService } from '../solr.service';
 import { SharedService } from '../shared.service';
 
 @Component({
@@ -27,7 +27,7 @@ import { SharedService } from '../shared.service';
 export class DashboardComponent implements OnInit {
   system: SystemInfo;
 
-  constructor(private solrService: SolrService, private sharedService: SharedService) { }
+  constructor(private solrService: SystemInfoService, private sharedService: SharedService) { }
 
   refresh() {
     this.sharedService.loaded = false;

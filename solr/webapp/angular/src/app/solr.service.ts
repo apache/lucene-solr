@@ -24,7 +24,7 @@ import { of } from 'rxjs/observable/of';
 import { catchError, map, tap } from 'rxjs/operators';
 
 @Injectable()
-export class SolrService {
+export class SystemInfoService {
 
   // TODO: nocommit
   private noCommitBaseUrl = 'http://localhost:8983';
