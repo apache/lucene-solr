@@ -21,7 +21,7 @@ limitations under the License.
           <h2><span>Instance</span></h2>
           <div class="content">
             <ul class="data">
-              <li class="start_time"><dl class="clearfix">
+              <li class="start_time"><dl *ngIf="system != null" class="clearfix">
                 <dt><span>Start</span></dt>
                   <dd class="timeAgo">{{system.jvm.jmx.startTime | timeAgo}}</dd>
               </dl></li>
@@ -32,20 +32,20 @@ limitations under the License.
           <h2><span>Versions</span></h2>
           <div class="content">
             <ul class="data">
-              <li class="solr solr_spec_version"><dl class="clearfix">
+              <li class="solr solr_spec_version"><dl *ngIf="system != null" class="clearfix">
                 <dt><span>solr-spec</span></dt>
                   <dd>{{system.lucene["solr-spec-version"]}}</dd>
               </dl></li>              
-              <li class="solr_impl_version"><dl class="clearfix">
+              <li class="solr_impl_version"><dl *ngIf="system != null" class="clearfix">
                 <dt class=""><span>solr-impl</span></dt>
                   <dd>{{system.lucene["solr-impl-version"]}}</dd>
               </dl></li>
               
-              <li class="lucene lucene_spec_version"><dl class="clearfix">
+              <li class="lucene lucene_spec_version"><dl *ngIf="system != null" class="clearfix">
                 <dt><span>lucene-spec</span></dt>
                   <dd>{{system.lucene["lucene-spec-version"]}}</dd>
               </dl></li>
-              <li class="lucene_impl_version"><dl class="clearfix">            
+              <li class="lucene_impl_version"><dl *ngIf="system != null" class="clearfix">            
                 <dt><span>lucene-impl</span></dt>
                   <dd>{{system.lucene["lucene-impl-version"]}}</dd>
               </dl></li>            
@@ -56,51 +56,52 @@ limitations under the License.
       
     <div class="index-right">
       <div class="block" id="system">
-          <h2><span>System</span>
-    <small class="bar-desc">{{system.system.load_average[0]}} {{system.system.load_average[1]}} {{system.system.load_average[2]}}</small>
-    </h2>
+          <h2>
+            <span>System</span>
+            <small *ngIf="system != null" class="bar-desc">{{system.system.load_average[0]}} {{system.system.load_average[1]}} {{system.system.load_average[2]}}</small>
+          </h2>
           <a class="reload" (click)="refresh()"><span>reload</span></a>
           <div class="content">
             <div id="physical-memory-bar">
               <p data-desc="physical-memory-bar">Physical Memory
-         <small class="bar-desc">{{system.system.memory.percentage}}</small>
-        </p>
+                <small *ngIf="system != null" class="bar-desc">{{system.system.memory.percentage}}</small>
+              </p>
               <div class="bar-holder bar-lvl-2">
                 <div class="bar-max bar">
-                  <span class="bar-max val">{{system.system.memory.maxDisplay}}</span>
-                  <div class="bar-total bar" [ngStyle]="{'width': system.system.memory.percentage}">
-                    <span class="bar-total val" title="raw: {{system.system.memory.total}}B">{{system.system.memory.totalDisplay}}</span>
+                  <span *ngIf="system != null" class="bar-max val">{{system.system.memory.maxDisplay}}</span>
+                  <div class="bar-total bar" [ngStyle]="{'width': system==null ? '0' : system.system.memory.percentage}">
+                    <span *ngIf="system != null" class="bar-total val" title="raw: {{system.system.memory.total}}B">{{!system.system.memory.totalDisplay}}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <div id="swap-space-bar" *ngIf="system.system.totalSwapSpaceSize && system.system.freeSwapSpaceSize">
+            <div id="swap-space-bar" *ngIf="system != null && system.system.totalSwapSpaceSize && system.system.freeSwapSpaceSize">
               <p data-desc="swap-space-bar">Swap Space
-          <small class="bar-desc">{{system.system.swap.percentage}}</small>
-        </p>
+                <small *ngIf="system != null" class="bar-desc">{{system.system.swap.percentage}}</small>
+              </p>
               <div class="bar-holder bar-lvl-2">
                 <div class="bar-max bar">
-                  <span class="bar-max val">{{system.system.swap.maxDisplay}}</span>
-                  <div class="bar-total bar" [ngStyle]="{'width': system.system.swap.percentage}">
-                    <span class="bar-total val" title="raw: {{system.system.swap.total}}B">{{system.system.swap.totalDisplay}}</span>
+                  <span *ngIf="system != null" class="bar-max val">{{system.system.swap.maxDisplay}}</span>
+                  <div class="bar-total bar" [ngStyle]="{'width': system==null ? '0' : system.system.swap.percentage}">
+                    <span *ngIf="system != null" class="bar-total val" title="raw: {{system.system.swap.total}}B">{{system.system.swap.totalDisplay}}</span>
                   </div>
                 </div>
               </div>
             </div>
-          <div id="file-descriptor-bar" ng-show="system.system.maxFileDescriptorCount && system.system.openFileDescriptorCount">
+          <div id="file-descriptor-bar" *ngIf="system != null && system.system.maxFileDescriptorCount && system.system.openFileDescriptorCount">
               <p data-desc="file-descriptor-bar">File Descriptor Count
-          <small class="bar-desc">{{system.system.fileDescriptorPercentage}}</small>
-        </p>
+                <small *ngIf="system != null" class="bar-desc">{{system.system.fileDescriptorPercentage}}</small>
+              </p>
               <div class="bar-holder bar-lvl-2">
                 <div class="bar-max bar">
-                  <span class="bar-max val">{{system.system.maxFileDescriptorCount}}</span>
-                  <div class="bar-total bar" [ngStyle]="{'width': system.system.fileDescriptorPercentage}">
-                    <span class="bar-total val">{{system.system.openFileDescriptorCount}}</span>
+                  <span *ngIf="system != null" class="bar-max val">{{system.system.maxFileDescriptorCount}}</span>
+                  <div class="bar-total bar" [ngStyle]="{'width': system==null ? '0' : system.system.fileDescriptorPercentage}">
+                    <span *ngIf="system != null" class="bar-total val">{{system.system.openFileDescriptorCount}}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <p class="no-info" *ngIf="system.system.noInfo">Sorry, no information available</p>
+            <p class="no-info" *ngIf="system==null || system.system.noInfo">Sorry, no information available</p>
           </div>
       </div>
     </div>
@@ -111,15 +112,15 @@ limitations under the License.
           <h2><span>JVM</span></h2>
           <div class="content clearfix">
             <ul class="data">
-              <li class="jvm_version"><dl class="clearfix">            
+              <li class="jvm_version"><dl *ngIf="system != null" class="clearfix">            
                 <dt><span>Runtime</span></dt>
                   <dd>{{system.jvm.name}} {{system.jvm.version}}</dd>
               </dl></li>
-              <li class="processors"><dl class="clearfix">            
+              <li class="processors"><dl *ngIf="system != null" class="clearfix">            
                 <dt><span>Processors</span></dt>
                   <dd>{{system.jvm.processors}}</dd>
               </dl></li>
-              <li class="command_line_args"><dl class="clearfix">
+              <li class="command_line_args"><dl *ngIf="system != null" class="clearfix">
                 <dt><span>Args</span></dt>
                 <dd *ngFor="let arg of system.jvm.jmx.commandLineArgs; let odd = odd" [ngClass]="{'odd':odd}">{{arg}}</dd>
               </dl></li>
@@ -131,17 +132,17 @@ limitations under the License.
     <div class="index-right">
       <div class="block" id="jvm-memory">
           <h2><span data-desc="jvm-memory-bar">JVM-Memory
-       <small class="bar-desc">{{system.system.jvmMemoryPercentage}}</small>
-    </span></h2>
+            <small *ngIf="system != null" class="bar-desc">{{system.system.jvmMemoryPercentage}}</small>
+          </span></h2>
           <div class="content">
             <div id="jvm-memory-bar">
               <div class="bar-holder bar-lvl-3">
                 <div class="bar-max bar">
-                  <span class="bar-max val" title="raw: {{system.system.jvmTotal.max}}B">{{system.system.jvmTotal.maxDisplay}}</span>
-                  <div class="bar-total bar" [ngStyle]="{'width': system.system.jvmTotal.percentage}">
-                    <span class="bar-total val" title="raw: {{system.system.jvmTotal.total}}B">{{system.system.jvmTotal.totalDisplay}}</span>
-                    <div class="bar-used bar" [ngStyle]="{'width': system.system.jvmUsed.percentage}">
-                      <span class="bar-used val" title="raw: {{system.system.jvmUsed.total}}B">{{system.system.jvmUsed.totalDisplay}}</span>
+                  <span *ngIf="system != null" class="bar-max val" title="raw: {{system.system.jvmTotal.max}}B">{{system.system.jvmTotal.maxDisplay}}</span>
+                  <div class="bar-total bar" [ngStyle]="{'width': system==null ? '0' : system.system.jvmTotal.percentage}">
+                    <span *ngIf="system != null" class="bar-total val" title="raw: {{system.system.jvmTotal.total}}B">{{system.system.jvmTotal.totalDisplay}}</span>
+                    <div class="bar-used bar" [ngStyle]="{'width': system==null ? '0' : system.system.jvmUsed.percentage}">
+                      <span *ngIf="system != null" class="bar-used val" title="raw: {{system.system.jvmUsed.total}}B">{{system.system.jvmUsed.totalDisplay}}</span>
                     </div>
                   </div>
                 </div>

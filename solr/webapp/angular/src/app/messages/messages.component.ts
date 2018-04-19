@@ -15,26 +15,17 @@
  limitations under the License.
 */
 
-import { Component, OnInit } from '@angular/core';
-import { SolrService } from '../solr.service';
-import { SharedService, InitFailure } from '../shared.service';
+import {Component} from '@angular/core';
+import { SharedService } from '../shared.service';
 
 @Component({
-  selector: 'app-collections',
-  templateUrl: './collections.component.html'
+  selector: 'app-messages',
+  templateUrl: './messages.component.html'  
 })
-export class CollectionsComponent implements OnInit {
-
-    constructor(private sharedService: SharedService) { }
-
-  refresh() {
-      this.sharedService.exceptions = ['test exception', 'another one'];
-      this.sharedService.showInitFailures = true;
-      this.sharedService.initFailures = [new InitFailure('sample core', 'sample error')];
-  }
-
-  ngOnInit() {
-    this.refresh();
-  }
-
+export class MessagesComponent {    
+  constructor(private sharedService: SharedService) { } 
 }
+
+
+
+

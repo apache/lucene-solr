@@ -23,13 +23,16 @@ import {TimeAgoPipe} from 'time-ago-pipe';
 import {AppComponent} from './app.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { SolrService } from './solr.service';
+import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { CoresComponent } from './cores/cores.component';
+import { MessagesComponent } from './messages/messages.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     TimeAgoPipe,
+    MessagesComponent,
     DashboardComponent,
     CollectionsComponent,
     CoresComponent
@@ -39,7 +42,7 @@ import { CoresComponent } from './cores/cores.component';
     HttpClientModule,
     AppRoutingModule
   ],
-  providers: [SolrService],
+  providers: [SolrService, SharedService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

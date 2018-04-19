@@ -1,0 +1,39 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div class="header-message" id="init-failures" *ngIf="sharedService.showInitFailures">
+	<h2>SolrCore Initialization Failures</h2>
+	<ul>
+		<li *ngFor="let initFailure of sharedService.initFailures"><strong>{{initFailure.core}}:</strong>
+			{{initFailure.error}}</li>
+	</ul>
+	<p>Please check your logs for more information</p>
+</div>
+<div id="loading" class="loader universal-loader" *ngIf="!sharedService.loaded">&nbsp;</div>
+<div id="connection-box">
+	<div id="connection-status-modal"></div>
+	<div class="connection-status header-message">
+		<h2>Connection to Solr lost</h2>
+		<p>Please check the Solr instance.</p>
+	</div>
+	<div class="connection-status header-message" id="connection-status-recovered" *ngIf="!connectionRecovered">
+		<h2>Connection recovered...</h2>
+		<p>Continuing to load data...</p>
+	</div>
+</div>
+<div id="http-exception" class="header-message" *ngFor="let exception of sharedService.exceptions">
+	<div class="exception">{{exception}}</div>
+</div>

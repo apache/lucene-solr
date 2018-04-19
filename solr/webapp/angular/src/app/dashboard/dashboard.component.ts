@@ -18,6 +18,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SystemInfo } from '../systemInfo';
 import { SolrService } from '../solr.service';
+import { SharedService } from '../shared.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,16 +27,18 @@ import { SolrService } from '../solr.service';
 export class DashboardComponent implements OnInit {
   system: SystemInfo;
 
-  constructor(private solrService: SolrService) { }
+  constructor(private solrService: SolrService, private sharedService: SharedService) { }
 
   refresh() {
+    this.sharedService.loaded = false;
     this.solrService.getSystemInfo().subscribe(system => {
       this.system = system;
+      this.sharedService.loaded = true;
     });
   }
 
   ngOnInit() {
-    this.refresh();
+    this.refresh();  
   }
 
 }

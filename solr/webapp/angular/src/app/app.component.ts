@@ -17,6 +17,7 @@
 
 import {Component} from '@angular/core';
 import {ViewEncapsulation} from '@angular/core';
+import { SharedService } from './shared.service';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +29,9 @@ import {ViewEncapsulation} from '@angular/core';
   encapsulation: ViewEncapsulation.None
 })
 export class AppComponent {
+    
+  constructor(private sharedService: SharedService) { }
+  
   title = 'app1';
   showingLogging = false;
   showingCloud = false;
@@ -36,12 +40,8 @@ export class AppComponent {
   collections = [];
   cores = [];
   currentCollection = null;
-  currentCore = null;
-  exceptions = []; //{msg: 'test exception'}, {msg: 'another one'}];
-  showInitFailures = false; //true;
-  initFailures = []; //{core: 'sample core', error: 'sample error' }];
+  currentCore = null;  
   pingMS = 1234567890;
-  loading=true;
 }
 
 

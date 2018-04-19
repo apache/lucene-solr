@@ -18,32 +18,9 @@ limitations under the License.
     <div id="header">
       <a href="/" id="solr"><span>Apache SOLR</span></a>
       <p id="environment">&nbsp;</p>
-    </div>
-    
+    </div>    
     <div id="main" class="clearfix">
-      <div class="header-message" id="init-failures" *ngIf="showInitFailures">
-          <h2>SolrCore Initialization Failures</h2>
-          <ul>
-              <li *ngFor="let initFailure of initFailures"><strong>{{initFailure.core}}:</strong> {{initFailure.error}}</li>
-          </ul>
-          <p>Please check your logs for more information</p>
-      </div>
-      <div id="loading" class="loader universal-loader" *ngIf="loading">&nbsp;</div>
-      <div id="connection-box">
-        <div id="connection-status-modal">
-      </div>
-      <div class="connection-status header-message">
-        <h2>Connection to Solr lost</h2>
-        <p>Please check the Solr instance.</p>
-      </div>
-	  <div class="connection-status header-message" id="connection-status-recovered"  *ngIf="!connectionRecovered">
-	    <h2>Connection recovered...</h2>
-	    <p>Continuing to load data...</p>
-	  </div>
-      </div>
-      <div id="http-exception" class="header-message" *ngFor="let exception of exceptions">
-        <div class="exception">{{exception.msg}}</div>
-      </div>
+      <app-messages></app-messages>      
       <div id="content-wrapper">
       	<div id="content">
         	<router-outlet></router-outlet>
