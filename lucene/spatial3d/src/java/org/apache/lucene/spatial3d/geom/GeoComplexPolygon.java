@@ -59,6 +59,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
   
+  private final static double NEAR_EDGE_CUTOFF = -10.0 * Vector.MINIMUM_RESOLUTION;
+  
   /**
    * Create a complex polygon from multiple lists of points, and a single point which is known to be in or out of
    * set.
@@ -81,37 +83,37 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.testPointFixedZPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
     
     Plane fixedYAbovePlane = new Plane(testPointFixedYPlane, true);
-    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
+    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedYAbovePlane = null;
     }
     this.testPointFixedYAbovePlane = fixedYAbovePlane;
     
     Plane fixedYBelowPlane = new Plane(testPointFixedYPlane, false);
-    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 ||  planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
+    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF ||  planetModel.getMinimumYValue() - fixedYBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedYBelowPlane = null;
     }
     this.testPointFixedYBelowPlane = fixedYBelowPlane;
     
     Plane fixedXAbovePlane = new Plane(testPointFixedXPlane, true);
-    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
+    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedXAbovePlane = null;
     }
     this.testPointFixedXAbovePlane = fixedXAbovePlane;
     
     Plane fixedXBelowPlane = new Plane(testPointFixedXPlane, false);
-    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
+    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedXBelowPlane = null;
     }
     this.testPointFixedXBelowPlane = fixedXBelowPlane;
     
     Plane fixedZAbovePlane = new Plane(testPointFixedZPlane, true);
-    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 ||planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
+    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF ||planetModel.getMinimumZValue() - fixedZAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedZAbovePlane = null;
     }
     this.testPointFixedZAbovePlane = fixedZAbovePlane;
     
     Plane fixedZBelowPlane = new Plane(testPointFixedZPlane, false);
-    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
+    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedZBelowPlane = null;
     }
     this.testPointFixedZBelowPlane = fixedZBelowPlane;
@@ -234,32 +236,32 @@ class GeoComplexPolygon extends GeoBasePolygon {
       final Plane travelPlaneFixedZ = new Plane(0.0, 0.0, 1.0, -z);
 
       Plane fixedYAbovePlane = new Plane(travelPlaneFixedY, true);
-      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
+      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedYAbovePlane = null;
       }
       
       Plane fixedYBelowPlane = new Plane(travelPlaneFixedY, false);
-      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
+      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedYBelowPlane = null;
       }
       
       Plane fixedXAbovePlane = new Plane(travelPlaneFixedX, true);
-      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
+      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedXAbovePlane = null;
       }
       
       Plane fixedXBelowPlane = new Plane(travelPlaneFixedX, false);
-      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
+      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedXBelowPlane = null;
       }
       
       Plane fixedZAbovePlane = new Plane(travelPlaneFixedZ, true);
-      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
+      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedZAbovePlane = null;
       }
       
       Plane fixedZBelowPlane = new Plane(travelPlaneFixedZ, false);
-      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
+      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedZBelowPlane = null;
       }
 
@@ -1248,6 +1250,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final GeoPoint insideInsidePoint = pickProximate(insideInsidePoints);
         
         // Get the outside-outside intersection point
+        //System.out.println("Computing outside-outside intersection");
         final GeoPoint[] outsideOutsidePoints = testPointOutsidePlane.findIntersections(planetModel, travelOutsidePlane);  //these don't add anything: , checkPointCutoffPlane, testPointCutoffPlane);
         final GeoPoint outsideOutsidePoint = pickProximate(outsideOutsidePoints);
         
