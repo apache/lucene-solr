@@ -1091,6 +1091,115 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   }
 
+  public void testGraphSynonyms_singleTermSynonymsPayloadBoost_shouldParseBoostedQuery() throws Exception {
+    Query q = QParser.getParser("tiger", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
+    assertEquals("((t_pick_best_boost_by_payload_foo:tiger)^1.0 | (t_pick_best_boost_by_payload_foo:big_cat)^0.8 | (t_pick_best_boost_by_payload_foo:shere_khan)^0.9)", q.toString());
+
+    q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boost_by_payload_foo"))).getQuery();
+    assertEquals("(t_as_distinct_boost_by_payload_foo:tiger)^1.0 (t_as_distinct_boost_by_payload_foo:big_cat)^0.8 (t_as_distinct_boost_by_payload_foo:shere_khan)^0.9", q.toString());
+
+   /*confirm autoGeneratePhraseQueries always builds OR queries*/
+    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_pick_best_boost_by_payload_foo:\"denim pants\" | t_pick_best_boost_by_payload_foo:jeans)", q.toString());
+
+    q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_as_distinct_boost_by_payload_foo:\"denim pants\" t_as_distinct_boost_by_payload_foo:jeans)", q.toString());
+  }
+
+  public void testGraphSynonyms_multiTermSynonymsPayloadBoost_shouldParseBoostedPhraseQuery() throws Exception {
+    Query q = QParser.getParser("lion", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
+    assertEquals("((t_pick_best_boost_by_payload_foo:lion)^1.0 | (t_pick_best_boost_by_payload_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_foo:simba)^0.8)", q.toString());
+
+    q = QParser.getParser("lion", req(params("df", "t_as_distinct_boost_by_payload_foo"))).getQuery();
+    assertEquals("((t_as_distinct_boost_by_payload_foo:lion)^1.0 (t_as_distinct_boost_by_payload_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_foo:simba)^0.8)", q.toString());
+  }
+
+  public void testGraphSynonyms_multiTermQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedPhraseQuery() throws Exception {
+    Query q = QParser.getParser("snow_leopard lion", req(params("df", "t_pick_best_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("((t_pick_best_boost_by_payload_foo:\"panthera uncia\")^0.99 | (t_pick_best_boost_by_payload_foo:\"snow leopard\")^1.0) " +
+                          "((t_pick_best_boost_by_payload_foo:lion)^1.0 | (t_pick_best_boost_by_payload_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_foo:simba)^0.8)", q.toString());
+
+    q = QParser.getParser("snow_leopard lion", req(params("df", "t_as_distinct_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("((t_as_distinct_boost_by_payload_foo:\"panthera uncia\")^0.99 (t_as_distinct_boost_by_payload_foo:\"snow leopard\")^1.0) " +
+                          "((t_as_distinct_boost_by_payload_foo:lion)^1.0 (t_as_distinct_boost_by_payload_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_foo:simba)^0.8)", q.toString());
+  }
+
+  public void testGraphSynonyms_phraseQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedSpanQuery() throws Exception {
+    Query q = QParser.getParser("\"snow_leopard lion\"", req(params("df", "t_pick_best_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("spanNear(" +
+        "[spanOr([" +
+            "(spanNear([t_pick_best_boost_by_payload_foo:panthera, t_pick_best_boost_by_payload_foo:uncia], 0, true))^0.99, " +
+            "(spanNear([t_pick_best_boost_by_payload_foo:snow, t_pick_best_boost_by_payload_foo:leopard], 0, true))^1.0]), " +
+        "spanOr([" +
+            "(t_pick_best_boost_by_payload_foo:lion)^1.0, " +
+            "(spanNear([t_pick_best_boost_by_payload_foo:panthera, t_pick_best_boost_by_payload_foo:leo], 0, true))^0.99, " +
+            "(t_pick_best_boost_by_payload_foo:simba)^0.8])]," +
+            " 0, true)", q.toString());
+
+    q = QParser.getParser("\"snow_leopard lion\"", req(params("df", "t_as_distinct_boost_by_payload_foo", "sow", "false"))).getQuery();
+    assertEquals("spanNear(" +
+        "[spanOr([" +
+        "(spanNear([t_as_distinct_boost_by_payload_foo:panthera, t_as_distinct_boost_by_payload_foo:uncia], 0, true))^0.99, " +
+        "(spanNear([t_as_distinct_boost_by_payload_foo:snow, t_as_distinct_boost_by_payload_foo:leopard], 0, true))^1.0]), " +
+        "spanOr([" +
+        "(t_as_distinct_boost_by_payload_foo:lion)^1.0, " +
+        "(spanNear([t_as_distinct_boost_by_payload_foo:panthera, t_as_distinct_boost_by_payload_foo:leo], 0, true))^0.99, " +
+        "(t_as_distinct_boost_by_payload_foo:simba)^0.8])]," +
+        " 0, true)", q.toString());
+  }
+
+  /* If you have single terms synonims, a flat token stream is still OK */
+  public void testFlatSynonyms_singleTermSynonymsPayloadBoost_shouldParseBoostedQuery() throws Exception {
+    Query q = QParser.getParser("tiger", req(params("df", "t_pick_best_boost_by_payload_flat_foo"))).getQuery();
+    assertEquals("((t_pick_best_boost_by_payload_flat_foo:tiger)^1.0 | (t_pick_best_boost_by_payload_flat_foo:big_cat)^0.8 | (t_pick_best_boost_by_payload_flat_foo:shere_khan)^0.9)", q.toString());
+
+    q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boost_by_payload_flat_foo"))).getQuery();
+    assertEquals("(t_as_distinct_boost_by_payload_flat_foo:tiger)^1.0 (t_as_distinct_boost_by_payload_flat_foo:big_cat)^0.8 (t_as_distinct_boost_by_payload_flat_foo:shere_khan)^0.9", q.toString());
+
+    /*confirm autoGeneratePhraseQueries builds disjunction queries or boolean queries accordingly*/
+    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_pick_best_boost_by_payload_flat_foo:\"denim pants\" | t_pick_best_boost_by_payload_flat_foo:jeans)", q.toString());
+
+    q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_as_distinct_boost_by_payload_flat_foo:\"denim pants\" t_as_distinct_boost_by_payload_flat_foo:jeans)", q.toString());
+  }
+
+  /* If you have multi term synonyms a flat token stream is not going to produce the ideal query, this test check it builds the best it can do*/
+  public void testFlatSynonyms_multiTermQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedQuery() throws Exception {
+    Query q = QParser.getParser("snow_leopard lion", req(params("df", "t_pick_best_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_pick_best_boost_by_payload_flat_foo:panthera | t_pick_best_boost_by_payload_flat_foo:snow) " +
+        "(t_pick_best_boost_by_payload_flat_foo:uncia | t_pick_best_boost_by_payload_flat_foo:leopard) " +
+        "((t_pick_best_boost_by_payload_flat_foo:lion)^1.0 | (t_pick_best_boost_by_payload_flat_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_flat_foo:simba)^0.8)", q.toString());
+
+    q = QParser.getParser("snow_leopard lion", req(params("df", "t_as_distinct_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("(t_as_distinct_boost_by_payload_flat_foo:panthera t_as_distinct_boost_by_payload_flat_foo:snow) " +
+        "(t_as_distinct_boost_by_payload_flat_foo:uncia t_as_distinct_boost_by_payload_flat_foo:leopard) " +
+        "((t_as_distinct_boost_by_payload_flat_foo:lion)^1.0 (t_as_distinct_boost_by_payload_flat_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_flat_foo:simba)^0.8)", q.toString());
+  }
+
+  /* If you have multi term synonyms a flat token stream is not going to produce the ideal query, , this test check it builds the best it can do*/
+  public void testFlatSynonyms_phraseQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedSpanQuery() throws Exception {
+    Query q = QParser.getParser("\"snow_leopard lion\"", req(params("df", "t_pick_best_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("spanNear([" +
+        "spanOr([t_pick_best_boost_by_payload_flat_foo:panthera, t_pick_best_boost_by_payload_flat_foo:snow]), " +
+        "spanOr([t_pick_best_boost_by_payload_flat_foo:uncia, t_pick_best_boost_by_payload_flat_foo:leopard]), " +
+        "spanOr([(t_pick_best_boost_by_payload_flat_foo:lion)^1.0, (spanNear([t_pick_best_boost_by_payload_flat_foo:panthera, t_pick_best_boost_by_payload_flat_foo:leo], 0, true))^0.99, (t_pick_best_boost_by_payload_flat_foo:simba)^0.8])], 0, true)", q.toString());
+
+    q = QParser.getParser("\"snow_leopard lion\"", req(params("df", "t_as_distinct_boost_by_payload_flat_foo", "sow", "false"))).getQuery();
+    assertEquals("spanNear([" +
+        "spanOr([t_as_distinct_boost_by_payload_flat_foo:panthera, t_as_distinct_boost_by_payload_flat_foo:snow]), " +
+        "spanOr([t_as_distinct_boost_by_payload_flat_foo:uncia, t_as_distinct_boost_by_payload_flat_foo:leopard]), " +
+        "spanOr([(t_as_distinct_boost_by_payload_flat_foo:lion)^1.0, (spanNear([t_as_distinct_boost_by_payload_flat_foo:panthera, t_as_distinct_boost_by_payload_flat_foo:leo], 0, true))^0.99, (t_as_distinct_boost_by_payload_flat_foo:simba)^0.8])], 0, true)", q.toString());
+  }
+
+  public void testGraphSynonyms_PayloadBoostMissing_shouldAssignDefaultBoost() throws Exception {
+    Query q = QParser.getParser("leopard", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
+    assertEquals("(t_pick_best_boost_by_payload_foo:leopard | (t_pick_best_boost_by_payload_foo:big_cat)^0.8 | (t_pick_best_boost_by_payload_foo:bagheera)^0.9)", q.toString());
+
+    q = QParser.getParser("leopard", req(params("df", "t_as_distinct_boost_by_payload_foo"))).getQuery();
+    assertEquals("t_as_distinct_boost_by_payload_foo:leopard (t_as_distinct_boost_by_payload_foo:big_cat)^0.8 (t_as_distinct_boost_by_payload_foo:bagheera)^0.9", q.toString());
+  }
+
   @Test
   public void testBadRequestInSetQuery() throws SyntaxError {
     SolrQueryRequest req = req();

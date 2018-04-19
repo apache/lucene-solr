@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -49,12 +50,14 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  */
 public final class GraphTokenStreamFiniteStrings {
   private final Map<Integer, BytesRef> idToTerm = new HashMap<>();
+  private final Map<Integer, BytesRef> idToPayload = new HashMap<>();
   private final Map<Integer, Integer> idToInc = new HashMap<>();
   private final Automaton det;
   private final Transition transition = new Transition();
 
   private class FiniteStringsTokenStream extends TokenStream {
     private final BytesTermAttribute termAtt = addAttribute(BytesTermAttribute.class);
+    private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
     private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     private final IntsRef ids;
     private final int end;
@@ -73,6 +76,7 @@ public final class GraphTokenStreamFiniteStrings {
         clearAttributes();
         int id = ids.ints[offset];
         termAtt.setBytesRef(idToTerm.get(id));
+        payloadAtt.setPayload(idToPayload.get(id));
 
         int incr = 1;
         if (idToInc.containsKey(id)) {
@@ -203,6 +207,7 @@ public final class GraphTokenStreamFiniteStrings {
   private Automaton build(final TokenStream in) throws IOException {
     Automaton.Builder builder = new Automaton.Builder();
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
+    final PayloadAttribute payloadAtt = in.addAttribute(PayloadAttribute.class);
     final PositionIncrementAttribute posIncAtt = in.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLengthAtt = in.addAttribute(PositionLengthAttribute.class);
 
@@ -229,7 +234,8 @@ public final class GraphTokenStreamFiniteStrings {
       }
 
       BytesRef term = termBytesAtt.getBytesRef();
-      int id = getTermID(currentIncr, prevIncr, term);
+      BytesRef payload = payloadAtt.getPayload();
+      int id = getTermID(currentIncr, prevIncr, term, payload);
       builder.addTransition(pos, endPos, id);
 
       // only save last increment on non-zero increment in case we have multiple stacked tokens
@@ -248,11 +254,14 @@ public final class GraphTokenStreamFiniteStrings {
   /**
    * Gets an integer id for a given term and saves the position increment if needed.
    */
-  private int getTermID(int incr, int prevIncr, BytesRef term) {
+  private int getTermID(int incr, int prevIncr, BytesRef term, BytesRef payload) {
     assert term != null;
     boolean isStackedGap = incr == 0 && prevIncr > 1;
     int id = idToTerm.size();
     idToTerm.put(id, BytesRef.deepCopyOf(term));
+    if (payload != null) {
+      idToPayload.put(id, BytesRef.deepCopyOf(payload));
+    }
     // stacked token should have the same increment as original token at this position
     if (isStackedGap) {
       idToInc.put(id, prevIncr);

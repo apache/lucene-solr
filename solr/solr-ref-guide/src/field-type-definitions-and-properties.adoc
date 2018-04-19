@@ -90,7 +90,7 @@ For multivalued fields, specifies a distance between multiple values, which prev
 `synonymQueryStyle`::
 Query used to combine scores of overlapping query terms (i.e., synonyms). Consider a search for "blue tee" with query-time synonyms `tshirt,tee`.
 +
-Use `as_same_term` (default) to blend terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important. Use `pick_best` to select the most significant synonym when scoring `Dismax(tee,tshirt)`. Use `as_distinct_terms` to bias scoring towards the most significant synonym `(pants OR slacks)`.
+Use `as_same_term` (default) to blend terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important. Use `pick_best` to select the most significant synonym when scoring `Dismax(tee,tshirt)`. Use `as_distinct_terms` to bias scoring towards the most significant synonym `(pants OR slacks)`. Use `*_boost_by_payload` ( 'pick_best_boost_by_payload' 'as_distinct_terms_boost_by_payload') to additionally apply a different boost to each synonym based on the synonym payload.
 +
 `as_same_term` is appropriate when terms are true synonyms (television, tv). Use `pick_best` or `as_distinct_terms` when synonyms are expanding to hyponyms `(q=jeans w/ jeans\=>jeans,pants)` and you want exact to come before parent and sibling concepts. See this http://opensourceconnections.com/blog/2017/11/21/solr-synonyms-mea-culpa/[blog article].
 

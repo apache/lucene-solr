@@ -38,3 +38,9 @@ tabby => tabby, cat, feline, animal
 persian => persian, cat, feline, animal
 
 jeans, denim pants
+
+# Synonyms used by Payload Boost
+tiger => tiger|1.0, Big_Cat|0.8, Shere_Khan|0.9
+leopard => leopard, Big_Cat|0.8, Bagheera|0.9
+lion => lion|1.0, panthera leo|0.99, Simba|0.8
+snow_leopard => panthera uncia|0.99, snow leopard|1.0

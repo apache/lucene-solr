@@ -16,17 +16,26 @@
  */
 package org.apache.solr.parser;
 
+import java.io.IOException;
 import java.io.StringReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -43,6 +52,11 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.spans.SpanBoostQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
@@ -105,13 +119,26 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
      * */
     PICK_BEST,
 
-    /** each synonym scored indepedently, then added together (ie boolean query)
-     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
-     *  summed with any "pants" matches
-     *  appropriate when more specific synonyms should score higher, but we don't want to ignore
-     *  less specific synonyms
-     * */
-    AS_DISTINCT_TERMS
+    /**
+     * each synonym scored indepedently, then added together (ie boolean query)
+     * so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
+     * summed with any "pants" matches
+     * appropriate when more specific synonyms should score higher, but we don't want to ignore
+     * less specific synonyms
+     */
+    AS_DISTINCT_TERMS,
+
+    /**
+     * this approach is an extension of the pick_best,
+     * it adds a boost to each synonym based on the payload associated to the term
+     */
+    PICK_BEST_BOOST_BY_PAYLOAD,
+
+    /**
+     * this approach is an extension of the as_distinct_terms,
+     * it adds a boost to each synonym based on the payload associated to the term
+     */
+    AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD,
   }
 
   // make it possible to call setDefaultOperator() without accessing
@@ -592,25 +619,177 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(Term terms[]) {
+  protected Query newSynonymQuery(Term[] terms, TokenStream sourceTokenStream) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
-        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
-        for (Term term : terms) {
-          currPosnClauses.add(newTermQuery(term));
-        }
-        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
-        return dm;
+        return getDisjunctionSynonymQuery(terms, sourceTokenStream, false);
+      case PICK_BEST_BOOST_BY_PAYLOAD:
+        return getDisjunctionSynonymQuery(terms, sourceTokenStream, true);
       case AS_DISTINCT_TERMS:
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Term term : terms) {
-          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
-        }
-        return builder.build();
+        return getBooleanSynonymQuery(terms, sourceTokenStream,false);
+      case AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD:
+        return getBooleanSynonymQuery(terms, sourceTokenStream,true);
       case AS_SAME_TERM:
-        return super.newSynonymQuery(terms);
+        return super.newSynonymQuery(terms, sourceTokenStream);
       default:
         throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+    }
+  }
+
+  private Query getBooleanSynonymQuery(Term[] terms, TokenStream sourceTokenStream, boolean payloadBoost) {
+    BooleanQuery.Builder builder;
+    builder = new BooleanQuery.Builder();
+    List<Query> synonymQueries = getSynonymQueries(terms, sourceTokenStream, payloadBoost);
+    for(Query synonymQuery:synonymQueries){
+      builder.add(synonymQuery,BooleanClause.Occur.SHOULD);
+    }
+    return builder.build();
+  }
+
+  private Query getDisjunctionSynonymQuery(Term[] terms, TokenStream sourceTokenStream, boolean payloadBoost) {
+    List<Query> synonymQueries = getSynonymQueries(terms, sourceTokenStream, payloadBoost);
+    DisjunctionMaxQuery synonymQuery;
+    synonymQuery = new DisjunctionMaxQuery(synonymQueries, 0.0f);
+    return synonymQuery;
+  }
+
+  private List<Query> getSynonymQueries(Term[] terms, TokenStream sourceTokenStream, boolean payloadBoost) {
+    List<Query> synonymQueries = new ArrayList<>(terms.length);
+    BytesRef[] currentStreamPayloads = null;
+    if (payloadBoost) {
+      currentStreamPayloads = super.getPayloadsFromStream(sourceTokenStream);
+    }
+    BytesRef termPayload = null;
+    for (int i = 0; i < terms.length; i++) {
+      Term currentTerm = terms[i];
+      if (payloadBoost) {
+        termPayload = currentStreamPayloads[i];
+      }
+      if (termPayload != null) {
+        float payloadValue = ByteBuffer.wrap(termPayload.bytes).order(ByteOrder.BIG_ENDIAN).getFloat();
+        synonymQueries.add(new BoostQuery(newTermQuery(currentTerm), payloadValue));
+      } else {
+        synonymQueries.add(newTermQuery(currentTerm));
+      }
+    }
+    return synonymQueries;
+  }
+
+  /**
+   * Builds a new GraphQuery for multi-terms synonyms.
+   * <p>
+   * This is intended for subclasses that wish to customize the generated queries.
+   *
+   * @return new Query instance
+   */
+  @Override
+  protected Query newGraphSynonymQuery(Iterator<Query> sidePaths, Iterator<BytesRef[]> sidePathsPayloads) {
+    switch (synonymQueryStyle) {
+      case PICK_BEST_BOOST_BY_PAYLOAD:
+        List<Query> boostedSidePaths = boostQueriesByPayload(sidePaths, sidePathsPayloads);
+        DisjunctionMaxQuery graphSynonymQuery = new DisjunctionMaxQuery(boostedSidePaths, 0.0f);
+        return graphSynonymQuery;
+      case AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD:
+        boostedSidePaths = boostQueriesByPayload(sidePaths, sidePathsPayloads);
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (Query boostedSidePath : boostedSidePaths) {
+          builder.add(boostedSidePath, BooleanClause.Occur.SHOULD);
+        }
+        BooleanQuery graphBooleanSynonymQuery = builder.build();
+        if (graphBooleanSynonymQuery.clauses().size() == 1) {
+          return graphBooleanSynonymQuery.clauses().get(0).getQuery();
+        }
+        return graphBooleanSynonymQuery;
+      default:
+        return super.newGraphSynonymQuery(sidePaths, sidePathsPayloads);
+    }
+  }
+
+  private List<Query> boostQueriesByPayload(Iterator<Query> sidePaths, Iterator<BytesRef[]> sidePathsPayloads) {
+    List<Query> boostedSidePaths = new LinkedList<>();
+    while (sidePaths.hasNext()) {
+      Query sidePath = sidePaths.next();
+      BytesRef[] sidePathPayloads = sidePathsPayloads.next();
+      float overallQueryPayload = extractQueryPayload(sidePathPayloads);
+      if (overallQueryPayload != 0) {
+        boostedSidePaths.add(new BoostQuery(sidePath, overallQueryPayload));
+      } else {
+        boostedSidePaths.add(sidePath);
+      }
+    }
+    return boostedSidePaths;
+  }
+
+  /*Current assumption is that the user will associate a single payload to the multi terms synonym
+   * that generated the phrase query, so a valid value for the payload associated to the query is just the first not null payload
+   * e.g.
+   * lion => panthera leo|0.99
+   * "panthera leo" query will have associated Payloads [null,0.99]
+   *  So the payload associated to the query will be 0.99 which is the first not null
+   * */
+  private float extractQueryPayload(BytesRef[] payloadsForQueryTerms) {
+    for (BytesRef singlePayload : payloadsForQueryTerms) {
+      if (singlePayload != null) {
+        float decodedPayload = ByteBuffer.wrap(singlePayload.bytes).order(ByteOrder.BIG_ENDIAN).getFloat();
+        return decodedPayload;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Creates a span query from the tokenstream.  In the case of a single token, a simple <code>SpanTermQuery</code> is
+   * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop of 0 is returned.
+   * In case the synonym query style involves payload boosting a <code>SpanBoostQuery</code> is returned
+   */
+  @Override
+  protected SpanQuery createSpanQuery(TokenStream source, String field) throws IOException {
+    if (synonymQueryStyle == PICK_BEST_BOOST_BY_PAYLOAD || synonymQueryStyle == AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD) {
+      try (CachingTokenFilter stream = new CachingTokenFilter(source)) {
+        TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+        PayloadAttribute payloadAttribute = stream.getAttribute(PayloadAttribute.class);
+        List<SpanTermQuery> terms = new ArrayList<>();
+        List<BytesRef> payloads = new ArrayList<>();
+
+        stream.reset();
+        if (termAtt == null) {
+          return null;
+        }
+        while (stream.incrementToken()) {
+          terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
+          payloads.add(payloadAttribute.getPayload());
+        }
+        stream.end();
+        stream.close();
+
+        BytesRef[] queryPayloadsArray = payloads.toArray(new BytesRef[payloads.size()]);
+        float queryPayloadBoost = 0;
+        if (!payloads.isEmpty()) {
+          queryPayloadBoost = extractQueryPayload(queryPayloadsArray);
+        }
+
+        if (terms.isEmpty()) {
+          return null;
+        } else if (terms.size() == 1) {
+          SpanTermQuery singleTermQuery = terms.get(0);
+          if (queryPayloadBoost != 0) {
+            return new SpanBoostQuery(singleTermQuery, queryPayloadBoost);
+          } else {
+            return singleTermQuery;
+          }
+        } else {
+          SpanNearQuery multiTermQuery = new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
+          if (queryPayloadBoost != 0) {
+            return new SpanBoostQuery(multiTermQuery, queryPayloadBoost);
+          } else {
+            return multiTermQuery;
+          }
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("Error analyzing query text", e);
+      }
+    } else {
+      return super.createSpanQuery(source, field);
     }
   }
 
