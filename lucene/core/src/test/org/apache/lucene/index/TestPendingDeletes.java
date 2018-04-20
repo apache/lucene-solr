@@ -134,13 +134,15 @@ public class TestPendingDeletes extends LuceneTestCase {
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, -1, -1, -1);
+    FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
+    si.getCodec().fieldInfosFormat().write(dir, si, "", fieldInfos, IOContext.DEFAULT);
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     for (int i = 0; i < 3; i++) {
       assertTrue(deletes.delete(i));
       if (random().nextBoolean()) {
         assertTrue(deletes.writeLiveDocs(dir));
       }
-      assertEquals(i == 2, deletes.isFullyDeleted());
+      assertEquals(i == 2, deletes.isFullyDeleted(() -> null));
     }
   }
 }

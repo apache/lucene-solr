@@ -26,17 +26,17 @@ import org.apache.lucene.util.IOSupplier;
  *
  * @lucene.experimental
  */
-public class MergePolicyWrapper extends MergePolicy {
+public class FilterMergePolicy extends MergePolicy {
 
   /** The wrapped {@link MergePolicy}. */
   protected final MergePolicy in;
 
   /**
-   * Creates a new merge policy instance.
+   * Creates a new filter merge policy instance wrapping another.
    *
    * @param in the wrapped {@link MergePolicy}
    */
-  public MergePolicyWrapper(MergePolicy in) {
+  public FilterMergePolicy(MergePolicy in) {
     this.in = in;
   }
 
@@ -84,17 +84,23 @@ public class MergePolicyWrapper extends MergePolicy {
   }
 
   @Override
+  public final double getMaxCFSSegmentSizeMB() {
+    return in.getMaxCFSSegmentSizeMB();
+  }
+
+  @Override
   public String toString() {
     return getClass().getSimpleName() + "(" + in + ")";
   }
 
   @Override
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
-    return in.keepFullyDeletedSegment(reader);
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    return in.keepFullyDeletedSegment(readerIOSupplier);
   }
 
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount,
+                               IOSupplier<CodecReader> readerSupplier) throws IOException {
     return in.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
   }
 }

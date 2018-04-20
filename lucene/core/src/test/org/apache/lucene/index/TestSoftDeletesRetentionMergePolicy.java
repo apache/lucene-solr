@@ -71,12 +71,12 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     {
       assertEquals(2, reader.leaves().size());
       final SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
-      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertTrue(policy.keepFullyDeletedSegment(() -> segmentReader));
       assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
     }
     {
       SegmentReader segmentReader = (SegmentReader) reader.leaves().get(1).reader();
-      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertTrue(policy.keepFullyDeletedSegment(() -> segmentReader));
       assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
       writer.forceMerge(1);
       reader.close();
@@ -86,7 +86,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       assertEquals(1, reader.leaves().size());
       SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
       assertEquals(2, reader.maxDoc());
-      assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+      assertTrue(policy.keepFullyDeletedSegment(() -> segmentReader));
       assertEquals(0, policy.numDeletesToMerge(segmentReader.getSegmentInfo(), 0, () -> segmentReader));
     }
     writer.forceMerge(1); // make sure we don't merge this
@@ -114,10 +114,9 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     assertEquals(1, reader.leaves().size());
-    SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     MergePolicy policy = new SoftDeletesRetentionMergePolicy("soft_delete",
         () -> new DocValuesFieldExistsQuery("keep_around"), NoMergePolicy.INSTANCE);
-    assertFalse(policy.keepFullyDeletedSegment(segmentReader));
+    assertFalse(policy.keepFullyDeletedSegment(() -> (SegmentReader) reader.leaves().get(0).reader()));
     reader.close();
 
     doc = new Document();
@@ -126,15 +125,13 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     doc.add(new NumericDocValuesField("soft_delete", 1));
     writer.addDocument(doc);
 
-    reader = writer.getReader();
-    assertEquals(2, reader.leaves().size());
-    segmentReader = (SegmentReader) reader.leaves().get(0).reader();
-    assertFalse(policy.keepFullyDeletedSegment(segmentReader));
+    DirectoryReader reader1 = writer.getReader();
+    assertEquals(2, reader1.leaves().size());
+    assertFalse(policy.keepFullyDeletedSegment(() -> (SegmentReader) reader1.leaves().get(0).reader()));
 
-    segmentReader = (SegmentReader) reader.leaves().get(1).reader();
-    assertTrue(policy.keepFullyDeletedSegment(segmentReader));
+    assertTrue(policy.keepFullyDeletedSegment(() -> (SegmentReader) reader1.leaves().get(1).reader()));
 
-    IOUtils.close(reader, writer, dir);
+    IOUtils.close(reader1, writer, dir);
   }
 
   public void testFieldBasedRetention() throws IOException {
@@ -365,4 +362,84 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     IOUtils.close(reader, writer, dir);
   }
 
+  public void testForceMergeDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_delete");
+    config.setMergePolicy(newMergePolicy(random(), false)); // no mock MP it might not select segments for force merge
+    if (random().nextBoolean()) {
+      config.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+          () -> new MatchNoDocsQuery(), config.getMergePolicy()));
+    }
+    IndexWriter writer = new IndexWriter(dir, config);
+    // The first segment includes d1 and d2
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+      writer.addDocument(d);
+    }
+    writer.flush();
+    // The second segment includes only the tombstone
+    Document tombstone = new Document();
+    tombstone.add(new NumericDocValuesField("soft_delete", 1));
+    writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
+    // Internally, forceMergeDeletes will call flush to flush pending updates
+    // Thus, we will have two segments - both having soft-deleted documents.
+    // We expect any MP to merge these segments into one segment
+    // when calling forceMergeDeletes.
+    writer.forceMergeDeletes(true);
+    assertEquals(1, writer.maxDoc());
+    assertEquals(1, writer.segmentInfos.asList().size());
+    writer.close();
+    dir.close();
+  }
+
+  public void testDropFullySoftDeletedSegment() throws Exception {
+    Directory dir = newDirectory();
+    String softDelete = random().nextBoolean() ? null : "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDelete);
+    config.setMergePolicy(newMergePolicy(random(), true));
+    if (softDelete != null && random().nextBoolean()) {
+      config.setMergePolicy(new SoftDeletesRetentionMergePolicy(softDelete,
+          () -> new MatchNoDocsQuery(), config.getMergePolicy()));
+    }
+    IndexWriter writer = new IndexWriter(dir, config);
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+      writer.addDocument(d);
+    }
+    writer.flush();
+    assertEquals(1, writer.segmentInfos.asList().size());
+
+    if (softDelete != null) {
+      // the newly created segment should be dropped as it is fully deleted (i.e. only contains deleted docs).
+      if (random().nextBoolean()) {
+        Document tombstone = new Document();
+        tombstone.add(new NumericDocValuesField(softDelete, 1));
+        writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField(softDelete, 1));
+      } else {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(1), Field.Store.YES));
+        if (random().nextBoolean()) {
+          writer.softUpdateDocument(new Term("id", "1"), doc, new NumericDocValuesField(softDelete, 1));
+        } else {
+          writer.addDocument(doc);
+        }
+        writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField(softDelete, 1));
+      }
+    } else {
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      writer.addDocument(d);
+      writer.deleteDocuments(new Term("id", "1"));
+    }
+    writer.commit();
+    IndexReader reader = writer.getReader();
+    assertEquals(reader.numDocs(), 1);
+    reader.close();
+    assertEquals(1, writer.segmentInfos.asList().size());
+
+    writer.close();
+    dir.close();
+  }
 }

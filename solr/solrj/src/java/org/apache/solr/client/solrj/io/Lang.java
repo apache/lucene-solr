@@ -233,6 +233,7 @@ public class Lang {
         .withFunctionName("linfnorm", LInfNormEvaluator.class)
         .withFunctionName("matrixMult", MatrixMultiplyEvaluator.class)
         .withFunctionName("bicubicSpline", BicubicSplineEvaluator.class)
+        .withFunctionName("valueAt", ValueAtEvaluator.class)
 
             // Boolean Stream Evaluators
 

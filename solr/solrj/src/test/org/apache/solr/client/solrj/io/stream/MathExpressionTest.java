@@ -2354,6 +2354,31 @@ public class MathExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testValueAt() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "               b=array(1,2,3,4), " +
+        "               c=matrix(array(5,6,7), " +
+        "                        array(8,9,10)), " +
+        "               d=valueAt(b, 3)," +
+        "               e=valueAt(c, 1, 0))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number value1 = (Number)tuples.get(0).get("d");
+    Number value2 = (Number)tuples.get(0).get("e");
+    assertEquals(value1.intValue(), 4);
+    assertEquals(value2.intValue(), 8);
+  }
+
+
   @Test
   public void testBetaDistribution() throws Exception {
     String cexpr = "let(a=sample(betaDistribution(1, 5), 50000), b=hist(a, 11), c=col(b, N))";

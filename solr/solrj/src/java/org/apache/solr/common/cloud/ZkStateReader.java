@@ -171,6 +171,8 @@ public class ZkStateReader implements Closeable {
 
   private ConcurrentHashMap<String, CollectionWatch<CollectionPropsWatcher>> collectionPropsWatches = new ConcurrentHashMap<>();
 
+  private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
+
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
   
   /** Used to submit notifications to Collection Properties watchers in order **/
@@ -545,6 +547,8 @@ public class ZkStateReader implements Closeable {
           clusterState.getCollectionStates());
     }
 
+    notifyCloudCollectionsListeners();
+
     for (String collection : changedCollections) {
       notifyStateWatchers(liveNodes, collection, clusterState.getCollectionOrNull(collection));
     }
@@ -648,6 +652,52 @@ public class ZkStateReader implements Closeable {
         }
       }
     }
+  }
+
+  // We don't get a Stat or track versions on getChildren() calls, so force linearization.
+  private final Object refreshCollectionsSetLock = new Object();
+  // Ensures that only the latest getChildren fetch gets applied.
+  private final AtomicReference<Set<String>> lastFetchedCollectionSet = new AtomicReference<>();
+
+  /**
+   * Register a CloudCollectionsListener to be called when the set of collections within a cloud changes.
+   */
+  public void registerCloudCollectionsListener(CloudCollectionsListener cloudCollectionsListener) {
+    cloudCollectionsListeners.add(cloudCollectionsListener);
+    notifyNewCloudCollectionsListener(cloudCollectionsListener);
+  }
+
+  /**
+   * Remove a registered CloudCollectionsListener.
+   */
+  public void removeCloudCollectionsListener(CloudCollectionsListener cloudCollectionsListener) {
+    cloudCollectionsListeners.remove(cloudCollectionsListener);
+  }
+
+  private void notifyNewCloudCollectionsListener(CloudCollectionsListener listener) {
+    listener.onChange(Collections.emptySet(), lastFetchedCollectionSet.get());
+  }
+
+  private void notifyCloudCollectionsListeners() {
+    notifyCloudCollectionsListeners(false);
+  }
+
+  private void notifyCloudCollectionsListeners(boolean notifyIfSame) {
+    synchronized (refreshCollectionsSetLock) {
+      final Set<String> newCollections = getCurrentCollections();
+      final Set<String> oldCollections = lastFetchedCollectionSet.getAndSet(newCollections);
+      if (!newCollections.equals(oldCollections) || notifyIfSame) {
+        cloudCollectionsListeners.forEach(listener -> listener.onChange(oldCollections, newCollections));
+      }
+    }
+  }
+
+  private Set<String> getCurrentCollections() {
+    Set<String> collections = new HashSet<>();
+    collections.addAll(legacyCollectionStates.keySet());
+    collections.addAll(watchedCollectionStates.keySet());
+    collections.addAll(lazyCollectionStates.keySet());
+    return collections;
   }
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
@@ -1364,7 +1414,7 @@ public class ZkStateReader implements Closeable {
     if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
     }
-    
+
     DocCollection state = clusterState.getCollectionOrNull(collection);
     if (stateWatcher.onStateChanged(liveNodes, state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
@@ -1572,8 +1622,12 @@ public class ZkStateReader implements Closeable {
         return v;
       });
       for (CollectionStateWatcher watcher : watchers) {
-        if (watcher.onStateChanged(liveNodes, collectionState)) {
-          removeCollectionStateWatcher(collection, watcher);
+        try {
+          if (watcher.onStateChanged(liveNodes, collectionState)) {
+            removeCollectionStateWatcher(collection, watcher);
+          }
+        } catch (Exception exception) {
+          LOG.warn("Error on calling watcher", exception);
         }
       }
     }

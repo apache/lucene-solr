@@ -590,7 +590,7 @@ public abstract class MergePolicy {
   }
 
   /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
+  public double getMaxCFSSegmentSizeMB() {
     return maxCFSSegmentSize/1024/1024.;
   }
 
@@ -611,7 +611,7 @@ public abstract class MergePolicy {
    * Returns true if the segment represented by the given CodecReader should be keep even if it's fully deleted.
    * This is useful for testing of for instance if the merge policy implements retention policies for soft deletes.
    */
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return false;
   }
 

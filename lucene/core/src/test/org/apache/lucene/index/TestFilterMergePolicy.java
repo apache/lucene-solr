@@ -21,17 +21,16 @@ import java.lang.reflect.Modifier;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestMergePolicyWrapper extends LuceneTestCase {
+public class TestFilterMergePolicy extends LuceneTestCase {
 
   public void testMethodsOverridden() throws Exception {
     for (Method m : MergePolicy.class.getDeclaredMethods()) {
       if (Modifier.isFinal(m.getModifiers())) continue;
       try {
-        MergePolicyWrapper.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
+        FilterMergePolicy.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
       } catch (NoSuchMethodException e) {
-        fail("MergePolicyWrapper needs to override '" + m + "'");
+        fail("FilterMergePolicy needs to override '" + m + "'");
       }
     }
   }
-
 }

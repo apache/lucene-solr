@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
@@ -53,7 +54,7 @@ import static java.math.RoundingMode.CEILING;
 /**
  * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}. The
  * first is based on Lucene's "Points" API, which is a BKD Index.  This field type is strictly limited to
- * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter.
+ * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
 public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
@@ -81,16 +82,18 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
    * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective
    * of the available precision.
    * @param value Non-null; stored location field data
-   * @return Non-null; "lat, lon" with 6 decimal point precision
+   * @return Non-null; "lat, lon"
    */
   public static String decodeDocValueToString(long value) {
     final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
     final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
-    // 7 decimal places maximizes our available precision to just over a centimeter; we have a test for it.
+    // This # decimal places gets us close to our available precision to 1.37cm; we have a test for it.
     // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
-    //   reverses the "floor" that occurs when we encode.
-    BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(7, CEILING);
-    BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(7, CEILING);
+    //   reverses the "floor" that occurred when we encoded.
+    final int DECIMAL_PLACES = 7;
+    final RoundingMode ROUND_MODE = CEILING;
+    BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
+    BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
     return latitudeDecoded.stripTrailingZeros().toPlainString() + ","
         + longitudeDecoded.stripTrailingZeros().toPlainString();
     // return ((float)latDouble) + "," + ((float)lonDouble);  crude but not quite as accurate

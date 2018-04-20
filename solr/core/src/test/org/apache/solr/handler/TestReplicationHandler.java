@@ -231,22 +231,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return details;
   }
   
-  private NamedList<Object> getCommits(SolrClient s) throws Exception {
-    
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command","commits");
-    params.set("_trace","getCommits");
-    params.set("qt",ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-
-    assertNotNull("null response from server", res);
-
-
-    return res;
-  }
+//  private NamedList<Object> getCommits(SolrClient s) throws Exception {
+//    
+//
+//    ModifiableSolrParams params = new ModifiableSolrParams();
+//    params.set("command","commits");
+//    params.set("_trace","getCommits");
+//    params.set("qt",ReplicationHandler.PATH);
+//    QueryRequest req = new QueryRequest(params);
+//
+//    NamedList<Object> res = s.request(req);
+//
+//    assertNotNull("null response from server", res);
+//
+//
+//    return res;
+//  }
   
   private NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
     
@@ -1239,7 +1239,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void doTestReplicateAfterCoreReload() throws Exception {
-    int docs = TEST_NIGHTLY ? 200000 : 0;
+    int docs = TEST_NIGHTLY ? 200000 : 10;
     
     //stop slave
     slaveJetty.stop();
@@ -1283,12 +1283,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(null, cmp);
     
     Object version = getIndexVersion(masterClient).get("indexversion");
-    NamedList<Object> commits = getCommits(masterClient);
     
     reloadCore(masterClient, "collection1");
     
     assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
-    assertEquals(commits.get("commits"), getCommits(masterClient).get("commits"));
     
     index(masterClient, "id", docs + 10, "name", "name = 1");
     index(masterClient, "id", docs + 20, "name", "name = 2");

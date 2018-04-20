@@ -18,27 +18,50 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevenshteinDistance;
+import org.apache.lucene.search.spell.LuceneLevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class ConjunctionSolrSpellCheckerTest extends LuceneTestCase {
   
+  public static final Class<?>[] AVAILABLE_DISTANCES = {LevenshteinDistance.class, LuceneLevenshteinDistance.class,
+      JaroWinklerDistance.class, NGramDistance.class};
+
   @Test
   public void test() throws Exception {
     ConjunctionSolrSpellChecker cssc = new ConjunctionSolrSpellChecker();
-    MockSolrSpellChecker levenstein1 = new MockSolrSpellChecker(new LevenshteinDistance());
-    MockSolrSpellChecker levenstein2 = new MockSolrSpellChecker(new LevenshteinDistance());
-    MockSolrSpellChecker ngram = new MockSolrSpellChecker(new NGramDistance());
+    @SuppressWarnings("unchecked")
+    Class<StringDistance> sameDistance = (Class<StringDistance>) AVAILABLE_DISTANCES[random().nextInt(AVAILABLE_DISTANCES.length)];
     
-    cssc.addChecker(levenstein1);
-    cssc.addChecker(levenstein2);
+    StringDistance sameDistance1 = sameDistance.newInstance();
+    StringDistance sameDistance2 = sameDistance.newInstance();
+    
+    //NGramDistance defaults to 2, so we'll try 3 or 4 to ensure we have one that is not-equal.
+    StringDistance differentDistance = new NGramDistance(3);
+    if(sameDistance1.equals(differentDistance)) {
+      differentDistance = new NGramDistance(4);
+      if(sameDistance1.equals(differentDistance)) {
+        fail("Cannot set up test.  2 NGramDistances with different gram sizes should not be equal.");
+      }
+    }
+    Assert.assertEquals("The distance " + sameDistance + " does not properly implement equals.", sameDistance1, sameDistance2);
+    
+    
+    MockSolrSpellChecker checker1 = new MockSolrSpellChecker(sameDistance1);
+    MockSolrSpellChecker checker2 = new MockSolrSpellChecker(sameDistance2);
+    MockSolrSpellChecker checker3 = new MockSolrSpellChecker(differentDistance);
+    
+    cssc.addChecker(checker1);
+    cssc.addChecker(checker2);
     try {
-      cssc.addChecker(ngram);
+      cssc.addChecker(checker3);
       fail("ConjunctionSolrSpellChecker should have thrown an exception about non-identical StringDistances.");
     } catch (IllegalArgumentException iae) {
       // correct behavior
