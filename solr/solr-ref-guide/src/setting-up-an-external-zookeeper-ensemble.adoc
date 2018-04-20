@@ -131,14 +131,14 @@ We've added these parameters to the three we had already:
 +
 Since we've assigned server IDs to specific hosts/ports, we must also define which server in the list this node is. We do this with a `myid` file stored in the data directory (defined by the `dataDir` parameter). The contents of the `myid` file is only the server ID.
 +
-In the case of the configuration example above, you would create the file `/var/lib/zookeeperdata/1/myid` with the content "1" (without quotes), as in this example:
+In the case of the configuration example above, you would create the file `/var/lib/zookeeper/1/myid` with the content "1" (without quotes), as in this example:
 +
 [source,bash]
 1
 
 `autopurge.snapRetainCount`:: The number of snapshots and corresponding transaction logs to retain when purging old snapshots and transaction logs.
 +
-ZooKeeper automatically keeps a transaction log and writes to it as changes are made. A snapshot of the current state is taken periodically, and this snapshot supersedes transaction logs older than the snapshot. However, ZooKeeper never cleans up neither the old snapshots nor the old transaction logs; over time they will silently fill available disk space on each server.
+ZooKeeper automatically keeps a transaction log and writes to it as changes are made. A snapshot of the current state is taken periodically, and this snapshot supersedes transaction logs older than the snapshot. However, ZooKeeper never cleans up either the old snapshots or the old transaction logs; over time they will silently fill available disk space on each server.
 +
 To avoid this, set the `autopurge.snapRetainCount` and `autopurge.purgeInterval` parameters to enable an automatic clean up (purge) to occur at regular intervals. The `autopurge.snapRetainCount` parameter will keep the set number of snapshots and transaction logs when a clean up occurs. This parameter can be configured higher than `3`, but cannot be set lower than 3.
 
@@ -199,7 +199,7 @@ Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare ca
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
-. Create a file named `zookeeper-env.sh` and put it in the `ZOOKEEPER_HOME/conf` directory (the same place you put `zoo.cfg`). This file will need to exist on each server of the ensemble.
+. Create a file named `zookeeper-env.sh` and put it in the `<ZOOKEEPER_HOME>/conf` directory (the same place you put `zoo.cfg`). This file will need to exist on each server of the ensemble.
 
 . Add the following settings to the file:
 +
@@ -215,7 +215,7 @@ The property `ZOO_LOG_DIR` defines the location on the server where ZooKeeper wi
 +
 With `SERVER_JVMFLAGS`, we've defined several parameters for garbage collection and logging GC-related events. One of the system parameters is `-Xloggc:$ZOO_LOG_DIR/zookeeper_gc.log`, which will put the garbage collection logs in the same directory we've defined for ZooKeeper logs, in a file named `zookeeper_gc.log`.
 
-. Review the default settings in `ZOOKEEPER_HOME/conf/log4j.properties`, especially the `log4j.appender.ROLLINGFILE.MaxFileSize` parameter. This sets the size at which log files will be rolled over, and by default it is 10MB.
+. Review the default settings in `<ZOOKEEPER_HOME>/conf/log4j.properties`, especially the `log4j.appender.ROLLINGFILE.MaxFileSize` parameter. This sets the size at which log files will be rolled over, and by default it is 10MB.
 
 . Copy `zookeeper-env.sh` and any changes to `log4j.properties` to each server in the ensemble.
 
@@ -231,7 +231,7 @@ ZooKeeper provides a great deal of power through additional configurations, but 
 
 === Start ZooKeeper
 
-To start the ensemble, use the `ZOOKEEPER_HOME/bin/zkServer.sh` or `zkServer.cmd` script, as with this command:
+To start the ensemble, use the `<ZOOKEEPER_HOME>/bin/zkServer.sh` or `zkServer.cmd` script, as with this command:
 
 .Linux OS
 [source,bash]
@@ -280,9 +280,9 @@ Once the znode is created, it behaves in a similar way to a directory on a files
 
 === Using the -z Parameter with bin/solr
 
-Pointing Solr at the ZooKeeper instance you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
+Pointing Solr at the ZooKeeper ensemble you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
 
-For example, to point the Solr instance to the ZooKeeper you've started on port 2181 on three servers, this is what you'd need to do:
+For example, to point the Solr instance to the ZooKeeper you've started on port 2181 on three servers with chroot `/solr` (see <<Using a chroot>> above), this is what you'd need to do:
 
 [source,bash]
 ----
@@ -348,6 +348,76 @@ set ZK_HOST=zk1:2181,zk2:2181,zk3:2181/solr
 --
 
 Now you will not have to enter the connection string when starting Solr.
+
+== Increasing ZooKeeper's 1MB File Size Limit
+
+ZooKeeper is designed to hold small files, on the order of kilobytes.  By default, ZooKeeper's file size limit is 1MB.  Attempting to write or read files larger than this will cause errors. 
+
+Some Solr features, e.g. text analysis synonyms, LTR, and OpenNLP named entity recognition, require configuration resources that can be larger than the default limit.  ZooKeeper can be configured, via Java system property https://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#Unsafe+Options[`jute.maxbuffer`], to increase this limit.  Note that this configuration, which is required both for ZooKeeper server(s) and for all clients that connect to the server(s), must be the same everywhere it is specified.
+
+=== Configuring jute.maxbuffer on ZooKeeper nodes
+
+`jute.maxbuffer` must be configured on each external ZooKeeper node.  This can be achieved in any of the following ways; note though that only the first option works on Windows:  
+
+. In `<ZOOKEEPER_HOME>/conf/zoo.cfg`, e.g. to increase the file size limit to one byte less than 10MB, add this line:
++
+[source,properties]
+jute.maxbuffer=0x9fffff
+. In `<ZOOKEEPER_HOME>/conf/zookeeper-env.sh`, e.g. to increase the file size limit to 50MiB, add this line:
++
+[source,properties]
+JVMFLAGS="$JVMFLAGS -Djute.maxbuffer=50000000"
+. In `<ZOOKEEPER_HOME>/bin/zkServer.sh`, add a `JVMFLAGS` environment variable assignment near the top of the script, e.g. to increase the file size limit to 5MiB:
++
+[source,properties]
+JVMFLAGS="$JVMFLAGS -Djute.maxbuffer=5000000"
+
+=== Configuring jute.maxbuffer for ZooKeeper clients
+
+The `bin/solr` script invokes Java programs that act as ZooKeeper clients.  (When you use Solr's bundled ZooKeeper server instead of setting up an external ZooKeeper ensemble, the configuration described below will also configure the ZooKeeper server.) 
+  
+Add the setting to the `SOLR_OPTS` environment variable in Solr's include file (`bin/solr.in.sh` or `solr.in.cmd`):
+
+[.dynamic-tabs]
+--
+[example.tab-pane#linux2]
+====
+[.tab-label]*Linux: solr.in.sh*
+
+The section to look for will start:
+
+[source,properties]
+----
+# Anything you add to the SOLR_OPTS variable will be included in the java
+# start command line as-is, in ADDITION to other options. If you specify the
+# -a option on start script, those options will be appended as well. Examples:
+----
+
+Add the following line to increase the file size limit to 2MB:
+
+[source,properties]
+SOLR_OPTS="$SOLR_OPTS -Djute.maxbuffer=0x200000"
+====
+
+[example.tab-pane#zkwindows2]
+====
+[.tab-label]*Windows: solr.in.cmd*
+
+The section to look for will start:
+
+[source,bat]
+----
+REM Anything you add to the SOLR_OPTS variable will be included in the java
+REM start command line as-is, in ADDITION to other options. If you specify the
+REM -a option on start script, those options will be appended as well. Examples:
+----
+
+Add the following line to increase the file size limit to 2MB:
+
+[source,bat]
+set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
+====
+--
 
 == Securing the ZooKeeper Connection
 

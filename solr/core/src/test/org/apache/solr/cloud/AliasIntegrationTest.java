@@ -93,7 +93,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
@@ -118,16 +118,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertTrue(((Map<String,Map<String,?>>)Utils.fromJSON(rawBytes)).get("collection").get("meta1") instanceof String);
 
     // set properties
-    UnaryOperator<Aliases> op5 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", "bar");
-    aliasesManager.applyModificationAndExportToZk(op5);
+    aliasesManager.applyModificationAndExportToZk(a1 ->
+        a1.cloneWithCollectionAliasProperties("meta1", "foo", "bar"));
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
     assertEquals("bar", meta.get("foo"));
 
     // set more properties
-    UnaryOperator<Aliases> op4 = a -> a.cloneWithCollectionAliasProperties("meta1", "foobar", "bazbam");
-    aliasesManager.applyModificationAndExportToZk(op4);
+    aliasesManager.applyModificationAndExportToZk( a1 ->
+        a1.cloneWithCollectionAliasProperties("meta1", "foobar", "bazbam"));
     meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
 
@@ -140,8 +140,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("bazbam", meta.get("foobar"));
 
     // remove properties
-    UnaryOperator<Aliases> op3 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", null);
-    aliasesManager.applyModificationAndExportToZk(op3);
+    aliasesManager.applyModificationAndExportToZk(a1 ->
+        a1.cloneWithCollectionAliasProperties("meta1", "foo", null));
     meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
     assertNotNull(meta);
 
@@ -153,18 +153,17 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("bazbam", meta.get("foobar"));
 
     // removal of non existent key should succeed.
-    UnaryOperator<Aliases> op2 = a -> a.cloneWithCollectionAliasProperties("meta1", "foo", null);
-    aliasesManager.applyModificationAndExportToZk(op2);
+    aliasesManager.applyModificationAndExportToZk(a2 ->
+        a2.cloneWithCollectionAliasProperties("meta1", "foo", null));
 
     // chained invocations
-    UnaryOperator<Aliases> op1 = a ->
-        a.cloneWithCollectionAliasProperties("meta1", "foo2", "bazbam")
-        .cloneWithCollectionAliasProperties("meta1", "foo3", "bazbam2");
-    aliasesManager.applyModificationAndExportToZk(op1);
+    aliasesManager.applyModificationAndExportToZk(a1 ->
+        a1.cloneWithCollectionAliasProperties("meta1", "foo2", "bazbam")
+        .cloneWithCollectionAliasProperties("meta1", "foo3", "bazbam2"));
 
     // some other independent update (not overwritten)
-    UnaryOperator<Aliases> op = a -> a.cloneWithCollectionAlias("meta3", "collection1meta,collection2meta");
-    aliasesManager.applyModificationAndExportToZk(op);
+    aliasesManager.applyModificationAndExportToZk(a1 ->
+        a1.cloneWithCollectionAlias("meta3", "collection1meta,collection2meta"));
 
     // competing went through
     assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
@@ -240,7 +239,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testModifyPropertiesV1() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
@@ -256,7 +255,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testModifyPropertiesCAR() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
