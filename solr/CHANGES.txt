@@ -219,7 +219,7 @@ Other Changes
 
 * SOLR-12142: EmbeddedSolrServer should use req.getContentWriter (noble)
 
-* SOLR-11252: Fix minor compiler and intellij warnings in autoscaling policy framework. (shalin)
+* SOLR-12252: Fix minor compiler and intellij warnings in autoscaling policy framework. (shalin)
 
 ==================  7.3.1 ==================
 
