@@ -292,6 +292,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return size;
   }
 
+  /**
+   * @return the current transaction log's size (based on its output stream)
+   */
+  public long getCurrentLogSizeFromStream() {
+    return tlog.getLogSizeFromStream();
+  }
+
   public long getTotalLogsNumber() {
     synchronized (this) {
       return logs.size();

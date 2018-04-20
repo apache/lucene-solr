@@ -54,6 +54,10 @@
   </peerSync>
 
   <updateHandler class="solr.DirectUpdateHandler2">
+    <!-- autocommit pending docs if certain criteria are met -->
+    <autoCommit>
+      <maxSize>${solr.autoCommit.maxSize:}</maxSize>
+    </autoCommit>
     <updateLog class="${solr.tests.ulog:solr.UpdateLog}">
       <str name="dir">${solr.ulog.dir:}</str>
       <str name="maxNumLogsToKeep">${solr.ulog.maxNumLogsToKeep:10}</str>
