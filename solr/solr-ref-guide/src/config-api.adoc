@@ -57,7 +57,8 @@ http://localhost:8983/api/collections/techproducts/config
 ====
 --
 
-The response will be the total Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml` and those configured implicitly (by default) by Solr out of the box.
+The response will be the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
+
 
 It's possible to restrict the returned config to a top-level section, such as, `query`, `requestHandler` or `updateHandler`. To do this, append the name of the section to the `config` endpoint. For example, to retrieve configuration for all request handlers:
 
@@ -70,7 +71,6 @@ It's possible to restrict the returned config to a top-level section, such as, `
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/config/requestHandler
-
 ----
 ====
 
@@ -85,7 +85,7 @@ http://localhost:8983/api/collections/techproducts/config/requestHandler
 ====
 --
 
-The output will be details of each request handler defined in `solrconfig.xml`, all  <<implicit-requesthandlers.adoc#implicit-requesthandlers,defined implicitly>> by Solr, and all defined with this Config API stored in `configoverlay.json`.
+The output will be details of each request handler defined in `solrconfig.xml`, all  <<implicit-requesthandlers.adoc#implicit-requesthandlers,defined implicitly>> by Solr, and all defined with this Config API stored in `configoverlay.json`. To see the configuration for implicit request handlers, add `expandParams=true` to the request. See the documentation for the implicit request handlers for examples using this command.
 
 The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
 
