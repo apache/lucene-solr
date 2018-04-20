@@ -18,7 +18,15 @@
 
 On a multicore Solr instance, you may find that you want to share configuration between a number of different cores. You can achieve this using named configsets, which are essentially shared configuration directories stored under a configurable configset base directory.
 
-To create a configset, simply add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the config directory you want to share. The structure should look something like this:
+Configsets are made up of the configuration files used in a Solr installation: inclduding `solrconfig.xml`, the schema, language-files, `synonyms.txt`, DIH-related configuration, and others as needed for your implementation.
+
+Solr ships with two example configsets located in `server/solr/configsets`, which can be used as a base for your own. These example configsets are named `_default` and `sample_techproducts_configs`.
+
+== Configsets in Standalone Mode
+
+If you are using Solr in standalone mode, configsets are created on the filesystem.
+
+To create a configset, add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the config directory you want to share. The structure should look something like this:
 
 [source,bash]
 ----
@@ -33,25 +41,39 @@ To create a configset, simply add a new directory under the configset base direc
             /solrconfig.xml
 ----
 
-The default base directory is `$SOLR_HOME/configsets`, and it can be configured in `solr.xml`.
+The default base directory is `$SOLR_HOME/configsets`. This path can be configured in `solr.xml` (see <<format-of-solr-xml.adoc#format-of-solr-xml,Format of solr.xml>> for details).
 
 To create a new core using a configset, pass `configSet` as one of the core properties. For example, if you do this via the CoreAdmin API:
 
 [.dynamic-tabs]
 --
 
-[example.tab-pane#v1api]
+[example.tab-pane#v1use-configset]
 ====
 [.tab-label]*V1 API*
 
-[source,text]
+[source,bash]
+----
 curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
+----
 ====
 
-[example.tab-pane#v2api]
+[example.tab-pane#v2use-configset]
 ====
 [.tab-label]*V2 API*
-[source,text]
-curl -v -X POST -H 'Content-type: application/json' -d '{"create":[{"name":"mycore", "instanceDir":"path/to/instance", "configSet":"configSet2"}]}' http://localhost:8983/api/cores
+
+[source,bash]
+----
+curl -v -X POST -H 'Content-type: application/json' -d '{
+  "create":[{
+    "name": "mycore",
+    "instanceDir": "path/to/instance",
+    "configSet": "configSet2"}]}'
+    http://localhost:8983/api/cores
+----
 ====
 --
+
+== Configsets in SolrCloud Mode
+
+In SolrCloud mode, you can use the <<configsets-api.adoc#configsets-api,Configsets API>> to manage your configsets.
