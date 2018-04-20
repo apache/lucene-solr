@@ -131,14 +131,14 @@ We've added these parameters to the three we had already:
 +
 Since we've assigned server IDs to specific hosts/ports, we must also define which server in the list this node is. We do this with a `myid` file stored in the data directory (defined by the `dataDir` parameter). The contents of the `myid` file is only the server ID.
 +
-In the case of the configuration example above, you would create the file `/var/lib/zookeeperdata/1/myid` with the content "1" (without quotes), as in this example:
+In the case of the configuration example above, you would create the file `/var/lib/zookeeper/1/myid` with the content "1" (without quotes), as in this example:
 +
 [source,bash]
 1
 
 `autopurge.snapRetainCount`:: The number of snapshots and corresponding transaction logs to retain when purging old snapshots and transaction logs.
 +
-ZooKeeper automatically keeps a transaction log and writes to it as changes are made. A snapshot of the current state is taken periodically, and this snapshot supersedes transaction logs older than the snapshot. However, ZooKeeper never cleans up neither the old snapshots nor the old transaction logs; over time they will silently fill available disk space on each server.
+ZooKeeper automatically keeps a transaction log and writes to it as changes are made. A snapshot of the current state is taken periodically, and this snapshot supersedes transaction logs older than the snapshot. However, ZooKeeper never cleans up either the old snapshots or the old transaction logs; over time they will silently fill available disk space on each server.
 +
 To avoid this, set the `autopurge.snapRetainCount` and `autopurge.purgeInterval` parameters to enable an automatic clean up (purge) to occur at regular intervals. The `autopurge.snapRetainCount` parameter will keep the set number of snapshots and transaction logs when a clean up occurs. This parameter can be configured higher than `3`, but cannot be set lower than 3.
 
@@ -199,7 +199,7 @@ Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare ca
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
-. Create a file named `zookeeper-env.sh` and put it in the `ZOOKEEPER_HOME/conf` directory (the same place you put `zoo.cfg`). This file will need to exist on each server of the ensemble.
+. Create a file named `zookeeper-env.sh` and put it in the `<ZOOKEEPER_HOME>/conf` directory (the same place you put `zoo.cfg`). This file will need to exist on each server of the ensemble.
 
 . Add the following settings to the file:
 +
@@ -215,7 +215,7 @@ The property `ZOO_LOG_DIR` defines the location on the server where ZooKeeper wi
 +
 With `SERVER_JVMFLAGS`, we've defined several parameters for garbage collection and logging GC-related events. One of the system parameters is `-Xloggc:$ZOO_LOG_DIR/zookeeper_gc.log`, which will put the garbage collection logs in the same directory we've defined for ZooKeeper logs, in a file named `zookeeper_gc.log`.
 
-. Review the default settings in `ZOOKEEPER_HOME/conf/log4j.properties`, especially the `log4j.appender.ROLLINGFILE.MaxFileSize` parameter. This sets the size at which log files will be rolled over, and by default it is 10MB.
+. Review the default settings in `<ZOOKEEPER_HOME>/conf/log4j.properties`, especially the `log4j.appender.ROLLINGFILE.MaxFileSize` parameter. This sets the size at which log files will be rolled over, and by default it is 10MB.
 
 . Copy `zookeeper-env.sh` and any changes to `log4j.properties` to each server in the ensemble.
 
@@ -231,7 +231,7 @@ ZooKeeper provides a great deal of power through additional configurations, but 
 
 === Start ZooKeeper
 
-To start the ensemble, use the `ZOOKEEPER_HOME/bin/zkServer.sh` or `zkServer.cmd` script, as with this command:
+To start the ensemble, use the `<ZOOKEEPER_HOME>/bin/zkServer.sh` or `zkServer.cmd` script, as with this command:
 
 .Linux OS
 [source,bash]
@@ -280,9 +280,9 @@ Once the znode is created, it behaves in a similar way to a directory on a files
 
 === Using the -z Parameter with bin/solr
 
-Pointing Solr at the ZooKeeper instance you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
+Pointing Solr at the ZooKeeper ensemble you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
 
-For example, to point the Solr instance to the ZooKeeper you've started on port 2181 on three servers, this is what you'd need to do:
+For example, to point the Solr instance to the ZooKeeper you've started on port 2181 on three servers with chroot `/solr` (see <<Using a chroot>> above), this is what you'd need to do:
 
 [source,bash]
 ----
