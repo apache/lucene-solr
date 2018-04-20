@@ -1638,7 +1638,7 @@ public class ZkStateReader implements Closeable {
             LOG.debug(e.toString(), e);
             LOG.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
             // considered a backoff here, but we really do want to compete strongly since the normal case is
-            // that we will do one update and succeed. This is left as a hot loop for 5 tries intentionally.
+            // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.
             // More failures than that here probably indicate a bug or a very strange high write frequency usage for
             // aliases.json, timeouts mean zk is being very slow to respond, or this node is being crushed
             // by other processing and just can't find any cpu cycles at all.
@@ -1666,6 +1666,9 @@ public class ZkStateReader implements Closeable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
+      LOG.debug("Checking ZK for most up to date Aliases " + ALIASES);
+      // Call sync() first to ensure the subsequent read (getData) is up to date.
+      zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

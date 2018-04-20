@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -71,6 +70,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(2).configure();
     solrClient = getCloudSolrClient(cluster);
+    //log this to help debug potential causes of problems
+    System.out.println("SolrClient: " + solrClient);
+    if (solrClient instanceof CloudSolrClient) {
+      System.out.println(((CloudSolrClient)solrClient).getClusterStateProvider());
+    }
   }
 
   @AfterClass
@@ -85,16 +89,17 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // Then we create a collection with the name of the eventual config.
     // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
     // Then when we create the "real" collections referencing this modified config-set.
-    final ConfigSetAdminRequest.Create adminRequest = new ConfigSetAdminRequest.Create();
-        adminRequest.setConfigSetName(configName);
-        adminRequest.setBaseConfigSetName("_default");
-        ConfigSetAdminResponse adminResponse = adminRequest.process(solrClient);
-        assertEquals(adminResponse.getStatus(), 0);
+    assertEquals(0, new ConfigSetAdminRequest.Create()
+        .setConfigSetName(configName)
+        .setBaseConfigSetName("_default")
+        .process(solrClient).getStatus());
 
-    CollectionAdminRequest.createCollection(configName, configName,1, 1).process(solrClient);
+    CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(solrClient);
+
     // manipulate the config...
-
-        String conf = "{" +
+    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{" +
             "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
             "  'add-updateprocessor' : {" +
             "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
@@ -103,10 +108,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
             "    'fieldName':'" + intField + "'" +
             "  }," +
-            "}";
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload(conf).build()));    // only sometimes test with "tolerant" URP
+            "}").build()));
+    // only sometimes test with "tolerant" URP:
     final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
     checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
         .withMethod(SolrRequest.METHOD.POST)
@@ -115,8 +118,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
             "  }" +
             "}").build()));
-    CollectionAdminRequest.deleteCollection(configName).process(solrClient);
 
+    CollectionAdminRequest.deleteCollection(configName).process(solrClient);
     assertTrue(
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
             .contains(configName)
