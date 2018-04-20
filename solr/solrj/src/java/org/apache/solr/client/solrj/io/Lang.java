@@ -234,6 +234,7 @@ public class Lang {
         .withFunctionName("matrixMult", MatrixMultiplyEvaluator.class)
         .withFunctionName("bicubicSpline", BicubicSplineEvaluator.class)
         .withFunctionName("valueAt", ValueAtEvaluator.class)
+        .withFunctionName("memset", MemsetEvaluator.class)
 
             // Boolean Stream Evaluators
 

@@ -68,7 +68,7 @@ public class TestLang extends LuceneTestCase {
        TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorQuarter.FUNCTION_NAME,
        TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, "abs", "add", "div", "mult", "sub", "log", "pow",
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
-      "cbrt", "coalesce", "uuid", "if", "convert", "valueAt"};
+      "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset"};
 
   @Test
   public void testLang() {
