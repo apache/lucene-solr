@@ -44,6 +44,9 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+  ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
+
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
