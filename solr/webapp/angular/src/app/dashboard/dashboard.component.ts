@@ -17,7 +17,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import { SystemInfo } from '../systemInfo';
-import { SystemInfoService } from '../solr.service';
+import { SystemInfoService } from '../systeminfo.service';
 import { SharedService } from '../shared.service';
 
 @Component({

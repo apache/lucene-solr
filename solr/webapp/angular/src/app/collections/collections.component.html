@@ -28,10 +28,9 @@ limitations under the License.
         <form>
           <p class="clearfix"><label for="add_name">name:</label>
           <input type="text" name="name" id="add_name" [(ngModel)]="newCollection.name" placeholder="new collection"></p>
-          <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
-          <select name="config_name" id="add_config" (ngModel)="newCollection.configName">
-          	<option *ngFor="let configName of configs" [value]="newCollection.configName">{{configName}}</option>
-          </select>
+          <p class="clearfix">
+            <label for="add_config">config set:</label>&nbsp;
+            <ng-select name="config_name" id="add_config" [(ngModel)]="newCollection.configName" [items]="configs" placeholder="Select an Option"></ng-select>
           </p>
           <p class="clearfix"><label for="add_numShards">numShards:</label>
           <input type="text" name="numShards" id="add_numShards" [(ngModel)]="newCollection.numShards"></p>
@@ -42,7 +41,7 @@ limitations under the License.
           <div *ngIf="showAdvanced">
               <p>Advanced options: </p>
               <p class="clearfix"><label for="add_router_name">router:</label>
-              <select name="routerName" id="add_router_name" (ngModel)="newCollection.routerName">
+              <select name="routerName" id="add_router_name" [(ngModel)]="newCollection.routerName">
                 <option value="compositeId">Composite ID</option>
                 <option value="implicit">Implicit</option>
               </select>
@@ -54,7 +53,7 @@ limitations under the License.
               <p class="clearfix"><label for="add_routerField">router.field:</label>
               <input type="text" name="routerField" id="add_routerField" [(ngModel)]="newCollection.routerField"></p>
               <p class="clearfix"><label for="add_autoAddReplicas">autoAddReplicas:</label>
-                <select name="autoAddReplicas" id="add_autoAddReplicas" (ngModel)="newCollection.autoAddReplicas">
+                <select name="autoAddReplicas" id="add_autoAddReplicas" [(ngModel)]="newCollection.autoAddReplicas">
                   <option value="true">true</option>
                   <option value="false">false</option>
                 </select>
@@ -94,7 +93,7 @@ limitations under the License.
           <input type="text" name="alias" [(ngModel)]="aliasToCreate" id="alias"></p>
           <p class="clearfix"><label for="aliasCollections">Collections:</label>
           <select multiple id="aliasCollections" (ngModel)="aliasCollections" class="other">
-          	<option *ngFor="let collectionName of collections">{{collectionName}}</option>          
+          	<option *ngFor="let collectionName of collections">{{collectionName}}</option>
           </select></p>
 
           <p class="clearfix note error" *ngIf="renameMessage">
@@ -280,8 +279,8 @@ limitations under the License.
                       <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
                       <select (ngModel)="shard.replicaNodeName" class="other">
                       	<option value="">No specified node</option>
-			          	<option *ngFor="let node of nodes">{{node}}</option>          
-			          </select> 
+			          	<option *ngFor="let node of nodes">{{node}}</option>
+			          </select>
                           node: {{shard.replicaNodeName}}
                       </p>
                       <p class="clearfix note error" *ngIf="createReplicaMessage">

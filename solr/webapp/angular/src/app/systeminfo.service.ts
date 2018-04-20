@@ -27,14 +27,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 export class SystemInfoService {
 
   // TODO: nocommit
-  private noCommitBaseUrl = 'http://localhost:8983';
-  private noCommitAuthHeader = ('Basic ' + btoa('user:password'));
-
-  private httpOptions = {
-    headers: new HttpHeaders({'Authorization' : this.noCommitAuthHeader})
-  };
-
-  private baseUrl = this.noCommitBaseUrl;
+  private baseUrl = ''; //'http://localhost:8983';
   private systemInfoUrl = this.baseUrl + '/solr/admin/info/system';
 
   constructor(private http: HttpClient) {
@@ -123,12 +116,5 @@ export class SystemInfoService {
       unit = 'GB';
     }
     return byteValue.toFixed( 2 ) + ' ' + unit;
-  }
-
-  private handleError<T> (operation = 'operation', result?: T) {
-    return (error: any): Observable<T> => {
-      console.error(error);
-      return of(result as T);
-    };
   }
 }

@@ -21,9 +21,12 @@ import {BrowserModule} from '@angular/platform-browser';
 import {HttpClientModule} from '@angular/common/http';
 import { FormsModule }   from '@angular/forms';
 import {TimeAgoPipe} from 'time-ago-pipe';
+import { NgSelectModule } from '@ng-select/ng-select';
 import {AppComponent} from './app.component';
 import { CollectionsComponent } from './collections/collections.component';
-import { SystemInfoService } from './solr.service';
+import { SystemInfoService } from './systeminfo.service';
+import { CollectionsService } from './collections.service';
+import { ZookeeperService } from './zookeeper.service';
 import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { CoresComponent } from './cores/cores.component';
@@ -42,9 +45,15 @@ import { MessagesComponent } from './messages/messages.component';
     BrowserModule,
     HttpClientModule,
     AppRoutingModule,
-    FormsModule
+    FormsModule,
+    NgSelectModule
   ],
-  providers: [SystemInfoService, SharedService],
+  providers: [
+    SharedService,
+    SystemInfoService,
+    CollectionsService,
+    ZookeeperService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}
