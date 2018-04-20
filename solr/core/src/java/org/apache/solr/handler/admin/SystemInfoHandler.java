@@ -30,10 +30,14 @@ import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -41,6 +45,7 @@ import com.codahale.metrics.Gauge;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -48,6 +53,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -180,6 +186,29 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (!solrCloudMode) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'node' only supported in Cloud mode");
     }
+    if (nodeName.equals("all")) {
+      log.debug("Requesting info from all live nodes");
+      Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
+      Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
+      for (String node : liveNodes) {
+        responses.put(node, getRemoteSystemInfo(node, container));
+      }
+      
+      for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry : responses.entrySet()) {
+        try {
+          NamedList<Object> resp = entry.getValue().first().get(10, TimeUnit.SECONDS);
+          entry.getValue().second().close();
+          rsp.add(entry.getKey(), resp);
+        } catch (ExecutionException ee) {
+          log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
+        } catch (TimeoutException te) {
+          log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
+        }
+      }
+      log.info("Fetched response from {} live nodes: {}", responses.keySet().size(), responses.keySet());
+      return true;
+    } 
+    
     if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'node' has wrong format");
     }
@@ -192,19 +221,26 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (!container.getZkController().zkStateReader.getClusterState().getLiveNodes().contains(nodeName)){
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Requested node not part of cluster");
     }
-    
+
+    Pair<Future<NamedList<Object>>, SolrClient> localResponse = getRemoteSystemInfo(nodeName, container);
+    NamedList<Object> resp = localResponse.first().get(10, TimeUnit.SECONDS);
+    rsp.setAllValues(resp);
+    localResponse.second().close();
+    log.info("Proxied /api/node/system request to node {}", nodeName);
+    return true;
+  }
+
+  // Makes a remote request and returns a future and the solr client. The caller is responsible for closing the client
+  private Pair<Future<NamedList<Object>>, SolrClient> getRemoteSystemInfo(String nodeName, CoreContainer container) 
+      throws IOException, SolrServerException {
     log.debug("Proxying /api/node/system request to node {}", nodeName);
     URL url = new URL(container.getZkController().zkStateReader.getBaseUrlForNodeName(nodeName));
     String baseUrl = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort();
     log.debug("baseURL = {}", baseUrl);
-    try (HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl).build()) {
-      SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/system", new ModifiableSolrParams());
-      HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
-      NamedList<Object> actualResponse = proxyResp.future.get(20, TimeUnit.SECONDS);
-      rsp.setAllValues(actualResponse);
-      log.info("Proxied /api/node/system request to node {}", nodeName);
-    }
-    return true;
+    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl).build();
+    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/system", new ModifiableSolrParams());
+    HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
+    return new Pair<>(proxyResp.future, solr);
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {

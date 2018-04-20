@@ -21,12 +21,16 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('admin/info/system', {"wt":"json", "_":Date.now()});
   }])
+.factory('SystemAll',
+    ['$resource', function($resource) {
+      return $resource('admin/info/system', {"wt":"json", "node": "all", "_":Date.now()});
+    }])
 .factory('SystemRemote', function($resource) {
-    return {
-        info: function (nodeName) {
-            return $resource('admin/info/system', {"wt": "json", "node": nodeName, "_": Date.now()});
-        }
+  return {
+    "info": function (nodeName) {
+      return $resource('admin/info/system', {"wt": "json", "node": nodeName, "_": Date.now()});
     }
+  }
 })
 .factory('Collections',
   ['$resource', function($resource) {
@@ -64,12 +68,6 @@ solrAdminServices.factory('System',
       "events": {params: {since:'0'}},
       "levels": {},
       "setLevel": {}
-      });
-  }])
-.factory('Nodes',
-  ['$resource', function($resource) {
-    return $resource('/api/cluster/nodes', {'wt':'json', '_':Date.now()}, {
-      "list": {}
       });
   }])
 .factory('Zookeeper',
@@ -266,12 +264,4 @@ solrAdminServices.factory('System',
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
      })
-}])
-.factory('RemoteGet', function($http, myUrl) {
-    var getData = function() {
-        return $http({method:"GET", url: myUrl}).then(function(result){
-            return result.data;
-        });
-    };
-    return { getData: getData };
-});
+}]);

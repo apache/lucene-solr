@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Nodes, Collections, SystemRemote) {
+    function($scope, $location, Zookeeper, Constants, Collections, SystemAll) {
 
         $scope.showDebug = false;
 
@@ -40,7 +40,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view == "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Zookeeper, Nodes, Collections, SystemRemote);
+            nodesSubController($scope, Zookeeper, Collections, SystemAll);
         }
     }
 );
@@ -71,7 +71,7 @@ function ensureInList(string, list) {
     }
 }
 
-var nodesSubController = function($scope, Zookeeper, Nodes, Collections, SystemRemote) {
+var nodesSubController = function($scope, Zookeeper, Collections, SystemAll) {
     $scope.showNodes = true;
     $scope.showTree = false;
     $scope.showGraph = false;
@@ -81,9 +81,6 @@ var nodesSubController = function($scope, Zookeeper, Nodes, Collections, SystemR
         var nodes = {};
         var hosts = {};
         var live_nodes = [];
-        $scope.nodes = nodes;
-        $scope.hosts = hosts;
-        $scope.live_nodes = live_nodes;        
         
         // Fetch cluster state from collections API and invert to a nodes structure
         for (var name in data.cluster.collections) {
@@ -126,28 +123,23 @@ var nodesSubController = function($scope, Zookeeper, Nodes, Collections, SystemR
             }
         }
         
-        for (var n in live_nodes) {
-            var nodeName = live_nodes[n];
-            var $data;
-            
-            // SystemRemote.info(nodeName, function(result) {
-            //     console.log("Inner result: " + JSON.stringify(result, undefined, 2));
-            //     $scope.nodes[nodeName]['info'] = result;
-            //     $scope.nodes[nodeName]['solr_version'] = result.lucene.solr-spec-version;
-            //     $scope.nodes[nodeName]['java_version'] = result.jvm.jre.version;
-            // });
-            
-            console.log("Getting results for node " + nodeName);
-            var result = SystemRemote.info(nodeName);
-            
-            console.log("Result: " + JSON.stringify(result, undefined, 2));
-            // $scope.nodes[nodeName]['info'] = result;
-            // $scope.nodes[nodeName]['solr_version'] = result.lucene.solr-spec-version;
-            // $scope.nodes[nodeName]['java_version'] = result.jvm.jre.version;
-        }
+        SystemAll.get(function(systemResponse) {
+          for (var node in systemResponse) {
+              console.log("Checking node " + node + " exist in " + nodes);
+              if (node in nodes) {
+                nodes[node]['system'] = systemResponse[node];                 
+              } else {
+                  console.log("Skipping node " + node);
+              }
+          }
+        });
 
-        console.log("Nodes=" + JSON.stringify(nodes, undefined, 2));
-        console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
+        $scope.nodes = nodes;
+        $scope.hosts = hosts;
+        $scope.live_nodes = live_nodes;        
+
+        // console.log("Nodes=" + JSON.stringify($scope.nodes, undefined, 2));
+        // console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
     });
 };                 
 
