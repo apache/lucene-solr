@@ -1117,11 +1117,23 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testGraphSynonyms_multiTermQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedPhraseQuery() throws Exception {
     Query q = QParser.getParser("snow_leopard lion", req(params("df", "t_pick_best_boost_by_payload_foo", "sow", "false"))).getQuery();
     assertEquals("((t_pick_best_boost_by_payload_foo:\"panthera uncia\")^0.99 | (t_pick_best_boost_by_payload_foo:\"snow leopard\")^1.0) " +
-                          "((t_pick_best_boost_by_payload_foo:lion)^1.0 | (t_pick_best_boost_by_payload_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_foo:simba)^0.8)", q.toString());
+        "((t_pick_best_boost_by_payload_foo:lion)^1.0 | (t_pick_best_boost_by_payload_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_foo:simba)^0.8)", q.toString());
 
     q = QParser.getParser("snow_leopard lion", req(params("df", "t_as_distinct_boost_by_payload_foo", "sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boost_by_payload_foo:\"panthera uncia\")^0.99 (t_as_distinct_boost_by_payload_foo:\"snow leopard\")^1.0) " +
-                          "((t_as_distinct_boost_by_payload_foo:lion)^1.0 (t_as_distinct_boost_by_payload_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_foo:simba)^0.8)", q.toString());
+        "((t_as_distinct_boost_by_payload_foo:lion)^1.0 (t_as_distinct_boost_by_payload_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_foo:simba)^0.8)", q.toString());
+  }
+
+  public void testGraphSynonyms_multiTermQueryMultiTermSynonymsEdismaxBoostAndPayloadBoost_shouldParseBoostedPhraseQuery() throws Exception {
+    Query q = QParser.getParser("snow_leopard lion","edismax",true, req(params("sow", "false","qf", "t_pick_best_boost_by_payload_foo^10"))).getQuery();
+    assertEquals("+(" +
+        "((((t_pick_best_boost_by_payload_foo:\"panthera uncia\")^0.99 | (t_pick_best_boost_by_payload_foo:\"snow leopard\")^1.0))^10.0) " +
+        "((((t_pick_best_boost_by_payload_foo:lion)^1.0 | (t_pick_best_boost_by_payload_foo:\"panthera leo\")^0.99 | (t_pick_best_boost_by_payload_foo:simba)^0.8))^10.0))", q.toString());
+
+    q = QParser.getParser("snow_leopard lion","edismax",true, req(params("sow", "false","qf", "t_as_distinct_boost_by_payload_foo^10"))).getQuery();
+    assertEquals("+(" +
+        "(((t_as_distinct_boost_by_payload_foo:\"panthera uncia\")^0.99 (t_as_distinct_boost_by_payload_foo:\"snow leopard\")^1.0)^10.0) " +
+        "(((t_as_distinct_boost_by_payload_foo:lion)^1.0 (t_as_distinct_boost_by_payload_foo:\"panthera leo\")^0.99 (t_as_distinct_boost_by_payload_foo:simba)^0.8)^10.0))", q.toString());
   }
 
   public void testGraphSynonyms_phraseQueryMultiTermSynonymsPayloadBoost_shouldParseBoostedSpanQuery() throws Exception {
