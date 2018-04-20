@@ -239,6 +239,8 @@ Bug Fixes
 
 * SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
 
+* SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
