@@ -33,7 +33,7 @@ import org.apache.solr.common.util.TimeSource;
  * Base class for overriding some behavior of {@link SolrCloudManager}.
  */
 public class DelegatingCloudManager implements SolrCloudManager {
-  private final SolrCloudManager delegate;
+  protected final SolrCloudManager delegate;
   private ObjectCache objectCache = new ObjectCache();
   private TimeSource timeSource = TimeSource.NANO_TIME;
 

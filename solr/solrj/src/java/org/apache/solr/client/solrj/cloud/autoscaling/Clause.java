@@ -46,13 +46,17 @@ import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
-// a set of conditions in a policy
+/**
+ * Represents a set of conditions in the policy
+ */
 public class Clause implements MapWriter, Comparable<Clause> {
+  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
+
   final Map<String, Object> original;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
 
-  boolean strict = true;
+  boolean strict;
 
   public Clause(Map<String, Object> m) {
     this.original = Utils.getDeepCopy(m, 10);
@@ -76,7 +80,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       }
       this.replica = parse(REPLICA, m);
       if (replica.op == WILDCARD) throw new RuntimeException("replica val cannot be null" + Utils.toJSONString(m));
-      m.forEach((s, o) -> parseCondition(s, o));
+      m.forEach(this::parseCondition);
     }
     if (tag == null)
       throw new RuntimeException("Invalid op, must have one and only one tag other than collection, shard,replica " + Utils.toJSONString(m));
@@ -193,7 +197,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
               .opposite(isReplicaZero() && this == tag)
               .delta(Clause.parseDouble(name, this.val), Clause.parseDouble(name, val));
         } else {
-          return 0l;
+          return 0L;
         }
       } else return op
           .opposite(isReplicaZero() && this == tag)
@@ -290,13 +294,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
           if (!shard.isPass(shardName)) break;
           Map<String, ReplicaCount> tagVsCount = collMap.computeIfAbsent(shardName, s -> new HashMap<>());
           Object tagVal = row.getVal(tag.name);
-          tagVsCount.computeIfAbsent(tag.isPass(tagVal) ? String.valueOf(tagVal) : "", s -> new ReplicaCount());
-          if (tag.isPass(tagVal)) {
+          boolean pass = tag.isPass(tagVal);
+          tagVsCount.computeIfAbsent(pass ? String.valueOf(tagVal) : "", s -> new ReplicaCount());
+          if (pass) {
             tagVsCount.get(String.valueOf(tagVal)).increment(shards.getValue());
-          }
           }
         }
       }
+    }
     return collVsShardVsTagVsCount;
   }
 
@@ -317,8 +322,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
   enum TestStatus {
     NOT_APPLICABLE, FAIL, PASS
   }
-
-  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
 
   public static String parseString(Object val) {
     return val == null ? null : String.valueOf(val);
