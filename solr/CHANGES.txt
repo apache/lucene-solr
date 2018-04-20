@@ -170,6 +170,10 @@ Bug Fixes
 
 * SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
 
+* SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
+  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
+  (shalin, hossman, Mark Miller, Steve Rowe)
+ 
 Optimizations
 ----------------------
 

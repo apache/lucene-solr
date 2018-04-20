@@ -613,6 +613,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   public static long eventQueueActionWait = 5000;
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 16-Apr-2018
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     SolrClient solrClient = cluster.simGetSolrClient();

@@ -224,6 +224,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 16-Apr-2018
   public void testListenerAcceptance() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     Map<String, Object> props = createTriggerProps(0);
