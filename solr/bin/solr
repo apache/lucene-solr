@@ -224,6 +224,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     fi
   fi
 
+  if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME"
+  fi
+
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
