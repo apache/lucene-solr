@@ -176,7 +176,10 @@ Bug Fixes
 * SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
   commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
   (shalin, hossman, Mark Miller, Steve Rowe)
- 
+
+* SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
+  (Shawn Heisey, Carlton Findley, Robby Pond, hossman)
+
 Optimizations
 ----------------------
 
