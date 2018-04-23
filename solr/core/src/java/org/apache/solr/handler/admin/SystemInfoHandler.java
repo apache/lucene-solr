@@ -25,35 +25,18 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.codahale.metrics.Gauge;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -149,10 +132,10 @@ public class SystemInfoHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     rsp.setHttpCaching(false);
-    if (proxyRequestToNode(req, rsp)) {
+    SolrCore core = req.getCore();
+    if (AdminHandlersProxy.proxyRequestToNode(req, rsp, getCoreContainer(req, core))) {
       return; // Request was proxied to other node
     }
-    SolrCore core = req.getCore();
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
     boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
@@ -167,80 +150,6 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
     }
-  }
-
-  // Proxy this request to a different remote node if 'node' parameter is provided
-  private boolean proxyRequestToNode(SolrQueryRequest req, SolrQueryResponse rsp)
-      throws IOException, SolrServerException, InterruptedException, TimeoutException, ExecutionException {
-    String nodeName = req.getParams().get(PARAM_NODE);
-
-    if (nodeName == null || nodeName.isEmpty()) {
-      return false; // local request
-    }
-
-    SolrCore core = req.getCore();
-    CoreContainer container = getCoreContainer(req, core);
-    boolean solrCloudMode =  container.isZooKeeperAware();
-    
-    log.debug("node parameter {} specified on sysetm info request");
-    if (!solrCloudMode) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'node' only supported in Cloud mode");
-    }
-    if (nodeName.equals("all")) {
-      log.debug("Requesting info from all live nodes");
-      Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
-      Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
-      for (String node : liveNodes) {
-        responses.put(node, getRemoteSystemInfo(node, container));
-      }
-      
-      for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry : responses.entrySet()) {
-        try {
-          NamedList<Object> resp = entry.getValue().first().get(10, TimeUnit.SECONDS);
-          entry.getValue().second().close();
-          rsp.add(entry.getKey(), resp);
-        } catch (ExecutionException ee) {
-          log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
-        } catch (TimeoutException te) {
-          log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
-        }
-      }
-      log.info("Fetched response from {} live nodes: {}", responses.keySet().size(), responses.keySet());
-      return true;
-    } 
-    
-    if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter 'node' has wrong format");
-    }
-
-    if (nodeName.equals(container.getZkController().getNodeName())) {
-      log.debug("Node parameter equals local node, not proxying");
-      return false;
-    }
-
-    if (!container.getZkController().zkStateReader.getClusterState().getLiveNodes().contains(nodeName)){
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Requested node not part of cluster");
-    }
-
-    Pair<Future<NamedList<Object>>, SolrClient> localResponse = getRemoteSystemInfo(nodeName, container);
-    NamedList<Object> resp = localResponse.first().get(10, TimeUnit.SECONDS);
-    rsp.setAllValues(resp);
-    localResponse.second().close();
-    log.info("Proxied /api/node/system request to node {}", nodeName);
-    return true;
-  }
-
-  // Makes a remote request and returns a future and the solr client. The caller is responsible for closing the client
-  private Pair<Future<NamedList<Object>>, SolrClient> getRemoteSystemInfo(String nodeName, CoreContainer container) 
-      throws IOException, SolrServerException {
-    log.debug("Proxying /api/node/system request to node {}", nodeName);
-    URL url = new URL(container.getZkController().zkStateReader.getBaseUrlForNodeName(nodeName));
-    String baseUrl = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort();
-    log.debug("baseURL = {}", baseUrl);
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl).build();
-    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/system", new ModifiableSolrParams());
-    HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
-    return new Pair<>(proxyResp.future, solr);
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
