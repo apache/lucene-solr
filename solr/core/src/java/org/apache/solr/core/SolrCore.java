@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,6 +60,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -2540,7 +2542,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (lpList == null) {
       toLog.add("params", "{" + req.getParamString() + "}");
     } else if (lpList.length() > 0) {
-      toLog.add("params", "{" + params.toFilteredSolrParams(Arrays.asList(lpList.split(","))).toString() + "}");
+
+      // Filter params by those in LOG_PARAMS_LIST so that we can then call toString
+      HashSet<String> lpSet = new HashSet<>(Arrays.asList(lpList.split(",")));
+      SolrParams filteredParams = new SolrParams() {
+        @Override
+        public Iterator<String> getParameterNamesIterator() {
+          return Iterators.filter(params.getParameterNamesIterator(), lpSet::contains);
+        }
+
+        @Override
+        public String get(String param) { // assume param is in lpSet
+          return params.get(param);
+        } //assume in lpSet
+
+        @Override
+        public String[] getParams(String param) { // assume param is in lpSet
+          return params.getParams(param);
+        } // assume in lpSet
+      };
+
+      toLog.add("params", "{" + filteredParams + "}");
     }
   }
 
