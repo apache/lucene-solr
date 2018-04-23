@@ -162,6 +162,9 @@ Bug Fixes
 
 * SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
 
+
+* SOLR-12253: Remove optimize button from the core admin page (Erick Erickson)
+
 Optimizations
 ----------------------
 
