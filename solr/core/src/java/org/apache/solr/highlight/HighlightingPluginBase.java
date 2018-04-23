@@ -44,7 +44,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList ) {
-        defaults = SolrParams.toSolrParams((NamedList)o);
+        defaults = ((NamedList) o).toSolrParams();
       }
     }
   }

@@ -457,6 +457,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   }
 
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
+  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String> toMap(NamedList params) {
     HashMap<String,String> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
@@ -466,6 +467,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   }
 
   /** Create a Map&lt;String,String[]&gt; from a NamedList */
+  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String[]> toMultiMap(NamedList params) {
     HashMap<String,String[]> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
@@ -487,14 +489,19 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     return map;
   }
 
-  /** Create SolrParams from NamedList. */
+  /**
+   * Create SolrParams from NamedList.
+   * @deprecated Use {@link NamedList#toSolrParams()}.
+   */
+  @Deprecated //move to NamedList to allow easier flow
   public static SolrParams toSolrParams(NamedList params) {
-    // always use MultiMap for easier processing further down the chain
-    return new MultiMapSolrParams(toMultiMap(params));
+    return params.toSolrParams();
   }
 
-  /** Create filtered SolrParams. */
+  @Deprecated
   public SolrParams toFilteredSolrParams(List<String> names) {
+    // TODO do this better somehow via a view that filters?  See SolrCore.preDecorateResponse.
+    //   ... and/or add some optional predicates to iterator()?
     NamedList<String> nl = new NamedList<>();
     for (Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
       final String name = it.next();
@@ -505,7 +512,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
         }
       }
     }
-    return toSolrParams(nl);
+    return nl.toSolrParams();
   }
 
   /**
@@ -528,6 +535,10 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     return result;
   }
 
+  // Deprecated because there isn't a universal way to deal with multi-values (always
+  //  String[] or only for > 1 or always 1st value).  And what to do with nulls or empty string.
+  //  And SolrParams now implements MapWriter.toMap(Map) (a default method).  So what do we do?
+  @Deprecated
   public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
     if (sink == null) sink = new LinkedHashMap<>();
     for (String param : params) {
@@ -547,6 +558,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   /**Copy all params to the given map or if the given map is null
    * create a new one
    */
+  @Deprecated
   public Map<String, Object> getAll(Map<String, Object> sink, String... params){
     return getAll(sink, params == null ? Collections.emptyList() : Arrays.asList(params));
   }

@@ -67,7 +67,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   @Override
   public void init(NamedList args) {
-    SolrParams params = SolrParams.toSolrParams(args);
+    SolrParams params = args.toSolrParams();
     isMutable = params.getBool("mutable", true);
     args.remove("mutable");
     managedSchemaResourceName = params.get(MANAGED_SCHEMA_RESOURCE_NAME, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);

@@ -136,7 +136,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   protected Map<String,ContentStreamLoader> createDefaultLoaders(NamedList args) {
     SolrParams p = null;
     if(args!=null) {
-      p = SolrParams.toSolrParams(args);
+      p = args.toSolrParams();
     }
     Map<String,ContentStreamLoader> registry = new HashMap<>();
     registry.put("application/xml", new XMLLoader().init(p) );

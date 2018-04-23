@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
@@ -449,9 +449,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      * as well as specific replicas= options
      */
     CREATE_OP(CREATE, (req, rsp, h) -> {
-      Map<String, Object> props = req.getParams().required().getAll(null, NAME);
+      Map<String, Object> props = copy(req.getParams().required(), null, NAME);
       props.put("fromApi", "true");
-      req.getParams().getAll(props,
+      copy(req.getParams(), props,
           REPLICATION_FACTOR,
           COLL_CONF,
           NUM_SLICES,
@@ -491,9 +491,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
     }),
-    DELETE_OP(DELETE, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
+    DELETE_OP(DELETE, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
-    RELOAD_OP(RELOAD, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
+    RELOAD_OP(RELOAD, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
     SYNCSHARD_OP(SYNCSHARD, (req, rsp, h) -> {
       String collection = req.getParams().required().get("collection");
@@ -522,35 +522,37 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
       String collections = req.getParams().get("collections");
-      Map<String, Object> result = req.getParams().getAll(null, REQUIRED_ROUTER_PARAMS);
-      req.getParams().getAll(result, OPTIONAL_ROUTER_PARAMS);
+      Map<String, Object> result = copy(req.getParams(), null, REQUIRED_ROUTER_PARAMS);
+      copy(req.getParams(), result, OPTIONAL_ROUTER_PARAMS);
       if (collections != null) {
         if (result.size() > 1) { // (NAME should be there, and if it's not we will fail below)
           throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a time routed alias.");
         }
         // regular alias creation...
-        return req.getParams().required().getAll(null, NAME, "collections");
+        return copy(req.getParams().required(), null, NAME, "collections");
       }
 
       // Ok so we are creating a time routed alias from here
 
       // for validation....
-      req.getParams().required().getAll(null, REQUIRED_ROUTER_PARAMS);
+      copy(req.getParams().required(), null, REQUIRED_ROUTER_PARAMS);
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
 
       // add to result params that start with "create-collection.".
       //   Additionally, save these without the prefix to createCollParams
-      forEach(req.getParams(), (p, v) -> {
-          if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
-            // This is what SolrParams#getAll(Map, Collection)} does
-            if (v.length == 1) {
-              result.put(p, v[0]);
-            } else {
-              result.put(p, v);
-            }
-            createCollParams.set(p.substring(CREATE_COLLECTION_PREFIX.length()), v);
+      for (Map.Entry<String, String[]> entry : req.getParams()) {
+        final String p = entry.getKey();
+        if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
+          // This is what SolrParams#getAll(Map, Collection)} does
+          final String[] v = entry.getValue();
+          if (v.length == 1) {
+            result.put(p, v[0]);
+          } else {
+            result.put(p, v);
           }
-        });
+          createCollParams.set(p.substring(CREATE_COLLECTION_PREFIX.length()), v);
+        }
+      }
 
       // Verify that the create-collection prefix'ed params appear to be valid.
       if (createCollParams.get(NAME) != null) {
@@ -568,13 +570,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return result;
     }),
 
-    DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
+    DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
     /**
      * Change properties for an alias (use CREATEALIAS_OP to change the actual value of the alias)
      */
     ALIASPROP_OP(ALIASPROP, (req, rsp, h) -> {
-      Map<String, Object> params = req.getParams().required().getAll(null, NAME);
+      Map<String, Object> params = copy(req.getParams().required(), null, NAME);
 
       // Note: success/no-op in the event of no properties supplied is intentional. Keeps code simple and one less case
       // for api-callers to check for.
@@ -621,7 +623,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "Only one of 'ranges' or 'split.key' should be specified");
       }
 
-      Map<String, Object> map = req.getParams().getAll(null,
+      Map<String, Object> map = copy(req.getParams(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP,
           "split.key",
@@ -630,10 +632,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETESHARD_OP(DELETESHARD, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP);
-      req.getParams().getAll(map,
+      copy(req.getParams(), map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR);
@@ -644,24 +646,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     CREATESHARD_OP(CREATESHARD, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       final String newShardName = SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
       if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
-      req.getParams().getAll(map,
+      copy(req.getParams(), map,
           REPLICATION_FACTOR,
           CREATE_NODE_SET,
           WAIT_FOR_FINAL_STATE);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETEREPLICA_OP(DELETEREPLICA, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP);
 
-      return req.getParams().getAll(map,
+      return copy(req.getParams(), map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
@@ -670,17 +672,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ONLY_IF_DOWN);
     }),
     MIGRATE_OP(MIGRATE, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null, COLLECTION_PROP, "split.key", "target.collection");
-      return req.getParams().getAll(map, "forward.timeout");
+      Map<String, Object> map = copy(req.getParams().required(), null, COLLECTION_PROP, "split.key", "target.collection");
+      return copy(req.getParams(), map, "forward.timeout");
     }),
     ADDROLE_OP(ADDROLE, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null, "role", "node");
+      Map<String, Object> map = copy(req.getParams().required(), null, "role", "node");
       if (!KNOWN_ROLES.contains(map.get("role")))
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown role. Supported roles are ," + KNOWN_ROLES);
       return map;
     }),
     REMOVEROLE_OP(REMOVEROLE, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null, "role", "node");
+      Map<String, Object> map = copy(req.getParams().required(), null, "role", "node");
       if (!KNOWN_ROLES.contains(map.get("role")))
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown role. Supported roles are ," + KNOWN_ROLES);
       return map;
@@ -776,7 +778,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
     }),
     ADDREPLICA_OP(ADDREPLICA, (req, rsp, h) -> {
-      Map<String, Object> props = req.getParams().getAll(null,
+      Map<String, Object> props = copy(req.getParams(), null,
           COLLECTION_PROP,
           "node",
           SHARD_ID_PROP,
@@ -809,7 +811,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      * Can return status per specific collection/shard or per all collections.
      */
     CLUSTERSTATUS_OP(CLUSTERSTATUS, (req, rsp, h) -> {
-      Map<String, Object> all = req.getParams().getAll(null,
+      Map<String, Object> all = copy(req.getParams(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP,
           _ROUTE_);
@@ -818,16 +820,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     UTILIZENODE_OP(UTILIZENODE, (req, rsp, h) -> {
-      return req.getParams().required().getAll(null, AutoScalingParams.NODE);
+      return copy(req.getParams().required(), null, AutoScalingParams.NODE);
     }),
     ADDREPLICAPROP_OP(ADDREPLICAPROP, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           PROPERTY_PROP,
           SHARD_ID_PROP,
           REPLICA_PROP,
           PROPERTY_VALUE_PROP);
-      req.getParams().getAll(map, SHARD_UNIQUE);
+      copy(req.getParams(), map, SHARD_UNIQUE);
       String property = (String) map.get(PROPERTY_PROP);
       if (!property.startsWith(COLL_PROP_PREFIX)) {
         property = COLL_PROP_PREFIX + property;
@@ -848,15 +850,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return map;
     }),
     DELETEREPLICAPROP_OP(DELETEREPLICAPROP, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           PROPERTY_PROP,
           SHARD_ID_PROP,
           REPLICA_PROP);
-      return req.getParams().getAll(map, PROPERTY_PROP);
+      return copy(req.getParams(), map, PROPERTY_PROP);
     }),
     BALANCESHARDUNIQUE_OP(BALANCESHARDUNIQUE, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           PROPERTY_PROP);
       Boolean shardUnique = Boolean.parseBoolean(req.getParams().get(SHARD_UNIQUE));
@@ -871,24 +873,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             " Property: " + prop + " shardUnique: " + Boolean.toString(shardUnique));
       }
 
-      return req.getParams().getAll(map, ONLY_ACTIVE_NODES, SHARD_UNIQUE);
+      return copy(req.getParams(), map, ONLY_ACTIVE_NODES, SHARD_UNIQUE);
     }),
     REBALANCELEADERS_OP(REBALANCELEADERS, (req, rsp, h) -> {
       new RebalanceLeaders(req, rsp, h).execute();
       return null;
     }),
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
-      Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS);
+      Map<String, Object> m = copy(req.getParams(), null, MODIFIABLE_COLL_PROPS);
       if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
           formatString("no supported values provided rule, snitch, maxShardsPerNode, replicationFactor, collection.configName"));
-      req.getParams().required().getAll(m, COLLECTION_PROP);
+      copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
       for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
       verifyRuleParams(h.coreContainer, m);
       return m;
     }),
-    MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT, (req, rsp, h) -> req.getParams().required().getAll(null, COLLECTION_PROP)),
+    MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT, (req, rsp, h) -> copy(req.getParams().required(), null, COLLECTION_PROP)),
 
     BACKUP_OP(BACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME, COLLECTION_PROP);
@@ -929,7 +931,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
       return params;
@@ -977,10 +979,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         );
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
+      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       // from CREATE_OP:
-      req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT,
+      copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT,
           AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
@@ -1002,7 +1004,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 + collectionName + "', no action taken.");
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
       return params;
     }),
     DELETESNAPSHOT_OP(DELETESNAPSHOT, (req, rsp, h) -> {
@@ -1014,7 +1016,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
       return params;
     }),
     LISTSNAPSHOTS_OP(LISTSNAPSHOTS, (req, rsp, h) -> {
@@ -1037,7 +1039,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> {
-      return req.getParams().getAll(null,
+      return copy(req.getParams(), null,
           "source", //legacy
           "target",//legacy
           WAIT_FOR_FINAL_STATE,
@@ -1045,10 +1047,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CollectionParams.TARGET_NODE);
     }),
     MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
-      Map<String, Object> map = req.getParams().required().getAll(null,
+      Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP);
 
-      return req.getParams().getAll(map,
+      return copy(req.getParams(), map,
           CollectionParams.FROM_NODE,
           CollectionParams.SOURCE_NODE,
           CollectionParams.TARGET_NODE,
@@ -1057,7 +1059,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "replica",
           "shard");
     }),
-    DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
+    DELETENODE_OP(DELETENODE, (req, rsp, h) -> copy(req.getParams().required(), null, "node"));
 
     /**
      * Places all prefixed properties in the sink map (or a new map) using the prefix as the key and a map of
@@ -1318,18 +1320,28 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return Boolean.TRUE;
   }
 
-  /**
-   * Calls the consumer for each parameter and with all values.
-   * This may be more convenient than using the iterator.
-   */
-  //TODO put on SolrParams, or maybe SolrParams should implement Iterable<Map.Entry<String,String[]>
-  private static void forEach(SolrParams params, BiConsumer<String, String[]> consumer) {
-    //TODO do we add a predicate for the parameter as a filter? It would avoid calling getParams
-    final Iterator<String> iterator = params.getParameterNamesIterator();
-    while (iterator.hasNext()) {
-      String param = iterator.next();
-      String[] values = params.getParams(param);
-      consumer.accept(param, values);
+  // These "copy" methods were once SolrParams.getAll but were moved here as there is no universal way that
+  //  a SolrParams can be represented in a Map; there are various choices.
+
+  /**Copy all params to the given map or if the given map is null create a new one */
+  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, Collection<String> paramNames) {
+    if (sink == null) sink = new LinkedHashMap<>();
+    for (String param : paramNames) {
+      String[] v = source.getParams(param);
+      if (v != null && v.length > 0) {
+        if (v.length == 1) {
+          sink.put(param, v[0]);
+        } else {
+          sink.put(param, v);
+        }
+      }
     }
+    return sink;
   }
+
+  /**Copy all params to the given map or if the given map is null create a new one */
+  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, String... paramNames){
+    return copy(source, sink, paramNames == null ? Collections.emptyList() : Arrays.asList(paramNames));
+  }
+
 }
