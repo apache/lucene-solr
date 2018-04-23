@@ -73,19 +73,20 @@ limitations under the License.
           <tr ng-repeat="(key, n) in nodes | orderBy:'key.order'">
               <td>
                 <div class="node-name"><a href="{{n.base_url}}">{{key}}</a></div>
-                <div class="node-spec">
-                  {{n.system.system.name}} {{n.system.system.version}} 
+                <span class="node-spec">
+                  <span title="{{n.system.system.uptime}}">{{n.system.system.name}} {{n.system.system.version}}</span> 
                   {{n.system.system.availableProcessors}}cpu 
-                  {{n.system.system.totalPhysicalMemorySize / 1024 / 1024 / 1024}}Gb
-                  Java {{n.system.jvm.spec.version}}
-                  Solr {{n.system.lucene['solr-spec-version']}}
+                  <span title="free: {{n.system.system.freePhysicalMemorySize}}">{{n.system.system.totalPhysicalMemorySize / 1024 / 1024 / 1024}}Gb</span>
+                  <span title="{{n.system.jvm.name}} {{n.system.jvm.version}}">Java {{n.system.jvm.spec.version}}</span>
+                  <span title="{{n.system.lucene['solr-impl-version']}}">Solr {{n.system.lucene['solr-spec-version']}}</span>
                 </div>
               </td>
-              <td><div class="node-uptime">{{n.system.jvm.jmx.upTimeMS}}</div></td>
-              <td><div class="node-load">{{n.system.system.systemLoadAverage}}</div></td>
-              <td><div class="node-cpu">{{n.system.system.availableProcessors}}</div></td>
+              <td><div class="node-uptime">{{("" + (n.system.jvm.jmx.upTimeMS / 1000 / 60)).substr(0,5)}}m</div></td>
+              <td><div class="node-load">{{(n.system.system.systemLoadAverage + "").substr(0,5)}}</div></td>
+              <td><div class="node-cpu">{{(n.system.system.processCpuLoad + "").substr(0,5)}}</div></td>
               <td>
-                <div class="node-ram">{{n.system.jvm.memory.used}}</div>
+                <div class="node-ram" title="total: {{n.system.jvm.memory.total}} free: {{n.system.jvm.memory.free}} used%: {{n.system.jvm.memory.raw['used%']}}">
+                  {{(n.system.jvm.memory.raw.used * 100 / n.system.jvm.memory.raw.total + "").substr(0,4)}}%</div>
               </td>
               <td><div class="node-disk">2G</div></td>
               <td>
