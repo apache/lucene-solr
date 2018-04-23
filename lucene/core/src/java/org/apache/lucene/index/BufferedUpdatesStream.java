@@ -258,7 +258,7 @@ class BufferedUpdatesStream implements Accountable {
   }
 
   /** Holds all per-segment internal state used while resolving deletions. */
-  public static final class SegmentState {
+  static final class SegmentState {
     final long delGen;
     final ReadersAndUpdates rld;
     final SegmentReader reader;
@@ -268,19 +268,11 @@ class BufferedUpdatesStream implements Accountable {
     PostingsEnum postingsEnum;
     BytesRef term;
 
-    public SegmentState(IndexWriter.ReaderPool pool, SegmentCommitInfo info) throws IOException {
-      rld = pool.get(info, true);
+    SegmentState(ReadersAndUpdates rld, SegmentCommitInfo info) throws IOException {
+      this.rld = rld;
       startDelCount = rld.getPendingDeleteCount();
       reader = rld.getReader(IOContext.READ);
       delGen = info.getBufferedDeletesGen();
-    }
-
-    public void finish(IndexWriter.ReaderPool pool) throws IOException {
-      try {
-        rld.release(reader);
-      } finally {
-        pool.release(rld);
-      }
     }
 
     @Override
@@ -290,23 +282,21 @@ class BufferedUpdatesStream implements Accountable {
   }
 
   /** Opens SegmentReader and inits SegmentState for each segment. */
-  public SegmentState[] openSegmentStates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos,
+  public SegmentState[] openSegmentStates(List<SegmentCommitInfo> infos,
                                           Set<SegmentCommitInfo> alreadySeenSegments, long delGen) throws IOException {
     List<SegmentState> segStates = new ArrayList<>();
     try {
       for (SegmentCommitInfo info : infos) {
         if (info.getBufferedDeletesGen() <= delGen && alreadySeenSegments.contains(info) == false) {
-          segStates.add(new SegmentState(pool, info));
+          segStates.add(new SegmentState(writer.getPooledInstance(info, true), info));
           alreadySeenSegments.add(info);
         }
       }
     } catch (Throwable t) {
-      for(SegmentState segState : segStates) {
-        try {
-          segState.finish(pool);
-        } catch (Throwable th) {
-          t.addSuppressed(th);
-        }
+      try {
+        finishSegmentStates(segStates);
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
       throw t;
     }
@@ -314,8 +304,19 @@ class BufferedUpdatesStream implements Accountable {
     return segStates.toArray(new SegmentState[0]);
   }
 
+  private void finishSegmentStates(List<SegmentState> segStates) throws IOException {
+    IOUtils.applyToAll(segStates, s -> {
+      ReadersAndUpdates rld = s.rld;
+      try {
+        rld.release(s.reader);
+      } finally {
+        writer.release(s.rld);
+      }
+    });
+  }
+
   /** Close segment states previously opened with openSegmentStates. */
-  public ApplyDeletesResult closeSegmentStates(IndexWriter.ReaderPool pool, SegmentState[] segStates, boolean success) throws IOException {
+  public ApplyDeletesResult closeSegmentStates(SegmentState[] segStates, boolean success) throws IOException {
     List<SegmentCommitInfo> allDeleted = null;
     long totDelCount = 0;
     final List<SegmentState> segmentStates = Arrays.asList(segStates);
@@ -332,9 +333,9 @@ class BufferedUpdatesStream implements Accountable {
         }
       }
     }
-    IOUtils.applyToAll(segmentStates, s -> s.finish(pool));
+    finishSegmentStates(segmentStates);
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + updates.size() + " packets; bytesUsed=" + pool.ramBytesUsed());
+      infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + updates.size() + " packets; bytesUsed=" + writer.getReaderPoolRamBytesUsed());
     }
 
     return new ApplyDeletesResult(totDelCount > 0, allDeleted);      

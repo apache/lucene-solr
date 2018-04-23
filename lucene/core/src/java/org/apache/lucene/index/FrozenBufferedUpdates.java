@@ -297,7 +297,7 @@ class FrozenBufferedUpdates {
 
         // Must open while holding IW lock so that e.g. segments are not merged
         // away, dropped from 100% deletions, etc., before we can open the readers
-        segStates = writer.bufferedUpdatesStream.openSegmentStates(writer.readerPool, infos, seenSegments, delGen());
+        segStates = writer.bufferedUpdatesStream.openSegmentStates(infos, seenSegments, delGen());
 
         if (segStates.length == 0) {
 
@@ -328,8 +328,8 @@ class FrozenBufferedUpdates {
         success.set(true);
       }
 
-      // Since we jus resolved some more deletes/updates, now is a good time to write them:
-      writer.readerPool.writeSomeDocValuesUpdates();
+      // Since we just resolved some more deletes/updates, now is a good time to write them:
+      writer.writeSomeDocValuesUpdates();
 
       // It's OK to add this here, even if the while loop retries, because delCount only includes newly
       // deleted documents, on the segments we didn't already do in previous iterations:
@@ -399,7 +399,7 @@ class FrozenBufferedUpdates {
 
       BufferedUpdatesStream.ApplyDeletesResult result;
       try {
-        result = writer.bufferedUpdatesStream.closeSegmentStates(writer.readerPool, segStates, success);
+        result = writer.bufferedUpdatesStream.closeSegmentStates(segStates, success);
       } finally {
         // Matches the incRef we did above, but we must do the decRef after closing segment states else
         // IFD can't delete still-open files
