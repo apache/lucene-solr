@@ -137,7 +137,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                 nodes[node]['memFree'] = Math.floor(memFree / 1024 / 1024 / 1024) + "Gb";                 
 
                 var heapTotal = s.jvm.memory.raw.total; 
-                var heapFree = s.jvm.memory.raw.free
+                var heapFree = s.jvm.memory.raw.free;
                 var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100); 
                 nodes[node]['heapUsedPct'] = heapPercentage + "%";
                 nodes[node]['heapTotal'] = Math.floor(heapTotal / 1024 / 1024 / 1024) + "Gb";
@@ -145,6 +145,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                 
                 var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
                 nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+                nodes[node]['jvmUptimeSec'] = jvmUptime;
                 
                 nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
                 nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
@@ -175,6 +176,11 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                 nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
                 nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
                 nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
+                
+                nodes[node]['gcMajorCount'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.count'];
+                nodes[node]['gcMajorTime'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.time'];
+                nodes[node]['gcMinorCount'] = m.metrics['solr.jvm']['gc.ParNew.count'];  
+                nodes[node]['gcMinorTime'] = m.metrics['solr.jvm']['gc.ParNew.time'];
             } else {
               console.log("Skipping node " + node);
             }
@@ -185,6 +191,8 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
         $scope.hosts = hosts;
         $scope.live_nodes = live_nodes;        
 
+        $scope.Math = window.Math;
+        
         console.log("Nodes=" + JSON.stringify($scope.nodes, undefined, 2));
         // console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
     });

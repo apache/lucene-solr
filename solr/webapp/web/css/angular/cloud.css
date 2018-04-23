@@ -471,7 +471,7 @@ limitations under the License.
 }
 #content #cloud #nodes-content .node-load,
 #content #cloud #nodes-content .node-cpu,
-#content #cloud #nodes-content .node-ram,
+#content #cloud #nodes-content .node-heap,
 #content #cloud #nodes-content .node-disk
 {
   font-weight: bolder;

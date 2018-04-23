@@ -57,11 +57,13 @@ limitations under the License.
               <th>CPU</th>
               <th>Heap</th>
               <th>Disk</th>
+              <th>GC</th>
               <th>Requests</th>
               <th>Collections</th>
               <th>Cores</th>
           </tr>
           <tr ng-if="nodes.length==0">
+              <td>NA</td>
               <td>NA</td>
               <td>NA</td>
               <td>NA</td>
@@ -87,11 +89,17 @@ limitations under the License.
               <td><div class="node-load">{{n.loadAvg}}</div></td>
               <td><div class="node-cpu">{{n.cpuPct}}</div></td>
               <td>
-                <div class="node-ram" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
+                <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
                   {{n.heapUsedPct}}</div>
               </td>
               <td><div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
                 {{n.diskUsedPct}}</div></td>
+              <td>
+                <div class="node-gc" title="majorCount: {{n.gcMinorCount}} majorTime: {{n.gcMajorTime}} minorCount: {{n.gcMinorCount}} minorTime: {{n.gcMinorTime}}">
+                  Major: {{Math.round(n.gcMajorCount / n.jvmUptimeSec * 60 * 5 * 100) / 100}}/5m<br/>
+                  Minor: {{Math.round(n.gcMinorCount / n.jvmUptimeSec * 60 * 5 * 100) / 100}}/5m
+                </div>
+              </td>
               <td><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}">
                 RPM: {{n.req1minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
               </td>
