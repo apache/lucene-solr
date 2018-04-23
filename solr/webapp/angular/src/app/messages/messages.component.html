@@ -29,7 +29,7 @@ limitations under the License.
 		<h2>Connection to Solr lost</h2>
 		<p>Please check the Solr instance.</p>
 	</div>
-	<div class="connection-status header-message" id="connection-status-recovered" *ngIf="!connectionRecovered">
+	<div class="connection-status header-message" id="connection-status-recovered" *ngIf="!sharedService.connectionRecovered">
 		<h2>Connection recovered...</h2>
 		<p>Continuing to load data...</p>
 	</div>

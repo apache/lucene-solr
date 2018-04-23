@@ -27,30 +27,29 @@ import { Collection } from './collections/collections.component';
 
 @Injectable()
 export class CollectionsService {
-    // TODO: nocommit
-    private baseUrl = ''; //'http://localhost:8983';
-    private collectionsUrl = this.baseUrl + '/solr/admin/collections';
 
-    constructor(private http: HttpClient) {
-    }
+  private collectionsUrl = '/solr/admin/collections';
 
-    listCollections (): Observable<String[]> {
-        return this.http.get<ListCollections>(this.collectionsUrl + "?action=LIST").pipe(map(lc => lc.collections));
-    }
+  constructor(private http: HttpClient) {
+  }
 
-    addCollection(coll: Collection ): Observable<Collection> {
-      const params: HttpParams = new HttpParams().set('action', 'CREATE');
-      params.set('name',coll.name);
-      params.set('router.name',coll.routerName);
-      params.set('numShards',coll.numShards.toString());
-      params.set('collection.configName', coll.configName.toString());
-      params.set('replicationFactor',coll.replicationFactor.toString());
-      params.set('maxShardsPerNode',coll.maxShardsPerNode.toString());
-      params.set('autoAddReplicas',coll.autoAddReplicas.toString());
-      params.set('shards',coll.shards);
-      params.set('router.field',coll.routerField);
+  listCollections(): Observable<String[]> {
+    return this.http.get<ListCollections>(this.collectionsUrl + "?action=LIST").pipe(map(lc => lc.collections));
+  }
 
-      return this.http.post<Collection>(this.collectionsUrl, coll, {params: params});
-    }
+  addCollection(coll: Collection): Observable<Collection> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'CREATE')
+      .set('name', coll.name)
+      .set('router.name', coll.routerName)
+      .set('numShards', coll.numShards.toString())
+      .set('collection.configName', coll.configName.toString())
+      .set('replicationFactor', coll.replicationFactor.toString())
+      .set('maxShardsPerNode', coll.maxShardsPerNode.toString())
+      .set('autoAddReplicas', coll.autoAddReplicas.toString())
+      .set('shards', coll.shards)
+      .set('router.field', coll.routerField);
+    return this.http.post<Collection>(this.collectionsUrl, coll, { params: params });
+  }
 
 }

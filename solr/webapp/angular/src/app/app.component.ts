@@ -27,19 +27,5 @@ import {ViewEncapsulation} from '@angular/core';
     'css/stream.css', 'css/suggestions.css', 'css/threads.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class AppComponent {
-    
-  showingLogging = false;
-  showingCloud = false;
-  isCloudEnabled = true;
-  connectionRecovered = true;
-  collections = [];
-  cores = [];
-  currentCollection = null;
-  currentCore = null;  
-  pingMS = 1234567890;
+export class AppComponent {  
 }
-
-
-
-

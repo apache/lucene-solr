@@ -16,7 +16,23 @@
 ## Building Angular UI
   - `cd solr/webapp/angular`
   - installs dependencies in "node_modules": `npm install`
+  - installs the ng-select dependency: `npm install --save @ng-select/ng-select`
   - builds Solr UI: `ng build --prod --build-optimizer`
+
+## debugging / development
+  - `ng serve` requires angular app to be served from a separate host than solr itself, presenting CORS issues.
+  - Instead, this development cycle may be more productive:
+    - setup...
+      - build solr server: `ant server`
+      - run solr server: `bin/solr -c`
+      - browse to solr ui under development: `http://localhost:8983/solr`
+      - switch to angular directory: `cd webapp/angular`
+    - develop....
+      - make changes in a good typescript ide (I settled on atom w/typescript plugin).
+      - run: `ng build`
+      - clean out old deployment: `rm ../../server/solr-webapp/webapp/admin-ui/*`
+      - copy in new deployment: `cp ./dist/* ../../server/solr-webapp/webapp/admin-ui/`
+      - refresh browser
 
 ## References
   - https://angular.io/guide/deployment

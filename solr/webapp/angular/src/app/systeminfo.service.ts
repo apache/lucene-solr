@@ -26,9 +26,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 @Injectable()
 export class SystemInfoService {
 
-  // TODO: nocommit
-  private baseUrl = ''; //'http://localhost:8983';
-  private systemInfoUrl = this.baseUrl + '/solr/admin/info/system';
+  private systemInfoUrl = '/solr/admin/info/system';
 
   constructor(private http: HttpClient) {
   }

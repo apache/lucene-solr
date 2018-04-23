@@ -15,17 +15,33 @@
  limitations under the License.
 */
 
-import {Component} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { SharedService } from '../shared.service';
+import { CollectionsService } from '../collections.service';
+import {Router} from '@angular/router';
 
 @Component({
-  selector: 'app-messages',
-  templateUrl: './messages.component.html'
+  selector: 'app-menu',
+  templateUrl: './menu.component.html'
 })
-export class MessagesComponent {
+export class MenuComponent implements OnInit {
   sharedService: SharedService
 
-  constructor(sharedService: SharedService) {
+  constructor(sharedService: SharedService, private collectionsService: CollectionsService, private router: Router) {
     this.sharedService = sharedService;
+  }
+
+  ngOnInit() {
+    this.collectionsService.listCollections().subscribe(cArr => {
+      this.sharedService.setCollections(cArr);
+    });
+  }
+
+  showCollection(c: String) {
+    this.router.navigate(['collections', c]);
+  }
+
+  ping() {
+    alert("PING");
   }
 }

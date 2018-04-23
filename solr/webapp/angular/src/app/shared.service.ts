@@ -16,13 +16,48 @@
 */
 
 import { Injectable} from '@angular/core';
+import { Collection } from './collections/collections.component';
+import { Core } from './cores/cores.component';
 
 @Injectable()
 export class SharedService {
     loaded = true;
     exceptions = []; //{msg: 'test exception'}, {msg: 'another one'}];
     showInitFailures = false; //true;
-    initFailures = []; //{core: 'sample core', error: 'sample error' }]; 
+    initFailures = []; //{core: 'sample core', error: 'sample error' }];
+    connectionRecovered = true;
+
+    showingLogging = false;
+    showingCloud = false;
+    isCloudEnabled = true;
+    collections = [];
+    cores = [];
+    currentCollection = null;
+    currentCore = null;
+    showPing=true;
+    pingMS = 1234567890;
+
+    addCollection(c: Collection) {
+      this.collections.push(c.name);
+      this.collections.sort();
+    }
+
+    addCore(c: Core) {
+      this.cores.push(c.name);
+      this.cores.sort();
+    }
+
+    setCollections(cArr: String[]) {
+      this.collections = cArr;
+      this.collections.sort();
+    }
+
+    setCores(cArr: String[]) {
+      this.cores = cArr;
+      this.cores.sort();
+    }
+
+
 }
 
 export class InitFailure {

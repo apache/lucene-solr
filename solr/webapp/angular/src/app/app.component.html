@@ -18,97 +18,15 @@ limitations under the License.
     <div id="header">
       <a href="/" id="solr"><span>Apache SOLR</span></a>
       <p id="environment">&nbsp;</p>
-    </div>    
+    </div>
     <div id="main" class="clearfix">
-      <app-messages></app-messages>      
+      <app-messages></app-messages>
       <div id="content-wrapper">
       	<div id="content">
         	<router-outlet></router-outlet>
         </div>
       </div>
-      <div id="menu-wrapper">
-        <div>
-          <ul id="menu">
-            <li id="index" class="global" routerLinkActive="active"><p><a routerLink="/dashboard">Dashboard</a></p></li>
-            <li id="logging" class="global" routerLinkActive="active"><p><a href="#/~logging">Logging</a></p>
-              <ul *ngIf="showingLogging">
-                <li class="global" routerLinkActive="active"><a href="#/~logging/level">Level</a></li>
-              </ul>
-            </li>
-            <li id="cloud"  class="global" routerLinkActive="active" *ngIf="isCloudEnabled"><p><a href="#/~cloud">Cloud</a></p>
-              <ul *ngIf="showingCloud">
-                <li class="global" routerLinkActive="active"><a href="#/~cloud?view=tree">Tree</a></li>
-                <li class="global" routerLinkActive="active"><a href="#/~cloud">Graph</a></li>
-                <li class="global" routerLinkActive="active"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
-              </ul>
-            </li>
-            <li *ngIf="isCloudEnabled" id="collections" class="global" routerLinkActive="active"><p><a routerLink="/collections">Collections</a></p></li>
-            <li *ngIf="!isCloudEnabled" id="cores" class="global" routerLinkActive="active"><p><a routerLink="/cores">Core Admin</a></p></li>
-            <li id="java-properties" class="global" routerLinkActive="active"><p><a href="#/~java-properties">Java Properties</a></li>
-            <li id="threads" class="global" routerLinkActive="active"><p><a href="#/~threads">Thread Dump</a></p></li>
-            <li *ngIf="isCloudEnabled" id="cluster-suggestions" class="global" routerLinkActive="active"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
-          </ul>
-
-          <div id="collection-selector" *ngIf="isCloudEnabled">
-            <div id="has-collections" *ngIf="collections.length!=0">
-              <select data-placeholder="Collection Selector"
-                      ng-model="currentCollection"
-                      chosen
-                      ng-change="showCollection(currentCollection)"
-                      ng-options="collection.name for collection in collections"></select>
-            </div>
-            
-            <p id="has-no-collections" *ngIf="collections.length==0"><a routerLink="/collections">
-              No collections available
-              <span>Go and create one</span>
-            </a></p>
-          </div>
-          
-          <div id="collection-menu" class="sub-menu" *ngIf="currentCollection">
-            <ul>
-              <li class="overview" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCollection.name}}/collection-overview"><span>Overview</span></a></li>
-              <li class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
-              <li class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCollection.name}}/dataimport"><span>Dataimport</span></a></li>
-              <li class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
-              <li class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
-              <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
-              <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
-              <li class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
-        	</ul>
-          </div>
-          <div id="core-selector">
-            <div id="has-cores" *ngIf="cores.length!=0">
-              <select data-placeholder="Core Selector"
-                      ng-model="currentCore"
-                      chosen
-                      ng-change="showCore(currentCore)"
-                      ng-options="core.name for core in cores"></select>
-            </div>
-            <p id="has-no-cores" *ngIf="cores.length==0"><a routerLink="/cores">
-              No cores available
-              <span>Go and create one</span>
-            </a></p>
-          </div>
-          
-          <div id="core-menu" class="sub-menu" *ngIf="currentCore">
-            <ul>
-              <li class="overview" ng-class="{active:page=='overview'}"><a href="#/{{currentCore.name}}"><span>Overview</span></a></li>
-              <li ng-hide="isCloudEnabled" class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
-              <li ng-hide="isCloudEnabled" class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCore.name}}/dataimport"><span>Dataimport</span></a></li>
-              <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
-              <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
-              <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="showPing"> (<span>{{pingMS}}ms</span>)</small></a></li>
-              <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
-              <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
-              <li ng-hide="isCloudEnabled" class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
-              <li ng-hide="isCloudEnabled" class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCore.name}}/schema"><span>Schema</span></a></li>
-              <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
-      		</ul>
-          </div>
-
-        </div>
-      </div>
-
+      <app-menu></app-menu>
       <div id="meta">
         <ul>
           <li class="documentation"><a href="http://lucene.apache.org/solr/"><span>Documentation</span></a></li>

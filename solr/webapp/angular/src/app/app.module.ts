@@ -31,15 +31,31 @@ import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { CoresComponent } from './cores/cores.component';
 import { MessagesComponent } from './messages/messages.component';
+import { MenuComponent } from './menu/menu.component';
+import { AnalysisComponent } from './analysis/analysis.component';
+import { DihComponent } from './dih/dih.component';
+import { DocumentsComponent } from './documents/documents.component';
+import { FilesComponent } from './files/files.component';
+import { QueryComponent } from './query/query.component';
+import { StreamComponent } from './stream/stream.component';
+import { SchemaComponent } from './schema/schema.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     TimeAgoPipe,
+    MenuComponent,
     MessagesComponent,
     DashboardComponent,
     CollectionsComponent,
-    CoresComponent
+    CoresComponent,
+    AnalysisComponent,
+    DihComponent,
+    DocumentsComponent,
+    FilesComponent,
+    QueryComponent,
+    StreamComponent,
+    SchemaComponent
   ],
   imports: [
     BrowserModule,

@@ -20,10 +20,25 @@ import { RouterModule, Routes } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { CoresComponent } from './cores/cores.component';
+import { AnalysisComponent } from './analysis/analysis.component';
+import { DihComponent } from './dih/dih.component';
+import { DocumentsComponent } from './documents/documents.component';
+import { FilesComponent } from './files/files.component';
+import { QueryComponent } from './query/query.component';
+import { StreamComponent } from './stream/stream.component';
+import { SchemaComponent } from './schema/schema.component';
 
-const routes: Routes = [  
+const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'collections/:name', component: CollectionsComponent },
+  { path: 'collections/:name/overview', component: CollectionsComponent },
+  { path: 'collections/:name/analysis', component: AnalysisComponent },
+  { path: 'collections/:name/dataimport', component: DihComponent },
+  { path: 'collections/:name/documents', component: DocumentsComponent },
+  { path: 'collections/:name/files', component: FilesComponent },
+  { path: 'collections/:name/query', component: QueryComponent },
+  { path: 'collections/:name/stream', component: StreamComponent },
+  { path: 'collections/:name/schema', component: SchemaComponent },
   { path: 'collections', component: CollectionsComponent },
   { path: 'cores', component: CoresComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'prefix' },

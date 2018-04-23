@@ -26,10 +26,10 @@ import { SharedService, InitFailure } from '../shared.service';
   templateUrl: './collections.component.html'
 })
 export class CollectionsComponent implements OnInit {
+  sharedService: SharedService;
   collections: String[];
   configs: String[];
 
-  collection: Collection = null;
   newCollection: Collection = null;
   showAdd = false;
   showDelete = false;
@@ -51,7 +51,7 @@ export class CollectionsComponent implements OnInit {
   nodes = ["test node 1", "test node 2"];
 
   constructor(private route: ActivatedRoute,
-    private sharedService: SharedService,
+    sharedService: SharedService,
     private collectionsService: CollectionsService,
     private zookeeperService: ZookeeperService) { }
 
@@ -93,7 +93,13 @@ export class CollectionsComponent implements OnInit {
     if (!this.newCollection.name) {
       this.addMessage = "Please provide a collection name";
     } else {
-      this.collectionsService.addCollection(this.newCollection).subscribe();
+      this.sharedService.loaded = false;
+      this.collectionsService.addCollection(this.newCollection).subscribe(c => {
+        this.sharedService.addCollection(c);
+        this.newCollection = null;
+        this.showAdd = false;
+        this.sharedService.loaded = true;
+      });
       this.newCollection = null;
       this.showAdd = false;
     }

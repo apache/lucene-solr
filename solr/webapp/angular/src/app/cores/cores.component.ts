@@ -29,3 +29,7 @@ export class CoresComponent implements OnInit {
   }
 
 }
+
+export class Core {
+  name : string;
+}

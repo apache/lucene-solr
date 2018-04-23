@@ -1,0 +1,105 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="menu-wrapper">
+	<div>
+		<ul id="menu">
+			<li id="index" class="global" routerLinkActive="active">
+				<p><a routerLink="/dashboard">Dashboard</a></p>
+			</li>
+			<li id="logging" class="global" routerLinkActive="active">
+				<p><a href="/logging">Logging</a></p>
+				<ul *ngIf="sharedService.showingLogging">
+					<li class="global" routerLinkActive="active"><a href="/logging/level">Level</a></li>
+				</ul>
+			</li>
+			<li id="cloud" class="global" routerLinkActive="active" *ngIf="sharedService.isCloudEnabled">
+				<p><a href="/cloud">Cloud</a></p>
+				<ul *ngIf="sharedService.showingCloud">
+					<li class="global" routerLinkActive="active"><a href="/cloud?view=tree">Tree</a></li>
+					<li class="global" routerLinkActive="active"><a href="/cloud">Graph</a></li>
+					<li class="global" routerLinkActive="active"><a href="/cloud?view=rgraph">Graph (Radial)</a></li>
+				</ul>
+			</li>
+			<li *ngIf="sharedService.isCloudEnabled" id="collections" class="global" routerLinkActive="active">
+				<p><a routerLink="/collections">Collections</a></p>
+			</li>
+			<li *ngIf="!sharedService.isCloudEnabled" id="cores" class="global" routerLinkActive="active">
+				<p><a routerLink="/cores">Core Admin</a></p>
+			</li>
+			<li id="java-properties" class="global" routerLinkActive="active">
+				<p><a href="/java-properties">Java Properties</a></li>
+			<li id="threads" class="global" routerLinkActive="active">
+				<p><a href="/threads">Thread Dump</a></p>
+			</li>
+			<li *ngIf="sharedService.isCloudEnabled" id="cluster-suggestions" class="global" routerLinkActive="active">
+				<p><a href="/cluster-suggestions">Suggestions</a></p>
+			</li>
+		</ul>
+
+		<div id="collection-selector" *ngIf="sharedService.isCloudEnabled">
+			<div id="has-collections" *ngIf="sharedService.collections.length!=0">
+				<ng-select name="collection-selector" id="collection-selector" [(ngModel)]="sharedService.currentCollection" [items]="sharedService.collections" (change)="showCollection(sharedService.currentCollection)" placeholder="Collection Selector">
+				</ng-select>
+			</div>
+
+			<p id="has-no-collections" *ngIf="sharedService.collections.length==0"><a routerLink="/collections">
+				No collections available
+				<span>Go and create one</span>
+			</a></p>
+		</div>
+
+		<div id="collection-menu" class="sub-menu" *ngIf="sharedService.currentCollection != null">
+			<ul>
+				<li class="overview" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/overview"><span>Overview</span></a></li>
+				<li class="analysis" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/analysis"><span>Analysis</span></a></li>
+				<li class="dataimport" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/dataimport"><span>Dataimport</span></a></li>
+				<li class="documents" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/documents"><span>Documents</span></a></li>
+				<li class="files" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/files"><span>Files</span></a></li>
+				<li class="query" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/query"><span>Query</span></a></li>
+				<li class="stream" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/stream"><span>Stream</span></a></li>
+				<li class="schema" routerLinkActive="active"><a routerLink="/collections/{{sharedService.currentCollection}}/schema"><span>Schema</span></a></li>
+			</ul>
+		</div>
+		<div id="core-selector">
+			<div id="has-cores" *ngIf="sharedService.cores.length!=0">
+				<ng-select name="core-selector" id="core-selector" [(ngModel)]="sharedService.currentCore" [items]="sharedService.cores" (change)="showCore(sharedService.currentCore)" placeholder="Core Selector">
+				</ng-select>
+			</div>
+			<p id="has-no-cores" *ngIf="sharedService.cores.length==0"><a routerLink="/cores">
+				No cores available
+				<span>Go and create one</span>
+			</a></p>
+		</div>
+
+		<div id="core-menu" class="sub-menu" *ngIf="currentCore">
+			<ul>
+				<li class="overview" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/overview"><span>Overview</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="analysis" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/analysis"><span>Analysis</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="dataimport" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/dataimport"><span>Dataimport</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="documents" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/documents"><span>Documents</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="files" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/files"><span>Files</span></a></li>
+				<li class="ping" routerLinkActive="active"><a (click)="ping()"><span>Ping</span><small class="qtime" *ngIf="sharedService.showPing"> (<span>{{sharedService.pingMS}}ms</span>)</small></a></li>
+				<li class="plugins" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/plugins"><span>Plugins / Stats</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="query" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/query"><span>Query</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="replication" routerLinkActive="active"><a href="#/{{sharedService.currentCore}}/replication"><span>Replication</span></a></li>
+				<li *ngIf="!sharedService.isCloudEnabled" class="schema" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/schema"><span>Schema</span></a></li>
+				<li class="segments" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/segments"><span>Segments info</span></a></li>
+			</ul>
+		</div>
+
+	</div>
+</div>

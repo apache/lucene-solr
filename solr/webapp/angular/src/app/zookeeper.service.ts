@@ -24,9 +24,8 @@ import { catchError, map, tap } from 'rxjs/operators';
 
 @Injectable()
 export class ZookeeperService {
-    // TODO: nocommit
-    private baseUrl = ''; //'http://localhost:8983';
-    private zookeeperUrl = this.baseUrl + '/solr/admin/zookeeper';
+
+    private zookeeperUrl = '/solr/admin/zookeeper';
 
     constructor(private http: HttpClient) {
     }
