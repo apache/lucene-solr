@@ -379,7 +379,8 @@ public class TransactionLog implements Closeable {
 
       // adaptive buffer sizing
       int bufSize = lastAddSize;    // unsynchronized access of lastAddSize should be fine
-      bufSize = Math.min(1024*1024, bufSize+(bufSize>>3)+256);
+      // at least 256 bytes and at most 1 MB
+      bufSize = Math.min(1024*1024, Math.max(256, bufSize+(bufSize>>3)+256));
 
       MemOutputStream out = new MemOutputStream(new byte[bufSize]);
       codec.init(out);

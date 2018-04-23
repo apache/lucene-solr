@@ -160,6 +160,8 @@ Bug Fixes
 * SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
   (Shawn Heisey, Carlton Findley, Robby Pond, hossman)
 
+* SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
