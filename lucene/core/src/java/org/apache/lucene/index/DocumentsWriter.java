@@ -23,17 +23,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
-import org.apache.lucene.index.IndexWriter.Event;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -101,6 +101,12 @@ import org.apache.lucene.util.InfoStream;
 final class DocumentsWriter implements Closeable, Accountable {
   private final Directory directoryOrig; // no wrapping, for infos
   private final Directory directory;
+  private final FieldInfos.FieldNumbers globalFieldNumberMap;
+  private final int indexCreatedVersionMajor;
+  private final AtomicLong pendingNumDocs;
+  private final boolean enableTestPoints;
+  private final Supplier<String> segmentNameSupplier;
+  private final FlushNotifications flushNotifications;
 
   private volatile boolean closed;
 
@@ -124,11 +130,12 @@ final class DocumentsWriter implements Closeable, Accountable {
   final DocumentsWriterPerThreadPool perThreadPool;
   final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
-  private final IndexWriter writer;
-  private final Queue<Event> events;
   private long lastSeqNo;
   
-  DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory) {
+  DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, AtomicLong pendingNumDocs, boolean enableTestPoints,
+                  Supplier<String> segmentNameSupplier, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory,
+                  FieldInfos.FieldNumbers globalFieldNumberMap) {
+    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
     this.directoryOrig = directoryOrig;
     this.directory = directory;
     this.config = config;
@@ -136,9 +143,12 @@ final class DocumentsWriter implements Closeable, Accountable {
     this.deleteQueue = new DocumentsWriterDeleteQueue(infoStream);
     this.perThreadPool = config.getIndexerThreadPool();
     flushPolicy = config.getFlushPolicy();
-    this.writer = writer;
-    this.events = new ConcurrentLinkedQueue<>();
-    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
+    this.globalFieldNumberMap = globalFieldNumberMap;
+    this.pendingNumDocs = pendingNumDocs;
+    flushControl = new DocumentsWriterFlushControl(this, config);
+    this.segmentNameSupplier = segmentNameSupplier;
+    this.enableTestPoints = enableTestPoints;
+    this.flushNotifications = flushNotifications;
   }
   
   long deleteQueries(final Query... queries) throws IOException {
@@ -175,7 +185,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       if (deleteQueue != null) {
         ticketQueue.addDeletes(deleteQueue);
       }
-      putEvent(ApplyDeletesEvent.INSTANCE); // apply deletes event forces a purge
+      flushNotifications.onDeletesApplied(); // apply deletes event forces a purge
       return true;
     }
     return false;
@@ -409,10 +419,10 @@ final class DocumentsWriter implements Closeable, Accountable {
   
   private void ensureInitialized(ThreadState state) throws IOException {
     if (state.dwpt == null) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(writer.globalFieldNumberMap);
-      state.dwpt = new DocumentsWriterPerThread(writer, writer.newSegmentName(), directoryOrig,
+      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldNumberMap);
+      state.dwpt = new DocumentsWriterPerThread(indexCreatedVersionMajor, segmentNameSupplier.get(), directoryOrig,
                                                 directory, config, infoStream, deleteQueue, infos,
-                                                writer.pendingNumDocs, writer.enableTestPoints);
+                                                pendingNumDocs, enableTestPoints);
     }
   }
 
@@ -433,7 +443,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delNode);
+        seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
       } finally {
         if (dwpt.isAborted()) {
           flushControl.doOnAbort(perThread);
@@ -460,7 +470,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
+                      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
 
     boolean hasEvents = preUpdate();
 
@@ -477,7 +487,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocument(doc, analyzer, delNode);
+        seqNo = dwpt.updateDocument(doc, analyzer, delNode, flushNotifications);
       } finally {
         if (dwpt.isAborted()) {
           flushControl.doOnAbort(perThread);
@@ -536,17 +546,18 @@ final class DocumentsWriter implements Closeable, Accountable {
           boolean dwptSuccess = false;
           try {
             // flush concurrently without locking
-            final FlushedSegment newSegment = flushingDWPT.flush();
+            final FlushedSegment newSegment = flushingDWPT.flush(flushNotifications);
             ticketQueue.addSegment(ticket, newSegment);
             dwptSuccess = true;
           } finally {
             subtractFlushedNumDocs(flushingDocsInRam);
             if (flushingDWPT.pendingFilesToDelete().isEmpty() == false) {
-              putEvent(new DeleteNewFilesEvent(flushingDWPT.pendingFilesToDelete()));
+              Set<String> files = flushingDWPT.pendingFilesToDelete();
+              flushNotifications.deleteUnusedFiles(files);
               hasEvents = true;
             }
             if (dwptSuccess == false) {
-              putEvent(new FlushFailedEvent(flushingDWPT.getSegmentInfo()));
+              flushNotifications.flushFailed(flushingDWPT.getSegmentInfo());
               hasEvents = true;
             }
           }
@@ -569,7 +580,7 @@ final class DocumentsWriter implements Closeable, Accountable {
           // thread in innerPurge can't keep up with all
           // other threads flushing segments.  In this case
           // we forcefully stall the producers.
-          putEvent(ForcedPurgeEvent.INSTANCE);
+          flushNotifications.onTicketBacklog();
           break;
         }
       } finally {
@@ -580,7 +591,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
 
     if (hasEvents) {
-      writer.doAfterSegmentFlushed(false, false);
+      flushNotifications.afterSegmentsFlushed();
     }
 
     // If deletes alone are consuming > 1/2 our RAM
@@ -597,11 +608,51 @@ final class DocumentsWriter implements Closeable, Accountable {
                                                  flushControl.getDeleteBytesUsed()/(1024.*1024.),
                                                  ramBufferSizeMB));
         }
-        putEvent(ApplyDeletesEvent.INSTANCE);
+        flushNotifications.onDeletesApplied();
       }
     }
 
     return hasEvents;
+  }
+
+  interface FlushNotifications { // TODO maybe we find a better name for this?
+
+    /**
+     * Called when files were written to disk that are not used anymore. It's the implementations responsibilty
+     * to clean these files up
+     */
+    void deleteUnusedFiles(Collection<String> files);
+
+    /**
+     * Called when a segment failed to flush.
+     */
+    void flushFailed(SegmentInfo info);
+
+    /**
+     * Called after one or more segments were flushed to disk.
+     */
+    void afterSegmentsFlushed() throws IOException;
+
+    /**
+     * Should be called if a flush or an indexing operation caused a tragic / unrecoverable event.
+     */
+    void onTragicEvent(Throwable event, String message);
+
+    /**
+     * Called once deletes have been applied either after a flush or on a deletes call
+     */
+    void onDeletesApplied();
+
+    /**
+     * Called once the DocumentsWriter ticket queue has a backlog. This means there is an inner thread
+     * that tries to publish flushed segments but can't keep up with the other threads flushing new segments.
+     * This likely requires other thread to forcefully purge the buffer to help publishing. This
+     * can't be done in-place since we might hold index writer locks when this is called. The caller must ensure
+     * that the purge happens without an index writer lock hold
+     *
+     * @see DocumentsWriter#purgeBuffer(IndexWriter, boolean)
+     */
+    void onTicketBacklog();
   }
   
   void subtractFlushedNumDocs(int numFlushed) {
@@ -626,7 +677,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    * two stage operation; the caller must ensure (in try/finally) that finishFlush
    * is called after this method, to release the flush lock in DWFlushControl
    */
-  long flushAllThreads()
+  long flushAllThreads(IndexWriter writer)
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
@@ -695,92 +746,8 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  void putEvent(Event event) {
-    events.add(event);
-  }
-
   @Override
   public long ramBytesUsed() {
     return flushControl.ramBytesUsed();
-  }
-
-  static final class ResolveUpdatesEvent implements Event {
-
-    private final FrozenBufferedUpdates packet;
-    
-    ResolveUpdatesEvent(FrozenBufferedUpdates packet) {
-      this.packet = packet;
-    }
-
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      try {
-        packet.apply(writer);
-      } catch (Throwable t) {
-        try {
-          writer.onTragicEvent(t, "applyUpdatesPacket");
-        } catch (Throwable t1) {
-          t.addSuppressed(t1);
-        }
-        throw t;
-      }
-      writer.flushDeletesCount.incrementAndGet();
-    }
-  }
-
-  static final class ApplyDeletesEvent implements Event {
-    static final Event INSTANCE = new ApplyDeletesEvent();
-
-    private ApplyDeletesEvent() {
-      // only one instance
-    }
-    
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      writer.applyDeletesAndPurge(true); // we always purge!
-    }
-  }
-
-  static final class ForcedPurgeEvent implements Event {
-    static final Event INSTANCE = new ForcedPurgeEvent();
-
-    private ForcedPurgeEvent() {
-      // only one instance
-    }
-    
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      writer.purge(true);
-    }
-  }
-  
-  static class FlushFailedEvent implements Event {
-    private final SegmentInfo info;
-    
-    public FlushFailedEvent(SegmentInfo info) {
-      this.info = info;
-    }
-    
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      writer.flushFailed(info);
-    }
-  }
-  
-  static class DeleteNewFilesEvent implements Event {
-    private final Collection<String>  files;
-    
-    public DeleteNewFilesEvent(Collection<String>  files) {
-      this.files = files;
-    }
-    
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      writer.deleteNewFiles(files);
-    }
-  }
-
-  public Queue<Event> eventQueue() {
-    return events;
   }
 }

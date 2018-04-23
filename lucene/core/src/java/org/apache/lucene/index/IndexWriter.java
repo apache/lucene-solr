@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -236,7 +237,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   /** Used only for testing. */
-  boolean enableTestPoints = false;
+  private final boolean enableTestPoints;
 
   static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
   
@@ -291,7 +292,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
-  private final Queue<Event> eventQueue;
+  private final Queue<Event> eventQueue = new ConcurrentLinkedQueue<>();
   final IndexFileDeleter deleter;
 
   // used by forceMerge to note those needing merging
@@ -344,6 +345,51 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  much like how hotels place an "authorization hold" on your credit
    *  card to make sure they can later charge you when you check out. */
   final AtomicLong pendingNumDocs = new AtomicLong();
+
+  private final DocumentsWriter.FlushNotifications flushNotifications = new DocumentsWriter.FlushNotifications() {
+    @Override
+    public void deleteUnusedFiles(Collection<String> files) {
+      eventQueue.add(w -> w.deleteNewFiles(files));
+    }
+
+    @Override
+    public void flushFailed(SegmentInfo info) {
+      eventQueue.add(w -> w.flushFailed(info));
+    }
+
+    @Override
+    public void afterSegmentsFlushed() throws IOException {
+      try {
+        purge(false);
+      } finally {
+        if (false) {
+          maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+        }
+      }
+    }
+
+    @Override
+    public void onTragicEvent(Throwable event, String message) {
+      IndexWriter.this.onTragicEvent(event, message);
+    }
+
+    @Override
+    public void onDeletesApplied() {
+      eventQueue.add(w -> {
+          try {
+            w.purge(true);
+          } finally {
+            flushCount.incrementAndGet();
+          }
+        }
+      );
+    }
+
+    @Override
+    public void onTicketBacklog() {
+      eventQueue.add(w -> w.purge(true));
+    }
+  };
 
   DirectoryReader getReader() throws IOException {
     return getReader(true, false);
@@ -439,7 +485,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         try {
           // TODO: should we somehow make this available in the returned NRT reader?
-          long seqNo = docWriter.flushAllThreads();
+          long seqNo = docWriter.flushAllThreads(this);
           if (seqNo < 0) {
             anyChanges = true;
             seqNo = -seqNo;
@@ -660,7 +706,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (d instanceof FSDirectory && ((FSDirectory) d).checkPendingDeletions()) {
       throw new IllegalArgumentException("Directory " + d + " still has pending deleted files; cannot initialize IndexWriter");
     }
-
+    enableTestPoints = isEnableTestPoints();
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
@@ -678,9 +724,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       mergeScheduler = config.getMergeScheduler();
       mergeScheduler.setInfoStream(infoStream);
       codec = config.getCodec();
-
-      bufferedUpdatesStream = new BufferedUpdatesStream(this);
-
       OpenMode mode = config.getOpenMode();
       boolean create;
       if (mode == OpenMode.CREATE) {
@@ -824,8 +867,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       validateIndexSort();
 
       config.getFlushPolicy().init(config);
-      docWriter = new DocumentsWriter(this, config, directoryOrig, directory);
-      eventQueue = docWriter.eventQueue();
+      bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
+      docWriter = new DocumentsWriter(flushNotifications, segmentInfos.getIndexCreatedVersionMajor(), pendingNumDocs,
+          enableTestPoints, this::newSegmentName,
+          config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,
           bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader);
       if (config.getReaderPooling()) {
@@ -2459,7 +2504,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   synchronized void publishFrozenUpdates(FrozenBufferedUpdates packet) throws IOException {
     assert packet != null && packet.any();
     bufferedUpdatesStream.push(packet);
-    docWriter.putEvent(new DocumentsWriter.ResolveUpdatesEvent(packet));
+    eventQueue.add(new ResolveUpdatesEvent(packet));
   }
 
   /**
@@ -2481,7 +2526,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (globalPacket != null && globalPacket.any()) {
         // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
         bufferedUpdatesStream.push(globalPacket);
-        docWriter.putEvent(new DocumentsWriter.ResolveUpdatesEvent(globalPacket));
+        eventQueue.add(new ResolveUpdatesEvent(globalPacket));
       }
 
       // Publishing the segment must be sync'd on IW -> BDS to make the sure
@@ -2491,7 +2536,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         nextGen = bufferedUpdatesStream.push(packet);
 
         // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
-        docWriter.putEvent(new DocumentsWriter.ResolveUpdatesEvent(packet));
+        eventQueue.add(new ResolveUpdatesEvent(packet));
 
       } else {
         // Since we don't have a delete packet to apply we can get a new
@@ -2879,7 +2924,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
         // createCompoundFile tries to cleanup, but it might not always be able to...
         try {
-          createCompoundFile(infoStream, trackingCFSDir, info, context);
+          createCompoundFile(infoStream, trackingCFSDir, info, context, this::deleteNewFiles);
         } finally {
           // delete new non cfs files directly: they were never
           // registered with IFD
@@ -3062,7 +3107,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           boolean flushSuccess = false;
           boolean success = false;
           try {
-            seqNo = docWriter.flushAllThreads();
+            seqNo = docWriter.flushAllThreads(this);
             if (seqNo < 0) {
               anyChanges = true;
               seqNo = -seqNo;
@@ -3423,7 +3468,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         boolean flushSuccess = false;
         try {
-          long seqNo = docWriter.flushAllThreads();
+          long seqNo = docWriter.flushAllThreads(this);
           if (seqNo < 0) {
             seqNo = -seqNo;
             anyChanges = true;
@@ -3471,7 +3516,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "now apply all deletes for all segments buffered updates bytesUsed=" + bufferedUpdatesStream.ramBytesUsed() + " reader pool bytesUsed=" + readerPool.ramBytesUsed());
     }
-    bufferedUpdatesStream.waitApplyAll();
+    bufferedUpdatesStream.waitApplyAll(this);
   }
 
   // for testing only
@@ -4000,9 +4045,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Does initial setup for a merge, which is fast but holds
    *  the synchronized lock on IndexWriter instance.  */
   final void mergeInit(MergePolicy.OneMerge merge) throws IOException {
-
+    assert Thread.holdsLock(this) == false;
     // Make sure any deletes that must be resolved before we commit the merge are complete:
-    bufferedUpdatesStream.waitApplyForMerge(merge.segments);
+    bufferedUpdatesStream.waitApplyForMerge(merge.segments, this);
 
     boolean success = false;
     try {
@@ -4269,7 +4314,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         Collection<String> filesToRemove = merge.info.files();
         TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
         try {
-          createCompoundFile(infoStream, trackingCFSDir, merge.info.info, context);
+          createCompoundFile(infoStream, trackingCFSDir, merge.info.info, context, this::deleteNewFiles);
           success = true;
         } catch (Throwable t) {
           synchronized(this) {
@@ -4753,7 +4798,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  final void createCompoundFile(InfoStream infoStream, TrackingDirectoryWrapper directory, final SegmentInfo info, IOContext context) throws IOException {
+  static final void createCompoundFile(InfoStream infoStream, TrackingDirectoryWrapper directory, final SegmentInfo info, IOContext context, IOUtils.IOConsumer<Collection<String>> deleteFiles) throws IOException {
 
     // maybe this check is not needed, but why take the risk?
     if (!directory.getCreatedFiles().isEmpty()) {
@@ -4771,7 +4816,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } finally {
       if (!success) {
         // Safe: these files must exist
-        deleteNewFiles(directory.getCreatedFiles());
+        deleteFiles.accept(directory.getCreatedFiles());
       }
     }
 
@@ -4785,14 +4830,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if an {@link IOException} occurs
    * @see IndexFileDeleter#deleteNewFiles(Collection)
    */
-  synchronized final void deleteNewFiles(Collection<String> files) throws IOException {
+  private synchronized void deleteNewFiles(Collection<String> files) throws IOException {
     deleter.deleteNewFiles(files);
   }
-  
   /**
    * Cleans up residuals from a segment that could not be entirely flushed due to an error
    */
-  synchronized final void flushFailed(SegmentInfo info) throws IOException {
+  private synchronized final void flushFailed(SegmentInfo info) throws IOException {
     // TODO: this really should be a tragic
     Collection<String> files;
     try {
@@ -4805,29 +4849,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       deleter.deleteNewFiles(files);
     }
   }
-  
-  final int purge(boolean forced) throws IOException {
+
+  private int purge(boolean forced) throws IOException {
     return docWriter.purgeBuffer(this, forced);
   }
 
-  final void applyDeletesAndPurge(boolean forcePurge) throws IOException {
-    try {
-      purge(forcePurge);
-    } finally {
-      flushCount.incrementAndGet();
-    }
-  }
-  
-  final void doAfterSegmentFlushed(boolean triggerMerge, boolean forcePurge) throws IOException {
-    try {
-      purge(forcePurge);
-    } finally {
-      if (triggerMerge) {
-        maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
-      }
-    }
-  }
-  
   /** Record that the files referenced by this {@link SegmentInfos} are still in use.
    *
    * @lucene.internal */
@@ -4869,8 +4895,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * encoded inside the {@link #process(IndexWriter)} method.
    *
    */
-  interface Event {
-    
+  @FunctionalInterface
+  private interface Event {
     /**
      * Processes the event. This method is called by the {@link IndexWriter}
      * passed as the first argument.
@@ -4972,5 +4998,44 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   ReadersAndUpdates getPooledInstance(SegmentCommitInfo info, boolean create) {
     ensureOpen(false);
     return readerPool.get(info, create);
+  }
+
+  private static final class ResolveUpdatesEvent implements Event {
+
+    private final FrozenBufferedUpdates packet;
+
+    ResolveUpdatesEvent(FrozenBufferedUpdates packet) {
+      this.packet = packet;
+    }
+
+    @Override
+    public void process(IndexWriter writer) throws IOException {
+      try {
+        packet.apply(writer);
+      } catch (Throwable t) {
+        try {
+          writer.onTragicEvent(t, "applyUpdatesPacket");
+        } catch (Throwable t1) {
+          t.addSuppressed(t1);
+        }
+        throw t;
+      }
+      writer.flushDeletesCount.incrementAndGet();
+    }
+  }
+
+  void finished(FrozenBufferedUpdates packet) {
+    bufferedUpdatesStream.finished(packet);
+  }
+
+  int getPendingUpdatesCount() {
+    return bufferedUpdatesStream.getPendingUpdatesCount();
+  }
+
+  /**
+   * Tests should override this to enable test points. Default is <code>false</code>.
+   */
+  protected boolean isEnableTestPoints() {
+    return false;
   }
 }
