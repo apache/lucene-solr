@@ -1836,9 +1836,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Directory dir = newMockDirectory(); // we want to ensure we don't leak any locks or file handles
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setInfoStream(evilInfoStream);
-    IndexWriter iw = new IndexWriter(dir, iwc);
     // TODO: cutover to RandomIndexWriter.mockIndexWriter?
-    iw.enableTestPoints = true;
+    IndexWriter iw = new IndexWriter(dir, iwc) {
+      @Override
+      protected boolean isEnableTestPoints() {
+        return true;
+      }
+    };
+
     Document doc = new Document();
     for (int i = 0; i < 10; i++) {
       iw.addDocument(doc);

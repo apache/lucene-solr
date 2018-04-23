@@ -169,11 +169,10 @@ class DocumentsWriterPerThread {
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
-  private final IndexWriter indexWriter;
-  
-  public DocumentsWriterPerThread(IndexWriter writer, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
+  private final int indexVersionCreated;
+
+  public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
-    this.indexWriter = writer;
     this.directoryOrig = directoryOrig;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
@@ -200,6 +199,7 @@ class DocumentsWriterPerThread {
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
     this.enableTestPoints = enableTestPoints;
+    this.indexVersionCreated = indexVersionCreated;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -207,7 +207,7 @@ class DocumentsWriterPerThread {
   }
 
   public int getIndexCreatedVersionMajor() {
-    return indexWriter.segmentInfos.getIndexCreatedVersionMajor();
+    return indexVersionCreated;
   }
 
   final void testPoint(String message) {
@@ -227,7 +227,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException {
+  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
       testPoint("DocumentsWriterPerThread addDocument start");
@@ -263,11 +263,11 @@ class DocumentsWriterPerThread {
 
       return finishDocument(deleteNode);
     } finally {
-      maybeAbort("updateDocument");
+      maybeAbort("updateDocument", flushNotifications);
     }
   }
 
-  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode) throws IOException {
+  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
@@ -343,7 +343,7 @@ class DocumentsWriterPerThread {
         docState.clear();
       }
     } finally {
-      maybeAbort("updateDocuments");
+      maybeAbort("updateDocuments", flushNotifications);
     }
   }
   
@@ -425,7 +425,7 @@ class DocumentsWriterPerThread {
   }
 
   /** Flush all pending docs to a new segment */
-  FlushedSegment flush() throws IOException {
+  FlushedSegment flush(DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -499,7 +499,7 @@ class DocumentsWriterPerThread {
       FlushedSegment fs = new FlushedSegment(infoStream, segmentInfoPerCommit, flushState.fieldInfos,
           segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
           sortMap);
-      sealFlushedSegment(fs, sortMap);
+      sealFlushedSegment(fs, sortMap, flushNotifications);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0) / 1000000.0) + " msec");
       }
@@ -508,18 +508,18 @@ class DocumentsWriterPerThread {
       onAbortingException(t);
       throw t;
     } finally {
-      maybeAbort("flush");
+      maybeAbort("flush", flushNotifications);
     }
   }
 
-  private void maybeAbort(String location) throws IOException {
+  private void maybeAbort(String location, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     if (hasHitAbortingException() && aborted == false) {
       // if we are already aborted don't do anything here
       try {
         abort();
       } finally {
         // whatever we do here we have to fire this tragic event up.
-        indexWriter.onTragicEvent(abortingException, location);
+        flushNotifications.onTragicEvent(abortingException, location);
       }
     }
   }
@@ -545,7 +545,7 @@ class DocumentsWriterPerThread {
    * Seals the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}.
    */
-  void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap) throws IOException {
+  void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     assert flushedSegment != null;
     SegmentCommitInfo newSegment = flushedSegment.segmentInfo;
 
@@ -559,7 +559,7 @@ class DocumentsWriterPerThread {
       if (indexWriterConfig.getUseCompoundFile()) {
         Set<String> originalFiles = newSegment.info.files();
         // TODO: like addIndexes, we are relying on createCompoundFile to successfully cleanup...
-        indexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context);
+        IndexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context, flushNotifications::deleteUnusedFiles);
         filesToDelete.addAll(originalFiles);
         newSegment.info.setUseCompoundFile(true);
       }
