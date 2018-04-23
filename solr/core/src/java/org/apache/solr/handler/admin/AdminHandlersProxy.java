@@ -54,16 +54,16 @@ public class AdminHandlersProxy {
   private static final String PARAM_NODES = "nodes";
 
   // Proxy this request to a different remote node if 'node' parameter is provided
-  public static boolean proxyRequestToNode(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
-      throws IOException, SolrServerException, InterruptedException, TimeoutException, ExecutionException {
-    String pathStr = req.getPath();
+  public static boolean maybeProxyToNodes(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
+      throws IOException, SolrServerException, InterruptedException {
     String nodeNames = req.getParams().get(PARAM_NODES);
-    Set<String> nodes;
         
     if (nodeNames == null || nodeNames.isEmpty()) {
       return false; // local request
     }
 
+    Set<String> nodes;
+    String pathStr = req.getPath();
     Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
     
     if (nodeNames.equals("all")) {

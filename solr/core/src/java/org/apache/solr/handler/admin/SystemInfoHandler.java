@@ -133,7 +133,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
-    if (AdminHandlersProxy.proxyRequestToNode(req, rsp, getCoreContainer(req, core))) {
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, core))) {
       return; // Request was proxied to other node
     }
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );

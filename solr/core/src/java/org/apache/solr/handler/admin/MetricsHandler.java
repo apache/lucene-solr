@@ -89,6 +89,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Core container instance not initialized");
     }
 
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, container)) {
+      return; // Request was proxied to other node
+    }
+
     boolean compact = req.getParams().getBool(COMPACT_PARAM, true);
     String[] keys = req.getParams().getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
