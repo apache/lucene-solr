@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, SystemAll) {
+    function($scope, $location, Zookeeper, Constants, Collections, SystemAll, MetricsAll) {
 
         $scope.showDebug = false;
 
@@ -40,7 +40,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view == "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Zookeeper, Collections, SystemAll);
+            nodesSubController($scope, Zookeeper, Collections, SystemAll, MetricsAll);
         }
     }
 );
@@ -71,7 +71,7 @@ function ensureInList(string, list) {
     }
 }
 
-var nodesSubController = function($scope, Zookeeper, Collections, SystemAll) {
+var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, MetricsAll) {
     $scope.showNodes = true;
     $scope.showTree = false;
     $scope.showGraph = false;
@@ -127,18 +127,65 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll) {
           for (var node in systemResponse) {
               console.log("Checking node " + node + " exist in " + nodes);
               if (node in nodes) {
-                nodes[node]['system'] = systemResponse[node];                 
+                var s = systemResponse[node]; 
+                nodes[node]['system'] = s;
+                var memTotal = s.system.totalPhysicalMemorySize; 
+                var memFree = s.system.freePhysicalMemorySize;
+                var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100); 
+                nodes[node]['memUsedPct'] = memPercentage + "%";
+                nodes[node]['memTotal'] = Math.floor(memTotal / 1024 / 1024 / 1024) + "Gb";
+                nodes[node]['memFree'] = Math.floor(memFree / 1024 / 1024 / 1024) + "Gb";                 
+
+                var heapTotal = s.jvm.memory.raw.total; 
+                var heapFree = s.jvm.memory.raw.free
+                var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100); 
+                nodes[node]['heapUsedPct'] = heapPercentage + "%";
+                nodes[node]['heapTotal'] = Math.floor(heapTotal / 1024 / 1024 / 1024) + "Gb";
+                nodes[node]['heapFree'] = Math.floor(heapFree / 1024 / 1024 / 1024) + "Gb";
+                
+                var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+                nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+                
+                nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+                nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
               } else {
                   console.log("Skipping node " + node);
               }
           }
         });
 
+        MetricsAll.get(function(metricsResponse) {
+          for (var node in metricsResponse) {
+            console.log("Checking node " + node + " exist in " + nodes);
+            if (node in nodes) {
+                var m = metricsResponse[node]; 
+                nodes[node]['metrics'] = m;
+                var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace']; 
+                var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
+                var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100); 
+                nodes[node]['diskUsedPct'] = diskPercentage + "%";
+                nodes[node]['diskTotal'] = Math.floor(diskTotal / 1024 / 1024 / 1024) + "Gb";
+                nodes[node]['diskFree'] = Math.floor(diskFree / 1024 / 1024 / 1024) + "Gb";
+                
+                var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
+                nodes[node]['req'] = r.count;
+                nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
+                nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
+                nodes[node]['req15minRate'] = Math.floor(r['15minRate'] * 100) / 100;
+                nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
+                nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
+                nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
+            } else {
+              console.log("Skipping node " + node);
+            }
+          }
+        });
+        
         $scope.nodes = nodes;
         $scope.hosts = hosts;
         $scope.live_nodes = live_nodes;        
 
-        // console.log("Nodes=" + JSON.stringify($scope.nodes, undefined, 2));
+        console.log("Nodes=" + JSON.stringify($scope.nodes, undefined, 2));
         // console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
     });
 };                 
@@ -178,6 +225,28 @@ var treeSubController = function($scope, Zookeeper) {
 
     $scope.initTree();
 };
+
+/**
+ * Translates seconds into human readable format of seconds, minutes, hours, days, and years
+ * 
+ * @param  {number} seconds The number of seconds to be processed
+ * @return {string}         The phrase describing the the amount of time
+ */
+function secondsForHumans ( seconds ) {
+    var levels = [
+        [Math.floor(seconds / 31536000), 'y'],
+        [Math.floor((seconds % 31536000) / 86400), 'd'],
+        [Math.floor(((seconds % 31536000) % 86400) / 3600), 'h'],
+        [Math.floor((((seconds % 31536000) % 86400) % 3600) / 60), 'm']
+    ];
+    var returntext = '';
+
+    for (var i = 0, max = levels.length; i < max; i++) {
+        if ( levels[i][0] === 0 ) continue;
+        returntext += ' ' + levels[i][0] + levels[i][1];
+    }
+    return returntext.trim() === '' ? '0m' : returntext.trim();
+}
 
 var graphSubController = function ($scope, Zookeeper, isRadial) {
     $scope.showTree = false;

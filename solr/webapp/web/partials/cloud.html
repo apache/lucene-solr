@@ -48,19 +48,21 @@ limitations under the License.
 
     </div>
 
-    <div id="nodes-content" class="content clearfix" ng-show="showNodes">
+    <span id="nodes-content" class="content clearfix" ng-show="showNodes">
       <table id="nodes-table">
           <tr>
               <th>Node</th>
-              <th>Uptime</th>
+              <th>Uptime (jvm)</th>
               <th>Load</th>
               <th>CPU</th>
               <th>Heap</th>
               <th>Disk</th>
+              <th>Requests</th>
               <th>Collections</th>
               <th>Cores</th>
           </tr>
           <tr ng-if="nodes.length==0">
+              <td>NA</td>
               <td>NA</td>
               <td>NA</td>
               <td>NA</td>
@@ -76,19 +78,23 @@ limitations under the License.
                 <span class="node-spec">
                   <span title="{{n.system.system.uptime}}">{{n.system.system.name}} {{n.system.system.version}}</span> 
                   {{n.system.system.availableProcessors}}cpu 
-                  <span title="free: {{n.system.system.freePhysicalMemorySize}}">{{n.system.system.totalPhysicalMemorySize / 1024 / 1024 / 1024}}Gb</span>
+                  <span title="free: {{n.memFree}}">{{n.memTotal}}</span>
                   <span title="{{n.system.jvm.name}} {{n.system.jvm.version}}">Java {{n.system.jvm.spec.version}}</span>
                   <span title="{{n.system.lucene['solr-impl-version']}}">Solr {{n.system.lucene['solr-spec-version']}}</span>
-                </div>
+                </span>
               </td>
-              <td><div class="node-uptime">{{("" + (n.system.jvm.jmx.upTimeMS / 1000 / 60)).substr(0,5)}}m</div></td>
-              <td><div class="node-load">{{(n.system.system.systemLoadAverage + "").substr(0,5)}}</div></td>
-              <td><div class="node-cpu">{{(n.system.system.processCpuLoad + "").substr(0,5)}}</div></td>
+              <td><div class="node-uptime">{{n.jvmUptime}}</div></td>
+              <td><div class="node-load">{{n.loadAvg}}</div></td>
+              <td><div class="node-cpu">{{n.cpuPct}}</div></td>
               <td>
-                <div class="node-ram" title="total: {{n.system.jvm.memory.total}} free: {{n.system.jvm.memory.free}} used%: {{n.system.jvm.memory.raw['used%']}}">
-                  {{(n.system.jvm.memory.raw.used * 100 / n.system.jvm.memory.raw.total + "").substr(0,4)}}%</div>
+                <div class="node-ram" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
+                  {{n.heapUsedPct}}</div>
               </td>
-              <td><div class="node-disk">2G</div></td>
+              <td><div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
+                {{n.diskUsedPct}}</div></td>
+              <td><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}">
+                RPM: {{n.req1minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
+              </td>
               <td>
                 <div ng-repeat="c in n.collections">
                   {{ c }}

@@ -23,15 +23,12 @@ solrAdminServices.factory('System',
   }])
 .factory('SystemAll',
     ['$resource', function($resource) {
-      return $resource('admin/info/system', {"wt":"json", "node": "all", "_":Date.now()});
+      return $resource('admin/info/system', {"wt":"json", "nodes": "all", "_":Date.now()});
     }])
-.factory('SystemRemote', function($resource) {
-  return {
-    "info": function (nodeName) {
-      return $resource('admin/info/system', {"wt": "json", "node": nodeName, "_": Date.now()});
-    }
-  }
-})
+.factory('MetricsAll',
+    ['$resource', function($resource) {
+      return $resource('admin/metrics', {"wt":"json", "nodes": "all", "_":Date.now()});
+    }])
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',

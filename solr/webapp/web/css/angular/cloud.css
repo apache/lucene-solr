@@ -464,7 +464,11 @@ limitations under the License.
 {
   font-style: italic;
 }
-#content #cloud #nodes-content .node-uptime,
+#content #cloud #nodes-content .node-uptime
+{
+  font-weight: bolder;
+  font-size: 20px;
+}
 #content #cloud #nodes-content .node-load,
 #content #cloud #nodes-content .node-cpu,
 #content #cloud #nodes-content .node-ram,
