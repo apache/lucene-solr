@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
@@ -32,6 +33,7 @@ public class TransactionLogTest extends LuceneTestCase {
 
   @Test
   public void testBigLastAddSize() throws IOException {
+    SolrTestCaseJ4.assumeWorkingMockito();
     String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, 0);
     try (TransactionLog transactionLog = new TransactionLog(Files.createTempFile(tlogFileName, "").toFile(), new ArrayList<>())) {
       transactionLog.lastAddSize = 2000000000;
