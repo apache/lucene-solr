@@ -215,7 +215,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                 live_nodes[data.tree[0].children[c].data.title] = true;
             }
 
-            var params = {view: "nodes"};
+            var params = {view: "graph"};
             if ($scope.rows) {
                 params.start = $scope.pos;
                 params.rows = $scope.rows;
