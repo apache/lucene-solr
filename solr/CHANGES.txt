@@ -182,8 +182,10 @@ Bug Fixes
 
 * SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
 
-
 * SOLR-12253: Remove optimize button from the core admin page (Erick Erickson)
+
+* SOLR-11833: Allow searchRate trigger to delete replicas. Improve configurability of the trigger by specifying
+  upper / lower thresholds and respective actions (ab)
 
 Optimizations
 ----------------------

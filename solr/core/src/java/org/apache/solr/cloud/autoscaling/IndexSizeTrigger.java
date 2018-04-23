@@ -143,11 +143,11 @@ public class IndexSizeTrigger extends TriggerBase {
     String belowOpStr = String.valueOf(properties.getOrDefault(BELOW_OP_PROP, CollectionParams.CollectionAction.MERGESHARDS.toLower()));
     aboveOp = CollectionParams.CollectionAction.get(aboveOpStr);
     if (aboveOp == null) {
-      throw new TriggerValidationException(getName(), ABOVE_OP_PROP, "unrecognized value of " + ABOVE_OP_PROP + ": '" + aboveOpStr + "'");
+      throw new TriggerValidationException(getName(), ABOVE_OP_PROP, "unrecognized value of: '" + aboveOpStr + "'");
     }
     belowOp = CollectionParams.CollectionAction.get(belowOpStr);
     if (belowOp == null) {
-      throw new TriggerValidationException(getName(), BELOW_OP_PROP, "unrecognized value of " + BELOW_OP_PROP + ": '" + belowOpStr + "'");
+      throw new TriggerValidationException(getName(), BELOW_OP_PROP, "unrecognized value of: '" + belowOpStr + "'");
     }
   }
 
