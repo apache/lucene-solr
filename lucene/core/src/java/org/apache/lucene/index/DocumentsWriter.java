@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToLongFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
@@ -140,40 +141,26 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
   }
   
-  synchronized long deleteQueries(final Query... queries) throws IOException {
-    // TODO why is this synchronized?
-    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    long seqNo = deleteQueue.addDelete(queries);
-    flushControl.doOnDelete();
-    lastSeqNo = Math.max(lastSeqNo, seqNo);
-    if (applyAllDeletes(deleteQueue)) {
-      seqNo = -seqNo;
-    }
-    return seqNo;
+  long deleteQueries(final Query... queries) throws IOException {
+    return applyDeleteOrUpdate(q -> q.addDelete(queries));
   }
 
-  synchronized void setLastSeqNo(long seqNo) {
+  void setLastSeqNo(long seqNo) {
     lastSeqNo = seqNo;
   }
 
-  // TODO: we could check w/ FreqProxTermsWriter: if the
-  // term doesn't exist, don't bother buffering into the
-  // per-DWPT map (but still must go into the global map)
-  synchronized long deleteTerms(final Term... terms) throws IOException {
-    // TODO why is this synchronized?
-    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    long seqNo = deleteQueue.addDelete(terms);
-    flushControl.doOnDelete();
-    lastSeqNo = Math.max(lastSeqNo, seqNo);
-    if (applyAllDeletes(deleteQueue)) {
-      seqNo = -seqNo;
-    }
-    return seqNo;
+  long deleteTerms(final Term... terms) throws IOException {
+    return applyDeleteOrUpdate(q -> q.addDelete(terms));
   }
 
-  synchronized long updateDocValues(DocValuesUpdate... updates) throws IOException {
+  long updateDocValues(DocValuesUpdate... updates) throws IOException {
+    return applyDeleteOrUpdate(q -> q.addDocValuesUpdates(updates));
+  }
+
+  private synchronized long applyDeleteOrUpdate(ToLongFunction<DocumentsWriterDeleteQueue> function) throws IOException {
+    // TODO why is this synchronized?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    long seqNo = deleteQueue.addDocValuesUpdates(updates);
+    long seqNo = function.applyAsLong(deleteQueue);
     flushControl.doOnDelete();
     lastSeqNo = Math.max(lastSeqNo, seqNo);
     if (applyAllDeletes(deleteQueue)) {
@@ -182,10 +169,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
   
-  DocumentsWriterDeleteQueue currentDeleteSession() {
-    return deleteQueue;
-  }
-
   /** If buffered deletes are using too much heap, resolve them and write disk and return true. */
   private boolean applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
     if (flushControl.getAndResetApplyAllDeletes()) {
