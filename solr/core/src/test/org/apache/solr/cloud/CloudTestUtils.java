@@ -88,9 +88,11 @@ public class CloudTestUtils {
                                   final CollectionStatePredicate predicate) throws InterruptedException, TimeoutException, IOException {
     TimeOut timeout = new TimeOut(wait, unit, cloudManager.getTimeSource());
     long timeWarn = timeout.timeLeft(TimeUnit.MILLISECONDS) / 4;
+    ClusterState state = null;
+    DocCollection coll = null;
     while (!timeout.hasTimedOut()) {
-      ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
-      DocCollection coll = state.getCollectionOrNull(collection);
+      state = cloudManager.getClusterStateProvider().getClusterState();
+      coll = state.getCollectionOrNull(collection);
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?
@@ -106,7 +108,7 @@ public class CloudTestUtils {
         log.trace("-- still not matching predicate: {}", state);
       }
     }
-    throw new TimeoutException();
+    throw new TimeoutException("last state: " + coll);
   }
 
   /**

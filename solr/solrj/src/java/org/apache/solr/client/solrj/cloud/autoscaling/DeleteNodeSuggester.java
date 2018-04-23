@@ -16,34 +16,31 @@
  */
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
-import java.util.Collections;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.util.Pair;
 
 /**
- * This suggester produces a SPLITSHARD request using provided {@link org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint#COLL_SHARD} value.
+ * This suggester produces a DELETENODE request using provided {@link org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint#SRC_NODE}.
  */
-class SplitShardSuggester extends Suggester {
+class DeleteNodeSuggester extends Suggester {
 
   @Override
   public CollectionParams.CollectionAction getAction() {
-    return CollectionParams.CollectionAction.SPLITSHARD;
+    return CollectionParams.CollectionAction.DELETENODE;
   }
 
   @Override
   SolrRequest init() {
-    Set<Pair<String, String>> shards = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
-    if (shards.isEmpty()) {
-      throw new RuntimeException("split-shard requires 'collection' and 'shard'");
+    Set<String> srcNodes = (Set<String>) hints.get(Hint.SRC_NODE);
+    if (srcNodes.isEmpty()) {
+      throw new RuntimeException("delete-node requires 'src_node' hint");
     }
-    if (shards.size() > 1) {
-      throw new RuntimeException("split-shard requires exactly one pair of 'collection' and 'shard'");
+    if (srcNodes.size() > 1) {
+      throw new RuntimeException("delete-node requires exactly one 'src_node' hint");
     }
-    Pair<String, String> collShard = shards.iterator().next();
-    return CollectionAdminRequest.splitShard(collShard.first()).setShardName(collShard.second());
+    return CollectionAdminRequest.deleteNode(srcNodes.iterator().next());
   }
 }

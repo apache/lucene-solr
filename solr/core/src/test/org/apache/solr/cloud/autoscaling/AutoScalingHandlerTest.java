@@ -475,7 +475,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'event' : 'searchRate'," +
         "'waitFor' : '10m'," +
         "'enabled' : true," +
-        "'rate': 'foo'," +
+        "'aboveRate': 'foo'," +
         "'actions' : [" +
         "{" +
         "'name' : 'compute_plan'," +
@@ -489,7 +489,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
-          false, "error/details[0]/errorMessages[0]")).contains("rate=Invalid 'rate' configuration value: 'foo'"));
+          false, "error/details[0]/errorMessages[0]")).contains("aboveRate=Invalid configuration value: 'foo'"));
     }
 
     // unknown trigger action properties
