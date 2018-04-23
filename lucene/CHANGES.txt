@@ -59,6 +59,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8266: Detect bogus tiles when creating a standard polygon
+  and throw a TileException. (Ignacio Vera)
+
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
   GeoStandardCircle when it covers the whole world. (Ignacio Vera)
 
