@@ -274,7 +274,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   final AtomicReference<Throwable> tragedy = new AtomicReference<>(null);
 
   private final Directory directoryOrig;       // original user directory
-  final Directory directory;           // wrapped with additional checks
+  private final Directory directory;           // wrapped with additional checks
   private final Analyzer analyzer;    // how to analyze text
 
   private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed
@@ -360,7 +360,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     @Override
     public void afterSegmentsFlushed() throws IOException {
       try {
-        purge(false);
+        publishFlushedSegments(false);
       } finally {
         if (false) {
           maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
@@ -377,7 +377,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     public void onDeletesApplied() {
       eventQueue.add(w -> {
           try {
-            w.purge(true);
+            w.publishFlushedSegments(true);
           } finally {
             flushCount.incrementAndGet();
           }
@@ -387,7 +387,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     @Override
     public void onTicketBacklog() {
-      eventQueue.add(w -> w.purge(true));
+      eventQueue.add(w -> w.publishFlushedSegments(true));
     }
   };
 
@@ -485,7 +485,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         try {
           // TODO: should we somehow make this available in the returned NRT reader?
-          long seqNo = docWriter.flushAllThreads(this);
+          long seqNo = docWriter.flushAllThreads();
           if (seqNo < 0) {
             anyChanges = true;
             seqNo = -seqNo;
@@ -497,7 +497,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // if we flushed anything.
             flushCount.incrementAndGet();
           }
-
+          publishFlushedSegments(true);
           processEvents(false);
 
           if (applyAllDeletes) {
@@ -534,7 +534,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           success = true;
         } finally {
           // Done: finish the full flush!
-          docWriter.finishFullFlush(this, success);
+          assert holdsFullFlushLock();
+          docWriter.finishFullFlush(success);
           if (success) {
             processEvents(false);
             doAfterFlush();
@@ -2209,10 +2210,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // set it to false before calling rollbackInternal
       mergeScheduler.close();
 
-      docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
-      docWriter.abort(this); // don't sync on IW here
+      docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes
+      assert !Thread.holdsLock(this) : "IndexWriter lock should never be hold when aborting";
+      docWriter.abort(); // don't sync on IW here
       docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
-      purge(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
+      publishFlushedSegments(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
       synchronized (this) {
 
         if (pendingCommit != null) {
@@ -2354,7 +2356,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     try {
       synchronized (fullFlushLock) {
-        try (Closeable finalizer = docWriter.lockAndAbortAll(this)) {
+        try (Closeable finalizer = docWriter.lockAndAbortAll()) {
           processEvents(false);
           synchronized (this) {
             try {
@@ -2501,19 +2503,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     segmentInfos.changed();
   }
 
-  synchronized void publishFrozenUpdates(FrozenBufferedUpdates packet) throws IOException {
+  synchronized long publishFrozenUpdates(FrozenBufferedUpdates packet) {
     assert packet != null && packet.any();
-    bufferedUpdatesStream.push(packet);
-    eventQueue.add(new ResolveUpdatesEvent(packet));
+    long nextGen = bufferedUpdatesStream.push(packet);
+    // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
+    eventQueue.add(w -> {
+      try {
+        packet.apply(w);
+      } catch (Throwable t) {
+        try {
+          w.onTragicEvent(t, "applyUpdatesPacket");
+        } catch (Throwable t1) {
+          t.addSuppressed(t1);
+        }
+        throw t;
+      }
+      w.flushDeletesCount.incrementAndGet();
+    });
+    return nextGen;
   }
 
   /**
    * Atomically adds the segment private delete packet and publishes the flushed
    * segments SegmentInfo to the index writer.
    */
-  synchronized void publishFlushedSegment(SegmentCommitInfo newSegment,
-                                          FieldInfos fieldInfos, FrozenBufferedUpdates packet, FrozenBufferedUpdates globalPacket,
-                                          Sorter.DocMap sortMap) throws IOException {
+  private synchronized void publishFlushedSegment(SegmentCommitInfo newSegment, FieldInfos fieldInfos,
+                                                  FrozenBufferedUpdates packet, FrozenBufferedUpdates globalPacket,
+                                                  Sorter.DocMap sortMap) throws IOException {
     boolean published = false;
     try {
       // Lock order IW -> BDS
@@ -2524,20 +2540,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       if (globalPacket != null && globalPacket.any()) {
-        // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
-        bufferedUpdatesStream.push(globalPacket);
-        eventQueue.add(new ResolveUpdatesEvent(globalPacket));
+        publishFrozenUpdates(globalPacket);
       }
 
       // Publishing the segment must be sync'd on IW -> BDS to make the sure
       // that no merge prunes away the seg. private delete packet
       final long nextGen;
       if (packet != null && packet.any()) {
-        nextGen = bufferedUpdatesStream.push(packet);
-
-        // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
-        eventQueue.add(new ResolveUpdatesEvent(packet));
-
+        nextGen = publishFrozenUpdates(packet);
       } else {
         // Since we don't have a delete packet to apply we can get a new
         // generation right away
@@ -3107,7 +3117,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           boolean flushSuccess = false;
           boolean success = false;
           try {
-            seqNo = docWriter.flushAllThreads(this);
+            seqNo = docWriter.flushAllThreads();
             if (seqNo < 0) {
               anyChanges = true;
               seqNo = -seqNo;
@@ -3117,7 +3127,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // if we flushed anything.
               flushCount.incrementAndGet();
             }
-
+            publishFlushedSegments(true);
             // cannot pass triggerMerges=true here else it can lead to deadlock:
             processEvents(false);
             
@@ -3171,8 +3181,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                 infoStream.message("IW", "hit exception during prepareCommit");
               }
             }
+            assert holdsFullFlushLock();
             // Done: finish the full flush!
-            docWriter.finishFullFlush(this, flushSuccess);
+            docWriter.finishFullFlush(flushSuccess);
             doAfterFlush();
           }
         }
@@ -3468,7 +3479,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         boolean flushSuccess = false;
         try {
-          long seqNo = docWriter.flushAllThreads(this);
+          long seqNo = docWriter.flushAllThreads();
           if (seqNo < 0) {
             seqNo = -seqNo;
             anyChanges = true;
@@ -3479,9 +3490,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // flushCount is incremented in flushAllThreads
             flushCount.incrementAndGet();
           }
+          publishFlushedSegments(true);
           flushSuccess = true;
         } finally {
-          docWriter.finishFullFlush(this, flushSuccess);
+          assert holdsFullFlushLock();
+          docWriter.finishFullFlush(flushSuccess);
           processEvents(false);
         }
       }
@@ -4850,8 +4863,40 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  private int purge(boolean forced) throws IOException {
-    return docWriter.purgeBuffer(this, forced);
+  /**
+   * Publishes the flushed segment, segment-private deletes (if any) and its
+   * associated global delete (if present) to IndexWriter.  The actual
+   * publishing operation is synced on {@code IW -> BDS} so that the {@link SegmentInfo}'s
+   * delete generation is always GlobalPacket_deleteGeneration + 1
+   * @param forced if <code>true</code> this call will block on the ticket queue if the lock is held by another thread.
+   *               if <code>false</code> the call will try to acquire the queue lock and exits if it's held by another thread.
+   *
+   */
+  void publishFlushedSegments(boolean forced) throws IOException {
+    docWriter.purgeFlushTickets(forced, ticket -> {
+      DocumentsWriterPerThread.FlushedSegment newSegment = ticket.getFlushedSegment();
+      FrozenBufferedUpdates bufferedUpdates = ticket.getFrozenUpdates();
+      ticket.markPublished();
+      if (newSegment == null) { // this is a flushed global deletes package - not a segments
+        if (bufferedUpdates != null && bufferedUpdates.any()) { // TODO why can this be null?
+          publishFrozenUpdates(bufferedUpdates);
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "flush: push buffered updates: " + bufferedUpdates);
+          }
+        }
+      } else {
+        assert newSegment.segmentInfo != null;
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "publishFlushedSegment seg-private updates=" + newSegment.segmentUpdates);
+        }
+        if (newSegment.segmentUpdates != null && infoStream.isEnabled("DW")) {
+          infoStream.message("IW", "flush: push buffered seg private updates: " + newSegment.segmentUpdates);
+        }
+        // now publish!
+        publishFlushedSegment(newSegment.segmentInfo, newSegment.fieldInfos, newSegment.segmentUpdates,
+            bufferedUpdates, newSegment.sortMap);
+      }
+    });
   }
 
   /** Record that the files referenced by this {@link SegmentInfos} are still in use.
@@ -4998,30 +5043,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   ReadersAndUpdates getPooledInstance(SegmentCommitInfo info, boolean create) {
     ensureOpen(false);
     return readerPool.get(info, create);
-  }
-
-  private static final class ResolveUpdatesEvent implements Event {
-
-    private final FrozenBufferedUpdates packet;
-
-    ResolveUpdatesEvent(FrozenBufferedUpdates packet) {
-      this.packet = packet;
-    }
-
-    @Override
-    public void process(IndexWriter writer) throws IOException {
-      try {
-        packet.apply(writer);
-      } catch (Throwable t) {
-        try {
-          writer.onTragicEvent(t, "applyUpdatesPacket");
-        } catch (Throwable t1) {
-          t.addSuppressed(t1);
-        }
-        throw t;
-      }
-      writer.flushDeletesCount.incrementAndGet();
-    }
   }
 
   void finished(FrozenBufferedUpdates packet) {

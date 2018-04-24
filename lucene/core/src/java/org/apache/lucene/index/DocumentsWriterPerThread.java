@@ -46,7 +46,7 @@ import org.apache.lucene.util.Version;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
-class DocumentsWriterPerThread {
+final class DocumentsWriterPerThread {
 
   /**
    * The IndexingChain must define the {@link #getChain(DocumentsWriterPerThread)} method
@@ -102,7 +102,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  static class FlushedSegment {
+  static final class FlushedSegment {
     final SegmentCommitInfo segmentInfo;
     final FieldInfos fieldInfos;
     final FrozenBufferedUpdates segmentUpdates;
@@ -152,7 +152,6 @@ class DocumentsWriterPerThread {
   final DocConsumer consumer;
   final Counter bytesUsed;
   
-  SegmentWriteState flushState;
   // Updates for our still-in-RAM (to be flushed next) segment
   final BufferedUpdates pendingUpdates;
   final SegmentInfo segmentInfo;     // Current segment we are working on
