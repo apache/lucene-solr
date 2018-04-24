@@ -221,7 +221,7 @@ public class ReplicaMutator {
     //collection does not yet exist, create placeholders if num shards is specified
     boolean collectionExists = prevState.hasCollection(cName);
     if (!collectionExists && numShards != null) {
-      ClusterStateMutator.getShardNames(numShards, shardNames);
+      ClusterStateMutator.addShardNames(numShards, shardNames);
       Map<String, Object> createMsg = Utils.makeMap(NAME, cName);
       createMsg.putAll(message.getProperties());
       writeCommand = new ClusterStateMutator(dataProvider).createCollection(prevState, new ZkNodeProps(createMsg));
