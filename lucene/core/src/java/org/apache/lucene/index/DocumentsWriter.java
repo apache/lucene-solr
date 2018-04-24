@@ -31,13 +31,13 @@ import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -190,12 +190,13 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
     return false;
   }
-  
-  int purgeBuffer(IndexWriter writer, boolean forced) throws IOException {
+
+  void purgeFlushTickets(boolean forced, IOUtils.IOConsumer<DocumentsWriterFlushQueue.FlushTicket> consumer)
+      throws IOException {
     if (forced) {
-      return ticketQueue.forcePurge(writer);
+      ticketQueue.forcePurge(consumer);
     } else {
-      return ticketQueue.tryPurge(writer);
+      ticketQueue.tryPurge(consumer);
     }
   }
 
@@ -206,7 +207,7 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   private void ensureOpen() throws AlreadyClosedException {
     if (closed) {
-      throw new AlreadyClosedException("this IndexWriter is closed");
+      throw new AlreadyClosedException("this DocumentsWriter is closed");
     }
   }
 
@@ -214,8 +215,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  synchronized void abort(IndexWriter writer) throws IOException {
-    assert !Thread.holdsLock(writer) : "IndexWriter lock should never be hold when aborting";
+  synchronized void abort() throws IOException {
     boolean success = false;
     try {
       deleteQueue.clear();
@@ -260,17 +260,19 @@ final class DocumentsWriter implements Closeable, Accountable {
   /** Locks all currently active DWPT and aborts them.
    *  The returned Closeable should be closed once the locks for the aborted
    *  DWPTs can be released. */
-  synchronized Closeable lockAndAbortAll(IndexWriter indexWriter) throws IOException {
-    assert indexWriter.holdsFullFlushLock();
+  synchronized Closeable lockAndAbortAll() throws IOException {
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "lockAndAbortAll");
     }
     // Make sure we move all pending tickets into the flush queue:
-    ticketQueue.forcePurge(indexWriter);
+    ticketQueue.forcePurge(ticket -> {
+      if (ticket.getFlushedSegment() != null) {
+        pendingNumDocs.addAndGet(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
+      }
+    });
     List<ThreadState> threadStates = new ArrayList<>();
     AtomicBoolean released = new AtomicBoolean(false);
     final Closeable release = () -> {
-      assert indexWriter.holdsFullFlushLock();
       if (released.compareAndSet(false, true)) { // only once
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", "unlockAllAbortedThread");
@@ -519,7 +521,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     while (flushingDWPT != null) {
       hasEvents = true;
       boolean success = false;
-      SegmentFlushTicket ticket = null;
+      DocumentsWriterFlushQueue.FlushTicket ticket = null;
       try {
         assert currentFullFlushDelQueue == null
             || flushingDWPT.deleteQueue == currentFullFlushDelQueue : "expected: "
@@ -618,7 +620,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   interface FlushNotifications { // TODO maybe we find a better name for this?
 
     /**
-     * Called when files were written to disk that are not used anymore. It's the implementations responsibilty
+     * Called when files were written to disk that are not used anymore. It's the implementation's responsibility
      * to clean these files up
      */
     void deleteUnusedFiles(Collection<String> files);
@@ -648,9 +650,9 @@ final class DocumentsWriter implements Closeable, Accountable {
      * that tries to publish flushed segments but can't keep up with the other threads flushing new segments.
      * This likely requires other thread to forcefully purge the buffer to help publishing. This
      * can't be done in-place since we might hold index writer locks when this is called. The caller must ensure
-     * that the purge happens without an index writer lock hold
+     * that the purge happens without an index writer lock being held.
      *
-     * @see DocumentsWriter#purgeBuffer(IndexWriter, boolean)
+     * @see DocumentsWriter#purgeFlushTickets(boolean, IOUtils.IOConsumer)
      */
     void onTicketBacklog();
   }
@@ -677,7 +679,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    * two stage operation; the caller must ensure (in try/finally) that finishFlush
    * is called after this method, to release the flush lock in DWFlushControl
    */
-  long flushAllThreads(IndexWriter writer)
+  long flushAllThreads()
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
@@ -713,7 +715,6 @@ final class DocumentsWriter implements Closeable, Accountable {
         }
         ticketQueue.addDeletes(flushingDeleteQueue);
       }
-      ticketQueue.forcePurge(writer);
       // we can't assert that we don't have any tickets in teh queue since we might add a DocumentsWriterDeleteQueue
       // concurrently if we have very small ram buffers this happens quite frequently
       assert !flushingDeleteQueue.anyChanges();
@@ -727,8 +728,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
   
-  void finishFullFlush(IndexWriter indexWriter, boolean success) {
-    assert indexWriter.holdsFullFlushLock();
+  void finishFullFlush(boolean success) {
     try {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", Thread.currentThread().getName() + " finishFullFlush success=" + success);
@@ -739,7 +739,6 @@ final class DocumentsWriter implements Closeable, Accountable {
         flushControl.finishFullFlush();
       } else {
         flushControl.abortFullFlushes();
-
       }
     } finally {
       pendingChangesInCurrentFullFlush = false;
