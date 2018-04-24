@@ -16,8 +16,8 @@
 */
 
 import { Injectable} from '@angular/core';
-import { Collection } from './collections/collections.component';
-import { Core } from './cores/cores.component';
+import { CollectionsService } from './collections.service';
+import { CoresService } from './cores.service';
 
 @Injectable()
 export class SharedService {
@@ -37,27 +37,43 @@ export class SharedService {
     showPing=true;
     pingMS = 1234567890;
 
-    addCollection(c: Collection) {
-      this.collections.push(c.name);
-      this.collections.sort();
+    constructor(private collectionsService: CollectionsService, private coresService: CoresService) {}
+
+    refreshCollections() {
+      this.collectionsService.listCollections().subscribe(c => {
+        this.collections = c;
+        this.collections.sort();
+      });
     }
 
-    addCore(c: Core) {
-      this.cores.push(c.name);
-      this.cores.sort();
+    refreshCores() {
+      this.coresService.listCores().subscribe(c => {
+        this.cores = c;
+        this.cores.sort();
+      });
     }
 
-    setCollections(cArr: String[]) {
-      this.collections = cArr;
-      this.collections.sort();
+    clearErrors() {
+      this.exceptions = [];
     }
 
-    setCores(cArr: String[]) {
-      this.cores = cArr;
-      this.cores.sort();
+    showError(e: any) {
+      if(e.error) {
+        if(e.error.exception) {
+            if(e.error.exception.msg) {
+              this.exceptions.push(e.error.exception.msg);
+            } else {
+              this.exceptions.push(JSON.stringify(e.error.exception));
+            }
+        } else if(e.error.msg) {
+          this.exceptions.push(e.error.msg);
+        } else {
+            this.exceptions.push(JSON.stringify(e.error));
+        }
+      } else {
+        this.exceptions.push(JSON.stringify(e));
+      }
     }
-
-
 }
 
 export class InitFailure {

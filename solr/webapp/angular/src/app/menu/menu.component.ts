@@ -18,6 +18,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SharedService } from '../shared.service';
 import { CollectionsService } from '../collections.service';
+import { CoresService } from '../cores.service';
 import {Router} from '@angular/router';
 
 @Component({
@@ -27,21 +28,33 @@ import {Router} from '@angular/router';
 export class MenuComponent implements OnInit {
   sharedService: SharedService
 
-  constructor(sharedService: SharedService, private collectionsService: CollectionsService, private router: Router) {
+  constructor(
+    sharedService: SharedService,
+    private collectionsService: CollectionsService,
+    private coresService: CoresService,
+    private router: Router) {
     this.sharedService = sharedService;
   }
 
   ngOnInit() {
-    this.collectionsService.listCollections().subscribe(cArr => {
-      this.sharedService.setCollections(cArr);
-    });
+    this.sharedService.refreshCollections();
+    this.sharedService.refreshCores();    
   }
 
   showCollection(c: String) {
-    this.router.navigate(['collections', c]);
+    this.router.navigate(['collections', c, 'overview']);
+  }
+
+  showCore(c: String) {
+    this.router.navigate(['cores', c, 'overview']);
   }
 
   ping() {
     alert("PING");
+  }
+
+  menuClick() {
+    this.sharedService.currentCollection = null;
+    this.sharedService.currentCore = null;
   }
 }

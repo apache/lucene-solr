@@ -23,7 +23,6 @@ import { of } from 'rxjs/observable/of';
 import { catchError, map, tap } from 'rxjs/operators';
 
 import { ListCollections } from './collections';
-import { Collection } from './collections/collections.component';
 
 @Injectable()
 export class CollectionsService {
@@ -37,19 +36,75 @@ export class CollectionsService {
     return this.http.get<ListCollections>(this.collectionsUrl + "?action=LIST").pipe(map(lc => lc.collections));
   }
 
+  collectionInfo(collectionName: string): Observable<Collection> {
+    const params: HttpParams = new HttpParams().set('action', 'CLUSTERSTATUS');
+    return this.http.get<HttpResponse<any>>(this.collectionsUrl, { observe: 'response', params: params }).pipe(map(cs => {
+      let c = new Collection();
+      const body: any = cs.body;
+      const cluster: any = body.cluster;
+      const collectionInfo = cluster.collections[collectionName];
+      const shards = collectionInfo.shards;
+      let numShards = 0;
+      for(let k in shards) {
+        numShards++;
+      }
+      c.numShards = numShards;
+      c.configName = collectionInfo.configName;
+      c.replicationFactor = collectionInfo.replicationFactor;
+      c.maxShardsPerNode = collectionInfo.maxShardsPerNode;
+      c.routerName = collectionInfo.router.name;
+      c.routerField = collectionInfo.router.field;
+      c.autoAddReplicas = collectionInfo.autoAddReplicas;
+      return c;
+    }));
+  }
+
   addCollection(coll: Collection): Observable<Collection> {
     const params: HttpParams = new HttpParams()
       .set('action', 'CREATE')
       .set('name', coll.name)
       .set('router.name', coll.routerName)
-      .set('numShards', coll.numShards.toString())
-      .set('collection.configName', coll.configName.toString())
-      .set('replicationFactor', coll.replicationFactor.toString())
-      .set('maxShardsPerNode', coll.maxShardsPerNode.toString())
-      .set('autoAddReplicas', coll.autoAddReplicas.toString())
+      .set('numShards', coll.numShards ? coll.numShards.toString() : "1")
+      .set('collection.configName', coll.configName)
+      .set('replicationFactor', coll.replicationFactor ? coll.replicationFactor.toString() : "1")
+      .set('maxShardsPerNode', coll.maxShardsPerNode ? coll.maxShardsPerNode.toString() : "1")
+      .set('autoAddReplicas', coll.autoAddReplicas ? coll.autoAddReplicas.toString() : "false")
       .set('shards', coll.shards)
       .set('router.field', coll.routerField);
     return this.http.post<Collection>(this.collectionsUrl, coll, { params: params });
   }
+}
+export class Collection {
+  name: string;
+  configName: string;
+  numShards: number;
+  replicationFactor: number;
+  routerField: string;
+  maxShardsPerNode: number;
+  shards: string;
+  routerName: string;
+  autoAddReplicas: boolean;
+  shardList: Shard[];
+}
 
+export class Shard {
+  name: string;
+  show: boolean;
+  range: string;
+  state: string;
+  showRemove: boolean;
+  replicas: Replica[];
+  addReplica: boolean;
+  replicaNodeName: String;
+}
+
+export class Replica {
+  name: string;
+  show: boolean;
+  core: string;
+  base_url: string;
+  node_name: string;
+  state: string;
+  leader: boolean;
+  deleted: boolean;
 }

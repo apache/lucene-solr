@@ -17,7 +17,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { CollectionsService } from '../collections.service';
+import { CollectionsService, Collection, Shard, Replica } from '../collections.service';
 import { ZookeeperService } from '../zookeeper.service';
 import { SharedService, InitFailure } from '../shared.service';
 
@@ -27,10 +27,9 @@ import { SharedService, InitFailure } from '../shared.service';
 })
 export class CollectionsComponent implements OnInit {
   sharedService: SharedService;
-  collections: String[];
   configs: String[];
-
   newCollection: Collection = null;
+  collection: Collection = null;
   showAdd = false;
   showDelete = false;
   showAdvanced = false;
@@ -53,12 +52,12 @@ export class CollectionsComponent implements OnInit {
   constructor(private route: ActivatedRoute,
     sharedService: SharedService,
     private collectionsService: CollectionsService,
-    private zookeeperService: ZookeeperService) { }
+    private zookeeperService: ZookeeperService) {
+      this.sharedService = sharedService;
+    }
 
   refresh() {
-    this.collectionsService.listCollections().subscribe(c => {
-      this.collections = c;
-    });
+    this.sharedService.refreshCollections();
     this.zookeeperService.listConfigsets().subscribe(c => {
       this.configs = c;
     });
@@ -68,13 +67,18 @@ export class CollectionsComponent implements OnInit {
     this.route.params.subscribe(params => {
       const collectionName = params['name'];
       if (collectionName !== undefined) {
-        alert("name: " + collectionName);
+        this.sharedService.loaded = false;
+        this.collectionsService.collectionInfo(collectionName).subscribe(c => {
+          this.collection = c;
+          this.sharedService.loaded = true;
+        });
       }
     });
     this.refresh();
   }
 
   showAddCollection() {
+    this.addMessage = null;
     this.newCollection = new Collection();
     this.newCollection.numShards = 1;
     this.newCollection.replicationFactor = 1;
@@ -90,18 +94,22 @@ export class CollectionsComponent implements OnInit {
   }
 
   addCollection() {
+    this.sharedService.clearErrors();
     if (!this.newCollection.name) {
       this.addMessage = "Please provide a collection name";
     } else {
       this.sharedService.loaded = false;
       this.collectionsService.addCollection(this.newCollection).subscribe(c => {
-        this.sharedService.addCollection(c);
+        this.sharedService.refreshCollections();
         this.newCollection = null;
         this.showAdd = false;
         this.sharedService.loaded = true;
-      });
-      this.newCollection = null;
-      this.showAdd = false;
+        this.newCollection = null;
+        this.showAdd = false;
+      }, (error => {
+        this.sharedService.showError(error);
+        this.sharedService.loaded = true;
+      }));
     }
   }
 
@@ -169,39 +177,4 @@ export class CollectionsComponent implements OnInit {
   deleteShard(shard: Shard) {
 
   }
-}
-
-export class Collection {
-  name: string;
-  configName: string;
-  numShards: number;
-  replicationFactor: number;
-  routerField: string;
-  maxShardsPerNode: number;
-  shards: string;
-  routerName: string;
-  autoAddReplicas: boolean;
-  shardList: Shard[];
-}
-
-export class Shard {
-  name: string;
-  show: boolean;
-  range: string;
-  state: string;
-  showRemove: boolean;
-  replicas: Replica[];
-  addReplica: boolean;
-  replicaNodeName: String;
-}
-
-export class Replica {
-  name: string;
-  show: boolean;
-  core: string;
-  base_url: string;
-  node_name: string;
-  state: string;
-  leader: boolean;
-  deleted: boolean;
 }

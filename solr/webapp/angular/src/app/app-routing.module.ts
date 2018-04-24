@@ -27,9 +27,13 @@ import { FilesComponent } from './files/files.component';
 import { QueryComponent } from './query/query.component';
 import { StreamComponent } from './stream/stream.component';
 import { SchemaComponent } from './schema/schema.component';
+import { PluginsComponent } from './plugins/plugins.component';
+import { ReplicationComponent } from './replication/replication.component';
+import { SegmentsComponent } from './segments/segments.component';
 
 const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
+  { path: 'collections', component: CollectionsComponent },
   { path: 'collections/:name', component: CollectionsComponent },
   { path: 'collections/:name/overview', component: CollectionsComponent },
   { path: 'collections/:name/analysis', component: AnalysisComponent },
@@ -39,8 +43,16 @@ const routes: Routes = [
   { path: 'collections/:name/query', component: QueryComponent },
   { path: 'collections/:name/stream', component: StreamComponent },
   { path: 'collections/:name/schema', component: SchemaComponent },
-  { path: 'collections', component: CollectionsComponent },
   { path: 'cores', component: CoresComponent },
+  { path: 'cores/:name/overview', component: CoresComponent },
+  { path: 'cores/:name/analysis', component: AnalysisComponent },
+  { path: 'cores/:name/dataimport', component: DihComponent },
+  { path: 'cores/:name/documents', component: DocumentsComponent },
+  { path: 'cores/:name/plugins', component: PluginsComponent },
+  { path: 'cores/:name/query', component: QueryComponent },
+  { path: 'cores/:name/replication', component: ReplicationComponent },
+  { path: 'cores/:name/schema', component: SchemaComponent },
+  { path: 'cores/:name/segments', component: SegmentsComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'prefix' },
 ];
 

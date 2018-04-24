@@ -26,6 +26,7 @@ import {AppComponent} from './app.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { SystemInfoService } from './systeminfo.service';
 import { CollectionsService } from './collections.service';
+import { CoresService } from './cores.service';
 import { ZookeeperService } from './zookeeper.service';
 import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -39,6 +40,9 @@ import { FilesComponent } from './files/files.component';
 import { QueryComponent } from './query/query.component';
 import { StreamComponent } from './stream/stream.component';
 import { SchemaComponent } from './schema/schema.component';
+import { PluginsComponent } from './plugins/plugins.component';
+import { ReplicationComponent } from './replication/replication.component';
+import { SegmentsComponent } from './segments/segments.component';
 
 @NgModule({
   declarations: [
@@ -55,7 +59,10 @@ import { SchemaComponent } from './schema/schema.component';
     FilesComponent,
     QueryComponent,
     StreamComponent,
-    SchemaComponent
+    SchemaComponent,
+    PluginsComponent,
+    ReplicationComponent,
+    SegmentsComponent
   ],
   imports: [
     BrowserModule,
@@ -68,6 +75,7 @@ import { SchemaComponent } from './schema/schema.component';
     SharedService,
     SystemInfoService,
     CollectionsService,
+    CoresService,
     ZookeeperService
   ],
   bootstrap: [AppComponent]

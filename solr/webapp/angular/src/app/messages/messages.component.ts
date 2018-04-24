@@ -15,17 +15,26 @@
  limitations under the License.
 */
 
-import {Component} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { SharedService } from '../shared.service';
+import { Router, NavigationEnd } from '@angular/router';
 
 @Component({
   selector: 'app-messages',
   templateUrl: './messages.component.html'
 })
-export class MessagesComponent {
+export class MessagesComponent implements OnInit {
   sharedService: SharedService
 
-  constructor(sharedService: SharedService) {
+  constructor(sharedService: SharedService, private router: Router) {
     this.sharedService = sharedService;
+  }
+  ngOnInit() {
+    this.router.events
+      .subscribe((event) => {
+        if (event instanceof NavigationEnd) {
+          this.sharedService.clearErrors();
+        }
+      });
   }
 }
