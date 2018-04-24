@@ -36,7 +36,7 @@ Currently the following event types (and corresponding trigger implementations) 
 * `metric`: generated when the configured metric crosses a configured lower or upper threshold value
 * `indexSize`: generated when a shard size (defined as index size in bytes or number of documents)
 exceeds upper or lower threshold values
-* `searchRate`: generated when the 1-minute average search rate exceeds configured upper threshold
+* `searchRate`: generated when the search rate exceeds configured upper or lower thresholds
 * `scheduled`: generated according to a scheduled time period such as every 24 hours etc
 
 Events are not necessarily generated immediately after the corresponding state change occurred - the
@@ -54,8 +54,8 @@ The following properties are common to all event types:
 `nodeAdded` event this will be the time when the node was added and not when the event was actually
 generated, which may significantly differ due to the rate limits set by `waitFor`.
 
-`properties`:: (map, optional) Any additional properties. Currently includes `nodeName` property that
-indicates the node that was lost or added.
+`properties`:: (map, optional) Any additional properties. Currently includes eg. `nodeNames` property that
+indicates the nodes that were lost or added.
 
 == Auto Add Replicas Trigger
 
@@ -200,7 +200,7 @@ belonging to other collections. Also, nodes that don't host any of the monitored
 those that are explicitly excluded by `node` config property won't be reported at all.
 
 
-This trigger support the following configuration:
+This trigger supports the following configuration:
 
 `collections`:: (string, optional) comma-separated list of collection names to monitor, or any collection if empty / not set.
 
@@ -228,24 +228,25 @@ the value is set to 1. Note also that shard leaders are never deleted.
 `belowRate`:: (float) the lower bound for the request rate metric value. At least one of
 `aboveRate` or `belowRate` must be set.
 
-`aboveOp`:: collection action to request when the upper threshold for a shard or replica is
-exceeded. Default action is `ADDREPLICA` and the trigger will request 1 to `maxOps` operations
-per shard per event, depending how much the rate is exceeded. This property can be set to 'NONE'
-to effectively disable the action (but still report it to the listeners).
+`aboveOp`:: (string, optional) collection action to request when the upper threshold for a shard or replica is
+exceeded. Default action is `ADDREPLICA` and the trigger will request from 1 up to `maxOps` operations
+per shard per event, proportionally to how much the rate is exceeded. This property can be set to 'NONE'
+to effectively disable the action but still report it to the listeners.
 
-`aboveNodeOp`:: collection action to request when the upper threshold for a node is exceeded.
+`aboveNodeOp`:: (string, optional) collection action to request when the upper threshold for a node is exceeded.
 Default action is `MOVEREPLICA`, and the trigger will request 1 replica operation per hot node per event.
 If both `aboveOp` and `aboveNodeOp` operations are requested then `aboveNodeOp` operations are
-always requested first. This property can be set to 'NONE' to effectively disable the action (but still report it to the listeners).
+always requested first. This property can be set to 'NONE' to effectively disable the action but still
+report it to the listeners.
 
-`belowOp`:: collection action to request when the lower threshold for a shard or replica is
+`belowOp`:: (string, optional) collection action to request when the lower threshold for a shard or replica is
 exceeded. Default action is `DELETEREPLICA`, and the trigger will request at most `maxOps` replicas
 to be deleted from eligible cold shards. This property can be set to 'NONE'
-to effectively disable the action (but still report it to the listeners).
+to effectively disable the action but still report it to the listeners.
 
 `belowNodeOp`:: action to request when the lower threshold for a node is exceeded.
 Default action is null (not set) and the condition is ignored, because in many cases the
-trigger will monitor only some selected resources (non-pull replica types from selected
+trigger will monitor only some selected resources (replicas from selected
 collections / shards) so setting this by default to eg. `DELETENODE` could interfere with
 these non-monitored resources. The trigger will request 1 operation per cold node per event.
 If both `belowOp` and `belowNodeOp` operations are requested then `belowOp` operations are
@@ -327,7 +328,9 @@ Trigger configuration consists of the following properties:
 
 `actions`:: (list of action configs, optional) An ordered list of actions to execute when event is fired.
 
-`waitFor`:: (string, optional) The time to wait between generating new events, as an integer number immediately followed by unit symbol, one of `s` (seconds), `m` (minutes), or `h` (hours). Default is `0s`.
+`waitFor`:: (string, optional) The time to wait between generating new events, as an integer number immediately
+followed by unit symbol, one of `s` (seconds), `m` (minutes), or `h` (hours). Default is `0s`. A condition must
+persist at least for the `waitFor` period to generate an event.
 
 `enabled`:: (boolean, optional) When `true` the trigger is enabled. Default is `true`.
 
