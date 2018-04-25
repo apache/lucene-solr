@@ -171,4 +171,11 @@ public abstract class Directory implements Closeable {
    * @throws AlreadyClosedException if this Directory is closed
    */
   protected void ensureOpen() throws AlreadyClosedException {}
+
+  /** Tries to delete any pending deleted files, and returns true if
+   *  there are still files that could not be deleted.
+   *  This method is optional and returns <code>false</code> by default. */
+  public boolean checkPendingDeletions() throws IOException {
+    return false;
+  }
 }
