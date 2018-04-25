@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -35,18 +35,24 @@ abstract class DocValuesFieldUpdates {
    * updates are returned by this iterator, and the documents are returned in
    * increasing order.
    */
-  static abstract class Iterator {
-    
-    /**
-     * Returns the next document which has an update, or
-     * {@link DocIdSetIterator#NO_MORE_DOCS} if there are no more documents to
-     * return.
-     */
-    abstract int nextDoc();
-    
-    /** Returns the current document this iterator is on. */
-    abstract int doc();
-    
+  static abstract class Iterator extends DocValuesIterator {
+
+    @Override
+    public final boolean advanceExact(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public final long cost() {
+      throw new UnsupportedOperationException();
+    }
+
+    public abstract int nextDoc(); // no IOException
+
     /**
      * Returns the value of the document returned from {@link #nextDoc()}. A
      * {@code null} value means that it was unset for this document.
@@ -55,7 +61,72 @@ abstract class DocValuesFieldUpdates {
 
     /** Returns delGen for this packet. */
     abstract long delGen();
+
+    /**
+     * Wraps the given iterator as a BinaryDocValues instance.
+     */
+    static BinaryDocValues asBinaryDocValues(Iterator iterator) {
+      return new BinaryDocValues() {
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+        @Override
+        public BytesRef binaryValue() {
+          return (BytesRef) iterator.value();
+        }
+        @Override
+        public boolean advanceExact(int target) {
+          return iterator.advanceExact(target);
+        }
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+        @Override
+        public int advance(int target) {
+          return iterator.advance(target);
+        }
+        @Override
+        public long cost() {
+          return iterator.cost();
+        }
+      };
+    }
+    /**
+     * Wraps the given iterator as a NumericDocValues instance.
+     */
+    static NumericDocValues asNumericDocValues(Iterator iterator) {
+      return new NumericDocValues() {
+        @Override
+        public long longValue() {
+          return ((Long)iterator.value()).longValue();
+        }
+        @Override
+        public boolean advanceExact(int target) {
+          throw new UnsupportedOperationException();
+        }
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+        @Override
+        public int advance(int target) {
+          return iterator.advance(target);
+        }
+        @Override
+        public long cost() {
+          return iterator.cost();
+        }
+      };
+    }
   }
+
+
 
   /** Merge-sorts multiple iterators, one per delGen, favoring the largest delGen that has updates for a given docID. */
   public static Iterator mergedIterator(Iterator[] subs) {
@@ -68,7 +139,7 @@ abstract class DocValuesFieldUpdates {
         @Override
         protected boolean lessThan(Iterator a, Iterator b) {
           // sort by smaller docID
-          int cmp = Integer.compare(a.doc(), b.doc());
+          int cmp = Integer.compare(a.docID(), b.docID());
           if (cmp == 0) {
             // then by larger delGen
             cmp = Long.compare(b.delGen(), a.delGen());
@@ -106,7 +177,7 @@ abstract class DocValuesFieldUpdates {
               doc = NO_MORE_DOCS;
               break;
             }
-            int newDoc = queue.top().doc();
+            int newDoc = queue.top().docID();
             if (newDoc != doc) {
               assert newDoc > doc: "doc=" + doc + " newDoc=" + newDoc;
               doc = newDoc;
@@ -119,14 +190,14 @@ abstract class DocValuesFieldUpdates {
             }
           }
         } else {
-          doc = queue.top().doc();
+          doc = queue.top().docID();
           first = false;
         }
         return doc;
       }
         
       @Override
-      public int doc() {
+      public int docID() {
         return doc;
       }
 
