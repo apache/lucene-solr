@@ -76,6 +76,10 @@ Bug Fixes
   shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
   Adrien Grand)
 
+* LUCENE-8275: Push up #checkPendingDeletes to Directory to ensure IW fails if 
+  the directory has pending deletes files even if the directory is filtered or 
+  a FileSwitchDirectory (Simon Willnauer, Robert Muir)
+
 Other
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from

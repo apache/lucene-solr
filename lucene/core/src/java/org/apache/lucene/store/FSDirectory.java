@@ -246,10 +246,11 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-
-    // If this file was pending delete, we are now bringing it back to life:
-    pendingDeletes.remove(name);
     maybeDeletePendingFiles();
+    // If this file was pending delete, we are now bringing it back to life:
+    if (pendingDeletes.remove(name)) {
+      privateDeleteFile(name, true); // try again to delete it - this is best effort
+    }
     return new FSIndexOutput(name);
   }
 
@@ -293,9 +294,11 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.contains(source)) {
       throw new NoSuchFileException("file \"" + source + "\" is pending delete and cannot be moved");
     }
-    pendingDeletes.remove(dest);
-    Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
     maybeDeletePendingFiles();
+    if (pendingDeletes.remove(dest)) {
+      privateDeleteFile(dest, true); // try again to delete it - this is best effort
+    }
+    Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
   }
 
   @Override
@@ -336,8 +339,7 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
   }
 
-  /** Tries to delete any pending deleted files, and returns true if
-   *  there are still files that could not be deleted. */
+  @Override
   public boolean checkPendingDeletions() throws IOException {
     deletePendingFiles();
     return pendingDeletes.isEmpty() == false;
