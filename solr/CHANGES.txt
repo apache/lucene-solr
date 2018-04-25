@@ -258,6 +258,8 @@ Bug Fixes
 
 * SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
 
+* SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
+
 Optimizations
 ----------------------
 
