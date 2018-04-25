@@ -35,18 +35,18 @@ export class CollectionsComponent implements OnInit {
   showAdvanced = false;
   showCreateAlias = false;
   showDeleteAlias = false;
-  reloadSuccess = true;
+  reloadSuccess = false;
   reloadFailure = false;
   addMessage = null;
   swapMessage = null;
+  deleteMessage = null;
   createReplicaMessage = null;
   collectionDeleteConfirm = null;
   aliasToCreate = null;
+  aliasCollections: string[] = [];
   aliasToDelete = null;
 
-  rootUrl = "ROOT-URL";
-
-  aliases = ["test alias 1", "test alias 2"];
+  aliases: string[] = [];
   nodes = ["test node 1", "test node 2"];
 
   constructor(private route: ActivatedRoute,
@@ -60,6 +60,9 @@ export class CollectionsComponent implements OnInit {
     this.sharedService.refreshCollections();
     this.zookeeperService.listConfigsets().subscribe(c => {
       this.configs = c;
+    });
+    this.zookeeperService.listAliases().subscribe(a => {
+      this.aliases = a;
     });
   }
 
@@ -94,13 +97,16 @@ export class CollectionsComponent implements OnInit {
   }
 
   addCollection() {
+    if(!this.sharedService.loaded) {
+      return;
+    }
     this.sharedService.clearErrors();
     if (!this.newCollection.name) {
       this.addMessage = "Please provide a collection name";
     } else {
       this.sharedService.loaded = false;
       this.collectionsService.addCollection(this.newCollection).subscribe(c => {
-        this.sharedService.refreshCollections();
+        this.refresh();
         this.newCollection = null;
         this.showAdd = false;
         this.sharedService.loaded = true;
@@ -114,9 +120,21 @@ export class CollectionsComponent implements OnInit {
   }
 
   reloadCollection() {
-    this.reloadSuccess = false;
-    this.reloadFailure = true;
-    alert("reload collections");
+    if(!this.sharedService.loaded || !this.collection) {
+      return;
+    }
+    this.sharedService.clearErrors();
+    this.sharedService.loaded = false;
+    this.collectionsService.reloadCollection(this.collection.name).subscribe(c => {
+      this.reloadSuccess = true;
+      this.reloadFailure = false;
+      this.sharedService.loaded = true;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.reloadSuccess = false;
+      this.reloadFailure = true;
+      this.sharedService.loaded = true;
+    }));
   }
 
   toggleCreateAlias() {
@@ -128,20 +146,36 @@ export class CollectionsComponent implements OnInit {
   }
 
   createAlias() {
-    alert("create alias: " + this.aliasToCreate);
-    this.aliasToCreate = null;
-    this.showCreateAlias = false;
+    this.sharedService.loaded = false;
+    this.collectionsService.createAlias(this.aliasToCreate, this.aliasCollections).subscribe(c => {
+      this.aliasToCreate = null;
+      this.aliasCollections = [];
+      this.showCreateAlias = false;
+      this.refresh();
+      this.sharedService.loaded = true;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.sharedService.loaded = true;
+    }));
   }
 
   cancelCreateAlias() {
     this.aliasToCreate = null;
+    this.aliasCollections = [];
     this.showCreateAlias = false;
   }
 
   deleteAlias() {
-    alert("delete alias: " + this.aliasToDelete);
-    this.aliasToCreate = null;
-    this.showDeleteAlias = false;
+    this.sharedService.loaded = false;
+    this.collectionsService.deleteAlias(this.aliasToDelete).subscribe(c => {
+      this.aliasToDelete = null;
+      this.showDeleteAlias = false;
+      this.refresh();
+      this.sharedService.loaded = true;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.sharedService.loaded = true;
+    }));
   }
 
   cancelDeleteAlias() {
@@ -158,8 +192,29 @@ export class CollectionsComponent implements OnInit {
   }
 
   deleteCollection() {
-    alert("delete collection: " + this.collectionDeleteConfirm);
-    this.collectionDeleteConfirm = null;
+    if(!this.sharedService.loaded || !this.collection) {
+      return;
+    }
+    if(this.collection.name != this.collectionDeleteConfirm) {
+      this.deleteMessage = "Collection names do not match.";
+      return;
+    }
+    this.sharedService.clearErrors();
+    this.sharedService.loaded = false;
+    this.collectionsService.deleteCollection(this.collection.name).subscribe(c => {
+      this.refresh();
+      this.sharedService.loaded = true;
+      this.deleteMessage = null;
+      this.collectionDeleteConfirm = null;
+      this.collection = null;
+      this.showDelete = null;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.deleteMessage = null;
+      this.collectionDeleteConfirm = null;
+      this.showDelete = null;
+      this.sharedService.loaded = true;
+    }));
   }
 
   toggleRemoveShard(shard: Shard) {

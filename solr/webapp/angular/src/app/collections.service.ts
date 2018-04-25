@@ -33,13 +33,15 @@ export class CollectionsService {
   }
 
   listCollections(): Observable<String[]> {
-    return this.http.get<ListCollections>(this.collectionsUrl + "?action=LIST").pipe(map(lc => lc.collections));
+    const params: HttpParams = new HttpParams().set('action', 'LIST').set("wt", "json");
+    return this.http.get<ListCollections>(this.collectionsUrl, { params: params }).pipe(map(lc => lc.collections));
   }
 
   collectionInfo(collectionName: string): Observable<Collection> {
-    const params: HttpParams = new HttpParams().set('action', 'CLUSTERSTATUS');
+    const params: HttpParams = new HttpParams().set('action', 'CLUSTERSTATUS').set("wt", "json");
     return this.http.get<HttpResponse<any>>(this.collectionsUrl, { observe: 'response', params: params }).pipe(map(cs => {
       let c = new Collection();
+      c.name = collectionName;
       const body: any = cs.body;
       const cluster: any = body.cluster;
       const collectionInfo = cluster.collections[collectionName];
@@ -62,6 +64,7 @@ export class CollectionsService {
   addCollection(coll: Collection): Observable<Collection> {
     const params: HttpParams = new HttpParams()
       .set('action', 'CREATE')
+      .set("wt", "json")
       .set('name', coll.name)
       .set('router.name', coll.routerName)
       .set('numShards', coll.numShards ? coll.numShards.toString() : "1")
@@ -72,6 +75,39 @@ export class CollectionsService {
       .set('shards', coll.shards)
       .set('router.field', coll.routerField);
     return this.http.post<Collection>(this.collectionsUrl, coll, { params: params });
+  }
+
+  createAlias(aliasName: string, collectionNames: string[]): Observable<any> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'CREATEALIAS')
+      .set("wt", "json")
+      .set('name', aliasName)
+      .set('collections', collectionNames.length==0 ? null : collectionNames.join());
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
+  }
+
+  deleteAlias(aliasName: string):  Observable<any> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'DELETEALIAS')
+      .set("wt", "json")
+      .set('name', aliasName);
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
+  }
+
+  reloadCollection(name: string): Observable<any> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'RELOAD')
+      .set("wt", "json")
+      .set('name', name);
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
+  }
+
+  deleteCollection(name: string): Observable<any> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'DELETE')
+      .set("wt", "json")
+      .set('name', name);
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
   }
 }
 export class Collection {

@@ -85,7 +85,7 @@ limitations under the License.
 			</a></p>
 		</div>
 
-		<div id="core-menu" class="sub-menu" *ngIf="currentCore">
+		<div id="core-menu" class="sub-menu" *ngIf="sharedService.currentCore != null">
 			<ul>
 				<li class="overview" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/overview"><span>Overview</span></a></li>
 				<li *ngIf="!sharedService.isCloudEnabled" class="analysis" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/analysis"><span>Analysis</span></a></li>

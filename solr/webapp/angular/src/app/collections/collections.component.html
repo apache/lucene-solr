@@ -75,7 +75,7 @@ limitations under the License.
         <form>
           <p>Please type collection name to confirm deletion:</p>
           <p class="clearfix"><label for="collectiondeleteConfirm">Collection</label>
-          <input type="text" [(ngModel)]="collectionDeleteConfirm" id="collectionDeleteConfirm"></p>
+          <input type="text" name="collectionDeleteConfirm" [(ngModel)]="collectionDeleteConfirm" id="collectionDeleteConfirm"></p>
           <p class="clearfix note error" *ngIf="deleteMessage">
             <span>{{deleteMessage}}</span>
           </p>
@@ -92,7 +92,7 @@ limitations under the License.
           <p class="clearfix"><label for="alias">Alias Name:</label>
           <input type="text" name="alias" [(ngModel)]="aliasToCreate" id="alias"></p>
           <p class="clearfix"><label for="aliasCollections">Collections:</label>
-          <select multiple id="aliasCollections" (ngModel)="aliasCollections" class="other">
+          <select multiple name="aliasCollections" id="aliasCollections" [(ngModel)]="aliasCollections" class="other">
           	<option *ngFor="let collectionName of sharedService.collections">{{collectionName}}</option>
           </select></p>
 
@@ -108,9 +108,9 @@ limitations under the License.
 
       <div class="action delete-alias" *ngIf="showDeleteAlias">
         <form>
-          <span *ngIf="aliases">
+          <span *ngIf="aliases && aliases.length > 0">
           <p class="clearfix"><label for="deleteAlias">Alias:</label>
-          <select id="deleteAlias" (ngModel)="aliasToDelete" class="other">
+          <select id="deleteAlias" name="aliasToDelete" [(ngModel)]="aliasToDelete" class="other">
           	<option *ngFor="let alias of aliases">{{alias}}</option>
           </select></p>
           <p class="clearfix note error" *ngIf="swapMessage">
@@ -121,7 +121,7 @@ limitations under the License.
             <button type="reset" class="reset" (click)="cancelDeleteAlias()"><span>Cancel</span></button>
           </p>
           </span>
-          <span *ngIf="!aliases">
+          <span *ngIf="!aliases || aliases.length == 0">
               <p>No aliases to delete.</p>
           <p class="clearfix buttons">
             <button type="reset" class="reset" (click)="cancelDeleteAlias()"><span>Cancel</span></button>
@@ -277,10 +277,10 @@ limitations under the License.
                   <div class="action add-replica" *ngIf="shard.showAdd">
                     <form>
                       <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
-                      <select (ngModel)="shard.replicaNodeName" class="other">
+                      <select name="shardReplicaNodeName" [(ngModel)]="shard.replicaNodeName" class="other">
                       	<option value="">No specified node</option>
-			          	<option *ngFor="let node of nodes">{{node}}</option>
-			          </select>
+                      	<option *ngFor="let node of nodes">{{node}}</option>
+                      </select>
                           node: {{shard.replicaNodeName}}
                       </p>
                       <p class="clearfix note error" *ngIf="createReplicaMessage">

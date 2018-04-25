@@ -17,11 +17,11 @@
 
 import {SystemInfo, ParsedMemory} from './systemInfo';
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
-import { catchError, map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 @Injectable()
 export class SystemInfoService {
@@ -32,7 +32,8 @@ export class SystemInfoService {
   }
 
   getSystemInfo (): Observable<SystemInfo> {
-    return this.http.get<SystemInfo>(this.systemInfoUrl).pipe(map(si => {
+    const params: HttpParams = new HttpParams().set("wt", "json");
+    return this.http.get<SystemInfo>(this.systemInfoUrl, { params: params }).pipe(map(si => {
 
       // load average
       const loadAverageArr = (si.system.uptime || '' ).match( /load averages?: (\d+[.,]\d\d),? (\d+[.,]\d\d),? (\d+[.,]\d\d)/ );

@@ -31,7 +31,7 @@ export class ZookeeperService {
     }
 
     listConfigsets (): Observable<String[]> {
-        const params: HttpParams = new HttpParams().set('detail', 'false').set('path', '/configs/');
+        const params: HttpParams = new HttpParams().set('detail', 'false').set('path', '/configs/').set("wt", "json");
         return this.http.get<HttpResponse<any>>(this.zookeeperUrl, { observe: 'response', params: params }).pipe(map(r => {
           let configs: String[] = [];
           const body: any = r.body;
@@ -41,6 +41,25 @@ export class ZookeeperService {
           }
           return configs;
         }));
+    }
+
+    listAliases (): Observable<string[]> {
+      const params: HttpParams = new HttpParams().set('detail', 'true').set('path', '/aliases.json').set("wt", "json");
+      return this.http.get<HttpResponse<any>>(this.zookeeperUrl, { observe: 'response', params: params }).pipe(map(r => {
+        let aliases: string[] = [];
+        const body: any = r.body;
+        const znode = body.znode;
+        if(znode.data) {
+            const data : string = znode.data;
+            const znodeData = JSON.parse(data);
+            if(znodeData.collection) {
+              for(let alias in znodeData.collection) {
+                aliases.push(alias);
+              }
+            }
+        }
+        return aliases;
+      }));
     }
 
 }
