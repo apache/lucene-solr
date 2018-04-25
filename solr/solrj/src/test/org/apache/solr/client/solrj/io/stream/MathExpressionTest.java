@@ -2302,6 +2302,65 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFFT() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=fft(array(1, 4, 8, 4, 1, 4, 8, 4, 1, 4, 8, 4, 1, 4, 8, 4))," +
+        "               b=ifft(a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+
+    List<List<Number>> fft = (List<List<Number>>)tuples.get(0).get("a");
+    assertEquals(fft.size(), 2);
+    List<Number> reals = fft.get(0);
+    assertEquals(reals.get(0).doubleValue(), 68, 0.0);
+    assertEquals(reals.get(1).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(2).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(3).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(4).doubleValue(), -28, 0.0);
+    assertEquals(reals.get(5).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(6).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(7).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(8).doubleValue(), 4, 0.0);
+    assertEquals(reals.get(9).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(10).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(11).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(12).doubleValue(), -28, 0.0);
+    assertEquals(reals.get(13).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(14).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(15).doubleValue(), 0, 0.0);
+
+    List<Number> imaginary = fft.get(1);
+    for(int i=0; i<imaginary.size(); i++) {
+      assertEquals(imaginary.get(i).doubleValue(), 0.0, 0.0);
+    }
+
+    List<Number> ifft = (List<Number>)tuples.get(0).get("b");
+    assertEquals(ifft.get(0).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(1).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(2).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(3).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(4).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(5).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(6).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(7).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(8).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(9).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(10).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(11).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(12).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(13).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(14).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(15).doubleValue(), 4, 0.0);
+  }
+
+  @Test
   public void testCosineSimilarity() throws Exception {
     String cexpr = "cosineSimilarity(array(2,4,6,8),array(1,1,3,4))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
