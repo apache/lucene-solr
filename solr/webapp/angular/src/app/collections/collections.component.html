@@ -177,7 +177,7 @@ limitations under the License.
       </div>
 
       <div class="block" id="shard-data">
-        <div class="content shard" *ngFor="let shard of collection.shards">
+        <div class="content shard" *ngFor="let shard of collection.shardList">
           <a (click)="toggleShard(shard)">
             <h2>
                   <span [ngClass]="{'open': shard.show}"><b>Shard: {{shard.name}}</b></span>

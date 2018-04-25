@@ -46,10 +46,38 @@ export class CollectionsService {
       const cluster: any = body.cluster;
       const collectionInfo = cluster.collections[collectionName];
       const shards = collectionInfo.shards;
+      let shardList : Shard[] = [];
       let numShards = 0;
-      for(let k in shards) {
+      for(let shard in shards) {
         numShards++;
+        let s: Shard = new Shard();
+        let sObj = shards[shard];
+        s.name = shard;
+        s.show = true;
+        s.showRemove = false;
+        s.addReplica = false;
+        s.range = sObj.range;
+        s.state = sObj.state;
+        const replicas = sObj.replicas;
+        let replicaList: Replica[] = [];
+        for(let replica in replicas) {
+          let r: Replica = new Replica();
+          let rObj = replicas[replica];
+          r.name = replica;
+          r.show = true;
+          r.core = rObj.core;
+          r.base_url = rObj.base_url;
+          r.node_name = rObj.node_name;
+          r.state = rObj.state;
+          r.leader = rObj.leader;
+          r.type = rObj.type;
+          r.deleted = false;
+          replicaList.push(r);
+        }
+        s.replicas = replicaList;
+        shardList.push(s);
       }
+      c.shardList = shardList;
       c.numShards = numShards;
       c.configName = collectionInfo.configName;
       c.replicationFactor = collectionInfo.replicationFactor;
@@ -61,20 +89,20 @@ export class CollectionsService {
     }));
   }
 
-  addCollection(coll: Collection): Observable<Collection> {
+  addCollection(coll: Collection): Observable<any> {
     const params: HttpParams = new HttpParams()
       .set('action', 'CREATE')
       .set("wt", "json")
-      .set('name', coll.name)
-      .set('router.name', coll.routerName)
-      .set('numShards', coll.numShards ? coll.numShards.toString() : "1")
-      .set('collection.configName', coll.configName)
-      .set('replicationFactor', coll.replicationFactor ? coll.replicationFactor.toString() : "1")
-      .set('maxShardsPerNode', coll.maxShardsPerNode ? coll.maxShardsPerNode.toString() : "1")
-      .set('autoAddReplicas', coll.autoAddReplicas ? coll.autoAddReplicas.toString() : "false")
-      .set('shards', coll.shards)
-      .set('router.field', coll.routerField);
-    return this.http.post<Collection>(this.collectionsUrl, coll, { params: params });
+      .set('name', coll.name ? coll.name : '')
+      .set('router.name', coll.routerName ? coll.routerName : '')
+      .set('numShards', coll.numShards ? coll.numShards.toString() : '1')
+      .set('collection.configName', coll.configName ? coll.configName : '')
+      .set('replicationFactor', coll.replicationFactor ? coll.replicationFactor.toString() : '1')
+      .set('maxShardsPerNode', coll.maxShardsPerNode ? coll.maxShardsPerNode.toString() : '1')
+      .set('autoAddReplicas', coll.autoAddReplicas ? coll.autoAddReplicas.toString() : 'false')
+      .set('shards', coll.shards ? coll.shards : '')
+      .set('router.field', coll.routerField ? coll.routerField : '');
+    return this.http.post<any>(this.collectionsUrl, coll, { params: params });
   }
 
   createAlias(aliasName: string, collectionNames: string[]): Observable<any> {
@@ -143,4 +171,5 @@ export class Replica {
   state: string;
   leader: boolean;
   deleted: boolean;
+  type: String;
 }

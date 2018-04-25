@@ -105,13 +105,16 @@ export class CollectionsComponent implements OnInit {
       this.addMessage = "Please provide a collection name";
     } else {
       this.sharedService.loaded = false;
-      this.collectionsService.addCollection(this.newCollection).subscribe(c => {
-        this.refresh();
-        this.newCollection = null;
-        this.showAdd = false;
-        this.sharedService.loaded = true;
-        this.newCollection = null;
-        this.showAdd = false;
+      this.collectionsService.addCollection(this.newCollection).subscribe(a => {
+        this.collectionsService.collectionInfo(this.newCollection.name).subscribe(c => {
+          this.collection = c;
+          this.refresh();
+          this.newCollection = null;
+          this.showAdd = false;
+          this.sharedService.loaded = true;
+          this.newCollection = null;
+          this.showAdd = false;
+        });        
       }, (error => {
         this.sharedService.showError(error);
         this.sharedService.loaded = true;
