@@ -64,7 +64,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     @Override
-    int nextDoc() {
+    public int nextDoc() {
       if (idx >= size) {
         offset = -1;
         return doc = DocIdSetIterator.NO_MORE_DOCS;
@@ -86,7 +86,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     @Override
-    int doc() {
+    public int docID() {
       return doc;
     }
     
@@ -205,7 +205,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       + lengths.ramBytesUsed()
       + docs.ramBytesUsed()
       + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-      + 4 * RamUsageEstimator.NUM_BYTES_INT
+      + 4 * Integer.BYTES
       + 5 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
       + values.bytes().length;
   }

@@ -211,12 +211,12 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           int doc = -1;
 
           @Override
-          int nextDoc() {
+          public int nextDoc() {
             return doc = iter.next();
           }
 
           @Override
-          int doc() {
+          public int docID() {
             return doc;
           }
 

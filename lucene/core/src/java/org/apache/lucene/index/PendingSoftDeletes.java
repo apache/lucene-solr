@@ -122,28 +122,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   @Override
   void onDocValuesUpdate(String field, DocValuesFieldUpdates.Iterator iterator) throws IOException {
     if (this.field.equals(field)) {
-      pendingDeleteCount += applySoftDeletes(new DocIdSetIterator() {
-        int docID = -1;
-        @Override
-        public int docID() {
-          return docID;
-        }
-
-        @Override
-        public int nextDoc() {
-          return docID = iterator.nextDoc();
-        }
-
-        @Override
-        public int advance(int target) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long cost() {
-          throw new UnsupportedOperationException();
-        }
-      }, getMutableBits());
+      pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
     }
   }
   @Override

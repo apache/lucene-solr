@@ -56,7 +56,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     @Override
-    int nextDoc() {
+    public int nextDoc() {
       if (idx >= size) {
         value = null;
         return doc = DocIdSetIterator.NO_MORE_DOCS;
@@ -73,7 +73,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     @Override
-    int doc() {
+    public int docID() {
       return doc;
     }
 
@@ -179,7 +179,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     return values.ramBytesUsed()
       + docs.ramBytesUsed()
       + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-      + 2 * RamUsageEstimator.NUM_BYTES_INT
+      + 2 * Integer.BYTES
       + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 }
