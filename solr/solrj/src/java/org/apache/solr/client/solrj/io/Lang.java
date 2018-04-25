@@ -235,6 +235,8 @@ public class Lang {
         .withFunctionName("bicubicSpline", BicubicSplineEvaluator.class)
         .withFunctionName("valueAt", ValueAtEvaluator.class)
         .withFunctionName("memset", MemsetEvaluator.class)
+        .withFunctionName("fft", FFTEvaluator.class)
+        .withFunctionName("ifft", IFFTEvaluator.class)
 
             // Boolean Stream Evaluators
 
