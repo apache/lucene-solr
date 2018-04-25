@@ -18,6 +18,8 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +44,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -51,7 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * structure to hold them.  We don't hold docIDs because these are applied on
  * flush.
  */
-class FrozenBufferedUpdates {
+final class FrozenBufferedUpdates {
 
   /* NOTE: we now apply this frozen packet immediately on creation, yet this process is heavy, and runs
    * in multiple threads, and this compression is sizable (~8.3% of the original size), so it's important
@@ -297,7 +300,7 @@ class FrozenBufferedUpdates {
 
         // Must open while holding IW lock so that e.g. segments are not merged
         // away, dropped from 100% deletions, etc., before we can open the readers
-        segStates = writer.bufferedUpdatesStream.openSegmentStates(writer.readerPool, infos, seenSegments, delGen());
+        segStates = openSegmentStates(writer, infos, seenSegments, delGen());
 
         if (segStates.length == 0) {
 
@@ -328,8 +331,8 @@ class FrozenBufferedUpdates {
         success.set(true);
       }
 
-      // Since we jus resolved some more deletes/updates, now is a good time to write them:
-      writer.readerPool.writeSomeDocValuesUpdates();
+      // Since we just resolved some more deletes/updates, now is a good time to write them:
+      writer.writeSomeDocValuesUpdates();
 
       // It's OK to add this here, even if the while loop retries, because delCount only includes newly
       // deleted documents, on the segments we didn't already do in previous iterations:
@@ -357,7 +360,7 @@ class FrozenBufferedUpdates {
           // Must do this while still holding IW lock else a merge could finish and skip carrying over our updates:
           
           // Record that this packet is finished:
-          writer.bufferedUpdatesStream.finished(this);
+          writer.finished(this);
 
           finished = true;
 
@@ -378,7 +381,7 @@ class FrozenBufferedUpdates {
 
     if (finished == false) {
       // Record that this packet is finished:
-      writer.bufferedUpdatesStream.finished(this);
+      writer.finished(this);
     }
         
     if (infoStream.isEnabled("BD")) {
@@ -388,9 +391,58 @@ class FrozenBufferedUpdates {
       if (iter > 0) {
         message += "; " + (iter+1) + " iters due to concurrent merges";
       }
-      message += "; " + writer.bufferedUpdatesStream.getPendingUpdatesCount() + " packets remain";
+      message += "; " + writer.getPendingUpdatesCount() + " packets remain";
       infoStream.message("BD", message);
     }
+  }
+
+  /** Opens SegmentReader and inits SegmentState for each segment. */
+  private static BufferedUpdatesStream.SegmentState[] openSegmentStates(IndexWriter writer, List<SegmentCommitInfo> infos,
+                                                                       Set<SegmentCommitInfo> alreadySeenSegments, long delGen) throws IOException {
+    List<BufferedUpdatesStream.SegmentState> segStates = new ArrayList<>();
+    try {
+      for (SegmentCommitInfo info : infos) {
+        if (info.getBufferedDeletesGen() <= delGen && alreadySeenSegments.contains(info) == false) {
+          segStates.add(new BufferedUpdatesStream.SegmentState(writer.getPooledInstance(info, true), writer::release, info));
+          alreadySeenSegments.add(info);
+        }
+      }
+    } catch (Throwable t) {
+      try {
+        IOUtils.close(segStates);
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
+      }
+      throw t;
+    }
+
+    return segStates.toArray(new BufferedUpdatesStream.SegmentState[0]);
+  }
+
+  /** Close segment states previously opened with openSegmentStates. */
+  public static BufferedUpdatesStream.ApplyDeletesResult closeSegmentStates(IndexWriter writer, BufferedUpdatesStream.SegmentState[] segStates, boolean success) throws IOException {
+    List<SegmentCommitInfo> allDeleted = null;
+    long totDelCount = 0;
+    final List<BufferedUpdatesStream.SegmentState> segmentStates = Arrays.asList(segStates);
+    for (BufferedUpdatesStream.SegmentState segState : segmentStates) {
+      if (success) {
+        totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
+        int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
+        assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
+        if (segState.rld.isFullyDeleted() && writer.getConfig().getMergePolicy().keepFullyDeletedSegment(() -> segState.reader) == false) {
+          if (allDeleted == null) {
+            allDeleted = new ArrayList<>();
+          }
+          allDeleted.add(segState.reader.getSegmentInfo());
+        }
+      }
+    }
+    IOUtils.close(segmentStates);
+    if (writer.infoStream.isEnabled("BD")) {
+      writer.infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + writer.getPendingUpdatesCount()+ " packets; bytesUsed=" + writer.getReaderPoolRamBytesUsed());
+    }
+
+    return new BufferedUpdatesStream.ApplyDeletesResult(totDelCount > 0, allDeleted);
   }
 
   private void finishApply(IndexWriter writer, BufferedUpdatesStream.SegmentState[] segStates,
@@ -399,7 +451,7 @@ class FrozenBufferedUpdates {
 
       BufferedUpdatesStream.ApplyDeletesResult result;
       try {
-        result = writer.bufferedUpdatesStream.closeSegmentStates(writer.readerPool, segStates, success);
+        result = closeSegmentStates(writer, segStates, success);
       } finally {
         // Matches the incRef we did above, but we must do the decRef after closing segment states else
         // IFD can't delete still-open files
@@ -407,8 +459,8 @@ class FrozenBufferedUpdates {
       }
 
       if (result.anyDeletes) {
-        writer.maybeMerge.set(true);
-        writer.checkpoint();
+          writer.maybeMerge.set(true);
+          writer.checkpoint();
       }
 
       if (result.allDeleted != null) {
@@ -856,9 +908,5 @@ class FrozenBufferedUpdates {
   
   boolean any() {
     return deleteTerms.size() > 0 || deleteQueries.length > 0 || numericDVUpdates.length > 0 || binaryDVUpdates.length > 0;
-  }
-
-  boolean anyDeleteTerms() {
-    return deleteTerms.size() > 0;
   }
 }

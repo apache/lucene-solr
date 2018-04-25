@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
@@ -205,6 +206,111 @@ public class MathExpressionTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testMemset() throws Exception {
+    String expr = "let(echo=\"b, c\"," +
+        "              a=memset(list(tuple(field1=val(1), field2=val(10)), tuple(field1=val(2), field2=val(20))), " +
+        "                       cols=\"field1, field2\", " +
+        "                       vars=\"f1, f2\")," +
+        "              b=add(f1)," +
+        "              c=add(f2))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    Number f1 = (Number)tuples.get(0).get("b");
+    assertEquals(f1.doubleValue(), 3, 0.0);
+
+    Number f2 = (Number)tuples.get(0).get("c");
+    assertEquals(f2.doubleValue(), 30, 0.0);
+  }
+
+  @Test
+  public void testMemsetSize() throws Exception {
+    String expr = "let(echo=\"b, c\"," +
+        "              a=memset(list(tuple(field1=val(1), field2=val(10)), tuple(field1=val(2), field2=val(20))), " +
+        "                       cols=\"field1, field2\", " +
+        "                       vars=\"f1, f2\"," +
+        "                       size=1)," +
+        "              b=add(f1)," +
+        "              c=add(f2))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    Number f1 = (Number)tuples.get(0).get("b");
+    assertEquals(f1.doubleValue(), 1, 0.0);
+
+    Number f2 = (Number)tuples.get(0).get("c");
+    assertEquals(f2.doubleValue(), 10, 0.0);
+  }
+
+  @Test
+  public void testMemsetTimeSeries() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "memset(timeseries("+COLLECTIONORALIAS+", " +
+        "                            q=\"*:*\", " +
+        "                            start=\"2013-01-01T01:00:00.000Z\", " +
+        "                            end=\"2016-12-01T01:00:00.000Z\", " +
+        "                            gap=\"+1YEAR\", " +
+        "                            field=\"test_dt\", " +
+        "                            count(*)), " +
+        "                 cols=\"count(*)\"," +
+        "                 vars=\"a\")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map<String, List<Number>> mem = (Map)tuples.get(0).get("return-value");
+    List<Number> array = mem.get("a");
+    assertEquals(array.get(0).intValue(), 100);
+    assertEquals(array.get(1).intValue(), 50);
+    assertEquals(array.get(2).intValue(), 50);
+    assertEquals(array.get(3).intValue(), 50);
+  }
+  
   @Test
   public void testHist() throws Exception {
     String expr = "hist(sequence(100, 0, 1), 10)";

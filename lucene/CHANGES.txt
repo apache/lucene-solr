@@ -137,9 +137,9 @@ New Features
   soft deletes if the reader is opened form a directory. (Simon Willnauer,
   Mike McCandless, Uwe Schindler, Adrien Grand)
 
-* LUCENE-8229: Add a method Weight.matches(LeafReaderContext, doc) that returns
-  an iterator over matching positions for a given query and document.  This
-  allows exact hit extraction and will enable implementation of accurate 
+* LUCENE-8229, LUCENE-8270: Add a method Weight.matches(LeafReaderContext, doc) 
+  that returns an iterator over matching positions for a given query and document.
+  This allows exact hit extraction and will enable implementation of accurate 
   highlighters. (Alan Woodward, Adrien Grand, David Smiley)
 
 * LUCENE-8246: Allow to customize the number of deletes a merge claims. This
@@ -151,6 +151,9 @@ New Features
   (Robert Muir, Jim Ferenczi)
 
 Bug Fixes
+
+* LUCENE-8266: Detect bogus tiles when creating a standard polygon and
+  throw a TileException. (Ignacio Vera)
 
 * LUCENE-8234: Fixed bug in how spatial relationship is computed for
   GeoStandardCircle when it covers the whole world. (Ignacio Vera)

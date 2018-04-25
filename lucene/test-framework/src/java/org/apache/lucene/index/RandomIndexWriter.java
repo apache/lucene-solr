@@ -80,7 +80,12 @@ public class RandomIndexWriter implements Closeable {
     IndexWriter iw;
     boolean success = false;
     try {
-      iw = new IndexWriter(dir, conf);
+      iw = new IndexWriter(dir, conf) {
+        @Override
+        protected boolean isEnableTestPoints() {
+          return true;
+        }
+      };
       success = true;
     } finally {
       if (reader != null) {
@@ -91,7 +96,6 @@ public class RandomIndexWriter implements Closeable {
         }
       }
     }
-    iw.enableTestPoints = true;
     return iw;
   }
 

@@ -23,29 +23,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * @lucene.internal 
  */
-class DocumentsWriterFlushQueue {
+final class DocumentsWriterFlushQueue {
   private final Queue<FlushTicket> queue = new LinkedList<>();
   // we track tickets separately since count must be present even before the ticket is
   // constructed ie. queue.size would not reflect it.
   private final AtomicInteger ticketCount = new AtomicInteger();
   private final ReentrantLock purgeLock = new ReentrantLock();
 
-  void addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    synchronized (this) {
-      incTickets();// first inc the ticket count - freeze opens
-                   // a window for #anyChanges to fail
-      boolean success = false;
-      try {
-        queue.add(new GlobalDeletesTicket(deleteQueue.freezeGlobalBuffer(null)));
-        success = true;
-      } finally {
-        if (!success) {
-          decTickets();
-        }
+  synchronized void addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+    incTickets();// first inc the ticket count - freeze opens
+                 // a window for #anyChanges to fail
+    boolean success = false;
+    try {
+      queue.add(new FlushTicket(deleteQueue.freezeGlobalBuffer(null), false));
+      success = true;
+    } finally {
+      if (!success) {
+        decTickets();
       }
     }
   }
@@ -60,14 +59,14 @@ class DocumentsWriterFlushQueue {
     assert numTickets >= 0;
   }
 
-  synchronized SegmentFlushTicket addFlushTicket(DocumentsWriterPerThread dwpt) throws IOException {
+  synchronized FlushTicket addFlushTicket(DocumentsWriterPerThread dwpt) throws IOException {
     // Each flush is assigned a ticket in the order they acquire the ticketQueue
     // lock
     incTickets();
     boolean success = false;
     try {
       // prepare flush freezes the global deletes - do in synced block!
-      final SegmentFlushTicket ticket = new SegmentFlushTicket(dwpt.prepareFlush());
+      final FlushTicket ticket = new FlushTicket(dwpt.prepareFlush(), true);
       queue.add(ticket);
       success = true;
       return ticket;
@@ -78,13 +77,15 @@ class DocumentsWriterFlushQueue {
     }
   }
   
-  synchronized void addSegment(SegmentFlushTicket ticket, FlushedSegment segment) {
+  synchronized void addSegment(FlushTicket ticket, FlushedSegment segment) {
+    assert ticket.hasSegment;
     // the actual flush is done asynchronously and once done the FlushedSegment
     // is passed to the flush ticket
     ticket.setSegment(segment);
   }
 
-  synchronized void markTicketFailed(SegmentFlushTicket ticket) {
+  synchronized void markTicketFailed(FlushTicket ticket) {
+    assert ticket.hasSegment;
     // to free the queue we mark tickets as failed just to clean up the queue.
     ticket.setFailed();
   }
@@ -94,9 +95,8 @@ class DocumentsWriterFlushQueue {
     return ticketCount.get() != 0;
   }
 
-  private int innerPurge(IndexWriter writer) throws IOException {
+  private void innerPurge(IOUtils.IOConsumer<FlushTicket> consumer) throws IOException {
     assert purgeLock.isHeldByCurrentThread();
-    int numPurged = 0;
     while (true) {
       final FlushTicket head;
       final boolean canPublish;
@@ -105,25 +105,21 @@ class DocumentsWriterFlushQueue {
         canPublish = head != null && head.canPublish(); // do this synced 
       }
       if (canPublish) {
-        numPurged++;
         try {
           /*
            * if we block on publish -> lock IW -> lock BufferedDeletes we don't block
            * concurrent segment flushes just because they want to append to the queue.
-           * the downside is that we need to force a purge on fullFlush since ther could
+           * the downside is that we need to force a purge on fullFlush since there could
            * be a ticket still in the queue. 
            */
-          head.publish(writer);
-          
+          consumer.accept(head);
+
         } finally {
           synchronized (this) {
             // finally remove the published ticket from the queue
             final FlushTicket poll = queue.poll();
-
+            decTickets();
             // we hold the purgeLock so no other thread should have polled:
-            assert poll == head;
-            
-            ticketCount.decrementAndGet();
             assert poll == head;
           }
         }
@@ -131,141 +127,77 @@ class DocumentsWriterFlushQueue {
         break;
       }
     }
-    return numPurged;
   }
 
-  int forcePurge(IndexWriter writer) throws IOException {
+  void forcePurge(IOUtils.IOConsumer<FlushTicket> consumer) throws IOException {
     assert !Thread.holdsLock(this);
-    assert !Thread.holdsLock(writer);
     purgeLock.lock();
     try {
-      return innerPurge(writer);
+      innerPurge(consumer);
     } finally {
       purgeLock.unlock();
     }
   }
 
-  int tryPurge(IndexWriter writer) throws IOException {
+  void tryPurge(IOUtils.IOConsumer<FlushTicket> consumer) throws IOException {
     assert !Thread.holdsLock(this);
-    assert !Thread.holdsLock(writer);
     if (purgeLock.tryLock()) {
       try {
-        return innerPurge(writer);
+        innerPurge(consumer);
       } finally {
         purgeLock.unlock();
       }
     }
-    return 0;
   }
 
-  public int getTicketCount() {
+  int getTicketCount() {
     return ticketCount.get();
   }
 
-  synchronized void clear() {
-    queue.clear();
-    ticketCount.set(0);
-  }
-
-  static abstract class FlushTicket {
-    protected FrozenBufferedUpdates frozenUpdates;
-    protected boolean published = false;
-
-    protected FlushTicket(FrozenBufferedUpdates frozenUpdates) {
-      this.frozenUpdates = frozenUpdates;
-    }
-
-    protected abstract void publish(IndexWriter writer) throws IOException;
-
-    protected abstract boolean canPublish();
-    
-    /**
-     * Publishes the flushed segment, segment private deletes (if any) and its
-     * associated global delete (if present) to IndexWriter.  The actual
-     * publishing operation is synced on {@code IW -> BDS} so that the {@link SegmentInfo}'s
-     * delete generation is always GlobalPacket_deleteGeneration + 1
-     */
-    protected final void publishFlushedSegment(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates globalPacket)
-        throws IOException {
-      assert newSegment != null;
-      SegmentCommitInfo segmentInfo = newSegment.segmentInfo;
-      assert segmentInfo != null;
-      final FrozenBufferedUpdates segmentUpdates = newSegment.segmentUpdates;
-      if (indexWriter.infoStream.isEnabled("DW")) {
-        indexWriter.infoStream.message("DW", "publishFlushedSegment seg-private updates=" + segmentUpdates);  
-      }
-      
-      if (segmentUpdates != null && indexWriter.infoStream.isEnabled("DW")) {
-        indexWriter.infoStream.message("DW", "flush: push buffered seg private updates: " + segmentUpdates);
-      }
-      // now publish!
-      indexWriter.publishFlushedSegment(segmentInfo, newSegment.fieldInfos, segmentUpdates, globalPacket, newSegment.sortMap);
-    }
-    
-    protected final void finishFlush(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates bufferedUpdates)
-            throws IOException {
-      // Finish the flushed segment and publish it to IndexWriter
-      if (newSegment == null) {
-        if (bufferedUpdates != null && bufferedUpdates.any()) {
-          indexWriter.publishFrozenUpdates(bufferedUpdates);
-          if (indexWriter.infoStream.isEnabled("DW")) {
-            indexWriter.infoStream.message("DW", "flush: push buffered updates: " + bufferedUpdates);
-          }
-        }
-      } else {
-        publishFlushedSegment(indexWriter, newSegment, bufferedUpdates);  
-      }
-    }
-  }
-  
-  static final class GlobalDeletesTicket extends FlushTicket {
-
-    protected GlobalDeletesTicket(FrozenBufferedUpdates frozenUpdates) {
-      super(frozenUpdates);
-    }
-
-    @Override
-    protected void publish(IndexWriter writer) throws IOException {
-      assert !published : "ticket was already publised - can not publish twice";
-      published = true;
-      // it's a global ticket - no segment to publish
-      finishFlush(writer, null, frozenUpdates);
-    }
-
-    @Override
-    protected boolean canPublish() {
-      return true;
-    }
-  }
-
-  static final class SegmentFlushTicket extends FlushTicket {
+  static final class FlushTicket {
+    private final FrozenBufferedUpdates frozenUpdates;
+    private final boolean hasSegment;
     private FlushedSegment segment;
     private boolean failed = false;
-    
-    protected SegmentFlushTicket(FrozenBufferedUpdates frozenDeletes) {
-      super(frozenDeletes);
+    private boolean published = false;
+
+    FlushTicket(FrozenBufferedUpdates frozenUpdates, boolean hasSegment) {
+      this.frozenUpdates = frozenUpdates;
+      this.hasSegment = hasSegment;
     }
-    
-    @Override
-    protected void publish(IndexWriter writer) throws IOException {
-      assert !published : "ticket was already publised - can not publish twice";
+
+    boolean canPublish() {
+      return hasSegment == false || segment != null || failed;
+    }
+
+    synchronized void markPublished() {
+      assert published == false: "ticket was already published - can not publish twice";
       published = true;
-      finishFlush(writer, segment, frozenUpdates);
     }
-    
-    protected void setSegment(FlushedSegment segment) {
+
+    private void setSegment(FlushedSegment segment) {
       assert !failed;
       this.segment = segment;
     }
-    
-    protected void setFailed() {
+
+    private void setFailed() {
       assert segment == null;
       failed = true;
     }
 
-    @Override
-    protected boolean canPublish() {
-      return segment != null || failed;
+    /**
+     * Returns the flushed segment or <code>null</code> if this flush ticket doesn't have a segment. This can be the
+     * case if this ticket represents a flushed global frozen updates package.
+     */
+    FlushedSegment getFlushedSegment() {
+      return segment;
+    }
+
+    /**
+     * Returns a frozen global deletes package.
+     */
+    FrozenBufferedUpdates getFrozenUpdates() {
+      return frozenUpdates;
     }
   }
 }

@@ -355,7 +355,7 @@ The {solr-javadocs}/solr-uima/index.html[`uima`] contrib provides::
 
 The {solr-javadocs}/solr-analysis-extras/index.html[`analysis-extras`] contrib provides::
 
-{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.  Note that in order to use model files larger than 1MB on SolrCloud, <<setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit,ZooKeeper server and client configuration is required>>.  
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

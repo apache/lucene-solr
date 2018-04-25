@@ -36,7 +36,7 @@ Currently the following event types (and corresponding trigger implementations) 
 * `metric`: generated when the configured metric crosses a configured lower or upper threshold value
 * `indexSize`: generated when a shard size (defined as index size in bytes or number of documents)
 exceeds upper or lower threshold values
-* `searchRate`: generated when the 1-minute average search rate exceeds configured upper threshold
+* `searchRate`: generated when the search rate exceeds configured upper or lower thresholds
 * `scheduled`: generated according to a scheduled time period such as every 24 hours etc
 
 Events are not necessarily generated immediately after the corresponding state change occurred - the
@@ -54,8 +54,8 @@ The following properties are common to all event types:
 `nodeAdded` event this will be the time when the node was added and not when the event was actually
 generated, which may significantly differ due to the rate limits set by `waitFor`.
 
-`properties`:: (map, optional) Any additional properties. Currently includes `nodeName` property that
-indicates the node that was lost or added.
+`properties`:: (map, optional) Any additional properties. Currently includes eg. `nodeNames` property that
+indicates the nodes that were lost or added.
 
 == Auto Add Replicas Trigger
 
@@ -184,43 +184,93 @@ operation `NONE` (which still can be monitored and acted upon by an appropriate 
 
 == Search Rate Trigger
 
-The search rate trigger can be used for monitoring 1-minute average search rates in a selected
-collection, and request that either replicas be moved to different nodes or new replicas be added
-to reduce the per-replica search rate for a collection or shard with search rate hot spots.
-(Future versions of Solr will also be able to automatically remove some replicas
-when search rate falls below the configured lower threshold).
+The search rate trigger can be used for monitoring search rates in a selected
+collection (1-min average rate by default), and request that either replicas be moved from
+"hot nodes" to different nodes, or new replicas be added to "hot shards" to reduce the
+per-replica search rate for a collection or shard with hot spots.
 
-This trigger support the following configuration:
+Similarly, if the search rate falls below a threshold then the trigger may request that some
+replicas are deleted from "cold" shards. It can also optionally issue node-level action requests
+when a cumulative node-level rate falls below a threshold.
 
-`collection`:: (string, optional) collection name to monitor, or any collection if empty.
+Note: this trigger calculates node-level cumulative rates using per-replica rates reported by
+replicas that are part of monitored collections / shards. This means that it may report
+some nodes as "cold" (underutilized) because it ignores other, perhaps more active, replicas
+belonging to other collections. Also, nodes that don't host any of the monitored replicas or
+those that are explicitly excluded by `node` config property won't be reported at all.
 
-`shard`:: (string, optional) shard name within the collection (requires `collection` to be set), or any shard if empty.
+
+This trigger supports the following configuration:
+
+`collections`:: (string, optional) comma-separated list of collection names to monitor, or any collection if empty / not set.
+
+`shard`:: (string, optional) shard name within the collection (requires `collections` to be set to exactly one name), or any shard if empty.
 
 `node`:: (string, optional) node name to monitor, or any if empty.
 
-`handler`:: (string, optional) handler name whose request rate represents the search rate
-(default is `/select`). This name is used for creating the full metric key, in
-this case `solr.core.<coreName>:QUERY./select.requestTimes:1minRate`.
+`metric`:: (string, optional) metric name that represents the search rate
+(default is `QUERY./select.requestTimes:1minRate`). This name has to identify a single numeric
+metric value, and it may use the colon syntax for selecting one property of a complex metric.
 
-`rate`:: (double, required) the upper bound for the request rate metric value.
+`maxOps`:: (integer, optional) maximum number of add replica / delete replica operations
+requested in a single autoscaling event. The default value is 3 and it helps to smooth out
+the changes to the number of replicas during periods of large search rate fluctuations.
 
-If a rate is exceeded for a node (but not for individual replicas placed on this node) then
-the action requested by this event is to move one replica (with the highest rate) to another
-node. If a rate is exceeded for a collection or shard then the action requested is to add some
-replicas - currently at least 1 and at most 3, depending on how much the rate is exceeded, proportional to
-the threshold rate and the current request rate.
+`minReplicas`:: (integer, optional) minimum acceptable number of searchable replicas (ie. replicas other
+than `PULL` type). The trigger will not generate any DELETEREPLICA requests when the number of
+searchable replicas in a shard reaches this threshold. When this value is not set (the default)
+the `replicationFactor` property of the collection is used, and if that property is not set then
+the value is set to 1. Note also that shard leaders are never deleted.
 
-.Example: a search rate trigger that monitors collection "test" and adds new replicas if 1-minute average request rate of "/select" handler exceeds 100 requests/sec:
+`aboveRate`:: (float) the upper bound for the request rate metric value. At least one of
+`aboveRate` or `belowRate` must be set.
+
+`belowRate`:: (float) the lower bound for the request rate metric value. At least one of
+`aboveRate` or `belowRate` must be set.
+
+`aboveOp`:: (string, optional) collection action to request when the upper threshold for a shard or replica is
+exceeded. Default action is `ADDREPLICA` and the trigger will request from 1 up to `maxOps` operations
+per shard per event, proportionally to how much the rate is exceeded. This property can be set to 'NONE'
+to effectively disable the action but still report it to the listeners.
+
+`aboveNodeOp`:: (string, optional) collection action to request when the upper threshold for a node is exceeded.
+Default action is `MOVEREPLICA`, and the trigger will request 1 replica operation per hot node per event.
+If both `aboveOp` and `aboveNodeOp` operations are requested then `aboveNodeOp` operations are
+always requested first. This property can be set to 'NONE' to effectively disable the action but still
+report it to the listeners.
+
+`belowOp`:: (string, optional) collection action to request when the lower threshold for a shard or replica is
+exceeded. Default action is `DELETEREPLICA`, and the trigger will request at most `maxOps` replicas
+to be deleted from eligible cold shards. This property can be set to 'NONE'
+to effectively disable the action but still report it to the listeners.
+
+`belowNodeOp`:: action to request when the lower threshold for a node is exceeded.
+Default action is null (not set) and the condition is ignored, because in many cases the
+trigger will monitor only some selected resources (replicas from selected
+collections / shards) so setting this by default to eg. `DELETENODE` could interfere with
+these non-monitored resources. The trigger will request 1 operation per cold node per event.
+If both `belowOp` and `belowNodeOp` operations are requested then `belowOp` operations are
+always requested first.
+
+.Example:
+A search rate trigger that monitors collection "test" and adds new replicas if 5-minute
+average request rate of "/select" handler exceeds 100 requests/sec, and the condition persists
+for over 20 minutes. If the rate falls below 0.01 and persists for 20 min the trigger will
+request not only replica deletions (leaving at most 1 replica per shard) but also it may
+request node deletion.
 [source,json]
 ----
 {
  "set-trigger": {
   "name" : "search_rate_trigger",
   "event" : "searchRate",
-  "collection" : "test",
-  "handler" : "/select",
-  "rate" : 100.0,
-  "waitFor" : "1m",
+  "collections" : "test",
+  "metric" : "QUERY./select.requestTimes:5minRate",
+  "aboveRate" : 100.0,
+  "belowRate" : 0.01,
+  "belowNodeOp" : "DELETENODE",
+  "minReplicas" : 1,
+  "waitFor" : "20m",
   "enabled" : true,
   "actions" : [
    {
@@ -278,7 +328,9 @@ Trigger configuration consists of the following properties:
 
 `actions`:: (list of action configs, optional) An ordered list of actions to execute when event is fired.
 
-`waitFor`:: (string, optional) The time to wait between generating new events, as an integer number immediately followed by unit symbol, one of `s` (seconds), `m` (minutes), or `h` (hours). Default is `0s`.
+`waitFor`:: (string, optional) The time to wait between generating new events, as an integer number immediately
+followed by unit symbol, one of `s` (seconds), `m` (minutes), or `h` (hours). Default is `0s`. A condition must
+persist at least for the `waitFor` period to generate an event.
 
 `enabled`:: (boolean, optional) When `true` the trigger is enabled. Default is `true`.
 

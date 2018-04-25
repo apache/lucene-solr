@@ -69,6 +69,9 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+  ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
+
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
@@ -172,6 +175,20 @@ Bug Fixes
 
 * SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
 
+* SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
+  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
+  (shalin, hossman, Mark Miller, Steve Rowe)
+
+* SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
+  (Shawn Heisey, Carlton Findley, Robby Pond, hossman)
+
+* SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
+
+* SOLR-12253: Remove optimize button from the core admin page (Erick Erickson)
+
+* SOLR-11833: Allow searchRate trigger to delete replicas. Improve configurability of the trigger by specifying
+  upper / lower thresholds and respective actions (ab)
+
 Optimizations
 ----------------------
 
@@ -234,6 +251,12 @@ Other Changes
 
 * SOLR-12142: EmbeddedSolrServer should use req.getContentWriter (noble)
 
+* SOLR-12252: Fix minor compiler and intellij warnings in autoscaling policy framework. (shalin)
+
+* SOLR-11914: The following SolrParams methods are now deprecated: toSolrParams (use NamedList.toSolrParams instead),
+  toMap, toMultiMap, toFilteredSolrParams, getAll.  The latter ones have no direct replacement but are easy to
+  implement yourself as-needed. (David Smiley)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -251,6 +274,8 @@ Bug Fixes
 ----------------------
 
 * SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
+
+* SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
 ==================  7.3.0 ==================
 

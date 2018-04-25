@@ -124,7 +124,7 @@ public enum Operand {
       Long actualL = ((Number) actual).longValue();
       return _delta(expectedL, actualL);
     } else {
-      return 0l;
+      return 0L;
     }
 
   }

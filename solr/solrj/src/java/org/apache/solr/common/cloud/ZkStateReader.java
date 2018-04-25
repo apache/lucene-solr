@@ -16,14 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
-import static java.util.Collections.unmodifiableSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
-
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -51,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
@@ -68,6 +61,14 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSet;
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements Closeable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
@@ -1705,7 +1706,7 @@ public class ZkStateReader implements Closeable {
             LOG.debug(e.toString(), e);
             LOG.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
             // considered a backoff here, but we really do want to compete strongly since the normal case is
-            // that we will do one update and succeed. This is left as a hot loop for 5 tries intentionally.
+            // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.
             // More failures than that here probably indicate a bug or a very strange high write frequency usage for
             // aliases.json, timeouts mean zk is being very slow to respond, or this node is being crushed
             // by other processing and just can't find any cpu cycles at all.
@@ -1733,6 +1734,9 @@ public class ZkStateReader implements Closeable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
+      LOG.debug("Checking ZK for most up to date Aliases " + ALIASES);
+      // Call sync() first to ensure the subsequent read (getData) is up to date.
+      zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

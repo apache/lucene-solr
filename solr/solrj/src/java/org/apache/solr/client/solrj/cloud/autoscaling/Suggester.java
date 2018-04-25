@@ -255,7 +255,7 @@ public abstract class Suggester implements MapWriter {
       Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
       for (Object o : c) {
         if (!(o instanceof Pair)) {
-          throw new RuntimeException("SHARD hint must use a Pair");
+          throw new RuntimeException("COLL_SHARD hint must use a Pair");
         }
         Pair p = (Pair) o;
         if (p.first() == null || p.second() == null) {
@@ -288,7 +288,11 @@ public abstract class Suggester implements MapWriter {
       Double actualFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.second(), false);
       if (actualFreediskInGb == null) return false;
       return actualFreediskInGb > hintFreediskInGb;
-    });
+    }),
+    NUMBER(true, o -> {
+      if (!(o instanceof Number)) throw new RuntimeException("NUMBER hint must be a number");
+    }),
+    REPLICA(true);
 
     public final boolean multiValued;
     public final Consumer<Object> validator;

@@ -59,6 +59,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
   
+  private final static double NEAR_EDGE_CUTOFF = 0.0;
+  
   /**
    * Create a complex polygon from multiple lists of points, and a single point which is known to be in or out of
    * set.
@@ -81,37 +83,37 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.testPointFixedZPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
     
     Plane fixedYAbovePlane = new Plane(testPointFixedYPlane, true);
-    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
+    if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedYAbovePlane = null;
     }
     this.testPointFixedYAbovePlane = fixedYAbovePlane;
     
     Plane fixedYBelowPlane = new Plane(testPointFixedYPlane, false);
-    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 ||  planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
+    if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF ||  planetModel.getMinimumYValue() - fixedYBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedYBelowPlane = null;
     }
     this.testPointFixedYBelowPlane = fixedYBelowPlane;
     
     Plane fixedXAbovePlane = new Plane(testPointFixedXPlane, true);
-    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
+    if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedXAbovePlane = null;
     }
     this.testPointFixedXAbovePlane = fixedXAbovePlane;
     
     Plane fixedXBelowPlane = new Plane(testPointFixedXPlane, false);
-    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
+    if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedXBelowPlane = null;
     }
     this.testPointFixedXBelowPlane = fixedXBelowPlane;
     
     Plane fixedZAbovePlane = new Plane(testPointFixedZPlane, true);
-    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 ||planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
+    if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF ||planetModel.getMinimumZValue() - fixedZAbovePlane.D > NEAR_EDGE_CUTOFF) {
         fixedZAbovePlane = null;
     }
     this.testPointFixedZAbovePlane = fixedZAbovePlane;
     
     Plane fixedZBelowPlane = new Plane(testPointFixedZPlane, false);
-    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
+    if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZBelowPlane.D > NEAR_EDGE_CUTOFF) {
         fixedZBelowPlane = null;
     }
     this.testPointFixedZBelowPlane = fixedZBelowPlane;
@@ -234,32 +236,32 @@ class GeoComplexPolygon extends GeoBasePolygon {
       final Plane travelPlaneFixedZ = new Plane(0.0, 0.0, 1.0, -z);
 
       Plane fixedYAbovePlane = new Plane(travelPlaneFixedY, true);
-      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYAbovePlane.D > 0.0) {
+      if (fixedYAbovePlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedYAbovePlane = null;
       }
       
       Plane fixedYBelowPlane = new Plane(travelPlaneFixedY, false);
-      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > 0.0 || planetModel.getMinimumYValue() - fixedYBelowPlane.D > 0.0) {
+      if (fixedYBelowPlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() - fixedYBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedYBelowPlane = null;
       }
       
       Plane fixedXAbovePlane = new Plane(travelPlaneFixedX, true);
-      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXAbovePlane.D > 0.0) {
+      if (fixedXAbovePlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedXAbovePlane = null;
       }
       
       Plane fixedXBelowPlane = new Plane(travelPlaneFixedX, false);
-      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > 0.0 || planetModel.getMinimumXValue() - fixedXBelowPlane.D > 0.0) {
+      if (fixedXBelowPlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() - fixedXBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedXBelowPlane = null;
       }
       
       Plane fixedZAbovePlane = new Plane(travelPlaneFixedZ, true);
-      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZAbovePlane.D > 0.0) {
+      if (fixedZAbovePlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZAbovePlane.D > NEAR_EDGE_CUTOFF) {
           fixedZAbovePlane = null;
       }
       
       Plane fixedZBelowPlane = new Plane(travelPlaneFixedZ, false);
-      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > 0.0 || planetModel.getMinimumZValue() - fixedZBelowPlane.D > 0.0) {
+      if (fixedZBelowPlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() - fixedZBelowPlane.D > NEAR_EDGE_CUTOFF) {
           fixedZBelowPlane = null;
       }
 
@@ -280,171 +282,201 @@ class GeoComplexPolygon extends GeoBasePolygon {
       GeoPoint intersectionPoint = null;
 
       if (testPointFixedYAbovePlane != null && testPointFixedYBelowPlane != null && fixedXAbovePlane != null && fixedXBelowPlane != null) {
-        final GeoPoint[] XIntersectionsY = travelPlaneFixedX.findIntersections(planetModel, testPointFixedYPlane);
-        for (final GeoPoint p : XIntersectionsY) {
-          // Travel would be in YZ plane (fixed x) then in XZ (fixed y)
-          // We compute distance we need to travel as a placeholder for the number of intersections we might encounter.
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.x - p.x;
-          final double tpDelta2 = testPoint.z - p.z;
-          final double cpDelta1 = y - p.y;
-          final double cpDelta2 = z - p.z;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
-          //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.y;
-            secondLegValue = x;
-            firstLegPlane = testPointFixedYPlane;
-            firstLegAbovePlane = testPointFixedYAbovePlane;
-            firstLegBelowPlane = testPointFixedYBelowPlane;
-            secondLegPlane = travelPlaneFixedX;
-            secondLegAbovePlane = fixedXAbovePlane;
-            secondLegBelowPlane = fixedXBelowPlane;
-            firstLegTree = yTree;
-            secondLegTree = xTree;
-            intersectionPoint = p;
+        //check if planes intersects  inside world
+        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseAbSquared + testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseAbSquared + testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] XIntersectionsY = travelPlaneFixedX.findIntersections(planetModel, testPointFixedYPlane);
+          for (final GeoPoint p : XIntersectionsY) {
+            // Travel would be in YZ plane (fixed x) then in XZ (fixed y)
+            // We compute distance we need to travel as a placeholder for the number of intersections we might encounter.
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.x - p.x;
+            final double tpDelta2 = testPoint.z - p.z;
+            final double cpDelta1 = y - p.y;
+            final double cpDelta2 = z - p.z;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
+            //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.y;
+              secondLegValue = x;
+              firstLegPlane = testPointFixedYPlane;
+              firstLegAbovePlane = testPointFixedYAbovePlane;
+              firstLegBelowPlane = testPointFixedYBelowPlane;
+              secondLegPlane = travelPlaneFixedX;
+              secondLegAbovePlane = fixedXAbovePlane;
+              secondLegBelowPlane = fixedXBelowPlane;
+              firstLegTree = yTree;
+              secondLegTree = xTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
       if (testPointFixedZAbovePlane != null && testPointFixedZBelowPlane != null && fixedXAbovePlane != null && fixedXBelowPlane != null) {
-        final GeoPoint[] XIntersectionsZ = travelPlaneFixedX.findIntersections(planetModel, testPointFixedZPlane);
-        for (final GeoPoint p : XIntersectionsZ) {
-          // Travel would be in YZ plane (fixed x) then in XY (fixed z)
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.x - p.x;
-          final double tpDelta2 = testPoint.y - p.y;
-          final double cpDelta1 = y - p.y;
-          final double cpDelta2 = z - p.z;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
-          //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.z;
-            secondLegValue = x;
-            firstLegPlane = testPointFixedZPlane;
-            firstLegAbovePlane = testPointFixedZAbovePlane;
-            firstLegBelowPlane = testPointFixedZBelowPlane;
-            secondLegPlane = travelPlaneFixedX;
-            secondLegAbovePlane = fixedXAbovePlane;
-            secondLegBelowPlane = fixedXBelowPlane;
-            firstLegTree = zTree;
-            secondLegTree = xTree;
-            intersectionPoint = p;
+        //check if planes intersects  inside world
+        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseAbSquared + testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseAbSquared + testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] XIntersectionsZ = travelPlaneFixedX.findIntersections(planetModel, testPointFixedZPlane);
+          for (final GeoPoint p : XIntersectionsZ) {
+            // Travel would be in YZ plane (fixed x) then in XY (fixed z)
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.x - p.x;
+            final double tpDelta2 = testPoint.y - p.y;
+            final double cpDelta1 = y - p.y;
+            final double cpDelta2 = z - p.z;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
+            //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.z;
+              secondLegValue = x;
+              firstLegPlane = testPointFixedZPlane;
+              firstLegAbovePlane = testPointFixedZAbovePlane;
+              firstLegBelowPlane = testPointFixedZBelowPlane;
+              secondLegPlane = travelPlaneFixedX;
+              secondLegAbovePlane = fixedXAbovePlane;
+              secondLegBelowPlane = fixedXBelowPlane;
+              firstLegTree = zTree;
+              secondLegTree = xTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
       if (testPointFixedXAbovePlane != null && testPointFixedXBelowPlane != null && fixedYAbovePlane != null && fixedYBelowPlane != null) {
-        final GeoPoint[] YIntersectionsX = travelPlaneFixedY.findIntersections(planetModel, testPointFixedXPlane);
-        for (final GeoPoint p : YIntersectionsX) {
-          // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.y - p.y;
-          final double tpDelta2 = testPoint.z - p.z;
-          final double cpDelta1 = x - p.x;
-          final double cpDelta2 = z - p.z;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
-          //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.x;
-            secondLegValue = y;
-            firstLegPlane = testPointFixedXPlane;
-            firstLegAbovePlane = testPointFixedXAbovePlane;
-            firstLegBelowPlane = testPointFixedXBelowPlane;
-            secondLegPlane = travelPlaneFixedY;
-            secondLegAbovePlane = fixedYAbovePlane;
-            secondLegBelowPlane = fixedYBelowPlane;
-            firstLegTree = xTree;
-            secondLegTree = yTree;
-            intersectionPoint = p;
+        //check if planes intersects inside world
+        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseAbSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseAbSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] YIntersectionsX = travelPlaneFixedY.findIntersections(planetModel, testPointFixedXPlane);
+          for (final GeoPoint p : YIntersectionsX) {
+            // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.y - p.y;
+            final double tpDelta2 = testPoint.z - p.z;
+            final double cpDelta1 = x - p.x;
+            final double cpDelta2 = z - p.z;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
+            //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.x;
+              secondLegValue = y;
+              firstLegPlane = testPointFixedXPlane;
+              firstLegAbovePlane = testPointFixedXAbovePlane;
+              firstLegBelowPlane = testPointFixedXBelowPlane;
+              secondLegPlane = travelPlaneFixedY;
+              secondLegAbovePlane = fixedYAbovePlane;
+              secondLegBelowPlane = fixedYBelowPlane;
+              firstLegTree = xTree;
+              secondLegTree = yTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
       if (testPointFixedZAbovePlane != null && testPointFixedZBelowPlane != null && fixedYAbovePlane != null && fixedYBelowPlane != null) {
-        final GeoPoint[] YIntersectionsZ = travelPlaneFixedY.findIntersections(planetModel, testPointFixedZPlane);
-        for (final GeoPoint p : YIntersectionsZ) {
-          // Travel would be in XZ plane (fixed y) then in XY (fixed z)
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.x - p.x;
-          final double tpDelta2 = testPoint.y - p.y;
-          final double cpDelta1 = x - p.x;
-          final double cpDelta2 = z - p.z;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
-          //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.z;
-            secondLegValue = y;
-            firstLegPlane = testPointFixedZPlane;
-            firstLegAbovePlane = testPointFixedZAbovePlane;
-            firstLegBelowPlane = testPointFixedZBelowPlane;
-            secondLegPlane = travelPlaneFixedY;
-            secondLegAbovePlane = fixedYAbovePlane;
-            secondLegBelowPlane = fixedYBelowPlane;
-            firstLegTree = zTree;
-            secondLegTree = yTree;
-            intersectionPoint = p;
+        //check if planes intersects inside world
+        final double checkAbove = 4.0 * (testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseCSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseCSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] YIntersectionsZ = travelPlaneFixedY.findIntersections(planetModel, testPointFixedZPlane);
+          for (final GeoPoint p : YIntersectionsZ) {
+            // Travel would be in XZ plane (fixed y) then in XY (fixed z)
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.x - p.x;
+            final double tpDelta2 = testPoint.y - p.y;
+            final double cpDelta1 = x - p.x;
+            final double cpDelta2 = z - p.z;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
+            //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.z;
+              secondLegValue = y;
+              firstLegPlane = testPointFixedZPlane;
+              firstLegAbovePlane = testPointFixedZAbovePlane;
+              firstLegBelowPlane = testPointFixedZBelowPlane;
+              secondLegPlane = travelPlaneFixedY;
+              secondLegAbovePlane = fixedYAbovePlane;
+              secondLegBelowPlane = fixedYBelowPlane;
+              firstLegTree = zTree;
+              secondLegTree = yTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
       if (testPointFixedXAbovePlane != null && testPointFixedXBelowPlane != null && fixedZAbovePlane != null && fixedZBelowPlane != null) {
-        final GeoPoint[] ZIntersectionsX = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedXPlane);
-        for (final GeoPoint p : ZIntersectionsX) {
-          // Travel would be in XY plane (fixed z) then in YZ (fixed x)
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.y - p.y;
-          final double tpDelta2 = testPoint.z - p.z;
-          final double cpDelta1 = y - p.y;
-          final double cpDelta2 = x - p.x;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
-          //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.x;
-            secondLegValue = z;
-            firstLegPlane = testPointFixedXPlane;
-            firstLegAbovePlane = testPointFixedXAbovePlane;
-            firstLegBelowPlane = testPointFixedXBelowPlane;
-            secondLegPlane = travelPlaneFixedZ;
-            secondLegAbovePlane = fixedZAbovePlane;
-            secondLegBelowPlane = fixedZBelowPlane;
-            firstLegTree = xTree;
-            secondLegTree = zTree;
-            intersectionPoint = p;
+        //check if planes intersects inside world
+        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseAbSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseAbSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] ZIntersectionsX = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedXPlane);
+          for (final GeoPoint p : ZIntersectionsX) {
+            // Travel would be in XY plane (fixed z) then in YZ (fixed x)
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.y - p.y;
+            final double tpDelta2 = testPoint.z - p.z;
+            final double cpDelta1 = y - p.y;
+            final double cpDelta2 = x - p.x;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
+            //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.x;
+              secondLegValue = z;
+              firstLegPlane = testPointFixedXPlane;
+              firstLegAbovePlane = testPointFixedXAbovePlane;
+              firstLegBelowPlane = testPointFixedXBelowPlane;
+              secondLegPlane = travelPlaneFixedZ;
+              secondLegAbovePlane = fixedZAbovePlane;
+              secondLegBelowPlane = fixedZBelowPlane;
+              firstLegTree = xTree;
+              secondLegTree = zTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
       if (testPointFixedYAbovePlane != null && testPointFixedYBelowPlane != null && fixedZAbovePlane != null && fixedZBelowPlane != null) {
-        final GeoPoint[] ZIntersectionsY = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedYPlane);
-        for (final GeoPoint p : ZIntersectionsY) {
-          // Travel would be in XY plane (fixed z) then in XZ (fixed y)
-          //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
-          final double tpDelta1 = testPoint.x - p.x;
-          final double tpDelta2 = testPoint.z - p.z;
-          final double cpDelta1 = y - p.y;
-          final double cpDelta2 = x - p.x;
-          final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
-          //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
-          //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
-          if (newDistance < bestDistance) {
-            bestDistance = newDistance;
-            firstLegValue = testPoint.y;
-            secondLegValue = z;
-            firstLegPlane = testPointFixedYPlane;
-            firstLegAbovePlane = testPointFixedYAbovePlane;
-            firstLegBelowPlane = testPointFixedYBelowPlane;
-            secondLegPlane = travelPlaneFixedZ;
-            secondLegAbovePlane = fixedZAbovePlane;
-            secondLegBelowPlane = fixedZBelowPlane;
-            firstLegTree = yTree;
-            secondLegTree = zTree;
-            intersectionPoint = p;
+        //check if planes intersects inside world
+        final double checkAbove = 4.0 * (testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseAbSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseAbSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
+          final GeoPoint[] ZIntersectionsY = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedYPlane);
+          for (final GeoPoint p : ZIntersectionsY) {
+            // Travel would be in XY plane (fixed z) then in XZ (fixed y)
+            //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+            final double tpDelta1 = testPoint.x - p.x;
+            final double tpDelta2 = testPoint.z - p.z;
+            final double cpDelta1 = y - p.y;
+            final double cpDelta2 = x - p.x;
+            final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+            //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
+            //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
+            if (newDistance < bestDistance) {
+              bestDistance = newDistance;
+              firstLegValue = testPoint.y;
+              secondLegValue = z;
+              firstLegPlane = testPointFixedYPlane;
+              firstLegAbovePlane = testPointFixedYAbovePlane;
+              firstLegBelowPlane = testPointFixedYBelowPlane;
+              secondLegPlane = travelPlaneFixedZ;
+              secondLegAbovePlane = fixedZAbovePlane;
+              secondLegBelowPlane = fixedZBelowPlane;
+              firstLegTree = yTree;
+              secondLegTree = zTree;
+              intersectionPoint = p;
+            }
           }
         }
       }
@@ -1248,6 +1280,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final GeoPoint insideInsidePoint = pickProximate(insideInsidePoints);
         
         // Get the outside-outside intersection point
+        //System.out.println("Computing outside-outside intersection");
         final GeoPoint[] outsideOutsidePoints = testPointOutsidePlane.findIntersections(planetModel, travelOutsidePlane);  //these don't add anything: , checkPointCutoffPlane, testPointCutoffPlane);
         final GeoPoint outsideOutsidePoint = pickProximate(outsideOutsidePoints);
         
