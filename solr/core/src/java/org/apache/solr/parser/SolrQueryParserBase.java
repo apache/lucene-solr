@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -666,8 +667,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         termPayload = currentStreamPayloads[i];
       }
       if (termPayload != null) {
-        float payloadValue = ByteBuffer.wrap(termPayload.bytes).order(ByteOrder.BIG_ENDIAN).getFloat();
-        synonymQueries.add(new BoostQuery(newTermQuery(currentTerm), payloadValue));
+        float decodedPayload = PayloadHelper.decodeFloat(termPayload.bytes, termPayload.offset);
+        synonymQueries.add(new BoostQuery(newTermQuery(currentTerm), decodedPayload));
       } else {
         synonymQueries.add(newTermQuery(currentTerm));
       }
@@ -730,7 +731,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   private float extractQueryPayload(BytesRef[] payloadsForQueryTerms) {
     for (BytesRef singlePayload : payloadsForQueryTerms) {
       if (singlePayload != null) {
-        float decodedPayload = ByteBuffer.wrap(singlePayload.bytes).order(ByteOrder.BIG_ENDIAN).getFloat();
+        float decodedPayload = PayloadHelper.decodeFloat(singlePayload.bytes, singlePayload.offset);
         return decodedPayload;
       }
     }
