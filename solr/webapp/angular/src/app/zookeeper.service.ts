@@ -30,10 +30,10 @@ export class ZookeeperService {
     constructor(private http: HttpClient) {
     }
 
-    listConfigsets (): Observable<String[]> {
+    listConfigsets (): Observable<string[]> {
         const params: HttpParams = new HttpParams().set('detail', 'false').set('path', '/configs/').set("wt", "json");
         return this.http.get<HttpResponse<any>>(this.zookeeperUrl, { observe: 'response', params: params }).pipe(map(r => {
-          let configs: String[] = [];
+          let configs: string[] = [];
           const body: any = r.body;
           const children = body.tree[0].children;
           for(let child in children) {
@@ -62,4 +62,16 @@ export class ZookeeperService {
       }));
     }
 
+    listNodes (): Observable<string[]> {
+      const params: HttpParams = new HttpParams().set('detail', 'true').set('path', '/live_nodes').set("wt", "json");
+      return this.http.get<HttpResponse<any>>(this.zookeeperUrl, { observe: 'response', params: params }).pipe(map(r => {
+        let nodes: string[] = [];
+        const body: any = r.body;
+        const children = body.tree[0].children;
+        for(let child in children) {
+          nodes.push(children[child].data.title);
+        }
+        return nodes;
+      }));
+    }
 }

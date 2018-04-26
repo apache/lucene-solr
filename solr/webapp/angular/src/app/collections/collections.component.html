@@ -222,7 +222,7 @@ limitations under the License.
                                  </h2>
                           </li>
                           <li>
-                            <ul *ngIf="replica.showRemove">
+                            <ul *ngIf="replica.showDelete">
                                 <li>
                                     <form class="delete-replica">
                                       <p class="clearfix"><em>Are you sure you want to delete this replica?</em></p>
@@ -276,18 +276,17 @@ limitations under the License.
                   </ul>
                   <div class="action add-replica" *ngIf="shard.showAdd">
                     <form>
-                      <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
-                      <select name="shardReplicaNodeName" [(ngModel)]="shard.replicaNodeName" class="other">
+                      <p id="node-name" class="clearfix"><label for="shardReplicaNodeName">Node:</label>
+                      <select id="shardReplicaNodeName" name="shardReplicaNodeName" [(ngModel)]="replicaNodeName" class="other">
                       	<option value="">No specified node</option>
                       	<option *ngFor="let node of nodes">{{node}}</option>
                       </select>
-                          node: {{shard.replicaNodeName}}
                       </p>
                       <p class="clearfix note error" *ngIf="createReplicaMessage">
                         <span>{{createReplicaMessage}}</span>
                       </p>
                       <p class="clearfix buttons">
-                        <button class="submit delete" [ngClass]="{'success': shard.replicaAdded}" (click)="addReplica(shard)"><span>Create Replica</span></button>
+                        <button class="submit delete" (click)="addReplica(shard)"><span>Create Replica</span></button>
                         <button type="reset" class="reset" (click)="toggleAddReplica(shard)"><span>Cancel</span></button>
                       </p>
                         <p clas="clearfix">&nbsp;</p>

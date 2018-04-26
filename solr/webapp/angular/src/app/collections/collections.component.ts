@@ -27,7 +27,6 @@ import { SharedService, InitFailure } from '../shared.service';
 })
 export class CollectionsComponent implements OnInit {
   sharedService: SharedService;
-  configs: String[];
   newCollection: Collection = null;
   collection: Collection = null;
   showAdd = false;
@@ -45,9 +44,11 @@ export class CollectionsComponent implements OnInit {
   aliasToCreate = null;
   aliasCollections: string[] = [];
   aliasToDelete = null;
+  replicaNodeName = null;
 
+  configs: string[] = [];
   aliases: string[] = [];
-  nodes = ["test node 1", "test node 2"];
+  nodes: string[] = [];
 
   constructor(private route: ActivatedRoute,
     sharedService: SharedService,
@@ -64,6 +65,14 @@ export class CollectionsComponent implements OnInit {
     this.zookeeperService.listAliases().subscribe(a => {
       this.aliases = a;
     });
+    this.zookeeperService.listNodes().subscribe(n => {
+      this.nodes = n;
+    });
+    if(this.collection) {
+      this.collectionsService.collectionInfo(this.collection.name).subscribe(c => {
+        this.collection = c;
+      });
+    }
   }
 
   ngOnInit() {
@@ -114,7 +123,7 @@ export class CollectionsComponent implements OnInit {
           this.sharedService.loaded = true;
           this.newCollection = null;
           this.showAdd = false;
-        });        
+        });
       }, (error => {
         this.sharedService.showError(error);
         this.sharedService.loaded = true;
@@ -220,16 +229,57 @@ export class CollectionsComponent implements OnInit {
     }));
   }
 
+  toggleShard(shard: Shard) {
+    shard.show = !shard.show;
+  }
+
   toggleRemoveShard(shard: Shard) {
     shard.showRemove = !shard.showRemove;
   }
 
   toggleAddReplica(shard: Shard) {
-    shard.addReplica = !shard.addReplica;
+    shard.showAdd = !shard.showAdd;
+  }
+
+  toggleReplica(replica: Replica) {
+    replica.show = !replica.show;
+  }
+
+  toggleRemoveReplica(replica: Replica) {
+    replica.showDelete = !replica.showDelete;
   }
 
   addReplica(shard: Shard) {
-    alert("add replica: " + shard.name);
+    if(!this.sharedService.loaded) {
+      return;
+    }
+    this.sharedService.clearErrors();
+    this.sharedService.loaded = false;
+    this.collectionsService.addReplica(shard.collectionName, shard.name, this.replicaNodeName).subscribe(c => {
+      shard.showAdd = false;
+      this.replicaNodeName = null;
+      this.refresh();
+      this.sharedService.loaded = true;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.sharedService.loaded = true;
+    }));
+  }
+
+  deleteReplica(replica: Replica) {
+    if(!this.sharedService.loaded) {
+      return;
+    }
+    this.sharedService.clearErrors();
+    this.sharedService.loaded = false;
+    this.collectionsService.deleteReplica(replica).subscribe(c => {
+      this.refresh();
+      replica.showDelete = false;
+      this.sharedService.loaded = true;
+    }, (error => {
+      this.sharedService.showError(error);
+      this.sharedService.loaded = true;
+    }));
   }
 
   deleteShard(shard: Shard) {

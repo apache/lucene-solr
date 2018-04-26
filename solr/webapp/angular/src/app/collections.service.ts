@@ -53,9 +53,10 @@ export class CollectionsService {
         let s: Shard = new Shard();
         let sObj = shards[shard];
         s.name = shard;
-        s.show = true;
+        s.collectionName = collectionName;
+        s.show = false;
         s.showRemove = false;
-        s.addReplica = false;
+        s.showAdd = false;
         s.range = sObj.range;
         s.state = sObj.state;
         const replicas = sObj.replicas;
@@ -63,15 +64,16 @@ export class CollectionsService {
         for(let replica in replicas) {
           let r: Replica = new Replica();
           let rObj = replicas[replica];
+          r.shard = s;
           r.name = replica;
-          r.show = true;
+          r.show = false;
+          r.showDelete  = false;
           r.core = rObj.core;
           r.base_url = rObj.base_url;
           r.node_name = rObj.node_name;
           r.state = rObj.state;
           r.leader = rObj.leader;
           r.type = rObj.type;
-          r.deleted = false;
           replicaList.push(r);
         }
         s.replicas = replicaList;
@@ -103,6 +105,18 @@ export class CollectionsService {
       .set('shards', coll.shards ? coll.shards : '')
       .set('router.field', coll.routerField ? coll.routerField : '');
     return this.http.post<any>(this.collectionsUrl, coll, { params: params });
+  }
+
+  addReplica(collectionName: string, shardName: string, replicaNodeName: string): Observable<any> {
+    let params: HttpParams = new HttpParams()
+      .set('action', 'ADDREPLICA')
+      .set("wt", "json")
+      .set('collection', collectionName)
+      .set('shard', shardName);
+    if(replicaNodeName) {
+      params = params.set('node', replicaNodeName);
+    }
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
   }
 
   createAlias(aliasName: string, collectionNames: string[]): Observable<any> {
@@ -137,6 +151,16 @@ export class CollectionsService {
       .set('name', name);
     return this.http.post<any>(this.collectionsUrl, null, { params: params });
   }
+
+  deleteReplica(replica: Replica): Observable<any> {
+    const params: HttpParams = new HttpParams()
+      .set('action', 'DELETEREPLICA')
+      .set("wt", "json")
+      .set('collection', replica.shard.collectionName)
+      .set('replica', replica.name)
+      .set('shard', replica.shard.name);
+    return this.http.post<any>(this.collectionsUrl, null, { params: params });
+  }
 }
 export class Collection {
   name: string;
@@ -153,23 +177,24 @@ export class Collection {
 
 export class Shard {
   name: string;
+  collectionName: string;
   show: boolean;
   range: string;
   state: string;
+  showAdd: boolean;
   showRemove: boolean;
   replicas: Replica[];
-  addReplica: boolean;
-  replicaNodeName: String;
 }
 
 export class Replica {
+  shard : Shard;
   name: string;
   show: boolean;
+  showDelete : boolean;
   core: string;
   base_url: string;
   node_name: string;
   state: string;
   leader: boolean;
-  deleted: boolean;
   type: String;
 }
