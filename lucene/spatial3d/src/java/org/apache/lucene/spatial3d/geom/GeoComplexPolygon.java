@@ -71,7 +71,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
   
-  private final static double NEAR_EDGE_CUTOFF = 0.0;
+  private final static double NEAR_EDGE_CUTOFF = -Vector.MINIMUM_RESOLUTION * 1000.0;
   
   /**
    * Create a complex polygon from multiple lists of points, and a single point which is known to be in or out of
