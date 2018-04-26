@@ -93,6 +93,7 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    */
   @Test
   @Repeat(iterations = 10)
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
   public void testCompareBigPolygons() {
     testComparePolygons(Math.PI);
   }
@@ -103,6 +104,7 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    */
   @Test
   @Repeat(iterations = 10)
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
   public void testCompareSmallPolygons() {
     testComparePolygons(1e-4 * Math.PI);
   }
