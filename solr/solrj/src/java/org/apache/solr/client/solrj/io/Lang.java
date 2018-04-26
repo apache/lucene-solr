@@ -237,6 +237,11 @@ public class Lang {
         .withFunctionName("memset", MemsetEvaluator.class)
         .withFunctionName("fft", FFTEvaluator.class)
         .withFunctionName("ifft", IFFTEvaluator.class)
+        .withFunctionName("manhattan", ManhattanEvaluator.class)
+        .withFunctionName("canberra", CanberraEvaluator.class)
+        .withFunctionName("earthMovers", EarthMoversEvaluator.class)
+        .withFunctionName("euclidean", EuclideanEvaluator.class)
+        .withFunctionName("chebyshev", ChebyshevEvaluator.class)
 
             // Boolean Stream Evaluators
 

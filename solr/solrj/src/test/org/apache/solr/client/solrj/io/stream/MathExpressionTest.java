@@ -481,21 +481,21 @@ public class MathExpressionTest extends SolrCloudTestCase {
                        "f=distance(b, c)," +
                        "g=transpose(matrix(a, b, c))," +
                        "h=distance(g)," +
-                       "i=distance(a, b, type=manhattan), " +
-                       "j=distance(a, c, type=manhattan)," +
-                       "k=distance(b, c, type=manhattan)," +
+                       "i=distance(a, b, manhattan()), " +
+                       "j=distance(a, c, manhattan())," +
+                       "k=distance(b, c, manhattan())," +
                        "l=transpose(matrix(a, b, c))," +
-                       "m=distance(l, type=manhattan)," +
-                       "n=distance(a, b, type=canberra), " +
-                       "o=distance(a, c, type=canberra)," +
-                       "p=distance(b, c, type=canberra)," +
+                       "m=distance(l, manhattan())," +
+                       "n=distance(a, b, canberra()), " +
+                       "o=distance(a, c, canberra())," +
+                       "p=distance(b, c, canberra())," +
                        "q=transpose(matrix(a, b, c))," +
-                       "r=distance(q, type=canberra)," +
-                       "s=distance(a, b, type=earthMovers), " +
-                       "t=distance(a, c, type=earthMovers)," +
-                       "u=distance(b, c, type=earthMovers)," +
+                       "r=distance(q, canberra())," +
+                       "s=distance(a, b, earthMovers()), " +
+                       "t=distance(a, c, earthMovers())," +
+                       "u=distance(b, c, earthMovers())," +
                        "w=transpose(matrix(a, b, c))," +
-                       "x=distance(w, type=earthMovers)," +
+                       "x=distance(w, earthMovers())," +
                        ")";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -2946,7 +2946,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               c=knn(a, b, 2),"+
         "               d=getRowLabels(c),"+
         "               e=getAttributes(c)," +
-        "               f=knn(a, b, 2, distance=manhattan)," +
+        "               f=knn(a, b, 2, manhattan())," +
         "               g=getAttributes(f))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
