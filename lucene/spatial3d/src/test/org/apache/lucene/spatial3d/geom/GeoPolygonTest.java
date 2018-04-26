@@ -1741,4 +1741,45 @@ shape:
     final GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(5.7E-322), Geo3DUtil.fromDegrees(-2.394808631784144E-4));
     assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
   }
+  
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8280")
+  public void testLUCENE8280() {
+    /*
+   [junit4]   1>       unquantized=[lat=0.16367268756896675, lon=-3.141592653589793([X=-0.9876510422569805, Y=-1.2095236875745584E-16, Z=0.16311061810965483])]
+   [junit4]   1>       quantized=[X=-0.9876510423773649, Y=-2.3309121299774915E-10, Z=0.16311061829120332]
+   [junit4]   1>   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=7fb785c7, 
+    testPoint=[lat=-1.3164421003439726, lon=-0.3852878798825553([X=0.23270178206383424, Y=-0.09437388649617809, Z=-0.9658649833483698])], testPointInSet=true, 
+    shapes={ {
+    [lat=-0.914670478121684, lon=2.4457272005608357E-47([X=0.609446252447186, Y=1.4905392768899487E-47, Z=-0.7915752112532345])], 
+    [lat=-0.737919215699403, lon=-1.0814374159521924([X=0.34764272191418555, Y=-0.6527705659008658, Z=-0.6724777381306498])], 
+    [lat=-0.2581712131420987, lon=-3.141592653589793([X=-0.9677277372221494, Y=-1.1851246758352164E-16, Z=-0.2555423342455023])], 
+    [lat=-0.40516490647074055, lon=2.4457272005608357E-47([X=0.919584346757591, Y=2.2490524500750083E-47, Z=-0.39440489992508504])], 
+    [lat=2.4457272005608357E-47, lon=-0.6244585784444767([X=0.8121874885299789, Y=-0.5853122613567737, Z=2.448463612203698E-47])]}}
+   [junit4]   1>   bounds=XYZBounds: [xmin=-1.0011188549924792 xmax=1.0011188549924792 ymin=-0.6616249691360604 ymax=1.0E-9 zmin=-0.9977622930221051 zmax=1.0E-9]
+    */
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.914670478121684, 2.4457272005608357E-47));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.737919215699403, -1.0814374159521924));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.2581712131420987, -3.141592653589793));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.40516490647074055, 2.4457272005608357E-47));
+    points.add(new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, -0.6244585784444767));
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+    //final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, description);
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, Collections.singletonList(description));
+
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, 0.16367268756896675, -3.141592653589793);
+    
+    // Both are complex polygons, so this is going to pass.
+    //assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+
+    final XYZBounds xyzBounds = new XYZBounds();
+    largePolygon.getBounds(xyzBounds);
+    final XYZSolid xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, xyzBounds);
+    // Failure is due either to bounds computation or multiple points having their in-set status wrongly assessed.
+    // Probably it is the former because there are more than a dozen points that otherwise fail to be correct.
+    assertTrue(largePolygon.isWithin(point)?xyzSolid.isWithin(point):true);
+
+  }
+  
 }
