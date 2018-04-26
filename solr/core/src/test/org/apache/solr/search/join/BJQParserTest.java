@@ -18,6 +18,7 @@ package org.apache.solr.search.join;
 
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,18 +27,26 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
   
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String[] klm = new String[] {"k", "l", "m"};
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
   private static final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
@@ -389,8 +398,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   private final static String elChild[] = new String[]{"//*[@numFound='1']",
-      "//doc[" +
-          "arr[@name=\"child_s\"]/str='l' and child::arr[@name=\"childparent_s\"]/str='e']"};
+      "//doc[" + 
+          "arr[@name=\"child_s\"]/str='l' and arr[@name=\"childparent_s\"]/str='e']"};
 
 
   @Test
@@ -441,10 +450,52 @@ public class BJQParserTest extends SolrTestCaseJ4 {
        "child.fq", "{!tag=secondTag}child_s:l", // 6 ls remains
        "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='6']");
     
-    assertQ(req("q", // top and filter are excluded, got zero result, but is it right? 
+    assertQ(req("q", // top and filter are excluded, got all results
         "{!filters excludeTags=bot,secondTag,top v=$gchq}" ,
          "child.fq", "{!tag=secondTag}child_s:l",
          "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='42']");
+  }
+  
+  @Test
+  public void testFiltersCache() throws SyntaxError, IOException {
+    final String [] elFilterQuery = new String[] {"q", "{!filters param=$child.fq v=$gchq}",
+        "child.fq", "childparent_s:e",
+        "child.fq", "child_s:l",
+        "gchq", "child_s:[* TO *]"};
+    assertQ(req(elFilterQuery), elChild);
+    final Query query;
+    {
+      final SolrQueryRequest req = req(elFilterQuery);
+      try {
+        QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
+        query = parser.getQuery();
+        final TopDocs topDocs = req.getSearcher().search(query, 10);
+        assertEquals(1, topDocs.totalHits);
+      }finally {
+        req.close();
+      }
+    }
+    assertU(adoc("id", "12275", 
+        "child_s", "l", "childparent_s", "e"));
+    assertU(commit());
+    try {
+      assertQ("here we rely on autowarming for cathing cache leak",  //cache=false
+          req(elFilterQuery), "//*[@numFound='2']");
+      final SolrQueryRequest req = req();
+      try {
+        final TopDocs topDocs = req.getSearcher().search(query, 10);
+        assertEquals("expecting new doc is visible to old query", 2, topDocs.totalHits);
+      }finally {
+        req.close();
+      }
+    }finally {
+      try {
+        assertU(delI("12275"));
+        assertU(commit());
+      } catch(Throwable t) {
+        log.error("ignoring exception occuring in compensation routine", t);
+      }
+    }
   }
 }
 
