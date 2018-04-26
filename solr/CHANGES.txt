@@ -191,6 +191,9 @@ Bug Fixes
   get an error that's it's a member of that alias.  This check now ensures the alias state is sync()'ed with ZK first.
   (David Smiley)
 
+* SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
+  (David Smiley, Mikhail Khluldnev)
+
 Optimizations
 ----------------------
 
