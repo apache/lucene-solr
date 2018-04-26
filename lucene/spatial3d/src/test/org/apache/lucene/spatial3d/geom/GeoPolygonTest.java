@@ -1743,6 +1743,41 @@ shape:
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
+  public void testLUCENE8281() {
+    /*
+   [junit4]    > Standard polygon: GeoCompositePolygon: {[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[[lat=-3.89514302068452E-6, lon=6.597839410815709E-6([X=1.0011188539630433, Y=6.605221429683868E-6, Z=-3.89950111699443E-6])], [lat=-2.8213942160840002E-6, lon=1.608008770581648E-5([X=1.0011188538590383, Y=1.60980789753873E-5, Z=-2.8245509442632E-6])], [lat=3.8977187534179774E-6, lon=1.9713406091526053E-5([X=1.0011188537902969, Y=1.973546251320774E-5, Z=3.902079731596721E-6])], [lat=1.980614928404974E-5, lon=4.069266235973146E-6([X=1.0011188537865057, Y=4.07381914993205E-6, Z=1.982830947192924E-5])], [lat=7.4E-323, lon=0.0([X=1.0011188539924791, Y=0.0, Z=7.4E-323])]], internalEdges={4}}, GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[[lat=-3.89514302068452E-6, lon=6.597839410815709E-6([X=1.0011188539630433, Y=6.605221429683868E-6, Z=-3.89950111699443E-6])], [lat=7.4E-323, lon=0.0([X=1.0011188539924791, Y=0.0, Z=7.4E-323])], [lat=-1.261719663233924E-5, lon=-1.5701544210600105E-5([X=1.001118853788849, Y=-1.5719111944122703E-5, Z=-1.2631313432823314E-5])]], internalEdges={0}}]}
+   [junit4]    > Large polygon: GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=d8738cf, testPoint=[lat=7.28355694648262E-7, lon=5.126509206005681E-6([X=1.0011188539790565, Y=5.13224502127445E-6, Z=7.291706183250984E-7])], testPointInSet=true, shapes={ {[lat=-1.261719663233924E-5, lon=-1.5701544210600105E-5([X=1.001118853788849, Y=-1.5719111944122703E-5, Z=-1.2631313432823314E-5])], [lat=-3.89514302068452E-6, lon=6.597839410815709E-6([X=1.0011188539630433, Y=6.605221429683868E-6, Z=-3.89950111699443E-6])], [lat=-2.8213942160840002E-6, lon=1.608008770581648E-5([X=1.0011188538590383, Y=1.60980789753873E-5, Z=-2.8245509442632E-6])], [lat=3.8977187534179774E-6, lon=1.9713406091526053E-5([X=1.0011188537902969, Y=1.973546251320774E-5, Z=3.902079731596721E-6])], [lat=1.980614928404974E-5, lon=4.069266235973146E-6([X=1.0011188537865057, Y=4.07381914993205E-6, Z=1.982830947192924E-5])], [lat=7.4E-323, lon=0.0([X=1.0011188539924791, Y=0.0, Z=7.4E-323])]}}
+   [junit4]    > Point: [lat=4.983019447098944E-6, lon=-3.0E-323([X=1.0011188539799663, Y=-3.0E-323, Z=4.98859471828087E-6])]
+   [junit4]    > WKT: POLYGON((
+        3.7802835214482185E-4 -2.2317525568506174E-4,
+        9.213211597434869E-4 -1.6165398092423463E-4,
+        0.0011294949688719308 2.233228342998425E-4,
+        2.3315178103634778E-4 0.0011348087623821073,
+        0.0 4.244E-321,
+        -8.996322151054578E-4 -7.22912116319714E-4,
+        3.7802835214482185E-4 -2.2317525568506174E-4))
+   [junit4]    > WKT: POINT(-1.7E-321 2.855059835503825E-4)
+    */
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(-2.2317525568506174E-4), Geo3DUtil.fromDegrees(3.7802835214482185E-4)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(-1.6165398092423463E-4), Geo3DUtil.fromDegrees(9.213211597434869E-4)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(2.233228342998425E-4), Geo3DUtil.fromDegrees(0.0011294949688719308)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(0.0011348087623821073), Geo3DUtil.fromDegrees(2.3315178103634778E-4)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(4.244E-321), Geo3DUtil.fromDegrees(0.0)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(-7.22912116319714E-4), Geo3DUtil.fromDegrees(-8.996322151054578E-4)));
+    points.add(new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(-2.2317525568506174E-4), Geo3DUtil.fromDegrees(3.7802835214482185E-4)));
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, description);
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, Collections.singletonList(description));
+
+    //POINT(-2.394808631784144E-4 5.7E-322)
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(2.855059835503825E-4), Geo3DUtil.fromDegrees(-1.7E-321));
+    assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+
+  }
+  
+  @Test
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8280")
   public void testLUCENE8280() {
     /*
