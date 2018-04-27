@@ -995,6 +995,51 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).doubleValue() == 500.23D);
   }
 
+
+  @Test
+  public void testOnes() throws Exception {
+    String cexpr = "ones(6)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).intValue(), 1);
+    assertEquals(out.get(1).intValue(), 1);
+    assertEquals(out.get(2).intValue(), 1);
+    assertEquals(out.get(3).intValue(), 1);
+    assertEquals(out.get(4).intValue(), 1);
+    assertEquals(out.get(5).intValue(), 1);
+  }
+
+  @Test
+  public void testZeros() throws Exception {
+    String cexpr = "zeros(6)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).intValue(), 0);
+    assertEquals(out.get(1).intValue(), 0);
+    assertEquals(out.get(2).intValue(), 0);
+    assertEquals(out.get(3).intValue(), 0);
+    assertEquals(out.get(4).intValue(), 0);
+    assertEquals(out.get(5).intValue(), 0);
+  }
+
   @Test
   public void testMatrix() throws Exception {
     String cexpr = "let(echo=true," +

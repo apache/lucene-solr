@@ -242,8 +242,10 @@ public class Lang {
         .withFunctionName("earthMovers", EarthMoversEvaluator.class)
         .withFunctionName("euclidean", EuclideanEvaluator.class)
         .withFunctionName("chebyshev", ChebyshevEvaluator.class)
+        .withFunctionName("ones", OnesEvaluator.class)
+        .withFunctionName("zeros", ZerosEvaluator.class)
 
-            // Boolean Stream Evaluators
+        // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("eor", ExclusiveOrEvaluator.class)
