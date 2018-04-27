@@ -221,8 +221,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
-
-
+  
   <fieldType name="text_as_distinct" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
@@ -276,7 +275,6 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
-
 
   <fieldType name="nametext" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
