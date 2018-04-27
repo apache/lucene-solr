@@ -16,9 +16,7 @@
  */
 package org.apache.solr.search.join;
 
-import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +24,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+
+import javax.xml.xpath.XPathConstants;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
@@ -39,14 +39,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
   
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String[] klm = new String[] {"k", "l", "m"};
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
   private static final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
@@ -86,15 +84,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertQ(req("q", "*:*"), "//*[@numFound='" + i + "']");
-    /*
-     * dump docs well System.out.println(h.query(req("q","*:*",
-     * "sort","_docid_ asc", "fl",
-     * "parent_s,child_s,parentchild_s,grand_s,grand_child_s,grand_parentchild_s"
-     * , "wt","csv", "rows","1000"))); /
-     */
   }
 
-  private static int id=0;
   private static List<List<String[]>> createBlocks() {
     List<List<String[]>> blocks = new ArrayList<>();
     for (String parent : abcdef) {
@@ -299,11 +290,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() throws IOException {
 
-    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.perSegFilter")).getGauge();
-    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
-
 
     Map<String,Object> parentsBefore = parentFilterCache.getValue();
 
@@ -462,40 +452,32 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "child.fq", "childparent_s:e",
         "child.fq", "child_s:l",
         "gchq", "child_s:[* TO *]"};
-    assertQ(req(elFilterQuery), elChild);
+    assertQ("precondition: single doc match", 
+         req(elFilterQuery), elChild);
     final Query query;
-    {
-      final SolrQueryRequest req = req(elFilterQuery);
-      try {
-        QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
-        query = parser.getQuery();
-        final TopDocs topDocs = req.getSearcher().search(query, 10);
-        assertEquals(1, topDocs.totalHits);
-      }finally {
-        req.close();
-      }
+    try(final SolrQueryRequest req = req(elFilterQuery)) {
+      QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
+      query = parser.getQuery();
+      final TopDocs topDocs = req.getSearcher().search(query, 10);
+      assertEquals(1, topDocs.totalHits);
     }
     assertU(adoc("id", "12275", 
         "child_s", "l", "childparent_s", "e"));
     assertU(commit());
-    try {
-      assertQ("here we rely on autowarming for cathing cache leak",  //cache=false
+
+    assertQ("here we rely on autowarming for cathing cache leak",  //cache=false
           req(elFilterQuery), "//*[@numFound='2']");
-      final SolrQueryRequest req = req();
-      try {
+
+    try(final SolrQueryRequest req = req()) {
         final TopDocs topDocs = req.getSearcher().search(query, 10);
         assertEquals("expecting new doc is visible to old query", 2, topDocs.totalHits);
-      }finally {
-        req.close();
-      }
-    }finally {
-      try {
-        assertU(delI("12275"));
-        assertU(commit());
-      } catch(Throwable t) {
-        log.error("ignoring exception occuring in compensation routine", t);
-      }
     }
+  }
+
+  @After
+  public void cleanAfterTestFiltersCache(){
+    assertU("should be noop", delI("12275"));
+    assertU("most of the time", commit());
   }
 }
 
