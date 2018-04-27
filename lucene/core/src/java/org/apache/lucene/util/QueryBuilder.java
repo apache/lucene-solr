@@ -600,7 +600,9 @@ public class QueryBuilder {
     } else if (clauses.size() == 1) {
       return clauses.get(0);
     } else {
-      return new SpanNearQuery(clauses.toArray(new SpanQuery[0]), phraseSlop, true);
+      // if phraseSlop > 1, then inOrder = false to match semantics of other slop queries.
+      boolean inOrder = (phraseSlop <= 1);
+      return new SpanNearQuery(clauses.toArray(new SpanQuery[0]), phraseSlop, inOrder);
     }
   }
 
