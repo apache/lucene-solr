@@ -173,6 +173,9 @@ Bug Fixes
   the directory has pending deletes files even if the directory is filtered or 
   a FileSwitchDirectory (Simon Willnauer, Robert Muir)
 
+* LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
+  refresh on exception (Mike McCandless)
+
 Other
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
@@ -200,7 +203,7 @@ Build
 Documentation
 
 * LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
-xo  (Mike Sokolov via Mike McCandless)
+  (Mike Sokolov via Mike McCandless)
 
 ======================= Lucene 7.3.0 =======================
 
