@@ -242,6 +242,8 @@ Other Changes
   toMap, toMultiMap, toFilteredSolrParams, getAll.  The latter ones have no direct replacement but are easy to
   implement yourself as-needed. (David Smiley)
 
+* SOLR-10036: Upgrade jackson from 2.5.4 to 2.9.5 (Shashank Pedamallu, Shawn Heisey, Varun Thacker)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
