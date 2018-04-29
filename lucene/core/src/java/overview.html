@@ -47,10 +47,9 @@ to check if the results are what we expect):</p>
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory);
     IndexSearcher isearcher = new IndexSearcher(ireader);
-    // Parse a simple query that searches for "text":
-    QueryParser parser = new QueryParser("fieldname", analyzer);
-    Query query = parser.parse("text");
-    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+    // Simple phrase query that searches for "text":
+    Query query = new QueryBuilder(analyzer).createPhraseQuery("fieldname", "text");
+    ScoreDoc[] hits = isearcher.search(query, 1000, Sort.RELEVANCE).scoreDocs;
     assertEquals(1, hits.length);
     // Iterate through the results:
     for (int i = 0; i < hits.length; i++) {
