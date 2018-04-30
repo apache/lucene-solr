@@ -173,6 +173,9 @@ Bug Fixes
 
 * SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
   (David Smiley, Mikhail Khluldnev)
+  
+* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
+  non-boolean queries. (James Dyer)
 
 Optimizations
 ----------------------

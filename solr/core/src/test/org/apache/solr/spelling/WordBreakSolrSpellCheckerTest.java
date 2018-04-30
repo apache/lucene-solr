@@ -234,13 +234,13 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:(printable line ample goodness)'",
         "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(paintablepine ample goodness)'",
         "//lst[@name='collation'][3 ]/str[@name='collationQuery']='lowerfilt:(printable pineapple goodness)'",
-        "//lst[@name='collation'][4 ]/str[@name='collationQuery']='lowerfilt:((paint able) line ample goodness)'",
-        "//lst[@name='collation'][5 ]/str[@name='collationQuery']='lowerfilt:(printable (pi ne) ample goodness)'",
-        "//lst[@name='collation'][6 ]/str[@name='collationQuery']='lowerfilt:((paint able) pineapple goodness)'",
-        "//lst[@name='collation'][7 ]/str[@name='collationQuery']='lowerfilt:((paint able) (pi ne) ample goodness)'",
+        "//lst[@name='collation'][4 ]/str[@name='collationQuery']='lowerfilt:(paint able line ample goodness)'",
+        "//lst[@name='collation'][5 ]/str[@name='collationQuery']='lowerfilt:(printable pi ne ample goodness)'",
+        "//lst[@name='collation'][6 ]/str[@name='collationQuery']='lowerfilt:(paint able pineapple goodness)'",
+        "//lst[@name='collation'][7 ]/str[@name='collationQuery']='lowerfilt:(paint able pi ne ample goodness)'",
         "//lst[@name='collation'][8 ]/str[@name='collationQuery']='lowerfilt:(pintable line ample goodness)'",
         "//lst[@name='collation'][9 ]/str[@name='collationQuery']='lowerfilt:(pintable pineapple goodness)'",
-        "//lst[@name='collation'][10]/str[@name='collationQuery']='lowerfilt:(pintable (pi ne) ample goodness)'",
+        "//lst[@name='collation'][10]/str[@name='collationQuery']='lowerfilt:(pintable pi ne ample goodness)'",
         "//lst[@name='collation'][10]/lst[@name='misspellingsAndCorrections']/str[@name='paintable']='pintable'",
         "//lst[@name='collation'][10]/lst[@name='misspellingsAndCorrections']/str[@name='pine']='pi ne'",
         "//lst[@name='collation'][10]/lst[@name='misspellingsAndCorrections']/str[@name='apple']='ample'",
@@ -297,7 +297,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
         SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10"),
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:(+line -ample)'",
-        "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:((+pi +ne) -ample)'"
+        "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(+pi +ne -ample)'"
     );
     assertQ(req(
         "q", "lowerfilt:(+printableinpuntableplantable)", 
@@ -309,7 +309,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         SpellCheckComponent.SPELLCHECK_COLLATE, "true",
         SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
         SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1"),
-        "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:((+printable +in +puntable +plantable))'"
+        "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:(+printable +in +puntable +plantable)'"
     );
     assertQ(req(
         "q", "zxcv AND qwtp AND fghj", 
