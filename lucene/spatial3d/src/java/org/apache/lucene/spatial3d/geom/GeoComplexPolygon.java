@@ -19,6 +19,7 @@ package org.apache.lucene.spatial3d.geom;
 import java.io.IOException;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Collections;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -382,20 +383,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
       // Find the intersection points for each one of these and the complementary test point planes.
 
-      // There will be multiple intersection points found.  We choose the one that has the lowest total distance, as measured in delta X, delta Y, and delta Z.
-      double bestDistance = Double.POSITIVE_INFINITY;
-      double firstLegValue = 0.0;
-      double secondLegValue = 0.0;
-      Plane firstLegPlane = null;
-      Plane firstLegAbovePlane = null;
-      Plane firstLegBelowPlane = null;
-      Plane secondLegPlane = null;
-      Plane secondLegAbovePlane = null;
-      Plane secondLegBelowPlane = null;
-      Tree firstLegTree = null;
-      Tree secondLegTree = null;
-      GeoPoint intersectionPoint = null;
-
+      final List<TraversalStrategy> traversalStrategies = new ArrayList<>(12);
+      
       if (testPointFixedYAbovePlane != null && testPointFixedYBelowPlane != null && fixedXAbovePlane != null && fixedXBelowPlane != null) {
         //check if planes intersects  inside world
         final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseAbSquared + testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
@@ -414,21 +403,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
             //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking YZ then XZ");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.y;
-              secondLegValue = x;
-              firstLegPlane = testPointFixedYPlane;
-              firstLegAbovePlane = testPointFixedYAbovePlane;
-              firstLegBelowPlane = testPointFixedYBelowPlane;
-              secondLegPlane = travelPlaneFixedX;
-              secondLegAbovePlane = fixedXAbovePlane;
-              secondLegBelowPlane = fixedXBelowPlane;
-              firstLegTree = yTree;
-              secondLegTree = xTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.y, x,
+              testPointFixedYPlane, testPointFixedYAbovePlane, testPointFixedYBelowPlane,
+              travelPlaneFixedX, fixedXAbovePlane, fixedXBelowPlane,
+              yTree, xTree, p));
           }
         }
       }
@@ -449,21 +427,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
             //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking YZ then XY");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.z;
-              secondLegValue = x;
-              firstLegPlane = testPointFixedZPlane;
-              firstLegAbovePlane = testPointFixedZAbovePlane;
-              firstLegBelowPlane = testPointFixedZBelowPlane;
-              secondLegPlane = travelPlaneFixedX;
-              secondLegAbovePlane = fixedXAbovePlane;
-              secondLegBelowPlane = fixedXBelowPlane;
-              firstLegTree = zTree;
-              secondLegTree = xTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.z, x,
+              testPointFixedZPlane, testPointFixedZAbovePlane, testPointFixedZBelowPlane,
+              travelPlaneFixedX, fixedXAbovePlane, fixedXBelowPlane,
+              zTree, xTree, p));
           }
         }
       }
@@ -484,21 +451,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
             //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking XZ then YZ");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.x;
-              secondLegValue = y;
-              firstLegPlane = testPointFixedXPlane;
-              firstLegAbovePlane = testPointFixedXAbovePlane;
-              firstLegBelowPlane = testPointFixedXBelowPlane;
-              secondLegPlane = travelPlaneFixedY;
-              secondLegAbovePlane = fixedYAbovePlane;
-              secondLegBelowPlane = fixedYBelowPlane;
-              firstLegTree = xTree;
-              secondLegTree = yTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.x, y,
+              testPointFixedXPlane, testPointFixedXAbovePlane, testPointFixedXBelowPlane,
+              travelPlaneFixedY, fixedYAbovePlane, fixedYBelowPlane,
+              xTree, yTree, p));
           }
         }
       }
@@ -519,21 +475,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
             //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking XZ then XY");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.z;
-              secondLegValue = y;
-              firstLegPlane = testPointFixedZPlane;
-              firstLegAbovePlane = testPointFixedZAbovePlane;
-              firstLegBelowPlane = testPointFixedZBelowPlane;
-              secondLegPlane = travelPlaneFixedY;
-              secondLegAbovePlane = fixedYAbovePlane;
-              secondLegBelowPlane = fixedYBelowPlane;
-              firstLegTree = zTree;
-              secondLegTree = yTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.z, y,
+              testPointFixedZPlane, testPointFixedZAbovePlane, testPointFixedZBelowPlane,
+              travelPlaneFixedY, fixedYAbovePlane, fixedYBelowPlane,
+              zTree, yTree, p));
           }
         }
       }
@@ -554,21 +499,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
             //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking XY then YZ");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.x;
-              secondLegValue = z;
-              firstLegPlane = testPointFixedXPlane;
-              firstLegAbovePlane = testPointFixedXAbovePlane;
-              firstLegBelowPlane = testPointFixedXBelowPlane;
-              secondLegPlane = travelPlaneFixedZ;
-              secondLegAbovePlane = fixedZAbovePlane;
-              secondLegBelowPlane = fixedZBelowPlane;
-              firstLegTree = xTree;
-              secondLegTree = zTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.x, z,
+              testPointFixedXPlane, testPointFixedXAbovePlane, testPointFixedXBelowPlane,
+              travelPlaneFixedZ, fixedZAbovePlane, fixedZBelowPlane,
+              xTree, zTree, p));
           }
         }
       }
@@ -589,74 +523,33 @@ class GeoComplexPolygon extends GeoBasePolygon {
             final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
             //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
             //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
-            if (newDistance < bestDistance) {
-              //System.out.println(" Picking XY then XZ");
-              bestDistance = newDistance;
-              firstLegValue = testPoint.y;
-              secondLegValue = z;
-              firstLegPlane = testPointFixedYPlane;
-              firstLegAbovePlane = testPointFixedYAbovePlane;
-              firstLegBelowPlane = testPointFixedYBelowPlane;
-              secondLegPlane = travelPlaneFixedZ;
-              secondLegAbovePlane = fixedZAbovePlane;
-              secondLegBelowPlane = fixedZBelowPlane;
-              firstLegTree = yTree;
-              secondLegTree = zTree;
-              intersectionPoint = p;
-            }
+            traversalStrategies.add(new TraversalStrategy(newDistance, testPoint.y, z,
+              testPointFixedYPlane, testPointFixedYAbovePlane, testPointFixedYBelowPlane,
+              travelPlaneFixedZ, fixedZAbovePlane, fixedZBelowPlane,
+              yTree, zTree, p));
           }
         }
       }
 
-      assert bestDistance > 0.0 : "Best distance should not be zero unless on single plane";
-      assert bestDistance < Double.POSITIVE_INFINITY : "Couldn't find an intersection point of any kind";
-
-      // First, try with two individual legs.  If that doesn't work, try the DualCrossingIterator.
-      try {
-        // First, we'll determine if the intersection point is in set or not
-        //System.out.println(" Finding whether "+intersectionPoint+" is in-set, based on travel from "+testPoint+" along "+firstLegPlane+" (value="+firstLegValue+")");
-        final CountingEdgeIterator testPointEdgeIterator = createLinearCrossingEdgeIterator(testPoint,
-          firstLegPlane, firstLegAbovePlane, firstLegBelowPlane,
-          intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
-        // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
-        firstLegTree.traverse(testPointEdgeIterator, firstLegValue);
-        final boolean intersectionPointOnEdge = testPointEdgeIterator.isOnEdge();
-        // If the intersection point is on the edge, we cannot use this combination of legs, since it's not logically possible to compute in-set or out-of-set
-        // with such a starting point.
-        if (intersectionPointOnEdge) {
-          throw new IllegalArgumentException("Intersection point landed on an edge -- illegal path");
-        }
-        final boolean intersectionPointInSet = intersectionPointOnEdge || (((testPointEdgeIterator.getCrossingCount() & 1) == 0)?testPointInSet:!testPointInSet);
-        
-        //System.out.println("  Intersection point in-set? "+intersectionPointInSet+" On edge? "+intersectionPointOnEdge);
-
-        // Now do the final leg
-        //System.out.println(" Finding whether ["+x+","+y+","+z+"] is in-set, based on travel from "+intersectionPoint+" along "+secondLegPlane+" (value="+secondLegValue+")");
-        final CountingEdgeIterator travelEdgeIterator = createLinearCrossingEdgeIterator(intersectionPoint,
-          secondLegPlane, secondLegAbovePlane, secondLegBelowPlane,
-          x, y, z);
-        // Traverse our way from the test point to the check point.
-        secondLegTree.traverse(travelEdgeIterator, secondLegValue);
-        final boolean rval = travelEdgeIterator.isOnEdge() || (((travelEdgeIterator.getCrossingCount() & 1) == 0)?intersectionPointInSet:!intersectionPointInSet);
-        
-        //System.out.println(" Check point in set? "+rval);
-        return rval;
-      } catch (IllegalArgumentException e) {
-        // Intersection point apparently was on edge, so try another strategy
-        final CountingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPoint,
-          firstLegPlane, firstLegAbovePlane, firstLegBelowPlane,
-          secondLegPlane, secondLegAbovePlane, secondLegBelowPlane,
-          x, y, z, intersectionPoint);
-        firstLegTree.traverse(edgeIterator, firstLegValue);
-        if (edgeIterator.isOnEdge()) {
-          return true;
-        }
-        secondLegTree.traverse(edgeIterator, secondLegValue);
-        return edgeIterator.isOnEdge() || (((edgeIterator.getCrossingCount() & 1) == 0)?testPointInSet:!testPointInSet);
+      Collections.sort(traversalStrategies);
+      
+      if (traversalStrategies.size() == 0) {
+        throw new IllegalArgumentException("No dual-plane travel strategies were found");
       }
+
+      // Loop through travel strategies, in order, until we find one that works.
+      for (final TraversalStrategy ts : traversalStrategies) {
+        try {
+          return ts.apply(testPoint, testPointInSet, x, y, z);
+        } catch (IllegalArgumentException e) {
+          // Continue
+        }
+      }
+      
+      throw new IllegalArgumentException("Exhausted all traversal strategies");
     }
   }
-  
+    
   @Override
   public GeoPoint[] getEdgePoints() {
     return edgePoints;
@@ -822,6 +715,101 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
 
     // Hashcode and equals are system default!!
+  }
+  
+  /** Strategy class for describing traversals.
+  * Implements Comparable so that these can be ordered by Collections.sort().
+  */
+  private class TraversalStrategy implements Comparable<TraversalStrategy> {
+    private final double traversalDistance;
+    private final double firstLegValue;
+    private final double secondLegValue;
+    private final Plane firstLegPlane;
+    private final Plane firstLegAbovePlane;
+    private final Plane firstLegBelowPlane;
+    private final Plane secondLegPlane;
+    private final Plane secondLegAbovePlane;
+    private final Plane secondLegBelowPlane;
+    private final Tree firstLegTree;
+    private final Tree secondLegTree;
+    private final GeoPoint intersectionPoint;
+    
+    public TraversalStrategy(final double traversalDistance, final double firstLegValue, final double secondLegValue,
+      final Plane firstLegPlane, final Plane firstLegAbovePlane, final Plane firstLegBelowPlane,
+      final Plane secondLegPlane, final Plane secondLegAbovePlane, final Plane secondLegBelowPlane,
+      final Tree firstLegTree, final Tree secondLegTree,
+      final GeoPoint intersectionPoint) {
+      this.traversalDistance = traversalDistance;
+      this.firstLegValue = firstLegValue;
+      this.secondLegValue = secondLegValue;
+      this.firstLegPlane = firstLegPlane;
+      this.firstLegAbovePlane = firstLegAbovePlane;
+      this.firstLegBelowPlane = firstLegBelowPlane;
+      this.secondLegPlane = secondLegPlane;
+      this.secondLegAbovePlane = secondLegAbovePlane;
+      this.secondLegBelowPlane = secondLegBelowPlane;
+      this.firstLegTree = firstLegTree;
+      this.secondLegTree = secondLegTree;
+      this.intersectionPoint = intersectionPoint;
+    }
+
+    public boolean apply(final GeoPoint testPoint, final boolean testPointInSet,
+      final double x, final double y, final double z) {
+      // First, try with two individual legs.  If that doesn't work, try the DualCrossingIterator.
+      try {
+        // First, we'll determine if the intersection point is in set or not
+        //System.out.println(" Finding whether "+intersectionPoint+" is in-set, based on travel from "+testPoint+" along "+firstLegPlane+" (value="+firstLegValue+")");
+        final CountingEdgeIterator testPointEdgeIterator = createLinearCrossingEdgeIterator(testPoint,
+          firstLegPlane, firstLegAbovePlane, firstLegBelowPlane,
+          intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+        // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
+        firstLegTree.traverse(testPointEdgeIterator, firstLegValue);
+        final boolean intersectionPointOnEdge = testPointEdgeIterator.isOnEdge();
+        // If the intersection point is on the edge, we cannot use this combination of legs, since it's not logically possible to compute in-set or out-of-set
+        // with such a starting point.
+        if (intersectionPointOnEdge) {
+          throw new IllegalArgumentException("Intersection point landed on an edge -- illegal path");
+        }
+        final boolean intersectionPointInSet = intersectionPointOnEdge || (((testPointEdgeIterator.getCrossingCount() & 1) == 0)?testPointInSet:!testPointInSet);
+        
+        //System.out.println("  Intersection point in-set? "+intersectionPointInSet+" On edge? "+intersectionPointOnEdge);
+
+        // Now do the final leg
+        //System.out.println(" Finding whether ["+x+","+y+","+z+"] is in-set, based on travel from "+intersectionPoint+" along "+secondLegPlane+" (value="+secondLegValue+")");
+        final CountingEdgeIterator travelEdgeIterator = createLinearCrossingEdgeIterator(intersectionPoint,
+          secondLegPlane, secondLegAbovePlane, secondLegBelowPlane,
+          x, y, z);
+        // Traverse our way from the test point to the check point.
+        secondLegTree.traverse(travelEdgeIterator, secondLegValue);
+        final boolean rval = travelEdgeIterator.isOnEdge() || (((travelEdgeIterator.getCrossingCount() & 1) == 0)?intersectionPointInSet:!intersectionPointInSet);
+        
+        //System.out.println(" Check point in set? "+rval);
+        return rval;
+      } catch (IllegalArgumentException e) {
+        // Intersection point apparently was on edge, so try another strategy
+        final CountingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPoint,
+          firstLegPlane, firstLegAbovePlane, firstLegBelowPlane,
+          secondLegPlane, secondLegAbovePlane, secondLegBelowPlane,
+          x, y, z, intersectionPoint);
+        firstLegTree.traverse(edgeIterator, firstLegValue);
+        if (edgeIterator.isOnEdge()) {
+          return true;
+        }
+        secondLegTree.traverse(edgeIterator, secondLegValue);
+        return edgeIterator.isOnEdge() || (((edgeIterator.getCrossingCount() & 1) == 0)?testPointInSet:!testPointInSet);
+      }
+    }
+    
+    @Override
+    public int compareTo(final TraversalStrategy other) {
+      if (traversalDistance < other.traversalDistance) {
+        return -1;
+      } else if (traversalDistance > other.traversalDistance) {
+        return 1;
+      }
+      return 0;
+    }
+    
   }
   
   /**
