@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -26,7 +27,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * 
  * @lucene.experimental
  */
-abstract class DocValuesFieldUpdates {
+abstract class DocValuesFieldUpdates implements Accountable {
   
   protected static final int PAGE_SIZE = 1024;
 
@@ -51,13 +52,18 @@ abstract class DocValuesFieldUpdates {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public abstract int nextDoc(); // no IOException
 
     /**
-     * Returns the value of the document returned from {@link #nextDoc()}. A
-     * {@code null} value means that it was unset for this document.
+     * Returns a long value for the current document if this iterator is a long iterator.
      */
-    abstract Object value();
+    abstract long longValue();
+
+    /**
+     * Returns a binary value for the current document if this iterator is a binary value iterator.
+     */
+    abstract BytesRef binaryValue();
 
     /** Returns delGen for this packet. */
     abstract long delGen();
@@ -73,7 +79,7 @@ abstract class DocValuesFieldUpdates {
         }
         @Override
         public BytesRef binaryValue() {
-          return (BytesRef) iterator.value();
+          return iterator.binaryValue();
         }
         @Override
         public boolean advanceExact(int target) {
@@ -100,7 +106,7 @@ abstract class DocValuesFieldUpdates {
       return new NumericDocValues() {
         @Override
         public long longValue() {
-          return ((Long)iterator.value()).longValue();
+          return iterator.longValue();
         }
         @Override
         public boolean advanceExact(int target) {
@@ -163,14 +169,9 @@ abstract class DocValuesFieldUpdates {
     }
 
     return new Iterator() {
-      private int doc;
-
-      private boolean first = true;
-      
+      private int doc = -1;
       @Override
       public int nextDoc() {
-        // TODO: can we do away with this first boolean?
-        if (first == false) {
           // Advance all sub iterators past current doc
           while (true) {
             if (queue.size() == 0) {
@@ -189,21 +190,22 @@ abstract class DocValuesFieldUpdates {
               queue.updateTop();
             }
           }
-        } else {
-          doc = queue.top().docID();
-          first = false;
-        }
         return doc;
       }
-        
+
       @Override
       public int docID() {
         return doc;
       }
 
       @Override
-      public Object value() {
-        return queue.top().value();
+      long longValue() {
+        return queue.top().longValue();
+      }
+
+      @Override
+      BytesRef binaryValue() {
+        return queue.top().binaryValue();
       }
 
       @Override
@@ -229,31 +231,34 @@ abstract class DocValuesFieldUpdates {
     this.type = type;
   }
 
-  public boolean getFinished() {
+  boolean getFinished() {
     return finished;
   }
   
+  abstract void add(int doc, long value);
+
+  abstract void add(int doc, BytesRef value);
+
   /**
-   * Add an update to a document. For unsetting a value you should pass
-   * {@code null}.
+   * Adds the value for the given docID.
+   * This method prevents conditional calls to {@link Iterator#longValue()} or {@link Iterator#binaryValue()}
+   * since the implementation knows if it's a long value iterator or binary value
    */
-  public abstract void add(int doc, Object value);
-  
+  abstract void add(int docId, Iterator iterator);
+
   /**
    * Returns an {@link Iterator} over the updated documents and their
    * values.
    */
   // TODO: also use this for merging, instead of having to write through to disk first
-  public abstract Iterator iterator();
+  abstract Iterator iterator();
 
   /** Freezes internal data structures and sorts updates by docID for efficient iteration. */
-  public abstract void finish();
+  abstract void finish();
   
   /** Returns true if this instance contains any updates. */
-  public abstract boolean any();
+  abstract boolean any();
   
-  /** Returns approximate RAM bytes used. */
-  public abstract long ramBytesUsed();
+  abstract int size();
 
-  public abstract int size();
 }

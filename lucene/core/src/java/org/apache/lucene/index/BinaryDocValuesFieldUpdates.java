@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.PagedMutable;
  * 
  * @lucene.experimental
  */
-class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
+final class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   
   final static class Iterator extends DocValuesFieldUpdates.Iterator {
     private final int size;
@@ -55,14 +55,14 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       value = values.clone();
       this.delGen = delGen;
     }
-    
+
     @Override
-    BytesRef value() {
+    BytesRef binaryValue() {
       value.offset = offset;
       value.length = length;
       return value;
     }
-    
+
     @Override
     public int nextDoc() {
       if (idx >= size) {
@@ -94,6 +94,11 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     long delGen() {
       return delGen;
     }
+
+    @Override
+    long longValue() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   private PagedMutable docs;
@@ -116,9 +121,18 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     return size;
   }
 
-  // NOTE: we fully consume the incoming BytesRef so caller is free to reuse it after we return:
   @Override
-  synchronized public void add(int doc, Object value) {
+  public void add(int doc, long value) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void add(int docId, DocValuesFieldUpdates.Iterator iterator) {
+    add(docId, iterator.binaryValue());
+  }
+
+  @Override
+  synchronized public void add(int doc, BytesRef value) {
     if (finished) {
       throw new IllegalStateException("already finished");
     }
@@ -130,8 +144,6 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
     }
 
-    BytesRef val = (BytesRef) value;
-    
     // grow the structures to have room for more elements
     if (docs.size() == size) {
       docs = docs.grow(size + 1);
@@ -141,8 +153,8 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     
     docs.set(size, doc);
     offsets.set(size, values.length());
-    lengths.set(size, val.length);
-    values.append(val);
+    lengths.set(size, value.length);
+    values.append(value);
     ++size;
   }
 
