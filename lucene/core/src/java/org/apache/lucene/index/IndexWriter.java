@@ -3701,7 +3701,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             int mappedDoc = segDocMap.get(segLeafDocMap.get(doc));
             if (mappedDoc != -1) {
               // not deleted
-              mappedUpdates.add(mappedDoc, it.value());
+              mappedUpdates.add(mappedDoc, it);
               anyDVUpdates = true;
             }
           }

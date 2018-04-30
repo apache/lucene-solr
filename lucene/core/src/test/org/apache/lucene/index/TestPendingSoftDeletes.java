@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
@@ -201,7 +202,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
   private DocValuesFieldUpdates singleUpdate(List<Integer> docsDeleted, int maxDoc) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
-      public void add(int doc, Object value) {
+      public void add(int doc, long value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int doc, BytesRef value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int docId, Iterator iterator) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -216,13 +228,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           }
 
           @Override
-          public int docID() {
-            return doc;
+          long longValue() {
+            return 1;
           }
 
           @Override
-          Object value() {
-            return 1;
+          BytesRef binaryValue() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int docID() {
+            return doc;
           }
 
           @Override
