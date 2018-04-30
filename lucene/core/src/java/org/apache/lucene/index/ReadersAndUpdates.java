@@ -146,12 +146,7 @@ final class ReadersAndUpdates {
     if (update.getFinished() == false) {
       throw new IllegalArgumentException("call finish first");
     }
-    List<DocValuesFieldUpdates> fieldUpdates = pendingDVUpdates.get(update.field);
-    if (fieldUpdates == null) {
-      fieldUpdates = new ArrayList<>();
-      pendingDVUpdates.put(update.field, fieldUpdates);
-    }
-
+    List<DocValuesFieldUpdates> fieldUpdates = pendingDVUpdates.computeIfAbsent(update.field, key -> new ArrayList<>());
     assert assertNoDupGen(fieldUpdates, update);
 
     ramBytesUsed.addAndGet(update.ramBytesUsed());

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntConsumer;
 
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -44,6 +45,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -76,8 +78,8 @@ final class FrozenBufferedUpdates {
   // binary DV update term and their updates
   final byte[] binaryDVUpdates;
 
-  private int numericDVUpdateCount;
-  private int binaryDVUpdateCount;
+  private final int numericDVUpdateCount;
+  private final int binaryDVUpdateCount;
 
   /** Counts down once all deletes/updates have been applied */
   public final CountDownLatch applied = new CountDownLatch(1);
@@ -116,19 +118,22 @@ final class FrozenBufferedUpdates {
       deleteQueryLimits[upto] = ent.getValue();
       upto++;
     }
-
+    Counter counter = Counter.newCounter();
     // TODO if a Term affects multiple fields, we could keep the updates key'd by Term
     // so that it maps to all fields it affects, sorted by their docUpto, and traverse
     // that Term only once, applying the update to all fields that still need to be
     // updated.
-    numericDVUpdates = freezeNumericDVUpdates(updates.numericUpdates);
-    
+    numericDVUpdates = freezeDVUpdates(updates.numericUpdates, counter::addAndGet);
+    numericDVUpdateCount = (int)counter.get();
+    counter.addAndGet(-counter.get());
+    assert counter.get() == 0;
     // TODO if a Term affects multiple fields, we could keep the updates key'd by Term
     // so that it maps to all fields it affects, sorted by their docUpto, and traverse
     // that Term only once, applying the update to all fields that still need to be
     // updated. 
-    binaryDVUpdates = freezeBinaryDVUpdates(updates.binaryUpdates);
-    
+    binaryDVUpdates = freezeDVUpdates(updates.binaryUpdates, counter::addAndGet);
+    binaryDVUpdateCount = (int)counter.get();
+
     bytesUsed = (int) (deleteTerms.ramBytesUsed() + deleteQueries.length * BYTES_PER_DEL_QUERY 
                        + numericDVUpdates.length + binaryDVUpdates.length);
     
@@ -141,60 +146,17 @@ final class FrozenBufferedUpdates {
     }
   }
 
-  private byte[] freezeNumericDVUpdates(Map<String,LinkedHashMap<Term,NumericDocValuesUpdate>> numericDVUpdates)
+  private static <T extends DocValuesUpdate> byte[] freezeDVUpdates(Map<String,LinkedHashMap<Term, T>> dvUpdates,
+                                                                    IntConsumer updateSizeConsumer)
     throws IOException {
     // TODO: we could do better here, e.g. collate the updates by field
     // so if you are updating 2 fields interleaved we don't keep writing the field strings
     try (RAMOutputStream out = new RAMOutputStream()) {
       String lastTermField = null;
       String lastUpdateField = null;
-      for (LinkedHashMap<Term, NumericDocValuesUpdate> numericUpdates : numericDVUpdates.values()) {
-        numericDVUpdateCount += numericUpdates.size();
-        for (NumericDocValuesUpdate update : numericUpdates.values()) {
-
-          int code = update.term.bytes().length << 2;
-
-          String termField = update.term.field();
-          if (termField.equals(lastTermField) == false) {
-            code |= 1;
-          }
-          String updateField = update.field;
-          if (updateField.equals(lastUpdateField) == false) {
-            code |= 2;
-          }
-          out.writeVInt(code);
-          out.writeVInt(update.docIDUpto);
-          if ((code & 1) != 0) {
-            out.writeString(termField);
-            lastTermField = termField;
-          }
-          if ((code & 2) != 0) {
-            out.writeString(updateField);
-            lastUpdateField = updateField;
-          }
-
-          out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-          out.writeZLong(((Long) update.value).longValue());
-        }
-      }
-      byte[] bytes = new byte[(int) out.getFilePointer()];
-      out.writeTo(bytes, 0);
-      return bytes;
-    }
-  }
-
-  private byte[] freezeBinaryDVUpdates(Map<String,LinkedHashMap<Term,BinaryDocValuesUpdate>> binaryDVUpdates)
-    throws IOException {
-    // TODO: we could do better here, e.g. collate the updates by field
-    // so if you are updating 2 fields interleaved we don't keep writing the field strings
-
-    try (RAMOutputStream out = new RAMOutputStream()) {
-      String lastTermField = null;
-      String lastUpdateField = null;
-      for (LinkedHashMap<Term, BinaryDocValuesUpdate> binaryUpdates : binaryDVUpdates.values()) {
-        binaryDVUpdateCount += binaryUpdates.size();
-        for (BinaryDocValuesUpdate update : binaryUpdates.values()) {
-
+      for (LinkedHashMap<Term, T> updates : dvUpdates.values()) {
+        updateSizeConsumer.accept(updates.size());
+        for (T update : updates.values()) {
           int code = update.term.bytes().length << 2;
 
           String termField = update.term.field();
@@ -216,10 +178,7 @@ final class FrozenBufferedUpdates {
             lastUpdateField = updateField;
           }
           out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-
-          BytesRef value = (BytesRef) update.value;
-          out.writeVInt(value.length);
-          out.writeBytes(value.bytes, value.offset, value.length);
+          update.writeTo(out);
         }
       }
       byte[] bytes = new byte[(int) out.getFilePointer()];
@@ -521,13 +480,13 @@ final class FrozenBufferedUpdates {
         // because we will run on the newly merged segment next:
         continue;
       }
-
+      final boolean isSegmentPrivateDeletes = privateSegment != null;
       if (numericDVUpdates.length > 0) {
-        updateCount += applyDocValuesUpdates(segState, numericDVUpdates, true);
+        updateCount += applyDocValuesUpdates(segState, numericDVUpdates, true, delGen, isSegmentPrivateDeletes);
       }
 
       if (binaryDVUpdates.length > 0) {
-        updateCount += applyDocValuesUpdates(segState, binaryDVUpdates, false);
+        updateCount += applyDocValuesUpdates(segState, binaryDVUpdates, false, delGen, isSegmentPrivateDeletes);
       }
     }
 
@@ -544,8 +503,9 @@ final class FrozenBufferedUpdates {
     return updateCount;
   }
 
-  private long applyDocValuesUpdates(BufferedUpdatesStream.SegmentState segState,
-                                     byte[] updates, boolean isNumeric) throws IOException {
+  private static long applyDocValuesUpdates(BufferedUpdatesStream.SegmentState segState, byte[] updates,
+                                            boolean isNumeric, long delGen,
+                                            boolean segmentPrivateDeletes) throws IOException {
 
     TermsEnum termsEnum = null;
     PostingsEnum postingsEnum = null;
@@ -592,9 +552,9 @@ final class FrozenBufferedUpdates {
       }
       in.readBytes(term.bytes, 0, term.length);
 
-      int limit;
+      final int limit;
       if (delGen == segState.delGen) {
-        assert privateSegment != null;
+        assert segmentPrivateDeletes;
         limit = docIDUpto;
       } else {
         limit = Integer.MAX_VALUE;
@@ -622,17 +582,14 @@ final class FrozenBufferedUpdates {
         }
       }
 
-      // TODO: can we avoid boxing here w/o fully forking this method?
-      Object value;
+      final BytesRef binaryValue;
+      final long longValue;
       if (isNumeric) {
-        value = Long.valueOf(in.readZLong());
+        longValue = NumericDocValuesUpdate.readFrom(in);
+        binaryValue = null;
       } else {
-        value = scratch;
-        scratch.length = in.readVInt();
-        if (scratch.bytes.length < scratch.length) {
-          scratch.bytes = ArrayUtil.grow(scratch.bytes, scratch.length);
-        }
-        in.readBytes(scratch.bytes, 0, scratch.length);
+        longValue = -1;
+        binaryValue = BinaryDocValuesUpdate.readFrom(in, scratch);
       }
 
       if (termsEnum == null) {
@@ -641,10 +598,8 @@ final class FrozenBufferedUpdates {
       }
 
       if (termsEnum.seekExact(term)) {
-
         // we don't need term frequencies for this
         postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
-
         DocValuesFieldUpdates dvUpdates = holder.get(updateField);
         if (dvUpdates == null) {
           if (isNumeric) {
@@ -652,38 +607,38 @@ final class FrozenBufferedUpdates {
           } else {
             dvUpdates = new BinaryDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
           }
-
           holder.put(updateField, dvUpdates);
         }
-
-        if (segState.rld.sortMap != null && privateSegment != null) {
+        final IntConsumer docIdConsumer;
+        final DocValuesFieldUpdates update = dvUpdates;
+        if (isNumeric) {
+          docIdConsumer = doc -> update.add(doc, longValue);
+        } else {
+          docIdConsumer = doc -> update.add(doc, binaryValue);
+        }
+        final Bits acceptDocs = segState.rld.getLiveDocs();
+        if (segState.rld.sortMap != null && segmentPrivateDeletes) {
           // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
           int doc;
-          final Bits acceptDocs = segState.rld.getLiveDocs();
           while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-
-            if (acceptDocs != null && acceptDocs.get(doc) == false) {
-              continue;
-            }
-            
-            // The limit is in the pre-sorted doc space:
-            if (segState.rld.sortMap.newToOld(doc) < limit) {
-              dvUpdates.add(doc, value);
-              updateCount++;
+            if (acceptDocs == null || acceptDocs.get(doc)) {
+              // The limit is in the pre-sorted doc space:
+              if (segState.rld.sortMap.newToOld(doc) < limit) {
+                docIdConsumer.accept(doc);
+                updateCount++;
+              }
             }
           }
         } else {
           int doc;
-          final Bits acceptDocs = segState.rld.getLiveDocs();
           while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             if (doc >= limit) {
               break; // no more docs that can be updated for this term
             }
-            if (acceptDocs != null && acceptDocs.get(doc) == false) {
-              continue;
+            if (acceptDocs == null || acceptDocs.get(doc)) {
+              docIdConsumer.accept(doc);
+              updateCount++;
             }
-            dvUpdates.add(doc, value);
-            updateCount++;
           }
         }
       }
@@ -888,7 +843,7 @@ final class FrozenBufferedUpdates {
       }
     }
     if (deleteQueries.length != 0) {
-      s += " numDeleteQuerys=" + deleteQueries.length;
+      s += " numDeleteQueries=" + deleteQueries.length;
     }
     if (numericDVUpdates.length > 0) {
       s += " numNumericDVUpdates=" + numericDVUpdateCount;
