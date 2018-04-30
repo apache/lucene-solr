@@ -221,8 +221,7 @@ public class SpellCheckCollator {
       
       //If the correction contains whitespace (because it involved breaking a word in 2+ words),
       //then be sure all of the new words have the same optional/required/prohibited status in the query.
-      while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {
-        addParenthesis = true;
+      while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {        
         char previousChar = tok.startOffset()>0 ? origQuery.charAt(tok.startOffset()-1) : ' ';
         if(previousChar=='-' || previousChar=='+') {
           corrSb.insert(indexOfSpace + bump, previousChar);
@@ -231,6 +230,7 @@ public class SpellCheckCollator {
           }
           bump++;
         } else if ((tok.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) {
+          addParenthesis = true;
           corrSb.insert(indexOfSpace + bump, "AND ");
           bump += 4;
         }
