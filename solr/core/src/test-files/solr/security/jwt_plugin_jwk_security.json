@@ -1,11 +1,14 @@
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
+    "block_unknown": true,
     "jwk": {
-      "e": "AQAB",
-      "kid": "k1",
       "kty": "RSA",
-      "n": "3ZF6wBGPMsLzsS1KLghxaVpZtXD3nTLzDm0c974i9-KNU_1rhhBeiVfS64VfEQmP8SA470jEy7yWcvnz9GvG-YAlm9iOwVF7jLl2awdws0ocFjdSPT3SjPQKzOeMO7G9XqNTkrvoFCn1YAi26fbhhcqkwZDoeTcHQdRN32frzccuPhZrwImApIedroKLlKWv2IvPDnz2Bpe2WWVc2HdoWYqEVD3p_BEy8f-RTSHK3_8kDDF9yAwI9jx7CK1_C-eYxXltm-6rpS5NGyFm0UNTZMxVU28Tl7LX8Vb6CikyCQ9YRCtk_CvpKWmEuKEp9I28KHQNmGkDYT90nt3vjbCXxw"
+      "e": "AQAB",
+      "use": "sig",
+      "kid": "test",
+      "alg": "RS256",
+      "n": "jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ"
     }
   }
 }

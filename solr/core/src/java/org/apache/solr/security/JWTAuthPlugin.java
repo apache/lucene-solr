@@ -88,6 +88,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String PARAM_JWK_CACHE_DURATION = "jwk_cache_dur";
   private static final String PARAM_CLAIMS_MATCH = "claims_match";
   private static final String AUTH_REALM = "solr";
+  private static final String JWT_SYSPROP = "jwt";
 
   private String jwk_url;
   private Map<String, Object> jwk;
@@ -190,6 +191,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     if (header != null) {
       // Put the header on the thread for later use in inter-node request
       authHeader.set(new BasicHeader(HttpHeaders.AUTHORIZATION, header));
+      log.info("**** Setting header on thread: {}, thread={}", header, Thread.currentThread().getName());
     }
     AuthenticationResponse authResponse = authenticate(header);
     switch(authResponse.authCode) {
@@ -364,12 +366,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     });
     builder.setDefaultCredentialsProvider(() -> {
       CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-      // Pull the authorization bearer header from ThreadLocal
-      if (authHeader.get() == null) {
-        log.warn("Cannot find Authorization header on request thread");
-      } else {
+      String jwtProperty = System.getProperty(JWT_SYSPROP);
+      if (jwtProperty != null) {
         // TODO: Limit AuthScope?
-        credentialsProvider.setCredentials(AuthScope.ANY, new TokenCredentials(authHeader.get().getValue()));
+        credentialsProvider.setCredentials(AuthScope.ANY, new TokenCredentials(jwtProperty));
       }
       return credentialsProvider;
     });

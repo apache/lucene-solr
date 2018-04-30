@@ -16,7 +16,10 @@
  */
 package org.apache.solr.security;
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.auth.AUTH;
 import org.apache.http.auth.AuthScheme;
@@ -28,6 +31,9 @@ import org.apache.http.auth.MalformedChallengeException;
 import org.apache.http.message.BufferedHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.CharArrayBuffer;
+import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BearerAuthSchemeProvider implements AuthSchemeProvider {
 
@@ -43,51 +49,59 @@ public class BearerAuthSchemeProvider implements AuthSchemeProvider {
   }
 
   private static class BearerAuthScheme implements ContextAwareAuthScheme {
-        private boolean complete = false;
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private boolean complete = false;
 
-        @Override
-        public void processChallenge(Header header) throws MalformedChallengeException {
-            this.complete = true;
-        }
-
-        @Override
-        public Header authenticate(Credentials credentials, HttpRequest request) throws AuthenticationException {
-            return authenticate(credentials, request, null);
-        }
-
-        @Override
-        public Header authenticate(Credentials credentials, HttpRequest request, HttpContext httpContext)
-                throws AuthenticationException {
-            CharArrayBuffer buffer = new CharArrayBuffer(128);
-            buffer.append(AUTH.WWW_AUTH_RESP);
-            buffer.append(": Bearer ");
-            buffer.append(credentials.getUserPrincipal().getName());
-            return new BufferedHeader(buffer);
-        }
-
-        @Override
-        public String getSchemeName() {
-            return "Bearer";
-        }
-
-        @Override
-        public String getParameter(String name) {
-            return null;
-        }
-
-        @Override
-        public String getRealm() {
-            return null;
-        }
-
-        @Override
-        public boolean isConnectionBased() {
-            return false;
-        }
-
-        @Override
-        public boolean isComplete() {
-            return this.complete;
-        }
+    @Override
+    public void processChallenge(Header header) throws MalformedChallengeException {
+      this.complete = true;
     }
+
+    @Override
+    public Header authenticate(Credentials credentials, HttpRequest request) throws AuthenticationException {
+      return authenticate(credentials, request, null);
+    }
+
+    @Override
+    public Header authenticate(Credentials credentials, HttpRequest request, HttpContext httpContext)
+        throws AuthenticationException {
+      Header header = request.getFirstHeader(HttpHeaders.AUTHORIZATION);
+      CharArrayBuffer buffer = new CharArrayBuffer(128);
+      buffer.append(AUTH.WWW_AUTH_RESP);
+      buffer.append(": ");
+      if (header != null) {
+        buffer.append(header.getValue());
+        log.debug("Propagating Authorization header from request: {}", header.getValue());
+      } else {
+        buffer.append("Bearer " + credentials.getUserPrincipal().getName());
+        log.debug("Using Authorization header from credentials provider: {}", credentials.getUserPrincipal().getName());
+      }
+      return new BufferedHeader(buffer);
+    }
+
+    @Override
+    public String getSchemeName() {
+      return "Bearer";
+    }
+
+    @Override
+    public String getParameter(String name) {
+      return null;
+    }
+
+    @Override
+    public String getRealm() {
+      return null;
+    }
+
+    @Override
+    public boolean isConnectionBased() {
+      return false;
+    }
+
+    @Override
+    public boolean isComplete() {
+      return this.complete;
+    }
+  }
 }

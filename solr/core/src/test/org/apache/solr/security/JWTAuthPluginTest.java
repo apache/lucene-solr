@@ -82,7 +82,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     slimHeader = "Bearer" + " " + slimJwt;
   }
 
-  private static JwtClaims generateClaims() {
+  protected static JwtClaims generateClaims() {
     JwtClaims claims = new JwtClaims();
     claims.setIssuer("IDServer");  // who creates the token and signs it
     claims.setAudience("Solr"); // to whom the token is intended to be sent
