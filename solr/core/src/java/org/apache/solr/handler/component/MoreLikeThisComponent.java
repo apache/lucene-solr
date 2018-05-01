@@ -381,6 +381,10 @@ public class MoreLikeThisComponent extends SearchComponent {
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
+      boolean interestingTermsExtraction = p.getBool(MoreLikeThisParams.INTERESTING_TERMS, false);
+      if(interestingTermsExtraction){
+        
+      }
       DocListAndSet sim = mltHelper.getMoreLikeThis(id, 0, rows, null, null,
           flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
@@ -388,7 +392,6 @@ public class MoreLikeThisComponent extends SearchComponent {
       
       if (dbg != null) {
         SimpleOrderedMap<Object> docDbg = new SimpleOrderedMap<>();
-        docDbg.add("rawMLTQuery", mltHelper.getRawMLTQuery().toString());
         docDbg
             .add("boostedMLTQuery", mltHelper.getBoostedMLTQuery().toString());
         docDbg.add("realMLTQuery", mltHelper.getRealMLTQuery().toString());

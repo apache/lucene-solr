@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -32,7 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -109,23 +107,7 @@ import org.apache.lucene.util.PriorityQueue;
  * <br>
  * <h3>More Advanced Usage</h3>
  * <p>
- * You may want to use {@link #setFieldNames setFieldNames(...)} so you can examine
- * multiple fields (e.g. body and title) for similarity.
- * <p>
- * Depending on the size of your index and the size and makeup of your documents you
- * may want to call the other set methods to control how the similarity queries are
- * generated:
- * <ul>
- * <li> {@link #setMinTermFreq setMinTermFreq(...)}
- * <li> {@link #setMinDocFreq setMinDocFreq(...)}
- * <li> {@link #setMaxDocFreq setMaxDocFreq(...)}
- * <li> {@link #setMaxDocFreqPct setMaxDocFreqPct(...)}
- * <li> {@link #setMinWordLen setMinWordLen(...)}
- * <li> {@link #setMaxWordLen setMaxWordLen(...)}
- * <li> {@link #setMaxQueryTerms setMaxQueryTerms(...)}
- * <li> {@link #setMaxNumTokensParsed setMaxNumTokensParsed(...)}
- * <li> {@link #setStopWords setStopWord(...)}
- * </ul>
+ * You may want to see the parameters class
  * <br>
  * <hr>
  * <pre>
@@ -139,141 +121,10 @@ import org.apache.lucene.util.PriorityQueue;
  * </pre>
  */
 public final class MoreLikeThis {
-
   /**
-   * Default maximum number of tokens to parse in each example doc field that is not stored with TermVector support.
-   *
-   * @see #getMaxNumTokensParsed
+   * All tunable parameters that regulates the query building
    */
-  public static final int DEFAULT_MAX_NUM_TOKENS_PARSED = 5000;
-
-  /**
-   * Ignore terms with less than this frequency in the source doc.
-   *
-   * @see #getMinTermFreq
-   * @see #setMinTermFreq
-   */
-  public static final int DEFAULT_MIN_TERM_FREQ = 2;
-
-  /**
-   * Ignore words which do not occur in at least this many docs.
-   *
-   * @see #getMinDocFreq
-   * @see #setMinDocFreq
-   */
-  public static final int DEFAULT_MIN_DOC_FREQ = 5;
-
-  /**
-   * Ignore words which occur in more than this many docs.
-   *
-   * @see #getMaxDocFreq
-   * @see #setMaxDocFreq
-   * @see #setMaxDocFreqPct
-   */
-  public static final int DEFAULT_MAX_DOC_FREQ = Integer.MAX_VALUE;
-
-  /**
-   * Boost terms in query based on score.
-   *
-   * @see #isBoost
-   * @see #setBoost
-   */
-  public static final boolean DEFAULT_BOOST = false;
-
-  /**
-   * Default field names. Null is used to specify that the field names should be looked
-   * up at runtime from the provided reader.
-   */
-  public static final String[] DEFAULT_FIELD_NAMES = new String[]{"contents"};
-
-  /**
-   * Ignore words less than this length or if 0 then this has no effect.
-   *
-   * @see #getMinWordLen
-   * @see #setMinWordLen
-   */
-  public static final int DEFAULT_MIN_WORD_LENGTH = 0;
-
-  /**
-   * Ignore words greater than this length or if 0 then this has no effect.
-   *
-   * @see #getMaxWordLen
-   * @see #setMaxWordLen
-   */
-  public static final int DEFAULT_MAX_WORD_LENGTH = 0;
-
-  /**
-   * Default set of stopwords.
-   * If null means to allow stop words.
-   *
-   * @see #setStopWords
-   * @see #getStopWords
-   */
-  public static final Set<?> DEFAULT_STOP_WORDS = null;
-
-  /**
-   * Current set of stop words.
-   */
-  private Set<?> stopWords = DEFAULT_STOP_WORDS;
-
-  /**
-   * Return a Query with no more than this many terms.
-   *
-   * @see BooleanQuery#getMaxClauseCount
-   * @see #getMaxQueryTerms
-   * @see #setMaxQueryTerms
-   */
-  public static final int DEFAULT_MAX_QUERY_TERMS = 25;
-
-  /**
-   * Analyzer that will be used to parse the doc.
-   */
-  private Analyzer analyzer = null;
-
-  /**
-   * Ignore words less frequent that this.
-   */
-  private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
-
-  /**
-   * Ignore words which do not occur in at least this many docs.
-   */
-  private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
-
-  /**
-   * Ignore words which occur in more than this many docs.
-   */
-  private int maxDocFreq = DEFAULT_MAX_DOC_FREQ;
-
-  /**
-   * Should we apply a boost to the Query based on the scores?
-   */
-  private boolean boost = DEFAULT_BOOST;
-
-  /**
-   * Field name we'll analyze.
-   */
-  private String[] fieldNames = DEFAULT_FIELD_NAMES;
-
-  /**
-   * The maximum number of tokens to parse in each example doc field that is not stored with TermVector support
-   */
-  private int maxNumTokensParsed = DEFAULT_MAX_NUM_TOKENS_PARSED;
-
-  /**
-   * Ignore words if less than this len.
-   */
-  private int minWordLen = DEFAULT_MIN_WORD_LENGTH;
-
-  /**
-   * Ignore words if greater than this len.
-   */
-  private int maxWordLen = DEFAULT_MAX_WORD_LENGTH;
-
-  /**
-   * Don't return a query longer than this.
-   */
-  private int maxQueryTerms = DEFAULT_MAX_QUERY_TERMS;
+  private MoreLikeThisParameters parameters;
 
   /**
    * For idf() calculations.
@@ -286,30 +137,6 @@ public final class MoreLikeThis {
   private final IndexReader ir;
 
   /**
-   * Boost factor to use when boosting the terms
-   */
-  private float boostFactor = 1;
-
-  /**
-   * Returns the boost factor used when boosting terms
-   *
-   * @return the boost factor used when boosting terms
-   * @see #setBoostFactor(float)
-   */
-  public float getBoostFactor() {
-    return boostFactor;
-  }
-
-  /**
-   * Sets the boost factor to use when boosting terms
-   *
-   * @see #getBoostFactor()
-   */
-  public void setBoostFactor(float boostFactor) {
-    this.boostFactor = boostFactor;
-  }
-
-  /**
    * Constructor requiring an IndexReader.
    */
   public MoreLikeThis(IndexReader ir) {
@@ -317,10 +144,14 @@ public final class MoreLikeThis {
   }
 
   public MoreLikeThis(IndexReader ir, TFIDFSimilarity sim) {
+    this.parameters = new MoreLikeThisParameters();
     this.ir = ir;
     this.similarity = sim;
   }
 
+  public MoreLikeThisParameters getParameters() {
+    return parameters;
+  }
 
   public TFIDFSimilarity getSimilarity() {
     return similarity;
@@ -331,254 +162,12 @@ public final class MoreLikeThis {
   }
 
   /**
-   * Returns an analyzer that will be used to parse source doc with. The default analyzer
-   * is not set.
-   *
-   * @return the analyzer that will be used to parse source doc with.
-   */
-  public Analyzer getAnalyzer() {
-    return analyzer;
-  }
-
-  /**
-   * Sets the analyzer to use. An analyzer is not required for generating a query with the
-   * {@link #like(int)} method, all other 'like' methods require an analyzer.
-   *
-   * @param analyzer the analyzer to use to tokenize text.
-   */
-  public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
-  }
-
-  /**
-   * Returns the frequency below which terms will be ignored in the source doc. The default
-   * frequency is the {@link #DEFAULT_MIN_TERM_FREQ}.
-   *
-   * @return the frequency below which terms will be ignored in the source doc.
-   */
-  public int getMinTermFreq() {
-    return minTermFreq;
-  }
-
-  /**
-   * Sets the frequency below which terms will be ignored in the source doc.
-   *
-   * @param minTermFreq the frequency below which terms will be ignored in the source doc.
-   */
-  public void setMinTermFreq(int minTermFreq) {
-    this.minTermFreq = minTermFreq;
-  }
-
-  /**
-   * Returns the frequency at which words will be ignored which do not occur in at least this
-   * many docs. The default frequency is {@link #DEFAULT_MIN_DOC_FREQ}.
-   *
-   * @return the frequency at which words will be ignored which do not occur in at least this
-   *         many docs.
-   */
-  public int getMinDocFreq() {
-    return minDocFreq;
-  }
-
-  /**
-   * Sets the frequency at which words will be ignored which do not occur in at least this
-   * many docs.
-   *
-   * @param minDocFreq the frequency at which words will be ignored which do not occur in at
-   * least this many docs.
-   */
-  public void setMinDocFreq(int minDocFreq) {
-    this.minDocFreq = minDocFreq;
-  }
-
-  /**
-   * Returns the maximum frequency in which words may still appear.
-   * Words that appear in more than this many docs will be ignored. The default frequency is
-   * {@link #DEFAULT_MAX_DOC_FREQ}.
-   *
-   * @return get the maximum frequency at which words are still allowed,
-   *         words which occur in more docs than this are ignored.
-   */
-  public int getMaxDocFreq() {
-    return maxDocFreq;
-  }
-
-  /**
-   * Set the maximum frequency in which words may still appear. Words that appear
-   * in more than this many docs will be ignored.
-   *
-   * @param maxFreq the maximum count of documents that a term may appear
-   * in to be still considered relevant
-   */
-  public void setMaxDocFreq(int maxFreq) {
-    this.maxDocFreq = maxFreq;
-  }
-
-  /**
-   * Set the maximum percentage in which words may still appear. Words that appear
-   * in more than this many percent of all docs will be ignored.
-   *
-   * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
-   * in to be still considered relevant
-   */
-  public void setMaxDocFreqPct(int maxPercentage) {
-    this.maxDocFreq = maxPercentage * ir.numDocs() / 100;
-  }
-
-
-  /**
-   * Returns whether to boost terms in query based on "score" or not. The default is
-   * {@link #DEFAULT_BOOST}.
-   *
-   * @return whether to boost terms in query based on "score" or not.
-   * @see #setBoost
-   */
-  public boolean isBoost() {
-    return boost;
-  }
-
-  /**
-   * Sets whether to boost terms in query based on "score" or not.
-   *
-   * @param boost true to boost terms in query based on "score", false otherwise.
-   * @see #isBoost
-   */
-  public void setBoost(boolean boost) {
-    this.boost = boost;
-  }
-
-  /**
-   * Returns the field names that will be used when generating the 'More Like This' query.
-   * The default field names that will be used is {@link #DEFAULT_FIELD_NAMES}.
-   *
-   * @return the field names that will be used when generating the 'More Like This' query.
-   */
-  public String[] getFieldNames() {
-    return fieldNames;
-  }
-
-  /**
-   * Sets the field names that will be used when generating the 'More Like This' query.
-   * Set this to null for the field names to be determined at runtime from the IndexReader
-   * provided in the constructor.
-   *
-   * @param fieldNames the field names that will be used when generating the 'More Like This'
-   * query.
-   */
-  public void setFieldNames(String[] fieldNames) {
-    this.fieldNames = fieldNames;
-  }
-
-  /**
-   * Returns the minimum word length below which words will be ignored. Set this to 0 for no
-   * minimum word length. The default is {@link #DEFAULT_MIN_WORD_LENGTH}.
-   *
-   * @return the minimum word length below which words will be ignored.
-   */
-  public int getMinWordLen() {
-    return minWordLen;
-  }
-
-  /**
-   * Sets the minimum word length below which words will be ignored.
-   *
-   * @param minWordLen the minimum word length below which words will be ignored.
-   */
-  public void setMinWordLen(int minWordLen) {
-    this.minWordLen = minWordLen;
-  }
-
-  /**
-   * Returns the maximum word length above which words will be ignored. Set this to 0 for no
-   * maximum word length. The default is {@link #DEFAULT_MAX_WORD_LENGTH}.
-   *
-   * @return the maximum word length above which words will be ignored.
-   */
-  public int getMaxWordLen() {
-    return maxWordLen;
-  }
-
-  /**
-   * Sets the maximum word length above which words will be ignored.
-   *
-   * @param maxWordLen the maximum word length above which words will be ignored.
-   */
-  public void setMaxWordLen(int maxWordLen) {
-    this.maxWordLen = maxWordLen;
-  }
-
-  /**
-   * Set the set of stopwords.
-   * Any word in this set is considered "uninteresting" and ignored.
-   * Even if your Analyzer allows stopwords, you might want to tell the MoreLikeThis code to ignore them, as
-   * for the purposes of document similarity it seems reasonable to assume that "a stop word is never interesting".
-   *
-   * @param stopWords set of stopwords, if null it means to allow stop words
-   * @see #getStopWords
-   */
-  public void setStopWords(Set<?> stopWords) {
-    this.stopWords = stopWords;
-  }
-
-  /**
-   * Get the current stop words being used.
-   *
-   * @see #setStopWords
-   */
-  public Set<?> getStopWords() {
-    return stopWords;
-  }
-
-
-  /**
-   * Returns the maximum number of query terms that will be included in any generated query.
-   * The default is {@link #DEFAULT_MAX_QUERY_TERMS}.
-   *
-   * @return the maximum number of query terms that will be included in any generated query.
-   */
-  public int getMaxQueryTerms() {
-    return maxQueryTerms;
-  }
-
-  /**
-   * Sets the maximum number of query terms that will be included in any generated query.
-   *
-   * @param maxQueryTerms the maximum number of query terms that will be included in any
-   * generated query.
-   */
-  public void setMaxQueryTerms(int maxQueryTerms) {
-    this.maxQueryTerms = maxQueryTerms;
-  }
-
-  /**
-   * @return The maximum number of tokens to parse in each example doc field that is not stored with TermVector support
-   * @see #DEFAULT_MAX_NUM_TOKENS_PARSED
-   */
-  public int getMaxNumTokensParsed() {
-    return maxNumTokensParsed;
-  }
-
-  /**
-   * @param i The maximum number of tokens to parse in each example doc field that is not stored with TermVector support
-   */
-  public void setMaxNumTokensParsed(int i) {
-    maxNumTokensParsed = i;
-  }
-
-
-  /**
    * Return a query that will return docs like the passed lucene document ID.
    *
    * @param docNum the documentID of the lucene doc to generate the 'More Like This" query for.
    * @return a query that will return docs like the passed lucene document ID.
    */
   public Query like(int docNum) throws IOException {
-    if (fieldNames == null) {
-      // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
-      fieldNames = fields.toArray(new String[fields.size()]);
-    }
-
     return createQuery(retrieveTerms(docNum));
   }
 
@@ -588,11 +177,6 @@ public final class MoreLikeThis {
    * @return More Like This query for the passed document.
    */
   public Query like(Map<String, Collection<Object>> filteredDocument) throws IOException {
-    if (fieldNames == null) {
-      // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
-      fieldNames = fields.toArray(new String[fields.size()]);
-    }
     return createQuery(retrieveTerms(filteredDocument));
   }
 
@@ -615,18 +199,20 @@ public final class MoreLikeThis {
    */
   private Query createQuery(PriorityQueue<ScoreTerm> q) {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = parameters.getBoostConfiguration();
     ScoreTerm scoreTerm;
     float bestScore = -1;
 
     while ((scoreTerm = q.pop()) != null) {
       Query tq = new TermQuery(new Term(scoreTerm.topField, scoreTerm.word));
 
-      if (boost) {
+      if (boostConfiguration.isBoostByTermScore()) {
         if (bestScore == -1) {
           bestScore = (scoreTerm.score);
         }
         float myScore = (scoreTerm.score);
-        tq = new BoostQuery(tq, boostFactor * myScore / bestScore);
+        float fieldBoost = boostConfiguration.getFieldBoost(scoreTerm.topField);
+        tq = new BoostQuery(tq, fieldBoost * myScore / bestScore);
       }
 
       try {
@@ -647,8 +233,13 @@ public final class MoreLikeThis {
   private PriorityQueue<ScoreTerm> createQueue(Map<String, Map<String, Int>> perFieldTermFrequencies) throws IOException {
     // have collected all words in doc and their freqs
     int numDocs = ir.numDocs();
+    int maxQueryTerms = parameters.getMaxQueryTerms();
+    int minTermFreq = parameters.getMinTermFreq();
+    int minDocFreq = parameters.getMinDocFreq();
+    int maxDocFreq = parameters.getMaxDocFreq();
     final int limit = Math.min(maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
     FreqQ queue = new FreqQ(limit); // will order words by score
+    
     for (Map.Entry<String, Map<String, Int>> entry : perFieldTermFrequencies.entrySet()) {
       Map<String, Int> perWordTermFrequencies = entry.getValue();
       String fieldName = entry.getKey();
@@ -702,34 +293,13 @@ public final class MoreLikeThis {
   }
 
   /**
-   * Describe the parameters that control how the "more like this" query is formed.
-   */
-  public String describeParams() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\t").append("maxQueryTerms  : ").append(maxQueryTerms).append("\n");
-    sb.append("\t").append("minWordLen     : ").append(minWordLen).append("\n");
-    sb.append("\t").append("maxWordLen     : ").append(maxWordLen).append("\n");
-    sb.append("\t").append("fieldNames     : ");
-    String delim = "";
-    for (String fieldName : fieldNames) {
-      sb.append(delim).append(fieldName);
-      delim = ", ";
-    }
-    sb.append("\n");
-    sb.append("\t").append("boost          : ").append(boost).append("\n");
-    sb.append("\t").append("minTermFreq    : ").append(minTermFreq).append("\n");
-    sb.append("\t").append("minDocFreq     : ").append(minDocFreq).append("\n");
-    return sb.toString();
-  }
-
-  /**
    * Find words for a more-like-this query former.
    *
    * @param docNum the id of the lucene document from which to find terms
    */
   private PriorityQueue<ScoreTerm> retrieveTerms(int docNum) throws IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
-    for (String fieldName : fieldNames) {
+    for (String fieldName : parameters.getFieldNamesOrInit(ir)) {
       final Fields vectors = ir.getTermVectors(docNum);
       final Terms vector;
       if (vectors != null) {
@@ -760,7 +330,7 @@ public final class MoreLikeThis {
   private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, Collection<Object>> field2fieldValues) throws
       IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
-    for (String fieldName : fieldNames) {
+    for (String fieldName : parameters.getFieldNamesOrInit(ir)) {
       for (String field : field2fieldValues.keySet()) {
         Collection<Object> fieldValues = field2fieldValues.get(field);
         if(fieldValues == null)
@@ -815,6 +385,7 @@ public final class MoreLikeThis {
    */
   private void addTermFrequencies(Reader r, Map<String, Map<String, Int>> perFieldTermFrequencies, String fieldName)
       throws IOException {
+    Analyzer analyzer = parameters.getAnalyzer();
     if (analyzer == null) {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
@@ -828,7 +399,7 @@ public final class MoreLikeThis {
       while (ts.incrementToken()) {
         String word = termAtt.toString();
         tokenCount++;
-        if (tokenCount > maxNumTokensParsed) {
+        if (tokenCount > parameters.getMaxNumTokensParsed()) {
           break;
         }
         if (isNoiseWord(word)) {
@@ -856,13 +427,13 @@ public final class MoreLikeThis {
    */
   private boolean isNoiseWord(String term) {
     int len = term.length();
-    if (minWordLen > 0 && len < minWordLen) {
+    if (parameters.getMinWordLen() > 0 && len < parameters.getMinWordLen()) {
       return true;
     }
-    if (maxWordLen > 0 && len > maxWordLen) {
+    if (parameters.getMaxWordLen() > 0 && len > parameters.getMaxWordLen()) {
       return true;
     }
-    return stopWords != null && stopWords.contains(term);
+    return parameters.getStopWords() != null && parameters.getStopWords().contains(term);
   }
 
 
@@ -898,6 +469,7 @@ public final class MoreLikeThis {
    * @see #retrieveInterestingTerms(java.io.Reader, String)
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
+    int maxQueryTerms = parameters.getMaxQueryTerms();
     ArrayList<String> al = new ArrayList<>(maxQueryTerms);
     PriorityQueue<ScoreTerm> pq = retrieveTerms(docNum);
     ScoreTerm scoreTerm;
@@ -918,9 +490,9 @@ public final class MoreLikeThis {
    * @param fieldName field passed to analyzer to use when analyzing the content
    * @return the most interesting words in the document
    * @see #retrieveTerms(java.io.Reader, String)
-   * @see #setMaxQueryTerms
    */
   public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
+    int maxQueryTerms = parameters.getMaxQueryTerms();
     ArrayList<String> al = new ArrayList<>(maxQueryTerms);
     PriorityQueue<ScoreTerm> pq = retrieveTerms(r, fieldName);
     ScoreTerm scoreTerm;

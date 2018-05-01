@@ -58,15 +58,16 @@ public class MoreLikeThisQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     MoreLikeThis mlt = new MoreLikeThis(reader);
+    MoreLikeThisParameters mltParameters = mlt.getParameters();
 
-    mlt.setFieldNames(moreLikeFields);
-    mlt.setAnalyzer(analyzer);
-    mlt.setMinTermFreq(minTermFrequency);
+    mltParameters.setFieldNames(moreLikeFields);
+    mltParameters.setAnalyzer(analyzer);
+    mltParameters.setMinTermFreq(minTermFrequency);
     if (minDocFreq >= 0) {
-      mlt.setMinDocFreq(minDocFreq);
+      mltParameters.setMinDocFreq(minDocFreq);
     }
-    mlt.setMaxQueryTerms(maxQueryTerms);
-    mlt.setStopWords(stopWords);
+    mltParameters.setMaxQueryTerms(maxQueryTerms);
+    mltParameters.setStopWords(stopWords);
     BooleanQuery bq = (BooleanQuery) mlt.like(fieldName, new StringReader(likeText));
     BooleanQuery.Builder newBq = new BooleanQuery.Builder();
     for (BooleanClause clause : bq) {
