@@ -289,6 +289,9 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
               writer.softUpdateDocument(new Term("id", id), doc,
                   new NumericDocValuesField("soft_delete", 1));
             }
+            if (rarely()) {
+              writer.flush();
+            }
             ids.add(id);
           }
         } catch (IOException | InterruptedException e) {
@@ -382,13 +385,13 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     Document tombstone = new Document();
     tombstone.add(new NumericDocValuesField("soft_delete", 1));
     writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
-    // Internally, forceMergeDeletes will call flush to flush pending updates
+    writer.forceMergeDeletes(true); // Internally, forceMergeDeletes will call flush to flush pending updates
     // Thus, we will have two segments - both having soft-deleted documents.
     // We expect any MP to merge these segments into one segment
     // when calling forceMergeDeletes.
-    writer.forceMergeDeletes(true);
-    assertEquals(1, writer.maxDoc());
     assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.numDocs());
+    assertEquals(1, writer.maxDoc());
     writer.close();
     dir.close();
   }

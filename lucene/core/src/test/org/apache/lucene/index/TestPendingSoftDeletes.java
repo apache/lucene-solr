@@ -116,9 +116,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(4, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -135,9 +134,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     updates = Arrays.asList(singleUpdate(docsDeleted, 10));
     fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0);
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(5, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -180,9 +178,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(1, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
