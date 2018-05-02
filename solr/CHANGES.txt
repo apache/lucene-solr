@@ -48,6 +48,8 @@ Bug Fixes
 * SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
   (Amrit Sarkar, Varun Thacker)
 
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
 ==================  7.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
