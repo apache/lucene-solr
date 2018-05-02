@@ -40,7 +40,7 @@ public class AssertingScorer extends Scorer {
   IteratorState state = IteratorState.ITERATING;
   int doc;
   float minCompetitiveScore = 0;
-  int lastShallowTarget;
+  int lastShallowTarget = -1;
 
   private AssertingScorer(Random random, Scorer in, ScoreMode scoreMode) {
     super(in.weight);

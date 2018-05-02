@@ -23,6 +23,9 @@ import java.util.List;
  */
 public abstract class Impacts {
 
+  /** Sole constructor. Typically invoked by sub classes. */
+  protected Impacts() {}
+
   /**
    * Return the number of levels on which we have impacts.
    * The returned value is always greater than 0 and may not always be the

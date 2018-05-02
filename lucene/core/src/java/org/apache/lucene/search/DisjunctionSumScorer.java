@@ -36,6 +36,7 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
     super(weight, subScorers, needsScores);
     double maxScore = 0;
     for (Scorer scorer : subScorers) {
+      scorer.advanceShallow(0);
       maxScore += scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
     }
     // The error of sums depends on the order in which values are summed up. In
