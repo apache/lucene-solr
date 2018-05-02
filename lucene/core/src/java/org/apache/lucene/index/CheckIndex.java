@@ -739,7 +739,7 @@ public final class CheckIndex implements Closeable {
 
           // Test Fieldinfos
           segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
-        
+
           // Test Field Norms
           segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
@@ -1209,7 +1209,8 @@ public final class CheckIndex implements Closeable {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, boolean doSlowChecks) throws IOException {
+  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos,
+      NormsProducer normsProducer, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, boolean doSlowChecks) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     long startNS;
     if (doPrint) {
@@ -1754,7 +1755,26 @@ public final class CheckIndex implements Closeable {
         if (visitedDocs.cardinality() != v) {
           throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
-        
+
+        if (fieldInfo.hasNorms() && isVectors == false) {
+          final NumericDocValues norms = normsProducer.getNorms(fieldInfo);
+          // Cross-check terms with norms
+          for (int doc = norms.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = norms.nextDoc()) {
+            if (liveDocs != null && liveDocs.get(doc) == false) {
+              // Norms may only be out of sync with terms on deleted documents.
+              // This happens when a document fails indexing and in that case it
+              // should be immediately marked as deleted by the IndexWriter.
+              continue;
+            }
+            final long norm = norms.longValue();
+            if (norm != 0 && visitedDocs.get(doc) == false) {
+              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + norm);
+            } else if (norm == 0 && visitedDocs.get(doc)) {
+              throw new RuntimeException("Document " + doc + " has terms according to postings but its norm value is 0, which may only be used on documents that have no terms");
+            }
+          }
+        }
+
         // Test seek to last term:
         if (lastTerm != null) {
           if (termsEnum.seekCeil(lastTerm.get()) != TermsEnum.SeekStatus.FOUND) { 
@@ -1937,7 +1957,11 @@ public final class CheckIndex implements Closeable {
 
       final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
-      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose, doSlowChecks);
+      NormsProducer normsProducer = reader.getNormsReader();
+      if (normsProducer != null) {
+        normsProducer = normsProducer.getMergeInstance();
+      }
+      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, normsProducer, true, false, infoStream, verbose, doSlowChecks);
     } catch (Throwable e) {
       if (failFast) {
         throw IOUtils.rethrowAlways(e);
@@ -2594,7 +2618,7 @@ public final class CheckIndex implements Closeable {
           
           if (tfv != null) {
             // First run with no deletions:
-            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose, doSlowChecks);
+            checkFields(tfv, null, 1, fieldInfos, null, false, true, infoStream, verbose, doSlowChecks);
             
             // Only agg stats if the doc is live:
             final boolean doStats = liveDocs == null || liveDocs.get(j);
