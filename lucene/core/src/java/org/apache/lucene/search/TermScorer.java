@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
@@ -31,6 +32,7 @@ final class TermScorer extends Scorer {
   private final ImpactsEnum impactsEnum;
   private final DocIdSetIterator iterator;
   private final LeafSimScorer docScorer;
+  private final MaxScoreCache maxScoreCache;
   private float minCompetitiveScore;
 
   /**
@@ -47,7 +49,8 @@ final class TermScorer extends Scorer {
     super(weight);
     this.docScorer = docScorer;
     if (scoreMode == ScoreMode.TOP_SCORES) {
-      impactsEnum = te.impacts(docScorer.getSimScorer(), PostingsEnum.FREQS);
+      impactsEnum = te.impacts(PostingsEnum.FREQS);
+      maxScoreCache = new MaxScoreCache(impactsEnum, docScorer.getSimScorer());
       postingsEnum = impactsEnum;
       iterator = new DocIdSetIterator() {
 
@@ -61,8 +64,10 @@ final class TermScorer extends Scorer {
           }
 
           if (target > upTo) {
-            upTo = impactsEnum.advanceShallow(target);
-            maxScore = impactsEnum.getMaxScore(upTo);
+            impactsEnum.advanceShallow(target);
+            Impacts impacts = impactsEnum.getImpacts();
+            upTo = impacts.getDocIdUpTo(0);
+            maxScore = maxScoreCache.getMaxScoreForLevel(0);
           }
 
           while (true) {
@@ -76,10 +81,23 @@ final class TermScorer extends Scorer {
               return NO_MORE_DOCS;
             }
 
-            target = upTo + 1;
-
-            upTo = impactsEnum.advanceShallow(target);
-            maxScore = impactsEnum.getMaxScore(upTo);
+            impactsEnum.advanceShallow(upTo + 1);
+            Impacts impacts = impactsEnum.getImpacts();
+            final int level = maxScoreCache.getSkipLevel(minCompetitiveScore);
+            if (level >= 0) {
+              // we can skip more docs
+              int newUpTo = impacts.getDocIdUpTo(level);
+              if (newUpTo == NO_MORE_DOCS) {
+                return NO_MORE_DOCS;
+              }
+              target = newUpTo + 1;
+              impactsEnum.advanceShallow(target);
+              impacts = impactsEnum.getImpacts();
+            } else {
+              target = upTo + 1;
+            }
+            upTo = impacts.getDocIdUpTo(0);
+            maxScore = maxScoreCache.getMaxScoreForLevel(0);
           }
         }
 
@@ -105,7 +123,8 @@ final class TermScorer extends Scorer {
       };
     } else {
       postingsEnum = te.postings(null, scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE);
-      impactsEnum = new SlowImpactsEnum(postingsEnum, docScorer.getSimScorer().score(Float.MAX_VALUE, 1));
+      impactsEnum = new SlowImpactsEnum(postingsEnum);
+      maxScoreCache = new MaxScoreCache(impactsEnum, docScorer.getSimScorer());
       iterator = postingsEnum;
     }
   }
@@ -132,12 +151,12 @@ final class TermScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
-    return impactsEnum.advanceShallow(target);
+    return maxScoreCache.advanceShallow(target);
   }
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
-    return impactsEnum.getMaxScore(upTo);
+    return maxScoreCache.getMaxScore(upTo);
   }
 
   @Override
@@ -148,4 +167,5 @@ final class TermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")[" + super.toString() + "]"; }
+
 }

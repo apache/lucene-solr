@@ -18,11 +18,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
-
 /**
- * Extension of {@link PostingsEnum} which also provides information about the
- * produced scores.
+ * Extension of {@link PostingsEnum} which also provides information about
+ * upcoming impacts.
  * @lucene.experimental
  */
 public abstract class ImpactsEnum extends PostingsEnum {
@@ -31,23 +29,28 @@ public abstract class ImpactsEnum extends PostingsEnum {
   protected ImpactsEnum() {}
 
   /**
-   * Advance to the block of documents that contains {@code target} in order to
-   * get scoring information about this block. This method is implicitly called
-   * by {@link DocIdSetIterator#advance(int)} and
-   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
-   * current {@link DocIdSetIterator#docID()}.
-   * It returns a number that is greater than or equal to all documents
-   * contained in the current block, but less than any doc IDS of the next block.
-   * {@code target} must be &gt;= {@link #docID()} as well as all targets that
-   * have been passed to {@link #advanceShallow(int)} so far.
+   * Shallow-advance to {@code target}. This is cheaper than calling
+   * {@link #advance(int)} and allows further calls to {@link #getImpacts()}
+   * to ignore doc IDs that are less than {@code target} in order to get more
+   * precise information about impacts.
+   * This method may not be called on targets that are less than the current
+   * {@link #docID()}.
+   * After this method has been called, {@link #nextDoc()} may not be called
+   * if the current doc ID is less than {@code target - 1} and
+   * {@link #advance(int)} may not be called on targets that are less than
+   * {@code target}.
    */
-  public abstract int advanceShallow(int target) throws IOException;
+  public abstract void advanceShallow(int target) throws IOException;
 
   /**
-   * Return the maximum score that documents between the last {@code target}
-   * that this iterator was {@link #advanceShallow(int) shallow-advanced} to
-   * included and {@code upTo} included.
+   * Get information about upcoming impacts for doc ids that are greater than
+   * or equal to the maximum of {@link #docID()} and the last target that was
+   * passed to {@link #advanceShallow(int)}.
+   * This method may not be called on an unpositioned iterator on which
+   * {@link #advanceShallow(int)} has never been called.
+   * NOTE: advancing this iterator may invalidate the returned impacts, so they
+   * should not be used after the iterator has been advanced.
    */
-  public abstract float getMaxScore(int upTo) throws IOException;
+  public abstract Impacts getImpacts() throws IOException;
 
 }

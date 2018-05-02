@@ -88,6 +88,7 @@ public class AssertingScorer extends Scorer {
   @Override
   public float getMaxScore(int upTo) throws IOException {
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
+    assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
     return maxScore;
   }
