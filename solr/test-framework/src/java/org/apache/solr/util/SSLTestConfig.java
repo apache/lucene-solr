@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import javax.net.ssl.SSLContext;
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -27,15 +25,17 @@ import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
@@ -49,9 +49,11 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class SSLTestConfig extends SSLConfig {
 
-  private static final String TEST_KEYSTORE_RESOURCE = "SSLTestConfig.testing.keystore";
+  private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
+  private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_KEYSTORE_PASSWORD = "secret";
 
+  private final boolean checkPeerName;
   private final Resource keyStore;
   private final Resource trustStore;
   
@@ -59,44 +61,59 @@ public class SSLTestConfig extends SSLConfig {
   public SSLTestConfig() {
     this(false, false);
   }
-
-  /** 
-   * Create an SSLTestConfig based on a few caller specified options.  As needed, 
-   * keystore/truststore information will be pulled from a hardocded resource file provided 
-   * by the solr test-framework.
+  
+  /**
+   * Create an SSLTestConfig based on a few caller specified options, 
+   * implicitly assuming <code>checkPeerName=false</code>.  
+   * <p>
+   * As needed, keystore/truststore information will be pulled from a hardcoded resource 
+   * file provided by the solr test-framework
+   * </p>
    *
-   * @param useSSL - wether SSL should be required.
+   * @param useSSL - whether SSL should be required.
    * @param clientAuth - whether client authentication should be required.
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth) {
+    this(useSSL, clientAuth, false);
+  }
+
+  // NOTE: if any javadocs below change, update create-keystores.sh
+  /**
+   * Create an SSLTestConfig based on a few caller specified options.  As needed, 
+   * keystore/truststore information will be pulled from a hardcoded resource files provided 
+   * by the solr test-framework based on the value of <code>checkPeerName</code>:
+   * <ul>
+   * <li><code>true</code> - A keystore resource file will be used that specifies 
+   *     a CN of <code>localhost</code> and a SAN IP of <code>127.0.0.1</code>, to 
+   *     ensure that all connections should be valid regardless of what machine runs the tests.</li> 
+   * <li><code>false</code> - A keystore resource file will be used that specifies 
+   *     a bogus hostname in the CN and reserved IP as the SAN, since no (valid) tests using this 
+   *     SSLTestConfig should care what CN/SAN are.</li> 
+   * </ul>
+   *
+   * @param useSSL - whether SSL should be required.
+   * @param clientAuth - whether client authentication should be required.
+   * @param checkPeerName - whether the client should validate the 'peer name' of the SSL Certificate (and which testing Cert should be used)
+   * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
+   */
+  public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
     super(useSSL, clientAuth, null, TEST_KEYSTORE_PASSWORD, null, TEST_KEYSTORE_PASSWORD);
-    trustStore = keyStore = Resource.newClassPathResource(TEST_KEYSTORE_RESOURCE);
+    this.checkPeerName = checkPeerName;
+    
+    final String resourceName = checkPeerName
+      ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
+    trustStore = keyStore = Resource.newClassPathResource(resourceName);
     if (null == keyStore || ! keyStore.exists() ) {
       throw new IllegalStateException("Unable to locate keystore resource file in classpath: "
-                                      + TEST_KEYSTORE_RESOURCE);
+                                      + resourceName);
     }
   }
 
-  /**
-   * Helper utility for building resources from arbitrary user input paths/urls
-   * if input is null, returns null; otherwise attempts to build Resource and verifies that Resource exists.
-   */
-  private static final Resource tryNewResource(String userInput, String type) {
-    if (null == userInput) {
-      return null;
-    }
-    Resource result;
-    try {
-      result = Resource.newResource(userInput);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Can't build " + type + " Resource: " + e.getMessage(), e);
-    }
-    if (! result.exists()) {
-      throw new IllegalArgumentException(type + " Resource does not exist " + result.getName());
-    }
-    return result;
+  /** If true, then servers hostname/ip should be validated against the SSL Cert metadata */
+  public boolean getCheckPeerName() {
+    return checkPeerName;
   }
-
+  
   /** 
    * NOTE: This method is meaningless in SSLTestConfig.
    * @return null
@@ -175,7 +192,7 @@ public class SSLTestConfig extends SSLConfig {
     
     SSLContextBuilder builder = SSLContexts.custom();
     builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
-    
+
     builder.loadKeyMaterial(buildKeyStore(keyStore, getKeyStorePassword()), getKeyStorePassword().toCharArray());
 
     if (isClientAuthMode()) {
@@ -229,11 +246,9 @@ public class SSLTestConfig extends SSLConfig {
     }
     SSLConnectionSocketFactory sslConnectionFactory;
     try {
-      boolean sslCheckPeerName = toBooleanDefaultIfNull(toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
       SSLContext sslContext = buildClientSSLContext();
-      if (sslCheckPeerName == false) {
-        sslConnectionFactory = new SSLConnectionSocketFactory
-          (sslContext, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+      if (checkPeerName == false) {
+        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
       } else {
         sslConnectionFactory = new SSLConnectionSocketFactory(sslContext);
       }

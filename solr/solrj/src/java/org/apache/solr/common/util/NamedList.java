@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +30,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * A simple container class for modeling an ordered list of name/value pairs.
@@ -513,6 +516,33 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
     }
     return result;
+  }
+  /**
+   * Create SolrParams from NamedList.  Values must be {@code String[]} or {@code List}
+   * (with toString()-appropriate entries), or otherwise have a toString()-appropriate value.
+   * Nulls are retained as such in arrays/lists but otherwise will NPE.
+   */
+  public SolrParams toSolrParams() {
+    HashMap<String,String[]> map = new HashMap<>();
+    for (int i=0; i<this.size(); i++) {
+      String name = this.getName(i);
+      Object val = this.getVal(i);
+      if (val instanceof String[]) {
+        MultiMapSolrParams.addParam(name, (String[]) val, map);
+      } else if (val instanceof List) {
+        List l = (List) val;
+        String[] s = new String[l.size()];
+        for (int j = 0; j < l.size(); j++) {
+          s[j] = l.get(j) == null ? null : l.get(j).toString();
+        }
+        MultiMapSolrParams.addParam(name, s, map);
+      } else {
+        //TODO: we NPE if val is null; yet we support val members above. A bug?
+        MultiMapSolrParams.addParam(name, val.toString(), map);
+      }
+    }
+    // always use MultiMap for easier processing further down the chain
+    return new MultiMapSolrParams(map);
   }
 
   /**

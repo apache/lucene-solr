@@ -62,15 +62,10 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Aliases aliases = zkStateReader.getAliases();
     final String collection = message.getStr(NAME);
-    for (Map.Entry<String, List<String>> ent :  aliases.getCollectionAliasListMap().entrySet()) {
-      if (ent.getValue().contains(collection)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Collection : " + collection + " is part of alias " + ent.getKey() + " remove or modify the alias before removing this collection.");
-      }
-    }
+    ZkStateReader zkStateReader = ocmh.zkStateReader;
+
+    checkNotReferencedByAlias(zkStateReader, collection);
 
     boolean removeCounterNode = true;
     try {
@@ -153,5 +148,24 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             + collection, e);
       }
     }
+  }
+
+  private void checkNotReferencedByAlias(ZkStateReader zkStateReader, String collection) throws Exception {
+    String alias = referencedByAlias(collection, zkStateReader.getAliases());
+    if (alias != null) {
+      zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
+      alias = referencedByAlias(collection, zkStateReader.getAliases());
+      if (alias != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Collection : " + collection + " is part of alias " + alias + " remove or modify the alias before removing this collection.");
+      }
+    }
+  }
+
+  private String referencedByAlias(String collection, Aliases aliases) {
+    return aliases.getCollectionAliasListMap().entrySet().stream()
+        .filter(e -> e.getValue().contains(collection))
+        .map(Map.Entry::getKey) // alias name
+        .findFirst().orElse(null);
   }
 }

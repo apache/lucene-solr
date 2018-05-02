@@ -235,8 +235,17 @@ public class Lang {
         .withFunctionName("bicubicSpline", BicubicSplineEvaluator.class)
         .withFunctionName("valueAt", ValueAtEvaluator.class)
         .withFunctionName("memset", MemsetEvaluator.class)
+        .withFunctionName("fft", FFTEvaluator.class)
+        .withFunctionName("ifft", IFFTEvaluator.class)
+        .withFunctionName("manhattan", ManhattanEvaluator.class)
+        .withFunctionName("canberra", CanberraEvaluator.class)
+        .withFunctionName("earthMovers", EarthMoversEvaluator.class)
+        .withFunctionName("euclidean", EuclideanEvaluator.class)
+        .withFunctionName("chebyshev", ChebyshevEvaluator.class)
+        .withFunctionName("ones", OnesEvaluator.class)
+        .withFunctionName("zeros", ZerosEvaluator.class)
 
-            // Boolean Stream Evaluators
+        // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("eor", ExclusiveOrEvaluator.class)

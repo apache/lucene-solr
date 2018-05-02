@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -31,7 +32,7 @@ import org.apache.lucene.util.packed.PagedMutable;
  * 
  * @lucene.experimental
  */
-class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
+final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
 
   // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
   final static class Iterator extends DocValuesFieldUpdates.Iterator {
@@ -40,7 +41,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     private final PagedMutable docs;
     private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
     private int doc = -1;
-    private Long value = null;
+    private long value;
     private final long delGen;
     
     Iterator(int size, PagedGrowableWriter values, PagedMutable docs, long delGen) {
@@ -50,15 +51,20 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
       this.delGen = delGen;
     }
     
+
     @Override
-    Long value() {
+    long longValue() {
       return value;
     }
-    
+
     @Override
-    int nextDoc() {
+    BytesRef binaryValue() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() {
       if (idx >= size) {
-        value = null;
         return doc = DocIdSetIterator.NO_MORE_DOCS;
       }
       doc = (int) docs.get(idx);
@@ -68,12 +74,12 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
         ++idx;
       }
       // idx points to the "next" element
-      value = Long.valueOf(values.get(idx - 1));
+      value = values.get(idx - 1);
       return doc;
     }
     
     @Override
-    int doc() {
+    public int docID() {
       return doc;
     }
 
@@ -101,28 +107,36 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
-  public synchronized void add(int doc, Object value) {
+  void add(int doc, BytesRef value) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  void add(int docId, DocValuesFieldUpdates.Iterator iterator) {
+    add(docId, iterator.longValue());
+  }
+
+  synchronized void add(int doc, long value) {
     if (finished) {
       throw new IllegalStateException("already finished");
     }
 
     assert doc < maxDoc;
-    
+
     // TODO: if the Sorter interface changes to take long indexes, we can remove that limitation
     if (size == Integer.MAX_VALUE) {
       throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
     }
 
-    Long val = (Long) value;
-    
+
     // grow the structures to have room for more elements
     if (docs.size() == size) {
       docs = docs.grow(size + 1);
       values = values.grow(size + 1);
     }
-    
+
     docs.set(size, doc);
-    values.set(size, val.longValue());
+    values.set(size, value);
     ++size;
   }
 
@@ -156,13 +170,13 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
         // increasing docID order:
         // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
         // stable and preserving original order so the last update to that docID wins
-        return Integer.compare((int) docs.get(i), (int) docs.get(j));
+        return Long.compare(docs.get(i), docs.get(j));
       }
     }.sort(0, size);
   }
 
   @Override
-  public Iterator iterator() {
+  Iterator iterator() {
     if (finished == false) {
       throw new IllegalStateException("call finish first");
     }
@@ -170,7 +184,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
   
   @Override
-  public boolean any() {
+  boolean any() {
     return size > 0;
   }
 
@@ -179,7 +193,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     return values.ramBytesUsed()
       + docs.ramBytesUsed()
       + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-      + 2 * RamUsageEstimator.NUM_BYTES_INT
+      + 2 * Integer.BYTES
       + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 }

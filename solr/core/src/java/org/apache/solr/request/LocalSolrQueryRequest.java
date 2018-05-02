@@ -16,15 +16,15 @@
  */
 package org.apache.solr.request;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Iterator;
 
 // With the addition of SolrParams, this class isn't needed for much anymore... it's currently
 // retained more for backward compatibility.
@@ -56,7 +56,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   }
 
   public LocalSolrQueryRequest(SolrCore core, NamedList args) {
-    super(core, SolrParams.toSolrParams(args));
+    super(core, args.toSolrParams());
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {

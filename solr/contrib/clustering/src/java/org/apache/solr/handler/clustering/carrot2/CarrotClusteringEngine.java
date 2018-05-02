@@ -123,7 +123,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     this.core = core;
 
     String result = super.init(config, core);
-    final SolrParams initParams = SolrParams.toSolrParams(config);
+    final SolrParams initParams = config.toSolrParams();
 
     // Initialization attributes for Carrot2 controller.
     HashMap<String, Object> initAttributes = new HashMap<>();

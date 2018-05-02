@@ -944,6 +944,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       props.put(ZkStateReader.STATE_PROP, Slice.State.INACTIVE.toString());
       props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
       // XXX also mark replicas as down? currently SplitShardCmd doesn't do this
+
+      // invalidate cached state
+      collectionsStatesRef.set(null);
     } finally {
       lock.unlock();
     }

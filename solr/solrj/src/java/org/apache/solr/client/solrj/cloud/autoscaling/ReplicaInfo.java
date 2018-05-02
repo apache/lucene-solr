@@ -138,6 +138,24 @@ public class ReplicaInfo implements MapWriter {
     return variables.get(name);
   }
 
+  public Object getVariable(String name, Object defValue) {
+    Object o = variables.get(name);
+    if (o != null) {
+      return o;
+    } else {
+      return defValue;
+    }
+  }
+
+  public boolean getBool(String name, boolean defValue) {
+    Object o = getVariable(name, defValue);
+    if (o instanceof Boolean) {
+      return (Boolean)o;
+    } else {
+      return Boolean.parseBoolean(String.valueOf(o));
+    }
+  }
+
   @Override
   public String toString() {
     return Utils.toJSONString(this);

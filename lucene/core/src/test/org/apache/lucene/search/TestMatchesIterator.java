@@ -147,30 +147,6 @@ public class TestMatchesIterator extends LuceneTestCase {
     }
   }
 
-  void checkTerms(Query q, String field, String[][] expected) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
-    for (int i = 0; i < expected.length; i++) {
-      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
-      int doc = i - ctx.docBase;
-      Matches matches = w.matches(ctx, doc);
-      if (matches == null) {
-        assertEquals(expected[i].length, 0);
-        continue;
-      }
-      MatchesIterator it = matches.getMatches(field);
-      if (it == null) {
-        assertEquals(expected[i].length, 0);
-        continue;
-      }
-      int pos = 0;
-      while (it.next()) {
-        assertEquals(expected[i][pos], it.term().utf8ToString());
-        pos += 1;
-      }
-      assertEquals(expected[i].length, pos);
-    }
-  }
-
   public void testTermQuery() throws IOException {
     Query q = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
@@ -191,13 +167,6 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, -1, -1, 2, 2, -1, -1 },
         { 4 }
     });
-    checkTerms(q, FIELD_NO_OFFSETS, new String[][]{
-        { "w1" },
-        { "w1" },
-        { "w1" },
-        { "w1", "w1" },
-        {}
-    });
   }
 
   public void testTermQueryNoPositions() throws IOException {
@@ -208,9 +177,11 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   public void testDisjunction() throws IOException {
+    Query w1 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
+    Query w3 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3"));
     Query q = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.SHOULD)
+        .add(w1, BooleanClause.Occur.SHOULD)
+        .add(w3, BooleanClause.Occur.SHOULD)
         .build();
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
         { 0, 0, 0, 0, 2, 2, 2, 6, 8 },
@@ -218,13 +189,6 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 2, 0, 0, 0, 2 },
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
         { 4 }
-    });
-    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
-        { "w1", "w3" },
-        { "w1", "w3", "w3" },
-        { "w1" },
-        { "w1", "w1", "w3" },
-        {}
     });
   }
 
@@ -263,12 +227,16 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   public void testMinShouldMatch() throws IOException {
+    Query w1 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
+    Query w3 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3"));
+    Query w4 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w4"));
+    Query xx = new TermQuery(new Term(FIELD_WITH_OFFSETS, "xx"));
     Query q = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")), BooleanClause.Occur.SHOULD)
+        .add(w3, BooleanClause.Occur.SHOULD)
         .add(new BooleanQuery.Builder()
-            .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "w4")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term(FIELD_WITH_OFFSETS, "xx")), BooleanClause.Occur.SHOULD)
+            .add(w1, BooleanClause.Occur.SHOULD)
+            .add(w4, BooleanClause.Occur.SHOULD)
+            .add(xx, BooleanClause.Occur.SHOULD)
             .setMinimumNumberShouldMatch(2)
             .build(), BooleanClause.Occur.SHOULD)
         .build();
@@ -278,13 +246,6 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 2, 0, 0, 0, 2, 1, 1, 3, 5, 4, 4, 12, 14 },
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 3, 3, 9, 11, 5, 5, 15, 17 },
         { 4 }
-    });
-    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
-        { "w1", "w3", "w4" },
-        { "w3", "w3" },
-        { "w1", "xx", "w4" },
-        { "w1", "w1", "w4", "w3" },
-        {}
     });
   }
 
@@ -360,9 +321,6 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3 },
         { 4 }
     });
-    checkTerms(q, FIELD_WITH_OFFSETS, new String[][]{
-        {}, {}, { "xx" }, {}
-    });
 
     Query rq = new RegexpQuery(new Term(FIELD_WITH_OFFSETS, "w[1-2]"));
     checkMatches(rq, FIELD_WITH_OFFSETS, new int[][]{
@@ -429,12 +387,5 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));
   }
-
-  protected String[] doc1Fields = {
-      "w1 w2 w3 w4 w5",
-      "w1 w3 w2 w3 zz",
-      "w1 xx w2 yy w4",
-      "w1 w2 w1 w4 w2 w3"
-  };
 
 }

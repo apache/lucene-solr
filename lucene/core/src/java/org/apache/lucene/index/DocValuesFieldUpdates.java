@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -26,7 +27,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * 
  * @lucene.experimental
  */
-abstract class DocValuesFieldUpdates {
+abstract class DocValuesFieldUpdates implements Accountable {
   
   protected static final int PAGE_SIZE = 1024;
 
@@ -35,27 +36,103 @@ abstract class DocValuesFieldUpdates {
    * updates are returned by this iterator, and the documents are returned in
    * increasing order.
    */
-  static abstract class Iterator {
-    
+  static abstract class Iterator extends DocValuesIterator {
+
+    @Override
+    public final boolean advanceExact(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public final long cost() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public abstract int nextDoc(); // no IOException
+
     /**
-     * Returns the next document which has an update, or
-     * {@link DocIdSetIterator#NO_MORE_DOCS} if there are no more documents to
-     * return.
+     * Returns a long value for the current document if this iterator is a long iterator.
      */
-    abstract int nextDoc();
-    
-    /** Returns the current document this iterator is on. */
-    abstract int doc();
-    
+    abstract long longValue();
+
     /**
-     * Returns the value of the document returned from {@link #nextDoc()}. A
-     * {@code null} value means that it was unset for this document.
+     * Returns a binary value for the current document if this iterator is a binary value iterator.
      */
-    abstract Object value();
+    abstract BytesRef binaryValue();
 
     /** Returns delGen for this packet. */
     abstract long delGen();
+
+    /**
+     * Wraps the given iterator as a BinaryDocValues instance.
+     */
+    static BinaryDocValues asBinaryDocValues(Iterator iterator) {
+      return new BinaryDocValues() {
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+        @Override
+        public BytesRef binaryValue() {
+          return iterator.binaryValue();
+        }
+        @Override
+        public boolean advanceExact(int target) {
+          return iterator.advanceExact(target);
+        }
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+        @Override
+        public int advance(int target) {
+          return iterator.advance(target);
+        }
+        @Override
+        public long cost() {
+          return iterator.cost();
+        }
+      };
+    }
+    /**
+     * Wraps the given iterator as a NumericDocValues instance.
+     */
+    static NumericDocValues asNumericDocValues(Iterator iterator) {
+      return new NumericDocValues() {
+        @Override
+        public long longValue() {
+          return iterator.longValue();
+        }
+        @Override
+        public boolean advanceExact(int target) {
+          throw new UnsupportedOperationException();
+        }
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+        @Override
+        public int advance(int target) {
+          return iterator.advance(target);
+        }
+        @Override
+        public long cost() {
+          return iterator.cost();
+        }
+      };
+    }
   }
+
+
 
   /** Merge-sorts multiple iterators, one per delGen, favoring the largest delGen that has updates for a given docID. */
   public static Iterator mergedIterator(Iterator[] subs) {
@@ -68,7 +145,7 @@ abstract class DocValuesFieldUpdates {
         @Override
         protected boolean lessThan(Iterator a, Iterator b) {
           // sort by smaller docID
-          int cmp = Integer.compare(a.doc(), b.doc());
+          int cmp = Integer.compare(a.docID(), b.docID());
           if (cmp == 0) {
             // then by larger delGen
             cmp = Long.compare(b.delGen(), a.delGen());
@@ -92,21 +169,16 @@ abstract class DocValuesFieldUpdates {
     }
 
     return new Iterator() {
-      private int doc;
-
-      private boolean first = true;
-      
+      private int doc = -1;
       @Override
       public int nextDoc() {
-        // TODO: can we do away with this first boolean?
-        if (first == false) {
           // Advance all sub iterators past current doc
           while (true) {
             if (queue.size() == 0) {
               doc = NO_MORE_DOCS;
               break;
             }
-            int newDoc = queue.top().doc();
+            int newDoc = queue.top().docID();
             if (newDoc != doc) {
               assert newDoc > doc: "doc=" + doc + " newDoc=" + newDoc;
               doc = newDoc;
@@ -118,21 +190,22 @@ abstract class DocValuesFieldUpdates {
               queue.updateTop();
             }
           }
-        } else {
-          doc = queue.top().doc();
-          first = false;
-        }
-        return doc;
-      }
-        
-      @Override
-      public int doc() {
         return doc;
       }
 
       @Override
-      public Object value() {
-        return queue.top().value();
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      long longValue() {
+        return queue.top().longValue();
+      }
+
+      @Override
+      BytesRef binaryValue() {
+        return queue.top().binaryValue();
       }
 
       @Override
@@ -158,31 +231,34 @@ abstract class DocValuesFieldUpdates {
     this.type = type;
   }
 
-  public boolean getFinished() {
+  boolean getFinished() {
     return finished;
   }
   
+  abstract void add(int doc, long value);
+
+  abstract void add(int doc, BytesRef value);
+
   /**
-   * Add an update to a document. For unsetting a value you should pass
-   * {@code null}.
+   * Adds the value for the given docID.
+   * This method prevents conditional calls to {@link Iterator#longValue()} or {@link Iterator#binaryValue()}
+   * since the implementation knows if it's a long value iterator or binary value
    */
-  public abstract void add(int doc, Object value);
-  
+  abstract void add(int docId, Iterator iterator);
+
   /**
    * Returns an {@link Iterator} over the updated documents and their
    * values.
    */
   // TODO: also use this for merging, instead of having to write through to disk first
-  public abstract Iterator iterator();
+  abstract Iterator iterator();
 
   /** Freezes internal data structures and sorts updates by docID for efficient iteration. */
-  public abstract void finish();
+  abstract void finish();
   
   /** Returns true if this instance contains any updates. */
-  public abstract boolean any();
+  abstract boolean any();
   
-  /** Returns approximate RAM bytes used. */
-  public abstract long ramBytesUsed();
+  abstract int size();
 
-  public abstract int size();
 }

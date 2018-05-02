@@ -481,21 +481,21 @@ public class MathExpressionTest extends SolrCloudTestCase {
                        "f=distance(b, c)," +
                        "g=transpose(matrix(a, b, c))," +
                        "h=distance(g)," +
-                       "i=distance(a, b, type=manhattan), " +
-                       "j=distance(a, c, type=manhattan)," +
-                       "k=distance(b, c, type=manhattan)," +
+                       "i=distance(a, b, manhattan()), " +
+                       "j=distance(a, c, manhattan())," +
+                       "k=distance(b, c, manhattan())," +
                        "l=transpose(matrix(a, b, c))," +
-                       "m=distance(l, type=manhattan)," +
-                       "n=distance(a, b, type=canberra), " +
-                       "o=distance(a, c, type=canberra)," +
-                       "p=distance(b, c, type=canberra)," +
+                       "m=distance(l, manhattan())," +
+                       "n=distance(a, b, canberra()), " +
+                       "o=distance(a, c, canberra())," +
+                       "p=distance(b, c, canberra())," +
                        "q=transpose(matrix(a, b, c))," +
-                       "r=distance(q, type=canberra)," +
-                       "s=distance(a, b, type=earthMovers), " +
-                       "t=distance(a, c, type=earthMovers)," +
-                       "u=distance(b, c, type=earthMovers)," +
+                       "r=distance(q, canberra())," +
+                       "s=distance(a, b, earthMovers()), " +
+                       "t=distance(a, c, earthMovers())," +
+                       "u=distance(b, c, earthMovers())," +
                        "w=transpose(matrix(a, b, c))," +
-                       "x=distance(w, type=earthMovers)," +
+                       "x=distance(w, earthMovers())," +
                        ")";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -993,6 +993,51 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(3).doubleValue() == 300.1D);
     assertTrue(out.get(4).doubleValue() == 2.13D);
     assertTrue(out.get(5).doubleValue() == 500.23D);
+  }
+
+
+  @Test
+  public void testOnes() throws Exception {
+    String cexpr = "ones(6)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).intValue(), 1);
+    assertEquals(out.get(1).intValue(), 1);
+    assertEquals(out.get(2).intValue(), 1);
+    assertEquals(out.get(3).intValue(), 1);
+    assertEquals(out.get(4).intValue(), 1);
+    assertEquals(out.get(5).intValue(), 1);
+  }
+
+  @Test
+  public void testZeros() throws Exception {
+    String cexpr = "zeros(6)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 6);
+    assertEquals(out.get(0).intValue(), 0);
+    assertEquals(out.get(1).intValue(), 0);
+    assertEquals(out.get(2).intValue(), 0);
+    assertEquals(out.get(3).intValue(), 0);
+    assertEquals(out.get(4).intValue(), 0);
+    assertEquals(out.get(5).intValue(), 0);
   }
 
   @Test
@@ -2302,6 +2347,65 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFFT() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=fft(array(1, 4, 8, 4, 1, 4, 8, 4, 1, 4, 8, 4, 1, 4, 8, 4))," +
+        "               b=ifft(a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+
+    List<List<Number>> fft = (List<List<Number>>)tuples.get(0).get("a");
+    assertEquals(fft.size(), 2);
+    List<Number> reals = fft.get(0);
+    assertEquals(reals.get(0).doubleValue(), 68, 0.0);
+    assertEquals(reals.get(1).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(2).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(3).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(4).doubleValue(), -28, 0.0);
+    assertEquals(reals.get(5).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(6).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(7).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(8).doubleValue(), 4, 0.0);
+    assertEquals(reals.get(9).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(10).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(11).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(12).doubleValue(), -28, 0.0);
+    assertEquals(reals.get(13).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(14).doubleValue(), 0, 0.0);
+    assertEquals(reals.get(15).doubleValue(), 0, 0.0);
+
+    List<Number> imaginary = fft.get(1);
+    for(int i=0; i<imaginary.size(); i++) {
+      assertEquals(imaginary.get(i).doubleValue(), 0.0, 0.0);
+    }
+
+    List<Number> ifft = (List<Number>)tuples.get(0).get("b");
+    assertEquals(ifft.get(0).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(1).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(2).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(3).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(4).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(5).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(6).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(7).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(8).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(9).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(10).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(11).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(12).doubleValue(), 1, 0.0);
+    assertEquals(ifft.get(13).doubleValue(), 4, 0.0);
+    assertEquals(ifft.get(14).doubleValue(), 8, 0.0);
+    assertEquals(ifft.get(15).doubleValue(), 4, 0.0);
+  }
+
+  @Test
   public void testCosineSimilarity() throws Exception {
     String cexpr = "cosineSimilarity(array(2,4,6,8),array(1,1,3,4))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -2887,7 +2991,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               c=knn(a, b, 2),"+
         "               d=getRowLabels(c),"+
         "               e=getAttributes(c)," +
-        "               f=knn(a, b, 2, distance=manhattan)," +
+        "               f=knn(a, b, 2, manhattan())," +
         "               g=getAttributes(f))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);

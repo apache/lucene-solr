@@ -47,6 +47,7 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -56,6 +57,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -93,7 +95,16 @@ public class HttpClientUtil {
   public static final String PROP_BASIC_AUTH_USER = "httpBasicAuthUser";
   // Basic auth password 
   public static final String PROP_BASIC_AUTH_PASS = "httpBasicAuthPassword";
-  
+
+  /**
+   * System property consulted to determine if the default {@link SchemaRegistryProvider} 
+   * will require hostname validation of SSL Certificates.  The default behavior is to enforce 
+   * peer name validation.
+   * <p>
+   * This property will have no effect if {@link #setSchemaRegistryProvider} is used to override
+   * the default {@link SchemaRegistryProvider} 
+   * </p>
+   */
   public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
   
   // * NOTE* The following params configure the default request config and this
@@ -181,6 +192,9 @@ public class HttpClientUtil {
     httpClientBuilder = newHttpClientBuilder;
   }
 
+  /**
+   * @see #SYS_PROP_CHECK_PEER_NAME
+   */
   public static void setSchemaRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
     schemaRegistryProvider = newRegistryProvider;
   }
@@ -188,7 +202,10 @@ public class HttpClientUtil {
   public static SolrHttpClientBuilder getHttpClientBuilder() {
     return httpClientBuilder;
   }
-  
+
+  /**
+   * @see #SYS_PROP_CHECK_PEER_NAME
+   */
   public static SchemaRegistryProvider getSchemaRegisteryProvider() {
     return schemaRegistryProvider;
   }
@@ -205,9 +222,22 @@ public class HttpClientUtil {
       // except that we explicitly use SSLConnectionSocketFactory.getSystemSocketFactory()
       // to pick up the system level default SSLContext (where javax.net.ssl.* properties
       // related to keystore & truststore are specified)
-      RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory>create();
+      RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory> create();
       builder.register("http", PlainConnectionSocketFactory.getSocketFactory());
-      builder.register("https", SSLConnectionSocketFactory.getSystemSocketFactory());
+
+      // logic to turn off peer host check
+      SSLConnectionSocketFactory sslConnectionSocketFactory = null;
+      boolean sslCheckPeerName = toBooleanDefaultIfNull(
+          toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
+      if (sslCheckPeerName) {
+        sslConnectionSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
+      } else {
+        sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
+                                                                    NoopHostnameVerifier.INSTANCE);
+        logger.debug(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME + "is false, hostname checks disabled.");
+      }
+      builder.register("https", sslConnectionSocketFactory);
+
       return builder.build();
     }
   }
@@ -459,5 +489,26 @@ public class HttpClientUtil {
     cookiePolicy = policyName;
   }
 
+  /**
+   * @lucene.internal
+   */
+  static boolean toBooleanDefaultIfNull(Boolean bool, boolean valueIfNull) {
+    if (bool == null) {
+      return valueIfNull;
+    }
+    return bool.booleanValue() ? true : false;
+  }
 
+  /**
+   * @lucene.internal
+   */
+  static Boolean toBooleanObject(String str) {
+    if ("true".equalsIgnoreCase(str)) {
+      return Boolean.TRUE;
+    } else if ("false".equalsIgnoreCase(str)) {
+      return Boolean.FALSE;
+    }
+    // no match
+    return null;
+  }
 }

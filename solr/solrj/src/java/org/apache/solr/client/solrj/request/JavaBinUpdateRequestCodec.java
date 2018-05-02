@@ -146,7 +146,7 @@ public class JavaBinUpdateRequestCodec {
 
       private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
         NamedList params = (NamedList) namedList[0].get("params");
-        updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
+        updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
         if (handler == null) return super.readIterator(fis);
         Integer commitWithin = null;
         Boolean overwrite = null;
@@ -165,7 +165,7 @@ public class JavaBinUpdateRequestCodec {
             sdoc = listToSolrInputDocument((List<NamedList>) o);
           } else if (o instanceof NamedList)  {
             UpdateRequest req = new UpdateRequest();
-            req.setParams(new ModifiableSolrParams(SolrParams.toSolrParams((NamedList) o)));
+            req.setParams(new ModifiableSolrParams(((NamedList) o).toSolrParams()));
             handler.update(null, req, null, null);
           } else if (o instanceof Map.Entry){
             sdoc = (SolrInputDocument) ((Map.Entry) o).getKey();
@@ -200,7 +200,7 @@ public class JavaBinUpdateRequestCodec {
     if(updateRequest.getParams()==null) {
       NamedList params = (NamedList) namedList[0].get("params");
       if(params!=null) {
-        updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
+        updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
       }
     }
     delById = (List<String>) namedList[0].get("delById");

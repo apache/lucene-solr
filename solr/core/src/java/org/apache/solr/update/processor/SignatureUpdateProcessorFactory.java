@@ -52,7 +52,7 @@ public class SignatureUpdateProcessorFactory
   @Override
   public void init(final NamedList args) {
     if (args != null) {
-      SolrParams params = SolrParams.toSolrParams(args);
+      SolrParams params = args.toSolrParams();
       boolean enabled = params.getBool("enabled", true);
       this.enabled = enabled;
 
