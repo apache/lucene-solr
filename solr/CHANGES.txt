@@ -108,6 +108,8 @@ New Features
 * SOLR-8998: introducing uniqueBlock(_root_) aggregation as faster alternative to unique(_root_) for counting
   child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
 
+* SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
+
 Bug Fixes
 ----------------------
 
