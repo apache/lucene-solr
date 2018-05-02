@@ -200,6 +200,8 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
 Optimizations
 ----------------------
 
