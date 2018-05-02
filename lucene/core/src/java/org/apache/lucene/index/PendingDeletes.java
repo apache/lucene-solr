@@ -235,18 +235,11 @@ class PendingDeletes {
   }
 
   /**
-   * Called before the given DocValuesFieldUpdates are written to disk
-   * @param info the field to apply
-   */
-  void onDocValuesUpdate(FieldInfo info) {
-  }
-
-  /**
-   * Called for every field update for the given field
-   * @param field the field that's updated
+   * Called for every field update for the given field at flush time
+   * @param info the field info of the field that's updated
    * @param iterator the values to apply
    */
-  void onDocValuesUpdate(String field, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
   }
 
   int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
