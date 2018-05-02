@@ -17,9 +17,7 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
@@ -35,23 +33,14 @@ import org.apache.lucene.util.packed.PagedMutable;
 final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
 
   // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
-  final static class Iterator extends DocValuesFieldUpdates.Iterator {
-    private final int size;
+  final static class Iterator extends DocValuesFieldUpdates.AbstractIterator {
     private final PagedGrowableWriter values;
-    private final PagedMutable docs;
-    private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
-    private int doc = -1;
     private long value;
-    private final long delGen;
-    
-    Iterator(int size, PagedGrowableWriter values, PagedMutable docs, long delGen) {
-      this.size = size;
-      this.values = values;
-      this.docs = docs;
-      this.delGen = delGen;
-    }
-    
 
+    Iterator(int size, PagedGrowableWriter values, PagedMutable docs, long delGen) {
+      super(size, docs, delGen);
+      this.values = values;
+    }
     @Override
     long longValue() {
       return value;
@@ -63,49 +52,16 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
 
     @Override
-    public int nextDoc() {
-      if (idx >= size) {
-        return doc = DocIdSetIterator.NO_MORE_DOCS;
-      }
-      doc = (int) docs.get(idx);
-      ++idx;
-      while (idx < size && docs.get(idx) == doc) {
-        // scan forward to last update to this doc
-        ++idx;
-      }
-      // idx points to the "next" element
-      value = values.get(idx - 1);
-      return doc;
-    }
-    
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    long delGen() {
-      return delGen;
+    protected void set(long idx) {
+      value = values.get(idx);
     }
   }
-
-  private final int bitsPerValue;
-  private PagedMutable docs;
   private PagedGrowableWriter values;
-  private int size;
-  
+
   public NumericDocValuesFieldUpdates(long delGen, String field, int maxDoc) {
     super(maxDoc, delGen, field, DocValuesType.NUMERIC);
-    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
-    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     values = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
   }
-
-  @Override
-  public int size() {
-    return size;
-  }
-
   @Override
   void add(int doc, BytesRef value) {
     throw new UnsupportedOperationException();
@@ -116,84 +72,43 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     add(docId, iterator.longValue());
   }
 
+  @Override
   synchronized void add(int doc, long value) {
-    if (finished) {
-      throw new IllegalStateException("already finished");
-    }
-
-    assert doc < maxDoc;
-
-    // TODO: if the Sorter interface changes to take long indexes, we can remove that limitation
-    if (size == Integer.MAX_VALUE) {
-      throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
-    }
-
-
-    // grow the structures to have room for more elements
-    if (docs.size() == size) {
-      docs = docs.grow(size + 1);
-      values = values.grow(size + 1);
-    }
-
-    docs.set(size, doc);
-    values.set(size, value);
-    ++size;
+    int add = add(doc);
+    values.set(add, value);
   }
 
   @Override
-  public void finish() {
-    if (finished) {
-      throw new IllegalStateException("already finished");
-    }
-    finished = true;
+  protected void swap(int i, int j) {
+    super.swap(i, j);
+    long tmpVal = values.get(j);
+    values.set(j, values.get(i));
+    values.set(i, tmpVal);
+  }
 
-    // shrink wrap
-    if (size < docs.size()) {
-      docs = docs.resize(size);
-      values = values.resize(size);
-    }
+  @Override
+  protected void grow(int size) {
+    super.grow(size);
+    values = values.grow(size);
+  }
 
-    new InPlaceMergeSorter() {
-      @Override
-      protected void swap(int i, int j) {
-        long tmpDoc = docs.get(j);
-        docs.set(j, docs.get(i));
-        docs.set(i, tmpDoc);
-        
-        long tmpVal = values.get(j);
-        values.set(j, values.get(i));
-        values.set(i, tmpVal);
-      }
-
-      @Override
-      protected int compare(int i, int j) {
-        // increasing docID order:
-        // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
-        // stable and preserving original order so the last update to that docID wins
-        return Long.compare(docs.get(i), docs.get(j));
-      }
-    }.sort(0, size);
+  @Override
+  protected void resize(int size) {
+    super.resize(size);
+    values = values.resize(size);
   }
 
   @Override
   Iterator iterator() {
-    if (finished == false) {
-      throw new IllegalStateException("call finish first");
-    }
+    ensureFinished();
     return new Iterator(size, values, docs, delGen);
   }
   
   @Override
-  boolean any() {
-    return size > 0;
-  }
-
-  @Override
   public long ramBytesUsed() {
     return values.ramBytesUsed()
-      + docs.ramBytesUsed()
-      + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-      + 2 * Integer.BYTES
-      + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+        + super.ramBytesUsed()
+        + Long.BYTES
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 }
