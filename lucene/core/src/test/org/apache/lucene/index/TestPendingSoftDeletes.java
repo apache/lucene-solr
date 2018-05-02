@@ -248,25 +248,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           }
         };
       }
-
-      @Override
-      public void finish() {
-      }
-
-      @Override
-      public boolean any() {
-        return true;
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public int size() {
-        return 1;
-      }
     };
   }
 }
