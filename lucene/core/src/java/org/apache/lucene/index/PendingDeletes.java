@@ -145,7 +145,6 @@ class PendingDeletes {
         liveDocs = reader.getLiveDocs();
         assert liveDocs == null || assertCheckLiveDocs(liveDocs, info.info.maxDoc(), info.getDelCount());
         liveDocsShared = true;
-
       }
       liveDocsInitialized = true;
     }
@@ -244,5 +243,9 @@ class PendingDeletes {
 
   int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return policy.numDeletesToMerge(info, numPendingDeletes(), readerIOSupplier);
+  }
+
+  Bits getHardLiveDocs() {
+    return liveDocs;
   }
 }

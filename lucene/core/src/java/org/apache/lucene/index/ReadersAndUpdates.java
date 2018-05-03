@@ -274,6 +274,13 @@ final class ReadersAndUpdates {
     return pendingDeletes.getLiveDocs();
   }
 
+  /**
+   * Returns the live-docs bits excluding documents that are not live due to soft-deletes
+   */
+  public synchronized Bits getHardLiveDocs() {
+    return pendingDeletes.getHardLiveDocs();
+  }
+
   public synchronized void dropChanges() {
     // Discard (don't save) changes when we are dropping
     // the reader; this is used only on the sub-readers
@@ -687,8 +694,18 @@ final class ReadersAndUpdates {
     return isMerging;
   }
 
+  final static class MergeReader {
+    final SegmentReader reader;
+    final Bits hardLiveDocs;
+
+    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
+      this.reader = reader;
+      this.hardLiveDocs = hardLiveDocs;
+    }
+  }
+
   /** Returns a reader for merge, with the latest doc values updates and deletions. */
-  synchronized SegmentReader getReaderForMerge(IOContext context) throws IOException {
+  synchronized MergeReader getReaderForMerge(IOContext context) throws IOException {
 
     // We must carry over any still-pending DV updates because they were not
     // successfully written, e.g. because there was a hole in the delGens,
@@ -715,7 +732,7 @@ final class ReadersAndUpdates {
     markAsShared();
     assert verifyDocCounts();
 
-    return reader;
+    return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
   /**

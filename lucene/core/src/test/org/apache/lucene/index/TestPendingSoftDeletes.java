@@ -70,6 +70,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNull(pendingSoftDeletes.getHardLiveDocs());
     // pass reader again
     Bits liveDocs = pendingSoftDeletes.getLiveDocs();
     pendingSoftDeletes.liveDocsShared();
@@ -91,6 +92,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertFalse(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNotNull(pendingSoftDeletes.getHardLiveDocs());
+    assertFalse(pendingSoftDeletes.getHardLiveDocs().get(0));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(1));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(2));
     IOUtils.close(reader, writer, dir);
   }
 
