@@ -49,9 +49,15 @@ limitations under the License.
     </div>
 
     <span id="nodes-content" class="content clearfix" ng-show="showNodes">
+      <div id="controls">
+        <a class="reload" ng-click="reload()"><span>reload</span></a>
+        <a class="details-button" ng-click="toggleDetails()" ng-class="{on:showDetails}">
+          <span>Details</span>
+        </a>
+      </div>
       <table id="nodes-table">
           <tr>
-              <th>Node</th>
+              <th width="20%">Node</th>
               <th>Uptime (jvm)</th>
               <th>Load</th>
               <th>CPU</th>
@@ -77,23 +83,44 @@ limitations under the License.
           <tr ng-repeat="(key, n) in nodes | orderBy:'key.order'">
               <td>
                 <div class="node-name"><a href="{{n.base_url}}">{{key}}</a></div>
-                <span class="node-spec">
-                  <span title="{{n.system.system.uptime}}">{{n.system.system.name}} {{n.system.system.version}}</span> 
+                <span class="node-spec" ng-show="!showDetails">
+                  <span title="{{n.system.system.uptime}}">{{n.system.system.name}}</span> 
                   {{n.system.system.availableProcessors}}cpu 
                   <span title="free: {{n.memFree}}">{{n.memTotal}}</span>
                   <span title="{{n.system.jvm.name}} {{n.system.jvm.version}}">Java {{n.system.jvm.spec.version}}</span>
                   <span title="{{n.system.lucene['solr-impl-version']}}">Solr {{n.system.lucene['solr-spec-version']}}</span>
                 </span>
+                <div class="node-spec" ng-show="showDetails">
+                  {{n.system.system.name}} {{n.system.system.version}}, {{n.system.system.availableProcessors}}cpu<br/>
+                  Uptime: {{n.uptime}}<br/>
+                  RAM: {{n.memTotal}} (used: {{n.memUsed}} free: {{n.memFree}})<br/> 
+                  Java: {{n.system.jvm.jre.vendor}} {{n.system.jvm.jre.version}}<br/>
+                  Solr: {{n.system.lucene['solr-impl-version'].split(" ")[0]}}
+                </div>
               </td>
               <td><div class="node-uptime">{{n.jvmUptime}}</div></td>
               <td><div class="node-load">{{n.loadAvg}}</div></td>
               <td><div class="node-cpu">{{n.cpuPct}}</div></td>
               <td>
                 <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
-                  {{n.heapUsedPct}}</div>
+                  {{n.heapUsedPct}}
+                </div>
+                <div class="node-spec">
+                  <span ng-show="showDetails">Used: </span>{{n.heapUsed}}
+                </div>
+                <div class="node-spec" ng-show="showDetails">
+                  Total: {{n.heapTotal}}<br/>
+                  Free: {{n.heapFree}}
+                </div>
               </td>
-              <td><div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
-                {{n.diskUsedPct}}</div></td>
+              <td>
+                <div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
+                {{n.diskUsedPct}}</div>
+                <div class="node-spec">
+                  <span title="Total size of all indices"><span ng-show="showDetails">Total: </span>{{n.size}}</span>
+                </div>
+                <div id="chart{{n.id}}" ng-show="showDetails"></div>
+              </td>
               <td>
                 <div class="node-gc" title="majorCount: {{n.gcMinorCount}} majorTime: {{n.gcMajorTime}} minorCount: {{n.gcMinorCount}} minorTime: {{n.gcMinorTime}}">
                   Major: {{Math.round(n.gcMajorCount / n.jvmUptimeSec * 60 * 5 * 100) / 100}}/5m<br/>
@@ -104,14 +131,16 @@ limitations under the License.
                 RPM: {{n.req1minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
               </td>
               <td>
-                <div ng-repeat="c in n.collections">
+                <div ng-repeat="c in n.collections | limitTo:showDetails?999:2 track by $index">
                   {{ c }}
                 </div>
+                <div class="more" ng-show="n.collections.length > 2 && !showDetails" ng-click="toggleDetails()">({{n.collections.length - 2}} more...)</div>
               </td>
               <td>
-                <div ng-repeat="core in n.cores">
+                <div ng-repeat="core in n.cores | limitTo:showDetails?999:2 track by $index">
                   <a href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.core }}</a> {{core.leader ? "(leader)" : ""}}
-                </div>                
+                </div>
+                <div class="more" ng-show="n.cores.length > 2 && !showDetails" ng-click="toggleDetails()">({{n.cores.length - 2}} more...)</div>
               </td>
           </tr>
       </table>

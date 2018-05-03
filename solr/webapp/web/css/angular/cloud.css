@@ -477,3 +477,70 @@ limitations under the License.
   font-weight: bolder;
   font-size: 25px;
 }
+
+/* Styling of reload and details buttons */
+#content #cloud #controls
+{
+  display: block;
+  height: 30px;
+}
+
+#content #cloud .reload
+{
+  background-image: url( ../../img/ico/arrow-circle.png );
+  padding-left: 21px;
+  float: left;
+}
+
+#content #cloud .reload.loader
+{
+  padding-left: 0;
+}
+
+#content #cloud .details-button 
+{
+  background-image: url(../../img/ico/ui-check-box-uncheck.png);
+  background-position: 0 50%;
+  color: #8D8D8D;
+  margin-top: 7px;
+  margin-left: 10px;
+  padding-left: 21px;
+  width: 30px;
+}
+
+#content #cloud .details-button.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
+}
+
+#content #cloud #nodes-content .more
+{
+  font-style: italic;
+  text-underline: #0000fa;
+}
+
+/* Disk usage details d3 chart bars style */
+.chart {
+    background: #eee;
+    padding: 1px;
+}
+.chart div {
+    width:90%;
+}
+.chart div div {
+    display:inline-block;
+}
+.chart div div.rect {
+    transition: all 0.5s ease-out;
+    -moz-transition: all 0.5s ease-out;
+    -webkit-transition: all 0.5s ease-out;
+    width:0;
+    font: 10px sans-serif;
+    background-color: #4CAF50;
+    text-align: left;
+    padding: 3px;
+    margin: 2px;
+    color: #000000;
+    box-shadow: 1px 1px 1px #666;
+}

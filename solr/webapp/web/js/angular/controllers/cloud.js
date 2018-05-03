@@ -71,131 +71,198 @@ function ensureInList(string, list) {
     }
 }
 
+// from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
+function bytesToSize(bytes) {
+    var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
+    if (bytes == 0) return 'n/a';
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+    if (i == 0) return bytes + '' + sizes[i];
+    return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
+}
+
 var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, MetricsAll) {
     $scope.showNodes = true;
     $scope.showTree = false;
     $scope.showGraph = false;
     $scope.showData = false;
+    $scope.showDetails = false;
+
+    $scope.toggleDetails = function() {
+        $scope.showDetails = !$scope.showDetails;
+    }
     
-    Collections.status(function (data) {
+    $scope.reload = function() {
+      Collections.status(function (data) {
         var nodes = {};
         var hosts = {};
         var live_nodes = [];
-        
+
         // Fetch cluster state from collections API and invert to a nodes structure
         for (var name in data.cluster.collections) {
-            var collection = data.cluster.collections[name];
-            collection.name = name;
-            var shards = collection.shards;
-            collection.shards = [];
-            for (var shardName in shards) {
-                var shard = shards[shardName];
-                shard.name = shardName;
-                shard.collection = collection.name;
-                var replicas = shard.replicas;
-                shard.replicas = [];
-                for (var replicaName in replicas) {
-                    var core = replicas[replicaName];
-                    core.name = replicaName;
-                    core.collection = collection.name;
-                    core.shard = shard.name;
-                    core.shard_state = shard.state;
-                    
-                    var node_name = core['node_name']; 
-                    var node = getOrCreateObj(node_name, nodes);
-                    var cores = getOrCreateList("cores", node);
-                    cores.push(core);
-                    node['base_url'] = core.base_url;
-                    var collections = getOrCreateList("collections", node);
-                    ensureInList(core.collection, collections);
-                    var host_name = node_name.split(":")[0];
-                    var host = getOrCreateObj(host_name, hosts);
-                    var host_nodes = getOrCreateList("nodes", host);
-                    ensureInList(node_name, host_nodes);
-                }
+          var collection = data.cluster.collections[name];
+          collection.name = name;
+          var shards = collection.shards;
+          collection.shards = [];
+          for (var shardName in shards) {
+            var shard = shards[shardName];
+            shard.name = shardName;
+            shard.collection = collection.name;
+            var replicas = shard.replicas;
+            shard.replicas = [];
+            for (var replicaName in replicas) {
+              var core = replicas[replicaName];
+              core.name = replicaName;
+              core.collection = collection.name;
+              core.shard = shard.name;
+              core.shard_state = shard.state;
+
+              var node_name = core['node_name'];
+              var node = getOrCreateObj(node_name, nodes);
+              var cores = getOrCreateList("cores", node);
+              cores.push(core);
+              node['base_url'] = core.base_url;
+              node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+              var collections = getOrCreateList("collections", node);
+              ensureInList(core.collection, collections);
+              var host_name = node_name.split(":")[0];
+              var host = getOrCreateObj(host_name, hosts);
+              var host_nodes = getOrCreateList("nodes", host);
+              ensureInList(node_name, host_nodes);
             }
+          }
         }
 
         live_nodes = data.cluster.live_nodes;
         for (n in data.cluster.live_nodes) {
-            if (!(data.cluster.live_nodes[n] in nodes)) {
-                nodes[data.cluster.live_nodes[n]] = {};
-            }
+          if (!(data.cluster.live_nodes[n] in nodes)) {
+            nodes[data.cluster.live_nodes[n]] = {};
+          }
         }
-        
-        SystemAll.get(function(systemResponse) {
+
+        SystemAll.get(function (systemResponse) {
           for (var node in systemResponse) {
-              console.log("Checking node " + node + " exist in " + nodes);
-              if (node in nodes) {
-                var s = systemResponse[node]; 
-                nodes[node]['system'] = s;
-                var memTotal = s.system.totalPhysicalMemorySize; 
-                var memFree = s.system.freePhysicalMemorySize;
-                var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100); 
-                nodes[node]['memUsedPct'] = memPercentage + "%";
-                nodes[node]['memTotal'] = Math.floor(memTotal / 1024 / 1024 / 1024) + "Gb";
-                nodes[node]['memFree'] = Math.floor(memFree / 1024 / 1024 / 1024) + "Gb";                 
-
-                var heapTotal = s.jvm.memory.raw.total; 
-                var heapFree = s.jvm.memory.raw.free;
-                var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100); 
-                nodes[node]['heapUsedPct'] = heapPercentage + "%";
-                nodes[node]['heapTotal'] = Math.floor(heapTotal / 1024 / 1024 / 1024) + "Gb";
-                nodes[node]['heapFree'] = Math.floor(heapFree / 1024 / 1024 / 1024) + "Gb";
-                
-                var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
-                nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
-                nodes[node]['jvmUptimeSec'] = jvmUptime;
-                
-                nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-                nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
-              } else {
-                  console.log("Skipping node " + node);
-              }
-          }
-        });
-
-        MetricsAll.get(function(metricsResponse) {
-          for (var node in metricsResponse) {
-            console.log("Checking node " + node + " exist in " + nodes);
             if (node in nodes) {
-                var m = metricsResponse[node]; 
-                nodes[node]['metrics'] = m;
-                var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace']; 
-                var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
-                var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100); 
-                nodes[node]['diskUsedPct'] = diskPercentage + "%";
-                nodes[node]['diskTotal'] = Math.floor(diskTotal / 1024 / 1024 / 1024) + "Gb";
-                nodes[node]['diskFree'] = Math.floor(diskFree / 1024 / 1024 / 1024) + "Gb";
-                
-                var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
-                nodes[node]['req'] = r.count;
-                nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
-                nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
-                nodes[node]['req15minRate'] = Math.floor(r['15minRate'] * 100) / 100;
-                nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
-                nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
-                nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
-                
-                nodes[node]['gcMajorCount'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.count'];
-                nodes[node]['gcMajorTime'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.time'];
-                nodes[node]['gcMinorCount'] = m.metrics['solr.jvm']['gc.ParNew.count'];  
-                nodes[node]['gcMinorTime'] = m.metrics['solr.jvm']['gc.ParNew.time'];
-            } else {
-              console.log("Skipping node " + node);
+              var s = systemResponse[node];
+              nodes[node]['system'] = s;
+              var memTotal = s.system.totalPhysicalMemorySize;
+              var memFree = s.system.freePhysicalMemorySize;
+              var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+              nodes[node]['memUsedPct'] = memPercentage + "%";
+              nodes[node]['memTotal'] = bytesToSize(memTotal);
+              nodes[node]['memFree'] = bytesToSize(memFree);
+              nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+
+              var heapTotal = s.jvm.memory.raw.total;
+              var heapFree = s.jvm.memory.raw.free;
+              var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
+              nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+              nodes[node]['heapUsedPct'] = heapPercentage + "%";
+              nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+              nodes[node]['heapFree'] = bytesToSize(heapFree);
+
+              var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+              nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+              nodes[node]['jvmUptimeSec'] = jvmUptime;
+
+              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?),.*/, "$1")
+              nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+              nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
             }
           }
         });
-        
+
+        MetricsAll.get(function (metricsResponse) {
+          for (var node in metricsResponse) {
+            if (node in nodes) {
+              var m = metricsResponse[node];
+              nodes[node]['metrics'] = m;
+              var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
+              var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
+              var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
+              nodes[node]['diskUsedPct'] = diskPercentage + "%";
+              nodes[node]['diskTotal'] = bytesToSize(diskTotal);
+              nodes[node]['diskFree'] = bytesToSize(diskFree);
+
+              var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
+              nodes[node]['req'] = r.count;
+              nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
+              nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
+              nodes[node]['req15minRate'] = Math.floor(r['15minRate'] * 100) / 100;
+              nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
+              nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
+              nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
+
+              nodes[node]['gcMajorCount'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.count'];
+              nodes[node]['gcMajorTime'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.time'];
+              nodes[node]['gcMinorCount'] = m.metrics['solr.jvm']['gc.ParNew.count'];
+              nodes[node]['gcMinorTime'] = m.metrics['solr.jvm']['gc.ParNew.time'];
+
+              var cores = nodes[node]['cores'];
+              var indexSizeTotal = 0;
+              var graphData = [];
+              if (cores) {
+                for (coreId in cores) {
+                  var core = cores[coreId];
+                  var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
+                  var nodeMetric = m.metrics[keyName];
+                  var size = nodeMetric['INDEX.sizeInBytes'];
+                  core['sizeInBytes'] = size;
+                  core['size'] = bytesToSize(size);
+                  core['sizeLabel'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
+                  indexSizeTotal += size;
+                }
+                for (coreId in cores) {
+                  var core = cores[coreId];
+                  var graphObj = {};
+                  graphObj['label'] = core['sizeLabel'];
+                  graphObj['size'] = core['sizeInBytes'];
+                  graphObj['sizeHuman'] = core['size'];
+                  graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                  graphData.push(graphObj);
+                }
+              }
+              cores.sort(function (a, b) {
+                return b.sizeInBytes - a.sizeInBytes
+              });
+              graphData.sort(function (a, b) {
+                return b.size - a.size
+              });
+              nodes[node]['graphData'] = graphData;
+              nodes[node]['sizeInBytes'] = indexSizeTotal;
+              nodes[node]['size'] = bytesToSize(indexSizeTotal);
+              
+              // Add the div containing the whole chart
+              $('#chart'+nodes[node]['id']).empty();
+              var chart = d3.select('#chart'+nodes[node]['id']).append('div').attr('class', 'chart');
+              
+              // Add one div per bar which will group together both labels and bars
+              var g = chart.selectAll('div')
+                  .data(nodes[node]['graphData']).enter()
+                  .append('div');
+              
+              // Add the bars
+              var bars = g.append("div")
+                  .attr("class", "rect")
+                  .text(function (d) { return d.label + ':\u00A0\u00A0' + d.sizeHuman; });
+              
+              // Execute the transition to show the bars
+              bars.transition()
+                  .ease('elastic')
+                  .style('width', function (d) { 
+                    return d.pct + '%'; 
+                  });
+            }
+          }
+        });
+
         $scope.nodes = nodes;
         $scope.hosts = hosts;
-        $scope.live_nodes = live_nodes;        
+        $scope.live_nodes = live_nodes;
 
         $scope.Math = window.Math;
-        
-        console.log("Nodes=" + JSON.stringify($scope.nodes, undefined, 2));
-        // console.log("Livenodes=" + JSON.stringify(live_nodes, undefined, 2));
-    });
+      })
+    };
+    $scope.reload();
 };                 
 
 var treeSubController = function($scope, Zookeeper) {
