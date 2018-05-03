@@ -93,11 +93,22 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
     $scope.showTree = false;
     $scope.showGraph = false;
     $scope.showData = false;
-    $scope.showDetails = false;
+    $scope.showAllDetails = false;
 
-    $scope.toggleDetails = function() {
-        $scope.showDetails = !$scope.showDetails;
-    }
+    $scope.toggleAllDetails = function() {
+      for (var node in $scope.nodes) {
+        $scope.nodes[node]['showDetails'] = !$scope.showAllDetails;
+      }
+      $scope.showAllDetails = !$scope.showAllDetails;
+    };
+
+    $scope.toggleDetails = function(key) {
+      if ($scope.nodes[key]['showDetails'] === true) {
+        $scope.nodes[key]['showDetails'] = false;
+      } else {
+        $scope.nodes[key]['showDetails'] = true;
+      }  
+    };
     
     $scope.reload = function() {
       Collections.status(function (data) {
