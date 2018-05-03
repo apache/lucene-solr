@@ -630,6 +630,13 @@ public class TransactionLog implements Closeable {
     return 0;
   }
 
+  /**
+   * @return the FastOutputStream size
+   */
+  public synchronized long getLogSizeFromStream() {
+    return fos.size();
+  }
+
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
    * be used from a single thread. */

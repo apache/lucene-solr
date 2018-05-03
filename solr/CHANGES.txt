@@ -85,6 +85,8 @@ New Features
 
 * SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
 
+* SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
