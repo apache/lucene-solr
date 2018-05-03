@@ -69,7 +69,7 @@ public class MDCLoggingContext {
     }
   }
   
-  private static void setCoreName(String core) {
+  public static void setCoreName(String core) {
     if (core != null) {
       MDC.put(CORE_NAME_PROP, "x:" + core);
     } else {
