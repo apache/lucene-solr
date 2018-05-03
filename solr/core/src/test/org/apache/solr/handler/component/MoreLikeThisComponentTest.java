@@ -209,7 +209,6 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(CommonParams.DEBUG_QUERY, "true");
     SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
-        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']"
@@ -236,8 +235,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(CommonParams.DEBUG_QUERY, "true");
     SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
-        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
-        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
+        , "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']",
         "//lst[@name='interestingTerms']/lst[1][count(*)>0]",
@@ -267,7 +265,6 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     
     SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
-        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']",

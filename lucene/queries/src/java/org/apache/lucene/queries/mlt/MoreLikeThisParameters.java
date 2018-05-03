@@ -90,7 +90,7 @@ public final class MoreLikeThisParameters {
    * Default field names. Null is used to specify that the field names should be looked
    * up at runtime from the provided reader.
    */
-  public static final String[] DEFAULT_FIELD_NAMES = new String[]{"contents"};
+  public static final String[] DEFAULT_FIELD_NAMES = null;
 
   /**
    * Ignore words less than this length or if 0 then this has no effect.
@@ -131,12 +131,6 @@ public final class MoreLikeThisParameters {
    * This analyzer will be used for all the fields in the document.
    */
   private Analyzer analyzer = null;
-
-  /**
-   * Advanced :
-   * Pass a specific Analyzer per field
-   */
-  private Map<String, Analyzer> fieldToAnalyzer;
 
   /**
    * Ignore words less frequent that this.
@@ -220,14 +214,6 @@ public final class MoreLikeThisParameters {
    */
   public void setAnalyzer(Analyzer analyzer) {
     this.analyzer = analyzer;
-  }
-
-  public Map<String, Analyzer> getFieldToAnalyzer() {
-    return fieldToAnalyzer;
-  }
-
-  public void setFieldToAnalyzer(Map<String, Analyzer> fieldToAnalyzer) {
-    this.fieldToAnalyzer = fieldToAnalyzer;
   }
 
   /**
@@ -464,10 +450,15 @@ public final class MoreLikeThisParameters {
      * By default the query time boost factor is not applied
      */
     public static final boolean DEFAULT_BOOST = false;
+
+    /**
+     * By default the query time boost factor is equal to 1.0
+     */
+    private static final float DEFAULT_BOOST_FACTOR = 1.0f;
     
     /**
      * If enabled a query time boost factor will applied to each query term.
-     * This boostFactor is the term score ( calculated by the similarity function).
+     * This boost factor is the term score ( calculated by the similarity function).
      * More the term is considered interesting, stronger the query time boost
      */
     private boolean boostByTermScore = DEFAULT_BOOST;
@@ -478,7 +469,7 @@ public final class MoreLikeThisParameters {
      * If a query time boost factor > 1 is specified, each query term boost
      * is equal the term score multiplied by this factor.
      */
-    private float boostFactor = 1.0f;
+    private float boostFactor = DEFAULT_BOOST_FACTOR;
 
     /**
      * This is an alternative to the generic boost factor.
