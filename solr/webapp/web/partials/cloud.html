@@ -95,7 +95,8 @@ limitations under the License.
                   Uptime: {{n.uptime}}<br/>
                   RAM: {{n.memTotal}} (used: {{n.memUsed}} free: {{n.memFree}})<br/> 
                   Java: {{n.system.jvm.jre.vendor}} {{n.system.jvm.jre.version}}<br/>
-                  Solr: {{n.system.lucene['solr-impl-version'].split(" ")[0]}}
+                  Solr: {{n.system.lucene['solr-impl-version'].split(" ")[0]}}<br>
+                  File descriptors: {{n.openFileDescriptorCount}}/{{n.maxFileDescriptorCount}}
                 </div>
               </td>
               <td><div class="node-uptime">{{n.jvmUptime}}</div></td>

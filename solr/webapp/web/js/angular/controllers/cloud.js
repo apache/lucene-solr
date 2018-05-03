@@ -186,6 +186,8 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1")
               nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
               nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
+              nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+              nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
             }
           }
         });
