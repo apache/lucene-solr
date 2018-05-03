@@ -18,8 +18,6 @@ package org.apache.solr.parser;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
