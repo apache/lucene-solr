@@ -94,20 +94,17 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
     $scope.showGraph = false;
     $scope.showData = false;
     $scope.showAllDetails = false;
+    $scope.showDetails = {};
 
     $scope.toggleAllDetails = function() {
-      for (var node in $scope.nodes) {
-        $scope.nodes[node]['showDetails'] = !$scope.showAllDetails;
-      }
       $scope.showAllDetails = !$scope.showAllDetails;
+      for (var node in $scope.nodes) {
+        $scope.showDetails[node] = $scope.showAllDetails;
+      }
     };
 
     $scope.toggleDetails = function(key) {
-      if ($scope.nodes[key]['showDetails'] === true) {
-        $scope.nodes[key]['showDetails'] = false;
-      } else {
-        $scope.nodes[key]['showDetails'] = true;
-      }  
+      $scope.showDetails[key] = !$scope.showDetails[key] === true;
     };
     
     $scope.reload = function() {
@@ -143,10 +140,11 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               node['id'] = core.base_url.replace(/[^\w\d]/g, '');
               var collections = getOrCreateList("collections", node);
               ensureInList(core.collection, collections);
-              var host_name = node_name.split(":")[0];
-              var host = getOrCreateObj(host_name, hosts);
-              var host_nodes = getOrCreateList("nodes", host);
-              ensureInList(node_name, host_nodes);
+              var hostName = node_name.split(":")[0];
+              var host = getOrCreateObj(hostName, hosts);
+              var hostNodes = getOrCreateList("nodes", host);
+              node['host'] = hostName;
+              ensureInList(node_name, hostNodes);
             }
           }
         }
@@ -236,7 +234,6 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                   core['numDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.numDocs']);
                   core['deletedDocs'] = nodeMetric['SEARCHER.searcher.deletedDocs'];
                   core['deletedDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.deletedDocs']);
-                  core['indexVersion'] = nodeMetric['SEARCHER.searcher.indexVersion'];
                   core['warmupTime'] = nodeMetric['SEARCHER.searcher.warmupTime'];
                   docsTotal += core['numDocs'];
                 }
@@ -285,11 +282,14 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
             }
           }
         });
-
+        // Make sure nodes are sorted alphabetically to align with rowspan in table 
+        for (var host in hosts) {
+          hosts[host].nodes.sort();
+        }
         $scope.nodes = nodes;
         $scope.hosts = hosts;
         $scope.live_nodes = live_nodes;
-
+        
         $scope.Math = window.Math;
       })
     };

@@ -443,10 +443,12 @@ limitations under the License.
 #nodes-table td, #nodes-table th {
   border: 1px solid #ddd;
   padding: 8px;
+  vertical-align: top;
 }
 #nodes-table th {
   font-weight: bolder;
   font-stretch: extra-expanded;
+  background: #F8F8F8;
 }
 #content #cloud #nodes-content #nodes-table
 {
@@ -455,11 +457,13 @@ limitations under the License.
   padding-top: 10px;
 }
 
+#content #cloud #nodes-content .host-name,
 #content #cloud #nodes-content .node-name a
 {
   font-weight: bold;
   font-size: larger;
 }
+#content #cloud #nodes-content .host-spec,
 #content #cloud #nodes-content .node-spec
 {
   font-style: italic;
@@ -550,8 +554,27 @@ limitations under the License.
   font-weight: bold;
 }
 
+#content #nodes-content .scroll-height-250
+{
+  max-height: 250px;
+  overflow-scrolling: auto;
+  overflow: auto;
+  overflow-y: scroll;
+}
+
 #content #nodes-content .core-details
 {
   padding-left: 21px;
 }
 
+
+::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0,0,0,.5);
+    -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+}
