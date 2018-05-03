@@ -274,6 +274,8 @@ Other Changes
 
 * SOLR-10036: Upgrade jackson from 2.5.4 to 2.9.5 (Shashank Pedamallu, Shawn Heisey, Varun Thacker)
 
+* SOLR-12289: Add more MDC logging information to collection admin requests (Varun Thacker)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
