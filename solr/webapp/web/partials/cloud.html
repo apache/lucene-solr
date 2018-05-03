@@ -119,6 +119,10 @@ limitations under the License.
                 <div class="node-spec">
                   <span title="Total size of all indices"><span ng-show="showDetails">Total: </span>{{n.size}}</span>
                 </div>
+                <div class="node-spec" ng-show="showDetails">
+                  Total #docs: {{n.numDocs}}<br/>
+                  Avg size/doc: {{n.sizePerDoc}}
+                </div>
                 <div id="chart{{n.id}}" ng-show="showDetails"></div>
               </td>
               <td>
@@ -132,13 +136,16 @@ limitations under the License.
               </td>
               <td>
                 <div ng-repeat="c in n.collections | limitTo:showDetails?999:2 track by $index">
-                  {{ c }}
+                  <a href="{{n.base_url + '/#/~collections/' + c}}">{{ c }}</a>
                 </div>
                 <div class="more" ng-show="n.collections.length > 2 && !showDetails" ng-click="toggleDetails()">({{n.collections.length - 2}} more...)</div>
               </td>
               <td>
                 <div ng-repeat="core in n.cores | limitTo:showDetails?999:2 track by $index">
-                  <a href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.core }}</a> {{core.leader ? "(leader)" : ""}}
+                  <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.label }} (docs={{core.numDocsHuman}})</a>
+                  <ul class="core-details" ng-show="showDetails">
+                    <li>deleted: {{core.deletedDocsHuman}}. warmupTime: {{core.warmupTime}}</li>
+                  </ul>
                 </div>
                 <div class="more" ng-show="n.cores.length > 2 && !showDetails" ng-click="toggleDetails()">({{n.cores.length - 2}} more...)</div>
               </td>

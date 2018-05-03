@@ -74,10 +74,18 @@ function ensureInList(string, list) {
 // from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
 function bytesToSize(bytes) {
     var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
-    if (bytes == 0) return 'n/a';
+    if (bytes === 0) return 'n/a';
     var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-    if (i == 0) return bytes + '' + sizes[i];
+    if (bytes === 0) return bytes + '' + sizes[i];
     return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
+}
+
+function numDocsHuman(docs) {
+    var sizes = ['', 'k', 'mn', 'bn', 'tn'];
+    if (docs === 0) return 'n/a';
+    var i = parseInt(Math.floor(Math.log(docs) / Math.log(1000)));
+    if (i === 0) return docs + '' + sizes[i];
+    return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
 }
 
 var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, MetricsAll) {
@@ -164,7 +172,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
               nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?),.*/, "$1")
+              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1")
               nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
               nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
             }
@@ -199,6 +207,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
 
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
+              var docsTotal = 0;
               var graphData = [];
               if (cores) {
                 for (coreId in cores) {
@@ -208,13 +217,20 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                   var size = nodeMetric['INDEX.sizeInBytes'];
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['sizeLabel'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
+                  core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
                   indexSizeTotal += size;
+                  core['numDocs'] = nodeMetric['SEARCHER.searcher.numDocs'];
+                  core['numDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.numDocs']);
+                  core['deletedDocs'] = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  core['deletedDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.deletedDocs']);
+                  core['indexVersion'] = nodeMetric['SEARCHER.searcher.indexVersion'];
+                  core['warmupTime'] = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  docsTotal += core['numDocs'];
                 }
                 for (coreId in cores) {
                   var core = cores[coreId];
                   var graphObj = {};
-                  graphObj['label'] = core['sizeLabel'];
+                  graphObj['label'] = core['label'];
                   graphObj['size'] = core['sizeInBytes'];
                   graphObj['sizeHuman'] = core['size'];
                   graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
@@ -228,8 +244,10 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                 return b.size - a.size
               });
               nodes[node]['graphData'] = graphData;
+              nodes[node]['numDocs'] = numDocsHuman(docsTotal);
               nodes[node]['sizeInBytes'] = indexSizeTotal;
               nodes[node]['size'] = bytesToSize(indexSizeTotal);
+              nodes[node]['sizePerDoc'] = bytesToSize(indexSizeTotal / docsTotal);
               
               // Add the div containing the whole chart
               $('#chart'+nodes[node]['id']).empty();

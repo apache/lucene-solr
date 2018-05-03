@@ -544,3 +544,14 @@ limitations under the License.
     color: #000000;
     box-shadow: 1px 1px 1px #666;
 }
+
+#content #nodes-content .leader
+{
+  font-weight: bold;
+}
+
+#content #nodes-content .core-details
+{
+  padding-left: 21px;
+}
+
