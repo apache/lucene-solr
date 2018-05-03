@@ -161,7 +161,6 @@ final class ReadersAndUpdates {
       }
       fieldUpdates.add(update);
     }
-    pendingDeletes.onDocValuesUpdate(update.field, update.iterator());
   }
 
   public synchronized long getNumDVUpdates() {
@@ -334,7 +333,6 @@ final class ReadersAndUpdates {
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
-        pendingDeletes.onDocValuesUpdate(fieldInfo);
         Function<FieldInfo, DocValuesFieldUpdates.Iterator> updateSupplier = (info) -> {
           if (info != fieldInfo) {
             throw new IllegalArgumentException("expected field info for field: " + fieldInfo.name + " but got: " + info.name);
@@ -345,6 +343,7 @@ final class ReadersAndUpdates {
           }
           return  DocValuesFieldUpdates.mergedIterator(subs);
         };
+        pendingDeletes.onDocValuesUpdate(fieldInfo, updateSupplier.apply(fieldInfo));
         if (type == DocValuesType.BINARY) {
           fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
             @Override

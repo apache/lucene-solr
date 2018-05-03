@@ -632,7 +632,7 @@ public class CheckHits {
           Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
           Assert.assertEquals(s1.score(), score);
-          Assert.assertTrue(score <= maxScore);
+          Assert.assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
 
           if (score >= minScore && random.nextInt(10) == 0) {
             // On some scorers, changing the min score changes the way that docs are iterated

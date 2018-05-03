@@ -45,7 +45,7 @@ public class MDCLoggingContext {
     }
   });
   
-  private static void setCollection(String collection) {
+  public static void setCollection(String collection) {
     if (collection != null) {
       MDC.put(COLLECTION_PROP, "c:" + collection);
     } else {
@@ -53,7 +53,7 @@ public class MDCLoggingContext {
     }
   }
   
-  private static void setShard(String shard) {
+  public static void setShard(String shard) {
     if (shard != null) {
       MDC.put(SHARD_ID_PROP, "s:" + shard);
     } else {
@@ -61,7 +61,7 @@ public class MDCLoggingContext {
     }
   }
   
-  private static void setReplica(String replica) {
+  public static void setReplica(String replica) {
     if (replica != null) {
       MDC.put(REPLICA_PROP, "r:" + replica);
     } else {
@@ -69,7 +69,7 @@ public class MDCLoggingContext {
     }
   }
   
-  private static void setCoreName(String core) {
+  public static void setCoreName(String core) {
     if (core != null) {
       MDC.put(CORE_NAME_PROP, "x:" + core);
     } else {
