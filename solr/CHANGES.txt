@@ -256,6 +256,8 @@ Other Changes
 
 * SOLR-12289: Add more MDC logging information to collection admin requests (Varun Thacker)
 
+* SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
