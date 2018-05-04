@@ -1630,6 +1630,10 @@ public class IndexFetcher {
             LOG.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
+          //This really shouldn't happen since we set the buf based on the handler PACKET_SZ, but it could be possible
+          //If that ever changes and both hosts aren't bounced at the same time for example..
+          if (buf.length < packetSize)
+            buf = new byte[packetSize];
           if (checksum != null) {
             //read the checksum
             fis.readFully(longbytes);
