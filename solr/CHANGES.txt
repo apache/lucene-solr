@@ -218,6 +218,9 @@ Bug Fixes
 * SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
   indexing requests between leader and replica ( Mark Miller, Varun Thacker)
 
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
+
 Optimizations
 ----------------------
 
