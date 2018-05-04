@@ -1531,7 +1531,7 @@ public class IndexFetcher {
    */
   private class FileFetcher {
 
-    int MAX_BUF_SIZE = 1024 * 1024;
+    static final int MAX_BUF_SIZE = 1024 * 1024;
 
     private final FileInterface file;
     private boolean includeChecksum = true;
