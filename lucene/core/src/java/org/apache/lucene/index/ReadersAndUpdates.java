@@ -88,10 +88,6 @@ final class ReadersAndUpdates {
 
   final AtomicLong ramBytesUsed = new AtomicLong();
 
-  // if set to true the pending deletes must be marked as shared next time the reader is
-  // returned from #getReader()
-  private boolean liveDocsSharedPending = false;
-
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
                     PendingDeletes pendingDeletes) {
     this.info = info;
@@ -196,8 +192,6 @@ final class ReadersAndUpdates {
       // We steal returned ref:
       reader = new SegmentReader(info, indexCreatedVersionMajor, context);
       pendingDeletes.onNewReader(reader, info);
-    } else if (liveDocsSharedPending) {
-      markAsShared();
     }
 
     // Ref for caller
@@ -224,7 +218,6 @@ final class ReadersAndUpdates {
       } finally {
         reader = null;
       }
-      liveDocsSharedPending = false;
     }
 
     decRef();
@@ -678,7 +671,6 @@ final class ReadersAndUpdates {
 
   private void swapNewReaderWithLatestLiveDocs() throws IOException {
     reader = createNewReaderWithLatestLiveDocs(reader);
-    liveDocsSharedPending = true;
   }
 
   synchronized void setIsMerging() {
@@ -764,7 +756,6 @@ final class ReadersAndUpdates {
 
   private final void markAsShared() {
     assert Thread.holdsLock(this);
-    liveDocsSharedPending = false;
     pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
 
