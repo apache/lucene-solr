@@ -206,6 +206,9 @@ Bug Fixes
 
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
 
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
+
 Optimizations
 ----------------------
 

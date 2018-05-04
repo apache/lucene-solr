@@ -519,8 +519,7 @@ public class SolrRequestParsers
 
     @Override
     public InputStream getStream() throws IOException {
-      // Protect container owned streams from being closed by us, see SOLR-8933
-      return new CloseShieldInputStream(req.getInputStream());
+      return req.getInputStream();
     }
   }
 
@@ -767,8 +766,7 @@ public class SolrRequestParsers
         String userAgent = req.getHeader("User-Agent");
         boolean isCurl = userAgent != null && userAgent.startsWith("curl/");
 
-        // Protect container owned streams from being closed by us, see SOLR-8933
-        FastInputStream input = FastInputStream.wrap( new CloseShieldInputStream(req.getInputStream()) );
+        FastInputStream input = FastInputStream.wrap(req.getInputStream());
 
         if (isCurl) {
           SolrParams params = autodetect(req, streams, input);
