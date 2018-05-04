@@ -52,6 +52,7 @@ class ReqOptSumScorer extends Scorer {
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
 
+    reqScorer.advanceShallow(0);
     this.reqMaxScore = reqScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
     this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
 
@@ -207,6 +208,12 @@ class ReqOptSumScorer extends Scorer {
     }
 
     return score;
+  }
+
+  @Override
+  public int advanceShallow(int target) throws IOException {
+    optScorer.advanceShallow(target);
+    return reqScorer.advanceShallow(target);
   }
 
   @Override

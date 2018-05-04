@@ -16,9 +16,14 @@
  */
 package org.apache.lucene.index;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PagedMutable;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -218,9 +223,12 @@ abstract class DocValuesFieldUpdates implements Accountable {
   final String field;
   final DocValuesType type;
   final long delGen;
-  protected boolean finished;
+  private final int bitsPerValue;
+  private boolean finished;
   protected final int maxDoc;
-    
+  protected PagedMutable docs;
+  protected int size;
+
   protected DocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
     this.maxDoc = maxDoc;
     this.delGen = delGen;
@@ -229,9 +237,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new NullPointerException("DocValuesType must not be null");
     }
     this.type = type;
+    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
   }
 
-  boolean getFinished() {
+  final boolean getFinished() {
     return finished;
   }
   
@@ -254,11 +264,132 @@ abstract class DocValuesFieldUpdates implements Accountable {
   abstract Iterator iterator();
 
   /** Freezes internal data structures and sorts updates by docID for efficient iteration. */
-  abstract void finish();
+  final synchronized void finish() {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+    finished = true;
+
+    // shrink wrap
+    if (size < docs.size()) {
+      resize(size);
+    }
+    new InPlaceMergeSorter() {
+      @Override
+      protected void swap(int i, int j) {
+        DocValuesFieldUpdates.this.swap(i, j);
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        // increasing docID order:
+        // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
+        // stable and preserving original order so the last update to that docID wins
+        return Long.compare(docs.get(i), docs.get(j));
+      }
+    }.sort(0, size);
+  }
   
   /** Returns true if this instance contains any updates. */
-  abstract boolean any();
-  
-  abstract int size();
+  synchronized final boolean any() {
+    return size > 0;
+  }
 
+  synchronized final int size() {
+    return size;
+  }
+
+  final synchronized int add(int doc) {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+    assert doc < maxDoc;
+
+    // TODO: if the Sorter interface changes to take long indexes, we can remove that limitation
+    if (size == Integer.MAX_VALUE) {
+      throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
+    }
+    // grow the structures to have room for more elements
+    if (docs.size() == size) {
+      grow(size+1);
+    }
+
+    docs.set(size, doc);
+    ++size;
+    return size-1;
+  }
+
+  protected void swap(int i, int j) {
+    long tmpDoc = docs.get(j);
+    docs.set(j, docs.get(i));
+    docs.set(i, tmpDoc);
+  }
+
+  protected void grow(int size) {
+    docs = docs.grow(size);
+  }
+
+  protected void resize(int size) {
+    docs = docs.resize(size);
+  }
+
+  protected final void ensureFinished() {
+    if (finished == false) {
+      throw new IllegalStateException("call finish first");
+    }
+  }
+  @Override
+  public long ramBytesUsed() {
+    return docs.ramBytesUsed()
+        + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * Integer.BYTES
+        + 2 + Long.BYTES
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+  }
+
+  // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
+  protected abstract static class AbstractIterator extends DocValuesFieldUpdates.Iterator {
+    private final int size;
+    private final PagedMutable docs;
+    private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
+    private int doc = -1;
+    private final long delGen;
+
+    AbstractIterator(int size, PagedMutable docs, long delGen) {
+      this.size = size;
+      this.docs = docs;
+      this.delGen = delGen;
+    }
+
+    @Override
+    public final int nextDoc() {
+      if (idx >= size) {
+        return doc = DocIdSetIterator.NO_MORE_DOCS;
+      }
+      doc = (int) docs.get(idx);
+      ++idx;
+      while (idx < size && docs.get(idx) == doc) {
+        // scan forward to last update to this doc
+        ++idx;
+      }
+      set(idx-1);
+      return doc;
+    }
+
+    /**
+     * Called when the iterator moved to the next document
+     * @param idx the internal index to set the value to
+     */
+    protected abstract void set(long idx);
+
+    @Override
+    public final int docID() {
+      return doc;
+    }
+
+    @Override
+    final long delGen() {
+      return delGen;
+    }
+  }
 }

@@ -73,6 +73,9 @@ import org.slf4j.LoggerFactory;
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser, SolrMetricProducer {
+
+  private static final int NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER = -1;
+
   protected final SolrCoreState solrCoreState;
 
   // stats
@@ -118,13 +121,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
-    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
-    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, updateHandlerInfo.openSearcher, false);
+    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs;
+    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime;
+    long fileSizeUpperBound = updateHandlerInfo.autoCommitMaxSizeBytes;
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, fileSizeUpperBound, updateHandlerInfo.openSearcher, false);
     
-    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
-    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs;
+    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime;
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, true, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
@@ -143,13 +147,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
-    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
-    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, updateHandlerInfo.openSearcher, false);
+    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs;
+    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime;
+    long fileSizeUpperBound = updateHandlerInfo.autoCommitMaxSizeBytes;
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, fileSizeUpperBound, updateHandlerInfo.openSearcher, false);
     
-    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
-    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, updateHandlerInfo.openSearcher, true);
+    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs;
+    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime;
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, updateHandlerInfo.openSearcher, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
@@ -176,6 +181,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     if (commitTracker.getTimeUpperBound() > 0) {
       manager.registerGauge(this, registryName, () -> "" + commitTracker.getTimeUpperBound() + "ms", tag, true, "autoCommitMaxTime",
+          getCategory().toString(), scope);
+    }
+    if (commitTracker.getTLogFileSizeUpperBound() > 0) {
+      manager.registerGauge(this, registryName, () -> commitTracker.getTLogFileSizeUpperBound(), tag, true, "autoCommitMaxSize",
           getCategory().toString(), scope);
     }
     if (softCommitTracker.getDocsUpperBound() > 0) {
@@ -279,12 +288,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1);
+          commitTracker.addedDocument(-1, currentTlogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin);
+          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
         }
       }
 
@@ -418,6 +428,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (commitTracker.getTimeUpperBound() > 0) {
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
+
+      long currentTlogSize = getCurrentTLogSize();
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
       
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker
@@ -988,6 +1001,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;
+  }
+
+  private long getCurrentTLogSize() {
+    return ulog != null && ulog.hasUncommittedChanges() ? ulog.getCurrentLogSizeFromStream() : -1;
   }
 
   // allow access for tests

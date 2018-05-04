@@ -53,6 +53,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
     float scoreMax = 0;
     double otherScoreSum = 0;
     for (Scorer scorer : subScorers) {
+      scorer.advanceShallow(0);
       float subScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
       if (subScore >= scoreMax) {
         otherScoreSum += scoreMax;

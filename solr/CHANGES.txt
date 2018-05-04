@@ -105,6 +105,13 @@ New Features
 * SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
   in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)
 
+* SOLR-8998: introducing uniqueBlock(_root_) aggregation as faster alternative to unique(_root_) for counting
+  child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
+
+* SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
+
+* SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
@@ -197,6 +204,8 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
 Optimizations
 ----------------------
 
@@ -266,6 +275,10 @@ Other Changes
   implement yourself as-needed. (David Smiley)
 
 * SOLR-10036: Upgrade jackson from 2.5.4 to 2.9.5 (Shashank Pedamallu, Shawn Heisey, Varun Thacker)
+
+* SOLR-12289: Add more MDC logging information to collection admin requests (Varun Thacker)
+
+* SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
 ==================  7.3.1 ==================
 

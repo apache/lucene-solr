@@ -23,23 +23,25 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.index.Impact;
+
 /**
  * This class accumulates the (freq, norm) pairs that may produce competitive scores.
  */
-public final class CompetitiveFreqNormAccumulator {
+public final class CompetitiveImpactAccumulator {
 
   // We speed up accumulation for common norm values by first computing
   // the max freq for all norms in -128..127
   private final int[] maxFreqs;
   private boolean dirty;
-  private final TreeSet<FreqAndNorm> freqNormPairs;
+  private final TreeSet<Impact> freqNormPairs;
 
   /** Sole constructor. */
-  public CompetitiveFreqNormAccumulator() {
+  public CompetitiveImpactAccumulator() {
     maxFreqs = new int[256];
-    Comparator<FreqAndNorm> comparator = new Comparator<CompetitiveFreqNormAccumulator.FreqAndNorm>() {
+    Comparator<Impact> comparator = new Comparator<Impact>() {
       @Override
-      public int compare(FreqAndNorm o1, FreqAndNorm o2) {
+      public int compare(Impact o1, Impact o2) {
         // greater freqs compare greater
         int cmp = Integer.compare(o1.freq, o2.freq);
         if (cmp == 0) {
@@ -59,44 +61,6 @@ public final class CompetitiveFreqNormAccumulator {
     freqNormPairs.clear();
   }
 
-  /**
-   * A (freq, norm) pair.
-   */
-  public static class FreqAndNorm {
-    /** Doc-term frequency. */
-    public final int freq;
-    /** Normalization factor. */
-    public final long norm;
-
-    /** Sole constructor. */
-    public FreqAndNorm(int freq, long norm) {
-      this.freq = freq;
-      this.norm = norm;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj == null || obj instanceof FreqAndNorm == false) {
-        return false;
-      }
-      FreqAndNorm that = (FreqAndNorm) obj;
-      return freq == that.freq && norm == that.norm;
-    }
-
-    @Override
-    public int hashCode() {
-      int h = getClass().hashCode();
-      h = 31 * h + freq;
-      h = 31 * h + Long.hashCode(norm);
-      return h;
-    }
-
-    @Override
-    public String toString() {
-      return "{" + freq + "," + norm + "}";
-    }
-  }
-
   /** Accumulate a (freq,norm) pair, updating this structure if there is no
    *  equivalent or more competitive entry already. */
   public void add(int freq, long norm) {
@@ -105,23 +69,23 @@ public final class CompetitiveFreqNormAccumulator {
       maxFreqs[index] = Math.max(maxFreqs[index], freq); 
       dirty = true;
     } else {
-      add(new FreqAndNorm(freq, norm));
+      add(new Impact(freq, norm));
     }
   }
 
   /** Merge {@code acc} into this. */
-  public void addAll(CompetitiveFreqNormAccumulator acc) {
-    for (FreqAndNorm entry : acc.getCompetitiveFreqNormPairs()) {
+  public void addAll(CompetitiveImpactAccumulator acc) {
+    for (Impact entry : acc.getCompetitiveFreqNormPairs()) {
       add(entry);
     }
   }
 
   /** Get the set of competitive freq and norm pairs, orderer by increasing freq and norm. */
-  public SortedSet<FreqAndNorm> getCompetitiveFreqNormPairs() {
+  public SortedSet<Impact> getCompetitiveFreqNormPairs() {
     if (dirty) {
       for (int i = 0; i < maxFreqs.length; ++i) {
         if (maxFreqs[i] > 0) {
-          add(new FreqAndNorm(maxFreqs[i], (byte) i));
+          add(new Impact(maxFreqs[i], (byte) i));
           maxFreqs[i] = 0;
         }
       }
@@ -130,8 +94,8 @@ public final class CompetitiveFreqNormAccumulator {
     return Collections.unmodifiableSortedSet(freqNormPairs);
   }
 
-  private void add(FreqAndNorm newEntry) {
-    FreqAndNorm next = freqNormPairs.ceiling(newEntry);
+  private void add(Impact newEntry) {
+    Impact next = freqNormPairs.ceiling(newEntry);
     if (next == null) {
       // nothing is more competitive
       freqNormPairs.add(newEntry);
@@ -144,8 +108,8 @@ public final class CompetitiveFreqNormAccumulator {
       freqNormPairs.add(newEntry);
     }
 
-    for (Iterator<FreqAndNorm> it = freqNormPairs.headSet(newEntry, false).descendingIterator(); it.hasNext(); ) {
-      FreqAndNorm entry = it.next();
+    for (Iterator<Impact> it = freqNormPairs.headSet(newEntry, false).descendingIterator(); it.hasNext(); ) {
+      Impact entry = it.next();
       if (Long.compareUnsigned(entry.norm, newEntry.norm) >= 0) {
         // less competitive
         it.remove();

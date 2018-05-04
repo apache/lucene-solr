@@ -81,12 +81,16 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
       int segOrd = subDv.ordValue();
       int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
 
-      FixedBitSet bits = arr[slotNum];
-      if (bits == null) {
-        bits = new FixedBitSet(nTerms);
-        arr[slotNum] = bits;
-      }
-      bits.set(ord);
+      collectOrdToSlot(slotNum, ord);
     }
+  }
+
+  protected void collectOrdToSlot(int slotNum, int ord) {
+    FixedBitSet bits = arr[slotNum];
+    if (bits == null) {
+      bits = new FixedBitSet(nTerms);
+      arr[slotNum] = bits;
+    }
+    bits.set(ord);
   }
 }

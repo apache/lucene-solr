@@ -25,6 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
@@ -120,14 +121,9 @@ final class PendingSoftDeletes extends PendingDeletes {
   }
 
   @Override
-  void onDocValuesUpdate(String field, DocValuesFieldUpdates.Iterator iterator) throws IOException {
-    if (this.field.equals(field)) {
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+    if (this.field.equals(info.name)) {
       pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
-    }
-  }
-  @Override
-  void onDocValuesUpdate(FieldInfo info) {
-    if (field.equals(info.name)) {
       assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
       assert dvGeneration != -2 : "docValues generation is still uninitialized";
       dvGeneration = info.getDocValuesGen();
@@ -197,5 +193,15 @@ final class PendingSoftDeletes extends PendingDeletes {
       final String segmentSuffix = Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
       return fisFormat.read(dir, segInfo, segmentSuffix, IOContext.READONCE);
     }
+  }
+
+  Bits getHardLiveDocs() {
+    return hardDeletes.getHardLiveDocs();
+  }
+
+  @Override
+  void liveDocsShared() {
+    super.liveDocsShared();
+    hardDeletes.liveDocsShared();
   }
 }
