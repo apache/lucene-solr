@@ -1539,7 +1539,7 @@ public class IndexFetcher {
 
     private final long size;
     private long bytesDownloaded = 0;
-    private byte[] buf = new byte[1024 * 1024];
+    private byte[] buf;
     private final Checksum checksum;
     private int errorCount = 0;
     private boolean aborted = false;
@@ -1549,6 +1549,8 @@ public class IndexFetcher {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
+      //Max buf of 1 MB, but we should save memory if the file size is smaller
+      buf = this.size < 1048576 ? new byte[(int) this.size] : new byte[1024 * 1024];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
