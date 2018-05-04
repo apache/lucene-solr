@@ -1530,9 +1530,6 @@ public class IndexFetcher {
    * @see org.apache.solr.handler.ReplicationHandler.DirectoryFileStream
    */
   private class FileFetcher {
-
-    static final int MAX_BUF_SIZE = 1024 * 1024;
-
     private final FileInterface file;
     private boolean includeChecksum = true;
     private final String fileName;
@@ -1552,7 +1549,7 @@ public class IndexFetcher {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
-      buf = new byte[(int)Math.min(this.size, MAX_BUF_SIZE)];
+      buf = new byte[(int)Math.min(this.size, ReplicationHandler.PACKET_SZ)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
@@ -1633,8 +1630,6 @@ public class IndexFetcher {
             LOG.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
-          if (buf.length < packetSize)
-            buf = new byte[packetSize];
           if (checksum != null) {
             //read the checksum
             fis.readFully(longbytes);
