@@ -1530,6 +1530,9 @@ public class IndexFetcher {
    * @see org.apache.solr.handler.ReplicationHandler.DirectoryFileStream
    */
   private class FileFetcher {
+
+    int MAX_BUF_SIZE = 1024 * 1024;
+
     private final FileInterface file;
     private boolean includeChecksum = true;
     private final String fileName;
@@ -1549,8 +1552,7 @@ public class IndexFetcher {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
-      //Max buf of 1 MB, but we should save memory if the file size is smaller
-      buf = this.size < 1048576 ? new byte[(int) this.size] : new byte[1024 * 1024];
+      buf = new byte[(int)Math.min(this.size, MAX_BUF_SIZE)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
