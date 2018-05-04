@@ -281,7 +281,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and replicas
+   * number of active shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {

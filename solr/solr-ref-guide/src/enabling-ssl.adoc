@@ -77,6 +77,11 @@ NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taki
 .bin/solr.in.sh example SOLR_SSL_* configuration
 [source,bash]
 ----
+# Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+# to enable https module with custom jetty configuration.
+SOLR_SSL_ENABLED=true
+# Uncomment to set SSL-related system properties
+# Be sure to update the paths to the correct keystore for your environment
 SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 SOLR_SSL_KEY_STORE_PASSWORD=secret
 SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
@@ -85,7 +90,10 @@ SOLR_SSL_TRUST_STORE_PASSWORD=secret
 SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
-# Define Key Store type if necessary
+# SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+# this to false can be useful to disable these checks when re-using a certificate on many hosts
+SOLR_SSL_CHECK_PEER_NAME=true
+# Override Key/Trust Store types if necessary
 SOLR_SSL_KEY_STORE_TYPE=JKS
 SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
@@ -100,6 +108,11 @@ Similarly, when you start Solr on Windows, the `bin\solr.cmd` script includes th
 .bin\solr.in.cmd example SOLR_SSL_* configuration
 [source,text]
 ----
+REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+REM to enable https module with custom jetty configuration.
+set SOLR_SSL_ENABLED=true
+REM Uncomment to set SSL-related system properties
+REM Be sure to update the paths to the correct keystore for your environment
 set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 set SOLR_SSL_KEY_STORE_PASSWORD=secret
 set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
@@ -108,6 +121,12 @@ REM Require clients to authenticate
 set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
+REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+set SOLR_SSL_CHECK_PEER_NAME=true
+REM Override Key/Trust Store types if necessary
+set SOLR_SSL_KEY_STORE_TYPE=JKS
+set SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
 
 === Run Single Node Solr using SSL

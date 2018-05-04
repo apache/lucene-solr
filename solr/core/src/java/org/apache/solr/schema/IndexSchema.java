@@ -971,7 +971,7 @@ public class IndexSchema {
         // configure a factory, get a similarity back
         final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
         namedList.add(SimilarityFactory.CLASS_NAME, classArg);
-        SolrParams params = SolrParams.toSolrParams(namedList);
+        SolrParams params = namedList.toSolrParams();
         similarityFactory = (SimilarityFactory)obj;
         similarityFactory.init(params);
       } else {

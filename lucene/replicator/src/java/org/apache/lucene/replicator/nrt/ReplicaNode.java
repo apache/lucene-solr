@@ -44,7 +44,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ByteArrayIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
@@ -83,7 +82,7 @@ public abstract class ReplicaNode extends Node {
   public ReplicaNode(int id, Directory dir, SearcherFactory searcherFactory, PrintStream printStream) throws IOException {
     super(id, dir, searcherFactory, printStream);
 
-    if (dir instanceof FSDirectory && ((FSDirectory) dir).checkPendingDeletions()) {
+    if (dir.checkPendingDeletions()) {
       throw new IllegalArgumentException("Directory " + dir + " still has pending deleted files; cannot initialize IndexWriter");
     }
 
@@ -200,7 +199,7 @@ public abstract class ReplicaNode extends Node {
         assert deleter.getRefCount(segmentsFileName) == 1;
         deleter.decRef(Collections.singleton(segmentsFileName));
 
-        if (dir instanceof FSDirectory && ((FSDirectory) dir).checkPendingDeletions()) {
+        if (dir.checkPendingDeletions()) {
           // If e.g. virus checker blocks us from deleting, we absolutely cannot start this node else there is a definite window during
           // which if we carsh, we cause corruption:
           throw new RuntimeException("replica cannot start: existing segments file=" + segmentsFileName + " must be removed in order to start, but the file delete failed");

@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
@@ -45,7 +46,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testDeleteSoft() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()); // no soft delete field hier
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("_soft_deletes"));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -69,6 +70,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNull(pendingSoftDeletes.getHardLiveDocs());
     // pass reader again
     Bits liveDocs = pendingSoftDeletes.getLiveDocs();
     pendingSoftDeletes.liveDocsShared();
@@ -90,6 +92,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertFalse(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNotNull(pendingSoftDeletes.getHardLiveDocs());
+    assertFalse(pendingSoftDeletes.getHardLiveDocs().get(0));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(1));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(2));
     IOUtils.close(reader, writer, dir);
   }
 
@@ -97,12 +103,26 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, 0, 0);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, -1, -1, -1);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    for (int i = 0; i < si.maxDoc(); i++) {
+      writer.addDocument(new Document());
+    }
+    writer.forceMerge(1);
+    writer.commit();
+    DirectoryReader reader = writer.getReader();
+    assertEquals(1, reader.leaves().size());
+    SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     PendingSoftDeletes deletes = newPendingDeletes(commitInfo);
+    deletes.onNewReader(segmentReader, commitInfo);
+    reader.close();
+    writer.close();
     FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10));
-    deletes.onDocValuesUpdate(fieldInfo, updates);
+    for (DocValuesFieldUpdates update : updates) {
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
+    }
     assertEquals(4, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -118,7 +138,9 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     docsDeleted = Arrays.asList(1, 2, DocIdSetIterator.NO_MORE_DOCS);
     updates = Arrays.asList(singleUpdate(docsDeleted, 10));
     fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0);
-    deletes.onDocValuesUpdate(fieldInfo, updates);
+    for (DocValuesFieldUpdates update : updates) {
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
+    }
     assertEquals(5, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -134,7 +156,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testUpdateAppliedOnlyOnce() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()); // no soft delete field hier
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        .setMaxBufferedDocs(3) // make sure we write one segment
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -152,13 +177,14 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    PendingSoftDeletes deletes = newPendingDeletes(segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getDocValuesGen(), Collections.emptyMap(), 0, 0);
+    PendingDeletes deletes = newPendingDeletes(segmentInfo);
+    deletes.onNewReader(segmentReader, segmentInfo);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3));
-    deletes.onDocValuesUpdate(fieldInfo, updates);
+    for (DocValuesFieldUpdates update : updates) {
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
+    }
     assertEquals(1, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -178,7 +204,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
   private DocValuesFieldUpdates singleUpdate(List<Integer> docsDeleted, int maxDoc) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
-      public void add(int doc, Object value) {
+      public void add(int doc, long value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int doc, BytesRef value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int docId, Iterator iterator) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -188,18 +225,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           int doc = -1;
 
           @Override
-          int nextDoc() {
+          public int nextDoc() {
             return doc = iter.next();
           }
 
           @Override
-          int doc() {
-            return doc;
+          long longValue() {
+            return 1;
           }
 
           @Override
-          Object value() {
-            return 1;
+          BytesRef binaryValue() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int docID() {
+            return doc;
           }
 
           @Override
@@ -207,25 +249,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
             return 0;
           }
         };
-      }
-
-      @Override
-      public void finish() {
-      }
-
-      @Override
-      public boolean any() {
-        return true;
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public int size() {
-        return 1;
       }
     };
   }

@@ -6,7 +6,7 @@
 The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of Solr's previous faceting capabilities, with the following goals:
 
 * First class native JSON API to control faceting and analytics
-** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat nanemspace provided by normal query parameters.
+** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat namespace provided by normal query parameters.
 * First class integrated analytics support
 * Nest any facet type under any other facet type (such as range facet, field facet, query facet)
 * Ability to sort facet buckets by any calculated metric
@@ -59,7 +59,7 @@ The response to the facet request above will start with documents matching the r
 [[BucketingFacetExample]]
 === Bucketing Facet Example
 
-Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 5 buckets:
+Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 3 buckets:
 
 [source,bash]
 ----
@@ -342,7 +342,8 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 |avg |avg(popularity) |average of numeric values
 |min |min(salary) |minimum value
 |max |max(mul(price,popularity)) |maximum value
-|unique |unique(author) |number of unique values
+|unique |unique(author) |number of unique values of the given field. Beyond 100 values it yields not exact estimate 
+|uniqueBlock |uniqueBlock(\_root_) |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended. 
 |hll |hll(author) |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |percentile(salary,50,75,99,99.9) |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |sumsq(rent) |sum of squares of field or function
@@ -448,6 +449,70 @@ And the response will look something like:
 ----
 
 By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
+
+
+[[BlockJoinFacets]]
+== Block Join Facets
+
+Block Join Facets facets allow bucketing <<uploading-data-with-index-handlers.adoc#nested-child-documents, child documents>> as attributes of their parents.
+
+[[Blockjoinfacetexample]]
+=== Block Join Facet example
+
+Suppose we have products with multiple SKUs, and we want to count products for each color.
+
+[source,java]
+----
+{
+    "id": "1", "type": "product", "name": "Solr T-Shirt",
+    "_childDocuments_": [
+      { "id": "11", "type": "SKU", "color": "Red",  "size": "L" },
+      { "id": "12", "type": "SKU", "color": "Blue", "size": "L" },
+      { "id": "13", "type": "SKU", "color": "Red",  "size": "M" },
+      { "id": "14", "type": "SKU", "color": "Blue", "size": "S" }
+    ]
+  }
+
+----
+
+For *SKU domain* we can request
+
+[source,java]
+----
+  color: {
+    type: terms,
+    field: color,
+    limit: -1,
+    facet: {
+      productsCount: "uniqueBlock(_root_)"
+    }
+  }
+
+
+----
+
+and get
+
+[source,java]
+----
+
+  [...]
+  color:{
+     buckets:[
+        {
+          val:Red, count:2, productsCount:1
+        },
+        {
+          val:Blue, count:2, productsCount:1
+        }
+     ]
+  }
+----
+
+Please notice that `\_root_` is an internal field added by Lucene to each child document to reference on parent one.
+Aggregation `uniqueBlock(\_root_)` is functionally equivalent to `unique(\_root_)`, but is optimized for nested documents block structure.
+It's recommended to define `limit: -1` for `uniqueBlock` calculation, like in above example,
+since default value of `limit` parameter is `10`, while `uniqueBlock` is supposed to be much faster with `-1`.
 
 [[References]]
 == References

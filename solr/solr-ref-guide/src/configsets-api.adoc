@@ -1,4 +1,4 @@
-= ConfigSets API
+= Configsets API
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -17,55 +17,155 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The ConfigSets API enables you to create, delete, and otherwise manage ConfigSets.
+The Configsets API enables you to upload new configsets to ZooKeeper, create, and delete configsets when Solr is running SolrCloud mode.
 
-To use a ConfigSet created with this API as the configuration for a collection, use the <<collections-api.adoc#collections-api,Collections API>>.
+Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, DIH-related configuration, and other collection-level configuration files (everything that normally lives in the `conf` directory). Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections. Using the same concept, you can create your own configsets and make them available when creating collections.
 
-This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
+This API provides a way to upload configuration files to ZooKeeper and share the same set of configuration files between two or more collections.
 
-== ConfigSets API Entry Points
+Once a configset has been uploaded to ZooKeeper, use the configset name when creating the collection with the <<collections-api.adoc#collections-api,Collections API>> and the collection will use your configuration files.
 
-The base URL for all API calls is `\http://<hostname>:<port>/solr`.
+Configsets do not have to be shared between collections if they are uploaded with this API, but this API makes it easier to do so if you wish. An alternative to uploading your configsets in advance would be to put the configuration files into a directory under `server/solr/configsets` and using the directory name as the `-d` parameter when using `bin/solr create` to create a collection.
 
-* `/admin/configs?action=CREATE`: <<configsets-create,create>> a ConfigSet, based on an existing ConfigSet
-* `/admin/configs?action=DELETE`: <<configsets-delete,delete>> a ConfigSet
-* `/admin/configs?action=LIST`: <<configsets-list,list>> all ConfigSets
-* `/admin/configs?action=UPLOAD`: <<configsets-upload,upload>> a ConfigSet
+NOTE: This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
 
-[[configsets-create]]
-== Create a ConfigSet
+The API works by passing commands to the `configs` endpoint. The path to the endpoint varies depending on the API being used: the v1 API uses `solr/admin/configs`, while the v2 API uses `api/cluster/configs`. Examples of both types are provided below.
 
-`/admin/configs?action=CREATE&name=_name_&baseConfigSet=_baseConfigSet_`
+[[configsets-list]]
+== List Configsets
 
-Create a ConfigSet, based on an existing ConfigSet.
+The `list` command fetches the names of the configsets that are available for use during collection creation.
 
-=== Create ConfigSet Parameters
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listconfigset]
+====
+[.tab-label]*V1 API*
 
-The following parameters are supported when creating a ConfigSet.
+With the v1 API, the `list` command must be capitalized as `LIST`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/configs?action=LIST&omitHeader=true
+
+----
+====
+
+[example.tab-pane#v2listconfigset]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `list` command is implied when there is no data sent with the request.
+
+[source,bash]
+----
+http://localhost:8983/api/cluster/configs?omitHeader=true
+----
+====
+--
+
+The output will look like:
+
+[source,json]
+----
+{
+  "configSets": [
+    "_default",
+    "techproducts",
+    "gettingstarted"
+  ]
+}
+----
+
+[[configsets-upload]]
+== Upload a Configset
+
+Upload a configset, which is sent as a zipped file.
+
+A configset is uploaded in a "trusted" mode if authentication is enabled and the upload operation is performed as an authenticated request. Without authentication, a configset is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" configset, the following functionality will not work:
+
+* If specified in the configset, the DataImportHandler's ScriptTransformer will not initialize.
+* The XSLT transformer (`tr` parameter) cannot be used at request processing time.
+* If specified in the configset, the StatelessScriptUpdateProcessor will not initialize.
+
+If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
+
+The `upload` command takes one parameter:
 
 name::
-The ConfigSet to be created. This parameter is required.
+The configset to be created when the upload is complete. This parameter is required.
+
+The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
+
+Here is an example on how to create the zip file named "myconfig.zip" and upload it as a config set named "myConfigSet":
+
+[source,bash]
+----
+$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
+
+$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+----
+
+The same can be achieved using a Unix pipe with a single request as follows:
+
+[source,bash]
+----
+$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+----
+
+NOTE: The `UPLOAD` command does not yet have a v2 equivalent API.
+
+[[configsets-create]]
+== Create a Configset
+
+The `create` command creates a new configset based on a configset that has been previously uploaded.
+
+If you have not yet uploaded any configsets, see the <<Upload a Configset>> command above.
+
+The following parameters are supported when creating a configset.
+
+name::
+The configset to be created. This parameter is required.
 
 baseConfigSet::
-The ConfigSet to copy as a base. This parameter is required.
+The name of the configset to copy as a base. This parameter is required.
 
-configSetProp._name_=_value_::
-Any ConfigSet property from base to override.
+configSetProp._property_=_value_::
+A configset property from the base configset to override in the copied configset.
 
-=== Create ConfigSet Response
+For example, to create a configset named "myConfigset" based on a previously defined "predefinedTemplate" configset, overriding the immutable property to false.
 
-The response will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createconfigset]
+====
+[.tab-label]*V1 API*
 
-=== Create ConfigSet Examples
+With the v1 API, the `create` command must be capitalized as `CREATE`:
 
-*Input*
-
-Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
-
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false&wt=xml
+http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false&wt=xml&omitHeader=true
 ----
+====
+
+[example.tab-pane#v2createconfigset]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+  "create":{
+    "name": "myConfigSet",
+    "baseConfigSet": "predefinedTemplate",
+    "configSetProp.immutable": "false"}}'
+    http://localhost:8983/api/cluster/configs?omitHeader=true
+----
+====
+--
 
 *Output*
 
@@ -80,31 +180,41 @@ http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConf
 ----
 
 [[configsets-delete]]
-== Delete a ConfigSet
+== Delete a Configset
 
-`/admin/configs?action=DELETE&name=_name_`
-
-Delete a ConfigSet
-
-=== Delete ConfigSet Parameters
+The `delete` command removes a configset. It does not remove any collections that were created with the configset.
 
 name::
-The ConfigSet to be deleted. This parameter is required.
+The configset to be deleted. This parameter is required.
 
-=== Delete ConfigSet Response
+To delete a configset named "myConfigSet":
 
-The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deleteconfigset]
+====
+[.tab-label]*V1 API*
 
-=== Delete ConfigSet Examples
+With the v1 API, the `delete` command must be capitalized as `DELETE`. The name of the configset to delete is provided with the `name` parameter:
 
-*Input*
-
-Delete ConfigSet 'myConfigSet'
-
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet&wt=xml
+http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet&omitHeader=true
 ----
+====
+
+[example.tab-pane#v2deleteconfigset]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `delete` command is provided as the request method, as in `-X DELETE`. The name of the configset to delete is provided as a path parameter:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/configs/myConfigSet?omitHeader=true
+----
+====
+--
 
 *Output*
 
@@ -116,72 +226,4 @@ http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet&wt=xml
     <int name="QTime">170</int>
   </lst>
 </response>
-----
-
-[[configsets-list]]
-== List ConfigSets
-
-`/admin/configs?action=LIST`
-
-Fetch the names of the ConfigSets in the cluster.
-
-=== List ConfigSet Examples
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/configs?action=LIST
-----
-
-*Output*
-
-[source,json]
-----
-{
-  "responseHeader":{
-    "status":0,
-    "QTime":203},
-  "configSets":["myConfigSet1",
-    "myConfig2"]}
-----
-
-[[configsets-upload]]
-== Upload a ConfigSet
-
-`/admin/configs?action=UPLOAD&name=_name_`
-
-Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
-
- * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.
- * XSLT transformer (tr parameter) cannot be used at request processing time.
- * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
-
-=== Upload ConfigSet Parameters
-
-name::
-The ConfigSet to be created when the upload is complete. This parameter is required.
-
-The body of the request should contain a zipped config set.
-
-=== Upload ConfigSet Response
-
-The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
-
-=== Upload ConfigSet Examples
-
-Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it:
-
-[source,text]
-----
-$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
-
-$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
-----
-
-The same can be achieved using a Unix pipe, without creating an intermediate zip file, as follows:
-
-[source,text]
-----
-$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
 ----

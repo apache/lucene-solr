@@ -42,7 +42,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -1429,8 +1428,8 @@ public class MemoryIndex {
       }
 
       @Override
-      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-        return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1L));
+      public ImpactsEnum impacts(int flags) throws IOException {
+        return new SlowImpactsEnum(postings(null, flags));
       }
 
       @Override

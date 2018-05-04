@@ -22,52 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-import org.apache.commons.math3.ml.distance.CanberraDistance;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
-import org.apache.commons.math3.ml.distance.EarthMoversDistance;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
-import org.apache.commons.math3.ml.distance.ManhattanDistance;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  private DistanceMeasure distanceMeasure;
-
   public KnnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-
-    DistanceEvaluator.DistanceType type = null;
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    if(namedParams.size() > 0) {
-      if (namedParams.size() > 1) {
-        throw new IOException("distance function expects only one named parameter 'distance'.");
-      }
-
-      StreamExpressionNamedParameter namedParameter = namedParams.get(0);
-      String name = namedParameter.getName();
-      if (!name.equalsIgnoreCase("distance")) {
-        throw new IOException("distance function expects only one named parameter 'distance'.");
-      }
-
-      String typeParam = namedParameter.getParameter().toString().trim();
-      type= DistanceEvaluator.DistanceType.valueOf(typeParam);
-    } else {
-      type = DistanceEvaluator.DistanceType.euclidean;
-    }
-
-    if (type.equals(DistanceEvaluator.DistanceType.euclidean)) {
-      distanceMeasure = new EuclideanDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.manhattan)) {
-      distanceMeasure = new ManhattanDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.canberra)) {
-      distanceMeasure = new CanberraDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.earthMovers)) {
-      distanceMeasure = new EarthMoversDistance();
-    }
-
   }
 
   @Override
@@ -104,6 +68,14 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
     }
 
     double[][] data = matrix.getData();
+
+    DistanceMeasure distanceMeasure = null;
+
+    if(values.length == 4) {
+      distanceMeasure = (DistanceMeasure)values[3];
+    } else {
+      distanceMeasure = new EuclideanDistance();
+    }
 
     TreeSet<Neighbor> neighbors = new TreeSet();
     for(int i=0; i<data.length; i++) {
@@ -165,6 +137,5 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
       return this.distance.compareTo(neighbor.getDistance());
     }
   }
-
 }
 

@@ -97,7 +97,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           id = tuple.getString("collection") + "." + id;
         }
 
-        writer.write("<node id=\""+replace(id)+"\"");
+        printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
         List<String> outfields = new ArrayList();
         Iterator<String> keys = tuple.fields.keySet().iterator();
@@ -115,7 +115,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           for (String nodeAttribute : outfields) {
             Object o = tuple.get(nodeAttribute);
             if (o != null) {
-              printWriter.println("<data key=\""+nodeAttribute+"\">" + o.toString() + "</data>");
+              printWriter.println("<data key=\"" + xmlEscape(nodeAttribute) + "\">" + xmlEscape(o.toString()) + "</data>");
             }
           }
           printWriter.println("</node>");
@@ -128,20 +128,20 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
         if(ancestors != null) {
           for (String ancestor : ancestors) {
             ++edgeCount;
-            writer.write("<edge id=\"" + edgeCount + "\" ");
-            writer.write(" source=\"" + replace(ancestor) + "\" ");
-            printWriter.println(" target=\"" + replace(id) + "\"/>");
+            printWriter.write("<edge id=\"" + edgeCount + "\" ");
+            printWriter.write(" source=\"" + xmlEscape(ancestor) + "\" ");
+            printWriter.println(" target=\"" + xmlEscape(id) + "\"/>");
           }
         }
       }
 
-      writer.write("</graph></graphml>");
+      printWriter.write("</graph></graphml>");
     } finally {
       stream.close();
     }
   }
 
-  private String replace(String s) {
+  private String xmlEscape(String s) {
     if(s.indexOf(">") > -1) {
       s = s.replace(">", "&gt;");
     }

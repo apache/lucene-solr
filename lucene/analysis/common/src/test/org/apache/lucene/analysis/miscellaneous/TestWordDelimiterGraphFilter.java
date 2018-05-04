@@ -309,6 +309,38 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     IOUtils.close(a, a2, a3);
   }
   
+  public void testKeywordFilter() throws Exception {
+    assertAnalyzesTo(keywordTestAnalyzer(GENERATE_WORD_PARTS),
+                     "abc-def klm-nop kpop",
+                     new String[] {"abc", "def", "klm", "nop", "kpop"});
+    assertAnalyzesTo(keywordTestAnalyzer(GENERATE_WORD_PARTS | IGNORE_KEYWORDS),
+                     "abc-def klm-nop kpop",
+                     new String[] {"abc", "def", "klm-nop", "kpop"},
+                     new int[]{0, 4, 8, 16},
+                     new int[]{3, 7, 15, 20},
+                     null,
+                     new int[]{1, 1, 1, 1},
+                     null,
+                     false);
+  }
+
+  private Analyzer keywordTestAnalyzer(int flags) throws Exception {
+    return new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        KeywordMarkerFilter kFilter = new KeywordMarkerFilter(tokenizer) {
+          private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
+          @Override public boolean isKeyword() {
+            // Marks terms starting with the letter 'k' as keywords
+            return term.toString().charAt(0) == 'k';
+          }
+        };
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(kFilter, flags, null));
+      }
+    };
+  }
+
   /** concat numbers + words + all */
   public void testLotsOfConcatenating() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;    

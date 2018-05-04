@@ -29,6 +29,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterLeafReader extends LuceneTestCase {
@@ -94,6 +95,27 @@ public class TestFilterLeafReader extends LuceneTestCase {
     public Terms terms(String field) throws IOException {
       Terms terms = super.terms(field);
       return terms==null ? null : new TestTerms(terms);
+    }
+
+    @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      NumericDocValues ndv = super.getNormValues(field);
+      if (ndv == null) {
+        return null;
+      }
+      FixedBitSet docsWithTerms = new FixedBitSet(maxDoc());
+      TermsEnum termsEnum = terms(field).iterator();
+      PostingsEnum postings = null;
+      while (termsEnum.next() != null) {
+        postings = termsEnum.postings(postings, PostingsEnum.NONE);
+        docsWithTerms.or(postings);
+      }
+      return new FilterNumericDocValues(ndv) {
+        @Override
+        public long longValue() throws IOException {
+          return docsWithTerms.get(docID()) ? super.longValue() : 0L;
+        }
+      };
     }
 
     @Override

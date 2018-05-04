@@ -560,6 +560,8 @@ NOTE: No `"features"` are configured in `myWrapperModel` because the features of
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
 
+As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit,increase ZooKeeper's file size limit>>.
+
 === Applying Changes
 
 The feature store and the model store are both <<managed-resources.adoc#managed-resources,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.

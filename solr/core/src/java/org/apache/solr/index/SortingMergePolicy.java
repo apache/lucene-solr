@@ -16,13 +16,13 @@
  */
 package org.apache.solr.index;
 
+import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergePolicyWrapper;
 import org.apache.lucene.search.Sort;
 
 // TODO: remove this and add indexSort specification directly to solrconfig.xml?  But for BWC, also accept SortingMergePolicy specifiction?
 
-public final class SortingMergePolicy extends MergePolicyWrapper {
+public final class SortingMergePolicy extends FilterMergePolicy {
 
   private final Sort sort;
 

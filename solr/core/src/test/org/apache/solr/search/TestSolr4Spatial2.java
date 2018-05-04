@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +57,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
+    RetrievalCombo.idCounter = 0;
   }
 
   @Test
@@ -145,12 +147,12 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
     assertU(adoc("id", "0", fld, ptOrig));
     assertU(commit());
-    // retrieve it (probably less precision
+    // retrieve it (probably less precision)
     String ptDecoded1 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     // now write it back
     assertU(adoc("id", "0", fld, ptDecoded1));
     assertU(commit());
-    // retrieve it and hopefully the same
+    // retrieve it; assert that it's the same as written
     String ptDecoded2 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     assertEquals("orig:" + ptOrig, ptDecoded1, ptDecoded2);
 
@@ -158,23 +160,30 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     final Point ptOrigObj = SpatialUtils.parsePoint(ptOrig, SpatialContext.GEO);
     final Point ptDecodedObj = SpatialUtils.parsePoint(ptDecoded1, SpatialContext.GEO);
     double deltaCentimeters = SpatialContext.GEO.calcDistance(ptOrigObj, ptDecodedObj) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //See javadocs of LatLonDocValuesField
-//    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
-//    double deltaCentimetersMax
-//        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //  equals 1.0420371840922256   which is a bit lower than what we're able to do
+    //See javadocs of LatLonDocValuesField for these constants
+    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
+    double deltaCentimetersMax
+        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
+    assertEquals(1.0420371840922256, deltaCentimetersMax, 0.0);// just so that we see it in black & white in the test
 
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.33);
+    //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
+    // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters <= 1.37);
   }
 
   @Test
   public void testLatLonRetrieval() throws Exception {
-    final String ptHighPrecision = "40.2996543270,-74.0824956673";
+    final String ptHighPrecision =   "40.2996543270,-74.0824956673";
     final String ptLossOfPrecision = "40.2996544,-74.0824957"; // rounded version of the one above, losing precision
 
     // "_1" is single, "_N" is multiValued
     // "_dv" is docValues (otherwise not),  "_dvasst" is useDocValuesAsStored (otherwise not)
     // "_st" is stored" (otherwise not)
+
+    // a random point using the number of decimal places we support for round-tripping.
+    String randPointStr =
+        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString() +
+        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString();
 
     List<RetrievalCombo> combos = Arrays.asList(
         new RetrievalCombo("llp_1_dv_st", ptHighPrecision),
@@ -184,7 +193,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         new RetrievalCombo("llp_1_dv_dvasst", ptHighPrecision, ptLossOfPrecision),
         // this one comes back in a different order since it gets sorted low to high
         new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList("-40,40", "-45,45"), Arrays.asList("-45,45", "-40,40")),
-        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList("-40,40")), // multiValued but 1 value
+        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(randPointStr)), // multiValued but 1 value
         // edge cases.  (note we sorted it as Lucene will internally)
         new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(
             "-90,180", "-90,-180",

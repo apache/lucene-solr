@@ -81,7 +81,7 @@ public class Violation implements MapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("replica", replicaInfo);
-      ew.putIfNotNull("delta",delta );
+      ew.putIfNotNull("delta", delta);
     }
   }
 

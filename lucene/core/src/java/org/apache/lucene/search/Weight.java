@@ -70,6 +70,36 @@ public abstract class Weight implements SegmentCacheable {
   public abstract void extractTerms(Set<Term> terms);
 
   /**
+   * Returns {@link Matches} for a specific document, or {@code null} if the document
+   * does not match the parent query
+   *
+   * A query match that contains no position information (for example, a Point or
+   * DocValues query) will return {@link Matches#MATCH_WITH_NO_TERMS}
+   *
+   * @param context the reader's context to create the {@link Matches} for
+   * @param doc     the document's id relative to the given context's reader
+   * @lucene.experimental
+   */
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    Scorer scorer = scorer(context);
+    if (scorer == null) {
+      return null;
+    }
+    final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
+    if (twoPhase == null) {
+      if (scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+    }
+    else {
+      if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
+        return null;
+      }
+    }
+    return Matches.MATCH_WITH_NO_TERMS;
+  }
+
+  /**
    * An explanation of the score computation for the named document.
    * 
    * @param context the readers context to create the {@link Explanation} for.

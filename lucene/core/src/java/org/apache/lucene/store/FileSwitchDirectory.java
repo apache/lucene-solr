@@ -202,4 +202,9 @@ public class FileSwitchDirectory extends Directory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     return getDirectory(name).openInput(name, context);
   }
+
+  @Override
+  public boolean checkPendingDeletions() throws IOException {
+    return primaryDir.checkPendingDeletions() && secondaryDir.checkPendingDeletions();
+  }
 }

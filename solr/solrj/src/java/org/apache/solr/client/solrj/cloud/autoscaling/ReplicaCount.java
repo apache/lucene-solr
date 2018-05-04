@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.Utils;
 
 class ReplicaCount extends Number implements MapWriter {
   long nrt, tlog, pull;
@@ -88,5 +89,10 @@ class ReplicaCount extends Number implements MapWriter {
           nrt++;
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

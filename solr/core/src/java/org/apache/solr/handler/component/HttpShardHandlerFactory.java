@@ -29,12 +29,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -303,30 +304,61 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   /**
    * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
    * This means it is just as likely to choose current host as any of the other hosts.
-   * This function makes sure that the cores of current host are always put first in the URL list.
-   * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
-   * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
+   * This function makes sure that the cores are sorted according to the given list of preferences.
+   * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from 
+   * healthy nodes. This will help prevent a distributed deadlock or timeouts in all the healthy nodes due 
+   * to one bad node.
    */
-  private static class IsOnPreferredHostComparator implements Comparator<Object> {
-    final private String preferredHostAddress;
-    public IsOnPreferredHostComparator(String preferredHostAddress) {
-      this.preferredHostAddress = preferredHostAddress;
+  static class NodePreferenceRulesComparator implements Comparator<Object> {
+    private static class PreferenceRule {
+      public final String name;
+      public final String value;
+
+      public PreferenceRule(String name, String value) {
+        this.name = name;
+        this.value = value;
+      }
+    }
+
+    private final SolrQueryRequest request;
+    private List<PreferenceRule> preferenceRules;
+    private String localHostAddress = null;
+
+    public NodePreferenceRulesComparator(final List<String> sortRules, final SolrQueryRequest request) {
+      this.request = request;
+      this.preferenceRules = new ArrayList<PreferenceRule>(sortRules.size());
+      sortRules.forEach(rule -> {
+        String[] parts = rule.split(":", 2);
+        if (parts.length != 2) {
+          throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " rule: " + rule);
+        }
+        this.preferenceRules.add(new PreferenceRule(parts[0], parts[1])); 
+      });
     }
     @Override
     public int compare(Object left, Object right) {
-      final boolean lhs = hasPrefix(objectToString(left));
-      final boolean rhs = hasPrefix(objectToString(right));
-      if (lhs != rhs) {
-        if (lhs) {
-          return -1;
-        } else {
-          return +1;
+      for (PreferenceRule preferenceRule: this.preferenceRules) {
+        final boolean lhs;
+        final boolean rhs;
+        switch (preferenceRule.name) {
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
+            lhs = hasReplicaType(left, preferenceRule.value);
+            rhs = hasReplicaType(right, preferenceRule.value);
+            break;
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
+            lhs = hasCoreUrlPrefix(left, preferenceRule.value);
+            rhs = hasCoreUrlPrefix(right, preferenceRule.value);
+            break;
+          default:
+            throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
         }
-      } else {
-        return 0;
+        if (lhs != rhs) {
+          return lhs ? -1 : +1;
+        }
       }
+      return 0;
     }
-    private String objectToString(Object o) {
+    private boolean hasCoreUrlPrefix(Object o, String prefix) {
       final String s;
       if (o instanceof String) {
         s = (String)o;
@@ -334,44 +366,80 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       else if (o instanceof Replica) {
         s = ((Replica)o).getCoreUrl();
       } else {
-        s = null;
+        return false;
       }
-      return s;
+      if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
+        if (null == localHostAddress) {
+          final ZkController zkController = this.request.getCore().getCoreContainer().getZkController();
+          localHostAddress = zkController != null ? zkController.getBaseUrl() : "";
+          if (localHostAddress.isEmpty()) {
+            log.warn("Couldn't determine current host address for sorting of local replicas");
+          }
+        }
+        if (!localHostAddress.isEmpty()) {
+          if (s.startsWith(localHostAddress)) {
+            return true;
+          }
+        }
+      } else {
+        if (s.startsWith(prefix)) {
+          return true;
+        }
+      }
+      return false;
     }
-    private boolean hasPrefix(String s) {
-      return s != null && s.startsWith(preferredHostAddress);
+    private static boolean hasReplicaType(Object o, String preferred) {
+      if (!(o instanceof Replica)) {
+        return false;
+      }
+      final String s = ((Replica)o).getType().toString();
+      return s.equals(preferred);
     }
   }
-  protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
-  {
-    final SolrParams params = req.getParams();
 
-    if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
-      final CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
-      final ZkController zkController = req.getCore().getCoreContainer().getZkController();
-      final String preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
-      if (preferredHostAddress == null) {
-        log.warn("Couldn't determine current host address to prefer local shards");
-      } else {
-        return new ShufflingReplicaListTransformer(r) {
-          @Override
-          public void transform(List<?> choices)
-          {
-            if (choices.size() > 1) {
-              super.transform(choices);
-              if (log.isDebugEnabled()) {
-                log.debug("Trying to prefer local shard on {} among the choices: {}",
-                    preferredHostAddress, Arrays.toString(choices.toArray()));
-              }
-              choices.sort(new IsOnPreferredHostComparator(preferredHostAddress));
-              if (log.isDebugEnabled()) {
-                log.debug("Applied local shard preference for choices: {}",
-                    Arrays.toString(choices.toArray()));
-              }
+  protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
+    final SolrParams params = req.getParams();
+    @SuppressWarnings("deprecation")
+    final boolean preferLocalShards = params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
+    final String shardsPreferenceSpec = params.get(ShardParams.SHARDS_PREFERENCE, "");
+
+    if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
+      if (preferLocalShards && !shardsPreferenceSpec.isEmpty()) {
+        throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "preferLocalShards is deprecated and must not be used with shards.preference" 
+        );
+      }
+      List<String> preferenceRules = StrUtils.splitSmart(shardsPreferenceSpec, ',');
+      if (preferLocalShards) {
+        preferenceRules.add(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
+      }
+
+      return new ShufflingReplicaListTransformer(r) {
+        @Override
+        public void transform(List<?> choices)
+        {
+          if (choices.size() > 1) {
+            super.transform(choices);
+            if (log.isDebugEnabled()) {
+              log.debug("Applying the following sorting preferences to replicas: {}",
+                  Arrays.toString(preferenceRules.toArray()));
+            }
+            try {
+              choices.sort(new NodePreferenceRulesComparator(preferenceRules, req));
+            } catch (IllegalArgumentException iae) {
+              throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                iae.getMessage()
+              );
+            }
+            if (log.isDebugEnabled()) {
+              log.debug("Applied sorting preferences to replica list: {}",
+                  Arrays.toString(choices.toArray()));
             }
           }
-        };
-      }
+        }
+      };
     }
 
     return shufflingReplicaListTransformer;
@@ -409,4 +477,5 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
+
 }

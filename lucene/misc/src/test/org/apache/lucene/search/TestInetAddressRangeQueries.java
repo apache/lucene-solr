@@ -23,10 +23,12 @@ import java.util.Arrays;
 import org.apache.lucene.document.InetAddressPoint;
 import org.apache.lucene.document.InetAddressRange;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs; 
 
 /**
  * Random testing for {@link InetAddressRange}
  */
+@SuppressCodecs({"Direct", "Memory"})
 public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "ipRangeField";
 

@@ -33,6 +33,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOSupplier;
 
 /**
  * This {@link MergePolicy} allows to carry over soft deleted documents across merges. The policy wraps
@@ -70,14 +71,16 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
   }
 
   @Override
-  public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
-    Scorer scorer = getScorer(field, retentionQuerySupplier.get(), wrapLiveDocs(reader, null, reader.maxDoc()));
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    CodecReader reader = readerIOSupplier.get();
+    /* we only need a single hit to keep it no need for soft deletes to be checked*/
+    Scorer scorer = getScorer(retentionQuerySupplier.get(), wrapLiveDocs(reader, null, reader.maxDoc()));
     if (scorer != null) {
       DocIdSetIterator iterator = scorer.iterator();
       boolean atLeastOneHit = iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
       return atLeastOneHit;
     }
-    return super.keepFullyDeletedSegment(reader) ;
+    return super.keepFullyDeletedSegment(readerIOSupplier) ;
   }
 
   // pkg private for testing
@@ -97,7 +100,10 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
         return liveDocs.length();
       }
     }, reader.maxDoc() - reader.numDocs());
-    Scorer scorer = getScorer(softDeleteField, retentionQuery, wrappedReader);
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.add(new DocValuesFieldExistsQuery(softDeleteField), BooleanClause.Occur.FILTER);
+    builder.add(retentionQuery, BooleanClause.Occur.FILTER);
+    Scorer scorer = getScorer(builder.build(), wrappedReader);
     if (scorer != null) {
       FixedBitSet cloneLiveDocs = cloneLiveDocs(liveDocs);
       DocIdSetIterator iterator = scorer.iterator();
@@ -132,13 +138,10 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
     }
   }
 
-  private static Scorer getScorer(String softDeleteField, Query retentionQuery, CodecReader reader) throws IOException {
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.add(new DocValuesFieldExistsQuery(softDeleteField), BooleanClause.Occur.FILTER);
-    builder.add(retentionQuery, BooleanClause.Occur.FILTER);
+  private static Scorer getScorer(Query query, CodecReader reader) throws IOException {
     IndexSearcher s = new IndexSearcher(reader);
     s.setQueryCache(null);
-    Weight weight = s.createWeight(builder.build(), ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+    Weight weight = s.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     return weight.scorer(reader.getContext());
   }
 
@@ -167,4 +170,33 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
         return numDocs;
       }
     };
-  }}
+  }
+
+  @Override
+  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    final int numDeletesToMerge = super.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
+    if (numDeletesToMerge != 0) {
+      final CodecReader reader = readerSupplier.get();
+      if (reader.getLiveDocs() != null) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(new DocValuesFieldExistsQuery(field), BooleanClause.Occur.FILTER);
+        builder.add(retentionQuerySupplier.get(), BooleanClause.Occur.FILTER);
+        Scorer scorer = getScorer(builder.build(), wrapLiveDocs(reader, null, reader.maxDoc()));
+        if (scorer != null) {
+          DocIdSetIterator iterator = scorer.iterator();
+          Bits liveDocs = reader.getLiveDocs();
+          int numDeletedDocs = reader.numDeletedDocs();
+          while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs.get(iterator.docID()) == false) {
+              numDeletedDocs--;
+            }
+          }
+          return numDeletedDocs;
+        }
+      }
+    }
+    assert numDeletesToMerge >= 0 : "numDeletesToMerge: " + numDeletesToMerge;
+    assert numDeletesToMerge <= info.info.maxDoc() : "numDeletesToMerge: " + numDeletesToMerge + " maxDoc:" + info.info.maxDoc();
+    return numDeletesToMerge;
+  }
+}

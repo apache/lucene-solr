@@ -1207,7 +1207,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w = new IndexWriter(d, iwc);
     IndexReader r = DirectoryReader.open(w, false, false);
     assertTrue(w.tryDeleteDocument(r, 1) != -1);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
     assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0) != -1);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
     r.close();
     w.close();
 
@@ -1216,6 +1218,28 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertNotNull(MultiFields.getLiveDocs(r));
     r.close();
     d.close();
+  }
+
+  public void testNRTIsCurrentAfterDelete() throws Exception {
+    Directory d = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(d, iwc);
+    Document doc = new Document();
+    w.addDocument(doc);
+    w.addDocument(doc);
+    w.addDocument(doc);
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    w.addDocument(doc);
+    w.close();
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
+    w = new IndexWriter(d, iwc);
+    IndexReader r = DirectoryReader.open(w, false, false);
+    w.deleteDocuments(new Term("id", "1"));
+    IndexReader r2 = DirectoryReader.open(w, true, true);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
+    assertTrue(((StandardDirectoryReader)r2).isCurrent());
+    IOUtils.close(r, r2, w, d);
   }
 
   public void testOnlyDeletesTriggersMergeOnClose() throws Exception {
