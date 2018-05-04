@@ -289,6 +289,9 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
               writer.softUpdateDocument(new Term("id", id), doc,
                   new NumericDocValuesField("soft_delete", 1));
             }
+            if (rarely()) {
+              writer.flush();
+            }
             ids.add(id);
           }
         } catch (IOException | InterruptedException e) {
@@ -382,13 +385,13 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     Document tombstone = new Document();
     tombstone.add(new NumericDocValuesField("soft_delete", 1));
     writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
-    // Internally, forceMergeDeletes will call flush to flush pending updates
+    writer.forceMergeDeletes(true); // Internally, forceMergeDeletes will call flush to flush pending updates
     // Thus, we will have two segments - both having soft-deleted documents.
     // We expect any MP to merge these segments into one segment
     // when calling forceMergeDeletes.
-    writer.forceMergeDeletes(true);
-    assertEquals(1, writer.maxDoc());
     assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.numDocs());
+    assertEquals(1, writer.maxDoc());
     writer.close();
     dir.close();
   }
@@ -441,5 +444,98 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
 
     writer.close();
     dir.close();
+  }
+
+  public void testSoftDeleteWhileMergeSurvives() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDelete);
+    AtomicBoolean update = new AtomicBoolean(true);
+    config.setReaderPooling(true);
+    config.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete", () -> new DocValuesFieldExistsQuery("keep"),
+        new LogDocMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+    writer.getConfig().setMergedSegmentWarmer(sr -> {
+      if (update.compareAndSet(true, false)) {
+        try {
+          writer.softUpdateDocument(new Term("id", "0"), new Document(),
+              new NumericDocValuesField(softDelete, 1), new NumericDocValuesField("keep", 1));
+          writer.commit();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      }
+    });
+
+    boolean preExistingDeletes = random().nextBoolean();
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+      if (preExistingDeletes && random().nextBoolean()) {
+        writer.addDocument(d); // randomly add a preexisting hard-delete that we don't carry over
+        writer.deleteDocuments(new Term("id", Integer.toString(i)));
+        d.add(new NumericDocValuesField("keep", 1));
+        writer.addDocument(d);
+      } else {
+        d.add(new NumericDocValuesField("keep", 1));
+        writer.addDocument(d);
+      }
+      writer.flush();
+    }
+    writer.forceMerge(1);
+    writer.commit();
+    assertFalse(update.get());
+    DirectoryReader open = DirectoryReader.open(dir);
+    assertEquals(0, open.numDeletedDocs());
+    assertEquals(3, open.maxDoc());
+    IOUtils.close(open, writer, dir);
+  }
+
+  /*
+   * This test is trying to hard-delete a particular document while the segment is merged which is already soft-deleted
+   * This requires special logic inside IndexWriter#carryOverHardDeletes since docMaps are not created for this document.
+   */
+  public void testDeleteDocWhileMergeThatIsSoftDeleted() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDelete);
+    AtomicBoolean delete = new AtomicBoolean(true);
+    config.setReaderPooling(true);
+    config.setMergePolicy(new LogDocMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    writer.addDocument(d);
+    if (random().nextBoolean()) {
+      // randomly run with a preexisting hard delete
+      d = new Document();
+      d.add(new StringField("id", "2", Field.Store.YES));
+      writer.addDocument(d);
+      writer.deleteDocuments(new Term("id", "2"));
+    }
+
+    writer.flush();
+    DirectoryReader reader = writer.getReader();
+    writer.softUpdateDocument(new Term("id", "0"), new Document(),
+        new NumericDocValuesField(softDelete, 1));
+    writer.flush();
+    writer.getConfig().setMergedSegmentWarmer(sr -> {
+      if (delete.compareAndSet(true, false)) {
+        try {
+          long seqNo = writer.tryDeleteDocument(reader, 0);
+          assertTrue("seqId was -1", seqNo !=  -1);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      }
+    });
+    writer.forceMerge(1);
+    assertEquals(2, writer.numDocs());
+    assertEquals(2, writer.maxDoc());
+    assertFalse(delete.get());
+    IOUtils.close(reader, writer, dir);
   }
 }

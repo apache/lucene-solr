@@ -80,6 +80,8 @@ Improvements
 * LUCENE-8135: Boolean queries now implement the block-max WAND algorithm in
   order to speed up selection of top scored documents. (Adrien Grand)
 
+* LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
@@ -150,6 +152,9 @@ New Features
   but to handle Korean using mecab-ko-dic and morphological analysis.
   (Robert Muir, Jim Ferenczi)
 
+* LUCENE-8265: WordDelimter/GraphFilter now have an option to skip tokens
+  marked with KeywordAttribute (Mike Sokolov via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon and
@@ -172,6 +177,9 @@ Bug Fixes
 * LUCENE-8275: Push up #checkPendingDeletes to Directory to ensure IW fails if 
   the directory has pending deletes files even if the directory is filtered or 
   a FileSwitchDirectory (Simon Willnauer, Robert Muir)
+
+* LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
+  refresh on exception (Mike McCandless)
 
 Other
 
@@ -200,7 +208,7 @@ Build
 Documentation
 
 * LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
-xo  (Mike Sokolov via Mike McCandless)
+  (Mike Sokolov via Mike McCandless)
 
 ======================= Lucene 7.3.0 =======================
 

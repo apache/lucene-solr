@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 
 /**
@@ -205,6 +206,7 @@ public abstract class MergePolicy {
     volatile long totalMergeBytes;
 
     List<SegmentReader> readers;        // used by IndexWriter
+    List<Bits> hardLiveDocs;        // used by IndexWriter
 
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;

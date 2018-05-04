@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -510,16 +511,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             // TODO: we could instead just clone SIS and pull/incref readers in sync'd block, and then do this w/o IW's lock?
             // Must do this sync'd on IW to prevent a merge from completing at the last second and failing to write its DV updates:
-            if (readerPool.writeAllDocValuesUpdates()) {
-              checkpoint();
-            }
-
-            if (writeAllDeletes) {
-              // Must move the deletes to disk:
-              if (readerPool.commit(segmentInfos)) {
-                checkpointNoSIS();
-              }
-            }
+           writeReaderPool(writeAllDeletes);
 
             // Prevent segmentInfos from changing while opening the
             // reader; in theory we could instead do similar retry logic,
@@ -3132,11 +3124,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             applyAllDeletesAndUpdates();
             synchronized(this) {
-
-              if (readerPool.commit(segmentInfos)) {
-                checkpointNoSIS();
-              }
-
+              writeReaderPool(true);
               if (changeCount.get() != lastCommitChangeCount) {
                 // There are changes to commit, so we will write a new segments_N in startCommit.
                 // The act of committing is itself an NRT-visible change (an NRT reader that was
@@ -3215,6 +3203,39 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         throw t;
       }
+    }
+  }
+
+  /**
+   * Ensures that all changes in the reader-pool are written to disk.
+   * @param writeDeletes if <code>true</code> if deletes should be written to disk too.
+   */
+  private final void writeReaderPool(boolean writeDeletes) throws IOException {
+    assert Thread.holdsLock(this);
+    if (writeDeletes) {
+      if (readerPool.commit(segmentInfos)) {
+        checkpointNoSIS();
+      }
+    } else { // only write the docValues
+      if (readerPool.writeAllDocValuesUpdates()) {
+        checkpoint();
+      }
+    }
+    // now do some best effort to check if a segment is fully deleted
+    List<SegmentCommitInfo> toDrop = new ArrayList<>(); // don't modify segmentInfos in-place
+    for (SegmentCommitInfo info : segmentInfos) {
+      ReadersAndUpdates readersAndUpdates = readerPool.get(info, false);
+      if (readersAndUpdates != null) {
+        if (isFullyDeleted(readersAndUpdates)) {
+          toDrop.add(info);
+        }
+      }
+    }
+    for (SegmentCommitInfo info : toDrop) {
+      dropDeletedSegment(info);
+    }
+    if (toDrop.isEmpty() == false) {
+      checkpoint();
     }
   }
   
@@ -3503,6 +3524,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       anyChanges |= maybeMerge.getAndSet(false);
       
       synchronized(this) {
+        writeReaderPool(applyAllDeletes);
         doAfterFlush();
         success = true;
         return anyChanges;
@@ -3600,64 +3622,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentCommitInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int maxDoc = info.info.maxDoc();
-      final Bits prevLiveDocs = merge.readers.get(i).getLiveDocs();
       final ReadersAndUpdates rld = getPooledInstance(info, false);
       // We hold a ref, from when we opened the readers during mergeInit, so it better still be in the pool:
       assert rld != null: "seg=" + info.info.name;
-      final Bits currentLiveDocs = rld.getLiveDocs();
 
       MergeState.DocMap segDocMap = mergeState.docMaps[i];
       MergeState.DocMap segLeafDocMap = mergeState.leafDocMaps[i];
 
-      if (prevLiveDocs != null) {
-
-        // If we had deletions on starting the merge we must
-        // still have deletions now:
-        assert currentLiveDocs != null;
-        assert prevLiveDocs.length() == maxDoc;
-        assert currentLiveDocs.length() == maxDoc;
-
-        // There were deletes on this segment when the merge
-        // started.  The merge has collapsed away those
-        // deletes, but, if new deletes were flushed since
-        // the merge started, we must now carefully keep any
-        // newly flushed deletes but mapping them to the new
-        // docIDs.
-
-        // Since we copy-on-write, if any new deletes were
-        // applied after merging has started, we can just
-        // check if the before/after liveDocs have changed.
-        // If so, we must carefully merge the liveDocs one
-        // doc at a time:
-        if (currentLiveDocs != prevLiveDocs) {
-          // This means this segment received new deletes
-          // since we started the merge, so we
-          // must merge them:
-          for (int j = 0; j < maxDoc; j++) {
-            if (prevLiveDocs.get(j) == false) {
-              // if the document was deleted before, it better still be deleted!
-              assert currentLiveDocs.get(j) == false;
-            } else if (currentLiveDocs.get(j) == false) {
-              // the document was deleted while we were merging:
-              mergedDeletesAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
-            }
-          }
-        }
-      } else if (currentLiveDocs != null) {
-        assert currentLiveDocs.length() == maxDoc;
-        // This segment had no deletes before but now it
-        // does:
-        for (int j = 0; j < maxDoc; j++) {
-          if (currentLiveDocs.get(j) == false) {
-            mergedDeletesAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
-          }
-        }
-      }
+      carryOverHardDeletes(mergedDeletesAndUpdates, maxDoc, mergeState.liveDocs[i],  merge.hardLiveDocs.get(i), rld.getHardLiveDocs(),
+          segDocMap, segLeafDocMap);
 
       // Now carry over all doc values updates that were resolved while we were merging, remapping the docIDs to the newly merged docIDs.
       // We only carry over packets that finished resolving; if any are still running (concurrently) they will detect that our merge completed
       // and re-resolve against the newly merged segment:
-      
       Map<String,List<DocValuesFieldUpdates>> mergingDVUpdates = rld.getMergingDVUpdates();
       for (Map.Entry<String,List<DocValuesFieldUpdates>> ent : mergingDVUpdates.entrySet()) {
 
@@ -3699,7 +3676,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             int mappedDoc = segDocMap.get(segLeafDocMap.get(doc));
             if (mappedDoc != -1) {
               // not deleted
-              mappedUpdates.add(mappedDoc, it.value());
+              mappedUpdates.add(mappedDoc, it);
               anyDVUpdates = true;
             }
           }
@@ -3734,6 +3711,69 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     merge.info.setBufferedDeletesGen(minGen);
 
     return mergedDeletesAndUpdates;
+  }
+
+  /**
+   * This method carries over hard-deleted documents that are applied to the source segment during a merge.
+   */
+  private static void carryOverHardDeletes(ReadersAndUpdates mergedReadersAndUpdates, int maxDoc,
+                                           Bits mergeLiveDocs, // the liveDocs used to build the segDocMaps
+                                           Bits prevHardLiveDocs, // the hard deletes when the merge reader was pulled
+                                           Bits currentHardLiveDocs, // the current hard deletes
+                                           MergeState.DocMap segDocMap, MergeState.DocMap segLeafDocMap) throws IOException {
+
+    assert mergeLiveDocs == null || mergeLiveDocs.length() == maxDoc;
+    // if we mix soft and hard deletes we need to make sure that we only carry over deletes
+    // that were not deleted before. Otherwise the segDocMap doesn't contain a mapping.
+    // yet this is also required if any MergePolicy modifies the liveDocs since this is
+    // what the segDocMap is build on.
+    final IntPredicate carryOverDelete = mergeLiveDocs == null || mergeLiveDocs == prevHardLiveDocs
+        ? docId -> currentHardLiveDocs.get(docId) == false
+        : docId -> mergeLiveDocs.get(docId) && currentHardLiveDocs.get(docId) == false;
+    if (prevHardLiveDocs != null) {
+      // If we had deletions on starting the merge we must
+      // still have deletions now:
+      assert currentHardLiveDocs != null;
+      assert mergeLiveDocs != null;
+      assert prevHardLiveDocs.length() == maxDoc;
+      assert currentHardLiveDocs.length() == maxDoc;
+
+      // There were deletes on this segment when the merge
+      // started.  The merge has collapsed away those
+      // deletes, but, if new deletes were flushed since
+      // the merge started, we must now carefully keep any
+      // newly flushed deletes but mapping them to the new
+      // docIDs.
+
+      // Since we copy-on-write, if any new deletes were
+      // applied after merging has started, we can just
+      // check if the before/after liveDocs have changed.
+      // If so, we must carefully merge the liveDocs one
+      // doc at a time:
+      if (currentHardLiveDocs != prevHardLiveDocs) {
+        // This means this segment received new deletes
+        // since we started the merge, so we
+        // must merge them:
+        for (int j = 0; j < maxDoc; j++) {
+          if (prevHardLiveDocs.get(j) == false) {
+            // if the document was deleted before, it better still be deleted!
+            assert currentHardLiveDocs.get(j) == false;
+          } else if (carryOverDelete.test(j)) {
+            // the document was deleted while we were merging:
+            mergedReadersAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
+          }
+        }
+      }
+    } else if (currentHardLiveDocs != null) {
+      assert currentHardLiveDocs.length() == maxDoc;
+      // This segment had no deletes before but now it
+      // does:
+      for (int j = 0; j < maxDoc; j++) {
+        if (carryOverDelete.test(j)) {
+          mergedReadersAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
+        }
+      }
+    }
   }
 
   @SuppressWarnings("try")
@@ -4215,6 +4255,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     merge.readers = new ArrayList<>(sourceSegments.size());
+    merge.hardLiveDocs = new ArrayList<>(sourceSegments.size());
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -4230,13 +4271,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         final ReadersAndUpdates rld = getPooledInstance(info, true);
         rld.setIsMerging();
 
-        SegmentReader reader = rld.getReaderForMerge(context);
+        ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(context);
+        SegmentReader reader = mr.reader;
         int delCount = reader.numDeletedDocs();
 
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "seg=" + segString(info) + " reader=" + reader);
         }
 
+        merge.hardLiveDocs.add(mr.hardLiveDocs);
         merge.readers.add(reader);
         assert delCount <= info.info.maxDoc(): "delCount=" + delCount + " info.maxDoc=" + info.info.maxDoc() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         segUpto++;

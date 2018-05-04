@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -39,7 +40,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * work correctly when this filter is used in the search-time analyzer.  Unlike
  * the deprecated {@link WordDelimiterFilter}, this token filter produces a
  * correct token graph as output.  However, it cannot consume an input token
- * graph correctly.
+ * graph correctly. Processing is suppressed by {@link KeywordAttribute#isKeyword()}=true.
  *
  * <p>
  * Words are split into subwords with the following rules:
@@ -156,7 +157,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
-  
+
+  /**
+   * Suppresses processing terms with {@link KeywordAttribute#isKeyword()}=true.
+   */
+  public static final int IGNORE_KEYWORDS = 512;
+
   /**
    * If not null is the set of tokens to protect from being delimited
    *
@@ -174,6 +180,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private char[][] bufferedTermParts = new char[4][];
   
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttribute = addAttribute(KeywordAttribute.class);;
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
@@ -225,7 +232,8 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
           PRESERVE_ORIGINAL |
           SPLIT_ON_CASE_CHANGE |
           SPLIT_ON_NUMERICS |
-          STEM_ENGLISH_POSSESSIVE)) != 0) {
+          STEM_ENGLISH_POSSESSIVE |
+          IGNORE_KEYWORDS)) != 0) {
       throw new IllegalArgumentException("flags contains unrecognized flag: " + configurationFlags);
     }
     this.flags = configurationFlags;
@@ -335,7 +343,9 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         if (input.incrementToken() == false) {
           return false;
         }
-
+        if (has(IGNORE_KEYWORDS) && keywordAttribute.isKeyword()) {
+            return true;
+        }
         int termLength = termAttribute.length();
         char[] termBuffer = termAttribute.buffer();
 

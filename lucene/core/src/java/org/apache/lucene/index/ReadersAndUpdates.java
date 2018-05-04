@@ -146,12 +146,7 @@ final class ReadersAndUpdates {
     if (update.getFinished() == false) {
       throw new IllegalArgumentException("call finish first");
     }
-    List<DocValuesFieldUpdates> fieldUpdates = pendingDVUpdates.get(update.field);
-    if (fieldUpdates == null) {
-      fieldUpdates = new ArrayList<>();
-      pendingDVUpdates.put(update.field, fieldUpdates);
-    }
-
+    List<DocValuesFieldUpdates> fieldUpdates = pendingDVUpdates.computeIfAbsent(update.field, key -> new ArrayList<>());
     assert assertNoDupGen(fieldUpdates, update);
 
     ramBytesUsed.addAndGet(update.ramBytesUsed());
@@ -166,7 +161,6 @@ final class ReadersAndUpdates {
       }
       fieldUpdates.add(update);
     }
-    pendingDeletes.onDocValuesUpdate(update.field, update.iterator());
   }
 
   public synchronized long getNumDVUpdates() {
@@ -280,6 +274,13 @@ final class ReadersAndUpdates {
     return pendingDeletes.getLiveDocs();
   }
 
+  /**
+   * Returns the live-docs bits excluding documents that are not live due to soft-deletes
+   */
+  public synchronized Bits getHardLiveDocs() {
+    return pendingDeletes.getHardLiveDocs();
+  }
+
   public synchronized void dropChanges() {
     // Discard (don't save) changes when we are dropping
     // the reader; this is used only on the sub-readers
@@ -339,7 +340,6 @@ final class ReadersAndUpdates {
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
       final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
-        pendingDeletes.onDocValuesUpdate(fieldInfo);
         Function<FieldInfo, DocValuesFieldUpdates.Iterator> updateSupplier = (info) -> {
           if (info != fieldInfo) {
             throw new IllegalArgumentException("expected field info for field: " + fieldInfo.name + " but got: " + info.name);
@@ -350,6 +350,7 @@ final class ReadersAndUpdates {
           }
           return  DocValuesFieldUpdates.mergedIterator(subs);
         };
+        pendingDeletes.onDocValuesUpdate(fieldInfo, updateSupplier.apply(fieldInfo));
         if (type == DocValuesType.BINARY) {
           fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
@@ -693,8 +694,18 @@ final class ReadersAndUpdates {
     return isMerging;
   }
 
+  final static class MergeReader {
+    final SegmentReader reader;
+    final Bits hardLiveDocs;
+
+    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
+      this.reader = reader;
+      this.hardLiveDocs = hardLiveDocs;
+    }
+  }
+
   /** Returns a reader for merge, with the latest doc values updates and deletions. */
-  synchronized SegmentReader getReaderForMerge(IOContext context) throws IOException {
+  synchronized MergeReader getReaderForMerge(IOContext context) throws IOException {
 
     // We must carry over any still-pending DV updates because they were not
     // successfully written, e.g. because there was a hole in the delGens,
@@ -721,7 +732,7 @@ final class ReadersAndUpdates {
     markAsShared();
     assert verifyDocCounts();
 
-    return reader;
+    return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
   /**

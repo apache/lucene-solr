@@ -1219,25 +1219,20 @@ shape:
     */
 
     final GeoPoint unquantized = new GeoPoint(PlanetModel.WGS84, -3.1780051348770987E-74, -3.032608859187692);
-    final GeoPoint quantized = new GeoPoint(-0.9951793580415914, -0.10888987641797832, -2.3309121299774915E-10);
-    
-    final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
-    final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
+    //final GeoPoint quantized = new GeoPoint(-0.9951793580415914, -0.10888987641797832, -2.3309121299774915E-10);
     
     // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
     GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);
     
-    // This shows y < 0 hemisphere is all in-set
-    //assertTrue(standard.isWithin(negativeY));
     // This should be in-set too, but isn't!!
-    assertTrue(standard.isWithin(negativeX));
+    assertTrue(standard.isWithin(PlanetModel.WGS84.MIN_X_POLE));
     
     final XYZBounds standardBounds = new XYZBounds();
     standard.getBounds(standardBounds);
     final XYZSolid standardSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, standardBounds);
 
     // If within shape, should be within bounds
-    assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
+    //assertTrue(standard.isWithin(quantized)?standardSolid.isWithin(quantized):true);
     assertTrue(standard.isWithin(unquantized)?standardSolid.isWithin(unquantized):true);
     
   }
@@ -1778,7 +1773,7 @@ shape:
   }
   
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8280")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8280")
   public void testLUCENE8280() {
     /*
    [junit4]   1>       unquantized=[lat=0.16367268756896675, lon=-3.141592653589793([X=-0.9876510422569805, Y=-1.2095236875745584E-16, Z=0.16311061810965483])]
@@ -1800,21 +1795,25 @@ shape:
     points.add(new GeoPoint(PlanetModel.WGS84, -0.40516490647074055, 2.4457272005608357E-47));
     points.add(new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, -0.6244585784444767));
     final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
-    //final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, description);
+    // I think this polygon may cross itself around lat=-0.91, lon=0.  If so, this is an invalid test.
     final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, Collections.singletonList(description));
 
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, 0.16367268756896675, -3.141592653589793);
-    
-    // Both are complex polygons, so this is going to pass.
-    //assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+    assertFalse(largePolygon.isWithin(point));
 
+    /* Confirmed that bounds is OK
     final XYZBounds xyzBounds = new XYZBounds();
     largePolygon.getBounds(xyzBounds);
+    
+    System.out.println("North pole is within? "+largePolygon.isWithin(PlanetModel.WGS84.NORTH_POLE));
+    System.out.println("South pole is within? "+largePolygon.isWithin(PlanetModel.WGS84.SOUTH_POLE));
+    
     final XYZSolid xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, xyzBounds);
     // Failure is due either to bounds computation or multiple points having their in-set status wrongly assessed.
     // Probably it is the former because there are more than a dozen points that otherwise fail to be correct.
     assertTrue(largePolygon.isWithin(point)?xyzSolid.isWithin(point):true);
-
+    */
+    
   }
   
 }

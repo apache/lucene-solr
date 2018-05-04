@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
@@ -69,6 +70,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNull(pendingSoftDeletes.getHardLiveDocs());
     // pass reader again
     Bits liveDocs = pendingSoftDeletes.getLiveDocs();
     pendingSoftDeletes.liveDocsShared();
@@ -90,6 +92,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertFalse(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNotNull(pendingSoftDeletes.getHardLiveDocs());
+    assertFalse(pendingSoftDeletes.getHardLiveDocs().get(0));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(1));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(2));
     IOUtils.close(reader, writer, dir);
   }
 
@@ -115,9 +121,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(4, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -134,9 +139,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     updates = Arrays.asList(singleUpdate(docsDeleted, 10));
     fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0);
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(5, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -179,9 +183,8 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(1, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -201,7 +204,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
   private DocValuesFieldUpdates singleUpdate(List<Integer> docsDeleted, int maxDoc) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
-      public void add(int doc, Object value) {
+      public void add(int doc, long value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int doc, BytesRef value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int docId, Iterator iterator) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -216,13 +230,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           }
 
           @Override
-          public int docID() {
-            return doc;
+          long longValue() {
+            return 1;
           }
 
           @Override
-          Object value() {
-            return 1;
+          BytesRef binaryValue() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int docID() {
+            return doc;
           }
 
           @Override
@@ -230,25 +249,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
             return 0;
           }
         };
-      }
-
-      @Override
-      public void finish() {
-      }
-
-      @Override
-      public boolean any() {
-        return true;
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public int size() {
-        return 1;
       }
     };
   }

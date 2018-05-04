@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MaxScoreCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -114,7 +115,8 @@ final class FeatureQuery extends Query {
         }
 
         SimScorer scorer = function.scorer(fieldName, boost);
-        ImpactsEnum impacts = termsEnum.impacts(scorer, PostingsEnum.FREQS);
+        ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
+        MaxScoreCache maxScoreCache = new MaxScoreCache(impacts, scorer);
 
         return new Scorer(this) {
 
@@ -135,12 +137,12 @@ final class FeatureQuery extends Query {
 
           @Override
           public int advanceShallow(int target) throws IOException {
-            return impacts.advanceShallow(target);
+            return maxScoreCache.advanceShallow(target);
           }
 
           @Override
           public float getMaxScore(int upTo) throws IOException {
-            return impacts.getMaxScore(upTo);
+            return maxScoreCache.getMaxScore(upTo);
           }
 
         };
