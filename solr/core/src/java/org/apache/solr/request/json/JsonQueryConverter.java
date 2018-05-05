@@ -69,6 +69,13 @@ class JsonQueryConverter {
             "Error when parsing json query, expect only one query parser here, but found : "+map.keySet());
       }
       String qtype = map.keySet().iterator().next();
+      String tagName = null;
+      if ("tagged".equals(qtype)) {
+        map = (Map) map.get("tagged");
+        tagName = (String) map.get("tagName");
+        map = (Map) map.get("query");
+        qtype = map.keySet().iterator().next();
+      }
       Object subVal = map.get(qtype);
 
       // We don't want to introduce unnecessary variable at root level
@@ -77,7 +84,10 @@ class JsonQueryConverter {
 
       if (useSubBuilder) subBuilder = new StringBuilder();
 
-      subBuilder = subBuilder.append("{!").append(qtype).append(' ');;
+      if (tagName != null) {
+        subBuilder.append("{!tag=").append(tagName).append("}");
+      }
+      subBuilder = subBuilder.append("{!").append(qtype).append(' ');
       buildLocalParams(subBuilder, subVal, false, additionalParams);
       subBuilder.append("}");
 
