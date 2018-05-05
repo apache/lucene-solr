@@ -209,6 +209,9 @@ Bug Fixes
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
   and devs. (Mark Miller)
 
+* SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
+  recoveries. (Mark Miller)
+
 Optimizations
 ----------------------
 
