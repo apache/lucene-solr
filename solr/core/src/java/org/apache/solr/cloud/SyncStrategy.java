@@ -69,7 +69,7 @@ public class SyncStrategy {
   
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    client = updateShardHandler.getHttpClient();
+    client = updateShardHandler.getDefaultHttpClient();
     shardHandler = cc.getShardHandlerFactory().getShardHandler();
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }

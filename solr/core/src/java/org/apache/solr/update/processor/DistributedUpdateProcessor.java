@@ -1285,7 +1285,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp = null;
     try (HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
-        withHttpClient(updateShardHandler.getHttpClient()).build()) {
+        withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build()) {
       rsp = hsc.request(ur);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
