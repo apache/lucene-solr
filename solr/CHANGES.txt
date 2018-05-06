@@ -212,6 +212,9 @@ Bug Fixes
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
 
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
+
 Optimizations
 ----------------------
 
