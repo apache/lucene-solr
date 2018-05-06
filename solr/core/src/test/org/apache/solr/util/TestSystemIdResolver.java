@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.commons.io.IOUtils;
@@ -76,8 +77,22 @@ public class TestSystemIdResolver extends LuceneTestCase {
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
     
-    // test, that resolving works if somebody uses an absolute file:-URI in a href attribute, the resolver should return null (default fallback)
-    assertNull(resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri));
+    // if somebody uses an absolute uri (e.g., file://) we should fail resolving:
+    IOException ioe = expectThrows(IOException.class, () -> {
+      resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri);
+    });
+    assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
+    
+    ioe = expectThrows(IOException.class, () -> {
+      resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml");
+    });
+    assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
+    
+    // check that we can't escape with absolute file paths:
+    ioe = expectThrows(IOException.class, () -> {
+      resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", "/etc/passwd");
+    });
+    assertTrue(ioe.getMessage().startsWith("Can't find resource '/etc/passwd' in classpath or"));
   }
 
 }
