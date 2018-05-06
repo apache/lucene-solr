@@ -37,7 +37,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
@@ -64,6 +65,10 @@ public class AdminHandlersProxy {
 
     Set<String> nodes;
     String pathStr = req.getPath();
+    
+    Map<String,String> paramsMap = req.getParams().toMap(new HashMap<>());
+    paramsMap.remove(PARAM_NODES);
+    SolrParams params = new MapSolrParams(paramsMap);
     Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
     
     if (nodeNames.equals("all")) {
@@ -91,7 +96,7 @@ public class AdminHandlersProxy {
     }
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
-      responses.put(node, callRemoteNode(node, pathStr, container.getZkController()));
+      responses.put(node, callRemoteNode(node, pathStr, params, container.getZkController()));
     }
     
     for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry : responses.entrySet()) {
@@ -112,12 +117,13 @@ public class AdminHandlersProxy {
   /**
    * Makes a remote request and returns a future and the solr client. The caller is responsible for closing the client 
    */
-  public static Pair<Future<NamedList<Object>>, SolrClient> callRemoteNode(String nodeName, String endpoint, ZkController zkController) 
+  public static Pair<Future<NamedList<Object>>, SolrClient> callRemoteNode(String nodeName, String endpoint, 
+                                                                           SolrParams params, ZkController zkController) 
       throws IOException, SolrServerException {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, new ModifiableSolrParams());
+    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
     HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
     return new Pair<>(proxyResp.future, solr);
   }
