@@ -36,7 +36,8 @@ Bug Fixes
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down state (Cao Manh Dat)
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
 
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
@@ -49,6 +50,9 @@ Bug Fixes
   (Amrit Sarkar, Varun Thacker)
 
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
