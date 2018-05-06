@@ -48,8 +48,20 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 public class JavabinLoader extends ContentStreamLoader {
 
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream cs, UpdateRequestProcessor processor) throws Exception {
-    InputStream stream = cs.getStream();
+  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+    InputStream is = null;
+    try {
+      is = stream.getStream();
+      parseAndLoadDocs(req, rsp, is, processor);
+    } finally {
+      if(is != null) {
+        is.close();
+      }
+    }
+  }
+  
+  private void parseAndLoadDocs(final SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
+                                final UpdateRequestProcessor processor) throws IOException {
     UpdateRequest update = null;
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       private AddUpdateCommand addCmd = null;

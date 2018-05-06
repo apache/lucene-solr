@@ -519,7 +519,11 @@ public class SolrRequestParsers
 
     @Override
     public InputStream getStream() throws IOException {
-      return req.getInputStream();
+      // we explicitly protect this servlet stream from being closed
+      // so that it does not trip our test assert in our close shield
+      // in SolrDispatchFilter - we must allow closes from getStream
+      // due to the other impls of ContentStream
+      return new CloseShieldInputStream(req.getInputStream());
     }
   }
 
