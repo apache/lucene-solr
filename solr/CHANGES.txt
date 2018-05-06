@@ -175,9 +175,6 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
-* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
-  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
-
 Optimizations
 ----------------------
 
@@ -282,6 +279,9 @@ Bug Fixes
   (Amrit Sarkar, Varun Thacker)
 
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
