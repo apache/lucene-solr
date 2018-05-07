@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -165,7 +164,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
-    iwconf.setCodec(new MockCodec2()); // uses standard for field content
+    iwconf.setCodec(new MockCodec()); // uses standard for field content
     writer = newWriter(dir, iwconf);
     // swap in new codec for currently written segments
     if (VERBOSE) {
@@ -218,24 +217,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   public static class MockCodec extends AssertingCodec {
     final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
     final PostingsFormat direct = new DirectPostingsFormat();
-    final PostingsFormat memory = new MemoryPostingsFormat();
-    
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      if (field.equals("id")) {
-        return direct;
-      } else if (field.equals("content")) {
-        return memory;
-      } else {
-        return luceneDefault;
-      }
-    }
-  }
 
-  public static class MockCodec2 extends AssertingCodec {
-    final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
-    final PostingsFormat direct = new DirectPostingsFormat();
-    
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
@@ -287,9 +269,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new MemoryPostingsFormat();
+          return new DirectPostingsFormat();
         } else if ("date".equals(field)) {
-          return new MemoryPostingsFormat();
+          return new DirectPostingsFormat();
         } else {
           return super.getPostingsFormatForField(field);
         }

@@ -21,7 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -42,9 +42,9 @@ public class TestRollingUpdates extends LuceneTestCase {
     
     final LineFileDocs docs = new LineFileDocs(random);
 
-    //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
-      Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
+      Codec.setDefault(TestUtil.alwaysPostingsFormat(
+          new DirectPostingsFormat()));
     }
 
     MockAnalyzer analyzer = new MockAnalyzer(random());

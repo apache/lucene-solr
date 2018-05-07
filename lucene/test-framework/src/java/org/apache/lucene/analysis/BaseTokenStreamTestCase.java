@@ -549,9 +549,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     Directory dir = null;
     RandomIndexWriter iw = null;
     final String postingsFormat =  TestUtil.getPostingsFormat("dummy");
-    boolean codecOk = iterations * maxWordLength < 100000 ||
-        !(postingsFormat.equals("Memory") ||
-            postingsFormat.equals("SimpleText"));
+    boolean codecOk = iterations * maxWordLength < 100000 || !(postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
       dir = newFSDirectory(createTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);

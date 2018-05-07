@@ -41,6 +41,9 @@ API Changes
 * LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
   been removed (Alan Woodward)
 
+* LUCENE-8267: Memory codecs removed from the codebase (MemoryPostings,
+  MemoryDocValues). (Dawid Weiss)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

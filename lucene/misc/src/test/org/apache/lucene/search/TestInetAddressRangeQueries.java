@@ -28,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 /**
  * Random testing for {@link InetAddressRange}
  */
-@SuppressCodecs({"Direct", "Memory"})
+@SuppressCodecs({"Direct"})
 public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "ipRangeField";
 

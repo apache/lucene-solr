@@ -42,13 +42,10 @@ public class TestExternalCodecs extends LuceneTestCase {
     
     private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
-    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      if (field.equals("field2") || field.equals("id")) {
-        return memoryFormat;
-      } else if (field.equals("field1")) {
+      if (field.equals("field2") || field.equals("field1") || field.equals("id")) {
         return defaultFormat;
       } else {
         return ramFormat;
