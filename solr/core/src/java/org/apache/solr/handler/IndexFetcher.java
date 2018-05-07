@@ -1539,7 +1539,7 @@ public class IndexFetcher {
 
     private final long size;
     private long bytesDownloaded = 0;
-    private byte[] buf = new byte[1024 * 1024];
+    private byte[] buf;
     private final Checksum checksum;
     private int errorCount = 0;
     private boolean aborted = false;
@@ -1549,6 +1549,7 @@ public class IndexFetcher {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
+      buf = new byte[(int)Math.min(this.size, ReplicationHandler.PACKET_SZ)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
@@ -1629,6 +1630,8 @@ public class IndexFetcher {
             LOG.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
+          //This really shouldn't happen since we set the buf based on the handler PACKET_SZ, but it could be possible
+          //If that ever changes and both hosts aren't bounced at the same time for example..
           if (buf.length < packetSize)
             buf = new byte[packetSize];
           if (checksum != null) {
