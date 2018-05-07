@@ -130,6 +130,7 @@ limitations under the License.
                 RPM: {{n.req15minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
               </td>
               <td ng-click="toggleDetails(key)">
+                <div ng-show="!n.collections">(none)</div>
                 <div ng-repeat="c in n.collections | limitTo:showDetails[key]?999:2 track by $index">
                   <a href="{{n.base_url + '/#/~collections/' + c}}">{{ c }}</a>
                 </div>
@@ -137,6 +138,7 @@ limitations under the License.
               </td>
               <td class="min-width-150" ng-click="toggleDetails(key)">
                 <div class="scroll-height-250">
+                  <div ng-show="!n.cores">(none)</div>
                   <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
                     <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)
                     <ul class="core-details" ng-show="showDetails[key]">

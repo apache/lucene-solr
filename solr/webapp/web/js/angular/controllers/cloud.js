@@ -71,10 +71,18 @@ function ensureInList(string, list) {
     }
 }
 
+/* Puts a node name into the hosts structure */
+var ensureNodeInHosts = function (node_name, hosts) {
+  var hostName = node_name.split(":")[0];
+  var host = getOrCreateObj(hostName, hosts);
+  var hostNodes = getOrCreateList("nodes", host);
+  ensureInList(node_name, hostNodes);
+};
+
 // from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
 function bytesToSize(bytes) {
     var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
-    if (bytes === 0) return 'n/a';
+    if (bytes === 0) return '0b';
     var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
     if (bytes === 0) return bytes + '' + sizes[i];
     return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
@@ -82,7 +90,7 @@ function bytesToSize(bytes) {
 
 function numDocsHuman(docs) {
     var sizes = ['', 'k', 'mn', 'bn', 'tn'];
-    if (docs === 0) return 'n/a';
+    if (docs === 0) return '0';
     var i = parseInt(Math.floor(Math.log(docs) / Math.log(1000)));
     if (i === 0) return docs + '' + sizes[i];
     return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
@@ -156,22 +164,24 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               cores.push(core);
               node['base_url'] = core.base_url;
               node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+              var hostName = node_name.split(":")[0];
+              node['host'] = hostName;
               var collections = getOrCreateList("collections", node);
               ensureInList(core.collection, collections);
-              var hostName = node_name.split(":")[0];
-              var host = getOrCreateObj(hostName, hosts);
-              var hostNodes = getOrCreateList("nodes", host);
-              node['host'] = hostName;
-              ensureInList(node_name, hostNodes);
+              ensureNodeInHosts(node_name, hosts);
             }
           }
         }
 
         live_nodes = data.cluster.live_nodes;
         for (n in data.cluster.live_nodes) {
-          if (!(data.cluster.live_nodes[n] in nodes)) {
-            nodes[data.cluster.live_nodes[n]] = {};
+          var node = data.cluster.live_nodes[n]; 
+          if (!(node in nodes)) {
+            var hostName = node.split(":")[0];
+            nodes[node] = {};
+            nodes[node]['host'] = hostName; 
           }
+          ensureNodeInHosts(node, hosts);
         }
 
         System.get({"nodes":"all"}, function (systemResponse) {
