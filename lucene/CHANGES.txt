@@ -88,6 +88,9 @@ Bug Fixes
 
 Other
 
+* LUCENE-8261: InterpolatedProperties.interpolate and recursive property
+  references. (Steve Rowe, Dawid Weiss)
+
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
   the javadoc. (Dawid Weiss)
 
