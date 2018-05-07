@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Parse a properties file, performing non-recursive Ant-like
+ * Parse a properties file, performing recursive Ant-like
  * property value interpolation, and return the resulting Properties.
  */
 public class InterpolatedProperties extends Properties {
@@ -44,7 +44,7 @@ public class InterpolatedProperties extends Properties {
 
   /**
    * Loads the properties file via {@link Properties#load(InputStream)},
-   * then performs non-recursive Ant-like property value interpolation.
+   * then performs recursive Ant-like property value interpolation.
    */
   @Override
   public void load(InputStream inStream) throws IOException {
@@ -53,7 +53,7 @@ public class InterpolatedProperties extends Properties {
 
   /**
    * Loads the properties file via {@link Properties#load(Reader)},
-   * then performs non-recursive Ant-like property value interpolation.
+   * then performs recursive Ant-like property value interpolation.
    */
   @Override
   public void load(Reader reader) throws IOException {
