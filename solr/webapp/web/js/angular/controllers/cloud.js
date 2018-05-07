@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, SystemAll, MetricsAll) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics) {
 
         $scope.showDebug = false;
 
@@ -40,7 +40,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view == "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Zookeeper, Collections, SystemAll, MetricsAll);
+            nodesSubController($scope, Collections, System, Metrics);
         }
     }
 );
@@ -88,7 +88,14 @@ function numDocsHuman(docs) {
     return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
 }
 
-var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, MetricsAll) {
+/* Returns a style class depending on percentage */
+var styleForPct = function (pct) {
+  if (pct < 60) return "pct-normal";
+  if (pct < 80) return "pct-warn";
+  return "pct-critical"
+};
+
+var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.showNodes = true;
     $scope.showTree = false;
     $scope.showGraph = false;
@@ -101,10 +108,21 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
       for (var node in $scope.nodes) {
         $scope.showDetails[node] = $scope.showAllDetails;
       }
+      for (var host in $scope.hosts) {
+        $scope.showDetails[host] = $scope.showAllDetails;
+      }
     };
 
     $scope.toggleDetails = function(key) {
       $scope.showDetails[key] = !$scope.showDetails[key] === true;
+    };
+
+    $scope.toggleHostDetails = function(key) {
+      $scope.showDetails[key] = !$scope.showDetails[key] === true;
+      for (var nodeId in $scope.hosts[key].nodes) {
+        var node = $scope.hosts[key].nodes[nodeId];
+        $scope.showDetails[node] = $scope.showDetails[key];
+      }
     };
     
     $scope.reload = function() {
@@ -156,7 +174,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
           }
         }
 
-        SystemAll.get(function (systemResponse) {
+        System.get({"nodes":"all"}, function (systemResponse) {
           for (var node in systemResponse) {
             if (node in nodes) {
               var s = systemResponse[node];
@@ -165,6 +183,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               var memFree = s.system.freePhysicalMemorySize;
               var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
               nodes[node]['memUsedPct'] = memPercentage + "%";
+              nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
               nodes[node]['memTotal'] = bytesToSize(memTotal);
               nodes[node]['memFree'] = bytesToSize(memFree);
               nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
@@ -174,6 +193,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
               nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
               nodes[node]['heapUsedPct'] = heapPercentage + "%";
+              nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
               nodes[node]['heapTotal'] = bytesToSize(heapTotal);
               nodes[node]['heapFree'] = bytesToSize(heapFree);
 
@@ -181,16 +201,18 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
               nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1")
+              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
               nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
               nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
+              nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
               nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
               nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
             }
           }
         });
 
-        MetricsAll.get(function (metricsResponse) {
+        Metrics.get({"nodes":"all", "prefix":"CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"}, 
+            function (metricsResponse) {
           for (var node in metricsResponse) {
             if (node in nodes) {
               var m = metricsResponse[node];
@@ -199,6 +221,7 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
               var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
               nodes[node]['diskUsedPct'] = diskPercentage + "%";
+              nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
               nodes[node]['diskTotal'] = bytesToSize(diskTotal);
               nodes[node]['diskFree'] = bytesToSize(diskFree);
 
@@ -211,11 +234,6 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
               nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
               nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
 
-              nodes[node]['gcMajorCount'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.count'];
-              nodes[node]['gcMajorTime'] = m.metrics['solr.jvm']['gc.ConcurrentMarkSweep.time'];
-              nodes[node]['gcMinorCount'] = m.metrics['solr.jvm']['gc.ParNew.count'];
-              nodes[node]['gcMinorTime'] = m.metrics['solr.jvm']['gc.ParNew.time'];
-
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
               var docsTotal = 0;
@@ -226,15 +244,22 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                   var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
+                  size = (typeof size != 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
                   core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
                   indexSizeTotal += size;
-                  core['numDocs'] = nodeMetric['SEARCHER.searcher.numDocs'];
-                  core['numDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.numDocs']);
-                  core['deletedDocs'] = nodeMetric['SEARCHER.searcher.deletedDocs'];
-                  core['deletedDocsHuman'] = numDocsHuman(nodeMetric['SEARCHER.searcher.deletedDocs']);
-                  core['warmupTime'] = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
+                  numDocs = (typeof numDocs != 'undefined') ? numDocs : 0;
+                  core['numDocs'] = numDocs;
+                  core['numDocsHuman'] = numDocsHuman(numDocs);
+                  var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  deletedDocs = (typeof deletedDocs != 'undefined') ? deletedDocs : 0;
+                  core['deletedDocs'] = deletedDocs;
+                  core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
+                  var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  warmupTime = (typeof warmupTime != 'undefined') ? warmupTime : 0;
+                  core['warmupTime'] = warmupTime; 
                   docsTotal += core['numDocs'];
                 }
                 for (coreId in cores) {
@@ -246,10 +271,12 @@ var nodesSubController = function($scope, Zookeeper, Collections, SystemAll, Met
                   graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
                   graphData.push(graphObj);
                 }
+                cores.sort(function (a, b) {
+                  return b.sizeInBytes - a.sizeInBytes
+                });
+              } else {
+                cores = {};
               }
-              cores.sort(function (a, b) {
-                return b.sizeInBytes - a.sizeInBytes
-              });
               graphData.sort(function (a, b) {
                 return b.size - a.size
               });

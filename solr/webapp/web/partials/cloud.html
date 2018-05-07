@@ -48,9 +48,9 @@ limitations under the License.
 
     </div>
 
-    <span id="nodes-content" class="content clearfix" ng-show="showNodes">
+    <div id="nodes-content" class="content clearfix" ng-show="showNodes">
       <div id="controls">
-        <a class="reload" ng-click="reload()"><span>reload</span></a>
+        <a class="reload" ng-click="reload()"><span>Refresh</span></a>
         <a class="details-button" ng-click="toggleAllDetails()" ng-class="{on:showAllDetails}">
           <span>Show all details</span>
         </a>
@@ -62,25 +62,24 @@ limitations under the License.
               <th>Node</th>
               <th>CPU</th>
               <th>Heap</th>
-              <th>Disk</th>
-              <th>GC</th>
+              <th>Disk usage</th>
               <th>Requests</th>
               <th>Collections</th>
               <th>Cores</th>
           </tr>
         </thead>
         <tbody>
-          <tr ng-repeat="(key, n) in nodes | orderBy:'key.order'" ng-click="toggleDetails(key)">
+          <tr ng-repeat="(key, n) in nodes | orderBy:'key.order'">
               <!-- TODO: Find more robust way of defining rowspan that also works with other sort orders -->
-              <td rowspan="{{hosts[n.host].nodes.length}}" ng-show="key == hosts[n.host].nodes[0]">
+              <td rowspan="{{hosts[n.host].nodes.length}}" ng-show="key == hosts[n.host].nodes[0]" ng-click="toggleHostDetails(n.host)">
                 <div class="host-name">{{n.host}}</div>
-                <span class="host-spec" ng-show="!showDetails[key]">
+                <span class="host-spec" ng-show="!showDetails[n.host]">
                   <span title="{{n.system.system.uptime}}">{{n.system.system.name}}</span> 
                   <span title="free: {{n.memFree}}">{{n.memTotal}}</span>
                   <span title="{{n.system.jvm.name}} {{n.system.jvm.version}}">Java {{n.system.jvm.spec.version}}</span>
                   <br/>Load: {{n.loadAvg}}
                 </span>
-                <div class="host-spec" ng-show="showDetails[key]">
+                <div class="host-spec" ng-show="showDetails[n.host]">
                   {{n.system.system.name}} {{n.system.system.version}}, {{n.system.system.availableProcessors}}cpu<br/>
                   Uptime: {{n.uptime}}<br/>
                   RAM: {{n.memTotal}}<br/>
@@ -89,17 +88,20 @@ limitations under the License.
                   Load: {{n.loadAvg}}
                 </div>
               </td>
-              <td><div class="node-name"><a href="{{n.base_url}}">{{key.replace(n.host+':', '')}}</a></div>
+              <td ng-click="toggleDetails(key)"><div class="node-name"><a href="{{n.base_url}}">{{key.replace(n.host+':', '')}}</a></div>
                 Uptime: {{n.jvmUptime}}<br/>
                 <div class="node-spec" ng-show="showDetails[key]">
                   Java <span title="{{n.system.jvm.jre.vendor}}">{{n.system.jvm.jre.version}}</span><br/>
                   Solr {{n.system.lucene['solr-impl-version'].split(" ")[0]}}<br>
                 </div>
               </td>
-              <td><div class="node-cpu">{{n.cpuPct}}</div></td>
-              <td>
+              <td ng-click="toggleDetails(key)">
+                <div class="node-cpu">
+                  <span class="{{n.cpuPctStyle}}">{{n.cpuPct}}</span>
+                </div></td>
+              <td ng-click="toggleDetails(key)">
                 <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
-                  {{n.heapUsedPct}}
+                  <span class="{{n.heapUsedPctStyle}}">{{n.heapUsedPct}}</span>
                 </div>
                 <div class="node-spec">
                   <span ng-show="showDetails[key]">Used: </span>{{n.heapUsed}}
@@ -109,10 +111,11 @@ limitations under the License.
                   Free: {{n.heapFree}}
                 </div>
               </td>
-              <td>
+              <td ng-click="toggleDetails(key)">
                 <div class="scroll-height-250">
                   <div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
-                  {{n.diskUsedPct}}</div>
+                    <span class="{{n.diskUsedPctStyle}}">{{n.diskUsedPct}}</span>
+                  </div>
                   <div class="node-spec">
                     <span title="Total size of all indices"><span ng-show="showDetails[key]">Total: </span>{{n.size}}</span>
                   </div>
@@ -123,22 +126,16 @@ limitations under the License.
                   <div id="chart{{n.id}}" ng-show="showDetails[key]"></div>
                 </div>
               </td>
-              <td>
-                <div class="node-gc" title="majorCount: {{n.gcMinorCount}} majorTime: {{n.gcMajorTime}} minorCount: {{n.gcMinorCount}} minorTime: {{n.gcMinorTime}}">
-                  Major: {{Math.round(n.gcMajorCount / n.jvmUptimeSec * 60 * 5 * 100) / 100}}/5m<br/>
-                  Minor: {{Math.round(n.gcMinorCount / n.jvmUptimeSec * 60 * 5 * 100) / 100}}/5m
-                </div>
+              <td ng-click="toggleDetails(key)"><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}">
+                RPM: {{n.req15minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
               </td>
-              <td><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}">
-                RPM: {{n.req1minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
-              </td>
-              <td>
+              <td ng-click="toggleDetails(key)">
                 <div ng-repeat="c in n.collections | limitTo:showDetails[key]?999:2 track by $index">
                   <a href="{{n.base_url + '/#/~collections/' + c}}">{{ c }}</a>
                 </div>
                 <div class="more" ng-show="n.collections.length > 2 && !showDetails[key]">({{n.collections.length - 2}} more...)</div>
               </td>
-              <td>
+              <td class="min-width-150" ng-click="toggleDetails(key)">
                 <div class="scroll-height-250">
                   <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
                     <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)

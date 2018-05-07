@@ -463,6 +463,22 @@ limitations under the License.
   font-weight: bold;
   font-size: larger;
 }
+
+#content #cloud #nodes-content a,
+#content #cloud #nodes-content a:hover,
+#content #cloud #nodes-content a.hover
+{
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: #beebff;
+}
+
+#content #cloud #nodes-content a:hover,
+#content #cloud #nodes-content a.hover
+{
+  background-color: #beebff;
+}
+
 #content #cloud #nodes-content .host-spec,
 #content #cloud #nodes-content .node-spec
 {
@@ -480,6 +496,21 @@ limitations under the License.
 {
   font-weight: bolder;
   font-size: 25px;
+}
+
+#content #cloud #nodes-content .pct-normal
+{
+  color: darkgreen;
+}
+
+#content #cloud #nodes-content .pct-warn
+{
+  color: orange;
+}
+
+#content #cloud #nodes-content .pct-critical
+{
+  color: red;
 }
 
 /* Styling of reload and details buttons */
@@ -562,10 +593,21 @@ limitations under the License.
   overflow-y: scroll;
 }
 
+#content #nodes-content .min-width-150
+{
+  min-width: 150px;
+}
+
+#content #cloud #nodes-content .node-cores
+{
+  min-width: 150px;
+}
+
 #content #nodes-content .core-details
 {
   padding-left: 21px;
 }
+
 
 
 ::-webkit-scrollbar {
