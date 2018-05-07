@@ -294,7 +294,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['numDocs'] = numDocsHuman(docsTotal);
               nodes[node]['sizeInBytes'] = indexSizeTotal;
               nodes[node]['size'] = bytesToSize(indexSizeTotal);
-              nodes[node]['sizePerDoc'] = bytesToSize(indexSizeTotal / docsTotal);
+              nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
               
               // Add the div containing the whole chart
               $('#chart'+nodes[node]['id']).empty();
