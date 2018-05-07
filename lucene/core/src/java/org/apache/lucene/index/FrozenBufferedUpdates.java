@@ -156,7 +156,7 @@ final class FrozenBufferedUpdates {
       for (LinkedHashMap<Term, T> updates : dvUpdates.values()) {
         updateSizeConsumer.accept(updates.size());
         for (T update : updates.values()) {
-          int code = update.term.bytes().length << 2;
+          int code = update.term.bytes().length << 3;
 
           String termField = update.term.field();
           if (termField.equals(lastTermField) == false) {
@@ -165,6 +165,9 @@ final class FrozenBufferedUpdates {
           String updateField = update.field;
           if (updateField.equals(lastUpdateField) == false) {
             code |= 2;
+          }
+          if (update.hasValue()) {
+            code |= 4;
           }
           out.writeVInt(code);
           out.writeVInt(update.docIDUpto);
@@ -177,7 +180,9 @@ final class FrozenBufferedUpdates {
             lastUpdateField = updateField;
           }
           out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-          update.writeTo(out);
+          if (update.hasValue()) {
+            update.writeTo(out);
+          }
         }
       }
       byte[] bytes = new byte[(int) out.getFilePointer()];
@@ -537,7 +542,7 @@ final class FrozenBufferedUpdates {
     while (in.getPosition() != updates.length) {
       int code = in.readVInt();
       int docIDUpto = in.readVInt();
-      term.length = code >> 2;
+      term.length = code >> 3;
       
       if ((code & 1) != 0) {
         termField = in.readString();
@@ -545,6 +550,7 @@ final class FrozenBufferedUpdates {
       if ((code & 2) != 0) {
         updateField = in.readString();
       }
+      boolean hasValue = (code & 4) != 0;
 
       if (term.bytes.length < term.length) {
         term.bytes = ArrayUtil.grow(term.bytes, term.length);
@@ -583,7 +589,10 @@ final class FrozenBufferedUpdates {
 
       final BytesRef binaryValue;
       final long longValue;
-      if (isNumeric) {
+      if (hasValue == false) {
+        longValue = -1;
+        binaryValue = null;
+      } else if (isNumeric) {
         longValue = NumericDocValuesUpdate.readFrom(in);
         binaryValue = null;
       } else {
@@ -610,7 +619,9 @@ final class FrozenBufferedUpdates {
         }
         final IntConsumer docIdConsumer;
         final DocValuesFieldUpdates update = dvUpdates;
-        if (isNumeric) {
+        if (hasValue == false) {
+          docIdConsumer = doc -> update.reset(doc);
+        } else if (isNumeric) {
           docIdConsumer = doc -> update.add(doc, longValue);
         } else {
           docIdConsumer = doc -> update.add(doc, binaryValue);

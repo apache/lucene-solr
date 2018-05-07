@@ -45,7 +45,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
     check(bits, info.info.maxDoc(), info.getDelCount() + newDelCount);
     in.writeLiveDocs(bits, dir, info, newDelCount, context);
   }
-  
+
   private void check(Bits bits, int expectedLength, int expectedDeleteCount) {
     assert bits.length() == expectedLength;
     int deletedCount = 0;
@@ -61,7 +61,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
   public void files(SegmentCommitInfo info, Collection<String> files) throws IOException {
     in.files(info, files);
   }
-  
+
   @Override
   public String toString() {
     return "Asserting(" + in + ")";
@@ -69,28 +69,27 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
 
   static class AssertingBits implements Bits {
     final Bits in;
-    
+
     AssertingBits(Bits in) {
       this.in = in;
       assert in.length() >= 0;
     }
-    
+
     @Override
     public boolean get(int index) {
       assert index >= 0;
-      assert index < in.length(): "index=" + index + " vs in.length()=" + in.length();
+      assert index < in.length() : "index=" + index + " vs in.length()=" + in.length();
       return in.get(index);
     }
-    
+
     @Override
     public int length() {
       return in.length();
     }
-    
+
     @Override
     public String toString() {
       return "Asserting(" + in + ")";
     }
   }
-
 }
