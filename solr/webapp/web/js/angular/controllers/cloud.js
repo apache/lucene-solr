@@ -104,125 +104,177 @@ var styleForPct = function (pct) {
 };
 
 var nodesSubController = function($scope, Collections, System, Metrics) {
-    $scope.showNodes = true;
-    $scope.showTree = false;
-    $scope.showGraph = false;
-    $scope.showData = false;
-    $scope.showAllDetails = false;
-    $scope.showDetails = {};
+  $scope.pageSize = 10;
+  $scope.showNodes = true;
+  $scope.showTree = false;
+  $scope.showGraph = false;
+  $scope.showData = false;
+  $scope.showAllDetails = false;
+  $scope.showDetails = {};
+  $scope.from = 0;
+  $scope.to = $scope.pageSize - 1;
 
-    $scope.toggleAllDetails = function() {
-      $scope.showAllDetails = !$scope.showAllDetails;
-      for (var node in $scope.nodes) {
-        $scope.showDetails[node] = $scope.showAllDetails;
-      }
-      for (var host in $scope.hosts) {
-        $scope.showDetails[host] = $scope.showAllDetails;
-      }
-    };
+  $scope.showPaging = function() {
+    return Object.keys($scope.hosts).length > $scope.pageSize;
+  };
 
-    $scope.toggleDetails = function(key) {
-      $scope.showDetails[key] = !$scope.showDetails[key] === true;
-    };
+  $scope.toggleAllDetails = function() {
+    $scope.showAllDetails = !$scope.showAllDetails;
+    for (var node in $scope.nodes) {
+      $scope.showDetails[node] = $scope.showAllDetails;
+    }
+    for (var host in $scope.hosts) {
+      $scope.showDetails[host] = $scope.showAllDetails;
+    }
+  };
 
-    $scope.toggleHostDetails = function(key) {
-      $scope.showDetails[key] = !$scope.showDetails[key] === true;
-      for (var nodeId in $scope.hosts[key].nodes) {
-        var node = $scope.hosts[key].nodes[nodeId];
-        $scope.showDetails[node] = $scope.showDetails[key];
-      }
-    };
+  $scope.toggleDetails = function(key) {
+    $scope.showDetails[key] = !$scope.showDetails[key] === true;
+  };
+
+  $scope.toggleHostDetails = function(key) {
+    $scope.showDetails[key] = !$scope.showDetails[key] === true;
+    for (var nodeId in $scope.hosts[key].nodes) {
+      var node = $scope.hosts[key].nodes[nodeId];
+      $scope.showDetails[node] = $scope.showDetails[key];
+    }
+  };
+
+  // Initializes the cluster state, list of nodes, collections etc
+  $scope.initClusterState = function() {
+    var nodes = {};
+    var hosts = {};
+    var live_nodes = [];
     
-    $scope.reload = function() {
-      Collections.status(function (data) {
-        var nodes = {};
-        var hosts = {};
-        var live_nodes = [];
+    Collections.status(function (data) {
+      // Fetch cluster state from collections API and invert to a nodes structure
+      for (var name in data.cluster.collections) {
+        var collection = data.cluster.collections[name];
+        collection.name = name;
+        var shards = collection.shards;
+        collection.shards = [];
+        for (var shardName in shards) {
+          var shard = shards[shardName];
+          shard.name = shardName;
+          shard.collection = collection.name;
+          var replicas = shard.replicas;
+          shard.replicas = [];
+          for (var replicaName in replicas) {
+            var core = replicas[replicaName];
+            core.name = replicaName;
+            core.collection = collection.name;
+            core.shard = shard.name;
+            core.shard_state = shard.state;
 
-        // Fetch cluster state from collections API and invert to a nodes structure
-        for (var name in data.cluster.collections) {
-          var collection = data.cluster.collections[name];
-          collection.name = name;
-          var shards = collection.shards;
-          collection.shards = [];
-          for (var shardName in shards) {
-            var shard = shards[shardName];
-            shard.name = shardName;
-            shard.collection = collection.name;
-            var replicas = shard.replicas;
-            shard.replicas = [];
-            for (var replicaName in replicas) {
-              var core = replicas[replicaName];
-              core.name = replicaName;
-              core.collection = collection.name;
-              core.shard = shard.name;
-              core.shard_state = shard.state;
-
-              var node_name = core['node_name'];
-              var node = getOrCreateObj(node_name, nodes);
-              var cores = getOrCreateList("cores", node);
-              cores.push(core);
-              node['base_url'] = core.base_url;
-              node['id'] = core.base_url.replace(/[^\w\d]/g, '');
-              var hostName = node_name.split(":")[0];
-              node['host'] = hostName;
-              var collections = getOrCreateList("collections", node);
-              ensureInList(core.collection, collections);
-              ensureNodeInHosts(node_name, hosts);
-            }
+            var node_name = core['node_name'];
+            var node = getOrCreateObj(node_name, nodes);
+            var cores = getOrCreateList("cores", node);
+            cores.push(core);
+            node['base_url'] = core.base_url;
+            node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+            var hostName = node_name.split(":")[0];
+            node['host'] = hostName;
+            var collections = getOrCreateList("collections", node);
+            ensureInList(core.collection, collections);
+            ensureNodeInHosts(node_name, hosts);
           }
         }
+      }
 
-        live_nodes = data.cluster.live_nodes;
-        for (n in data.cluster.live_nodes) {
-          var node = data.cluster.live_nodes[n]; 
-          if (!(node in nodes)) {
-            var hostName = node.split(":")[0];
-            nodes[node] = {};
-            nodes[node]['host'] = hostName; 
-          }
-          ensureNodeInHosts(node, hosts);
+      live_nodes = data.cluster.live_nodes;
+      for (n in data.cluster.live_nodes) {
+        var node = data.cluster.live_nodes[n];
+        if (!(node in nodes)) {
+          var hostName = node.split(":")[0];
+          nodes[node] = {};
+          nodes[node]['host'] = hostName;
         }
+        ensureNodeInHosts(node, hosts);
+      }
 
-        System.get({"nodes":"all"}, function (systemResponse) {
-          for (var node in systemResponse) {
-            if (node in nodes) {
-              var s = systemResponse[node];
-              nodes[node]['system'] = s;
-              var memTotal = s.system.totalPhysicalMemorySize;
-              var memFree = s.system.freePhysicalMemorySize;
-              var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
-              nodes[node]['memUsedPct'] = memPercentage + "%";
-              nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
-              nodes[node]['memTotal'] = bytesToSize(memTotal);
-              nodes[node]['memFree'] = bytesToSize(memFree);
-              nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+      // Make sure nodes are sorted alphabetically to align with rowspan in table 
+      for (var host in hosts) {
+        hosts[host].nodes.sort();
+      }
+      
+      $scope.nodes = nodes;
+      $scope.hosts = hosts;
+      $scope.live_nodes = live_nodes;
 
-              var heapTotal = s.jvm.memory.raw.total;
-              var heapFree = s.jvm.memory.raw.free;
-              var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
-              nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
-              nodes[node]['heapUsedPct'] = heapPercentage + "%";
-              nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
-              nodes[node]['heapTotal'] = bytesToSize(heapTotal);
-              nodes[node]['heapFree'] = bytesToSize(heapFree);
+      $scope.Math = window.Math;
+      // console.log("***Initialized cluster state. nodes=" + JSON.stringify(nodes, undefined, 2) + ", hosts=" + JSON.stringify(hosts, undefined, 2));
+      $scope.reload();
+    });
+  };
 
-              var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
-              nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
-              nodes[node]['jvmUptimeSec'] = jvmUptime;
+  $scope.reload = function() {
+    var nodes = $scope.nodes;
+    var hosts = $scope.hosts;
+    var live_nodes = $scope.live_nodes;
+    var hostNames = Object.keys(hosts);
+    hostNames.sort();
 
-              nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
-              nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-              nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
-              nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
-              nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
-              nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
-            }
-          }
-        });
+    // Calculate what nodes that will show on this page
+    var nodesToShow = [];
+    var nodesParam = '';
+    var hostsToShow = [];
+    if ($scope.showPaging()) {
+      for (var id = $scope.from ; id < $scope.from + $scope.pageSize && hostNames[id] ; id++) {
+        var hostName = hostNames[id];
+        hostsToShow.push(hostName);
+        nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
+        nodesParam = nodesToShow.join(',');
+      }
+    } else {
+      nodesToShow = Object.keys(nodes);
+      hostsToShow = Object.keys(hosts);
+      nodesParam = 'all'; // Show all nodes
+    }
+    nodesToShow.sort();
+    hostsToShow.sort();
 
-        Metrics.get({"nodes":"all", "prefix":"CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"}, 
-            function (metricsResponse) {
+    System.get({"nodes": nodesParam}, function (systemResponse) {
+      for (var node in systemResponse) {
+        if (node in nodes) {
+          var s = systemResponse[node];
+          nodes[node]['system'] = s;
+          var memTotal = s.system.totalPhysicalMemorySize;
+          var memFree = s.system.freePhysicalMemorySize;
+          var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+          nodes[node]['memUsedPct'] = memPercentage + "%";
+          nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
+          nodes[node]['memTotal'] = bytesToSize(memTotal);
+          nodes[node]['memFree'] = bytesToSize(memFree);
+          nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+
+          var heapTotal = s.jvm.memory.raw.total;
+          var heapFree = s.jvm.memory.raw.free;
+          var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
+          nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+          nodes[node]['heapUsedPct'] = heapPercentage + "%";
+          nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+          nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+          nodes[node]['heapFree'] = bytesToSize(heapFree);
+
+          var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+          nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+          nodes[node]['jvmUptimeSec'] = jvmUptime;
+
+          nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
+          nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
+          nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
+          nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+          nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
+        }
+      }
+    });
+
+    Metrics.get({
+          "nodes": nodesParam,
+          "prefix": "CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"
+        },
+        function (metricsResponse) {
           for (var node in metricsResponse) {
             if (node in nodes) {
               var m = metricsResponse[node];
@@ -269,7 +321,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
                   var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
                   warmupTime = (typeof warmupTime != 'undefined') ? warmupTime : 0;
-                  core['warmupTime'] = warmupTime; 
+                  core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
                 for (coreId in cores) {
@@ -295,43 +347,42 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['sizeInBytes'] = indexSizeTotal;
               nodes[node]['size'] = bytesToSize(indexSizeTotal);
               nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
-              
+
               // Add the div containing the whole chart
-              $('#chart'+nodes[node]['id']).empty();
-              var chart = d3.select('#chart'+nodes[node]['id']).append('div').attr('class', 'chart');
-              
+              $('#chart' + nodes[node]['id']).empty();
+              var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
+
               // Add one div per bar which will group together both labels and bars
               var g = chart.selectAll('div')
                   .data(nodes[node]['graphData']).enter()
                   .append('div');
-              
+
               // Add the bars
               var bars = g.append("div")
                   .attr("class", "rect")
-                  .text(function (d) { return d.label + ':\u00A0\u00A0' + d.sizeHuman; });
-              
+                  .text(function (d) {
+                    return d.label + ':\u00A0\u00A0' + d.sizeHuman;
+                  });
+
               // Execute the transition to show the bars
               bars.transition()
                   .ease('elastic')
-                  .style('width', function (d) { 
-                    return d.pct + '%'; 
+                  .style('width', function (d) {
+                    return d.pct + '%';
                   });
             }
           }
-        });
-        // Make sure nodes are sorted alphabetically to align with rowspan in table 
-        for (var host in hosts) {
-          hosts[host].nodes.sort();
-        }
-        $scope.nodes = nodes;
-        $scope.hosts = hosts;
-        $scope.live_nodes = live_nodes;
-        
-        $scope.Math = window.Math;
-      })
-    };
-    $scope.reload();
-};                 
+    });
+    $scope.nodes = nodes;
+    $scope.hosts = hosts;
+    $scope.live_nodes = live_nodes;
+    $scope.nodesToShow = nodesToShow;
+    $scope.hostsToShow = hostsToShow;
+    $scope.hostNames = hostNames;
+    // console.log("***Reloaded data. nodes=" + JSON.stringify($scope.nodes, undefined, 2));
+  };
+  $scope.initClusterState();
+};
 
 var treeSubController = function($scope, Zookeeper) {
     $scope.showTree = true;
