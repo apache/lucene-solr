@@ -156,5 +156,4 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       return size;
     }
   }
-
 }

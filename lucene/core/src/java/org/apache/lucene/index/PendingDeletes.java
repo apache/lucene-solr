@@ -61,7 +61,7 @@ class PendingDeletes {
   }
 
 
-  protected FixedBitSet getMutableBits() throws IOException {
+  protected FixedBitSet getMutableBits() {
     // if we pull mutable bits but we haven't been initialized something is completely off.
     // this means we receive deletes without having the bitset that is on-disk ready to be cloned
     assert liveDocsInitialized : "can't delete if liveDocs are not initialized";
@@ -70,14 +70,11 @@ class PendingDeletes {
       // SegmentReader sharing the current liveDocs
       // instance; must now make a private clone so we can
       // change it:
-      writeableLiveDocs = new FixedBitSet(info.info.maxDoc());
-      writeableLiveDocs.set(0, info.info.maxDoc());
       if (liveDocs != null) {
-        for (int i = 0; i < liveDocs.length(); ++i) {
-          if (liveDocs.get(i) == false) {
-            writeableLiveDocs.clear(i);
-          }
-        }
+        writeableLiveDocs = FixedBitSet.copyOf(liveDocs);
+      } else {
+        writeableLiveDocs = new FixedBitSet(info.info.maxDoc());
+        writeableLiveDocs.set(0, info.info.maxDoc());
       }
       liveDocs = writeableLiveDocs;
     }

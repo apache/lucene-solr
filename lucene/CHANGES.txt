@@ -167,6 +167,11 @@ New Features
   fields for individual documents. This allows for instance to soft-delete
   individual documents. (Simon Willnauer)
 
+* LUCENE-8298: Allow DocValues updates to reset a value. Passing a DV field with a null
+  value to IW#updateDocValues or IW#tryUpdateDocValues will now remove the value from the 
+  provided document. This allows to undelete a soft-deleted document unless it's been claimed
+  by a merge. (Simon Willnauer) 
+
 Bug Fixes
 
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon and
