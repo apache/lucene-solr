@@ -225,6 +225,10 @@ Bug Fixes
 
 * SOLR-12192: Fixed a solr cli error message when ulimits are unlimited. (Martijn Koster)
 
+* SOLR-12258: A V2 request referencing a collection or alias may fail to resolve it if it was just recently created.
+  Now we sync with ZooKeeper and try one more time.  V1 partially did this but only for aliases; now it does both.
+  (David Smiley)
+
 Optimizations
 ----------------------
 

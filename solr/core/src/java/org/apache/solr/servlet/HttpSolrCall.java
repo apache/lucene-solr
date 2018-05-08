@@ -440,9 +440,9 @@ public class HttpSolrCall {
       action = REMOTEQUERY;
     } else {
       if (!retry) {
-        // we couldn't find a core to work with, try reloading aliases
-        // TODO: it would be nice if admin ui elements skipped this...
+        // we couldn't find a core to work with, try reloading aliases & this collection
         cores.getZkController().getZkStateReader().aliasesManager.update();
+        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
         action = RETRY;
       }
     }
