@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1088,14 +1088,11 @@ public class TestAddIndexes extends LuceneTestCase {
   private static final class CustomPerFieldCodec extends AssertingCodec {
     private final PostingsFormat directFormat = PostingsFormat.forName("Direct");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
-    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return directFormat;
-      } else if (field.equals("content")) {
-        return memoryFormat;
       } else {
         return defaultFormat;
       }
@@ -1164,7 +1161,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-      conf.setCodec(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new DirectPostingsFormat()));
       IndexWriter w = new IndexWriter(dir, conf);
       expectThrows(IllegalArgumentException.class, () -> {
         w.addIndexes(toAdd);

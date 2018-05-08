@@ -55,7 +55,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 //
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene62 -Dtestcase=Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("very slow, use 5g minimum heap")
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")

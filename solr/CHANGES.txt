@@ -41,6 +41,10 @@ Upgrade Notes
   method signatures was required to fix it. Third party components that use this API
   need to be updated. (Eros Taborelli, Erick Erickson, ab)
 
+* LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
+  MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
+  switch to "Direct" instead. (Dawid Weiss)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
