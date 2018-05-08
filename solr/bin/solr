@@ -1455,13 +1455,13 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
-       if [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
+       if [ $openFiles != "unlimited" ] && [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
            echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
            echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
 
-       if [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
+       if [ $maxProcs != "unlimited" ] && [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
            echo "*** [WARN] ***  Your Max Processes Limit is currently $maxProcs. "
            echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
