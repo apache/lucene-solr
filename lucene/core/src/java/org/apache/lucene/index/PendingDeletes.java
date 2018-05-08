@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -26,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
@@ -52,7 +52,10 @@ class PendingDeletes {
   }
 
   PendingDeletes(SegmentCommitInfo info) {
-    this(info, null, false);
+    this(info, null, info.hasDeletions() == false);
+    // if we don't have deletions we can mark it as initialized since we might receive deletes on a segment
+    // without having a reader opened on it ie. after a merge when we apply the deletes that IW received while merging.
+    // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
   }
 
   private PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
@@ -65,6 +68,9 @@ class PendingDeletes {
 
 
   protected MutableBits getMutableBits() throws IOException {
+    // if we pull mutable bits but we haven't been initialized something is completely off.
+    // this means we receive deletes without having the bitset that is on-disk ready to be cloned
+    assert liveDocsInitialized : "can't delete if liveDocs are not initialized";
     if (liveDocsShared) {
       // Copy on write: this means we've cloned a
       // SegmentReader sharing the current liveDocs
@@ -129,7 +135,7 @@ class PendingDeletes {
   /**
    * Called once a new reader is opened for this segment ie. when deletes or updates are applied.
    */
-  void onNewReader(SegmentReader reader, SegmentCommitInfo info) throws IOException {
+  void onNewReader(CodecReader reader, SegmentCommitInfo info) throws IOException {
     if (liveDocsInitialized == false) {
       if (reader.hasDeletions()) {
         // we only initialize this once either in the ctor or here
@@ -139,7 +145,6 @@ class PendingDeletes {
         liveDocs = reader.getLiveDocs();
         assert liveDocs == null || assertCheckLiveDocs(liveDocs, info.info.maxDoc(), info.getDelCount());
         liveDocsShared = true;
-
       }
       liveDocsInitialized = true;
     }
@@ -160,7 +165,7 @@ class PendingDeletes {
   /**
    * Resets the pending docs
    */
-  void reset() {
+  void dropChanges() {
     pendingDeleteCount = 0;
   }
 
@@ -217,22 +222,30 @@ class PendingDeletes {
     // (successfully written) del docs:
     info.advanceDelGen();
     info.setDelCount(info.getDelCount() + pendingDeleteCount);
-    reset();
+    dropChanges();
     return true;
   }
 
   /**
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
-  boolean isFullyDeleted() {
+  boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
   }
 
   /**
-   * Called before the given DocValuesFieldUpdates are applied
-   * @param info the field to apply
-   * @param fieldUpdates the field updates
+   * Called for every field update for the given field at flush time
+   * @param info the field info of the field that's updated
+   * @param iterator the values to apply
    */
-  void onDocValuesUpdate(FieldInfo info, List<DocValuesFieldUpdates> fieldUpdates) throws IOException {
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+  }
+
+  int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    return policy.numDeletesToMerge(info, numPendingDeletes(), readerIOSupplier);
+  }
+
+  Bits getHardLiveDocs() {
+    return liveDocs;
   }
 }

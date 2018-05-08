@@ -238,7 +238,9 @@ abstract class IntervalFunction {
       queueEnd = start = end = -1;
       this.queue.clear();
       for (IntervalIterator it : subIterators) {
-        it.nextInterval();
+        if (it.nextInterval() == NO_MORE_INTERVALS) {
+          break;
+        }
         queue.add(it);
         updateRightExtreme(it);
       }

@@ -114,4 +114,8 @@ public abstract class FilterDirectory extends Directory {
     return getClass().getSimpleName() + "(" + in.toString() + ")";
   }
 
+  @Override
+  public boolean checkPendingDeletions() throws IOException {
+    return in.checkPendingDeletions();
+  }
 }

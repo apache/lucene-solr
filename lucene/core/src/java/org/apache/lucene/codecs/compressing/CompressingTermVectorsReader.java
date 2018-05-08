@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -946,10 +945,9 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    public ImpactsEnum impacts(int flags) throws IOException {
       final PostingsEnum delegate = postings(null, PostingsEnum.FREQS);
-      final float maxScore = scorer.score(Float.MAX_VALUE, 1);
-      return new SlowImpactsEnum(delegate, maxScore);
+      return new SlowImpactsEnum(delegate);
     }
 
   }

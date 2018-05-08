@@ -1903,7 +1903,7 @@ public class TestPointQueries extends LuceneTestCase {
       upperBound[i] = value[i] + random().nextInt(1);
     }
     Query query = IntPoint.newRangeQuery("point", lowerBound, upperBound);
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
     Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertEquals(DocIdSetIterator.all(1).getClass(), scorer.iterator().getClass());
 
@@ -1914,7 +1914,7 @@ public class TestPointQueries extends LuceneTestCase {
     reader = w.getReader();
     searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
-    weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
     scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertFalse(DocIdSetIterator.all(1).getClass().equals(scorer.iterator().getClass()));
 

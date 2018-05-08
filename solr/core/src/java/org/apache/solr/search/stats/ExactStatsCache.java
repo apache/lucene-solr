@@ -16,6 +16,16 @@
  */
 package org.apache.solr.search.stats;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -38,16 +48,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * This class implements exact caching of statistics. It requires an additional
@@ -157,7 +157,7 @@ public class ExactStatsCache extends StatsCache {
     Query q = rb.getQuery();
     try {
       HashSet<Term> terms = new HashSet<>();
-      searcher.createNormalizedWeight(q, ScoreMode.COMPLETE).extractTerms(terms);
+      searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1).extractTerms(terms);
       IndexReaderContext context = searcher.getTopReaderContext();
       HashMap<String,TermStats> statsMap = new HashMap<>();
       HashMap<String,CollectionStats> colMap = new HashMap<>();

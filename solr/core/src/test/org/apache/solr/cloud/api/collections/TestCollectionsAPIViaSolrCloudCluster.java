@@ -172,6 +172,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
 
     final String collectionName = "testSolrCloudCollectionWithoutCores";

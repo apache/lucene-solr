@@ -483,7 +483,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testCollectionReload() throws Exception {
 
     final String collectionName = "reloaded_collection";

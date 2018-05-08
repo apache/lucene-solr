@@ -74,11 +74,16 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new ConstantScoreWeight(this, boost) {
+
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
-          TermsEnum termsEnum = query.getTermsEnum(new Terms() {
-            
+          return Matches.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query.field, getTermsEnum(fcsi)));
+        }
+
+        private TermsEnum getTermsEnum(SortedSetDocValues fcsi) throws IOException {
+          return query.getTermsEnum(new Terms() {
+
             @Override
             public TermsEnum iterator() throws IOException {
               return fcsi.termsEnum();
@@ -118,13 +123,18 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             public boolean hasPositions() {
               return false;
             }
-            
+
             @Override
             public boolean hasPayloads() {
               return false;
             }
           });
-          
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
+          TermsEnum termsEnum = getTermsEnum(fcsi);
           assert termsEnum != null;
           if (termsEnum.next() == null) {
             // no matching terms

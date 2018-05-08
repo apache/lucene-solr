@@ -172,7 +172,8 @@ public class GroupingSearch {
 
   protected TopGroups<?> groupByDocBlock(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
     int topN = groupOffset + groupLimit;
-    final Weight groupEndDocs = searcher.createNormalizedWeight(this.groupEndDocs, ScoreMode.COMPLETE_NO_SCORES);
+    final Query endDocsQuery = searcher.rewrite(this.groupEndDocs);
+    final Weight groupEndDocs = searcher.createWeight(endDocsQuery, ScoreMode.COMPLETE_NO_SCORES, 1);
     BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, includeScores, groupEndDocs);
     searcher.search(query, c);
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;

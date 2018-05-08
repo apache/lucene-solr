@@ -100,10 +100,10 @@ public final class StandardDirectoryReader extends DirectoryReader {
         // IndexWriter's segmentInfos:
         final SegmentCommitInfo info = infos.info(i);
         assert info.info.dir == dir;
-        final ReadersAndUpdates rld = writer.readerPool.get(info, true);
+        final ReadersAndUpdates rld = writer.getPooledInstance(info, true);
         try {
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
-          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(reader)) {
+          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(() -> reader)) {
             // Steal the ref:
             readers.add(reader);
             infosUpto++;
@@ -112,7 +112,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
             segmentInfos.remove(infosUpto);
           }
         } finally {
-          writer.readerPool.release(rld);
+          writer.release(rld);
         }
       }
 
@@ -197,7 +197,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
               if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()) {
                 // only DV updates
-                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs());
+                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs(), false); // this is not an NRT reader!
               } else {
                 // both DV and liveDocs have changed
                 newReaders[i] = new SegmentReader(commitInfo, oldReader);

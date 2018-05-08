@@ -124,7 +124,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * @see #handleRequest(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
    * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
    * @see org.apache.solr.util.SolrPluginUtils#setDefaults(org.apache.solr.request.SolrQueryRequest, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams)
-   * @see SolrParams#toSolrParams(org.apache.solr.common.util.NamedList)
+   * @see NamedList#toSolrParams()
    *
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
@@ -166,7 +166,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
     Object o = args.get(key);
     if (o != null && o instanceof NamedList) {
-      return  SolrParams.toSolrParams((NamedList) o);
+      return ((NamedList) o).toSolrParams();
     }
     return null;
   }

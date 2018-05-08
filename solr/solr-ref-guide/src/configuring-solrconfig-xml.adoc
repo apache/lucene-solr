@@ -81,21 +81,21 @@ The <<config-api.adoc#config-api,Config API>> allows you to use an API to modify
 
 [source,json]
 ----
-{"userProps":{
-    "dih.db.url":"jdbc:oracle:thin:@localhost:1521",
-    "dih.db.user":"username",
-    "dih.db.pass":"password"}}
+{"userProps": {
+    "dih.db.url": "jdbc:oracle:thin:@localhost:1521",
+    "dih.db.user": "username",
+    "dih.db.pass": "password"}}
 ----
 
 For more details, see the section <<config-api.adoc#config-api,Config API>>.
 
 === solrcore.properties
 
-If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user defined property names and values using the Java standard https://en.wikipedia.org/wiki/.properties[properties file format], and those properties can be used as variables in the XML configuration files for that Solr core.
+If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user-defined property names and values using the Java https://en.wikipedia.org/wiki/.properties[properties file format]. Those properties can then be used as variables in other configuration files for that Solr core.
 
 For example, the following `solrcore.properties` file could be created in the `conf/` directory of a collection using one of the example configurations, to override the lockType used.
 
-[source,bash]
+[source,properties]
 ----
 #conf/solrcore.properties
 solr.lock.type=none
@@ -116,14 +116,36 @@ The path and name of the `solrcore.properties` file can be overridden using the 
 
 === User-Defined Properties in core.properties
 
-Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters to go into each core.properties that will be created, by prefixing the parameter name with "property." as a URL parameter. Example:
+Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters by prefixing the parameter name with `_property.name_` as a parameter.
+
+For example, to add a property named "my.custom.prop":
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1customprop]
+====
+[.tab-label]*V1 API*
 
 [source,bash]
+----
 http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted&numShards=1&property.my.custom.prop=edismax
+----
+====
 
-That would create a `core.properties` file that has at least the following properties (others omitted for brevity):
+[example.tab-pane#v2]
+====
+[.tab-label]*V2 API*
 
 [source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{"create": {"name": "gettingstarted", "numShards": "1", "property.my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
+----
+====
+--
+
+This will create a `core.properties` file that has at least the following properties (others omitted for brevity):
+
+[source,properties]
 ----
 #core.properties
 name=gettingstarted
@@ -143,7 +165,9 @@ The `my.custom.prop` property can then be used as a variable, such as in `solrco
 
 === Implicit Core Properties
 
-Several attributes of a Solr core are available as "implicit" properties that can be used in variable substitution, independent of where or how they underlying value is initialized. For example: regardless of whether the name for a particular Solr core is explicitly configured in `core.properties` or inferred from the name of the instance directory, the implicit property `solr.core.name` is available for use as a variable in that core's configuration file...
+Several attributes of a Solr core are available as "implicit" properties that can be used in variable substitution, independent of where or how the underlying value is initialized.
+
+For example, regardless of whether the name for a particular Solr core is explicitly configured in `core.properties` or inferred from the name of the instance directory, the implicit property `solr.core.name` is available for use as a variable in that core's configuration file:
 
 [source,xml]
 ----

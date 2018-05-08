@@ -54,7 +54,7 @@ public class StreamingSolrClients {
   public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
     this.updateExecutor = updateShardHandler.getUpdateExecutor();
     
-    httpClient = updateShardHandler.getHttpClient();
+    httpClient = updateShardHandler.getUpdateOnlyHttpClient();
   }
 
   public List<Error> getErrors() {

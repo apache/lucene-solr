@@ -306,7 +306,7 @@ For MySQL driver, which doesn't honor fetchSize and pulls whole resultSet, which
 +
 In this case, set `batchSize=-1` that pass setFetchSize(Integer.MIN_VALUE), and switch result set to pull row by row
 
-All of them substitute properties via `${placeholders}`.
+All of them substitute properties via `$\{placeholders}`.
 
 === URLDataSource
 

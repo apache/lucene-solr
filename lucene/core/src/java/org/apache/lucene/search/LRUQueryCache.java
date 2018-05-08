@@ -678,6 +678,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
       in.extractTerms(terms);
     }
 
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return in.matches(context, doc);
+    }
+
     private boolean cacheEntryHasReasonableWorstCaseSize(int maxDoc) {
       // The worst-case (dense) is a bit set which needs one bit per document
       final long worstCaseRamUsage = maxDoc / 8;
@@ -722,16 +727,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.scorerSupplier(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.scorerSupplier(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cache helper
         return in.scorerSupplier(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.scorerSupplier(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -802,16 +808,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.bulkScorer(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.bulkScorer(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cacheHelper
         return in.bulkScorer(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.bulkScorer(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);

@@ -41,6 +41,10 @@ Upgrade Notes
   method signatures was required to fix it. Third party components that use this API
   need to be updated. (Eros Taborelli, Erick Erickson, ab)
 
+* LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
+  MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
+  switch to "Direct" instead. (Dawid Weiss)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -69,6 +73,9 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+  ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
+
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
@@ -77,6 +84,37 @@ New Features
 
 * SOLR-7887: Upgrade Solr to use Log4J 2.11
   (Tim Potter, Keith Laban, Shawn Heisey, Ralph Goers, Erick Erickson, Varun Thacker)
+
+* SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
+  (Andrey Kudryavtsev, David Smiley)
+  
+* SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
+  (Mano Kovacs via Mark Miller)
+
+* SOLR-12036: Factor out DefaultStreamFactory solrj class. (Christine Poerschke)
+
+* SOLR-12151: Add abstract MultiSolrCloudTestCase class. (Christine Poerschke)
+
+* SOLR-12181: Add index size autoscaling trigger, based on document count or size in bytes. (ab)
+
+* SOLR-11982: Add possibility to define replica order with the shards.preference parameter to e.g. prefer PULL replicas
+  for distributed queries. (Ere Maijala, Tomás Fernández Löbbe)
+
+* SOLR-11336: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports a list of versioned fields.
+  (versionField config may now be a comma-delimited list). (Michael Braun via David Smiley)
+
+* SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
+  using it for convenience. (David Smiley, Tapan Vaishnav)
+
+* SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
+  in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)
+
+* SOLR-8998: introducing uniqueBlock(_root_) aggregation as faster alternative to unique(_root_) for counting
+  child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
+
+* SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
+
+* SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
 Bug Fixes
 ----------------------
@@ -113,6 +151,80 @@ Bug Fixes
 
 * SOLR-12192: Fixed a solr cli error message when ulimits are unlimited. (Martijn Koster)
 
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+  Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
+
+* SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
+  (Munendra S N, Mikhail Khludnev via Ishan Chattopadhyaya)
+
+* SOLR-12207: Just rethrowing AssertionError caused by jdk bug in reflection with invocation details.
+ (ab, Dawid Weiss, Mikhail Khludnev)
+
+* SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait.
+ (Andrey Kudryavtsev, Mikhail Khludnev)
+
+* SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
+  (Steve Rowe)
+
+* SOLR-12190: Need to properly escape output in GraphMLResponseWriter. (yonik)
+
+* SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
+
+* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
+  (Rohit, Varun Thacker)
+
+* SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
+
+* SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
+
+* SOLR-10169: PeerSync will hit an NPE on no response errors when looking for fingerprint. (Erick Erickson)
+
+* SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
+
+* SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
+  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
+  (shalin, hossman, Mark Miller, Steve Rowe)
+
+* SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
+  (Shawn Heisey, Carlton Findley, Robby Pond, hossman)
+
+* SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
+
+* SOLR-12253: Remove optimize button from the core admin page (Erick Erickson)
+
+* SOLR-11833: Allow searchRate trigger to delete replicas. Improve configurability of the trigger by specifying
+  upper / lower thresholds and respective actions (ab)
+
+* SOLR-12261: If you attempt to delete a collection immediately after deleting an alias it used to be a part of, you may
+  get an error that's it's a member of that alias.  This check now ensures the alias state is sync()'ed with ZK first.
+  (David Smiley)
+
+* SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
+  (David Smiley, Mikhail Khluldnev)
+  
+* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
+  non-boolean queries. (James Dyer)
+
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
+
+* SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
+  recoveries. (Mark Miller)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
+
+* SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
+  MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
+  alias refers to it.  (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -121,7 +233,7 @@ Optimizations
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
 * SOLR-11731: LatLonPointSpatialField can now decode points from docValues when stored=false docValues=true,
-  albeit with maximum precision of 1.33cm (Karthik Ramachandran, David Smiley)
+  albeit with maximum precision of 1.37cm (Karthik Ramachandran, David Smiley)
 
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
@@ -129,6 +241,9 @@ Optimizations
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
 * SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
+  (Jeff Miller, David Smiley)
 
 Other Changes
 ----------------------
@@ -172,6 +287,40 @@ Other Changes
 
 * SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
   javadoc links locally. (hossman)
+
+* SOLR-12142: EmbeddedSolrServer should use req.getContentWriter (noble)
+
+* SOLR-12252: Fix minor compiler and intellij warnings in autoscaling policy framework. (shalin)
+
+* SOLR-11914: The following SolrParams methods are now deprecated: toSolrParams (use NamedList.toSolrParams instead),
+  toMap, toMultiMap, toFilteredSolrParams, getAll.  The latter ones have no direct replacement but are easy to
+  implement yourself as-needed. (David Smiley)
+
+* SOLR-10036: Upgrade jackson from 2.5.4 to 2.9.5 (Shashank Pedamallu, Shawn Heisey, Varun Thacker)
+
+* SOLR-12289: Add more MDC logging information to collection admin requests (Varun Thacker)
+
+* SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
+
+==================  7.3.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.8.v20171121
+
+Bug Fixes
+----------------------
+
+* SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
+
+* SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
 ==================  7.3.0 ==================
 
@@ -385,7 +534,7 @@ Bug Fixes
 
 * SOLR-11988: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent false positives (hossman)
 
-* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
   (麦 香浓郁, Uwe Schindler)
 
 * SOLR-12021: Fixed a bug in ApiSpec and other JSON resource loading that was causing unclosed file handles (hossman)
@@ -1960,7 +2109,7 @@ Bug Fixes
 
 * SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
 
-* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit via Erick Erickson)
 
 * SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
   them all to the transient lists. (Erick Erickson)

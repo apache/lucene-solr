@@ -661,7 +661,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     more.add("s", "ccc");
     more.add("ss","YYY");
     more.add("xx","XXX");
-    p = SolrParams.wrapAppended(p, SolrParams.toSolrParams(more));
+    p = SolrParams.wrapAppended(p, more.toSolrParams());
     assertEquals(3, p.getParams("s").length);
     assertEquals("bbb", p.getParams("s")[0]);
     assertEquals("aaa", p.getParams("s")[1]);

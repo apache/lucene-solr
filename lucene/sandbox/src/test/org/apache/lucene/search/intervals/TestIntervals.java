@@ -20,6 +20,7 @@ package org.apache.lucene.search.intervals;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -60,7 +61,7 @@ public class TestIntervals extends LuceneTestCase {
 
   private static Directory directory;
   private static IndexSearcher searcher;
-  private static Analyzer analyzer = new StandardAnalyzer();
+  private static Analyzer analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
 
   @BeforeClass
   public static void setupIndex() throws IOException {
@@ -172,7 +173,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testIntervalDisjunction() throws IOException {
-    checkIntervals(Intervals.or(Intervals.term("pease"), Intervals.term("hot")), "field1", 4, new int[][]{
+    checkIntervals(Intervals.or(Intervals.term("pease"), Intervals.term("hot"), Intervals.term("notMatching")), "field1", 4, new int[][]{
         {},
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},
@@ -192,6 +193,26 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
+  }
+
+  public void testNesting2() throws IOException {
+    checkIntervals(
+        Intervals.unordered(
+            Intervals.ordered(
+                Intervals.term("like"),
+                Intervals.term("it"),
+                Intervals.term("cold")
+            ),
+            Intervals.term("pease")
+        ),
+        "field1", 2, new int[][]{
+            {},
+            {6, 21},
+            {6, 17},
+            {},
+            {},
+            {}
+        });
   }
 
 }

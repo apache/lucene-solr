@@ -508,7 +508,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
-    private class ReindexingMergePolicy extends MergePolicyWrapper {
+    private class ReindexingMergePolicy extends FilterMergePolicy {
 
       class ReindexingOneMerge extends OneMerge {
 

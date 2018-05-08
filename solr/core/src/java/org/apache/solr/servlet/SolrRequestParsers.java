@@ -519,7 +519,10 @@ public class SolrRequestParsers
 
     @Override
     public InputStream getStream() throws IOException {
-      // Protect container owned streams from being closed by us, see SOLR-8933
+      // we explicitly protect this servlet stream from being closed
+      // so that it does not trip our test assert in our close shield
+      // in SolrDispatchFilter - we must allow closes from getStream
+      // due to the other impls of ContentStream
       return new CloseShieldInputStream(req.getInputStream());
     }
   }
@@ -767,8 +770,7 @@ public class SolrRequestParsers
         String userAgent = req.getHeader("User-Agent");
         boolean isCurl = userAgent != null && userAgent.startsWith("curl/");
 
-        // Protect container owned streams from being closed by us, see SOLR-8933
-        FastInputStream input = FastInputStream.wrap( new CloseShieldInputStream(req.getInputStream()) );
+        FastInputStream input = FastInputStream.wrap(req.getInputStream());
 
         if (isCurl) {
           SolrParams params = autodetect(req, streams, input);

@@ -44,11 +44,14 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 
+@SuppressFileSystems("WindowsFS") // testRecreateAndRefresh doesn't like pending files
 public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
@@ -191,37 +194,41 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // DirTaxoWriter lost the INDEX_EPOCH property if it was opened in
     // CREATE_OR_APPEND (or commit(userData) called twice), which could lead to
     // DirTaxoReader succeeding to refresh().
-    Directory dir = newDirectory();
-    
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new FacetLabel("a"));
-    
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    try (Directory dir = newDirectory()) {
 
-    touchTaxo(taxoWriter, new FacetLabel("b"));
-    
-    TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
-    taxoReader.close();
-    taxoReader = newtr;
-    assertEquals(1, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
+      DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
+      touchTaxo(taxoWriter, new FacetLabel("a"));
 
-    // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
-    taxoWriter.close();
-    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new FacetLabel("c"));
-    taxoWriter.close();
-    
-    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new FacetLabel("d"));
-    taxoWriter.close();
+      TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
 
-    newtr = TaxonomyReader.openIfChanged(taxoReader);
-    taxoReader.close();
-    taxoReader = newtr;
-    assertEquals(2, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
+      touchTaxo(taxoWriter, new FacetLabel("b"));
 
-    taxoReader.close();
-    dir.close();
+      TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
+      taxoReader.close();
+      taxoReader = newtr;
+      assertEquals(1, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
+
+      // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
+      taxoWriter.close();
+
+      assumeFalse("if we are on windows and we have pending deletions we can't execute this test",
+          Constants.WINDOWS && dir.checkPendingDeletions());
+      taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
+      touchTaxo(taxoWriter, new FacetLabel("c"));
+      taxoWriter.close();
+
+      assumeFalse("if we are on windows and we have pending deletions we can't execute this test",
+          Constants.WINDOWS && dir.checkPendingDeletions());
+      taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
+      touchTaxo(taxoWriter, new FacetLabel("d"));
+      taxoWriter.close();
+
+      newtr = TaxonomyReader.openIfChanged(taxoReader);
+      taxoReader.close();
+      taxoReader = newtr;
+      assertEquals(2, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
+      taxoReader.close();
+    }
   }
 
   @Test

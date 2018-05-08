@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -87,9 +88,11 @@ public class CloudTestUtils {
                                   final CollectionStatePredicate predicate) throws InterruptedException, TimeoutException, IOException {
     TimeOut timeout = new TimeOut(wait, unit, cloudManager.getTimeSource());
     long timeWarn = timeout.timeLeft(TimeUnit.MILLISECONDS) / 4;
+    ClusterState state = null;
+    DocCollection coll = null;
     while (!timeout.hasTimedOut()) {
-      ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
-      DocCollection coll = state.getCollectionOrNull(collection);
+      state = cloudManager.getClusterStateProvider().getClusterState();
+      coll = state.getCollectionOrNull(collection);
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?
@@ -105,7 +108,7 @@ public class CloudTestUtils {
         log.trace("-- still not matching predicate: {}", state);
       }
     }
-    throw new TimeoutException();
+    throw new TimeoutException("last state: " + coll);
   }
 
   /**
@@ -113,19 +116,30 @@ public class CloudTestUtils {
    * number of shards and replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
+    return clusterShape(expectedShards, expectedReplicas, false);
+  }
+
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive) {
     return (liveNodes, collectionState) -> {
-      if (collectionState == null)
+      if (collectionState == null) {
+        log.debug("-- null collection");
         return false;
-      if (collectionState.getSlices().size() != expectedShards)
+      }
+      Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
+      if (slices.size() != expectedShards) {
+        log.debug("-- wrong number of active slices, expected=" + expectedShards + ", found=" + collectionState.getSlices().size());
         return false;
-      for (Slice slice : collectionState) {
+      }
+      for (Slice slice : slices) {
         int activeReplicas = 0;
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
             activeReplicas++;
         }
-        if (activeReplicas != expectedReplicas)
+        if (activeReplicas != expectedReplicas) {
+          log.debug("-- wrong number of active replicas in slice " + slice.getName() + ", expected=" + expectedReplicas + ", found=" + activeReplicas);
           return false;
+        }
       }
       return true;
     };

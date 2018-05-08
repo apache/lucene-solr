@@ -166,7 +166,8 @@ class GeoJSONWriter extends JSONWriter {
 
       // SolrDocument will now have multiValued fields represented as a Collection,
       // even if only a single value is returned for this document.
-      if (val instanceof List) {
+      // For SolrDocumentList, use writeVal instead of writeArray
+      if (!(val instanceof SolrDocumentList) && val instanceof List) {
         // shortcut this common case instead of going through writeVal again
         writeArray(name,((Iterable)val).iterator());
       } else {

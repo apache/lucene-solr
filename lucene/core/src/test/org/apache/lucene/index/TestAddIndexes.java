@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1088,14 +1088,11 @@ public class TestAddIndexes extends LuceneTestCase {
   private static final class CustomPerFieldCodec extends AssertingCodec {
     private final PostingsFormat directFormat = PostingsFormat.forName("Direct");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
-    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return directFormat;
-      } else if (field.equals("content")) {
-        return memoryFormat;
       } else {
         return defaultFormat;
       }
@@ -1164,7 +1161,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-      conf.setCodec(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new DirectPostingsFormat()));
       IndexWriter w = new IndexWriter(dir, conf);
       expectThrows(IllegalArgumentException.class, () -> {
         w.addIndexes(toAdd);
@@ -1331,5 +1328,86 @@ public class TestAddIndexes extends LuceneTestCase {
       }).getMessage();
     assertEquals("cannot change index sort from <int: \"foo\"> to <string: \"foo\">", message);
     IOUtils.close(r1, dir1, w2, dir2);
+  }
+
+  public void testAddIndexesDVUpdateSameSegmentName() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    w1.addDocument(doc);
+    w1.flush();
+
+    w1.updateDocValues(new Term("id", "1"), new NumericDocValuesField("soft_delete", 1));
+    w1.commit();
+    w1.close();
+
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addIndexes(dir1);
+    w2.commit();
+    w2.close();
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now open w3");
+    }
+    IndexWriterConfig iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    if (VERBOSE) {
+      iwc3.setInfoStream(System.out);
+    }        
+    IndexWriter w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+
+    iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+    dir1.close();
+    dir2.close();
+  }
+
+  public void testAddIndexesDVUpdateNewSegmentName() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("soft_delete", 1));
+    w1.addDocument(doc);
+    w1.flush();
+
+    w1.updateDocValues(new Term("id", "1"), new NumericDocValuesField("soft_delete", 1));
+    w1.commit();
+    w1.close();
+
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addDocument(new Document());
+    w2.commit();
+    
+    w2.addIndexes(dir1);
+    w2.commit();
+    w2.close();
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now open w3");
+    }
+    IndexWriterConfig iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    if (VERBOSE) {
+      iwc3.setInfoStream(System.out);
+    }        
+    IndexWriter w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+
+    iwc3 = newIndexWriterConfig(new MockAnalyzer(random()));
+    w3 = new IndexWriter(dir2, iwc3);
+    w3.close();
+    dir1.close();
+    dir2.close();
   }
 }

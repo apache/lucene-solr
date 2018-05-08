@@ -40,7 +40,7 @@ public class AssertingScorer extends Scorer {
   IteratorState state = IteratorState.ITERATING;
   int doc;
   float minCompetitiveScore = 0;
-  int lastShallowTarget;
+  int lastShallowTarget = -1;
 
   private AssertingScorer(Random random, Scorer in, ScoreMode scoreMode) {
     super(in.weight);
@@ -88,6 +88,7 @@ public class AssertingScorer extends Scorer {
   @Override
   public float getMaxScore(int upTo) throws IOException {
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
+    assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
     return maxScore;
   }
@@ -98,7 +99,7 @@ public class AssertingScorer extends Scorer {
     assert iterating() : state;
     final float score = in.score();
     assert !Float.isNaN(score) : "NaN score for in="+in;
-    assert score <= getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+    assert lastShallowTarget == -1 || score <= getMaxScore(docID());
     assert Float.compare(score, 0f) >= 0 : score;
     return score;
   }

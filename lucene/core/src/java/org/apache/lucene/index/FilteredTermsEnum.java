@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -184,8 +183,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-    return tenum.impacts(scorer, flags);
+  public ImpactsEnum impacts(int flags) throws IOException {
+    return tenum.impacts(flags);
   }
 
   /** This enum does not support seeking!

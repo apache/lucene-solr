@@ -207,7 +207,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       log.info("Turning off node reporter, period=" + period);
       return;
     }
-    HttpClient httpClient = cc.getUpdateShardHandler().getHttpClient();
+    HttpClient httpClient = cc.getUpdateShardHandler().getDefaultHttpClient();
     ZkController zk = cc.getZkController();
     String reporterId = zk.getNodeName();
     reporter = SolrReporter.Builder.forReports(metricManager, reports)

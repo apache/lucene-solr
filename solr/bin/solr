@@ -163,6 +163,11 @@ fi
 SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
+
+if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
+  SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
+fi
+
 if [ -z "$SOLR_SSL_ENABLED" ]; then
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
@@ -172,6 +177,7 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
+  SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
@@ -216,6 +222,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
     fi
+  fi
+
+  if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
@@ -341,7 +351,7 @@ function print_usage() {
     echo "                  on which example is run. The default value is server/solr. If passed relative dir,"
     echo "                  validation with current dir will be done, before trying default server/<dir>"
     echo ""
-    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
+    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
     echo "                  If not set, Solr uses solr.solr.home for config and data."
     echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
@@ -364,7 +374,7 @@ function print_usage() {
     echo ""
     echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
     echo ""
-    echo "  -V or -verbose Verbose messages from this script"
+    echo "  -V/-verbose   Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -375,6 +385,8 @@ function print_usage() {
     echo "  -p <port>     Specify the port the Solr HTTP listener is bound to"
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
+    echo ""
+    echo "  -V/-verbose   Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -566,7 +578,7 @@ function print_usage() {
     echo ""
     echo "             Only the node names are listed, not data"
     echo ""
-    echo "         mkroot makes a znode on Zookeeper with no data. Can be used to make a path of arbitrary"
+    echo "         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary"
     echo "             depth but primarily intended to create a 'chroot'."
     echo ""
     echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."

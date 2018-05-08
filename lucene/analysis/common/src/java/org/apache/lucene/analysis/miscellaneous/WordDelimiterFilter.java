@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -55,11 +56,14 @@ import org.apache.lucene.util.InPlaceMergeSorter;
  * </li>
  * </ul>
  * 
- * The <b>combinations</b> parameter affects how subwords are combined:
+ * The <b>GENERATE...</b> options affect how incoming tokens are broken into parts, and the
+ * various <b>CATENATE_...</b> parameters affect how those parts are combined.
+ *
  * <ul>
- * <li>combinations="0" causes no subword combinations: <code>"PowerShot"</code>
- * &#8594; <code>0:"Power", 1:"Shot"</code> (0 and 1 are the token positions)</li>
- * <li>combinations="1" means that in addition to the subwords, maximum runs of
+ * <li>If no CATENATE option is set, then no subword combinations are generated:
+ * <code>"PowerShot"</code> &#8594; <code>0:"Power", 1:"Shot"</code> (0 and 1 are the token
+ * positions)</li>
+ * <li>CATENATE_WORDS means that in addition to the subwords, maximum runs of
  * non-numeric subwords are catenated and produced at the same position of the
  * last subword in the run:
  * <ul>
@@ -72,12 +76,15 @@ import org.apache.lucene.util.InPlaceMergeSorter;
  * </li>
  * </ul>
  * </li>
+ * <li>CATENATE_NUMBERS works like CATENATE_WORDS, but for adjacent digit sequences.</li>
+ * <li>CATENATE_ALL smushes together all the token parts without distinguishing numbers and words.</li>
  * </ul>
+ *
  * One use for {@link WordDelimiterFilter} is to help match words with different
  * subword delimiters. For example, if the source text contained "wi-fi" one may
  * want "wifi" "WiFi" "wi-fi" "wi+fi" queries to all match. One way of doing so
- * is to specify combinations="1" in the analyzer used for indexing, and
- * combinations="0" (the default) in the analyzer used for querying. Given that
+ * is to specify CATENATE options in the analyzer used for indexing, and
+ * not in the analyzer used for querying. Given that
  * the current {@link StandardTokenizer} immediately removes many intra-word
  * delimiters, it is recommended that this filter be used after a tokenizer that
  * does not do this (such as {@link WhitespaceTokenizer}).
@@ -158,7 +165,12 @@ public final class WordDelimiterFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
-  
+
+  /**
+   * Suppresses processing terms with {@link KeywordAttribute#isKeyword()}=true.
+   */
+  public static final int IGNORE_KEYWORDS = 512;
+
   /**
    * If not null is the set of tokens to protect from being delimited
    *
@@ -168,6 +180,7 @@ public final class WordDelimiterFilter extends TokenFilter {
   private final int flags;
     
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttribute = addAttribute(KeywordAttribute.class);;
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
@@ -237,7 +250,9 @@ public final class WordDelimiterFilter extends TokenFilter {
         if (!input.incrementToken()) {
           return false;
         }
-
+        if (has(IGNORE_KEYWORDS) && keywordAttribute.isKeyword()) {
+            return true;
+        }
         int termLength = termAttribute.length();
         char[] termBuffer = termAttribute.buffer();
         

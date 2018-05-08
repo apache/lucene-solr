@@ -46,6 +46,7 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
+import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
@@ -540,7 +541,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
     String metricName = "QUERY./select.requestTimes:1minRate";
     // simulate search traffic
-    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
+    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, false, true);
 
     // now define the trigger. doing it earlier may cause partial events to be generated (where only some
     // nodes / replicas exceeded the threshold).
@@ -549,7 +550,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         "'name' : 'search_rate_trigger'," +
         "'event' : 'searchRate'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
-        "'rate' : 1.0," +
+        "'aboveRate' : 1.0," +
         "'enabled' : true," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
@@ -581,7 +582,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
-    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty("node");
+    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty(SearchRateTrigger.HOT_NODES);
     assertNotNull(m);
     assertEquals(nodes.size(), m.size());
     assertEquals(nodes, m.keySet());
@@ -592,7 +593,19 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     ops.forEach(op -> {
       assertEquals(CollectionParams.CollectionAction.ADDREPLICA, op.getAction());
       assertEquals(1, op.getHints().size());
-      Pair<String, String> hint = (Pair<String, String>)op.getHints().get(Suggester.Hint.COLL_SHARD);
+      Object o = op.getHints().get(Suggester.Hint.COLL_SHARD);
+      // this may be a pair or a HashSet of pairs with size 1
+      Pair<String, String> hint = null;
+      if (o instanceof Pair) {
+        hint = (Pair<String, String>)o;
+      } else if (o instanceof Set) {
+        assertEquals("unexpected number of hints: " + o, 1, ((Set)o).size());
+        o = ((Set)o).iterator().next();
+        assertTrue("unexpected hint: " + o, o instanceof Pair);
+        hint = (Pair<String, String>)o;
+      } else {
+        fail("unexpected hints: " + o);
+      }
       assertNotNull(hint);
       assertEquals(collectionName, hint.first());
       assertEquals("shard1", hint.second());

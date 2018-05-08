@@ -119,6 +119,41 @@ final class BooleanWeight extends Weight {
     }
   }
 
+  @Override
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    final int minShouldMatch = query.getMinimumNumberShouldMatch();
+    List<Matches> matches = new ArrayList<>();
+    int shouldMatchCount = 0;
+    Iterator<Weight> wIt = weights.iterator();
+    Iterator<BooleanClause> cIt = query.clauses().iterator();
+    while (wIt.hasNext()) {
+      Weight w = wIt.next();
+      BooleanClause bc = cIt.next();
+      Matches m = w.matches(context, doc);
+      if (bc.isProhibited()) {
+        if (m != null) {
+          return null;
+        }
+      }
+      if (bc.isRequired()) {
+        if (m == null) {
+          return null;
+        }
+        matches.add(m);
+      }
+      if (bc.getOccur() == Occur.SHOULD) {
+        if (m != null) {
+          matches.add(m);
+          shouldMatchCount++;
+        }
+      }
+    }
+    if (shouldMatchCount < minShouldMatch) {
+      return null;
+    }
+    return Matches.fromSubMatches(matches);
+  }
+
   static BulkScorer disableScoring(final BulkScorer scorer) {
     return new BulkScorer() {
 

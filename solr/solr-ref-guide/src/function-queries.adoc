@@ -496,7 +496,8 @@ Returns `true` if any member of the field exists.
 === Comparison Functions
 `gt`, `gte`, `lt`, `lte`, `eq`
 
-5 comparison functions: Greater Than, Greater Than or Equal, Less Than, Less Than or Equal, Equal
+5 comparison functions: Greater Than, Greater Than or Equal, Less Than, Less Than or Equal, Equal.
+`eq` works on not just numbers but essentially any value like a string field.
 
 *Syntax Example*
 

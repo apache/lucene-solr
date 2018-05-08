@@ -134,8 +134,8 @@ public class Suggestion {
       @Override
       public int compareViolation(Violation v1, Violation v2) {
         return Long.compare(
-            v1.getViolatingReplicas().stream().mapToLong(v -> v.delta == null? 0 :v.delta).max().orElse(0l),
-            v2.getViolatingReplicas().stream().mapToLong(v3 -> v3.delta == null? 0 : v3.delta).max().orElse(0l));
+            v1.getViolatingReplicas().stream().mapToLong(v -> v.delta == null? 0 :v.delta).max().orElse(0L),
+            v2.getViolatingReplicas().stream().mapToLong(v3 -> v3.delta == null? 0 : v3.delta).max().orElse(0L));
       }
 
       @Override

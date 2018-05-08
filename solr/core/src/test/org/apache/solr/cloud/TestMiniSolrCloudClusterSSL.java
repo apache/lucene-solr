@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -46,6 +49,9 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +77,10 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   public static final int NUM_SERVERS = 3;
   public static final String CONF_NAME = MethodHandles.lookup().lookupClass().getName();
+  
+  @Rule
+  public TestRule syspropRestore = new TestRuleRestoreSystemProperties
+    (HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
   
   @Before
   public void before() {
@@ -120,6 +130,13 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     checkClusterWithNodeReplacement(sslConfig);
   }
   
+  public void testSslWithCheckPeerName() throws Exception {
+    final SSLTestConfig sslConfig = new SSLTestConfig(true, false, true);
+    HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    checkClusterWithNodeReplacement(sslConfig);
+  }
+  
   /**
    * Constructs a cluster with the specified sslConfigs, runs {@link #checkClusterWithCollectionCreations}, 
    * then verifies that if we modify the default SSLContext (mimicing <code>javax.net.ssl.*</code> 
@@ -142,6 +159,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       // our test config doesn't use SSL, and reset HttpClientUtil to it's defaults so it picks up our
       // SSLContext that way.
       SSLContext.setDefault( sslConfig.isSSLMode() ? sslConfig.buildClientSSLContext() : DEFAULT_SSL_CONTEXT);
+      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME,
+                         Boolean.toString(sslConfig.getCheckPeerName()));
       HttpClientUtil.resetHttpClientBuilder();
       
       // recheck that we can communicate with all the jetty instances in our cluster
@@ -149,6 +168,46 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  /** Sanity check that our test scaffolding for validating SSL peer names fails when it should */
+  public void testSslWithInvalidPeerName() throws Exception {
+    // NOTE: first initialize the cluster w/o peer name checks, which means our server will use
+    // certs with a bogus hostname/ip and clients shouldn't care...
+    final SSLTestConfig sslConfig = new SSLTestConfig(true, false, false);
+    HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig).build();
+    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
+    try {
+      checkClusterWithCollectionCreations(cluster, sslConfig);
+      
+      // now initialize a client that still uses the existing SSLContext/Provider, so it will accept
+      // our existing certificate, but *does* care about validating the peer name
+      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
+      HttpClientUtil.resetHttpClientBuilder();
+
+      // and validate we get failures when trying to talk to our cluster...
+      final List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+      for (JettySolrRunner jetty : jettys) {
+        final String baseURL = jetty.getBaseUrl().toString();
+        // verify new solr clients validate peer name and can't talk to this server
+        Exception ex = expectThrows(SolrServerException.class, () -> {
+            try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+              CoreAdminRequest req = new CoreAdminRequest();
+              req.setAction( CoreAdminAction.STATUS );
+              client.request(req);
+            }
+          });
+        assertTrue("Expected an root cause SSL Exception, got: " + ex.toString(),
+                   ex.getCause() instanceof SSLException);
+      }
+    } finally {
+      cluster.shutdown();
+    }
+
+
+    
   }
 
   /**

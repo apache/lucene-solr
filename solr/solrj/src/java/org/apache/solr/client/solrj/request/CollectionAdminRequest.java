@@ -553,6 +553,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to delete a node.
+   */
+  public static DeleteNode deleteNode(String node) {
+    return new DeleteNode(node);
+  }
+
   public static class DeleteNode extends AsyncCollectionAdminRequest {
     String node;
 
@@ -1665,6 +1672,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static DeleteReplica deleteReplica(String collection, String shard, String replica) {
     return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard),
         checkNotNull(CoreAdminParams.REPLICA, replica));
+  }
+
+  public static DeleteReplica deleteReplica(String collection, String shard, int count) {
+    return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard), count);
   }
 
   /**

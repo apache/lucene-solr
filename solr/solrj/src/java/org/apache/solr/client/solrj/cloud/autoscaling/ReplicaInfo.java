@@ -66,6 +66,10 @@ public class ReplicaInfo implements MapWriter {
     this.node = node;
   }
 
+  public Object clone() {
+    return new ReplicaInfo(name, core, collection, shard, type, node, variables);
+  }
+
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(name, (MapWriter) ew1 -> {
@@ -132,6 +136,24 @@ public class ReplicaInfo implements MapWriter {
 
   public Object getVariable(String name) {
     return variables.get(name);
+  }
+
+  public Object getVariable(String name, Object defValue) {
+    Object o = variables.get(name);
+    if (o != null) {
+      return o;
+    } else {
+      return defValue;
+    }
+  }
+
+  public boolean getBool(String name, boolean defValue) {
+    Object o = getVariable(name, defValue);
+    if (o instanceof Boolean) {
+      return (Boolean)o;
+    } else {
+      return Boolean.parseBoolean(String.valueOf(o));
+    }
   }
 
   @Override

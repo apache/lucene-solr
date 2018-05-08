@@ -155,7 +155,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testValidate() {
     expectError("replica", -1, "must be greater than");
     expectError("replica", "hello", "not a valid number");
-    assertEquals(1l, Clause.validate("replica", "1", true));
+    assertEquals(1L, Clause.validate("replica", "1", true));
     assertEquals("c", Clause.validate("collection", "c", true));
     assertEquals("s", Clause.validate("shard", "s", true));
     assertEquals("overseer", Clause.validate("nodeRole", "overseer", true));
@@ -176,7 +176,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectError("ip_1", "-1", "must be greater than");
     expectError("ip_1", -1, "must be greater than");
 
-    assertEquals(1l, Clause.validate("ip_1", "1", true));
+    assertEquals(1L, Clause.validate("ip_1", "1", true));
 
     expectError("heapUsage", "-1", "must be greater than");
     expectError("heapUsage", -1, "must be greater than");
@@ -474,7 +474,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public DistribStateManager getDistribStateManager() {
         return new DelegatingDistribStateManager(null) {
           @Override
-          public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+          public AutoScalingConfig getAutoScalingConfig() {
             return asc;
           }
         };
@@ -868,7 +868,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("sysprop.rack", clauses.get(0).tag.getName());
   }
 
-  public void testRules() throws IOException {
+  public void testRules() {
     String rules = "{" +
         "cluster-policy:[" +
         "{nodeRole:'overseer',replica : 0 , strict:false}," +
@@ -1020,7 +1020,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   private DistribStateManager delegatingDistribStateManager(AutoScalingConfig config) {
     return new DelegatingDistribStateManager(null) {
       @Override
-      public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+      public AutoScalingConfig getAutoScalingConfig() {
         return config;
       }
     };
@@ -1248,7 +1248,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public void close() throws IOException {
+      public void close() {
 
       }
 
@@ -1291,12 +1291,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public SolrResponse request(SolrRequest req) throws IOException {
+      public SolrResponse request(SolrRequest req) {
         return null;
       }
 
       @Override
-      public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
+      public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) {
         return new byte[0];
       }
     };
@@ -1505,7 +1505,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertFalse(l.isEmpty());
 
     Map m = l.get(0).toMap(new LinkedHashMap<>());
-    assertEquals(1l, Utils.getObjectByPath(m, true, "violation/violation/delta"));
+    assertEquals(1L, Utils.getObjectByPath(m, true, "violation/violation/delta"));
     assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
     assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
     assertNotNull(Utils.getObjectByPath(m, false, "operation/command/move-replica"));
@@ -1579,7 +1579,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
     assertFalse(violations.isEmpty());
-    assertEquals(2l, violations.get(0).replicaCountDelta.longValue());
+    assertEquals(2L, violations.get(0).replicaCountDelta.longValue());
 
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg,
         cloudManagerWithData(dataproviderdata));
@@ -1794,7 +1794,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public DocCollection getCollection(String name) throws IOException {
+          public DocCollection getCollection(String name) {
             return new DocCollection(name, Collections.emptyMap(), Collections.emptyMap(), DocRouter.DEFAULT) {
               @Override
               public Replica getLeader(String sliceName) {

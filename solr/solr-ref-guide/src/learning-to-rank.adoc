@@ -61,7 +61,7 @@ The LTR contrib module includes several feature classes as well as support for c
 |solr query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
 |solr filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
 |solr query + filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
-|value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"${userFromMobile}","required":true}` |supported
+|value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
 |(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
 |===
 
@@ -559,6 +559,8 @@ Then, configure `DefaultWrapperModel` to wrap `myModel.json`:
 NOTE: No `"features"` are configured in `myWrapperModel` because the features of the wrapped model (`myModel`) will be used; also note that the `"store"` configured for the wrapper model must match that of the wrapped model i.e., in this example the feature store called `largeModelsFeatureStore` is used.
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
+
+As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit,increase ZooKeeper's file size limit>>.
 
 === Applying Changes
 

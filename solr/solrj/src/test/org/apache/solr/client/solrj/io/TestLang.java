@@ -68,7 +68,8 @@ public class TestLang extends LuceneTestCase {
        TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorQuarter.FUNCTION_NAME,
        TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, "abs", "add", "div", "mult", "sub", "log", "pow",
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
-      "cbrt", "coalesce", "uuid", "if", "convert"};
+      "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset", "fft", "ifft", "euclidean","manhattan",
+      "earthMovers", "canberra", "chebyshev", "ones", "zeros"};
 
   @Test
   public void testLang() {
@@ -85,7 +86,7 @@ public class TestLang extends LuceneTestCase {
       assertTrue("Testing function:"+func, registeredFunctions.containsKey(func));
     }
 
-    //Check that ech function that is registered is expected.
+    //Check that each function that is registered is expected.
     Set<String> keys = registeredFunctions.keySet();
     for(String key : keys) {
       assertTrue("Testing key:"+key, functions.contains(key));

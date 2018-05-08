@@ -167,7 +167,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   @Override
   public void init(NamedList args) {
-    this.initArgs = SolrParams.toSolrParams(args);
+    this.initArgs = args.toSolrParams();
   }
 
   @Override

@@ -159,6 +159,11 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          return innerWeight.matches(context, doc);
+        }
+
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           ScorerSupplier scorerSupplier = scorerSupplier(context);
           if (scorerSupplier == null) {

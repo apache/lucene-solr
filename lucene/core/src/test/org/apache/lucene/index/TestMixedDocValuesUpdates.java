@@ -18,17 +18,25 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -258,7 +266,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     DirectoryReader reader = DirectoryReader.open(dir);
-    BytesRef scratch = new BytesRef();
     for (LeafReaderContext context : reader.leaves()) {
       LeafReader r = context.reader();
       for (int i = 0; i < numFields; i++) {
@@ -305,8 +312,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
-          new NumericDocValuesField("cf", value*2));
+      if (random().nextBoolean()) {
+        doUpdate(t, writer, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
+            new NumericDocValuesField("cf", value*2));
+      } else {
+        writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
+            new NumericDocValuesField("cf", value*2));
+      }
+
       DirectoryReader reader = DirectoryReader.open(writer);
       for (LeafReaderContext context : reader.leaves()) {
         LeafReader r = context.reader();
@@ -394,5 +407,138 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     dir.close();
   }
-  
+
+  public void testTryUpdateDocValues() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig();
+    IndexWriter writer = new IndexWriter(dir, conf);
+    int numDocs = 1 + random().nextInt(128);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "" + i, Store.YES));
+      doc.add(new NumericDocValuesField("id", i));
+      doc.add(new BinaryDocValuesField("binaryId", new BytesRef(new byte[] {(byte)i})));
+      writer.addDocument(doc);
+      if (random().nextBoolean()) {
+        writer.flush();
+      }
+    }
+    int doc = random().nextInt(numDocs);
+    doUpdate(new Term("id", "" + doc), writer, new NumericDocValuesField("id", doc + 1),
+        new BinaryDocValuesField("binaryId", new BytesRef(new byte[]{(byte) (doc + 1)})));
+    IndexReader reader = writer.getReader();
+    NumericDocValues idValues = null;
+    BinaryDocValues binaryIdValues = null;
+    for (LeafReaderContext c : reader.leaves()) {
+      TopDocs topDocs = new IndexSearcher(c.reader()).search(new TermQuery(new Term("id", "" + doc)), 10);
+      if (topDocs.totalHits == 1) {
+        assertNull(idValues);
+        assertNull(binaryIdValues);
+        idValues = c.reader().getNumericDocValues("id");
+        assertEquals(topDocs.scoreDocs[0].doc, idValues.advance(topDocs.scoreDocs[0].doc));
+        binaryIdValues = c.reader().getBinaryDocValues("binaryId");
+        assertEquals(topDocs.scoreDocs[0].doc, binaryIdValues.advance(topDocs.scoreDocs[0].doc));
+      } else {
+        assertEquals(0, topDocs.totalHits);
+      }
+    }
+
+    assertNotNull(idValues);
+    assertNotNull(binaryIdValues);
+
+    assertEquals(doc+1, idValues.longValue());
+    assertEquals(new BytesRef(new byte[] {(byte)(doc+1)}), binaryIdValues.binaryValue());
+    IOUtils.close(reader, writer, dir);
+  }
+
+  public void testTryUpdateMultiThreaded() throws IOException, BrokenBarrierException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig();
+    IndexWriter writer = new IndexWriter(dir, conf);
+    ReentrantLock[] locks = new ReentrantLock[25 + random().nextInt(50)];
+    int[] values = new int[locks.length];
+    for (int i = 0; i < locks.length; i++) {
+      locks[i] = new ReentrantLock();
+      Document doc = new Document();
+      values[i] = random().nextInt();
+      doc.add(new StringField("id", Integer.toString(i), Store.NO));
+      doc.add(new NumericDocValuesField("value", values[i]));
+      writer.addDocument(doc);
+    }
+
+    Thread[] threads = new Thread[2 + random().nextInt(3)];
+    CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        try {
+          barrier.await();
+          for (int doc = 0; doc < 1000; doc++) {
+            int docId = random().nextInt(locks.length);
+            locks[docId].lock();
+            try {
+              int value = random().nextInt();
+              if (random().nextBoolean()) {
+                writer.updateDocValues(new Term("id", docId + ""), new NumericDocValuesField("value", value));
+              } else {
+                doUpdate(new Term("id", docId + ""), writer, new NumericDocValuesField("value", value));
+              }
+              values[docId] = value;
+            } catch (IOException e) {
+              throw new AssertionError(e);
+            } finally {
+              locks[docId].unlock();
+            }
+
+            if (rarely()) {
+              writer.flush();
+            }
+          }
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+
+    barrier.await();
+    for (Thread t : threads) {
+      t.join();
+    }
+    try (DirectoryReader reader = writer.getReader()) {
+      for (int i = 0; i < locks.length; i++) {
+        locks[i].lock();
+        try {
+          int value = values[i];
+          TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(new Term("id", "" + i)), 10);
+          assertEquals(topDocs.totalHits, 1);
+          int docID = topDocs.scoreDocs[0].doc;
+          List<LeafReaderContext> leaves = reader.leaves();
+          int subIndex = ReaderUtil.subIndex(docID, leaves);
+          LeafReader leafReader = leaves.get(subIndex).reader();
+          docID -= leaves.get(subIndex).docBase;
+          NumericDocValues numericDocValues = leafReader.getNumericDocValues("value");
+          assertEquals(docID, numericDocValues.advance(docID));
+          assertEquals(numericDocValues.longValue(), value);
+        } finally {
+          locks[i].unlock();
+        }
+
+      }
+    }
+
+    IOUtils.close(writer, dir);
+  }
+
+  static void doUpdate(Term doc, IndexWriter writer, Field... fields) throws IOException {
+    long seqId = -1;
+    do { // retry if we just committing a merge
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(doc), 10);
+        assertEquals(1, topDocs.totalHits);
+        int theDoc = topDocs.scoreDocs[0].doc;
+        seqId = writer.tryUpdateDocValue(reader, theDoc, fields);
+      }
+    } while (seqId == -1);
+  }
 }
+

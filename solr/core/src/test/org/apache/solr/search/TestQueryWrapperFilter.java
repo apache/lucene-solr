@@ -228,7 +228,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
     final Query query = new QueryWrapperFilter(new RandomApproximationQuery(new TermQuery(new Term("foo", "bar")), random()));
-    final Weight weight = searcher.createNormalizedWeight(query, RandomPicks.randomFrom(random(), ScoreMode.values()));
+    final Weight weight = searcher.createWeight(searcher.rewrite(query), RandomPicks.randomFrom(random(), ScoreMode.values()), 1);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertNotNull(scorer.twoPhaseIterator());
     reader.close();
