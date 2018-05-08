@@ -18,6 +18,35 @@ limitations under the License.
 
   <div id="frame">
 
+    <div id="zookeeper-content" class="content clearfix" ng-show="showZookeeper">
+      <div class="zookeeper-status">Status: <span class="zkstatus-{{zkState.status}}">{{zkState.status}}</span></div>
+      <div class="zookeeper-errors" ng-show="zkState.errors">
+        Errors:
+        <ul>
+          <li ng-repeat="error in zkState.errors">{{error}}</li>
+        </ul>
+      </div>
+      <div>Ensemble size: {{zkState.ensembleSize}}</div>
+      <div>Ensemble mode: {{zkState.mode}}</div>
+      
+      <table id="zk-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th ng-repeat="host in zkState.details">{{host.host}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="key in zkKeys">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details">
+              {{key === 'zk_version' ? host[key].split("-")[0] : host[key]}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div id="tree-content" class="content clearfix" ng-show="showTree">
     <jstree class="tree" on-select="showTreeLink(url)" id="tree" data="tree"></jstree>
 

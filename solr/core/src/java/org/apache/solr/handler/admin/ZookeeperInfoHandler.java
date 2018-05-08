@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -49,6 +50,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -68,6 +70,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.CloudUtil.getZkRawResponse;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -79,6 +82,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
  * @since solr 4.0
  */
 public final class ZookeeperInfoHandler extends RequestHandlerBase {
+  private static final String PARAM_MNTR = "mntr";
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -373,11 +377,16 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     String path = params.get(PATH);
     String addr = params.get("addr");
-
+    
     if (addr != null && addr.length() == 0) {
       addr = null;
     }
 
+    if (Boolean.parseBoolean(params.get(PARAM_MNTR))) {
+      handleZookeeperStatsCmd(req, rsp);
+      return;
+    }
+    
     String detailS = params.get("detail");
     boolean detail = detailS != null && detailS.equals("true");
 
@@ -417,6 +426,125 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
     rsp.getValues().add(RawResponseWriter.CONTENT,printer);
   }
+
+  private void handleZookeeperStatsCmd(SolrQueryRequest req, SolrQueryResponse rsp) {
+    Map<String, String> map = new HashMap<>(1);
+    map.put(WT, "json");
+    map.put(OMIT_HEADER, "false");
+    req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
+
+    NamedList values = rsp.getValues();
+
+    values.add("zkStatus", getZkStatus(cores.getZkController().getZkServerAddress()));
+  }
+
+  private Map<String, Object> getZkStatus(String zkHost) {
+    Map<String, Object> zkStatus = new HashMap<>();
+    List<String> zookeepers = Arrays.asList(zkHost.split("/")[0].split(","));
+    List<Object> details = new ArrayList<>();
+    int numOk = 0;
+    String status = "N/A";
+    int standalone = 0;
+    int followers = 0;
+    int reportedFollowers = 0;
+    int leaders = 0;
+    List<String> errors = new ArrayList<>();
+    for (String zk : zookeepers) {
+      try {
+        Map<String, Object> stat = monitorZookeeper(zk);
+        details.add(stat);
+        if ("true".equals(String.valueOf(stat.get("ok")))) {
+          numOk++;
+        }
+        String state = String.valueOf(stat.get("zk_server_state"));
+        if ("follower".equals(state)) {
+          followers++;
+        } else if ("leader".equals(state)) {
+          leaders++;
+          reportedFollowers = Integer.parseInt(String.valueOf(stat.get("zk_followers")));
+        } else if ("standalone".equals(state)) {
+          standalone++;
+        }
+      } catch (SolrException se) {
+        log.warn("Failed talking to zookeeper" + zk, se);
+        errors.add(se.getMessage());
+        Map<String, Object> stat = new HashMap<>();
+        stat.put("host", zk);
+        stat.put("ok", false);
+        details.add(stat);
+      }       
+    }
+    zkStatus.put("ensembleSize", zookeepers.size());
+    zkStatus.put("details", details);
+    if (followers+leaders > 0 && standalone > 0) {
+      status = "red";
+      errors.add("The zk nodes do not agree on their mode, check details");
+    }
+    if (standalone > 1) {
+      status = "red";
+      errors.add("Only one zk allowed in standalone mode");
+    }
+    if (leaders > 1) {
+      zkStatus.put("mode", "ensemble");
+      status = "red";
+      errors.add("Only one leader allowed, got " + leaders);
+    }
+    if (followers > 0 && leaders == 0) {
+      zkStatus.put("mode", "ensemble");
+      status = "red";
+      errors.add("We do not have a leader");
+    }
+    if (leaders > 0 && followers != reportedFollowers) {
+      zkStatus.put("mode", "ensemble");
+      status = "red";
+      errors.add("Leader reports " + reportedFollowers + " followers, but we only found " + followers + 
+        ". Please check zkHost configuration");
+    }
+    if (followers+leaders == 0 && standalone == 1) {
+      zkStatus.put("mode", "standalone");
+    }
+    if (followers+leaders > 0 && (zookeepers.size())%2 == 0) {
+      if (!"red".equals(status)) {
+        status = "yellow";
+      }
+      errors.add("We have an even number of zookeepers which is not recommended");
+    }
+    if (followers+leaders > 0 && standalone == 0) {
+      zkStatus.put("mode", "ensemble");
+    }
+    if (status.equals("N/A")) {
+      if (numOk == zookeepers.size()) {
+        status = "green";
+      } else if (numOk < zookeepers.size() && numOk > zookeepers.size() / 2) {
+        status = "yellow";
+        errors.add("Some zookeepers are down: " + numOk + "/" + zookeepers.size());
+      } else {
+        status = "red";
+        errors.add("Mismatch in number of zookeeper nodes live. numOK=" + numOk + ", expected " + zookeepers.size());
+      }
+    }
+    zkStatus.put("status", status);
+    if (!errors.isEmpty()) {
+      zkStatus.put("errors", errors);
+    }
+    return zkStatus;
+  }
+
+  private Map<String, Object> monitorZookeeper(String zk) {
+    List<String> lines = getZkRawResponse(zk, "mntr");
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("host", zk);
+    obj.put("ok", "imok".equals(getZkRawResponse(zk, "ruok").get(0)));
+    for (String line : lines) {
+      obj.put(line.split("\t")[0], line.split("\t")[1]);
+    }
+    lines = getZkRawResponse(zk, "conf");
+    for (String line : lines) {
+      obj.put(line.split("=")[0], line.split("=")[1]);
+    }
+    return obj;
+  }
+
 
   //--------------------------------------------------------------------------------------
   //

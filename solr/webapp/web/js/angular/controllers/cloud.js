@@ -38,11 +38,38 @@ solrAdminApp.controller('CloudController',
         } else if (view == "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
+        } else if (view == "zookeeper") {
+            $scope.resetMenu("cloud-zookeeper", Constants.IS_ROOT_PAGE);
+            zookeeperSubController($scope, Zookeeper, false);
         }
     }
 );
 
+var zookeeperSubController = function($scope, Zookeeper) {
+    $scope.showZookeeper = true;
+    $scope.showTree = false;
+    $scope.showGraph = false;
+    $scope.tree = {};
+    $scope.showData = false;
+    
+    $scope.initZookeeper = function() {
+      Zookeeper.mntr({}, function(data) {
+        $scope.zkState = data.zkStatus;
+        $scope.zkKeys = ["ok", "zk_server_state", "zk_version", "zk_approximate_data_size",
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_num_alive_connections",
+          "zk_watch_count", "zk_znode_count", "zk_packets_sent", "zk_packets_received",
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
+          "clientPort", "dataDir", "dataLogDir", "tickTime", "maxClientCnxns", "minSessionTimeout", 
+          "maxSessionTimeout", "serverId", "initLimit", "syncLimit", "electionAlg", "electionPort", 
+          "quorumPort", "peerType"];
+      });
+    };
+
+    $scope.initZookeeper();
+};
+
 var treeSubController = function($scope, Zookeeper) {
+    $scope.showZookeeper = false;
     $scope.showTree = true;
     $scope.showGraph = false;
     $scope.tree = {};
@@ -79,6 +106,7 @@ var treeSubController = function($scope, Zookeeper) {
 };
 
 var graphSubController = function ($scope, Zookeeper, isRadial) {
+    $scope.showZookeeper = false;
     $scope.showTree = false;
     $scope.showGraph = true;
 
