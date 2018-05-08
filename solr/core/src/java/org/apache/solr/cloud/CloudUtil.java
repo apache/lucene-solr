@@ -20,7 +20,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.Socket;
 import java.util.Collections;
@@ -30,8 +32,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -50,8 +52,9 @@ import org.slf4j.LoggerFactory;
 
 public class CloudUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  
+  public static final int ZOOKEEPER_DEFAULT_PORT = 2181;
+
+
   /**
    * See if coreNodeName has been taken over by another baseUrl and unload core
    * + throw exception if it has been.
@@ -157,21 +160,23 @@ public class CloudUtil {
 
   /**
    * Sends a four-letter-word command to Zookeeper and returns the response as list of strings
-   * @param zk
-   * @param command
-   * @return
+   * @param zk the zkHost connection string, e.g. my.host:2181,other.host:2181/solr
+   * @param fourLetterWordCommand the custom 4-letter command to send to Zookeeper
+   * @return a list of lines returned from Zookeeper
    */
-  public static List<String> getZkRawResponse(String zk, String command) {
-    String host = zk.split(":")[0];
-    int port = 2181;
-    if (zk.split(":").length > 1) {
-       port = Integer.parseInt(zk.split(":")[1]);
+  public static List<String> getZkRawResponse(String zk, String fourLetterWordCommand) {
+    String[] hostPort = zk.split(":");
+    String host = hostPort[0];
+    int port = ZOOKEEPER_DEFAULT_PORT;
+    if (hostPort.length > 1) {
+      port = Integer.parseInt(hostPort[1]);
     }
     try (
         Socket socket = new Socket(host, port);
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
-      out.println(command);
+        Writer writer = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
+        PrintWriter out = new PrintWriter(writer, true);
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));) {
+      out.println(fourLetterWordCommand);
       List<String> response = in.lines().collect(Collectors.toList());
       log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
       if (response == null || response.isEmpty()) {
