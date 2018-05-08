@@ -353,6 +353,7 @@ public class ZkStateReader implements Closeable {
    * Forcibly refresh a collection's internal state from ZK. Try to avoid having to resort to this when
    * a better design is possible.
    */
+  //TODO shouldn't we call ZooKeeper.sync() at the right places to prevent reading a stale value?  We do so for aliases.
   public void forceUpdateCollection(String collection) throws KeeperException, InterruptedException {
 
     synchronized (getUpdateLock()) {
