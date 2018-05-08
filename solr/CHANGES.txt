@@ -182,6 +182,8 @@ Bug Fixes
   MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
   alias refers to it.  (David Smiley)
 
+* SOLR-12192: Fixed a solr cli error message when ulimits are unlimited. (Martijn Koster)
+
 Optimizations
 ----------------------
 
