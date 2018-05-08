@@ -178,6 +178,10 @@ Bug Fixes
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
 
+* SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
+  MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
+  alias refers to it.  (David Smiley)
+
 Optimizations
 ----------------------
 
