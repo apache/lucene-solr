@@ -219,6 +219,10 @@ Bug Fixes
 * SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
   (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
+* SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
+  MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
+  alias refers to it.  (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -235,6 +239,9 @@ Optimizations
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
 * SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
+  (Jeff Miller, David Smiley)
 
 Other Changes
 ----------------------

@@ -1347,7 +1347,82 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  to delete documents indexed after opening the NRT
    *  reader you must use {@link #deleteDocuments(Term...)}). */
   public synchronized long tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
+    // NOTE: DON'T use docID inside the closure
+    return tryModifyDocument(readerIn, docID, (leafDocId, rld) -> {
+      if (rld.delete(leafDocId)) {
+        if (isFullyDeleted(rld)) {
+          dropDeletedSegment(rld.info);
+          checkpoint();
+        }
 
+        // Must bump changeCount so if no other changes
+        // happened, we still commit this change:
+        changed();
+      }
+    });
+  }
+
+  /** Expert: attempts to update doc values by document ID, as long as
+   *  the provided reader is a near-real-time reader (from {@link
+   *  DirectoryReader#open(IndexWriter)}).  If the
+   *  provided reader is an NRT reader obtained from this
+   *  writer, and its segment has not been merged away, then
+   *  the update succeeds and this method returns a valid (&gt; 0) sequence
+   *  number; else, it returns -1 and the caller must then
+   *  either retry the update and resolve the document again.
+   *
+   *  <b>NOTE</b>: this method can only updates documents
+   *  visible to the currently open NRT reader.  If you need
+   *  to update documents indexed after opening the NRT
+   *  reader you must use {@link #updateDocValues(Term, Field...)}. */
+  public synchronized long tryUpdateDocValue(IndexReader readerIn, int docID, Field... fields) throws IOException {
+    // NOTE: DON'T use docID inside the closure
+    final DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(null, fields);
+    return tryModifyDocument(readerIn, docID, (leafDocId, rld) -> {
+      long nextGen = bufferedUpdatesStream.getNextGen();
+      try {
+        Map<String, DocValuesFieldUpdates> fieldUpdatesMap = new HashMap<>();
+        for (DocValuesUpdate update : dvUpdates) {
+          DocValuesFieldUpdates docValuesFieldUpdates = fieldUpdatesMap.computeIfAbsent(update.field, k -> {
+            switch (update.type) {
+              case NUMERIC:
+                return new NumericDocValuesFieldUpdates(nextGen, k, rld.info.info.maxDoc());
+              case BINARY:
+                return new BinaryDocValuesFieldUpdates(nextGen, k, rld.info.info.maxDoc());
+              default:
+                throw new AssertionError("type: " + update.type + " is not supported");
+            }
+          });
+          switch (update.type) {
+            case NUMERIC:
+              docValuesFieldUpdates.add(leafDocId, ((NumericDocValuesUpdate) update).value);
+              break;
+            case BINARY:
+              docValuesFieldUpdates.add(leafDocId, ((BinaryDocValuesUpdate) update).value);
+              break;
+            default:
+              throw new AssertionError("type: " + update.type + " is not supported");
+          }
+        }
+        for (DocValuesFieldUpdates updates : fieldUpdatesMap.values()) {
+          updates.finish();
+          rld.addDVUpdate(updates);
+        }
+      } finally {
+        bufferedUpdatesStream.finishedSegment(nextGen);
+      }
+      // Must bump changeCount so if no other changes
+      // happened, we still commit this change:
+      changed();
+    });
+  }
+
+  @FunctionalInterface
+  private interface DocModifier {
+    void run(int docId, ReadersAndUpdates readersAndUpdates) throws IOException;
+  }
+
+  private synchronized long tryModifyDocument(IndexReader readerIn, int docID, DocModifier toApply) throws IOException {
     final LeafReader reader;
     if (readerIn instanceof LeafReader) {
       // Reader is already atomic: use the incoming docID:
@@ -1365,7 +1440,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (!(reader instanceof SegmentReader)) {
       throw new IllegalArgumentException("the reader must be a SegmentReader or composite reader containing only SegmentReaders");
     }
-      
+
     final SegmentCommitInfo info = ((SegmentReader) reader).getSegmentInfo();
 
     // TODO: this is a slow linear search, but, number of
@@ -1377,21 +1452,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       ReadersAndUpdates rld = getPooledInstance(info, false);
       if (rld != null) {
         synchronized(bufferedUpdatesStream) {
-          if (rld.delete(docID)) {
-            if (isFullyDeleted(rld)) {
-              dropDeletedSegment(rld.info);
-              checkpoint();
-            }
-
-            // Must bump changeCount so if no other changes
-            // happened, we still commit this change:
-            changed();
-          }
+          toApply.run(docID, rld);
           return docWriter.deleteQueue.getNextSequenceNumber();
         }
       }
     }
-
     return -1;
   }
 

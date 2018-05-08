@@ -158,6 +158,12 @@ New Features
 * LUCENE-8265: WordDelimter/GraphFilter now have an option to skip tokens
   marked with KeywordAttribute (Mike Sokolov via Mike McCandless)
 
+* LUCENE-8297: Add IW#tryUpdateDocValues(Reader, int, Fields...) IndexWriter can
+  update doc values for a specific term but this might affect all documents 
+  containing the term. With tryUpdateDocValues users can update doc-values 
+  fields for individual documents. This allows for instance to soft-delete
+  individual documents. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon and
