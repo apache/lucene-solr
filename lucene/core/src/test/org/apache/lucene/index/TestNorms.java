@@ -43,7 +43,7 @@ import org.apache.lucene.util.TestUtil;
  * Test that norms info is preserved during index life - including
  * separate norms, addDocument, addIndexes, forceMerge.
  */
-@SuppressCodecs({ "Memory", "Direct", "SimpleText" })
+@SuppressCodecs({ "Direct", "SimpleText" })
 @Slow
 public class TestNorms extends LuceneTestCase {
   static final String BYTE_TEST_FIELD = "normsTestByte";

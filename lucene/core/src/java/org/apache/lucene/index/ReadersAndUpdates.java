@@ -88,10 +88,6 @@ final class ReadersAndUpdates {
 
   final AtomicLong ramBytesUsed = new AtomicLong();
 
-  // if set to true the pending deletes must be marked as shared next time the reader is
-  // returned from #getReader()
-  private boolean liveDocsSharedPending = false;
-
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
                     PendingDeletes pendingDeletes) {
     this.info = info;
@@ -196,8 +192,6 @@ final class ReadersAndUpdates {
       // We steal returned ref:
       reader = new SegmentReader(info, indexCreatedVersionMajor, context);
       pendingDeletes.onNewReader(reader, info);
-    } else if (liveDocsSharedPending) {
-      markAsShared();
     }
 
     // Ref for caller
@@ -224,7 +218,6 @@ final class ReadersAndUpdates {
       } finally {
         reader = null;
       }
-      liveDocsSharedPending = false;
     }
 
     decRef();
@@ -272,6 +265,13 @@ final class ReadersAndUpdates {
 
   public synchronized Bits getLiveDocs() {
     return pendingDeletes.getLiveDocs();
+  }
+
+  /**
+   * Returns the live-docs bits excluding documents that are not live due to soft-deletes
+   */
+  public synchronized Bits getHardLiveDocs() {
+    return pendingDeletes.getHardLiveDocs();
   }
 
   public synchronized void dropChanges() {
@@ -671,7 +671,6 @@ final class ReadersAndUpdates {
 
   private void swapNewReaderWithLatestLiveDocs() throws IOException {
     reader = createNewReaderWithLatestLiveDocs(reader);
-    liveDocsSharedPending = true;
   }
 
   synchronized void setIsMerging() {
@@ -687,8 +686,18 @@ final class ReadersAndUpdates {
     return isMerging;
   }
 
+  final static class MergeReader {
+    final SegmentReader reader;
+    final Bits hardLiveDocs;
+
+    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
+      this.reader = reader;
+      this.hardLiveDocs = hardLiveDocs;
+    }
+  }
+
   /** Returns a reader for merge, with the latest doc values updates and deletions. */
-  synchronized SegmentReader getReaderForMerge(IOContext context) throws IOException {
+  synchronized MergeReader getReaderForMerge(IOContext context) throws IOException {
 
     // We must carry over any still-pending DV updates because they were not
     // successfully written, e.g. because there was a hole in the delGens,
@@ -715,7 +724,7 @@ final class ReadersAndUpdates {
     markAsShared();
     assert verifyDocCounts();
 
-    return reader;
+    return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
   /**
@@ -747,7 +756,6 @@ final class ReadersAndUpdates {
 
   private final void markAsShared() {
     assert Thread.holdsLock(this);
-    liveDocsSharedPending = false;
     pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
 

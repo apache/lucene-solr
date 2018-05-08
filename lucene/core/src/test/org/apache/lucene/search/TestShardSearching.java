@@ -41,7 +41,7 @@ import org.apache.lucene.util.TestUtil;
 //   - test pulling docs in 2nd round trip...
 //   - filter too
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestShardSearching extends ShardSearchingTestBase {
 
   private static class PreviousSearchState {

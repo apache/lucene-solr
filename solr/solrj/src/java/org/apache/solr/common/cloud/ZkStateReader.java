@@ -1685,9 +1685,7 @@ public class ZkStateReader implements Closeable {
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
       // note: triesLeft tuning is based on ConcurrentCreateRoutedAliasTest
-      int triesLeft = 30;
-      while (triesLeft > 0) {
-        triesLeft--;
+      for (int triesLeft = 30; triesLeft > 0; triesLeft--) {
         // we could synchronize on "this" but there doesn't seem to be a point; we have a retry loop.
         Aliases curAliases = getAliases();
         Aliases modAliases = op.apply(curAliases);
@@ -1723,9 +1721,7 @@ public class ZkStateReader implements Closeable {
           throw new ZooKeeperException(ErrorCode.SERVER_ERROR, e.toString(), e);
         }
       }
-      if (triesLeft == 0) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Too many successive version failures trying to update aliases");
-      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Too many successive version failures trying to update aliases");
     }
 
     /**
@@ -1734,7 +1730,7 @@ public class ZkStateReader implements Closeable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
-      LOG.debug("Checking ZK for most up to date Aliases " + ALIASES);
+      LOG.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();

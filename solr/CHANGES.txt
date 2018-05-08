@@ -41,6 +41,10 @@ Upgrade Notes
   method signatures was required to fix it. Third party components that use this API
   need to be updated. (Eros Taborelli, Erick Erickson, ab)
 
+* LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
+  MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
+  switch to "Direct" instead. (Dawid Weiss)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -109,6 +113,8 @@ New Features
   child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
 
 * SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
+
+* SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
 Bug Fixes
 ----------------------
@@ -204,6 +210,19 @@ Bug Fixes
 
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
 
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
+
+* SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
+  recoveries. (Mark Miller)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
+
+* SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
+  MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
+  alias refers to it.  (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -220,6 +239,9 @@ Optimizations
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
 
 * SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
+  (Jeff Miller, David Smiley)
 
 Other Changes
 ----------------------

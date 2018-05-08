@@ -30,7 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
-@LuceneTestCase.SuppressCodecs({"Memory"})
 public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
 
   /* UnInvertedField had a reference block limitation of 2^24. This unit test triggered it.

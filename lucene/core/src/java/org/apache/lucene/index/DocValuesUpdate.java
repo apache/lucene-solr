@@ -83,7 +83,7 @@ abstract class DocValuesUpdate {
   
   /** An in-place update to a binary DocValues field */
   static final class BinaryDocValuesUpdate extends DocValuesUpdate {
-    private final BytesRef value;
+    final BytesRef value;
     
     /* Size of BytesRef: 2*INT + ARRAY_HEADER + PTR */
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*Integer.BYTES + NUM_BYTES_OBJECT_REF;
@@ -132,7 +132,7 @@ abstract class DocValuesUpdate {
 
   /** An in-place update to a numeric DocValues field */
   static final class NumericDocValuesUpdate extends DocValuesUpdate {
-    private final long value;
+    final long value;
 
     NumericDocValuesUpdate(Term term, String field, long value) {
       this(term, field, value, BufferedUpdates.MAX_INT);

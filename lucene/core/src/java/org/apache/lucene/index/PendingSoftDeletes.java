@@ -25,6 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
@@ -192,5 +193,15 @@ final class PendingSoftDeletes extends PendingDeletes {
       final String segmentSuffix = Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
       return fisFormat.read(dir, segInfo, segmentSuffix, IOContext.READONCE);
     }
+  }
+
+  Bits getHardLiveDocs() {
+    return hardDeletes.getHardLiveDocs();
+  }
+
+  @Override
+  void liveDocsShared() {
+    super.liveDocsShared();
+    hardDeletes.liveDocsShared();
   }
 }

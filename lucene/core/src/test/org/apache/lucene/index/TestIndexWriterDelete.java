@@ -994,7 +994,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
     final String fieldFormat = TestUtil.getPostingsFormat("field");
-    assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
     assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
     final Random r = random();

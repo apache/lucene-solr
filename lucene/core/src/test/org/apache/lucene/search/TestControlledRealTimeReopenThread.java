@@ -47,7 +47,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearchingTestCase {
 
   // Not guaranteed to reflect deletes:

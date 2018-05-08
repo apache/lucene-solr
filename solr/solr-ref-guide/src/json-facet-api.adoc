@@ -6,7 +6,7 @@
 The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of Solr's previous faceting capabilities, with the following goals:
 
 * First class native JSON API to control faceting and analytics
-** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat nanemspace provided by normal query parameters.
+** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat namespace provided by normal query parameters.
 * First class integrated analytics support
 * Nest any facet type under any other facet type (such as range facet, field facet, query facet)
 * Ability to sort facet buckets by any calculated metric
