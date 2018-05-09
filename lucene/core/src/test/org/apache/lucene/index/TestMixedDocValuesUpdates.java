@@ -595,7 +595,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     int numDocs = 10 + random().nextInt(50);
     int currentSeqId = 0;
-    int[] seqId = new int[5];
+    int[] seqId = new int[] {-1, -1, -1, -1, -1};
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       int id = random().nextInt(5);
@@ -615,11 +615,17 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     if (random().nextBoolean()) {
       writer.commit();
     }
+    int numHits = 0; // check if every doc has been selected at least once
+    for (int i : seqId) {
+      if (i > -1) {
+        numHits++;
+      }
+    }
     try(DirectoryReader reader = writer.getReader()) {
       IndexSearcher searcher = new IndexSearcher(reader);
 
       TopDocs is_live = searcher.search(new DocValuesFieldExistsQuery("is_live"), 5);
-      assertEquals(5, is_live.totalHits);
+      assertEquals(numHits, is_live.totalHits);
       for (ScoreDoc doc : is_live.scoreDocs) {
         int id = Integer.parseInt(reader.document(doc.doc).get("id"));
         int i = ReaderUtil.subIndex(doc.doc, reader.leaves());
