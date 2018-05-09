@@ -192,6 +192,8 @@ Bug Fixes
 
 Other
 
+* LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
 
