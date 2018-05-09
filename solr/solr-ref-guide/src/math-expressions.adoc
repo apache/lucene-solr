@@ -56,4 +56,6 @@ record in your Solr Cloud cluster computable.
 
 == <<curve-fitting.adoc#curve-fitting,Curve Fitting>>
 
+== <<dsp.adoc#digital-signal-processing, Digital Signal Processing>>
+
 == <<machine-learning.adoc#machine-learning,Machine Learning>>
