@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.Date;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -115,7 +116,8 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
             throw new RuntimeException(e);
           }
         },
-        Object::toString); // getFieldQueryVal
+        obj -> obj instanceof Date ? ((Date)obj).toInstant().toString() : obj.toString()
+    );
   }
 
 }

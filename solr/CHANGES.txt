@@ -188,6 +188,9 @@ Bug Fixes
   Now we sync with ZooKeeper and try one more time.  V1 partially did this but only for aliases; now it does both.
   (David Smiley)
 
+* SOLR-12170: JSON Facet API: Terms facet on a date field sometimes failed with an exception complaining
+  about "Invalid Date String". (yonik)
+
 Optimizations
 ----------------------
 
