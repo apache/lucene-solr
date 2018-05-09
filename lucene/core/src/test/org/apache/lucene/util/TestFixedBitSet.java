@@ -499,8 +499,10 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     int numBits = TestUtil.nextInt(random, 1000, 2000);
     int count = TestUtil.nextInt(random, 0, numBits - 1);
     int[] bits = makeIntArray(random, count, 0, numBits - 1);
-    FixedBitSet fixedBitSet = makeFixedBitSet(bits, numBits);
-
+    FixedBitSet fixedBitSet = new FixedBitSet(numBits);
+    for (int e : bits) {
+      fixedBitSet.set(e);
+    }
     FixedBitSet mutableCopy = FixedBitSet.copyOf(fixedBitSet);
     assertNotSame(mutableCopy, fixedBitSet);
     assertEquals(mutableCopy, fixedBitSet);
