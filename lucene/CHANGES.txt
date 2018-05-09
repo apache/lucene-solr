@@ -112,6 +112,9 @@ API Changes
 * LUCENE-8248: MergePolicyWrapper is renamed to FilterMergePolicy and now
   also overrides getMaxCFSSegmentSizeMB (Mike Sokolov via Mike McCandless)
 
+* LUCENE-8303: LiveDocsFormat is now only responsible for (de)serialization of
+  live docs. (Adrien Grand)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together

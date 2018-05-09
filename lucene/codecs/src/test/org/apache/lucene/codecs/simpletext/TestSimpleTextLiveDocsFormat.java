@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.codecs.simpletext;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseLiveDocsFormatTestCase;
 
-/**
- * Extension of Bits for live documents.
- */
-public interface MutableBits extends Bits {
-  /** 
-   * Sets the bit specified by <code>index</code> to false. 
-   * @param index index, should be non-negative and &lt; {@link #length()}.
-   *        The result of passing negative or out of bounds values is undefined
-   *        by this interface, <b>just don't do it!</b>
-   */
-  public void clear(int index);
+public class TestSimpleTextLiveDocsFormat extends BaseLiveDocsFormatTestCase {
+  private final Codec codec = new SimpleTextCodec();
+
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
 }

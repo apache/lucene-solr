@@ -20,14 +20,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MutableBits;
 
 /**
  * This class handles accounting and applying pending deletes for live segment readers
@@ -67,7 +66,7 @@ class PendingDeletes {
   }
 
 
-  protected MutableBits getMutableBits() throws IOException {
+  protected FixedBitSet getMutableBits() throws IOException {
     // if we pull mutable bits but we haven't been initialized something is completely off.
     // this means we receive deletes without having the bitset that is on-disk ready to be cloned
     assert liveDocsInitialized : "can't delete if liveDocs are not initialized";
@@ -76,17 +75,19 @@ class PendingDeletes {
       // SegmentReader sharing the current liveDocs
       // instance; must now make a private clone so we can
       // change it:
-      LiveDocsFormat liveDocsFormat = info.info.getCodec().liveDocsFormat();
-      MutableBits mutableBits;
-      if (liveDocs == null) {
-        mutableBits = liveDocsFormat.newLiveDocs(info.info.maxDoc());
-      } else {
-        mutableBits = liveDocsFormat.newLiveDocs(liveDocs);
+      FixedBitSet mutableBits = new FixedBitSet(info.info.maxDoc());
+      mutableBits.set(0, info.info.maxDoc());
+      if (liveDocs != null) {
+        for (int i = 0; i < liveDocs.length(); ++i) {
+          if (liveDocs.get(i) == false) {
+            mutableBits.clear(i);
+          }
+        }
       }
       liveDocs = mutableBits;
       liveDocsShared = false;
     }
-    return (MutableBits) liveDocs;
+    return (FixedBitSet) liveDocs;
   }
 
 
@@ -96,7 +97,7 @@ class PendingDeletes {
    */
   boolean delete(int docID) throws IOException {
     assert info.info.maxDoc() > 0;
-    MutableBits mutableBits = getMutableBits();
+    FixedBitSet mutableBits = getMutableBits();
     assert mutableBits != null;
     assert docID >= 0 && docID < mutableBits.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + mutableBits.length() + " seg=" + info.info.name + " maxDoc=" + info.info.maxDoc();
     assert !liveDocsShared;
@@ -202,7 +203,7 @@ class PendingDeletes {
     boolean success = false;
     try {
       Codec codec = info.info.getCodec();
-      codec.liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
+      codec.liveDocsFormat().writeLiveDocs(liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
       success = true;
     } finally {
       if (!success) {

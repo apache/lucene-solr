@@ -24,7 +24,6 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -32,31 +31,6 @@ import org.apache.lucene.util.TestUtil;
  */
 public class AssertingLiveDocsFormat extends LiveDocsFormat {
   private final LiveDocsFormat in = TestUtil.getDefaultCodec().liveDocsFormat();
-
-  @Override
-  public MutableBits newLiveDocs(int size) throws IOException {
-    assert size >= 0;
-    MutableBits raw = in.newLiveDocs(size);
-    assert raw != null;
-    assert raw.length() == size;
-    for (int i = 0; i < raw.length(); i++) {
-      assert raw.get(i);
-    }
-    return new AssertingMutableBits(raw);
-  }
-
-  @Override
-  public MutableBits newLiveDocs(Bits existing) throws IOException {
-    assert existing instanceof AssertingBits;
-    Bits rawExisting = ((AssertingBits)existing).in;
-    MutableBits raw = in.newLiveDocs(rawExisting);
-    assert raw != null;
-    assert raw.length() == rawExisting.length();
-    for (int i = 0; i < raw.length(); i++) {
-      assert rawExisting.get(i) == raw.get(i);
-    }
-    return new AssertingMutableBits(raw);
-  }
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
@@ -67,11 +41,9 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
-    assert bits instanceof AssertingMutableBits;
-    MutableBits raw = (MutableBits) ((AssertingMutableBits)bits).in;
-    check(raw, info.info.maxDoc(), info.getDelCount() + newDelCount);
-    in.writeLiveDocs(raw, dir, info, newDelCount, context);
+  public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
+    check(bits, info.info.maxDoc(), info.getDelCount() + newDelCount);
+    in.writeLiveDocs(bits, dir, info, newDelCount, context);
   }
   
   private void check(Bits bits, int expectedLength, int expectedDeleteCount) {
@@ -120,17 +92,5 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
       return "Asserting(" + in + ")";
     }
   }
-  
-  static class AssertingMutableBits extends AssertingBits implements MutableBits {   
-    AssertingMutableBits(MutableBits in) {
-      super(in);
-    }
 
-    @Override
-    public void clear(int index) {
-      assert index >= 0;
-      assert index < in.length();
-      ((MutableBits)in).clear(index);
-    }
-  }
 }
