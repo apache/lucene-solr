@@ -234,7 +234,6 @@ final class ReadersAndUpdates {
     }
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
-    markAsShared();
     if (liveDocs != null) {
       return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs,
           info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
@@ -263,6 +262,9 @@ final class ReadersAndUpdates {
     return reader;
   }
 
+  /**
+   * Returns a snapshot of the live docs.
+   */
   public synchronized Bits getLiveDocs() {
     return pendingDeletes.getLiveDocs();
   }
@@ -720,8 +722,6 @@ final class ReadersAndUpdates {
       assert pendingDeletes.getLiveDocs() != null;
       reader = createNewReaderWithLatestLiveDocs(reader);
     }
-
-    markAsShared();
     assert verifyDocCounts();
 
     return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
@@ -752,11 +752,6 @@ final class ReadersAndUpdates {
 
   public synchronized boolean isFullyDeleted() throws IOException {
     return pendingDeletes.isFullyDeleted(this::getLatestReader);
-  }
-
-  private final void markAsShared() {
-    assert Thread.holdsLock(this);
-    pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
 
   boolean keepFullyDeletedSegment(MergePolicy mergePolicy) throws IOException {

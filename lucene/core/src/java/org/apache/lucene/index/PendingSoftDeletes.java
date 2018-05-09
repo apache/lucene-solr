@@ -195,13 +195,9 @@ final class PendingSoftDeletes extends PendingDeletes {
     }
   }
 
+  @Override
   Bits getHardLiveDocs() {
-    return hardDeletes.getHardLiveDocs();
+    return hardDeletes.getLiveDocs();
   }
 
-  @Override
-  void liveDocsShared() {
-    super.liveDocsShared();
-    hardDeletes.liveDocsShared();
-  }
 }
