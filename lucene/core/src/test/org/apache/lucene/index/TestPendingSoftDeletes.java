@@ -73,7 +73,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertNull(pendingSoftDeletes.getHardLiveDocs());
     // pass reader again
     Bits liveDocs = pendingSoftDeletes.getLiveDocs();
-    pendingSoftDeletes.liveDocsShared();
     pendingSoftDeletes.onNewReader(segmentReader, segmentInfo);
     assertEquals(1, pendingSoftDeletes.numPendingDeletes());
     assertSame(liveDocs, pendingSoftDeletes.getLiveDocs());
@@ -189,7 +188,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
     assertTrue(deletes.getLiveDocs().get(2));
-    deletes.liveDocsShared();
     Bits liveDocs = deletes.getLiveDocs();
     deletes.onNewReader(segmentReader, segmentInfo);
     // no changes we don't apply updates twice
