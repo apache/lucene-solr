@@ -26,9 +26,9 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MutableBits;
 
 final class PendingSoftDeletes extends PendingDeletes {
 
@@ -50,7 +50,7 @@ final class PendingSoftDeletes extends PendingDeletes {
 
   @Override
   boolean delete(int docID) throws IOException {
-    MutableBits mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
+    FixedBitSet mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
     if (hardDeletes.delete(docID)) {
       if (mutableBits.get(docID)) { // delete it here too!
         mutableBits.clear(docID);
@@ -105,7 +105,7 @@ final class PendingSoftDeletes extends PendingDeletes {
    * @param bits the bit set to apply the deletes to
    * @return the number of bits changed by this function
    */
-  static int applySoftDeletes(DocIdSetIterator iterator, MutableBits bits) throws IOException {
+  static int applySoftDeletes(DocIdSetIterator iterator, FixedBitSet bits) throws IOException {
     assert iterator != null;
     int newDeletes = 0;
     int docID;

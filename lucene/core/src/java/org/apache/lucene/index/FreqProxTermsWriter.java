@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 
 final class FreqProxTermsWriter extends TermsHash {
@@ -62,7 +63,8 @@ final class FreqProxTermsWriter extends TermsHash {
             int doc = postingsEnum.nextDoc();
             if (doc < delDocLimit) {
               if (state.liveDocs == null) {
-                state.liveDocs = state.segmentInfo.getCodec().liveDocsFormat().newLiveDocs(state.segmentInfo.maxDoc());
+                state.liveDocs = new FixedBitSet(state.segmentInfo.maxDoc());
+                state.liveDocs.set(0, state.segmentInfo.maxDoc());
               }
               if (state.liveDocs.get(doc)) {
                 state.delCountOnFlush++;
