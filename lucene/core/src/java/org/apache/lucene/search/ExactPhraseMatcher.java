@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 
-final class ExactPhraseScorer extends Scorer {
+final class ExactPhraseMatcher extends PhraseMatcher {
 
   private static class PostingsAndPosition {
     private final PostingsEnum postings;
@@ -37,71 +37,32 @@ final class ExactPhraseScorer extends Scorer {
     }
   }
 
-  private final DocIdSetIterator conjunction;
   private final PostingsAndPosition[] postings;
 
-  private int freq;
-
-  private final Similarity.SimScorer docScorer;
-  private final boolean needsScores;
-  private float matchCost;
-
-  ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer, boolean needsScores,
-                    float matchCost) throws IOException {
-    super(weight);
-    this.docScorer = docScorer;
-    this.needsScores = needsScores;
-
-    List<DocIdSetIterator> iterators = new ArrayList<>();
+  ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, float matchCost) {
+    super(approximation(postings), matchCost);
     List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
     for(PhraseQuery.PostingsAndFreq posting : postings) {
-      iterators.add(posting.postings);
       postingsAndPositions.add(new PostingsAndPosition(posting.postings, posting.position));
     }
-    conjunction = ConjunctionDISI.intersectIterators(iterators);
-    assert TwoPhaseIterator.unwrap(conjunction) == null;
     this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
-    this.matchCost = matchCost;
+  }
+
+  private static DocIdSetIterator approximation(PhraseQuery.PostingsAndFreq[] postings) {
+    List<DocIdSetIterator> iterators = new ArrayList<>();
+    for (PhraseQuery.PostingsAndFreq posting : postings) {
+      iterators.add(posting.postings);
+    }
+    return ConjunctionDISI.intersectIterators(iterators);
   }
 
   @Override
-  public TwoPhaseIterator twoPhaseIterator() {
-    return new TwoPhaseIterator(conjunction) {
-      @Override
-      public boolean matches() throws IOException {
-        return phraseFreq() > 0;
-      }
-
-      @Override
-      public float matchCost() {
-        return matchCost;
-      }
-    };
-  }
-
-  @Override
-  public DocIdSetIterator iterator() {
-    return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
-  }
-
-  @Override
-  public String toString() {
-    return "ExactPhraseScorer(" + weight + ")";
-  }
-
-  final int freq() {
-    return freq;
-  }
-
-  @Override
-  public int docID() {
-    return conjunction.docID();
-  }
-
-  @Override
-  public float score() throws IOException {
-    return docScorer.score(docID(), freq);
+  float maxFreq() {
+    int minFreq = postings[0].freq;
+    for (int i = 1; i < postings.length; i++) {
+      minFreq = Math.min(minFreq, postings[i].freq);
+    }
+    return minFreq;
   }
 
   /** Advance the given pos enum to the first doc on or after {@code target}.
@@ -119,18 +80,25 @@ final class ExactPhraseScorer extends Scorer {
     return true;
   }
 
-  private int phraseFreq() throws IOException {
-    // reset state
-    final PostingsAndPosition[] postings = this.postings;
+  @Override
+  public void reset() throws IOException {
     for (PostingsAndPosition posting : postings) {
       posting.freq = posting.postings.freq();
-      posting.pos = posting.postings.nextPosition();
-      posting.upTo = 1;
+      posting.pos = -1;
+      posting.upTo = 0;
     }
+  }
 
-    int freq = 0;
+  @Override
+  public boolean nextMatch() throws IOException {
     final PostingsAndPosition lead = postings[0];
-
+    if (lead.upTo < lead.freq) {
+      lead.pos = lead.postings.nextPosition();
+      lead.upTo += 1;
+    }
+    else {
+      return false;
+    }
     advanceHead:
     while (true) {
       final int phrasePos = lead.pos - lead.offset;
@@ -151,20 +119,34 @@ final class ExactPhraseScorer extends Scorer {
           }
         }
       }
-
-      freq += 1;
-      if (needsScores == false) {
-        break;
-      }
-
-      if (lead.upTo == lead.freq) {
-        break;
-      }
-      lead.pos = lead.postings.nextPosition();
-      lead.upTo += 1;
+      return true;
     }
+    return false;
+  }
 
-    return this.freq = freq;
+  @Override
+  float sloppyWeight(Similarity.SimScorer simScorer) {
+    return 1;
+  }
+
+  @Override
+  public int startPosition() {
+    return postings[0].pos;
+  }
+
+  @Override
+  public int endPosition() {
+    return postings[postings.length - 1].pos;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return postings[0].postings.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return postings[postings.length - 1].postings.endOffset();
   }
 
 }

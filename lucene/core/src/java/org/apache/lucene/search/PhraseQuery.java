@@ -37,7 +37,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -350,121 +349,6 @@ public class PhraseQuery extends Query {
     }
   }
 
-  private class PhraseWeight extends Weight {
-    private final Similarity similarity;
-    private final Similarity.SimWeight stats;
-    private final boolean needsScores;
-    private transient TermContext states[];
-
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
-      throws IOException {
-      super(PhraseQuery.this);
-      final int[] positions = PhraseQuery.this.getPositions();
-      if (positions.length < 2) {
-        throw new IllegalStateException("PhraseWeight does not support less than 2 terms, call rewrite first");
-      } else if (positions[0] != 0) {
-        throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
-      }
-      this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity(needsScores);
-      final IndexReaderContext context = searcher.getTopReaderContext();
-      states = new TermContext[terms.length];
-      TermStatistics termStats[] = new TermStatistics[terms.length];
-      for (int i = 0; i < terms.length; i++) {
-        final Term term = terms[i];
-        states[i] = TermContext.build(context, term);
-        termStats[i] = searcher.termStatistics(term, states[i]);
-      }
-      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> queryTerms) {
-      Collections.addAll(queryTerms, terms);
-    }
-
-    @Override
-    public String toString() { return "weight(" + PhraseQuery.this + ")"; }
-
-    @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      assert terms.length > 0;
-      final LeafReader reader = context.reader();
-      PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
-
-      final Terms fieldTerms = reader.terms(field);
-      if (fieldTerms == null) {
-        return null;
-      }
-
-      if (fieldTerms.hasPositions() == false) {
-        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run PhraseQuery (phrase=" + getQuery() + ")");
-      }
-
-      // Reuse single TermsEnum below:
-      final TermsEnum te = fieldTerms.iterator();
-      float totalMatchCost = 0;
-      
-      for (int i = 0; i < terms.length; i++) {
-        final Term t = terms[i];
-        final TermState state = states[i].get(context.ord);
-        if (state == null) { /* term doesnt exist in this segment */
-          assert termNotInReader(reader, t): "no termstate found but term exists in reader";
-          return null;
-        }
-        te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.POSITIONS);
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
-        totalMatchCost += termPositionsCost(te);
-      }
-
-      // sort by increasing docFreq order
-      if (slop == 0) {
-        ArrayUtil.timSort(postingsFreqs);
-      }
-
-      if (slop == 0) {  // optimize exact case
-        return new ExactPhraseScorer(this, postingsFreqs,
-                                      similarity.simScorer(stats, context),
-                                      needsScores, totalMatchCost);
-      } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop,
-                                        similarity.simScorer(stats, context),
-                                        needsScores, totalMatchCost);
-      }
-    }
-
-    @Override
-    public boolean isCacheable(LeafReaderContext ctx) {
-      return true;
-    }
-
-    // only called from assert
-    private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
-      return reader.docFreq(term) == 0;
-    }
-
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
-      if (scorer != null) {
-        int newDoc = scorer.iterator().advance(doc);
-        if (newDoc == doc) {
-          float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SimScorer docScorer = similarity.simScorer(stats, context);
-          Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
-          Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
-          return Explanation.match(
-              scoreExplanation.getValue(),
-              "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
-              scoreExplanation);
-        }
-      }
-      
-      return Explanation.noMatch("no matching term");
-    }
-  }
-
   /** A guess of
    * the average number of simple operations for the initial seek and buffer refill
    * per document for the positions of a term.
@@ -500,10 +384,93 @@ public class PhraseQuery extends Query {
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 
-
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new PhraseWeight(searcher, needsScores, boost);
+    return new PhraseWeight(this, field, searcher, needsScores) {
+
+      private transient TermContext states[];
+
+      @Override
+      protected Similarity.SimWeight getStats(IndexSearcher searcher) throws IOException {
+        final int[] positions = PhraseQuery.this.getPositions();
+        if (positions.length < 2) {
+          throw new IllegalStateException("PhraseWeight does not support less than 2 terms, call rewrite first");
+        } else if (positions[0] != 0) {
+          throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
+        }
+        final IndexReaderContext context = searcher.getTopReaderContext();
+        states = new TermContext[terms.length];
+        TermStatistics termStats[] = new TermStatistics[terms.length];
+        int termUpTo = 0;
+        for (int i = 0; i < terms.length; i++) {
+          final Term term = terms[i];
+          states[i] = TermContext.build(context, term);
+          if (needsScores) {
+            TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+            if (termStatistics != null) {
+              termStats[termUpTo++] = termStatistics;
+            }
+          }
+        }
+        if (termUpTo > 0) {
+          return similarity.computeWeight(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+        } else {
+          return null; // no terms at all, we won't use similarity
+        }
+      }
+
+      @Override
+      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, boolean exposeOffsets) throws IOException {
+        assert terms.length > 0;
+        final LeafReader reader = context.reader();
+        PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
+
+        final Terms fieldTerms = reader.terms(field);
+        if (fieldTerms == null) {
+          return null;
+        }
+
+        if (fieldTerms.hasPositions() == false) {
+          throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run PhraseQuery (phrase=" + getQuery() + ")");
+        }
+
+        // Reuse single TermsEnum below:
+        final TermsEnum te = fieldTerms.iterator();
+        float totalMatchCost = 0;
+
+        for (int i = 0; i < terms.length; i++) {
+          final Term t = terms[i];
+          final TermState state = states[i].get(context.ord);
+          if (state == null) { /* term doesnt exist in this segment */
+            assert termNotInReader(reader, t): "no termstate found but term exists in reader";
+            return null;
+          }
+          te.seekExact(t.bytes(), state);
+          PostingsEnum postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS);
+          postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
+          totalMatchCost += termPositionsCost(te);
+        }
+
+        // sort by increasing docFreq order
+        if (slop == 0) {
+          ArrayUtil.timSort(postingsFreqs);
+          return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
+        }
+        else {
+          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost);
+        }
+      }
+
+      @Override
+      public void extractTerms(Set<Term> queryTerms) {
+        Collections.addAll(queryTerms, terms);
+      }
+    };
+  }
+
+  // only called from assert
+  private static boolean termNotInReader(LeafReader reader, Term term) throws IOException {
+    return reader.docFreq(term) == 0;
   }
 
   /** Prints a user-readable version of this query. */

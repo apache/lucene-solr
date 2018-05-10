@@ -24,96 +24,118 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.FixedBitSet;
 
-final class SloppyPhraseScorer extends Scorer {
+/**
+ * Find all slop-valid position-combinations (matches)
+ * encountered while traversing/hopping the PhrasePositions.
+ * <br> The sloppy frequency contribution of a match depends on the distance:
+ * <br> - highest freq for distance=0 (exact match).
+ * <br> - freq gets lower as distance gets higher.
+ * <br>Example: for query "a b"~2, a document "x a b a y" can be matched twice:
+ * once for "a b" (distance=0), and once for "b a" (distance=2).
+ * <br>Possibly not all valid combinations are encountered, because for efficiency
+ * we always propagate the least PhrasePosition. This allows to base on
+ * PriorityQueue and move forward faster.
+ * As result, for example, document "a b c b a"
+ * would score differently for queries "a b c"~4 and "c b a"~4, although
+ * they really are equivalent.
+ * Similarly, for doc "a b c b a f g", query "c b"~2
+ * would get same score as "g f"~2, although "c b"~2 could be matched twice.
+ * We may want to fix this in the future (currently not, for performance reasons).
+ */
+final class SloppyPhraseMatcher extends PhraseMatcher {
 
-  private final DocIdSetIterator conjunction;
   private final PhrasePositions[] phrasePositions;
 
-  private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
-
-  private final Similarity.SimScorer docScorer;
-  
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
-  
-  private int end; // current largest phrase position  
+
+  private int end; // current largest phrase position
+
+  private int leadPosition;
+  private int leadOffset;
+  private int currentEndPostings;
+  private int advanceEndPostings;
 
   private boolean hasRpts; // flag indicating that there are repetitions (as checked in first candidate doc)
   private boolean checkedRpts; // flag to only check for repetitions in first candidate doc
   private boolean hasMultiTermRpts; //  
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
-  private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
-  
-  private int numMatches;
-  final boolean needsScores;
-  private final float matchCost;
-  
-  SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SimScorer docScorer, boolean needsScores,
-      float matchCost) {
-    super(weight);
-    this.docScorer = docScorer;
-    this.needsScores = needsScores;
+  private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps
+
+  private boolean positioned;
+  private int matchLength;
+
+  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, float matchCost) {
+    super(approximation(postings), matchCost);
     this.slop = slop;
-    this.numPostings = postings==null ? 0 : postings.length;
+    this.numPostings = postings.length;
     pq = new PhraseQueue(postings.length);
-    DocIdSetIterator[] iterators = new DocIdSetIterator[postings.length];
     phrasePositions = new PhrasePositions[postings.length];
     for (int i = 0; i < postings.length; ++i) {
-      iterators[i] = postings[i].postings;
       phrasePositions[i] = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
     }
-    conjunction = ConjunctionDISI.intersectIterators(Arrays.asList(iterators));
-    assert TwoPhaseIterator.unwrap(conjunction) == null;
-    this.matchCost = matchCost;
   }
 
-  /**
-   * Score a candidate doc for all slop-valid position-combinations (matches) 
-   * encountered while traversing/hopping the PhrasePositions.
-   * <br> The score contribution of a match depends on the distance: 
-   * <br> - highest score for distance=0 (exact match).
-   * <br> - score gets lower as distance gets higher.
-   * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice: 
-   * once for "a b" (distance=0), and once for "b a" (distance=2).
-   * <br>Possibly not all valid combinations are encountered, because for efficiency  
-   * we always propagate the least PhrasePosition. This allows to base on 
-   * PriorityQueue and move forward faster. 
-   * As result, for example, document "a b c b a"
-   * would score differently for queries "a b c"~4 and "c b a"~4, although 
-   * they really are equivalent. 
-   * Similarly, for doc "a b c b a f g", query "c b"~2 
-   * would get same score as "g f"~2, although "c b"~2 could be matched twice.
-   * We may want to fix this in the future (currently not, for performance reasons).
-   */
-  private float phraseFreq() throws IOException {
-    if (!initPhrasePositions()) {
-      return 0.0f;
+  private static DocIdSetIterator approximation(PhraseQuery.PostingsAndFreq[] postings) {
+    List<DocIdSetIterator> iterators = new ArrayList<>();
+    for (PhraseQuery.PostingsAndFreq posting : postings) {
+      iterators.add(posting.postings);
     }
-    float freq = 0.0f;
-    numMatches = 0;
+    return ConjunctionDISI.intersectIterators(iterators);
+  }
+
+  @Override
+  float maxFreq() throws IOException {
+    // every term position in each postings list can be at the head of at most
+    // one matching phrase, so the maximum possible phrase freq is the sum of
+    // the freqs of the postings lists.
+    float maxFreq = 0;
+    for (PhrasePositions phrasePosition : phrasePositions) {
+      maxFreq += phrasePosition.postings.freq();
+    }
+    return maxFreq;
+  }
+
+  @Override
+  public void reset() throws IOException {
+    this.positioned = initPhrasePositions();
+    this.matchLength = Integer.MAX_VALUE;
+    this.leadPosition = Integer.MAX_VALUE;
+  }
+
+  @Override
+  float sloppyWeight(Similarity.SimScorer simScorer) {
+    return simScorer.computeSlopFactor(matchLength);
+  }
+
+  @Override
+  public boolean nextMatch() throws IOException {
+    if (!positioned) {
+      return false;
+    }
     PhrasePositions pp = pq.pop();
-    int matchLength = end - pp.position;
+    assert pp != null;  // if the pq is empty, then positioned == false
+    leadPosition = pp.position + pp.offset;
+    leadOffset = pp.postings.startOffset();
+    currentEndPostings = advanceEndPostings;
+    matchLength = end - pp.position;
     int next = pq.top().position; 
     while (advancePP(pp)) {
       if (hasRpts && !advanceRpts(pp)) {
         break; // pps exhausted
       }
-      if (pp.position > next) { // done minimizing current match-length 
-        if (matchLength <= slop) {
-          freq += docScorer.computeSlopFactor(matchLength); // score match
-          numMatches++;
-          if (!needsScores) {
-            return freq;
-          }
-        }      
+      if (pp.position > next) { // done minimizing current match-length
         pq.add(pp);
+        if (matchLength <= slop) {
+          return true;
+        }
         pp = pq.pop();
         next = pq.top().position;
         matchLength = end - pp.position;
@@ -123,12 +145,50 @@ final class SloppyPhraseScorer extends Scorer {
           matchLength = matchLength2;
         }
       }
+      leadPosition = pp.position + pp.offset;
+      leadOffset = pp.postings.startOffset();
+      currentEndPostings = advanceEndPostings;
     }
-    if (matchLength <= slop) {
-      freq += docScorer.computeSlopFactor(matchLength); // score match
-      numMatches++;
-    }    
-    return freq;
+    positioned = false;
+    return matchLength <= slop;
+  }
+
+  @Override
+  public int startPosition() {
+    // when a match is detected, the top postings is advanced until it has moved
+    // beyond its successor, to ensure that the match is of minimal width.  This
+    // means that we need to record the lead position before it is advanced.
+    // However, the priority queue doesn't guarantee that the top postings is in fact the
+    // earliest in the list, so we need to cycle through all terms to check.
+    // this is slow, but Matches is slow anyway...
+    for (PhrasePositions pp : phrasePositions) {
+      leadPosition = Math.min(leadPosition, pp.position + pp.offset);
+    }
+    return leadPosition;
+  }
+
+  @Override
+  public int endPosition() {
+    return phrasePositions[currentEndPostings].position + phrasePositions[currentEndPostings].offset;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    // when a match is detected, the top postings is advanced until it has moved
+    // beyond its successor, to ensure that the match is of minimal width.  This
+    // means that we need to record the lead offset before it is advanced.
+    // However, the priority queue doesn't guarantee that the top postings is in fact the
+    // earliest in the list, so we need to cycle through all terms to check
+    // this is slow, but Matches is slow anyway...
+    for (PhrasePositions pp : phrasePositions) {
+      leadOffset = Math.min(leadOffset, pp.postings.startOffset());
+    }
+    return leadOffset;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return phrasePositions[currentEndPostings].postings.endOffset();
   }
 
   /** advance a PhrasePosition and update 'end', return false if exhausted */
@@ -138,6 +198,12 @@ final class SloppyPhraseScorer extends Scorer {
     }
     if (pp.position > end) {
       end = pp.position;
+      advanceEndPostings = pp.ord;
+    }
+    if (pp.position == end) {
+      if (pp.ord > advanceEndPostings) {
+        advanceEndPostings = pp.ord;
+      }
     }
     return true;
   }
@@ -242,6 +308,12 @@ final class SloppyPhraseScorer extends Scorer {
       pp.firstPosition();
       if (pp.position > end) {
         end = pp.position;
+        advanceEndPostings = pp.ord;
+      }
+      if (pp.position == end) {
+        if (pp.ord > advanceEndPostings) {
+          advanceEndPostings = pp.ord;
+        }
       }
       pq.add(pp);
     }
@@ -271,6 +343,12 @@ final class SloppyPhraseScorer extends Scorer {
     for (PhrasePositions pp : phrasePositions) {  // iterate cyclic list: done once handled max
       if (pp.position > end) {
         end = pp.position;
+        advanceEndPostings = pp.ord;
+      }
+      if (pp.position == end) {
+        if (pp.ord > advanceEndPostings) {
+          advanceEndPostings = pp.ord;
+        }
       }
       pq.add(pp);
     }
@@ -516,72 +594,4 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  int freq() {
-    return numMatches;
-  }
-
-  float sloppyFreq() {
-    return sloppyFreq;
-  }
-  
-//  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
-//    //if (min.doc != ?) return;
-//    ps.println();
-//    ps.println("---- "+title);
-//    ps.println("EXT: "+ext);
-//    PhrasePositions[] t = new PhrasePositions[pq.size()];
-//    if (pq.size()>0) {
-//      t[0] = pq.pop();
-//      ps.println("  " + 0 + "  " + t[0]);
-//      for (int i=1; i<t.length; i++) {
-//        t[i] = pq.pop();
-//        assert t[i-1].position <= t[i].position;
-//        ps.println("  " + i + "  " + t[i]);
-//      }
-//      // add them back
-//      for (int i=t.length-1; i>=0; i--) {
-//        pq.add(t[i]);
-//      }
-//    }
-//  }
-  
-  
-  @Override
-  public int docID() {
-    return conjunction.docID(); 
-  }
-  
-  @Override
-  public float score() throws IOException {
-    return docScorer.score(docID(), sloppyFreq);
-  }
-
-  @Override
-  public String toString() { return "scorer(" + weight + ")"; }
-
-  @Override
-  public TwoPhaseIterator twoPhaseIterator() {
-    return new TwoPhaseIterator(conjunction) {
-      @Override
-      public boolean matches() throws IOException {
-        sloppyFreq = phraseFreq(); // check for phrase
-        return sloppyFreq != 0F;
-      }
-
-      @Override
-      public float matchCost() {
-        return matchCost;
-      }
-
-      @Override
-      public String toString() {
-        return "SloppyPhraseScorer@asTwoPhaseIterator(" + SloppyPhraseScorer.this + ")";
-      }
-    };
-  }
-
-  @Override
-  public DocIdSetIterator iterator() {
-    return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
-  }
 }

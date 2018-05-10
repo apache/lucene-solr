@@ -28,9 +28,11 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
@@ -183,6 +185,23 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     float max;
     int totalHits;
     Scorer scorer;
+
+    Similarity.SimScorer simScorer = new Similarity.SimScorer() {
+      @Override
+      public float score(int doc, float freq) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public float computeSlopFactor(int distance) {
+        return 1f / (1f + distance);
+      }
+
+      @Override
+      public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+        throw new UnsupportedOperationException();
+      }
+    };
     
     @Override
     public void setScorer(Scorer scorer) throws IOException {
@@ -195,10 +214,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     @Override
     public void collect(int doc) throws IOException {
       totalHits++;
-      if (scorer instanceof SloppyPhraseScorer)
-        max = Math.max(max, ((SloppyPhraseScorer)scorer).freq());
-      else
-        max = Math.max(max, ((ExactPhraseScorer)scorer).freq());
+      PhraseScorer ps = (PhraseScorer) scorer;
+      float freq = ps.matcher.sloppyWeight(simScorer);
+      while (ps.matcher.nextMatch()) {
+        freq += ps.matcher.sloppyWeight(simScorer);
+      }
+      max = Math.max(max, freq);
     }
     
     @Override
@@ -207,7 +228,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
   }
   
-  /** checks that no scores or freqs are infinite */
+  /** checks that no scores are infinite */
   private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
     searcher.search(pq, new SimpleCollector() {
       Scorer scorer;
@@ -222,7 +243,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       
       @Override
       public void collect(int doc) throws IOException {
-        assertFalse(Float.isInfinite(((SloppyPhraseScorer)scorer).freq()));
         assertFalse(Float.isInfinite(scorer.score()));
       }
       
