@@ -150,6 +150,9 @@ New Features
   This allows exact hit extraction and will enable implementation of accurate 
   highlighters. (Alan Woodward, Adrien Grand, David Smiley)
 
+* LUCENE-8249: Implement Matches API for phrase queries (Alan Woodward, Adrien 
+  Grand)
+
 * LUCENE-8246: Allow to customize the number of deletes a merge claims. This
   helps merge policies in the soft-delete case to correctly implement retention
   policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
