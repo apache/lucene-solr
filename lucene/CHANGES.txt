@@ -100,6 +100,10 @@ Bug Fixes
 * LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
   refresh on exception (Mike McCandless)
 
+* LUCENE-8305: ComplexPhraseQuery.rewrite now handles an embedded MultiTermQuery
+  that rewrites to a MatchNoDocsQuery instead of throwing an exception.
+  (Bjarke Mortensen, Andy Tran via David Smiley)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
