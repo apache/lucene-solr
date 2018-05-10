@@ -309,7 +309,7 @@ Other Changes
 
 * SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
-* SOLR-12290: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker)
+* SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
 
 ==================  7.3.1 ==================
 
