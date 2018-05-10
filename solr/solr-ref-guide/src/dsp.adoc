@@ -280,7 +280,7 @@ the second vector and sliding it across the first vector. The *dot product* of t
 is calculated at each point as the second vector is slid across the first vector.
 The dot products are collected in a *third vector* which is the *convolution* of the two vectors.
 
-=== Moving Average
+=== Moving Average function
 
 Before looking at an example of convolution its useful to review the `movingAvg` function. The moving average
 function computes a moving average by sliding a window across a vector and computing
