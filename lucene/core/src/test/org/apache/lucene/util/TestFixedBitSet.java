@@ -493,4 +493,36 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     
     assertEquals(bitSet1.cardinality(), andNotCount);
   }
+
+  public void testCopyOf() {
+    Random random = random();
+    int numBits = TestUtil.nextInt(random, 1000, 2000);
+    int count = TestUtil.nextInt(random, 0, numBits - 1);
+    int[] bits = makeIntArray(random, count, 0, numBits - 1);
+    FixedBitSet fixedBitSet = new FixedBitSet(numBits);
+    for (int e : bits) {
+      fixedBitSet.set(e);
+    }
+    FixedBitSet mutableCopy = FixedBitSet.copyOf(fixedBitSet);
+    assertNotSame(mutableCopy, fixedBitSet);
+    assertEquals(mutableCopy, fixedBitSet);
+
+    FixedBitSet mutableCopy1 = FixedBitSet.copyOf(new Bits() {
+
+      @Override
+      public boolean get(int index) {
+        return fixedBitSet.get(index);
+      }
+
+      @Override
+      public int length() {
+        return fixedBitSet.length();
+      }
+    });
+
+    assertNotSame(mutableCopy, mutableCopy1);
+    assertNotSame(fixedBitSet, mutableCopy1);
+    assertEquals(mutableCopy1, mutableCopy);
+    assertEquals(mutableCopy1, fixedBitSet);
+  }
 }

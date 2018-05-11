@@ -542,6 +542,9 @@ final class DefaultIndexingChain extends DocConsumer {
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
+        if (field.numericValue() == null) {
+          throw new IllegalArgumentException("field=\"" + fp.fieldInfo.name + "\": null value not allowed");
+        }
         ((NumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
         break;
 

@@ -31,7 +31,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * 
  * @lucene.internal
  */
-public final class FixedBitSet extends BitSet implements MutableBits, Accountable {
+public final class FixedBitSet extends BitSet implements Bits, Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class);
 
@@ -509,5 +509,24 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     // fold leftmost bits into right and add a constant to prevent
     // empty sets from returning 0, which is too common.
     return (int) ((h>>32) ^ h) + 0x98761234;
+  }
+
+  /**
+   * Make a copy of the given bits.
+   */
+  public static FixedBitSet copyOf(Bits bits) {
+    if (bits instanceof FixedBitSet) {
+      return ((FixedBitSet)bits).clone();
+    } else {
+      int length = bits.length();
+      FixedBitSet bitSet = new FixedBitSet(length);
+      bitSet.set(0, length);
+      for (int i = 0; i < length; ++i) {
+        if (bits.get(i) == false) {
+          bitSet.clear(i);
+        }
+      }
+      return bitSet;
+    }
   }
 }

@@ -1370,6 +1370,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  the update succeeds and this method returns a valid (&gt; 0) sequence
    *  number; else, it returns -1 and the caller must then
    *  either retry the update and resolve the document again.
+   *  If a doc values fields data is <code>null</code> the existing
+   *  value is removed from all documents matching the term. This can be used
+   *  to un-delete a soft-deleted document since this method will apply the
+   *  field update even if the document is marked as deleted.
    *
    *  <b>NOTE</b>: this method can only updates documents
    *  visible to the currently open NRT reader.  If you need
@@ -1393,15 +1397,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                 throw new AssertionError("type: " + update.type + " is not supported");
             }
           });
-          switch (update.type) {
-            case NUMERIC:
-              docValuesFieldUpdates.add(leafDocId, ((NumericDocValuesUpdate) update).value);
-              break;
-            case BINARY:
-              docValuesFieldUpdates.add(leafDocId, ((BinaryDocValuesUpdate) update).value);
-              break;
-            default:
-              throw new AssertionError("type: " + update.type + " is not supported");
+          if (update.hasValue()) {
+            switch (update.type) {
+              case NUMERIC:
+                docValuesFieldUpdates.add(leafDocId, ((NumericDocValuesUpdate) update).getValue());
+                break;
+              case BINARY:
+                docValuesFieldUpdates.add(leafDocId, ((BinaryDocValuesUpdate) update).getValue());
+                break;
+              default:
+                throw new AssertionError("type: " + update.type + " is not supported");
+            }
+          } else {
+            docValuesFieldUpdates.reset(leafDocId);
           }
         }
         for (DocValuesFieldUpdates updates : fieldUpdatesMap.values()) {
@@ -1726,7 +1734,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * Updates documents' DocValues fields to the given values. Each field update
    * is applied to the set of documents that are associated with the
    * {@link Term} to the same value. All updates are atomically applied and
-   * flushed together.
+   * flushed together. If a doc values fields data is <code>null</code> the existing
+   * value is removed from all documents matching the term.
+   *
    * 
    * @param updates
    *          the updates to apply
@@ -1772,9 +1782,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (config.getIndexSortFields().contains(f.name())) {
         throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + f.name() + ", sort=" + config.getIndexSort());
       }
+
       switch (dvType) {
         case NUMERIC:
-          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue());
+          Long value = (Long)f.numericValue();
+          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), value);
           break;
         case BINARY:
           dvUpdates[i] = new BinaryDocValuesUpdate(term, f.name(), f.binaryValue());
@@ -3740,8 +3752,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           while ((doc = it.nextDoc()) != NO_MORE_DOCS) {
             int mappedDoc = segDocMap.get(segLeafDocMap.get(doc));
             if (mappedDoc != -1) {
-              // not deleted
-              mappedUpdates.add(mappedDoc, it);
+              if (it.hasValue()) {
+                // not deleted
+                mappedUpdates.add(mappedDoc, it);
+              } else {
+                mappedUpdates.reset(mappedDoc);
+              }
               anyDVUpdates = true;
             }
           }

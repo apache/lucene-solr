@@ -95,6 +95,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       "w1 w3 w2 w3 zz",
       "w1 xx w2 yy w4",
       "w1 w2 w1 w4 w2 w3",
+      "a phrase sentence with many phrase sentence iterations of a phrase sentence",
       "nothing matches this document"
   };
 
@@ -122,10 +123,10 @@ public class TestMatchesIterator extends LuceneTestCase {
     int pos = 1;
     while (it.next()) {
       //System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
-      assertEquals(expected[pos], it.startPosition());
-      assertEquals(expected[pos + 1], it.endPosition());
-      assertEquals(expected[pos + 2], it.startOffset());
-      assertEquals(expected[pos + 3], it.endOffset());
+      assertEquals("Wrong start position", expected[pos], it.startPosition());
+      assertEquals("Wrong end position", expected[pos + 1], it.endPosition());
+      assertEquals("Wrong start offset", expected[pos + 2], it.startOffset());
+      assertEquals("Wrong end offset", expected[pos + 3], it.endOffset());
       pos += 4;
     }
     assertEquals(expected.length, pos);
@@ -386,6 +387,69 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertEquals(2, fields.size());
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));
+  }
+
+  //  0         1         2         3         4         5         6         7
+  // "a phrase sentence with many phrase sentence iterations of a phrase sentence",
+
+  public void testSloppyPhraseQuery() throws IOException {
+    PhraseQuery pq = new PhraseQuery(4, FIELD_WITH_OFFSETS, "a", "sentence");
+    checkMatches(pq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 0, 2, 0, 17, 6, 9, 35, 59, 9, 11, 58, 75 }
+    });
+  }
+
+  public void testExactPhraseQuery() throws IOException {
+    PhraseQuery pq = new PhraseQuery(FIELD_WITH_OFFSETS, "phrase", "sentence");
+    checkMatches(pq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 1, 2, 2, 17, 5, 6, 28, 43, 10, 11, 60, 75 }
+    });
+
+    PhraseQuery pq2 = new PhraseQuery.Builder()
+        .add(new Term(FIELD_WITH_OFFSETS, "a"))
+        .add(new Term(FIELD_WITH_OFFSETS, "sentence"), 2)
+        .build();
+    checkMatches(pq2, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 0, 2, 0, 17, 9, 11, 58, 75 }
+    });
+  }
+
+  //  0         1         2         3         4         5         6         7
+  // "a phrase sentence with many phrase sentence iterations of a phrase sentence",
+
+  public void testSloppyMultiPhraseQuery() throws IOException {
+    MultiPhraseQuery mpq = new MultiPhraseQuery.Builder()
+        .add(new Term(FIELD_WITH_OFFSETS, "phrase"))
+        .add(new Term[]{ new Term(FIELD_WITH_OFFSETS, "sentence"), new Term(FIELD_WITH_OFFSETS, "iterations") })
+        .setSlop(4)
+        .build();
+    checkMatches(mpq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 1, 2, 2, 17, 5, 7, 28, 54, 5, 7, 28, 54, 10, 11, 60, 75 }
+    });
+  }
+
+  public void testExactMultiPhraseQuery() throws IOException {
+    MultiPhraseQuery mpq = new MultiPhraseQuery.Builder()
+        .add(new Term(FIELD_WITH_OFFSETS, "sentence"))
+        .add(new Term[]{ new Term(FIELD_WITH_OFFSETS, "with"), new Term(FIELD_WITH_OFFSETS, "iterations") })
+        .build();
+    checkMatches(mpq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 2, 3, 9, 22, 6, 7, 35, 54 }
+    });
+
+    MultiPhraseQuery mpq2 = new MultiPhraseQuery.Builder()
+        .add(new Term[]{ new Term(FIELD_WITH_OFFSETS, "a"), new Term(FIELD_WITH_OFFSETS, "many")})
+        .add(new Term(FIELD_WITH_OFFSETS, "phrase"))
+        .build();
+    checkMatches(mpq2, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 0, 1, 0, 8, 4, 5, 23, 34, 9, 10, 58, 66 }
+    });
   }
 
 }

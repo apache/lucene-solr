@@ -36,6 +36,9 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -456,11 +459,12 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     ReentrantLock[] locks = new ReentrantLock[25 + random().nextInt(50)];
-    int[] values = new int[locks.length];
+    Long[] values = new Long[locks.length];
+
     for (int i = 0; i < locks.length; i++) {
       locks[i] = new ReentrantLock();
       Document doc = new Document();
-      values[i] = random().nextInt();
+      values[i] = random().nextLong();
       doc.add(new StringField("id", Integer.toString(i), Store.NO));
       doc.add(new NumericDocValuesField("value", values[i]));
       writer.addDocument(doc);
@@ -476,7 +480,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
             int docId = random().nextInt(locks.length);
             locks[docId].lock();
             try {
-              int value = random().nextInt();
+              Long value = rarely() ? null : random().nextLong(); // sometimes reset it
               if (random().nextBoolean()) {
                 writer.updateDocValues(new Term("id", docId + ""), new NumericDocValuesField("value", value));
               } else {
@@ -488,7 +492,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
             } finally {
               locks[docId].unlock();
             }
-
             if (rarely()) {
               writer.flush();
             }
@@ -508,7 +511,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       for (int i = 0; i < locks.length; i++) {
         locks[i].lock();
         try {
-          int value = values[i];
+          Long value = values[i];
           TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(new Term("id", "" + i)), 10);
           assertEquals(topDocs.totalHits, 1);
           int docID = topDocs.scoreDocs[0].doc;
@@ -517,12 +520,15 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
           LeafReader leafReader = leaves.get(subIndex).reader();
           docID -= leaves.get(subIndex).docBase;
           NumericDocValues numericDocValues = leafReader.getNumericDocValues("value");
-          assertEquals(docID, numericDocValues.advance(docID));
-          assertEquals(numericDocValues.longValue(), value);
+          if (value == null) {
+            assertFalse("docID: " + docID, numericDocValues.advanceExact(docID));
+          } else {
+            assertTrue("docID: " + docID, numericDocValues.advanceExact(docID));
+            assertEquals(numericDocValues.longValue(), value.longValue());
+          }
         } finally {
           locks[i].unlock();
         }
-
       }
     }
 
@@ -540,5 +546,99 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       }
     } while (seqId == -1);
   }
+
+  public void testResetValue() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Store.NO));
+    doc.add(new NumericDocValuesField("val", 5));
+    doc.add(new BinaryDocValuesField("val-bin", new BytesRef(new byte[] {(byte)5})));
+    writer.addDocument(doc);
+
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    try(DirectoryReader reader = writer.getReader()) {
+      assertEquals(1, reader.leaves().size());
+      LeafReader r = reader.leaves().get(0).reader();
+      NumericDocValues ndv = r.getNumericDocValues("val");
+      assertEquals(0, ndv.nextDoc());
+      assertEquals(5, ndv.longValue());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, ndv.nextDoc());
+
+      BinaryDocValues bdv = r.getBinaryDocValues("val-bin");
+      assertEquals(0, bdv.nextDoc());
+      assertEquals(new BytesRef(new byte[]{(byte) 5}), bdv.binaryValue());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, bdv.nextDoc());
+    }
+
+    writer.updateDocValues(new Term("id", "0"), new BinaryDocValuesField("val-bin", null));
+    try(DirectoryReader reader = writer.getReader()) {
+      assertEquals(1, reader.leaves().size());
+      LeafReader r = reader.leaves().get(0).reader();
+      NumericDocValues ndv = r.getNumericDocValues("val");
+      assertEquals(0, ndv.nextDoc());
+      assertEquals(5, ndv.longValue());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, ndv.nextDoc());
+
+      BinaryDocValues bdv = r.getBinaryDocValues("val-bin");
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, bdv.nextDoc());
+    }
+    IOUtils.close(writer, dir);
+  }
+
+  public void testResetValueMultipleDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    int numDocs = 10 + random().nextInt(50);
+    int currentSeqId = 0;
+    int[] seqId = new int[] {-1, -1, -1, -1, -1};
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int id = random().nextInt(5);
+      seqId[id] = currentSeqId;
+      doc.add(new StringField("id",  "" + id, Store.YES));
+      doc.add(new NumericDocValuesField("seqID", currentSeqId++));
+      doc.add(new NumericDocValuesField("is_live", 1));
+      if (i > 0) {
+        writer.updateDocValues(new Term("id", "" + id), new NumericDocValuesField("is_live", null));
+      }
+      writer.addDocument(doc);
+      if (random().nextBoolean()) {
+        writer.flush();
+      }
+    }
+
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    int numHits = 0; // check if every doc has been selected at least once
+    for (int i : seqId) {
+      if (i > -1) {
+        numHits++;
+      }
+    }
+    try(DirectoryReader reader = writer.getReader()) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+
+      TopDocs is_live = searcher.search(new DocValuesFieldExistsQuery("is_live"), 5);
+      assertEquals(numHits, is_live.totalHits);
+      for (ScoreDoc doc : is_live.scoreDocs) {
+        int id = Integer.parseInt(reader.document(doc.doc).get("id"));
+        int i = ReaderUtil.subIndex(doc.doc, reader.leaves());
+        assertTrue(i >= 0);
+        LeafReaderContext leafReaderContext = reader.leaves().get(i);
+        NumericDocValues seqID = leafReaderContext.reader().getNumericDocValues("seqID");
+        assertNotNull(seqID);
+        assertTrue(seqID.advanceExact(doc.doc - leafReaderContext.docBase));
+        assertEquals(seqId[id], seqID.longValue());
+      }
+    }
+    IOUtils.close(writer, dir);
+  }
+  
 }
 

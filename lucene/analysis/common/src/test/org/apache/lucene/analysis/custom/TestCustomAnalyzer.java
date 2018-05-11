@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
+import org.apache.lucene.analysis.reverse.ReverseStringFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
@@ -498,6 +499,49 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
         .addCharFilter(MappingCharFilterFactory.class, new HashMap<>(Collections.singletonMap("mapping", "org/apache/lucene/analysis/custom/mapping2.txt")))
         .build();
     assertEquals(new BytesRef("e f c"), analyzer.normalize("dummy", "a b c"));
+  }
+
+  public void testConditions() throws IOException {
+    CustomAnalyzer analyzer = CustomAnalyzer.builder()
+        .withTokenizer("whitespace")
+        .addTokenFilter("lowercase")
+        .whenTerm(t -> t.toString().contains("o"))
+          .addTokenFilter("uppercase")
+          .addTokenFilter(ReverseStringFilterFactory.class)
+        .endwhen()
+        .addTokenFilter("asciifolding")
+        .build();
+
+    assertAnalyzesTo(analyzer, "Héllo world whaT's hãppening",
+        new String[]{ "OLLEH", "DLROW", "what's", "happening" });
+  }
+
+  public void testConditionsWithResourceLoader() throws IOException {
+    CustomAnalyzer analyzer = CustomAnalyzer.builder()
+        .withTokenizer("whitespace")
+        .addTokenFilter("lowercase")
+        .when("termexclusion", "protected", "org/apache/lucene/analysis/custom/teststop.txt")
+          .addTokenFilter("reversestring")
+        .endwhen()
+        .build();
+
+    assertAnalyzesTo(analyzer, "FOO BAR BAZ",
+        new String[]{ "foo", "bar", "zab" });
+  }
+
+  public void testConditionsWithWrappedResourceLoader() throws IOException {
+    CustomAnalyzer analyzer = CustomAnalyzer.builder()
+        .withTokenizer("whitespace")
+        .addTokenFilter("lowercase")
+        .whenTerm(t -> t.toString().contains("o") == false)
+          .addTokenFilter("stop",
+            "ignoreCase", "true",
+            "words", "org/apache/lucene/analysis/custom/teststop.txt",
+            "format", "wordset")
+        .endwhen()
+        .build();
+
+    assertAnalyzesTo(analyzer, "foo bar baz", new String[]{ "foo", "baz" });
   }
 
 }

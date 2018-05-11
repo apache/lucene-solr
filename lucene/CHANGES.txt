@@ -112,6 +112,9 @@ API Changes
 * LUCENE-8248: MergePolicyWrapper is renamed to FilterMergePolicy and now
   also overrides getMaxCFSSegmentSizeMB (Mike Sokolov via Mike McCandless)
 
+* LUCENE-8303: LiveDocsFormat is now only responsible for (de)serialization of
+  live docs. (Adrien Grand)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together
@@ -147,6 +150,9 @@ New Features
   This allows exact hit extraction and will enable implementation of accurate 
   highlighters. (Alan Woodward, Adrien Grand, David Smiley)
 
+* LUCENE-8249: Implement Matches API for phrase queries (Alan Woodward, Adrien 
+  Grand)
+
 * LUCENE-8246: Allow to customize the number of deletes a merge claims. This
   helps merge policies in the soft-delete case to correctly implement retention
   policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
@@ -163,6 +169,18 @@ New Features
   containing the term. With tryUpdateDocValues users can update doc-values 
   fields for individual documents. This allows for instance to soft-delete
   individual documents. (Simon Willnauer)
+
+* LUCENE-8298: Allow DocValues updates to reset a value. Passing a DV field with a null
+  value to IW#updateDocValues or IW#tryUpdateDocValues will now remove the value from the 
+  provided document. This allows to undelete a soft-deleted document unless it's been claimed
+  by a merge. (Simon Willnauer) 
+
+* LUCENE-8273: ConditionalTokenFilter allows analysis chains to skip particular token
+  filters based on the attributes of the current token. This generalises the keyword
+  token logic currently used for stemmers and WDF.  It is integrated into 
+  CustomAnalyzer by using the `when` and `whenTerm` builder methods, and a new
+  TermExclusionConditionalFilter is added as an example.  (Alan Woodward,
+  Robert Muir, David Smiley, Steve Rowe, Mike Sokolov)
 
 Bug Fixes
 
@@ -190,7 +208,13 @@ Bug Fixes
 * LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
   refresh on exception (Mike McCandless)
 
+* LUCENE-8305: ComplexPhraseQuery.rewrite now handles an embedded MultiTermQuery
+  that rewrites to a MatchNoDocsQuery instead of throwing an exception.
+  (Bjarke Mortensen, Andy Tran via David Smiley)
+
 Other
+
+* LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
 
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
