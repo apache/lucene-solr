@@ -77,6 +77,13 @@ New Features
   provided document. This allows to undelete a soft-deleted document unless it's been claimed
   by a merge. (Simon Willnauer) 
 
+* LUCENE-8273: ConditionalTokenFilter allows analysis chains to skip particular token
+  filters based on the attributes of the current token. This generalises the keyword
+  token logic currently used for stemmers and WDF.  It is integrated into 
+  CustomAnalyzer by using the `when` and `whenTerm` builder methods, and a new
+  TermExclusionConditionalFilter is added as an example.  (Alan Woodward,
+  Robert Muir, David Smiley, Steve Rowe, Mike Sokolov)
+
 Bug Fixes
 
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon
