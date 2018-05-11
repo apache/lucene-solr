@@ -64,14 +64,15 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
 
     @Override
     public void end() throws IOException {
-      // clearing attributes etc is done by the parent stream,
-      // so must be avoided here
+      endCalled = true;
+      ConditionalTokenFilter.this.end();
     }
   }
 
   private final TokenStream delegate;
   private TokenState state = TokenState.READING;
   private boolean lastTokenFiltered;
+  private boolean endCalled;
 
   /**
    * Create a new BypassingTokenFilter
@@ -94,12 +95,13 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     this.delegate.reset();
     this.state = TokenState.READING;
     this.lastTokenFiltered = false;
+    this.endCalled = false;
   }
 
   @Override
   public void end() throws IOException {
     super.end();
-    if (lastTokenFiltered) {
+    if (endCalled == false && lastTokenFiltered) {
       this.delegate.end();
     }
   }
