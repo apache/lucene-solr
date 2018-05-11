@@ -241,7 +241,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           var memTotal = s.system.totalPhysicalMemorySize;
           var memFree = s.system.freePhysicalMemorySize;
           var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
-          nodes[node]['memUsedPct'] = memPercentage + "%";
+          nodes[node]['memUsedPct'] = memPercentage;
           nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
           nodes[node]['memTotal'] = bytesToSize(memTotal);
           nodes[node]['memFree'] = bytesToSize(memFree);
@@ -251,7 +251,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           var heapFree = s.jvm.memory.raw.free;
           var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
           nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
-          nodes[node]['heapUsedPct'] = heapPercentage + "%";
+          nodes[node]['heapUsedPct'] = heapPercentage;
           nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
           nodes[node]['heapTotal'] = bytesToSize(heapTotal);
           nodes[node]['heapFree'] = bytesToSize(heapFree);
@@ -262,7 +262,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
           nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad) + "%";
+          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
           nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
           nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
@@ -282,7 +282,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
               var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
               var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
-              nodes[node]['diskUsedPct'] = diskPercentage + "%";
+              nodes[node]['diskUsedPct'] = diskPercentage;
               nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
               nodes[node]['diskTotal'] = bytesToSize(diskTotal);
               nodes[node]['diskFree'] = bytesToSize(diskFree);
@@ -315,6 +315,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   numDocs = (typeof numDocs != 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
                   core['numDocsHuman'] = numDocsHuman(numDocs);
+                  core['avgSizePerDoc'] = bytesToSize(numDocs == 0 ? 0 : size / numDocs);
                   var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
                   deletedDocs = (typeof deletedDocs != 'undefined') ? deletedDocs : 0;
                   core['deletedDocs'] = deletedDocs;

@@ -92,7 +92,7 @@ limitations under the License.
               <th>Disk usage</th>
               <th>Requests</th>
               <th>Collections</th>
-              <th>Cores</th>
+              <th>Replicas</th>
           </tr>
         </thead>
         <tbody>
@@ -108,14 +108,17 @@ limitations under the License.
                 <div class="host-spec" ng-show="showDetails[n.host]">
                   {{n.system.system.name}} {{n.system.system.version}}, {{n.system.system.availableProcessors}}cpu<br/>
                   Uptime: {{n.uptime}}<br/>
-                  RAM: {{n.memTotal}}<br/>
-                  (used: {{n.memUsed}} free: {{n.memFree}})<br/> 
+                  <span title="Used: {{n.memUsed}} - includes OS file-cache, and it is normal for it to approach 100%">Memory: {{n.memTotal}}</span><br/> 
                   File descriptors: {{n.openFileDescriptorCount}}/{{n.maxFileDescriptorCount}}<br/>
+                  Disk: <span class="{{n.diskUsedPctStyle}}" title="Nodes may use other disks too">{{n.diskTotal}} used: {{n.diskUsedPct}}%</span><br/>
                   Load: {{n.loadAvg}}
                 </div>
               </td>
               <td ng-click="toggleDetails(key)"><div class="node-name"><a href="{{n.base_url}}">{{key.replace(n.host+':', '')}}</a></div>
                 Uptime: {{n.jvmUptime}}<br/>
+                <div class="node-spec" ng-show="!showDetails[key]">
+                  <a>show details...</a>
+                </div>
                 <div class="node-spec" ng-show="showDetails[key]">
                   Java <span title="{{n.system.jvm.jre.vendor}}">{{n.system.jvm.jre.version}}</span><br/>
                   Solr {{n.system.lucene['solr-impl-version'].split(" ")[0]}}<br>
@@ -123,27 +126,21 @@ limitations under the License.
               </td>
               <td ng-click="toggleDetails(key)">
                 <div class="node-cpu">
-                  <span class="{{n.cpuPctStyle}}">{{n.cpuPct}}</span>
+                  <span class="{{n.cpuPctStyle}}">{{n.cpuPct}}%</span>
                 </div></td>
               <td ng-click="toggleDetails(key)">
-                <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}">
-                  <span class="{{n.heapUsedPctStyle}}">{{n.heapUsedPct}}</span>
-                </div>
-                <div class="node-spec">
-                  <span ng-show="showDetails[key]">Used: </span>{{n.heapUsed}}
+                <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}%">
+                  <span class="{{n.heapUsedPctStyle}}">{{n.heapUsedPct}}%</span>
                 </div>
                 <div class="node-spec" ng-show="showDetails[key]">
-                  Total: {{n.heapTotal}}<br/>
-                  Free: {{n.heapFree}}
+                  Max: {{n.heapTotal}}<br/>
+                  Used: {{n.heapUsed}}
                 </div>
               </td>
-              <td ng-click="toggleDetails(key)">
-                <div class="scroll-height-250">
-                  <div class="node-disk" title="total: {{n.diskTotal}} free: {{n.diskFree}}">
-                    <span class="{{n.diskUsedPctStyle}}">{{n.diskUsedPct}}</span>
-                  </div>
-                  <div class="node-spec">
-                    <span title="Total size of all indices"><span ng-show="showDetails[key]">Total: </span>{{n.size}}</span>
+              <td class="scroll-height-250" ng-click="toggleDetails(key)">
+                <div>
+                  <div class="node-disk" title="Available disk: {{n.diskTotal}} free: {{n.diskFree}} used by this node: {{n.size}}">
+                    {{n.size}}
                   </div>
                   <div class="node-spec" ng-show="showDetails[key]">
                     Total #docs: {{n.numDocs}}<br/>
@@ -162,18 +159,17 @@ limitations under the License.
                 </div>
                 <div class="more" ng-show="n.collections.length > 2 && !showDetails[key]">({{n.collections.length - 2}} more...)</div>
               </td>
-              <td class="min-width-150" ng-click="toggleDetails(key)">
-                <div class="scroll-height-250">
+              <td class="scroll-height-250" ng-click="toggleDetails(key)">
                   <div ng-show="!n.cores">(none)</div>
                   <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
                     <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/~collections/' + core.collection}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)
                     <ul class="core-details" ng-show="showDetails[key]">
                       <li>deleted: {{core.deletedDocsHuman}}</li>
                       <li>warmupTime: {{core.warmupTime}}</li>
+                      <li ng-show="core.numDocs > 0">avg size/doc: {{core.avgSizePerDoc}}</li>
                     </ul>
                   </div>
                   <div class="more" ng-show="n.cores.length > 2 && !showDetails[key]">({{n.cores.length - 2}} more...)</div>
-                </div>
               </td>
           </tr>
         </tbody>

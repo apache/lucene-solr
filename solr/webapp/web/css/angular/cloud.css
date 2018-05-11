@@ -486,7 +486,8 @@ limitations under the License.
 }
 
 #content #cloud #nodes-content .host-spec,
-#content #cloud #nodes-content .node-spec
+#content #cloud #nodes-content .node-spec,
+#content #cloud #nodes-content .node-spec a
 {
   font-style: italic;
 }
@@ -501,7 +502,7 @@ limitations under the License.
 #content #cloud #nodes-content .node-disk
 {
   font-weight: bolder;
-  font-size: 25px;
+  font-size: 20px;
 }
 
 #content #cloud #nodes-content .pct-normal
@@ -596,7 +597,7 @@ limitations under the License.
   max-height: 250px;
   overflow-scrolling: auto;
   overflow: auto;
-  overflow-y: scroll;
+  /*overflow-y: auto;*/
 }
 
 #content #nodes-content .min-width-150
