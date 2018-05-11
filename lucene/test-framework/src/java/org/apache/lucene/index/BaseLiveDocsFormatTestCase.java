@@ -73,7 +73,7 @@ public abstract class BaseLiveDocsFormatTestCase extends LuceneTestCase {
     testSerialization(maxDoc, 1, true);
   }
 
-  @Nightly
+  @Monster("Uses lots of memory")
   public void testOverflow() throws IOException {
     testSerialization(IndexWriter.MAX_DOCS, IndexWriter.MAX_DOCS - 7, false);
   }
