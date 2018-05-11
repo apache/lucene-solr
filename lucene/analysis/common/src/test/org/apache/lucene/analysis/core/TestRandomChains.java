@@ -93,6 +93,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -107,6 +108,7 @@ import org.tartarus.snowball.SnowballProgram;
 import org.xml.sax.InputSource;
 
 /** tests random analysis chains */
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8273")
 public class TestRandomChains extends BaseTokenStreamTestCase {
 
   static List<Constructor<? extends Tokenizer>> tokenizers;
