@@ -191,6 +191,9 @@ Bug Fixes
 * SOLR-12170: JSON Facet API: Terms facet on a date field sometimes failed with an exception complaining
   about "Invalid Date String". (yonik)
 
+* SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
+  (Mikhail Khludnev) 
+
 Optimizations
 ----------------------
 
