@@ -207,6 +207,8 @@ Optimizations
 * SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
   (Jeff Miller, David Smiley)
 
+* SOLR-12333: Removed redundant lines for handling lists in JSON reponse writers. (David Smiley via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
