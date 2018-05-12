@@ -519,14 +519,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
-  private static String CLOSE_RESPONSE_STREAM_MSG = "Attempted close of response output stream - in general you should not do this, "
+  private static String CLOSE_STREAM_MSG = "Attempted close of http request or response stream - in general you should not do this, "
       + "you may spoil connection reuse and possibly disrupt a client. If you must close without actually needing to close, "
-      + "use a CloseShield*Stream. Closing or flushing the stream commits the response and prevents us from modifying it and "
-      + "closing the stream prevents us from gauranteeing ourselves that streams are fully read for proper connection reuse.";
-
-  private static String CLOSE_REQUEST_STREAM_MSG = "We should not normally close the request input stream - we prefer to let the"
-      + " container manage the lifecycle of these streams and we prefer streams to remain open so we can use our own code to "
-      + "ensure streams are fully read for connection reuse.";
+      + "use a CloseShield*Stream. Closing or flushing the response stream commits the response and prevents us from modifying it. "
+      + "Closing the request stream prevents us from gauranteeing ourselves that streams are fully read for proper connection reuse."
+      + "Let the container manage the lifecycle of these streams when possible.";
  
   /**
    * Wrap the request's input stream with a close shield. If this is a
@@ -551,7 +548,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
               assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_REQUEST_STREAM_MSG;
+                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
@@ -587,7 +584,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               // place
               assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
                   "org\\.apache\\.(?:solr|lucene).*") ? false
-                      : true : CLOSE_RESPONSE_STREAM_MSG;
+                      : true : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };
