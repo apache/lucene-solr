@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -40,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -2641,7 +2643,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(r, r2, w, dir);
   }
 
-  public void testWithPendingDeletions() throws Exception {
+  public void testPendingDeleteDVGeneration() throws IOException {
     // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);
 
@@ -2652,6 +2654,115 @@ public class TestIndexWriter extends LuceneTestCase {
     Path root = new FilterPath(path, fs);
 
     // MMapDirectory doesn't work because it closes its file handles after mapping!
+    List<Closeable> toClose = new ArrayList<>();
+    try (FSDirectory dir = new SimpleFSDirectory(root);
+         Closeable closeable = () -> IOUtils.close(toClose)) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
+          .setUseCompoundFile(false)
+          .setMaxBufferedDocs(2)
+          .setRAMBufferSizeMB(-1);
+      IndexWriter w = new IndexWriter(dir, iwc);
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 1));
+      w.addDocument(d);
+      d = new Document();
+      d.add(new StringField("id", "2", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 2));
+      w.addDocument(d);
+      w.flush();
+      d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 1));
+      w.updateDocument(new Term("id", "1"), d);
+      w.commit();
+      Set<String> files = new HashSet<>(Arrays.asList(dir.listAll()));
+      int numIters = 10 + random().nextInt(50);
+      for (int i = 0; i < numIters; i++) {
+        if (random().nextBoolean()) {
+          d = new Document();
+          d.add(new StringField("id", "1", Field.Store.YES));
+          d.add(new NumericDocValuesField("id", 1));
+          w.updateDocument(new Term("id", "1"), d);
+        } else if (random().nextBoolean()) {
+          w.deleteDocuments(new Term("id", "2"));
+        } else {
+          w.updateNumericDocValue(new Term("id", "1"), "id", 2);
+        }
+        w.prepareCommit();
+        List<String> newFiles = new ArrayList<>(Arrays.asList(dir.listAll()));
+        newFiles.removeAll(files);
+        String randomFile = RandomPicks.randomFrom(random(), newFiles);
+        toClose.add(dir.openInput(randomFile, IOContext.DEFAULT));
+        w.rollback();
+        iwc = new IndexWriterConfig(new MockAnalyzer(random()))
+            .setUseCompoundFile(false)
+            .setMaxBufferedDocs(2)
+            .setRAMBufferSizeMB(-1);
+        w = new IndexWriter(dir, iwc);
+        expectThrows(NoSuchFileException.class, () -> {
+          dir.deleteFile(randomFile);
+        });
+      }
+      w.close();
+    }
+
+  }
+
+  public void testWithPendingDeletions() throws Exception {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    IndexCommit indexCommit;
+    DirectoryReader reader;
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
+    try (FSDirectory dir = new SimpleFSDirectory(root)) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+      IndexWriter w = new IndexWriter(dir, iwc);
+      w.commit();
+      reader = w.getReader();
+      // we pull this commit to open it again later to check that we fail if a futur file delete is pending
+      indexCommit = reader.getIndexCommit();
+      w.close();
+      w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+      w.addDocument(new Document());
+      w.close();
+      IndexInput in = dir.openInput("segments_2", IOContext.DEFAULT);
+      dir.deleteFile("segments_2");
+      assertTrue(dir.getPendingDeletions().size() > 0);
+
+      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      expectThrows(NoSuchFileException.class, () -> {
+        dir.deleteFile("segments_2");
+      });
+
+      try (IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexCommit(indexCommit))) {
+        writer.addDocument(new Document());
+        writer.commit();
+        assertEquals(1, writer.maxDoc());
+        // now check that we moved to 3
+        dir.openInput("segments_3", IOContext.READ).close();;
+      }
+      reader.close();
+      in.close();
+    }
+  }
+
+  public void testPendingDeletesAlreadyWrittenFiles() throws IOException {
+    Path path = createTempDir();
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    DirectoryReader reader;
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
     try (FSDirectory dir = new SimpleFSDirectory(root)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter w = new IndexWriter(dir, iwc);
@@ -2659,18 +2770,14 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexInput in = dir.openInput("segments_1", IOContext.DEFAULT);
       w.addDocument(new Document());
       w.close();
-      assertTrue(dir.checkPendingDeletions());
+
+      assertTrue(dir.getPendingDeletions().size() > 0);
 
       // make sure we get NFSF if we try to delete and already-pending-delete file:
       expectThrows(NoSuchFileException.class, () -> {
         dir.deleteFile("segments_1");
       });
-
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-      });
-      assertTrue(expected.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
-
+      new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))).close();
       in.close();
     }
   }

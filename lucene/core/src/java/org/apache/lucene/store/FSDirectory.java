@@ -339,12 +339,6 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
   }
 
-  @Override
-  public boolean checkPendingDeletions() throws IOException {
-    deletePendingFiles();
-    return pendingDeletes.isEmpty() == false;
-  }
-
   /** Try to delete any pending files that we had previously tried to delete but failed
    *  because we are on Windows and the files were still held open. */
   public synchronized void deletePendingFiles() throws IOException {
@@ -424,6 +418,16 @@ public abstract class FSDirectory extends BaseDirectory {
           }
         }
       }, CHUNK_SIZE);
+    }
+  }
+
+  @Override
+  public synchronized Set<String> getPendingDeletions() throws IOException {
+    deletePendingFiles();
+    if (pendingDeletes.isEmpty()) {
+      return Collections.emptySet();
+    } else {
+      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
     }
   }
 }

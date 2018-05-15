@@ -22,6 +22,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
+import java.util.Collections;
+import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
 
@@ -172,10 +174,12 @@ public abstract class Directory implements Closeable {
    */
   protected void ensureOpen() throws AlreadyClosedException {}
 
-  /** Tries to delete any pending deleted files, and returns true if
-   *  there are still files that could not be deleted.
-   *  This method is optional and returns <code>false</code> by default. */
-  public boolean checkPendingDeletions() throws IOException {
-    return false;
+  /**
+   * Returns the current pending deletions in this directory or an emtpy set
+   * if there are no known pending deletions.
+   * @lucene.internal
+   */
+  public Set<String> getPendingDeletions() throws IOException {
+    return Collections.emptySet();
   }
 }

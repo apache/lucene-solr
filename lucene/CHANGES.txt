@@ -182,6 +182,13 @@ New Features
   TermExclusionConditionalFilter is added as an example.  (Alan Woodward,
   Robert Muir, David Smiley, Steve Rowe, Mike Sokolov)
 
+* LUCENE-8310: Ensure IndexFileDeleter accounts for pending deletes. Today we fail
+  creating the IndexWriter when the directory has a pending delete. Yet, this
+  is mainly done to prevent writing still existing files more than once.
+  IndexFileDeleter already accounts for that for existing files which we can
+  now use to also take pending deletes into account which ensures that all file
+  generations per segment always go forward. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon and
