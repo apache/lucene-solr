@@ -230,6 +230,12 @@ Other
 * LUCENE-8122, LUCENE-8175: Upgrade analysis/icu to ICU 61.1.
   (Robert Muir, Adrien Grand, Uwe Schindler)
 
+* LUCENE-8291: Remove QueryTemplateManager utility class from XML queryparser.
+  This class is just a general XML transforming tool (using property files and
+  XSLT) and has nothing to do with query parsing. It can easily be implemented
+  using more sophisticated libraries or using XSL transformers from the JDK.
+  (Uwe Schindler)
+
 Build
 
 * LUCENE-7935: Publish .sha512 hash files with the release artifacts and stop
