@@ -1942,6 +1942,82 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
+  
+  @Test
+  public void testHashJoinStreamWithKnownConflict() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "1", "type_s","left", "bbid_s", "MG!!00TNH1", "ykey_s", "Mtge")
+        .add(id, "2", "type_s","right", "bbid_s", "MG!!00TNGP", "ykey_s", "Mtge")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("hashJoin", HashJoinStream.class);
+    try {
+      // Basic test
+      expression = StreamExpressionParser.parse("hashJoin("
+          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  on=\"bbid_s,ykey_s\""
+          + ")");
+      stream = new HashJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      
+      assertEquals(0, tuples.size());
+    
+    
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testOuterHashJoinStreamWithKnownConflict() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "1", "type_s","left", "bbid_s", "MG!!00TNH1", "ykey_s", "Mtge")
+        .add(id, "2", "type_s","right", "bbid_s", "MG!!00TNGP", "ykey_s", "Mtge", "extra_s", "foo")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
+    try {
+      // Basic test
+      expression = StreamExpressionParser.parse("outerHashJoin("
+          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s,extra_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  on=\"bbid_s,ykey_s\""
+          + ")");
+      stream = new OuterHashJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      
+      assertEquals(1, tuples.size());
+      assertFalse(tuples.get(0).fields.containsKey("extra_s"));
+    
+    } finally {
+      solrClientCache.close();
+    }
+  }
 
   @Test
   public void testOuterHashJoinStream() throws Exception {

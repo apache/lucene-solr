@@ -196,6 +196,8 @@ Bug Fixes
 
 * SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
 
+* SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
+
 Optimizations
 ----------------------
 
