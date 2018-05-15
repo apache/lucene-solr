@@ -126,9 +126,6 @@ Bug Fixes
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
 
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
-  state (Cao Manh Dat)
-
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
 * SOLR-12035: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer (Tim Allison via
@@ -168,15 +165,9 @@ Bug Fixes
 
 * SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
 
-* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
-  (Rohit, Varun Thacker)
-
 * SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
 
 * SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
-
-* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
-  (Amrit Sarkar, Varun Thacker)
 
 * SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
 
@@ -208,16 +199,11 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
-* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
-
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
   and devs. (Mark Miller)
 
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
-
-* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
-  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 * SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
   MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
@@ -247,10 +233,6 @@ Optimizations
 
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
-
-* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
-
-* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
 
 * SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
   (Jeff Miller, David Smiley)
@@ -335,6 +317,24 @@ Bug Fixes
 * SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
+
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
+
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
+  (Rohit, Varun Thacker)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
 
 ==================  7.3.0 ==================
 
