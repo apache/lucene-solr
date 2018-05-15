@@ -695,9 +695,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    if (d.checkPendingDeletions()) {
-      throw new IllegalArgumentException("Directory " + d + " still has pending deleted files; cannot initialize IndexWriter");
-    }
     enableTestPoints = isEnableTestPoints();
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
@@ -847,6 +844,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
+
+
 
       commitUserData = new HashMap<>(segmentInfos.getUserData()).entrySet();
 

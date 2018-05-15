@@ -231,11 +231,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
         printStream.println("\nTEST: WriterThread iter=" + i);
         iwc.setOpenMode(OpenMode.APPEND);
         try {
-          if (Constants.WINDOWS && dir.checkPendingDeletions()) {
-            // on windows we can potentially have pending deletes here if this happens we step out like in the catch clause
-            // tests using this also assumes no mock window FS
-            break;
-          }
           writer = new IndexWriter(dir, iwc);
 
         } catch (Throwable t) {
