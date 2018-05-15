@@ -99,10 +99,6 @@ Bug Fixes
   index file names for updated doc values fields (Simon Willnauer,
   Michael McCandless, Nhat Nguyen)
 
-* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
-  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
-  Adrien Grand)
-
 * LUCENE-8275: Push up #checkPendingDeletes to Directory to ensure IW fails if 
   the directory has pending deletes files even if the directory is filtered or 
   a FileSwitchDirectory (Simon Willnauer, Robert Muir)
@@ -149,7 +145,12 @@ Documentation
   (Mike Sokolov via Mike McCandless)
 
 ======================= Lucene 7.3.1 =======================
-(No Changes)
+
+Bug fixes
+
+* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
+  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
+  Adrien Grand)
 
 ======================= Lucene 7.3.0 =======================
 
