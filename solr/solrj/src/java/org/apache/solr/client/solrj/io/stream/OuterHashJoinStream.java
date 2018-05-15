@@ -100,7 +100,7 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
       // If fullTuple doesn't have a valid hash or the hash cannot be found in the hashedTuples then
       // return the tuple from fullStream.
       // This is an outer join so there is no requirement there be a matching value in the hashed stream
-      Integer fullHash = calculateHash(fullTuple, leftHashOn);
+      String fullHash = computeHash(fullTuple, leftHashOn);
       if(null == fullHash || !hashedTuples.containsKey(fullHash)){
         return fullTuple.clone();
       }
