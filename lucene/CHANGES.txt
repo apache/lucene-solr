@@ -148,6 +148,9 @@ Documentation
 * LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
   (Mike Sokolov via Mike McCandless)
 
+======================= Lucene 7.3.1 =======================
+(No Changes)
+
 ======================= Lucene 7.3.0 =======================
 
 API Changes
