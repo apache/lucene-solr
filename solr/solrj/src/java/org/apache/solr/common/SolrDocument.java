@@ -43,7 +43,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 {
   private final Map<String,Object> _fields;
   
-  private List<SolrDocument> _childDocuments;
+  private Map<String, Object> _childDocuments;
   
   public SolrDocument()
   {
@@ -375,11 +375,19 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public void addChildDocument(SolrDocument child) {
-    if (_childDocuments == null) {
-      _childDocuments = new ArrayList<>();
-    }
-     _childDocuments.add(child);
+    boolean hasAnonChildDocs = (hasChildDocuments() && _childDocuments.containsKey(CHILD_DOC_KEY));
+    List<Object> childList = hasAnonChildDocs? ((List) _childDocuments.get(CHILD_DOC_KEY)): new ArrayList<>(1);
+    childList.add(child);
+    addChildDocument(CHILD_DOC_KEY, childList);
    }
+
+  @Override
+  public void addChildDocument(String key, Object child) {
+    if (_childDocuments == null) {
+      _childDocuments = new LinkedHashMap<>();
+    }
+    _childDocuments.put(key, child);
+  }
    
   @Override
    public void addChildDocuments(Collection<SolrDocument> children) {
@@ -388,10 +396,24 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
      }
    }
 
+   @Override
+   public Map<String, Object> getChildDocumentsMap() {
+     return _childDocuments;
+   }
+
    /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
-     return _childDocuments;
+     if (!hasChildDocuments()) return null;
+     List<SolrDocument> children = new ArrayList<>();
+     for(Object entry: _childDocuments.values()) {
+       if(entry instanceof Collection) {
+         children.addAll(((Collection<SolrDocument>) entry));
+         continue;
+       }
+       children.add(((SolrDocument) entry));
+     }
+     return children;
    }
    
    @Override

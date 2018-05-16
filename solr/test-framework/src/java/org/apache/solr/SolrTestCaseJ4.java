@@ -45,6 +45,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -2117,12 +2118,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return false;
     } else if(solrDocument1.getChildDocuments().size() != solrDocument2.getChildDocuments().size()) {
       return false;
+    } else if (solrDocument1.getChildDocumentsMap().size() != solrDocument2.getChildDocumentsMap().size()) {
+      return false;
     } else {
       Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
       Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
       while(childDocsIter1.hasNext()) {
         if(!compareSolrDocument(childDocsIter1.next(), childDocsIter2.next())) {
           return false;
+        }
+      }
+      Iterator<Entry<String, Object>> childDocsMapIter1 = solrDocument1.getChildDocumentsMap().entrySet().iterator();
+      Iterator<Entry<String, Object>> childDocsMapIter2 = solrDocument2.getChildDocumentsMap().entrySet().iterator();
+      while(childDocsMapIter1.hasNext()) {
+        Object child1 = childDocsMapIter1.next();
+        Object child2 = childDocsMapIter2.next();
+        if (!(child1 instanceof Collection)) {
+          compareSolrDocument(child1, child2);
+        } else {
+          compareSolrDocumentList(child1, child2);
         }
       }
       return true;
