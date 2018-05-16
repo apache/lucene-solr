@@ -115,6 +115,10 @@ API Changes
 * LUCENE-8303: LiveDocsFormat is now only responsible for (de)serialization of
   live docs. (Adrien Grand)
 
+Changes in Runtime Behavior
+
+* LUCENE-8309: Live docs are no longer backed by a FixedBitSet. (Adrien Grand)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together

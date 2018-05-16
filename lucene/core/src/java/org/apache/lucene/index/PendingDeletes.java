@@ -76,7 +76,7 @@ class PendingDeletes {
         writeableLiveDocs = new FixedBitSet(info.info.maxDoc());
         writeableLiveDocs.set(0, info.info.maxDoc());
       }
-      liveDocs = writeableLiveDocs;
+      liveDocs = writeableLiveDocs.asReadOnlyBits();
     }
     return writeableLiveDocs;
   }
