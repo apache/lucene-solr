@@ -45,12 +45,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 
-@SuppressFileSystems("WindowsFS") // testRecreateAndRefresh doesn't like pending files
 public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
