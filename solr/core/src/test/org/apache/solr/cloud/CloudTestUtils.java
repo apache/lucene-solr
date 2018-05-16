@@ -129,7 +129,6 @@ public class CloudTestUtils {
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas
    * @param withInactive if true then count also inactive shards
-   * @return
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive) {
     return (liveNodes, collectionState) -> {
