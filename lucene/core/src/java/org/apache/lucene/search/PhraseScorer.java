@@ -89,7 +89,8 @@ class PhraseScorer extends Scorer {
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
-    return simScorer.maxScore();
+    // TODO: merge impacts of all clauses to get better score upper bounds
+    return simScorer.getSimScorer().score(Integer.MAX_VALUE, 1L);
   }
 
   @Override

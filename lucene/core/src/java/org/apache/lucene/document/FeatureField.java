@@ -209,7 +209,7 @@ public final class FeatureField extends Field {
   }
 
   static abstract class FeatureFunction {
-    abstract SimScorer scorer(String field, float w);
+    abstract SimScorer scorer(float w);
     abstract Explanation explain(String field, String feature, float w, int freq);
     FeatureFunction rewrite(IndexReader reader) throws IOException { return this; }
   }
@@ -242,8 +242,8 @@ public final class FeatureField extends Field {
     }
 
     @Override
-    SimScorer scorer(String field, float weight) {
-      return new SimScorer(field) {
+    SimScorer scorer(float weight) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return (float) (weight * Math.log(scalingFactor + decodeFeatureValue(freq)));
@@ -254,7 +254,7 @@ public final class FeatureField extends Field {
     @Override
     Explanation explain(String field, String feature, float w, int freq) {
       float featureValue = decodeFeatureValue(freq);
-      float score = scorer(field, w).score(freq, 1L);
+      float score = scorer(w).score(freq, 1L);
       return Explanation.match(score,
           "Log function on the " + field + " field for the " + feature + " feature, computed as w * log(a + S) from:",
           Explanation.match(w, "w, weight of this function"),
@@ -305,12 +305,12 @@ public final class FeatureField extends Field {
     }
 
     @Override
-    SimScorer scorer(String field, float weight) {
+    SimScorer scorer(float weight) {
       if (pivot == null) {
         throw new IllegalStateException("Rewrite first");
       }
       final float pivot = this.pivot; // unbox
-      return new SimScorer(field) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           float f = decodeFeatureValue(freq);
@@ -325,7 +325,7 @@ public final class FeatureField extends Field {
     @Override
     Explanation explain(String field, String feature, float weight, int freq) {
       float featureValue = decodeFeatureValue(freq);
-      float score = scorer(field, weight).score(freq, 1L);
+      float score = scorer(weight).score(freq, 1L);
       return Explanation.match(score,
           "Saturation function on the " + field + " field for the " + feature + " feature, computed as w * S / (S + k) from:",
           Explanation.match(weight, "w, weight of this function"),
@@ -368,8 +368,8 @@ public final class FeatureField extends Field {
     }
 
     @Override
-    SimScorer scorer(String field, float weight) {
-      return new SimScorer(field) {
+    SimScorer scorer(float weight) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           float f = decodeFeatureValue(freq);
@@ -384,7 +384,7 @@ public final class FeatureField extends Field {
     @Override
     Explanation explain(String field, String feature, float weight, int freq) {
       float featureValue = decodeFeatureValue(freq);
-      float score = scorer(field, weight).score(freq, 1L);
+      float score = scorer(weight).score(freq, 1L);
       return Explanation.match(score,
           "Sigmoid function on the " + field + " field for the " + feature + " feature, computed as w * S^a / (S^a + k^a) from:",
           Explanation.match(weight, "w, weight of this function"),

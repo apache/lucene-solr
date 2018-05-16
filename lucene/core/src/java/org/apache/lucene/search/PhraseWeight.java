@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 abstract class PhraseWeight extends Weight {
 
@@ -34,7 +35,16 @@ abstract class PhraseWeight extends Weight {
     this.scoreMode = scoreMode;
     this.field = field;
     this.similarity = searcher.getSimilarity();
-    this.stats = getStats(searcher);
+    SimScorer stats = getStats(searcher);
+    if (stats == null) { // Means no terms or scores are not needed
+      stats = new SimScorer() {
+        @Override
+        public float score(float freq, long norm) {
+          return 1;
+        }
+      };
+    }
+    this.stats = stats;
   }
 
   protected abstract Similarity.SimScorer getStats(IndexSearcher searcher) throws IOException;
@@ -46,7 +56,7 @@ abstract class PhraseWeight extends Weight {
     PhraseMatcher matcher = getPhraseMatcher(context, false);
     if (matcher == null)
       return null;
-    LeafSimScorer simScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Integer.MAX_VALUE);
+    LeafSimScorer simScorer = new LeafSimScorer(stats, context.reader(), field, scoreMode.needsScores());
     return new PhraseScorer(this, matcher, scoreMode, simScorer);
   }
 
@@ -64,7 +74,7 @@ abstract class PhraseWeight extends Weight {
     while (matcher.nextMatch()) {
       freq += matcher.sloppyWeight();
     }
-    LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
+    LeafSimScorer docScorer = new LeafSimScorer(stats, context.reader(), field, scoreMode.needsScores());
     Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
     Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
     return Explanation.match(

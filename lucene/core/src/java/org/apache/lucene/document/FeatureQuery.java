@@ -133,7 +133,7 @@ final class FeatureQuery extends Query {
           return null;
         }
 
-        SimScorer scorer = function.scorer(fieldName, boost);
+        SimScorer scorer = function.scorer(boost);
         ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
         MaxScoreCache maxScoreCache = new MaxScoreCache(impacts, scorer);
 

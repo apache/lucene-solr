@@ -211,15 +211,15 @@ public class TestFeatureField extends LuceneTestCase {
   }
 
   public void testLogSimScorer() {
-    doTestSimScorer(new FeatureField.LogFunction(4.5f).scorer("foo", 3f));
+    doTestSimScorer(new FeatureField.LogFunction(4.5f).scorer(3f));
   }
 
   public void testSatuSimScorer() {
-    doTestSimScorer(new FeatureField.SaturationFunction("foo", "bar", 20f).scorer("foo", 3f));
+    doTestSimScorer(new FeatureField.SaturationFunction("foo", "bar", 20f).scorer(3f));
   }
 
   public void testSigmSimScorer() {
-    doTestSimScorer(new FeatureField.SigmoidFunction(20f, 0.6f).scorer("foo", 3f));
+    doTestSimScorer(new FeatureField.SigmoidFunction(20f, 0.6f).scorer(3f));
   }
 
   private void doTestSimScorer(SimScorer s) {
