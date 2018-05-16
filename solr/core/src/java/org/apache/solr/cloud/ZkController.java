@@ -699,6 +699,10 @@ public class ZkController {
     return zkServerAddress;
   }
 
+  boolean isClosed() {
+    return isClosed;
+  }
+
   /**
    * Create the zknodes necessary for a cluster to operate
    *

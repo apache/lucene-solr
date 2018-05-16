@@ -194,6 +194,8 @@ Bug Fixes
 * SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
   (Mikhail Khludnev) 
 
+* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
+
 Optimizations
 ----------------------
 
