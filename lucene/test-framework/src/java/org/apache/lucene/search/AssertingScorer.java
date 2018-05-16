@@ -76,6 +76,7 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
+    assert scoreMode.needsScores();
     assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
     assert target >= docID() : "target = " + target + " < docID = " + docID();
     int upTo = in.advanceShallow(target);
@@ -87,6 +88,7 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
+    assert scoreMode.needsScores();
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
     assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
