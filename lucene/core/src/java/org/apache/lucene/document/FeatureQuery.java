@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.document.FeatureField.FeatureFunction;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -45,6 +46,15 @@ final class FeatureQuery extends Query {
     this.fieldName = Objects.requireNonNull(fieldName);
     this.featureName = Objects.requireNonNull(featureName);
     this.function = Objects.requireNonNull(function);
+  }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    FeatureFunction rewritten = function.rewrite(reader);
+    if (function != rewritten) {
+      return new FeatureQuery(fieldName, featureName, rewritten);
+    }
+    return super.rewrite(reader);
   }
 
   @Override
@@ -77,7 +87,16 @@ final class FeatureQuery extends Query {
       }
 
       @Override
-      public void extractTerms(Set<Term> terms) {}
+      public void extractTerms(Set<Term> terms) {
+        if (needsScores == false) {
+          // features are irrelevant to highlighting, skip
+        } else {
+          // extracting the term here will help get better scoring with
+          // distributed term statistics if the saturation function is used
+          // and the pivot value is computed automatically
+          terms.add(new Term(fieldName, featureName));
+        }
+      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

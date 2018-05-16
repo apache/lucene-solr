@@ -17,10 +17,15 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -209,7 +214,7 @@ public class TestFeatureField extends LuceneTestCase {
   }
 
   public void testSatuSimScorer() throws IOException {
-    doTestSimScorer(new FeatureField.SaturationFunction(20f).scorer("foo", 3f));
+    doTestSimScorer(new FeatureField.SaturationFunction("foo", "bar", 20f).scorer("foo", 3f));
   }
 
   public void testSigmSimScorer() throws IOException {
@@ -229,6 +234,14 @@ public class TestFeatureField extends LuceneTestCase {
   public void testComputePivotFeatureValue() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+
+    // Make sure that we create a legal pivot on missing features
+    DirectoryReader reader = writer.getReader();
+    float pivot = FeatureField.computePivotFeatureValue(reader, "features", "pagerank");
+    assertTrue(Float.isFinite(pivot));
+    assertTrue(pivot > 0);
+    reader.close();
+
     Document doc = new Document();
     FeatureField pagerank = new FeatureField("features", "pagerank", 1);
     doc.add(pagerank);
@@ -247,16 +260,31 @@ public class TestFeatureField extends LuceneTestCase {
     pagerank.setFeatureValue(42);
     writer.addDocument(doc);
 
-    DirectoryReader reader = writer.getReader();
+    reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
-    float pivot = FeatureField.computePivotFeatureValue(searcher, "features", "pagerank");
+    pivot = FeatureField.computePivotFeatureValue(reader, "features", "pagerank");
     double expected = Math.pow(10 * 100 * 1 * 42, 1/4.); // geometric mean
     assertEquals(expected, pivot, 0.1);
 
     reader.close();
     dir.close();
+  }
+
+  public void testExtractTerms() throws IOException {
+    IndexReader reader = new MultiReader();
+    IndexSearcher searcher = newSearcher(reader);
+    Query query = FeatureField.newLogQuery("field", "term", 2f, 42);
+
+    Weight weight = searcher.createWeight(query, false, 1f);
+    Set<Term> terms = new HashSet<>();
+    weight.extractTerms(terms);
+    assertEquals(Collections.emptySet(), terms);
+
+    terms = new HashSet<>();
+    weight = searcher.createWeight(query, true, 1f);
+    weight.extractTerms(terms);
+    assertEquals(Collections.singleton(new Term("field", "term")), terms);
   }
 
   public void testDemo() throws IOException {
@@ -297,7 +325,7 @@ public class TestFeatureField extends LuceneTestCase {
         .add(new TermQuery(new Term("body", "apache")), Occur.SHOULD)
         .add(new TermQuery(new Term("body", "lucene")), Occur.SHOULD)
         .build();
-    Query boost = FeatureField.newSaturationQuery(searcher, "features", "pagerank");
+    Query boost = FeatureField.newSaturationQuery("features", "pagerank");
     Query boostedQuery = new BooleanQuery.Builder()
         .add(query, Occur.MUST)
         .add(boost, Occur.SHOULD)
