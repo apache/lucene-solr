@@ -298,7 +298,9 @@ public class Overseer implements SolrCloseable {
     }
 
     private void checkIfIamStillLeader() {
-      if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
+      if (zkController != null && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
+        return;//shutting down no need to go further
+      }
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
       String path = OVERSEER_ELECT + "/leader";
       byte[] data;
