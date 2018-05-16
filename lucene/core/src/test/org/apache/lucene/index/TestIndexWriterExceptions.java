@@ -61,6 +61,7 @@ import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -709,6 +710,44 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
+  public void testDocumentsWriterExceptionFailOneDoc() throws Exception {
+    Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
+      }
+    };
+    for (int i = 0; i < 10; i++) {
+      try (Directory dir = newDirectory();
+           final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
+               .setMaxBufferedDocs(-1)
+               .setRAMBufferSizeMB(random().nextBoolean() ? 0.00001 : Integer.MAX_VALUE)
+               .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+                 @Override
+                 public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+                   return true;
+                 }
+               }))) {
+        Document doc = new Document();
+        doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+        writer.addDocument(doc);
+        doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
+        doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
+        expectThrows(IOException.class, () -> {
+          writer.addDocument(doc);
+        });
+        writer.commit();
+        try (IndexReader reader = DirectoryReader.open(dir)) {
+            assertEquals(2, reader.docFreq(new Term("contents", "here")));
+            assertEquals(2, reader.maxDoc());
+            assertEquals(1, reader.numDocs());
+        }
+      }
+    }
+  }
+
   public void testDocumentsWriterExceptionThreads() throws Exception {
     Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
@@ -724,12 +763,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     for(int i=0;i<2;i++) {
       Directory dir = newDirectory();
-
       {
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
-            .setMaxBufferedDocs(-1)
-            .setMergePolicy(NoMergePolicy.INSTANCE));
-        // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
+            .setMaxBufferedDocs(Integer.MAX_VALUE)
+            .setRAMBufferSizeMB(-1) // we don't want to flush automatically
+            .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+              // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
+              // we also need to keep fully deleted segments since otherwise we clean up fully deleted ones and if we
+              // flush the one that has only the failed document the docFreq checks will be off below.
+              @Override
+              public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+                return true;
+              }
+            }));
+
         final int finalI = i;
 
         Thread[] threads = new Thread[NUM_THREAD];
