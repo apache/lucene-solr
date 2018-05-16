@@ -136,7 +136,8 @@ Other
   This class is just a general XML transforming tool (using property files and
   XSLT) and has nothing to do with query parsing. It can easily be implemented
   using more sophisticated libraries or using XSL transformers from the JDK.
-  (Uwe Schindler)
+  This change also removes the Lucene demo webapp to prevent XSS issues in
+  untested/unmaintained code. (Uwe Schindler)
 
 Build
 
