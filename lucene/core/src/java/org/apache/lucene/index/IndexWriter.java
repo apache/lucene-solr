@@ -1780,7 +1780,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (globalFieldNumberMap.contains(f.name(), dvType) == false) {
         // if this field doesn't exists we try to add it. if it exists and the DV type doesn't match we
         // get a consistent error message as if you try to do that during an indexing operation.
-        globalFieldNumberMap.addOrGet(f.name(), -1, IndexOptions.NONE, dvType, 0, 0);
+        globalFieldNumberMap.addOrGet(f.name(), -1, dvType, 0, 0);
         assert globalFieldNumberMap.contains(f.name(), dvType);
       }
       if (config.getIndexSortFields().contains(f.name())) {
