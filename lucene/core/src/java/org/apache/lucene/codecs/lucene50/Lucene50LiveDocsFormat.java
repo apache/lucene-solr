@@ -80,7 +80,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
           throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
                                           " info.delcount=" + info.getDelCount(), input);
         }
-        return fbs;
+        return fbs.asReadOnlyBits();
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
