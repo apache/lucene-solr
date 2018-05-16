@@ -78,6 +78,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -3288,5 +3289,52 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
     IOUtils.close(reader, writer, dir);
+  }
+
+  public void testDeleteHappensBeforeWhileFlush() throws IOException, InterruptedException {
+    CountDownLatch latch = new CountDownLatch(1);
+    CountDownLatch inFlush = new CountDownLatch(1);
+    try (Directory dir = new FilterDirectory(newDirectory()) {
+      @Override
+      public IndexOutput createOutput(String name, IOContext context) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
+            try {
+              inFlush.countDown();
+              latch.await();
+            } catch (InterruptedException e) {
+              throw new AssertionError(e);
+            }
+          }
+        }
+        return super.createOutput(name, context);
+      }
+    }; IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      Document document = new Document();
+      document.add(new StringField("id", "1", Field.Store.YES));
+      writer.addDocument(document);
+      Thread t = new Thread(() -> {
+        try {
+          inFlush.await();
+          writer.docWriter.flushControl.setApplyAllDeletes();
+          if (random().nextBoolean()) {
+            writer.updateDocument(new Term("id", "1"), document);
+          } else {
+            writer.deleteDocuments(new Term("id", "1"));
+          }
+
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        } finally {
+          latch.countDown();
+        }
+      });
+      t.start();
+      try (IndexReader reader = writer.getReader()) {
+        assertEquals(1, reader.numDocs());
+      };
+      t.join();
+    }
   }
 }

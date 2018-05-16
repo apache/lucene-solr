@@ -124,6 +124,10 @@ Bug Fixes
 * LUCENE-8287: Ensure that empty regex completion queries always return no results.
   (Julie Tibshirani via Jim Ferenczi)
 
+* LUCENE-8317: Prevent concurrent deletes from being applied during full flush.
+  Future deletes could potentially be exposed to flushes/commits/refreshes if the 
+  amount of RAM used by deletes is greater than half of the IW RAM buffer. (Simon Willnauer)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
