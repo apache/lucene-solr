@@ -113,12 +113,23 @@ public class CloudTestUtils {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and replicas
+   * number of active shards and replicas
+   * @param expectedShards expected number of active shards
+   * @param expectedReplicas expected number of active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return clusterShape(expectedShards, expectedReplicas, false);
   }
 
+  /**
+   * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
+   * number of shards and replicas.
+   * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
+   * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
+   * @param expectedShards expected number of shards
+   * @param expectedReplicas expected number of active replicas
+   * @param withInactive if true then count also inactive shards
+   */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) {

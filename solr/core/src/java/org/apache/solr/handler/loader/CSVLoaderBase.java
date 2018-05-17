@@ -28,6 +28,7 @@ import org.apache.solr.update.*;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.internal.csv.CSVParser;
+import org.apache.commons.io.IOUtils;
 
 import java.util.regex.Pattern;
 import java.util.List;
@@ -314,48 +315,54 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   /** load the CSV input */
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor)
-      throws IOException {
+  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws IOException {
     errHeader = "CSVLoader: input=" + stream.getSourceInfo();
-    Reader reader = stream.getReader();
-    if (skipLines > 0) {
-      if (!(reader instanceof BufferedReader)) {
-        reader = new BufferedReader(reader);
-      }
-      BufferedReader r = (BufferedReader) reader;
-      for (int i = 0; i < skipLines; i++) {
-        r.readLine();
-      }
-    }
-
-    CSVParser parser = new CSVParser(reader, strategy);
-
-    // parse the fieldnames from the header of the file
-    if (fieldnames == null) {
-      fieldnames = parser.getLine();
-      if (fieldnames == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected fieldnames in CSV input");
-      }
-      prepareFields();
-    }
-
-    // read the rest of the CSV file
-    for (;;) {
-      int line = parser.getLineNumber(); // for error reporting in MT mode
-      String[] vals = null;
-      try {
-        vals = parser.getLine();
-      } catch (IOException e) {
-        // Catch the exception and rethrow it with more line information
-        input_err("can't read line: " + line, null, line, e);
-      }
-      if (vals == null) break;
-
-      if (vals.length != fieldnames.length) {
-        input_err("expected " + fieldnames.length + " values but got " + vals.length, vals, line);
+    Reader reader = null;
+    try {
+      reader = stream.getReader();
+      if (skipLines>0) {
+        if (!(reader instanceof BufferedReader)) {
+          reader = new BufferedReader(reader);
+        }
+        BufferedReader r = (BufferedReader)reader;
+        for (int i=0; i<skipLines; i++) {
+          r.readLine();
+        }
       }
 
-      addDoc(line, vals);
+      CSVParser parser = new CSVParser(reader, strategy);
+
+      // parse the fieldnames from the header of the file
+      if (fieldnames==null) {
+        fieldnames = parser.getLine();
+        if (fieldnames==null) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Expected fieldnames in CSV input");
+        }
+        prepareFields();
+      }
+
+      // read the rest of the CSV file
+      for(;;) {
+        int line = parser.getLineNumber();  // for error reporting in MT mode
+        String[] vals = null;
+        try {
+          vals = parser.getLine();
+        } catch (IOException e) {
+          //Catch the exception and rethrow it with more line information
+         input_err("can't read line: " + line, null, line, e);
+        }
+        if (vals==null) break;
+
+        if (vals.length != fieldnames.length) {
+          input_err("expected "+fieldnames.length+" values but got "+vals.length, vals, line);
+        }
+
+        addDoc(line,vals);
+      }
+    } finally{
+      if (reader != null) {
+        IOUtils.closeQuietly(reader);
+      }
     }
   }
 

@@ -372,7 +372,7 @@ To create a `CloudSolrClient` that uses delegation tokens:
 [source,java]
 ----
 CloudSolrClient client = new CloudSolrClient.Builder()
-                .withZkHost("http://localhost:2181")
+                .withZkHost("localhost:2181")
                 .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
                     .withResponseParser(client.getParser())
                     .withHttpSolrClientBuilder(

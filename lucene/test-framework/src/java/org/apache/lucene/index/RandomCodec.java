@@ -46,8 +46,6 @@ import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
@@ -205,14 +203,11 @@ public class RandomCodec extends AssertingCodec {
         new LuceneVarGapFixedInterval(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapDocFreqInterval(TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
         TestUtil.getDefaultPostingsFormat(),
-        new AssertingPostingsFormat(),
-        new MemoryPostingsFormat(true, random.nextFloat()),
-        new MemoryPostingsFormat(false, random.nextFloat()));
+        new AssertingPostingsFormat());
     
     addDocValues(avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
         new DirectDocValuesFormat(), // maybe not a great idea...
-        new MemoryDocValuesFormat(),
         TestUtil.getDefaultDocValuesFormat(),
         new AssertingDocValuesFormat());
 

@@ -538,4 +538,93 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     assertFalse(delete.get());
     IOUtils.close(reader, writer, dir);
   }
+
+  public void testUndeleteDocument() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig()
+        .setSoftDeletesField(softDelete)
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+        MatchAllDocsQuery::new, new LogDocMergePolicy()));
+    config.setReaderPooling(true);
+    config.setMergePolicy(new LogDocMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    d.add(new StringField("seq_id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    writer.addDocument(d);
+    writer.updateDocValues(new Term("id", "0"), new NumericDocValuesField("soft_delete", 1));
+    try (IndexReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(1, reader.numDocs());
+    }
+    doUpdate(new Term("id", "0"), writer, new NumericDocValuesField("soft_delete", null));
+    try (IndexReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(2, reader.numDocs());
+    }
+    IOUtils.close(writer, dir);
+  }
+
+  static void doUpdate(Term doc, IndexWriter writer, Field... fields) throws IOException {
+    long seqId = -1;
+    do { // retry if we just committing a merge
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(new NoDeletesWrapper(reader)).search(new TermQuery(doc), 10);
+        assertEquals(1, topDocs.totalHits);
+        int theDoc = topDocs.scoreDocs[0].doc;
+        seqId = writer.tryUpdateDocValue(reader, theDoc, fields);
+      }
+    } while (seqId == -1);
+  }
+
+  private static final class NoDeletesSubReaderWrapper extends FilterDirectoryReader.SubReaderWrapper {
+
+    @Override
+    public LeafReader wrap(LeafReader reader) {
+      return new FilterLeafReader(reader) {
+
+        @Override
+        public int numDocs() {
+          return maxDoc();
+        }
+
+        @Override
+        public Bits getLiveDocs() {
+          return null;
+        }
+
+        @Override
+        public CacheHelper getCoreCacheHelper() {
+          return null;
+        }
+
+        @Override
+        public CacheHelper getReaderCacheHelper() {
+          return null;
+        }
+      };
+    }
+  }
+
+  private static final class NoDeletesWrapper extends FilterDirectoryReader {
+
+    NoDeletesWrapper(DirectoryReader in) throws IOException {
+      super(in, new NoDeletesSubReaderWrapper());
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new NoDeletesWrapper(in);
+    }
+
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
+  }
 }

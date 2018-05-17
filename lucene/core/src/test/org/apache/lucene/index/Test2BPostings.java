@@ -35,7 +35,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
  * Test indexes ~82M docs with 26 terms each, so you get &gt; Integer.MAX_VALUE terms/docs pairs
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct", "Compressing" })
+@SuppressCodecs({ "SimpleText", "Direct", "Compressing" })
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test2BPostings extends LuceneTestCase {
 

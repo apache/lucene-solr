@@ -519,6 +519,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
+  private static String CLOSE_STREAM_MSG = "Attempted close of http request or response stream - in general you should not do this, "
+      + "you may spoil connection reuse and possibly disrupt a client. If you must close without actually needing to close, "
+      + "use a CloseShield*Stream. Closing or flushing the response stream commits the response and prevents us from modifying it. "
+      + "Closing the request stream prevents us from gauranteeing ourselves that streams are fully read for proper connection reuse."
+      + "Let the container manage the lifecycle of these streams when possible.";
+ 
   /**
    * Wrap the request's input stream with a close shield. If this is a
    * retry, we will assume that the stream has already been wrapped and do nothing.
@@ -542,7 +548,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
               assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : "Attempted close of request input stream - never do this, you will spoil connection reuse and possibly disrupt a client";
+                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
@@ -577,7 +583,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
               assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : "Attempted close of response output stream - never do this, you will spoil connection reuse and possibly disrupt a client";
+                  "org\\.apache\\.(?:solr|lucene).*") ? false
+                      : true : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };

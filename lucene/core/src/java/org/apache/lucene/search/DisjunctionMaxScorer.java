@@ -50,28 +50,32 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
       throw new IllegalArgumentException("tieBreakerMultiplier must be in [0, 1]");
     }
 
-    float scoreMax = 0;
-    double otherScoreSum = 0;
-    for (Scorer scorer : subScorers) {
-      scorer.advanceShallow(0);
-      float subScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-      if (subScore >= scoreMax) {
-        otherScoreSum += scoreMax;
-        scoreMax = subScore;
-      } else {
-        otherScoreSum += subScore;
-      }
-    }
-
-    if (tieBreakerMultiplier == 0) {
-      this.maxScore = scoreMax;
+    if (needsScores == false) {
+      this.maxScore = Float.MAX_VALUE;
     } else {
-      // The error of sums depends on the order in which values are summed up. In
-      // order to avoid this issue, we compute an upper bound of the value that
-      // the sum may take. If the max relative error is b, then it means that two
-      // sums are always within 2*b of each other.
-      otherScoreSum *= (1 + 2 * MathUtil.sumRelativeErrorBound(subScorers.size() - 1));
-      this.maxScore = (float) (scoreMax + otherScoreSum * tieBreakerMultiplier);
+      float scoreMax = 0;
+      double otherScoreSum = 0;
+      for (Scorer scorer : subScorers) {
+        scorer.advanceShallow(0);
+        float subScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+        if (subScore >= scoreMax) {
+          otherScoreSum += scoreMax;
+          scoreMax = subScore;
+        } else {
+          otherScoreSum += subScore;
+        }
+      }
+
+      if (tieBreakerMultiplier == 0) {
+        this.maxScore = scoreMax;
+      } else {
+        // The error of sums depends on the order in which values are summed up. In
+        // order to avoid this issue, we compute an upper bound of the value that
+        // the sum may take. If the max relative error is b, then it means that two
+        // sums are always within 2*b of each other.
+        otherScoreSum *= (1 + 2 * MathUtil.sumRelativeErrorBound(subScorers.size() - 1));
+        this.maxScore = (float) (scoreMax + otherScoreSum * tieBreakerMultiplier);
+      }
     }
   }
 

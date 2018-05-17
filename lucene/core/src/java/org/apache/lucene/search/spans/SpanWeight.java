@@ -140,7 +140,7 @@ public abstract class SpanWeight extends Weight {
    * @throws IOException on error
    */
   public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
-    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
+    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), field, true);
   }
 
   @Override
@@ -150,7 +150,7 @@ public abstract class SpanWeight extends Weight {
       int newDoc = scorer.iterator().advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
+        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), field, true);
         Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
         Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
         return Explanation.match(scoreExplanation.getValue(),

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.lucene.analysis.util.ResourceLoader;
 
 import org.xml.sax.InputSource;
@@ -26,7 +23,6 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.ext.EntityResolver2;
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.xml.transform.Source;
@@ -55,7 +51,6 @@ import javax.xml.stream.XMLStreamException;
  * </pre>
  */
 public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String RESOURCE_LOADER_URI_SCHEME = "solrres";
   public static final String RESOURCE_LOADER_AUTHORITY_ABSOLUTE = "@";
@@ -126,8 +121,9 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   @Override
   public InputSource resolveEntity(String name, String publicId, String baseURI, String systemId) throws IOException {
-    if (systemId == null)
+    if (systemId == null) {
       return null;
+    }
     try {
       final URI uri = resolveRelativeURI(baseURI, systemId);
       
@@ -147,12 +143,10 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
           throw new IOException(re.getMessage(), re);
         }
       } else {
-        // resolve all other URIs using the standard resolver
-        return null;
+        throw new IOException("Cannot resolve absolute systemIDs / external entities (only relative paths work): " + systemId);
       }
     } catch (URISyntaxException use) {
-      log.warn("An URI systax problem occurred during resolving SystemId, falling back to default resolver", use);
-      return null;
+      throw new IOException("An URI syntax problem occurred during resolving systemId: " + systemId, use);
     }
   }
 

@@ -26,9 +26,9 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MutableBits;
 
 final class PendingSoftDeletes extends PendingDeletes {
 
@@ -50,7 +50,7 @@ final class PendingSoftDeletes extends PendingDeletes {
 
   @Override
   boolean delete(int docID) throws IOException {
-    MutableBits mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
+    FixedBitSet mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
     if (hardDeletes.delete(docID)) {
       if (mutableBits.get(docID)) { // delete it here too!
         mutableBits.clear(docID);
@@ -105,16 +105,25 @@ final class PendingSoftDeletes extends PendingDeletes {
    * @param bits the bit set to apply the deletes to
    * @return the number of bits changed by this function
    */
-  static int applySoftDeletes(DocIdSetIterator iterator, MutableBits bits) throws IOException {
+  static int applySoftDeletes(DocIdSetIterator iterator, FixedBitSet bits) throws IOException {
     assert iterator != null;
     int newDeletes = 0;
     int docID;
+    DocValuesFieldUpdates.Iterator hasValue = iterator instanceof DocValuesFieldUpdates.Iterator
+        ? (DocValuesFieldUpdates.Iterator) iterator : null;
     while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits.get(docID)) { // doc is live - clear it
-        bits.clear(docID);
-        newDeletes++;
-        // now that we know we deleted it and we fully control the hard deletes we can do correct accounting
-        // below.
+      if (hasValue == null || hasValue.hasValue()) {
+        if (bits.get(docID)) { // doc is live - clear it
+          bits.clear(docID);
+          newDeletes++;
+          // now that we know we deleted it and we fully control the hard deletes we can do correct accounting
+          // below.
+        }
+      } else {
+        if (bits.get(docID) == false) {
+          bits.set(docID);
+          newDeletes--;
+        }
       }
     }
     return newDeletes;
@@ -195,13 +204,9 @@ final class PendingSoftDeletes extends PendingDeletes {
     }
   }
 
+  @Override
   Bits getHardLiveDocs() {
-    return hardDeletes.getHardLiveDocs();
+    return hardDeletes.getLiveDocs();
   }
 
-  @Override
-  void liveDocsShared() {
-    super.liveDocsShared();
-    hardDeletes.liveDocsShared();
-  }
 }

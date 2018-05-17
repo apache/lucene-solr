@@ -18,7 +18,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -708,7 +707,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     bucket.add("val", bucketVal);
 
     // fieldQuery currently relies on a string input of the value...
-    String bucketStr = bucketVal instanceof Date ? Instant.ofEpochMilli(((Date)bucketVal).getTime()).toString() : bucketVal.toString();
+    String bucketStr = bucketVal instanceof Date ? ((Date)bucketVal).toInstant().toString() : bucketVal.toString();
     Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
