@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.Test;
 
+import static org.apache.solr.handler.loader.JsonLoader.CHILD_DOC_KEY;
 import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.fastEstimate;
 
 public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
@@ -93,10 +94,13 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
     assertEquals(fastEstimate(document), fastEstimate(map));
 
     SolrInputDocument childDocument = new SolrInputDocument();
+    Map<String, Object> childMap = new HashMap<>();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       childDocument.addField(entry.getKey(), entry.getValue());
+      childMap.put(entry.getKey(), entry.getValue());
     }
+    map.put(CHILD_DOC_KEY, childMap);
     document.addChildDocument(childDocument);
-    assertEquals(fastEstimate(document), fastEstimate(map) * 2);
+    assertEquals(fastEstimate(document), fastEstimate(map));
   }
 }

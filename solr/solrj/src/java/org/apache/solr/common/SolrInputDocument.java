@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ import java.util.Set;
 public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument> implements Iterable<SolrInputField>
 {
   private final Map<String,SolrInputField> _fields;
-  private List<SolrInputDocument> _childDocuments;
+  private Map<String, Object> _childDocuments;
   
   public SolrInputDocument(String... fields) {
     _fields = new LinkedHashMap<>();
@@ -177,9 +178,11 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
 
     if (_childDocuments != null) {
-      clone._childDocuments = new ArrayList<>(_childDocuments.size());
-      for (SolrInputDocument child : _childDocuments) {
-        clone._childDocuments.add(child.deepCopy());
+      clone._childDocuments = new HashMap<>(_childDocuments.size());
+      for (Entry<String, Object> child : _childDocuments.entrySet()) {
+        if (!(child.getValue() instanceof Collection)) {
+          clone._childDocuments.put(child.getKey(), ((SolrInputDocument) child.getValue()).deepCopy());
+        }
       }
     }
     
@@ -247,10 +250,17 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
 
   @Override
   public void addChildDocument(SolrInputDocument child) {
-   if (_childDocuments == null) {
-     _childDocuments = new ArrayList<>();
-   }
-    _childDocuments.add(child);
+    boolean hasAnonChildDocs = (hasChildDocuments() && _childDocuments.containsKey(CHILD_DOC_KEY));
+    List<SolrInputDocument> childList = hasAnonChildDocs? ((List) _childDocuments.get(CHILD_DOC_KEY)): new ArrayList<>(1);
+    childList.add(child);
+    addChildDocument(CHILD_DOC_KEY, childList);
+  }
+
+  public void addChildDocument(String key, Object child) {
+    if (_childDocuments == null) {
+      _childDocuments = new LinkedHashMap<>();
+    }
+    _childDocuments.put(key, child);
   }
   
   public void addChildDocuments(Collection<SolrInputDocument> children) {
@@ -259,9 +269,24 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
   }
 
+  /** Returns the map of child documents, or null if none. */
+  @Override
+  public Map<String, Object> getChildDocumentsMap() {
+    return _childDocuments;
+  }
+
   /** Returns the list of child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
-    return _childDocuments;
+    if (!hasChildDocuments()) return null;
+    List<SolrInputDocument> children = new ArrayList<>();
+    for(Object entry: _childDocuments.values()) {
+      if(entry instanceof Collection) {
+        children.addAll(((Collection<SolrInputDocument>) entry));
+        continue;
+      }
+      children.add(((SolrInputDocument) entry));
+    }
+    return children;
   }
   
   public boolean hasChildDocuments() {

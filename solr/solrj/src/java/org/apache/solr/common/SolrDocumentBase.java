@@ -23,6 +23,8 @@ import java.util.Map;
 
 public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializable {
 
+  public static final String CHILD_DOC_KEY = "_childDocuments_";
+
   /** Get all field names.
   */
   public abstract Collection<String> getFieldNames();
@@ -52,9 +54,13 @@ public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializ
 
   public abstract void addChildDocument(K child);
 
+  public abstract void addChildDocument(String key, Object child);
+
   public abstract void addChildDocuments(Collection<K> children);
 
   public abstract List<K> getChildDocuments();
+
+  public abstract Map<String, Object> getChildDocumentsMap();
 
   public abstract boolean hasChildDocuments();
 
