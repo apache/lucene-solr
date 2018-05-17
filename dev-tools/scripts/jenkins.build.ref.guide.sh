@@ -60,6 +60,7 @@ echoRun "rvm $RUBY_VERSION@$GEMSET"      # Activate this project's gemset
 echoRun "gem install --force --version 3.5.0 jekyll"
 echoRun "gem install --force --version 2.1.0 jekyll-asciidoc"
 echoRun "gem install --force --version 1.1.2 pygments.rb"
+echoRun "gem install --force --version 1.5.6.2 asciidoctor"
 
 cd solr/solr-ref-guide
 
