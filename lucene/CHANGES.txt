@@ -219,6 +219,9 @@ Bug Fixes
   that rewrites to a MatchNoDocsQuery instead of throwing an exception.
   (Bjarke Mortensen, Andy Tran via David Smiley)
 
+* LUCENE-8287: Ensure that empty regex completion queries always return no results.
+  (Julie Tibshirani via Jim Ferenczi)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
