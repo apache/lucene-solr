@@ -2134,9 +2134,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         Object child1 = childDocsMapIter1.next();
         Object child2 = childDocsMapIter2.next();
         if (!(child1 instanceof Collection)) {
-          compareSolrDocument(child1, child2);
+          if (!compareSolrDocument(child1, child2)) {
+            return false;
+          }
         } else {
-          compareSolrDocumentList(child1, child2);
+          if(!compareSolrDocumentList(child1, child2)) {
+            return false;
+          }
         }
       }
       return true;
