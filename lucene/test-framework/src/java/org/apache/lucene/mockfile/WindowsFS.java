@@ -88,19 +88,22 @@ public class WindowsFS extends HandleTrackingFS {
       }
     }
   }
+
+  private Object getKeyOrNull(Path path) {
+    try {
+      return getKey(path);
+    } catch (Exception ignore) {
+      // we don't care if the file doesn't exist
+    }
+    return null;
+  }
   
   /** 
    * Checks that it's ok to delete {@code Path}. If the file
    * is still open, it throws IOException("access denied").
    */
   private void checkDeleteAccess(Path path) throws IOException {
-    Object key = null;
-    try {
-      key = getKey(path);
-    } catch (Throwable ignore) {
-      // we don't care if the file doesn't exist
-    } 
-
+    Object key = getKeyOrNull(path);
     if (key != null) {
       synchronized(openFiles) {
         if (openFiles.containsKey(key)) {
@@ -122,7 +125,20 @@ public class WindowsFS extends HandleTrackingFS {
   public void move(Path source, Path target, CopyOption... options) throws IOException {
     synchronized (openFiles) {
       checkDeleteAccess(source);
+      Object key = getKeyOrNull(target);
       super.move(source, target, options);
+      if (key != null) {
+        Object newKey = getKey(target);
+        if (newKey.equals(key) == false) {
+          // we need to transfer ownership here if we have open files on this file since the getKey() method will
+          // return a different i-node next time we call it with the target path and our onClose method will
+          // trip an assert
+          Integer remove = openFiles.remove(key);
+          if (remove != null) {
+            openFiles.put(newKey, remove);
+          }
+        }
+      }
     }
   }
 
