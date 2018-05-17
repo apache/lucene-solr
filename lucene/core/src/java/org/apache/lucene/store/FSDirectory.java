@@ -250,6 +250,7 @@ public abstract class FSDirectory extends BaseDirectory {
     // If this file was pending delete, we are now bringing it back to life:
     if (pendingDeletes.remove(name)) {
       privateDeleteFile(name, true); // try again to delete it - this is best effort
+      pendingDeletes.remove(name); // watch out - if the delete fails it put
     }
     return new FSIndexOutput(name);
   }
@@ -297,6 +298,7 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
     if (pendingDeletes.remove(dest)) {
       privateDeleteFile(dest, true); // try again to delete it - this is best effort
+      pendingDeletes.remove(dest); // watch out if the delete fails it's back in here.
     }
     Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
   }
