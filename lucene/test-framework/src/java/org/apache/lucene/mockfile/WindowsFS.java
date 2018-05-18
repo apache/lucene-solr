@@ -138,14 +138,16 @@ public class WindowsFS extends HandleTrackingFS {
           // return a different i-node next time we call it with the target path and our onClose method will
           // trip an assert
           Map<Path, Integer> map = openFiles.get(key);
-          Integer v = map.remove(target);
-          if (v != null) {
-            Map<Path, Integer> pathIntegerMap = openFiles.computeIfAbsent(newKey, k -> new HashMap<>());
-            Integer existingValue = pathIntegerMap.getOrDefault(target, 0);
-            pathIntegerMap.put(target, existingValue + v);
-          }
-          if (map.isEmpty()) {
-            openFiles.remove(key);
+          if (map != null) {
+            Integer v = map.remove(target);
+            if (v != null) {
+              Map<Path, Integer> pathIntegerMap = openFiles.computeIfAbsent(newKey, k -> new HashMap<>());
+              Integer existingValue = pathIntegerMap.getOrDefault(target, 0);
+              pathIntegerMap.put(target, existingValue + v);
+            }
+            if (map.isEmpty()) {
+              openFiles.remove(key);
+            }
           }
         }
       }
