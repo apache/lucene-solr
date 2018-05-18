@@ -99,12 +99,7 @@ The {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/package-summary.h
 
 [source,java]
 ----
-StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
-    .withStreamFunction("search", CloudSolrStream.class)
-    .withStreamFunction("unique", UniqueStream.class)
-    .withStreamFunction("top", RankStream.class)
-    .withStreamFunction("group", ReducerStream.class)
-    .withStreamFunction("parallel", ParallelStream.class);
+StreamFactory streamFactory = new DefaultStreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress());
 
 ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 ----
