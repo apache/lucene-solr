@@ -28,6 +28,7 @@ import java.util.Collections;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
@@ -93,6 +94,8 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
   }
 
   public void testRenameWithHardLink() throws Exception {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path path = createTempDir();
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     Directory dir1 = new SimpleFSDirectory(new FilterPath(path, fs));
