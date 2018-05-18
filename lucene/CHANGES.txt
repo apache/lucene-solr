@@ -226,6 +226,9 @@ Bug Fixes
   Future deletes could potentially be exposed to flushes/commits/refreshes if the 
   amount of RAM used by deletes is greater than half of the IW RAM buffer. (Simon Willnauer)
 
+* LUCENE-8320: Fix WindowsFS to correctly account for rename and hardlinks. 
+  (Simon Willnauer, Nhat Nguyen)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
