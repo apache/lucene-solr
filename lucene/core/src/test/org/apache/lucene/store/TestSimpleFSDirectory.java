@@ -24,6 +24,7 @@ import java.nio.file.Path;
 
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -38,6 +39,8 @@ public class TestSimpleFSDirectory extends BaseDirectoryTestCase {
 
   public void testRenameWithPendingDeletes() throws IOException {
     Path path = createTempDir();
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     // Use WindowsFS to prevent open files from being deleted:
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path root = new FilterPath(path, fs);
@@ -60,6 +63,8 @@ public class TestSimpleFSDirectory extends BaseDirectoryTestCase {
   }
 
   public void testCreateOutputWithPendingDeletes() throws IOException {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path path = createTempDir();
     // Use WindowsFS to prevent open files from being deleted:
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
