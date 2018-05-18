@@ -19,16 +19,27 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Random;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ValidatingTokenFilter;
+import org.apache.lucene.analysis.core.TypeTokenFilter;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -77,23 +88,23 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     }
   }
 
+  private class SkipMatchingFilter extends ConditionalTokenFilter {
+    private final Pattern pattern;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    SkipMatchingFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory, String termRegex) {
+      super(input, inputFactory);
+      pattern = Pattern.compile(termRegex);
+    }
+
+    @Override
+    protected boolean shouldFilter() throws IOException {
+      return pattern.matcher(termAtt.toString()).matches() == false;
+    }
+  }
+
   public void testSimple() throws IOException {
-
-    CannedTokenStream cts = new CannedTokenStream(
-        new Token("Alice", 1, 0, 5),
-        new Token("Bob", 1, 6, 9),
-        new Token("Clara", 1, 10, 15),
-        new Token("David", 1, 16, 21)
-    );
-
-    TokenStream t = new ConditionalTokenFilter(cts, AssertingLowerCaseFilter::new) {
-      CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return termAtt.toString().contains("o") == false;
-      }
-    };
-
+    TokenStream stream = whitespaceMockTokenizer("Alice Bob Clara David");
+    TokenStream t = new SkipMatchingFilter(stream, AssertingLowerCaseFilter::new, ".*o.*");
     assertTokenStreamContents(t, new String[]{ "alice", "Bob", "clara", "david" });
     assertTrue(closed);
     assertTrue(reset);
@@ -103,6 +114,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   private final class TokenSplitter extends TokenFilter {
 
     final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    State state = null;
     String half;
 
     protected TokenSplitter(TokenStream input) {
@@ -112,6 +124,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (half == null) {
+        state = captureState();
         if (input.incrementToken() == false) {
           return false;
         }
@@ -119,6 +132,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
         termAtt.setLength(4);
         return true;
       }
+      restoreState(state);
       termAtt.setEmpty().append(half);
       half = null;
       return true;
@@ -126,21 +140,8 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testMultitokenWrapping() throws IOException {
-    CannedTokenStream cts = new CannedTokenStream(
-        new Token("tokenpos1", 0, 9),
-        new Token("tokenpos2", 10, 19),
-        new Token("tokenpos3", 20, 29),
-        new Token("tokenpos4", 30, 39)
-    );
-
-    TokenStream ts = new ConditionalTokenFilter(cts, TokenSplitter::new) {
-      final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return termAtt.toString().contains("2") == false;
-      }
-    };
-
+    TokenStream stream = whitespaceMockTokenizer("tokenpos1 tokenpos2 tokenpos3 tokenpos4");
+    TokenStream ts = new SkipMatchingFilter(stream, TokenSplitter::new, ".*2.*");
     assertTokenStreamContents(ts, new String[]{
         "toke", "npos1", "tokenpos2", "toke", "npos3", "toke", "npos4"
     });
@@ -194,13 +195,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
   public void testWrapGraphs() throws Exception {
 
-    CannedTokenStream cts = new CannedTokenStream(
-        new Token("a", 0, 1),
-        new Token("b", 2, 3),
-        new Token("c", 4, 5),
-        new Token("d", 6, 7),
-        new Token("e", 8, 9)
-    );
+    TokenStream stream = whitespaceMockTokenizer("a b c d e");
 
     SynonymMap sm;
     try (Analyzer analyzer = new MockAnalyzer(random())) {
@@ -209,13 +204,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
       sm = parser.build();
     }
 
-    TokenStream ts = new ConditionalTokenFilter(cts, in -> new SynonymGraphFilter(in, sm, true)) {
-      CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return "c".equals(termAtt.toString()) == false;
-      }
-    };
+    TokenStream ts = new SkipMatchingFilter(stream, in -> new SynonymGraphFilter(in, sm, true), "c");
 
     assertTokenStreamContents(ts, new String[]{
         "f", "a", "b", "c", "d", "e"
@@ -227,6 +216,117 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
         new int[]{
         2, 1, 1, 1, 1, 1
         });
+
+  }
+
+  public void testReadaheadWithNoFiltering() throws IOException {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new ClassicTokenizer();
+        TokenStream sink = new ConditionalTokenFilter(source, in -> new ShingleFilter(in, 2)) {
+          @Override
+          protected boolean shouldFilter() throws IOException {
+            return true;
+          }
+        };
+        return new TokenStreamComponents(source, sink);
+      }
+    };
+
+    String input = "one two three four";
+
+    try (TokenStream ts = analyzer.tokenStream("", input)) {
+      assertTokenStreamContents(ts, new String[]{
+          "one", "one two",
+          "two", "two three",
+          "three", "three four",
+          "four"
+      });
+    }
+  }
+
+  public void testReadaheadWithFiltering() throws IOException {
+
+    CharArraySet exclusions = new CharArraySet(2, true);
+    exclusions.add("three");
+
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new ClassicTokenizer();
+        TokenStream sink = new TermExclusionFilter(exclusions, source, in -> new ShingleFilter(in, 2));
+        return new TokenStreamComponents(source, sink);
+      }
+    };
+
+    String input = "one two three four";
+
+    try (TokenStream ts = analyzer.tokenStream("", input)) {
+      assertTokenStreamContents(ts, new String[]{
+          "one", "one two",
+          "two",
+          "three",
+          "four"
+      });
+    }
+  }
+
+  public void testMultipleConditionalFilters() throws IOException {
+    TokenStream stream = whitespaceMockTokenizer("Alice Bob Clara David");
+    TokenStream t = new SkipMatchingFilter(stream, in -> {
+      TruncateTokenFilter truncateFilter = new TruncateTokenFilter(in, 2);
+      return new AssertingLowerCaseFilter(truncateFilter);
+    }, ".*o.*");
+
+    assertTokenStreamContents(t, new String[]{"al", "Bob", "cl", "da"});
+    assertTrue(closed);
+    assertTrue(reset);
+    assertTrue(ended);
+  }
+
+  public void testFilteredTokenFilters() throws IOException {
+
+    CharArraySet exclusions = new CharArraySet(2, true);
+    exclusions.add("foobar");
+
+    TokenStream ts = whitespaceMockTokenizer("wuthering foobar abc");
+    ts = new TermExclusionFilter(exclusions, ts, in -> new LengthFilter(in, 1, 4));
+    assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
+
+    ts = whitespaceMockTokenizer("foobar abc");
+    ts = new TermExclusionFilter(exclusions, ts, in -> new LengthFilter(in, 1, 4));
+    assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
+
+  }
+
+  public void testConsistentOffsets() throws IOException {
+
+    long seed = random().nextLong();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new NGramTokenizer();
+        TokenStream sink = new KeywordRepeatFilter(source);
+        sink = new ConditionalTokenFilter(sink, in -> new TypeTokenFilter(in, Collections.singleton("word"))) {
+          Random random = new Random(seed);
+          @Override
+          protected boolean shouldFilter() throws IOException {
+            return random.nextBoolean();
+          }
+
+          @Override
+          public void reset() throws IOException {
+            super.reset();
+            random = new Random(seed);
+          }
+        };
+        sink = new ValidatingTokenFilter(sink, "last stage");
+        return new TokenStreamComponents(source, sink);
+      }
+    };
+
+    checkRandomData(random(), analyzer, 1);
 
   }
 
