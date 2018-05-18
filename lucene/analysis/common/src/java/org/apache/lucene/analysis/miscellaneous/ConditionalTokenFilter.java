@@ -22,6 +22,8 @@ import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -35,25 +37,37 @@ import org.apache.lucene.util.AttributeSource;
 public abstract class ConditionalTokenFilter extends TokenFilter {
 
   private enum TokenState {
-    READING, PREBUFFERING, BUFFERING, DELEGATING
+    READING, PREBUFFERING, DELEGATING
   }
 
   private final class OneTimeWrapper extends TokenStream {
 
+    private final OffsetAttribute offsetAtt;
+
     public OneTimeWrapper(AttributeSource attributeSource) {
       super(attributeSource);
+      this.offsetAtt = attributeSource.addAttribute(OffsetAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (state == TokenState.PREBUFFERING) {
-        state = TokenState.BUFFERING;
+        state = TokenState.DELEGATING;
         return true;
       }
-      if (state == TokenState.DELEGATING) {
-        return false;
+      assert state == TokenState.DELEGATING;
+      boolean more = input.incrementToken();
+      if (more && shouldFilter()) {
+        return true;
       }
-      return ConditionalTokenFilter.this.incrementToken();
+      if (more) {
+        endOffset = offsetAtt.endOffset();
+        bufferedState = captureState();
+      }
+      else {
+        exhausted = true;
+      }
+      return false;
     }
 
     @Override
@@ -64,15 +78,28 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
 
     @Override
     public void end() throws IOException {
-      endCalled = true;
-      ConditionalTokenFilter.this.end();
+      // imitate Tokenizer.end() call - endAttributes, set final offset
+      if (exhausted) {
+        if (endCalled == false) {
+          input.end();
+        }
+        endCalled = true;
+        endOffset = offsetAtt.endOffset();
+      }
+      endAttributes();
+      offsetAtt.setOffset(endOffset, endOffset);
     }
   }
 
   private final TokenStream delegate;
   private TokenState state = TokenState.READING;
   private boolean lastTokenFiltered;
+  private State bufferedState = null;
+  private boolean exhausted;
   private boolean endCalled;
+  private int endOffset;
+
+  private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Create a new BypassingTokenFilter
@@ -81,7 +108,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
    */
   protected ConditionalTokenFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
     super(input);
-    this.delegate = inputFactory.apply(new OneTimeWrapper(this));
+    this.delegate = inputFactory.apply(new OneTimeWrapper(this.input));
   }
 
   /**
@@ -95,13 +122,20 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     this.delegate.reset();
     this.state = TokenState.READING;
     this.lastTokenFiltered = false;
+    this.bufferedState = null;
+    this.exhausted = false;
+    this.endOffset = -1;
     this.endCalled = false;
   }
 
   @Override
   public void end() throws IOException {
-    super.end();
-    if (endCalled == false && lastTokenFiltered) {
+    if (endCalled == false) {
+      super.end();
+      endCalled = true;
+    }
+    endOffset = getAttribute(OffsetAttribute.class).endOffset();
+    if (lastTokenFiltered) {
       this.delegate.end();
     }
   }
@@ -116,7 +150,17 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (state == TokenState.READING) {
+        if (bufferedState != null) {
+          restoreState(bufferedState);
+          bufferedState = null;
+          lastTokenFiltered = false;
+          return true;
+        }
+        if (exhausted == true) {
+          return false;
+        }
         if (input.incrementToken() == false) {
+          exhausted = true;
           return false;
         }
         if (shouldFilter()) {
@@ -128,17 +172,27 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
           // to ensure that it can continue to emit more tokens
           delegate.reset();
           boolean more = delegate.incrementToken();
-          state = TokenState.DELEGATING;
-          return more;
+          if (more) {
+            state = TokenState.DELEGATING;
+          }
+          else {
+            lastTokenFiltered = false;
+            state = TokenState.READING;
+            if (bufferedState != null) {
+              delegate.end();
+              int posInc = posIncAtt.getPositionIncrement();
+              restoreState(bufferedState);
+              posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posInc);
+              bufferedState = null;
+              return true;
+            }
+          }
+          return more || bufferedState != null;
         }
         lastTokenFiltered = false;
         return true;
       }
-      if (state == TokenState.BUFFERING) {
-        return input.incrementToken();
-      }
       if (state == TokenState.DELEGATING) {
-        clearAttributes();
         if (delegate.incrementToken()) {
           return true;
         }
