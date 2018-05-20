@@ -25,28 +25,29 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A ConditionalTokenFilter that only applies its wrapped filters to tokens that
- * are not contained in an exclusion set.
+ * are not contained in a protected set.
  */
-public class TermExclusionFilter extends ConditionalTokenFilter {
+public class ProtectedTermFilter extends ConditionalTokenFilter {
 
-  private final CharArraySet excludeTerms;
+  private final CharArraySet protectedTerms;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
-   * Creates a new TermExclusionFilter
-   * @param excludeTerms  the set of terms to skip the wrapped filters for
+   * Creates a new ProtectedTermFilter
+   * @param protectedTerms  the set of terms to skip the wrapped filters for
    * @param input         the input TokenStream
-   * @param inputFactory  a factory function to create the wrapped filters
+   * @param inputFactory  a factory function to create the wrapped filter(s)
    */
-  public TermExclusionFilter(final CharArraySet excludeTerms, TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
+  public ProtectedTermFilter(final CharArraySet protectedTerms, TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
     super(input, inputFactory);
-    this.excludeTerms = excludeTerms;
+    this.protectedTerms = protectedTerms;
   }
 
   @Override
   protected boolean shouldFilter() {
-    return excludeTerms.contains(termAtt.buffer(), 0, termAtt.length()) == false;
+    boolean b = protectedTerms.contains(termAtt.buffer(), 0, termAtt.length());
+    return b == false;
   }
 
 }

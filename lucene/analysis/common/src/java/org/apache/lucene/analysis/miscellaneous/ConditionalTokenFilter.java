@@ -29,10 +29,10 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * Allows skipping TokenFilters based on the current set of attributes.
  *
- * To use, implement the {@link #shouldFilter()} method.  If it returns {@code false},
- * then calling {@link #incrementToken()} will use the wrapped TokenFilter to
- * make changes to the tokenstream.  If it returns {@code true}, then the wrapped
- * filter will be skipped
+ * To use, implement the {@link #shouldFilter()} method.  If it returns {@code true},
+ * then calling {@link #incrementToken()} will use the wrapped TokenFilter(s) to
+ * make changes to the tokenstream.  If it returns {@code false}, then the wrapped
+ * filter(s) will be skipped.
  */
 public abstract class ConditionalTokenFilter extends TokenFilter {
 
@@ -102,9 +102,9 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Create a new BypassingTokenFilter
+   * Create a new ConditionalTokenFilter
    * @param input         the input TokenStream
-   * @param inputFactory  a factory function to create a new instance of the TokenFilter to wrap
+   * @param inputFactory  a factory function to create the wrapped filter(s)
    */
   protected ConditionalTokenFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
     super(input);
@@ -112,7 +112,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   }
 
   /**
-   * Whether or not to execute the wrapped TokenFilter for the current token
+   * Whether or not to execute the wrapped TokenFilter(s) for the current token
    */
   protected abstract boolean shouldFilter() throws IOException;
 

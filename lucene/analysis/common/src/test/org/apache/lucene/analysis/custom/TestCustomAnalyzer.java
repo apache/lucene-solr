@@ -520,7 +520,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     CustomAnalyzer analyzer = CustomAnalyzer.builder()
         .withTokenizer("whitespace")
         .addTokenFilter("lowercase")
-        .when("termexclusion", "protected", "org/apache/lucene/analysis/custom/teststop.txt")
+        .when("protectedterm", "protected", "org/apache/lucene/analysis/custom/teststop.txt")
           .addTokenFilter("reversestring")
         .endwhen()
         .build();
