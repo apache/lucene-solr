@@ -26,9 +26,9 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 
-public class TestTermExclusionFilter extends BaseTokenStreamTestCase {
+public class TestProtectedTermFilter extends BaseTokenStreamTestCase {
 
-  public void testExcludeTerms() throws IOException {
+  public void testBasic() throws IOException {
 
     CannedTokenStream cts = new CannedTokenStream(
         new Token("Alice", 1, 0, 5),
@@ -37,10 +37,10 @@ public class TestTermExclusionFilter extends BaseTokenStreamTestCase {
         new Token("David", 1, 16, 21)
     );
 
-    CharArraySet exclusions = new CharArraySet(5, true);
-    exclusions.add("bob");
+    CharArraySet protectedTerms = new CharArraySet(5, true);
+    protectedTerms.add("bob");
 
-    TokenStream ts = new TermExclusionFilter(exclusions, cts, LowerCaseFilter::new);
+    TokenStream ts = new ProtectedTermFilter(protectedTerms, cts, LowerCaseFilter::new);
     assertTokenStreamContents(ts, new String[]{ "alice", "Bob", "clara", "david" });
 
   }

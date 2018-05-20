@@ -183,8 +183,8 @@ New Features
   filters based on the attributes of the current token. This generalises the keyword
   token logic currently used for stemmers and WDF.  It is integrated into 
   CustomAnalyzer by using the `when` and `whenTerm` builder methods, and a new
-  TermExclusionConditionalFilter is added as an example.  (Alan Woodward,
-  Robert Muir, David Smiley, Steve Rowe, Mike Sokolov)
+  ProtectedTermFilter is added as an example.  (Alan Woodward, Robert Muir,
+  David Smiley, Steve Rowe, Mike Sokolov)
 
 * LUCENE-8310: Ensure IndexFileDeleter accounts for pending deletes. Today we fail
   creating the IndexWriter when the directory has a pending delete. Yet, this

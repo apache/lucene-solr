@@ -1112,6 +1112,53 @@ This filter applies the Porter Stemming Algorithm for English. The results are s
 
 *Out:* "jump", "jump", "jump"
 
+== Protected Term Filter
+
+This filter enables a form of conditional filtering: it only applies its wrapped filters to terms that are *not contained* in a protected set.
+
+*Factory class:* `solr.ProtectedTermFilterFactory`
+
+*Arguments:*
+
+`protected`:: (required) Comma-separated list of files containing protected terms, one per line.
+
+`wrappedFilters`:: (required) Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[java.util.ServiceLoader interface]).  Each filter name must be unique, so if you need to specify the same filter more than once, you must add case-insensitive unique `-id` suffixes to each same-SPI-named filter (note that the `-id` suffix is stripped prior to SPI lookup).
+
+`ignoreCase`:: (true/false, default false) Ignore case when testing for protected words. If true, the protected list should contain lowercase words.
+
+*Example:*
+
+All terms except those in `protectedTerms.txt` are truncated at 4 characters and lowercased:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+  <filter class="solr.ProtectedTermFilterFactory"
+          ignoreCase="true" protected="protectedTerms.txt"
+          wrappedFilters="truncate,lowercase"
+          truncate.prefixLength="4"/>
+</analyzer>
+----
+
+*Example:*
+
+This example includes multiple same-named wrapped filters with unique `-id` suffixes.  Note that both the filter SPI names and `-id` suffixes are treated case-insensitively.
+
+For all terms except those in `protectedTerms.txt`, synonyms are added, terms are reversed, and then synonyms are added for the reversed terms:
+
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+  <filter class="solr.ProtectedTermFilterFactory"
+          ignoreCase="true" protected="protectedTerms.txt"
+          wrappedFilters="SynonymGraph-fwd,ReverseString,SynonymGraph-rev"
+          synonymgraph-FWD.synonyms="fwd-syns.txt"
+          synonymgraph-FWD.synonyms="rev-syns.txt"/>
+</analyzer>
+----
+
 == Remove Duplicates Token Filter
 
 The filter removes duplicate tokens in the stream. Tokens are considered to be duplicates ONLY if they have the same text and position values.

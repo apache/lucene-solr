@@ -248,14 +248,14 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
   public void testReadaheadWithFiltering() throws IOException {
 
-    CharArraySet exclusions = new CharArraySet(2, true);
-    exclusions.add("three");
+    CharArraySet protectedTerms = new CharArraySet(2, true);
+    protectedTerms.add("three");
 
     Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer source = new ClassicTokenizer();
-        TokenStream sink = new TermExclusionFilter(exclusions, source, in -> new ShingleFilter(in, 2));
+        TokenStream sink = new ProtectedTermFilter(protectedTerms, source, in -> new ShingleFilter(in, 2));
         return new TokenStreamComponents(source, sink);
       }
     };
@@ -287,15 +287,15 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
   public void testFilteredTokenFilters() throws IOException {
 
-    CharArraySet exclusions = new CharArraySet(2, true);
-    exclusions.add("foobar");
+    CharArraySet protectedTerms = new CharArraySet(2, true);
+    protectedTerms.add("foobar");
 
     TokenStream ts = whitespaceMockTokenizer("wuthering foobar abc");
-    ts = new TermExclusionFilter(exclusions, ts, in -> new LengthFilter(in, 1, 4));
+    ts = new ProtectedTermFilter(protectedTerms, ts, in -> new LengthFilter(in, 1, 4));
     assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
 
     ts = whitespaceMockTokenizer("foobar abc");
-    ts = new TermExclusionFilter(exclusions, ts, in -> new LengthFilter(in, 1, 4));
+    ts = new ProtectedTermFilter(protectedTerms, ts, in -> new LengthFilter(in, 1, 4));
     assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
 
   }

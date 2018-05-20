@@ -87,7 +87,7 @@ import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassI
  *    .whenTerm(t -&gt; t.length() &gt; 10)
  *      .addTokenFilter(&quot;reversestring&quot;)
  *    .endwhen()
- *    .build()
+ *    .build();
  * </pre>
  */
 public final class CustomAnalyzer extends Analyzer {
