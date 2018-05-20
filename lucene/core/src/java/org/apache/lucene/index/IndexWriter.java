@@ -2652,6 +2652,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           if (isFullyDeleted(rld)) {
             dropDeletedSegment(newSegment);
+            checkpoint();
           }
         } finally {
           release(rld);
