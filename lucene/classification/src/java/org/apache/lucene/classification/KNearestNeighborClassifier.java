@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -90,8 +91,8 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
-   * @param minDocsFreq    {@link MoreLikeThis#minDocFreq} parameter
-   * @param minTermFreq    {@link MoreLikeThis#minTermFreq} parameter
+   * @param minDocsFreq    {@link org.apache.lucene.queries.mlt.MoreLikeThisParameters#minDocFreq} parameter
+   * @param minTermFreq    {@link org.apache.lucene.queries.mlt.MoreLikeThisParameters#minTermFreq} parameter
    * @param classFieldName the name of the field used as the output for the classifier
    * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
    */
@@ -100,8 +101,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.mlt = new MoreLikeThis(indexReader);
-    this.mlt.setAnalyzer(analyzer);
-    this.mlt.setFieldNames(textFieldNames);
+    MoreLikeThisParameters mltParameters = mlt.getParameters();
+    
+    mltParameters.setAnalyzer(analyzer);
+    mltParameters.setFieldNames(textFieldNames);
     this.indexSearcher = new IndexSearcher(indexReader);
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
@@ -109,10 +112,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       this.indexSearcher.setSimilarity(new BM25Similarity());
     }
     if (minDocsFreq > 0) {
-      mlt.setMinDocFreq(minDocsFreq);
+      mltParameters.setMinDocFreq(minDocsFreq);
     }
     if (minTermFreq > 0) {
-      mlt.setMinTermFreq(minTermFreq);
+      mltParameters.setMinTermFreq(minTermFreq);
     }
     this.query = query;
     this.k = k;
@@ -158,19 +161,12 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
   private TopDocs knnSearch(String text) throws IOException {
     BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
+    MoreLikeThisParameters mltParameters = mlt.getParameters();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
+    boostConfiguration.setBoost(true); //terms boost actually helps in MLT queries
     for (String fieldName : textFieldNames) {
-      String boost = null;
-      mlt.setBoost(true); //terms boost actually helps in MLT queries
-      if (fieldName.contains("^")) {
-        String[] field2boost = fieldName.split("\\^");
-        fieldName = field2boost[0];
-        boost = field2boost[1];
-      }
-      if (boost != null) {
-        mlt.setBoostFactor(Float.parseFloat(boost));//if we have a field boost, we add it
-      }
+      boostConfiguration.addFieldWithBoost(fieldName);
       mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));
-      mlt.setBoostFactor(1);// restore neutral boost for next field
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

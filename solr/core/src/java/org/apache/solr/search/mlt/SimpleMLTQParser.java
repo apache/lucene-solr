@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -69,16 +70,18 @@ public class SimpleMLTQParser extends QParser {
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-      
-      mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
-      mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
-      mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
-      mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
-      mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
-      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
-      mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
-      Boolean boost = localParams.getBool("boost", false);
-      mlt.setBoost(boost);
+      MoreLikeThisParameters mltParameters = mlt.getParameters();
+      MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
+
+      mltParameters.setMinTermFreq(localParams.getInt("mintf", MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
+      mltParameters.setMinDocFreq(localParams.getInt("mindf", MoreLikeThisParameters.DEFAULT_MIN_DOC_FREQ));
+      mltParameters.setMinWordLen(localParams.getInt("minwl", MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
+      mltParameters.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
+      mltParameters.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
+      mltParameters.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
+      mltParameters.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+      Boolean boost = localParams.getBool("boost",MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST);
+      boostConfiguration.setBoost(boost);
 
       String[] fieldNames;
       
@@ -112,8 +115,8 @@ public class SimpleMLTQParser extends QParser {
             "MoreLikeThis requires at least one similarity field: qf" );
       }
 
-      mlt.setFieldNames(fieldNames);
-      mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
+      mltParameters.setFieldNames(fieldNames);
+      mltParameters.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
       Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
       BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
