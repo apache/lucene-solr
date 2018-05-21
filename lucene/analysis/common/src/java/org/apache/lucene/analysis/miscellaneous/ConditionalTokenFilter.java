@@ -80,10 +80,10 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     public void end() throws IOException {
       // imitate Tokenizer.end() call - endAttributes, set final offset
       if (exhausted) {
-        if (endCalled == false) {
+        if (endState == null) {
           input.end();
+          endState = captureState();
         }
-        endCalled = true;
         endOffset = offsetAtt.endOffset();
       }
       endAttributes();
@@ -96,7 +96,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   private boolean lastTokenFiltered;
   private State bufferedState = null;
   private boolean exhausted;
-  private boolean endCalled;
+  private State endState = null;
   private int endOffset;
 
   private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
@@ -125,18 +125,22 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     this.bufferedState = null;
     this.exhausted = false;
     this.endOffset = -1;
-    this.endCalled = false;
+    this.endState = null;
   }
 
   @Override
   public void end() throws IOException {
-    if (endCalled == false) {
+    if (endState == null) {
       super.end();
-      endCalled = true;
+      endState = captureState();
+    }
+    else {
+      restoreState(endState);
     }
     endOffset = getAttribute(OffsetAttribute.class).endOffset();
     if (lastTokenFiltered) {
       this.delegate.end();
+      endState = captureState();
     }
   }
 
