@@ -522,7 +522,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testRecovery() throws Exception {
     boolean useKill = random().nextBoolean();
     createAndWaitForCollection(1, 0, 2, 0);
