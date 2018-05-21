@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -88,8 +89,8 @@ public class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot) throws IOException {
-      sub.collect(doc, slot);
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      sub.collect(doc, slot, slotContext);
     }
 
     @Override
@@ -126,8 +127,8 @@ public class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public int collect(DocSet docs, int slot) throws IOException {
-      return sub.collect(docs, slot);
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      return sub.collect(docs, slot, slotContext);
     }
 
     @Override

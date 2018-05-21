@@ -1,4 +1,5 @@
 = JSON Facet API
+:page-tocclass: right
 
 [[JSONFacetAPI]]
 == Facet & Analytics Module
@@ -338,17 +339,18 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 [width="100%",cols="10%,30%,60%",options="header",]
 |===
 |Aggregation |Example |Description
-|sum |sum(sales) |summation of numeric values
-|avg |avg(popularity) |average of numeric values
-|min |min(salary) |minimum value
-|max |max(mul(price,popularity)) |maximum value
-|unique |unique(author) |number of unique values of the given field. Beyond 100 values it yields not exact estimate 
-|uniqueBlock |uniqueBlock(\_root_) |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended. 
-|hll |hll(author) |distributed cardinality estimate via hyper-log-log algorithm
-|percentile |percentile(salary,50,75,99,99.9) |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
-|sumsq |sumsq(rent) |sum of squares of field or function
-|variance |variance(rent) |variance of numeric field or function
-|stddev |stddev(rent) |standard deviation of field or function
+|sum |`sum(sales)` |summation of numeric values
+|avg |`avg(popularity)` |average of numeric values
+|min |`min(salary)` |minimum value
+|max |`max(mul(price,popularity))` |maximum value
+|unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate 
+|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended. 
+|hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
+|percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
+|sumsq |`sumsq(rent)` |sum of squares of field or function
+|variance |`variance(rent)` |variance of numeric field or function
+|stddev |`stddev(rent)` |standard deviation of field or function
+|relatedness |`relatedness('popularity:[100 TO \*]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<Semantic Knowledge Graphs>>.
 |===
 
 Numeric aggregation functions such as `avg` can be on any numeric field, or on another function of multiple numeric fields such as `avg(mul(price,popularity))`.
@@ -513,6 +515,126 @@ Please notice that `\_root_` is an internal field added by Lucene to each child 
 Aggregation `uniqueBlock(\_root_)` is functionally equivalent to `unique(\_root_)`, but is optimized for nested documents block structure.
 It's recommended to define `limit: -1` for `uniqueBlock` calculation, like in above example,
 since default value of `limit` parameter is `10`, while `uniqueBlock` is supposed to be much faster with `-1`.
+
+== Semantic Knowledge Graphs
+
+The `relatedness(...)` aggregation functions allows for sets of documents to be scored relative to Foreground and Background sets of documents, for the purposes of finding ad-hoc relationships that make up a "Semantic Knowledge Graph":
+
+[quote, Grainger et al., 'https://arxiv.org/abs/1609.00464[The Semantic Knowledge Graph]']
+____
+At its heart, the Semantic Knowledge Graph leverages an inverted index, along with a complementary uninverted index, to represent nodes (terms) and edges (the documents within intersecting postings lists for multiple terms/nodes). This provides a layer of indirection between each pair of nodes and their corresponding edge, enabling edges to materialize dynamically from underlying corpus statistics. As a result, any combination of nodes can have edges to any other nodes materialize and be scored to reveal latent relationships between the nodes.
+____
+
+The `relatedness(...)` function is used to "score" these relationships, relative to "Foreground" and "Background" sets of documents, specified in the function params as queries.
+
+Unlike most aggregation functions, the `relatedness(...)` function is aware of if/how it's used in <<NestedFacets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
+
+=== Semantic Knowledge Graph Example
+
+
+.Sample Documents
+[source,bash,subs="verbatim,callouts"]
+----
+curl -sS -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -d '[
+{"id":"01",age:15,"state":"AZ","hobbies":["soccer","painting","cycling"]},
+{"id":"02",age:22,"state":"AZ","hobbies":["swimming","darts","cycling"]},
+{"id":"03",age:27,"state":"AZ","hobbies":["swimming","frisbee","painting"]},
+{"id":"04",age:33,"state":"AZ","hobbies":["darts"]},
+{"id":"05",age:42,"state":"AZ","hobbies":["swimming","golf","painting"]},
+{"id":"06",age:54,"state":"AZ","hobbies":["swimming","golf"]},
+{"id":"07",age:67,"state":"AZ","hobbies":["golf","painting"]},
+{"id":"08",age:71,"state":"AZ","hobbies":["painting"]},
+{"id":"09",age:14,"state":"CO","hobbies":["soccer","frisbee","skiing","swimming","skating"]},
+{"id":"10",age:23,"state":"CO","hobbies":["skiing","darts","cycling","swimming"]},
+{"id":"11",age:26,"state":"CO","hobbies":["skiing","golf"]},
+{"id":"12",age:35,"state":"CO","hobbies":["golf","frisbee","painting","skiing"]},
+{"id":"13",age:47,"state":"CO","hobbies":["skiing","darts","painting","skating"]},
+{"id":"14",age:51,"state":"CO","hobbies":["skiing","golf"]},
+{"id":"15",age:64,"state":"CO","hobbies":["skating","cycling"]},
+{"id":"16",age:73,"state":"CO","hobbies":["painting"]},
+]'
+----
+
+.Example Query
+[source,bash,subs="verbatim,callouts"]
+----
+curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:*
+&back=*:*                                  # <1>
+&fore=age:[35 TO *]                        # <2>
+&json.facet={
+  hobby : {
+    type : terms,
+    field : hobbies,
+    limit : 5,
+    sort : { r1: desc },                   # <3>
+    facet : {
+      r1 : "relatedness($fore,$back)",     # <4>
+      location : {
+        type : terms,
+        field : state,
+        limit : 2,
+        sort : { r2: desc },               # <3>
+        facet : {
+          r2 : "relatedness($fore,$back)"  # <4>
+        }
+      }
+    }
+  }
+}'
+----
+<1> Use the entire collection as our "Background Set"
+<2> Use a query for "age >= 35" to define our (initial) "Foreground Set"
+<3> For both the top level `hobbies` facet & the sub-facet on `state` we will be sorting on the `relatedness(...)` values
+<4> In both calls to the `relatedness(...)` function, we use <<local-parameters-in-queries.adoc#parameter-dereferencing,Parameter Variables>> to refer to the previously defined `fore` and `back` queries. 
+
+.The Facet Response
+[source,javascript,subs="verbatim,callouts"]
+----
+"facets":{
+  "count":16,
+  "hobby":{
+    "buckets":[{
+        "val":"golf",
+        "count":6,                                // <1>
+        "r1":{
+          "relatedness":0.01225,
+          "foreground_popularity":0.3125,         // <2>
+          "background_popularity":0.375},         // <3>
+        "location":{
+          "buckets":[{
+              "val":"az",
+              "count":3,
+              "r2":{
+                "relatedness":0.00496,            // <4>
+                "foreground_popularity":0.1875,   // <6>
+                "background_popularity":0.5}},    // <7>
+            {
+              "val":"co",
+              "count":3,
+              "r2":{
+                "relatedness":-0.00496,           // <5>
+                "foreground_popularity":0.125,
+                "background_popularity":0.5}}]}},
+      {
+        "val":"painting",
+        "count":8,                                // <1>
+        "r1":{
+          "relatedness":0.01097,
+          "foreground_popularity":0.375,
+          "background_popularity":0.5},
+        "location":{
+          "buckets":[{
+            ...
+----
+<1> Even though `hobbies:golf` has a lower total facet `count` then `hobbies:painting`, it has a higher `relatedness` score, indicating that relative to the Background Set (the entire collection) Golf has a stronger correlation to our Foreground Set (people age 35+) then Painting. 
+<2> The number of documents matching `age:[35 TO *]` _and_ `hobbies:golf` is 31.25% of the total number of documents in the Background Set
+<3> 37.5% of the documents in the Background Set match `hobbies:golf`
+<4> The state of Arizona (AZ) has a _positive_ relatedness correlation with the _nested_ Foreground Set (people ages 35+ who play Golf) compared to the Background Set -- ie: "People in Arizona are statistically more likely to be '35+ year old Golfers' then the country as a whole."
+<5> The state of Colorado (CO) has a _negative_ correlation with the nested Foreground Set -- ie: "People in Colorado are statistically less likely to be '35+ year old Golfers' then the country as a whole."
+<6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
+<7> 50% of the documents in the Background Set match `state:AZ`
+
+NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[References]]
 == References
