@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSetUtil;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 /**
  * Facets numbers into a hash table.  The number is either a raw numeric DocValues value, or
@@ -259,7 +260,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
     indexOrderAcc = new SlotAcc(fcontext) {
       @Override
-      public void collect(int doc, int slot) throws IOException {
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       }
 
       @Override
@@ -305,7 +306,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       }
 
       @Override
-      public void collect(int doc, int slot) throws IOException {
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
         throw new UnsupportedOperationException();
       }
 
@@ -428,7 +429,10 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     // Our countAcc is virtual, so this is not needed:
     // countAcc.incrementCount(slot, 1);
 
-    super.collectFirstPhase(segDoc, slot);
+    super.collectFirstPhase(segDoc, slot, slotNum -> {
+        Comparable value = calc.bitsToValue(val);
+        return new SlotContext(sf.getType().getFieldQuery(null, sf, calc.formatValue(value)));
+      });
   }
 
   private void doRehash(LongCounts table) {

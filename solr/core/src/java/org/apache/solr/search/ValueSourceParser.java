@@ -63,6 +63,7 @@ import org.apache.solr.search.facet.PercentileAgg;
 import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
+import org.apache.solr.search.facet.RelatednessAgg;
 import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.facet.UniqueBlockAgg;
 import org.apache.solr.search.facet.VarianceAgg;
@@ -1038,6 +1039,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("agg_percentile", new PercentileAgg.Parser());
+    
+    addParser("agg_" + RelatednessAgg.NAME, new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        // TODO: (fore & back)-ground should be optional -- use hasMoreArguments
+        // if only one arg, assume it's the foreground
+        // (background is the one that will most commonly just be "*:*")
+        // see notes in RelatednessAgg constructor about why we don't do this yet
+        return new RelatednessAgg(fp.parseNestedQuery(), fp.parseNestedQuery());
+      }
+    });
     
     addParser("childfield", new ChildFieldValueSourceParser());
   }

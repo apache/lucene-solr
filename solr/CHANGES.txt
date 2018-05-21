@@ -87,6 +87,9 @@ New Features
 
 * SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
+* SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
+  Knowledge Graphs. (Trey Grainger, hossman)
+
 Bug Fixes
 ----------------------
 

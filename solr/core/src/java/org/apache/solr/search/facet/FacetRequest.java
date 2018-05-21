@@ -87,6 +87,15 @@ public abstract class FacetRequest {
 
   // domain changes
   public static class Domain {
+    /** 
+     * An explicit query domain, <em>ignoring all parent context</em>, expressed in JSON query format.
+     * Mutually exclusive to {@link #excludeTags}
+     */
+    public List<Object> explicitQueries; // list of symbolic filters (JSON query format)
+    /**
+     * Specifies query/filter tags that should be excluded to re-compute the domain from the parent context.
+     * Mutually exclusive to {@link #explicitQueries}
+     */
     public List<String> excludeTags;
     public JoinField joinField;
     public boolean toParent;
@@ -96,12 +105,13 @@ public abstract class FacetRequest {
 
     // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
     public boolean canTransformDomain() {
-      return toParent || toChildren || (excludeTags != null) || (joinField != null);
+      return toParent || toChildren
+        || (explicitQueries != null) || (excludeTags != null) || (joinField != null);
     }
 
     // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
     public boolean canBecomeNonEmpty() {
-      return excludeTags != null;
+      return (explicitQueries != null) || (excludeTags != null);
     }
 
     /** Are we doing a query time join across other documents */
@@ -197,6 +207,7 @@ public abstract class FacetRequest {
    * This is normally true only for facets with a limit.
    */
   public boolean returnsPartial() {
+    // TODO: should the default impl check processEmpty ?
     return false;
   }
 
@@ -242,6 +253,7 @@ class FacetContext {
   public static final int IS_REFINEMENT=0x02;
   public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
 
+  FacetProcessor processor;
   Map<String,Object> facetInfo; // refinement info for this node
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
@@ -459,6 +471,17 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
           domain.excludeTags = excludeTags;
         }
 
+        if (domainMap.containsKey("query")) {
+          domain.explicitQueries = parseJSONQueryStruct(domainMap.get("query"));
+          if (null == domain.explicitQueries) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'query' domain can not be null or empty");
+          } else if (null != domain.excludeTags) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'query' domain can not be combined with 'excludeTags'");
+          }
+        }
+        
         String blockParent = (String)domainMap.get("blockParent");
         String blockChildren = (String)domainMap.get("blockChildren");
 
@@ -475,21 +498,29 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         Object filterOrList = domainMap.get("filter");
         if (filterOrList != null) {
           assert domain.filters == null;
-          if (filterOrList instanceof List) {
-            domain.filters = (List<Object>)filterOrList;
-          } else {
-            domain.filters = new ArrayList<>(1);
-            domain.filters.add(filterOrList);
-          }
+          domain.filters = parseJSONQueryStruct(filterOrList);
         }
 
-
       } // end "domain"
-
-
     }
   }
 
+  /** returns null on null input, otherwise returns a list of the JSON query structures -- either
+   * directly from the raw (list) input, or if raw input is a not a list then it encapsulates 
+   * it in a new list.
+   */
+  private List<Object> parseJSONQueryStruct(Object raw) {
+    List<Object> result = null;
+    if (null == raw) {
+      return result;
+    } else if (raw instanceof List) {
+      result = (List<Object>) raw;
+    } else {
+      result = new ArrayList<>(1);
+      result.add(raw);
+    }
+    return result;
+  }
 
   public String getField(Map<String,Object> args) {
     Object fieldName = args.get("field"); // TODO: pull out into defined constant
