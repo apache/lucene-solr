@@ -32,8 +32,8 @@ Jetty 9.3.14.v20161028
 Bug Fixes
 ----------------------
 
-* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
-  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
 
 ==================  6.6.3 ==================
 
