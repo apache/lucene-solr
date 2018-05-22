@@ -71,6 +71,7 @@ import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
+import org.apache.lucene.analysis.minhash.MinHashFilter;
 import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.FingerprintFilter;
@@ -120,6 +121,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static {
     // Fingerprint filter needs to consume the whole tokenstream, so conditionals don't make sense here
     avoidConditionals.add(FingerprintFilter.class);
+    // Ditto MinHashFilter
+    avoidConditionals.add(MinHashFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
