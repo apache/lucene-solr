@@ -162,7 +162,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     final String idFormat = TestUtil.getPostingsFormat("id");
     final String contentFormat = TestUtil.getPostingsFormat("content");
-    assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
 
     int START_COUNT = 57;
     int NUM_DIR = TEST_NIGHTLY ? 50 : 5;

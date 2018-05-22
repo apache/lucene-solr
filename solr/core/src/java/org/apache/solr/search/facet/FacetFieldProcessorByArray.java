@@ -18,11 +18,15 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
@@ -115,7 +119,28 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
             throw new RuntimeException(e);
           }
         },
-        Object::toString); // getFieldQueryVal
+        obj -> valueObjToString(obj)
+    );
   }
 
+  private static String valueObjToString(Object obj) {
+    return (obj instanceof Date) ? ((Date)obj).toInstant().toString() : obj.toString();
+  }
+
+                                                           
+  /**
+   * SlotContext to use during all {@link SlotAcc} collection.
+   *
+   * @see #lookupOrd
+   */
+  public IntFunction<SlotContext> slotContext = (slotNum) -> {
+    try {
+      Object value = sf.getType().toObject(sf, lookupOrd(slotNum));
+      Query q = makeBucketQuery(valueObjToString(value));
+      assert null != q : "null query for: '" + value + "'";
+      return new SlotContext(q);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
 }

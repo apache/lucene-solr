@@ -590,6 +590,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      */
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
+      // if someone calls listAliases, lets ensure we return an up to date response
+      zkStateReader.aliasesManager.update();
       Aliases aliases = zkStateReader.getAliases();
       if (aliases != null) {
         // the aliases themselves...

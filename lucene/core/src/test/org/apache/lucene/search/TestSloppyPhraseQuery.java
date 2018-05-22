@@ -195,10 +195,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     @Override
     public void collect(int doc) throws IOException {
       totalHits++;
-      if (scorer instanceof SloppyPhraseScorer)
-        max = Math.max(max, ((SloppyPhraseScorer)scorer).freq());
-      else
-        max = Math.max(max, ((ExactPhraseScorer)scorer).freq());
+      PhraseScorer ps = (PhraseScorer) scorer;
+      float freq = ps.matcher.sloppyWeight();
+      while (ps.matcher.nextMatch()) {
+        freq += ps.matcher.sloppyWeight();
+      }
+      max = Math.max(max, freq);
     }
     
     @Override
@@ -207,7 +209,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
   }
   
-  /** checks that no scores or freqs are infinite */
+  /** checks that no scores are infinite */
   private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
     searcher.search(pq, new SimpleCollector() {
       Scorer scorer;
@@ -222,7 +224,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       
       @Override
       public void collect(int doc) throws IOException {
-        assertFalse(Float.isInfinite(((SloppyPhraseScorer)scorer).freq()));
         assertFalse(Float.isInfinite(scorer.score()));
       }
       

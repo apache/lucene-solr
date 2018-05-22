@@ -54,7 +54,7 @@ import org.tartarus.snowball.ext.TurkishStemmer;
  * @lucene.experimental
  */
 public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public IStemmer getStemmer(LanguageCode language) {
@@ -137,7 +137,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
           .get(language);
 
       if (stemmerClazz == null) {
-        logger.warn("No Snowball stemmer class for: " + language.name()
+        log.warn("No Snowball stemmer class for: " + language.name()
             + ". Quality of clustering may be degraded.");
         return IdentityStemmer.INSTANCE;
       }
@@ -145,7 +145,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
       try {
         return new SnowballStemmerAdapter(stemmerClazz.newInstance());
       } catch (Exception e) {
-        logger.warn("Could not instantiate snowball stemmer"
+        log.warn("Could not instantiate snowball stemmer"
             + " for language: " + language.name()
             + ". Quality of clustering may be degraded.", e);
 
@@ -166,7 +166,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
         ReflectionUtils.classForName(ArabicStemmer.class.getName(), false);
         ReflectionUtils.classForName(ArabicNormalizer.class.getName(), false);
       } catch (ClassNotFoundException e) {
-        logger
+        log
             .warn(
                 "Could not instantiate Lucene stemmer for Arabic, clustering quality "
                     + "of Arabic content may be degraded. For best quality clusters, "

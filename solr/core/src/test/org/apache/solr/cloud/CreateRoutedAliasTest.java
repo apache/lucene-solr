@@ -32,7 +32,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -57,9 +56,6 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
-  private CloudSolrClient solrClient;
-  private CloseableHttpClient httpClient;
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).configure();
@@ -73,27 +69,18 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 //        .process(cluster.getSolrClient());
   }
 
-  @After
-  public void finish() throws Exception {
-    IOUtils.close(solrClient, httpClient);
-  }
+  private CloudSolrClient solrClient;
 
   @Before
   public void doBefore() throws Exception {
     solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) solrClient.getHttpClient();
-    // delete aliases first since they refer to the collections
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    //TODO create an API to delete collections attached to the routed alias when the alias is removed
-    zkStateReader.aliasesManager.update();// ensure we're seeing the latest
-    zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> {
-      Aliases a = zkStateReader.getAliases();
-      for (String alias : a.getCollectionAliasMap().keySet()) {
-        a = a.cloneWithCollectionAlias(alias,null); // remove
-      }
-      return a;
-    });
-    cluster.deleteAllCollections();
+  }
+
+  @After
+  public void doAfter() throws Exception {
+    cluster.deleteAllCollections(); // deletes aliases too
+
+    solrClient.close();
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the created
@@ -235,7 +222,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
           "+30MINUTE",
           "evt_dt",
           CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1)
-          )
+      )
           .setTimeZone(TimeZone.getTimeZone("GMT-10"))
           .process(client);
     }
@@ -366,6 +353,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
+    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       if (200 != response.getStatusLine().getStatusCode()) {
         System.err.println(EntityUtils.toString(response.getEntity()));
@@ -375,6 +363,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
+    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
       String entity = EntityUtils.toString(response.getEntity());

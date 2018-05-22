@@ -120,8 +120,10 @@ public abstract class FacetMerger {
 
       subs = null;
       for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
-        Collection<String> childSubs = getSubsWithPartial(entry.getValue());
-        if (childSubs.size() > 0 || entry.getValue().returnsPartial()) {
+        final FacetRequest entryVal = entry.getValue();
+        Collection<String> childSubs = getSubsWithPartial(entryVal);
+        // TODO: should returnsPartial() check processEmpty internally?
+        if (childSubs.size() > 0 || entryVal.returnsPartial() || entryVal.processEmpty) {
           if (subs == null) {
             subs = new ArrayList<>(freq.getSubFacets().size());
           }

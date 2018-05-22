@@ -27,7 +27,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.3.20.v20170531
+Jetty 9.4.10.v20180503
 
 Upgrade Notes
 ----------------------
@@ -41,6 +41,10 @@ Upgrade Notes
   method signatures was required to fix it. Third party components that use this API
   need to be updated. (Eros Taborelli, Erick Erickson, ab)
 
+* LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
+  MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
+  switch to "Direct" instead. (Dawid Weiss)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -52,7 +56,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.4.8.v20171121
+Jetty 9.4.10.v20180503
 
 Upgrade Notes
 ----------------------
@@ -112,6 +116,9 @@ New Features
 
 * SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
+* SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
+  Knowledge Graphs. (Trey Grainger, hossman)
+
 Bug Fixes
 ----------------------
 
@@ -121,9 +128,6 @@ Bug Fixes
 
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
-
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
-  state (Cao Manh Dat)
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
@@ -164,15 +168,9 @@ Bug Fixes
 
 * SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
 
-* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
-  (Rohit, Varun Thacker)
-
 * SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
 
 * SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
-
-* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
-  (Amrit Sarkar, Varun Thacker)
 
 * SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
 
@@ -204,7 +202,33 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
-* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
+
+* SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
+  recoveries. (Mark Miller)
+
+* SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
+  MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
+  alias refers to it.  (David Smiley)
+
+* SOLR-12192: Fixed a solr cli error message when ulimits are unlimited. (Martijn Koster)
+
+* SOLR-12258: A V2 request referencing a collection or alias may fail to resolve it if it was just recently created.
+  Now we sync with ZooKeeper and try one more time.  V1 partially did this but only for aliases; now it does both.
+  (David Smiley)
+
+* SOLR-12170: JSON Facet API: Terms facet on a date field sometimes failed with an exception complaining
+  about "Invalid Date String". (yonik)
+
+* SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
+  (Mikhail Khludnev) 
+
+* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
+
+* SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
+
+* SOLR-12377: Don't spin off overseer when Zk controller is closed (Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -219,9 +243,10 @@ Optimizations
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
 
-* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+* SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
+  (Jeff Miller, David Smiley)
 
-* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+* SOLR-12333: Removed redundant lines for handling lists in JSON reponse writers. (David Smiley via Mikhail Khludnev)
 
 Other Changes
 ----------------------
@@ -280,6 +305,8 @@ Other Changes
 
 * SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
+* SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -299,6 +326,24 @@ Bug Fixes
 * SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
+
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
+
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
+  (Rohit, Varun Thacker)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
 
 ==================  7.3.0 ==================
 
@@ -2014,6 +2059,25 @@ Other Changes
   (Uwe Schindler)
 
 * SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
+
+==================  6.6.4 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.10.v20180503
+
+Bug Fixes
+----------------------
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  6.6.3 ==================
 

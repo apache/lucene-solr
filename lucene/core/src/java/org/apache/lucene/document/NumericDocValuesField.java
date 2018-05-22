@@ -59,8 +59,18 @@ public class NumericDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null
    */
   public NumericDocValuesField(String name, long value) {
+    this(name, Long.valueOf(value));
+  }
+
+  /**
+   * Creates a new DocValues field with the specified 64-bit long value
+   * @param name field name
+   * @param value 64-bit long value or <code>null</code> if the existing fields value should be removed on update
+   * @throws IllegalArgumentException if the field name is null
+   */
+  public NumericDocValuesField(String name, Long value) {
     super(name, TYPE);
-    fieldsData = Long.valueOf(value);
+    fieldsData = value;
   }
 
   /**

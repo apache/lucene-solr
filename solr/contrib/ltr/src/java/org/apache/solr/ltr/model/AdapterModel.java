@@ -26,6 +26,8 @@ import org.apache.solr.ltr.norm.Normalizer;
 /**
  * A scoring model whose initialization is completed via its
  * {@link #init(SolrResourceLoader)} method.
+ *
+ * @since 7.3
  */
 public abstract class AdapterModel extends LTRScoringModel {
 

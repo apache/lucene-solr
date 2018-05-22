@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -111,24 +110,8 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      IndexOptions indexOptions = context.reader()
-          .getFieldInfos()
-          .fieldInfo(getTerm().field())
-          .getIndexOptions();
-      float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
-      LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
+      LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), term.field(), scoreMode.needsScores());
       return new TermScorer(this, termsEnum, scoreMode, scorer);
-    }
-
-    private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
-      // TODO: store the max term freq?
-      if (indexOptions.compareTo(IndexOptions.DOCS) <= 0) {
-        // omitTFAP field, tf values are implicitly 1.
-        return 1;
-      } else {
-        assert ttf >= 0;
-        return Math.min(Integer.MAX_VALUE, ttf - df + 1);
-      }
     }
 
     @Override
@@ -168,7 +151,7 @@ public class TermQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Integer.MAX_VALUE);
+          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), term.field(), true);
           Explanation freqExplanation = Explanation.match(freq, "freq, occurrences of term within document");
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(

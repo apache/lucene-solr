@@ -46,6 +46,7 @@ abstract class DocValuesUpdate {
   // used in BufferedDeletes to apply this update only to a slice of docs. It's initialized to BufferedUpdates.MAX_INT
   // since it's safe and most often used this way we safe object creations.
   final int docIDUpto;
+  final boolean hasValue;
 
   /**
    * Constructor.
@@ -53,12 +54,13 @@ abstract class DocValuesUpdate {
    * @param term the {@link Term} which determines the documents that will be updated
    * @param field the {@link NumericDocValuesField} to update
    */
-  protected DocValuesUpdate(DocValuesType type, Term term, String field, int docIDUpto) {
+  protected DocValuesUpdate(DocValuesType type, Term term, String field, int docIDUpto, boolean hasValue) {
     assert docIDUpto >= 0 : docIDUpto + "must be >= 0";
     this.type = type;
     this.term = term;
     this.field = field;
     this.docIDUpto = docIDUpto;
+    this.hasValue = hasValue;
   }
 
   abstract long valueSizeInBytes();
@@ -69,12 +71,17 @@ abstract class DocValuesUpdate {
     sizeInBytes += term.bytes.bytes.length;
     sizeInBytes += field.length() * Character.BYTES;
     sizeInBytes += valueSizeInBytes();
+    sizeInBytes += 1; // hasValue
     return sizeInBytes;
   }
 
   protected abstract String valueToString();
 
   abstract void writeTo(DataOutput output) throws IOException;
+
+  boolean hasValue() {
+    return hasValue;
+  }
   
   @Override
   public String toString() {
@@ -84,7 +91,7 @@ abstract class DocValuesUpdate {
   /** An in-place update to a binary DocValues field */
   static final class BinaryDocValuesUpdate extends DocValuesUpdate {
     private final BytesRef value;
-    
+
     /* Size of BytesRef: 2*INT + ARRAY_HEADER + PTR */
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*Integer.BYTES + NUM_BYTES_OBJECT_REF;
 
@@ -93,7 +100,7 @@ abstract class DocValuesUpdate {
     }
     
     private BinaryDocValuesUpdate(Term term, String field, BytesRef value, int docIDUpTo) {
-      super(DocValuesType.BINARY, term, field, docIDUpTo);
+      super(DocValuesType.BINARY, term, field, docIDUpTo, value != null);
       this.value = value;
     }
 
@@ -106,7 +113,7 @@ abstract class DocValuesUpdate {
 
     @Override
     long valueSizeInBytes() {
-      return RAW_VALUE_SIZE_IN_BYTES + value.bytes.length;
+      return RAW_VALUE_SIZE_IN_BYTES + (value == null ? 0 : value.bytes.length);
     }
 
     @Override
@@ -114,8 +121,14 @@ abstract class DocValuesUpdate {
       return value.toString();
     }
 
+    BytesRef getValue() {
+      assert hasValue : "getValue should only be called if this update has a value";
+      return value;
+    }
+
     @Override
     void writeTo(DataOutput out) throws IOException {
+      assert hasValue;
       out.writeVInt(value.length);
       out.writeBytes(value.bytes, value.offset, value.length);
     }
@@ -135,11 +148,16 @@ abstract class DocValuesUpdate {
     private final long value;
 
     NumericDocValuesUpdate(Term term, String field, long value) {
-      this(term, field, value, BufferedUpdates.MAX_INT);
+      this(term, field, value, BufferedUpdates.MAX_INT, true);
     }
 
-    private NumericDocValuesUpdate(Term term, String field, long value, int docIDUpTo) {
-      super(DocValuesType.NUMERIC, term, field, docIDUpTo);
+    NumericDocValuesUpdate(Term term, String field, Long value) {
+      this(term, field, value != null ? value.longValue() : -1, BufferedUpdates.MAX_INT, value != null);
+    }
+
+
+    private NumericDocValuesUpdate(Term term, String field, long value, int docIDUpTo, boolean hasValue) {
+      super(DocValuesType.NUMERIC, term, field, docIDUpTo, hasValue);
       this.value = value;
     }
 
@@ -147,7 +165,7 @@ abstract class DocValuesUpdate {
       if (docIDUpto == this.docIDUpto) {
         return this;
       }
-      return new NumericDocValuesUpdate(term, field, value, docIDUpto);
+      return new NumericDocValuesUpdate(term, field, value, docIDUpto, hasValue);
     }
 
     @Override
@@ -157,16 +175,22 @@ abstract class DocValuesUpdate {
 
     @Override
     protected String valueToString() {
-      return Long.toString(value);
+      return hasValue ? Long.toString(value) : "null";
     }
 
     @Override
     void writeTo(DataOutput out) throws IOException {
+      assert hasValue;
       out.writeZLong(value);
     }
 
     static long readFrom(DataInput in) throws IOException {
       return in.readZLong();
+    }
+
+    long getValue() {
+      assert hasValue : "getValue should only be called if this update has a value";
+      return value;
     }
   }
 }

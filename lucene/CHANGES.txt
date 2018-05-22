@@ -41,6 +41,9 @@ API Changes
 * LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
   been removed (Alan Woodward)
 
+* LUCENE-8267: Memory codecs removed from the codebase (MemoryPostings,
+  MemoryDocValues). (Dawid Weiss)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -109,6 +112,13 @@ API Changes
 * LUCENE-8248: MergePolicyWrapper is renamed to FilterMergePolicy and now
   also overrides getMaxCFSSegmentSizeMB (Mike Sokolov via Mike McCandless)
 
+* LUCENE-8303: LiveDocsFormat is now only responsible for (de)serialization of
+  live docs. (Adrien Grand)
+
+Changes in Runtime Behavior
+
+* LUCENE-8309: Live docs are no longer backed by a FixedBitSet. (Adrien Grand)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together
@@ -144,6 +154,9 @@ New Features
   This allows exact hit extraction and will enable implementation of accurate 
   highlighters. (Alan Woodward, Adrien Grand, David Smiley)
 
+* LUCENE-8249: Implement Matches API for phrase queries (Alan Woodward, Adrien 
+  Grand)
+
 * LUCENE-8246: Allow to customize the number of deletes a merge claims. This
   helps merge policies in the soft-delete case to correctly implement retention
   policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
@@ -154,6 +167,31 @@ New Features
 
 * LUCENE-8265: WordDelimter/GraphFilter now have an option to skip tokens
   marked with KeywordAttribute (Mike Sokolov via Mike McCandless)
+
+* LUCENE-8297: Add IW#tryUpdateDocValues(Reader, int, Fields...) IndexWriter can
+  update doc values for a specific term but this might affect all documents 
+  containing the term. With tryUpdateDocValues users can update doc-values 
+  fields for individual documents. This allows for instance to soft-delete
+  individual documents. (Simon Willnauer)
+
+* LUCENE-8298: Allow DocValues updates to reset a value. Passing a DV field with a null
+  value to IW#updateDocValues or IW#tryUpdateDocValues will now remove the value from the 
+  provided document. This allows to undelete a soft-deleted document unless it's been claimed
+  by a merge. (Simon Willnauer) 
+
+* LUCENE-8273: ConditionalTokenFilter allows analysis chains to skip particular token
+  filters based on the attributes of the current token. This generalises the keyword
+  token logic currently used for stemmers and WDF.  It is integrated into 
+  CustomAnalyzer by using the `when` and `whenTerm` builder methods, and a new
+  ProtectedTermFilter is added as an example.  (Alan Woodward, Robert Muir,
+  David Smiley, Steve Rowe, Mike Sokolov)
+
+* LUCENE-8310: Ensure IndexFileDeleter accounts for pending deletes. Today we fail
+  creating the IndexWriter when the directory has a pending delete. Yet, this
+  is mainly done to prevent writing still existing files more than once.
+  IndexFileDeleter already accounts for that for existing files which we can
+  now use to also take pending deletes into account which ensures that all file
+  generations per segment always go forward. (Simon Willnauer)
 
 Bug Fixes
 
@@ -170,10 +208,6 @@ Bug Fixes
   index file names for updated doc values fields (Simon Willnauer,
   Michael McCandless, Nhat Nguyen)
 
-* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
-  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
-  Adrien Grand)
-
 * LUCENE-8275: Push up #checkPendingDeletes to Directory to ensure IW fails if 
   the directory has pending deletes files even if the directory is filtered or 
   a FileSwitchDirectory (Simon Willnauer, Robert Muir)
@@ -181,7 +215,26 @@ Bug Fixes
 * LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
   refresh on exception (Mike McCandless)
 
+* LUCENE-8305: ComplexPhraseQuery.rewrite now handles an embedded MultiTermQuery
+  that rewrites to a MatchNoDocsQuery instead of throwing an exception.
+  (Bjarke Mortensen, Andy Tran via David Smiley)
+
+* LUCENE-8287: Ensure that empty regex completion queries always return no results.
+  (Julie Tibshirani via Jim Ferenczi)
+
+* LUCENE-8317: Prevent concurrent deletes from being applied during full flush.
+  Future deletes could potentially be exposed to flushes/commits/refreshes if the 
+  amount of RAM used by deletes is greater than half of the IW RAM buffer. (Simon Willnauer)
+
+* LUCENE-8320: Fix WindowsFS to correctly account for rename and hardlinks. 
+  (Simon Willnauer, Nhat Nguyen)
+
 Other
+
+* LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
+* LUCENE-8261: InterpolatedProperties.interpolate and recursive property
+  references. (Steve Rowe, Dawid Weiss)
 
 * LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
   the javadoc. (Dawid Weiss)
@@ -198,6 +251,13 @@ Other
 * LUCENE-8122, LUCENE-8175: Upgrade analysis/icu to ICU 61.1.
   (Robert Muir, Adrien Grand, Uwe Schindler)
 
+* LUCENE-8291: Remove QueryTemplateManager utility class from XML queryparser.
+  This class is just a general XML transforming tool (using property files and
+  XSLT) and has nothing to do with query parsing. It can easily be implemented
+  using more sophisticated libraries or using XSL transformers from the JDK.
+  This change also removes the Lucene demo webapp to prevent XSS issues in
+  untested/unmaintained code. (Uwe Schindler)
+
 Build
 
 * LUCENE-7935: Publish .sha512 hash files with the release artifacts and stop
@@ -209,6 +269,14 @@ Documentation
 
 * LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
   (Mike Sokolov via Mike McCandless)
+
+======================= Lucene 7.3.1 =======================
+
+Bug fixes
+
+* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
+  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
+  Adrien Grand)
 
 ======================= Lucene 7.3.0 =======================
 
@@ -851,6 +919,9 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.4 =======================
+(No Changes)
 
 ======================= Lucene 6.6.3 =======================
 

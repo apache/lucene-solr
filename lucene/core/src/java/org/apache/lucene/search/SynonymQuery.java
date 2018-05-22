@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -184,7 +182,7 @@ public final class SynonymQuery extends Query {
             assert scorer instanceof TermScorer;
             freq = ((TermScorer)scorer).freq();
           }
-          LeafSimScorer docScorer = new LeafSimScorer(simWeight, context.reader(), true, Float.MAX_VALUE);
+          LeafSimScorer docScorer = new LeafSimScorer(simWeight, context.reader(), terms[0].field(), true);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
@@ -199,26 +197,14 @@ public final class SynonymQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      IndexOptions indexOptions = IndexOptions.NONE;
-      if (terms.length > 0) {
-        FieldInfo info = context.reader()
-            .getFieldInfos()
-            .fieldInfo(terms[0].field());
-        if (info != null) {
-          indexOptions = info.getIndexOptions();
-        }
-      }
       // we use termscorers + disjunction as an impl detail
       List<Scorer> subScorers = new ArrayList<>();
-      long totalMaxFreq = 0;
       for (int i = 0; i < terms.length; i++) {
         TermState state = termStates[i].get(context);
         if (state != null) {
           TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
           termsEnum.seekExact(terms[i].bytes(), state);
-          long termMaxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
-          totalMaxFreq += termMaxFreq;
-          LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), true, termMaxFreq);
+          LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), terms[0].field(), true);
           subScorers.add(new TermScorer(this, termsEnum, ScoreMode.COMPLETE, simScorer));
         }
       }
@@ -228,7 +214,7 @@ public final class SynonymQuery extends Query {
         // we must optimize this case (term not in segment), disjunctionscorer requires >= 2 subs
         return subScorers.get(0);
       } else {
-        LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), true, totalMaxFreq);
+        LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), terms[0].field(), true);
         return new SynonymScorer(simScorer, this, subScorers);
       }
     }
@@ -238,17 +224,6 @@ public final class SynonymQuery extends Query {
       return true;
     }
 
-  }
-
-  private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
-    // TODO: store the max term freq?
-    if (indexOptions.compareTo(IndexOptions.DOCS) <= 0) {
-      // omitTFAP field, tf values are implicitly 1.
-      return 1;
-    } else {
-      assert ttf >= 0;
-      return Math.min(Integer.MAX_VALUE, ttf - df + 1);
-    }
   }
 
   static class SynonymScorer extends DisjunctionScorer {
@@ -266,7 +241,8 @@ public final class SynonymQuery extends Query {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      return similarity.maxScore();
+      // TODO: merge impacts to get better score upper bounds
+      return similarity.getSimScorer().score(Float.MAX_VALUE, 1L);
     }
 
     /** combines TF of all subs. */

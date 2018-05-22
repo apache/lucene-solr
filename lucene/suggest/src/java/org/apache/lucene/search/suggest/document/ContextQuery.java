@@ -167,11 +167,19 @@ public class ContextQuery extends CompletionQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
+    final Automaton innerAutomaton = innerWeight.getAutomaton();
+
+    // If the inner automaton matches nothing, then we return an empty weight to avoid
+    // traversing all contexts during scoring.
+    if (innerAutomaton.getNumStates() == 0) {
+      return new CompletionWeight(this, innerAutomaton);
+    }
+
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
     Automaton optionalSepLabel = Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL));
-    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerWeight.getAutomaton());
+    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerAutomaton);
     Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
     contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
 
