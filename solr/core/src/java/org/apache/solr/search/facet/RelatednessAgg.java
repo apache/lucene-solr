@@ -137,7 +137,9 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
     
-    return new SKGSlotAcc(fcontext, numSlots, fgFilters, bgQ);
+    DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
+    DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
+    return new SKGSlotAcc(fcontext, numSlots, fgSet, bgSet);
   }
 
   @Override
@@ -151,15 +153,11 @@ public class RelatednessAgg extends AggValueSource {
     private final DocSet bgSet;
     private final long fgSize;
     private final long bgSize;
-    private final List<Query> fgFilters;
-    private final Query bgQ;
-    public SKGSlotAcc(FacetContext fcontext, int numSlots,
-                      List<Query> fgFilters, Query bgQ) throws IOException {
+    public SKGSlotAcc(final FacetContext fcontext, final int numSlots,
+                      final DocSet fgSet, final DocSet bgSet) throws IOException {
       super(fcontext);
-      this.fgFilters = fgFilters;
-      this.bgQ = bgQ;
-      this.fgSet = fcontext.searcher.getDocSet(fgFilters);
-      this.bgSet = fcontext.searcher.getDocSet(bgQ);
+      this.fgSet = fgSet;
+      this.bgSet = bgSet;
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
@@ -174,8 +172,8 @@ public class RelatednessAgg extends AggValueSource {
       Query slotQ = slotContext.apply(slot).getSlotQuery();
       if (null == slotQ) {
         // extremeley special edge case...
-        // the only way this should be possible is if our skg() function is used as a "top level" stat
-        // w/o being nested under any facet, in which case it should be a FacetQuery w/no parent...
+        // the only way this should be possible is if our relatedness() function is used as a "top level"
+        // stat w/o being nested under any facet, in which case it should be a FacetQuery w/no parent...
         assert fcontext.processor.freq instanceof FacetQuery : fcontext.processor.freq;
         assert null == fcontext.parent;
         assert null == fcontext.filter;
