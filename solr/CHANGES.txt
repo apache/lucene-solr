@@ -228,6 +228,8 @@ Bug Fixes
 
 * SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
 
+* SOLR-12377: Don't spin off overseer when Zk controller is closed (Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
