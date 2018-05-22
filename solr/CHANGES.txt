@@ -248,6 +248,9 @@ Optimizations
 
 * SOLR-12333: Removed redundant lines for handling lists in JSON reponse writers. (David Smiley via Mikhail Khludnev)
 
+* SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
+  search and update operations. (Varun Thacker, shalin)
+
 Other Changes
 ----------------------
 
