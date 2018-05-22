@@ -105,7 +105,7 @@ public class ExecutorUtil {
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(1, 1,
             0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>(),
+            new LinkedBlockingQueue<>(),
             threadFactory);
   }
 
@@ -122,7 +122,7 @@ public class ExecutorUtil {
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
         60L, TimeUnit.SECONDS,
-        new SynchronousQueue<Runnable>(),
+        new SynchronousQueue<>(),
         threadFactory);
   }
 
@@ -131,20 +131,30 @@ public class ExecutorUtil {
 
     private static final int MAX_THREAD_NAME_LEN = 512;
 
+    private final boolean enableSubmitterStackTrace;
+
     public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+      this.enableSubmitterStackTrace = true;
     }
 
     public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+      this.enableSubmitterStackTrace = true;
     }
 
     public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
+      this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, true);
+    }
+
+    public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, boolean enableSubmitterStackTrace) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
+      this.enableSubmitterStackTrace = enableSubmitterStackTrace;
     }
 
     public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+      this.enableSubmitterStackTrace = true;
     }
 
     @Override
@@ -164,7 +174,7 @@ public class ExecutorUtil {
 
       String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
-      final Exception submitterStackTrace = new Exception("Submitter stack trace");
+      final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
       final List<InheritableThreadLocalProvider> providersCopy = providers;
       final ArrayList<AtomicReference> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
@@ -194,7 +204,11 @@ public class ExecutorUtil {
           if (t instanceof OutOfMemoryError) {
             throw t;
           }
-          log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
+          if (enableSubmitterStackTrace)  {
+            log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
+          } else  {
+            log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName());
+          }
           throw t;
         } finally {
           isServerPool.remove();

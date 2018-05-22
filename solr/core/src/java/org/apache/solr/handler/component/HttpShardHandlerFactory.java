@@ -81,8 +81,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       0,
       Integer.MAX_VALUE,
       5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-      new SynchronousQueue<Runnable>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("httpShardExecutor")
+      new SynchronousQueue<>(),  // directly hand off tasks
+      new DefaultSolrThreadFactory("httpShardExecutor"),
+      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+      // see SOLR-11880 for more details
+      false
   );
 
   protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
