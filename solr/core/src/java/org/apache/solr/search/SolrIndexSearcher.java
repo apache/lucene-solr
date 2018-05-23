@@ -1061,7 +1061,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       List<Weight> weights = new ArrayList<>(notCached.size());
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createWeight(rewrite(qq), ScoreMode.COMPLETE, 1));
+        weights.add(createWeight(rewrite(qq), ScoreMode.COMPLETE_NO_SCORES, 1));
       }
       pf.filter = new FilterImpl(answer, weights);
       pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
@@ -1672,7 +1672,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
           @Override
           public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE;
+            return ScoreMode.TOP_SCORES;
           }
         };
 
