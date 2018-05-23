@@ -90,6 +90,9 @@ New Features
 * SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
   Knowledge Graphs. (Trey Grainger, hossman)
 
+* SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
+  (Oliver Bates, Michael Braun via Mark Miller)
+
 Bug Fixes
 ----------------------
 
