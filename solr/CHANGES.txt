@@ -230,6 +230,9 @@ Bug Fixes
 
 * SOLR-12377: Don't spin off overseer when Zk controller is closed (Mikhail Khludnev)
 
+* SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
+  (Josh Lucas via shalin)
+
 Optimizations
 ----------------------
 
