@@ -40,6 +40,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -3340,11 +3341,12 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   private static void assertFiles(IndexWriter writer) throws IOException {
+    Predicate<String> filter = file -> file.startsWith("segments") == false && file.equals("write.lock") == false;
     // remove segment files we don't know if we have committed and what is kept around
     Set<String> segFiles = new HashSet<>(writer.segmentInfos.files(true)).stream()
-        .filter(f -> f.startsWith("segments") == false).collect(Collectors.toSet());
+        .filter(filter).collect(Collectors.toSet());
     Set<String> dirFiles = new HashSet<>(Arrays.asList(writer.getDirectory().listAll()))
-        .stream().filter(f -> f.startsWith("segments") == false).collect(Collectors.toSet());
+        .stream().filter(filter).collect(Collectors.toSet());
     Set<String> s = new HashSet<>(segFiles);
     s.removeAll(dirFiles);
     assertEquals(segFiles.toString() + " vs "+ dirFiles.toString(), segFiles.size(), dirFiles.size());
