@@ -254,6 +254,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     trigger.run();
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    trigger.setProcessor(null); // the processor may get called for old nodes
     trigger.run(); // this run should detect the new node
     trigger.close(); // close the old trigger
 
@@ -301,7 +302,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       assertTrue(fired.get());
       TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
-      //TODO assertEquals("", newNode.getNodeName(), nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAME));
+      List<String> nodeNames = (List<String>) nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAMES);
+      assertTrue("Newly added node was not present in event message",
+          nodeNames.contains(newNode.getNodeName()));
     }
   }
 
