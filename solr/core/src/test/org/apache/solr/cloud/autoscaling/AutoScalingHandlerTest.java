@@ -757,14 +757,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
 
     Map<String, Object> diagnostics = (Map<String, Object>) response.get("diagnostics");
-    List sortedNodes = (List) diagnostics.get("sortedNodes");
+    List sortedNodes = (List) Utils.getObjectByPath(response, false, "diagnostics/sortedNodes");
     assertNotNull(sortedNodes);
 
     assertEquals(2, sortedNodes.size());
     for (int i = 0; i < 2; i++) {
       Map node = (Map) sortedNodes.get(i);
       assertNotNull(node);
-      assertEquals(5, node.size());
+      assertEquals(6, node.size());
       assertNotNull(node.get("node"));
       assertNotNull(node.get("cores"));
       assertEquals(0L, node.get("cores"));
