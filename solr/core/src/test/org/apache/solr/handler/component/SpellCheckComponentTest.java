@@ -160,7 +160,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testPerDictionary() throws Exception {
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","documemt"
-        , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo")
+        , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + "perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + "perDict.bar", "foo")
        ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
        ,"/spellcheck/suggestions/foo=={'numFound':1, 'startOffset':2, 'endOffset':3, 'suggestion':['bar']}"        
     );

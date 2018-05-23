@@ -339,10 +339,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected SolrParams getCustomParams(String dictionary, SolrParams params) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     Iterator<String> iter = params.getParameterNamesIterator();
-    String prefix = SpellingParams.SPELLCHECK_PREFIX + "." + dictionary + ".";
-    while (iter.hasNext()){
+    String prefix = SpellingParams.SPELLCHECK_PREFIX + dictionary + ".";
+    while (iter.hasNext()) {
       String nxt = iter.next();
-      if (nxt.startsWith(prefix)){
+      if (nxt.startsWith(prefix)) {
         result.add(nxt.substring(prefix.length()), params.getParams(nxt));
       }
     }
