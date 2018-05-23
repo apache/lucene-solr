@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -359,14 +360,35 @@ public class Policy implements MapWriter {
   }
 
   static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    List<Row> deadNodes = null;
+    Iterator<Row> it =matrix.iterator();
+    while (it.hasNext()){
+      Row row = it.next();
+      if(!row.isLive){
+        if(deadNodes == null) deadNodes = new ArrayList<>();
+        deadNodes.add(row);
+        it.remove();
+      }
+    }
+
     if (!clusterPreferences.isEmpty()) {
       //this is to set the approximate value according to the precision
       ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      Row[] lastComparison = new Row[2];
       for (Preference p : clusterPreferences) {
         try {
-          tmpMatrix.sort((r1, r2) -> p.compare(r1, r2, false));
+          tmpMatrix.sort((r1, r2) -> {
+            lastComparison[0] = r1;
+            lastComparison[1] = r2;
+            return p.compare(r1, r2, false);
+          });
         } catch (Exception e) {
-          LOG.error("Exception! prefs = {}, matrix = {}", clusterPreferences, matrix);
+          LOG.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, compare : {} matrix = {}",
+              clusterPreferences,
+              lastComparison[0].node,
+              lastComparison[1].node,
+              p.compare(lastComparison[0],lastComparison[1], false ),
+              Utils.toJSONString(Utils.getDeepCopy(tmpMatrix, 6, false)));
           throw e;
         }
         p.setApproxVal(tmpMatrix);
@@ -378,6 +400,12 @@ public class Policy implements MapWriter {
         if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
         return result;
       });
+
+      if(deadNodes != null){
+        for (Row deadNode : deadNodes) {
+          matrix.add(0, deadNode);
+        }
+      }
     }
   }
 
