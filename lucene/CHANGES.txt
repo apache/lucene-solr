@@ -131,6 +131,9 @@ Bug Fixes
 * LUCENE-8320: Fix WindowsFS to correctly account for rename and hardlinks. 
   (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8328: Ensure ReadersAndUpdates consistently executes under lock.
+  (Nhat Nguyen via Simon Willnauer)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
