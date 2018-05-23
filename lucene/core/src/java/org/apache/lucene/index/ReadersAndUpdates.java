@@ -249,7 +249,7 @@ final class ReadersAndUpdates {
     return pendingDeletes.numDeletesToMerge(policy, this::getLatestReader);
   }
 
-  private CodecReader getLatestReader() throws IOException {
+  private synchronized CodecReader getLatestReader() throws IOException {
     if (this.reader == null) {
       // get a reader and dec the ref right away we just make sure we have a reader
       getReader(IOContext.READ).decRef();
@@ -667,6 +667,7 @@ final class ReadersAndUpdates {
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
     assert reader != null;
+    assert Thread.holdsLock(this) : Thread.currentThread().getName();
     SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
         info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
     boolean success2 = false;
