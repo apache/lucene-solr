@@ -230,6 +230,9 @@ Bug Fixes
 
 * SOLR-12377: Don't spin off overseer when Zk controller is closed (Mikhail Khludnev)
 
+* SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
+  (Josh Lucas via shalin)
+
 Optimizations
 ----------------------
 
@@ -247,6 +250,9 @@ Optimizations
   (Jeff Miller, David Smiley)
 
 * SOLR-12333: Removed redundant lines for handling lists in JSON reponse writers. (David Smiley via Mikhail Khludnev)
+
+* SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
+  search and update operations. (Varun Thacker, shalin)
 
 Other Changes
 ----------------------
