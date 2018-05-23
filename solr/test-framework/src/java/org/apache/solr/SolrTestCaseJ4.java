@@ -45,6 +45,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -1351,30 +1352,27 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         JSONUtil.writeString(sfield.getName(), 0, sfield.getName().length(), out);
         out.append(':');
 
-        if (sfield.getValueCount() > 1) {
+        if (sfield.getValue() instanceof Collection) {
           out.append('[');
           boolean firstVal = true;
           for (Object val : sfield) {
             if (firstVal) firstVal=false;
             else out.append(',');
+            if(val instanceof SolrInputDocument) {
+              json((SolrInputDocument) val, out);
+              continue;
+            }
             out.append(JSONUtil.toJSON(val));
           }
           out.append(']');
         } else {
-          out.append(JSONUtil.toJSON(sfield.getValue()));
+          Object val = sfield.getValue();
+          if (val instanceof SolrInputDocument) {
+            json(((SolrInputDocument) val), out);
+            continue;
+          }
+          out.append(JSONUtil.toJSON(val));
         }
-      }
-
-      boolean firstChildDoc = true;
-      if(doc.hasChildDocuments()) {
-        out.append(",\"_childDocuments_\": [");
-        List<SolrInputDocument> childDocuments = doc.getChildDocuments();
-        for(SolrInputDocument childDocument : childDocuments) {
-          if (firstChildDoc) firstChildDoc=false;
-          else out.append(',');
-          json(childDocument, out);
-        }
-        out.append(']');
       }
       out.append('}');
     } catch (IOException e) {

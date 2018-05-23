@@ -376,20 +376,6 @@ class JSONWriter extends TextResponseWriter {
         writeVal(fname, val);
       }
     }
-
-    if(doc.hasChildDocuments()) {
-      if(first == false) {
-        writeMapSeparator();
-        indent();
-      }
-      writeKey("_childDocuments_", true);
-      writeArrayOpener(doc.getChildDocumentCount());
-      List<SolrDocument> childDocs = doc.getChildDocuments();
-      for(int i=0; i<childDocs.size(); i++) {
-        writeSolrDocument(null, childDocs.get(i), null, i);
-      }
-      writeArrayCloser();
-    }
     
     decLevel();
     writeMapCloser();

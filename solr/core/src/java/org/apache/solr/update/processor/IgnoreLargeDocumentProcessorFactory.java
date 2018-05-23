@@ -113,12 +113,9 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       long size = 0;
       if (doc.getFieldNames() != null) {
         for (String fieldName : doc.getFieldNames()) {
-          size += fastEstimate(fieldName) + fastEstimate(doc.getField(fieldName).getValue());
-        }
-      }
-      if (doc.hasChildDocuments()) {
-        for (SolrInputDocument childDoc : doc.getChildDocuments()) {
-          size += fastEstimate(childDoc);
+          size += fastEstimate(fieldName);
+          Object fieldValue = doc.getField(fieldName).getValue();
+          size += fastEstimate(fieldValue);
         }
       }
       return size;
@@ -156,7 +153,17 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       if (map.isEmpty()) return 0;
       long size = 0;
       for (Map.Entry<Object, Object> entry : map.entrySet()) {
-        size += primitiveEstimate(entry.getKey(), 0L) + primitiveEstimate(entry.getValue(), 0L);
+        size += primitiveEstimate(entry.getKey(), 0L);
+        Object value = entry.getValue();
+        if (value instanceof Map) {
+          size += fastEstimate(entry.getValue());
+        } else if (value instanceof Collection) {
+          for(Object item: ((Collection) value)) {
+            size += fastEstimate(item);
+          }
+        } else {
+          size += primitiveEstimate(entry.getValue(), 0L);
+        }
       }
       return size;
     }
@@ -165,6 +172,10 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       if (collection.isEmpty()) return 0;
       long size = 0;
       for (Object obj : collection) {
+        if (obj instanceof SolrInputDocument) {
+          size += fastEstimate(((SolrInputDocument) obj));
+          continue;
+        }
         size += primitiveEstimate(obj, 0L);
       }
       return size;
