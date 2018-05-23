@@ -227,6 +227,11 @@ Optimizations
 * SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
   search and update operations. (Varun Thacker, shalin)
 
+* SOLR-12375: Optimize Lucene needsScore / ScoreMode use:
+  A non-cached filter query could be told incorrectly that scores were needed.
+  The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
+  Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
+
 Other Changes
 ----------------------
 

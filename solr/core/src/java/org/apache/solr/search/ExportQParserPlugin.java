@@ -16,18 +16,25 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.handler.component.MergeStrategy;
-import org.apache.solr.request.SolrRequestInfo;
-
-import org.apache.lucene.search.*;
-import org.apache.lucene.index.*;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.common.params.SolrParams;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 
 public class ExportQParserPlugin extends QParserPlugin {
 
@@ -72,7 +79,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
-      return mainQuery.createWeight(searcher, true, boost);
+      return mainQuery.createWeight(searcher, needsScores, boost);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
@@ -176,7 +183,7 @@ public class ExportQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean needsScores() {
-      return true; // TODO: is this the case?
+      return false;
     }
   }
 
