@@ -253,7 +253,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+    public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
       MergeSpecification ms = new MergeSpecification();
       if (doMerge) {
@@ -267,19 +267,19 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-        int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
+                                               int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
         throws IOException {
       return null;
     }
 
     @Override
     public MergeSpecification findForcedDeletesMerges(
-        SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+        SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
       return null;
     }
 
     @Override
-    public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, IndexWriter writer) {
+    public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
       return useCompoundFile;
     }
   }
