@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.apache.solr.common.util.NamedList;
 
@@ -401,12 +399,20 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
-     List<SolrDocument> childDocs = new ArrayList<>();
-     Stream<AbstractMap.SimpleEntry<String, SolrDocument>> fields = _fields.entrySet().stream()
-         .filter(value -> value.getValue() instanceof SolrInputDocument)
-         .map(value -> new AbstractMap.SimpleEntry<>(value.getKey(), (SolrDocument) value.getValue()));
-     fields.forEach(e -> childDocs.add(e.getValue()));
-     return childDocs.size() > 0 ? childDocs: null;
+     Map<String, Object> childDocMap = getChildDocumentsMap();
+     if (childDocMap == null) {
+       return null;
+     }
+     List<SolrDocument> children = new ArrayList<>();
+     for(Entry<String, Object> entry: childDocMap.entrySet()) {
+       Object value = entry.getValue();
+       if(value instanceof Collection) {
+         children.addAll(((Collection<SolrDocument>) value));
+         continue;
+       }
+       children.add(((SolrDocument) value));
+     }
+     return children;
    }
    
    @Override
