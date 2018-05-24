@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -207,7 +208,8 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * referenced by the "front" of the index). For this, IndexFileDeleter
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
+public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
+    MergePolicy.MergeContext {
 
   /** Hard limit on maximum number of documents that may be added to the
    *  index.  If you try to add more than this you'll hit {@code IllegalArgumentException}. */
@@ -629,8 +631,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * If the reader isn't being pooled, the segmentInfo's 
    * delCount is returned.
    */
+  @Override
   public int numDeletedDocs(SegmentCommitInfo info) {
     ensureOpen(false);
+    validate(info);
     int delCount = info.getDelCount();
 
     final ReadersAndUpdates rld = getPooledInstance(info, false);
@@ -1089,6 +1093,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public Directory getDirectory() {
     // return the original directory the user supplied, unwrapped.
     return directoryOrig;
+  }
+
+  @Override
+  public InfoStream getInfoStream() {
+    return infoStream;
   }
 
   /** Returns the analyzer used by this index. */
@@ -4589,26 +4598,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return segString(segmentInfos);
   }
 
-  /** Returns a string description of the specified
-   *  segments, for debugging.
-   *
-   * @lucene.internal */
   synchronized String segString(Iterable<SegmentCommitInfo> infos) {
-    final StringBuilder buffer = new StringBuilder();
-    for(final SegmentCommitInfo info : infos) {
-      if (buffer.length() > 0) {
-        buffer.append(' ');
-      }
-      buffer.append(segString(info));
-    }
-    return buffer.toString();
+    return StreamSupport.stream(infos.spliterator(), false)
+        .map(this::segString).collect(Collectors.joining(" "));
   }
 
   /** Returns a string description of the specified
    *  segment, for debugging.
    *
    * @lucene.internal */
-  synchronized String segString(SegmentCommitInfo info) {
+  private synchronized String segString(SegmentCommitInfo info) {
     return info.toString(numDeletedDocs(info) - info.getDelCount());
   }
 
@@ -5132,8 +5131,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @param info the segment to get the number of deletes for
    * @lucene.experimental
    */
+  @Override
   public final int numDeletesToMerge(SegmentCommitInfo info) throws IOException {
     ensureOpen(false);
+    validate(info);
     MergePolicy mergePolicy = config.getMergePolicy();
     final ReadersAndUpdates rld = getPooledInstance(info, false);
     int numDeletesToMerge;
@@ -5179,5 +5180,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   protected boolean isEnableTestPoints() {
     return false;
+  }
+
+  private void validate(SegmentCommitInfo info) {
+    if (info.info.dir != directoryOrig) {
+      throw new IllegalArgumentException("SegmentCommitInfo must be from the same directory");
+    }
   }
 }

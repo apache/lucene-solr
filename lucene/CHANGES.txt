@@ -21,6 +21,10 @@ Changes in Runtime Behavior
 
 * LUCENE-8309: Live docs are no longer backed by a FixedBitSet. (Adrien Grand)
 
+* LUCENE-8330: Detach IndexWriter from MergePolicy. MergePolicy now instead of 
+  requiring IndexWriter as a hard dependency expects a MergeContext which
+  IndexWriter implements. (Simon Willnauer, Robert Muir, Dawid Weiss, Mike McCandless)
+
 New Features
 
 * LUCENE-8200: Allow doc-values to be updated atomically together

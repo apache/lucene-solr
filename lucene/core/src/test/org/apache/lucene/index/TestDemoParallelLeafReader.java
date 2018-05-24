@@ -593,28 +593,28 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       @Override
       public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-                                           SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-        return wrap(in.findMerges(mergeTrigger, segmentInfos, writer));
+                                           SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+        return wrap(in.findMerges(mergeTrigger, segmentInfos, mergeContext));
       }
 
       @Override
       public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
+                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
         throws IOException {
         // TODO: do we need to force-force this?  Ie, wrapped MP may think index is already optimized, yet maybe its schemaGen is old?  need test!
-        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
+        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
       }
 
       @Override
-      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
+      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
-        return wrap(in.findForcedDeletesMerges(segmentInfos, writer));
+        return wrap(in.findForcedDeletesMerges(segmentInfos, mergeContext));
       }
 
       @Override
       public boolean useCompoundFile(SegmentInfos segments,
-                                     SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-        return in.useCompoundFile(segments, newSegment, writer);
+                                     SegmentCommitInfo newSegment, MergeContext mergeContext) throws IOException {
+        return in.useCompoundFile(segments, newSegment, mergeContext);
       }
 
       @Override

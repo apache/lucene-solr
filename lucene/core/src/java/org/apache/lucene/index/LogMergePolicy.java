@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -96,20 +97,6 @@ public abstract class LogMergePolicy extends MergePolicy {
     super(DEFAULT_NO_CFS_RATIO, MergePolicy.DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
 
-  /** Returns true if {@code LMP} is enabled in {@link
-   *  IndexWriter}'s {@code infoStream}. */
-  protected boolean verbose(IndexWriter writer) {
-    return writer != null && writer.infoStream.isEnabled("LMP");
-  }
-
-  /** Print a debug message to {@link IndexWriter}'s {@code
-   *  infoStream}. */
-  protected void message(String message, IndexWriter writer) {
-    if (verbose(writer)) {
-      writer.infoStream.message("LMP", message);
-    }
-  }
-
   /** <p>Returns the number of segments that are merged at
    * once and also controls the total number of segments
    * allowed to accumulate in the index.</p> */
@@ -148,10 +135,10 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  SegmentCommitInfo}, pro-rated by percentage of
    *  non-deleted documents if {@link
    *  #setCalibrateSizeByDeletes} is set. */
-  protected long sizeDocs(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+  protected long sizeDocs(SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
     if (calibrateSizeByDeletes) {
-      int delCount = writer.numDeletesToMerge(info);
-      assert delCount <= info.info.maxDoc();
+      int delCount = mergeContext.numDeletesToMerge(info);
+      assert assertDelCount(delCount, info);
       return (info.info.maxDoc() - (long)delCount);
     } else {
       return info.info.maxDoc();
@@ -162,9 +149,9 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  SegmentCommitInfo}, pro-rated by percentage of
    *  non-deleted documents if {@link
    *  #setCalibrateSizeByDeletes} is set. */
-  protected long sizeBytes(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+  protected long sizeBytes(SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
     if (calibrateSizeByDeletes) {
-      return super.size(info, writer);
+      return super.size(info, mergeContext);
     }
     return info.sizeInBytes();
   }
@@ -172,7 +159,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   /** Returns true if the number of segments eligible for
    *  merging is less than or equal to the specified {@code
    *  maxNumSegments}. */
-  protected boolean isMerged(SegmentInfos infos, int maxNumSegments, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
+  protected boolean isMerged(SegmentInfos infos, int maxNumSegments, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
     final int numSegments = infos.size();
     int numToMerge = 0;
     SegmentCommitInfo mergeInfo = null;
@@ -188,7 +175,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     return numToMerge <= maxNumSegments &&
-      (numToMerge != 1 || !segmentIsOriginal || isMerged(infos, mergeInfo, writer));
+      (numToMerge != 1 || !segmentIsOriginal || isMerged(infos, mergeInfo, mergeContext));
   }
 
   /**
@@ -200,20 +187,20 @@ public abstract class LogMergePolicy extends MergePolicy {
    * maxNumSegments} will remain, but &lt;= that number.
    */
   private MergeSpecification findForcedMergesSizeLimit(
-      SegmentInfos infos, int maxNumSegments, int last, IndexWriter writer) throws IOException {
+      SegmentInfos infos, int last, MergeContext mergeContext) throws IOException {
     MergeSpecification spec = new MergeSpecification();
     final List<SegmentCommitInfo> segments = infos.asList();
 
     int start = last - 1;
     while (start >= 0) {
       SegmentCommitInfo info = infos.info(start);
-      if (size(info, writer) > maxMergeSizeForForcedMerge || sizeDocs(info, writer) > maxMergeDocs) {
-        if (verbose(writer)) {
-          message("findForcedMergesSizeLimit: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSizeForForcedMerge + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")", writer);
+      if (size(info, mergeContext) > maxMergeSizeForForcedMerge || sizeDocs(info, mergeContext) > maxMergeDocs) {
+        if (verbose(mergeContext)) {
+          message("findForcedMergesSizeLimit: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSizeForForcedMerge + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")", mergeContext);
         }
         // need to skip that segment + add a merge for the 'right' segments,
         // unless there is only 1 which is merged.
-        if (last - start - 1 > 1 || (start != last - 1 && !isMerged(infos, infos.info(start + 1), writer))) {
+        if (last - start - 1 > 1 || (start != last - 1 && !isMerged(infos, infos.info(start + 1), mergeContext))) {
           // there is more than 1 segment to the right of
           // this one, or a mergeable single segment.
           spec.add(new OneMerge(segments.subList(start + 1, last)));
@@ -229,7 +216,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Add any left-over segments, unless there is just 1
     // already fully merged
-    if (last > 0 && (++start + 1 < last || !isMerged(infos, infos.info(start), writer))) {
+    if (last > 0 && (++start + 1 < last || !isMerged(infos, infos.info(start), mergeContext))) {
       spec.add(new OneMerge(segments.subList(start, last)));
     }
 
@@ -241,7 +228,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    * the returned merges only by the {@code maxNumSegments} parameter, and
    * guaranteed that exactly that number of segments will remain in the index.
    */
-  private MergeSpecification findForcedMergesMaxNumSegments(SegmentInfos infos, int maxNumSegments, int last, IndexWriter writer) throws IOException {
+  private MergeSpecification findForcedMergesMaxNumSegments(SegmentInfos infos, int maxNumSegments, int last, MergeContext mergeContext) throws IOException {
     MergeSpecification spec = new MergeSpecification();
     final List<SegmentCommitInfo> segments = infos.asList();
 
@@ -259,7 +246,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
         // Since we must merge down to 1 segment, the
         // choice is simple:
-        if (last > 1 || !isMerged(infos, infos.info(0), writer)) {
+        if (last > 1 || !isMerged(infos, infos.info(0), mergeContext)) {
           spec.add(new OneMerge(segments.subList(0, last)));
         }
       } else if (last > maxNumSegments) {
@@ -282,9 +269,9 @@ public abstract class LogMergePolicy extends MergePolicy {
         for(int i=0;i<last-finalMergeSize+1;i++) {
           long sumSize = 0;
           for(int j=0;j<finalMergeSize;j++) {
-            sumSize += size(infos.info(j+i), writer);
+            sumSize += size(infos.info(j+i), mergeContext);
           }
-          if (i == 0 || (sumSize < 2*size(infos.info(i-1), writer) && sumSize < bestSize)) {
+          if (i == 0 || (sumSize < 2*size(infos.info(i-1), mergeContext) && sumSize < bestSize)) {
             bestStart = i;
             bestSize = sumSize;
           }
@@ -308,18 +295,18 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  in use may make use of concurrency. */
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos infos,
-            int maxNumSegments, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
+                                             int maxNumSegments, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
 
     assert maxNumSegments > 0;
-    if (verbose(writer)) {
-      message("findForcedMerges: maxNumSegs=" + maxNumSegments + " segsToMerge="+ segmentsToMerge, writer);
+    if (verbose(mergeContext)) {
+      message("findForcedMerges: maxNumSegs=" + maxNumSegments + " segsToMerge="+ segmentsToMerge, mergeContext);
     }
 
     // If the segments are already merged (e.g. there's only 1 segment), or
     // there are <maxNumSegments:.
-    if (isMerged(infos, maxNumSegments, segmentsToMerge, writer)) {
-      if (verbose(writer)) {
-        message("already merged; skip", writer);
+    if (isMerged(infos, maxNumSegments, segmentsToMerge, mergeContext)) {
+      if (verbose(mergeContext)) {
+        message("already merged; skip", mergeContext);
       }
       return null;
     }
@@ -337,16 +324,16 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     if (last == 0) {
-      if (verbose(writer)) {
-        message("last == 0; skip", writer);
+      if (verbose(mergeContext)) {
+        message("last == 0; skip", mergeContext);
       }
       return null;
     }
     
     // There is only one segment already, and it is merged
-    if (maxNumSegments == 1 && last == 1 && isMerged(infos, infos.info(0), writer)) {
-      if (verbose(writer)) {
-        message("already 1 seg; skip", writer);
+    if (maxNumSegments == 1 && last == 1 && isMerged(infos, infos.info(0), mergeContext)) {
+      if (verbose(mergeContext)) {
+        message("already 1 seg; skip", mergeContext);
       }
       return null;
     }
@@ -355,16 +342,16 @@ public abstract class LogMergePolicy extends MergePolicy {
     boolean anyTooLarge = false;
     for (int i = 0; i < last; i++) {
       SegmentCommitInfo info = infos.info(i);
-      if (size(info, writer) > maxMergeSizeForForcedMerge || sizeDocs(info, writer) > maxMergeDocs) {
+      if (size(info, mergeContext) > maxMergeSizeForForcedMerge || sizeDocs(info, mergeContext) > maxMergeDocs) {
         anyTooLarge = true;
         break;
       }
     }
 
     if (anyTooLarge) {
-      return findForcedMergesSizeLimit(infos, maxNumSegments, last, writer);
+      return findForcedMergesSizeLimit(infos, last, mergeContext);
     } else {
-      return findForcedMergesMaxNumSegments(infos, maxNumSegments, last, writer);
+      return findForcedMergesMaxNumSegments(infos, maxNumSegments, last, mergeContext);
     }
   }
 
@@ -374,32 +361,33 @@ public abstract class LogMergePolicy extends MergePolicy {
    * deletes, up to mergeFactor at a time.
    */ 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
     final List<SegmentCommitInfo> segments = segmentInfos.asList();
     final int numSegments = segments.size();
 
-    if (verbose(writer)) {
-      message("findForcedDeleteMerges: " + numSegments + " segments", writer);
+    if (verbose(mergeContext)) {
+      message("findForcedDeleteMerges: " + numSegments + " segments", mergeContext);
     }
 
     MergeSpecification spec = new MergeSpecification();
     int firstSegmentWithDeletions = -1;
-    assert writer != null;
+    assert mergeContext != null;
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = segmentInfos.info(i);
-      int delCount = writer.numDeletesToMerge(info);
+      int delCount = mergeContext.numDeletesToMerge(info);
+      assert assertDelCount(delCount, info);
       if (delCount > 0) {
-        if (verbose(writer)) {
-          message("  segment " + info.info.name + " has deletions", writer);
+        if (verbose(mergeContext)) {
+          message("  segment " + info.info.name + " has deletions", mergeContext);
         }
         if (firstSegmentWithDeletions == -1)
           firstSegmentWithDeletions = i;
         else if (i - firstSegmentWithDeletions == mergeFactor) {
           // We've seen mergeFactor segments in a row with
           // deletions, so force a merge now:
-          if (verbose(writer)) {
-            message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive", writer);
+          if (verbose(mergeContext)) {
+            message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive", mergeContext);
           }
           spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
           firstSegmentWithDeletions = i;
@@ -408,8 +396,8 @@ public abstract class LogMergePolicy extends MergePolicy {
         // End of a sequence of segments with deletions, so,
         // merge those past segments even if it's fewer than
         // mergeFactor segments
-        if (verbose(writer)) {
-          message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive", writer);
+        if (verbose(mergeContext)) {
+          message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive", mergeContext);
         }
         spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
         firstSegmentWithDeletions = -1;
@@ -417,8 +405,8 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     if (firstSegmentWithDeletions != -1) {
-      if (verbose(writer)) {
-        message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive", writer);
+      if (verbose(mergeContext)) {
+        message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive", mergeContext);
       }
       spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, numSegments)));
     }
@@ -450,11 +438,11 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  will return multiple merges, allowing the {@link
    *  MergeScheduler} to use concurrency. */
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos infos, IndexWriter writer) throws IOException {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos infos, MergeContext mergeContext) throws IOException {
 
     final int numSegments = infos.size();
-    if (verbose(writer)) {
-      message("findMerges: " + numSegments + " segments", writer);
+    if (verbose(mergeContext)) {
+      message("findMerges: " + numSegments + " segments", mergeContext);
     }
 
     // Compute levels, which is just log (base mergeFactor)
@@ -462,11 +450,11 @@ public abstract class LogMergePolicy extends MergePolicy {
     final List<SegmentInfoAndLevel> levels = new ArrayList<>(numSegments);
     final float norm = (float) Math.log(mergeFactor);
 
-    final Set<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> mergingSegments = mergeContext.getMergingSegments();
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = infos.info(i);
-      long size = size(info, writer);
+      long size = size(info, mergeContext);
 
       // Floor tiny segments
       if (size < 1) {
@@ -476,13 +464,13 @@ public abstract class LogMergePolicy extends MergePolicy {
       final SegmentInfoAndLevel infoLevel = new SegmentInfoAndLevel(info, (float) Math.log(size)/norm);
       levels.add(infoLevel);
 
-      if (verbose(writer)) {
-        final long segBytes = sizeBytes(info, writer);
+      if (verbose(mergeContext)) {
+        final long segBytes = sizeBytes(info, mergeContext);
         String extra = mergingSegments.contains(info) ? " [merging]" : "";
         if (size >= maxMergeSize) {
           extra += " [skip: too large]";
         }
-        message("seg=" + writer.segString(info) + " level=" + infoLevel.level + " size=" + String.format(Locale.ROOT, "%.3f MB", segBytes/1024/1024.) + extra, writer);
+        message("seg=" + segString(mergeContext, Collections.singleton(info)) + " level=" + infoLevel.level + " size=" + String.format(Locale.ROOT, "%.3f MB", segBytes/1024/1024.) + extra, mergeContext);
       }
     }
 
@@ -538,8 +526,8 @@ public abstract class LogMergePolicy extends MergePolicy {
         }
         upto--;
       }
-      if (verbose(writer)) {
-        message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments", writer);
+      if (verbose(mergeContext)) {
+        message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments", mergeContext);
       }
 
       // Finally, record all merges that are viable at this level:
@@ -549,7 +537,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         boolean anyMerging = false;
         for(int i=start;i<end;i++) {
           final SegmentCommitInfo info = levels.get(i).info;
-          anyTooLarge |= (size(info, writer) >= maxMergeSize || sizeDocs(info, writer) >= maxMergeDocs);
+          anyTooLarge |= (size(info, mergeContext) >= maxMergeSize || sizeDocs(info, mergeContext) >= maxMergeDocs);
           if (mergingSegments.contains(info)) {
             anyMerging = true;
             break;
@@ -566,12 +554,12 @@ public abstract class LogMergePolicy extends MergePolicy {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);
           }
-          if (verbose(writer)) {
-            message("  add merge=" + writer.segString(mergeInfos) + " start=" + start + " end=" + end, writer);
+          if (verbose(mergeContext)) {
+            message("  add merge=" + segString(mergeContext, mergeInfos) + " start=" + start + " end=" + end, mergeContext);
           }
           spec.add(new OneMerge(mergeInfos));
-        } else if (verbose(writer)) {
-          message("    " + start + " to " + end + ": contains segment over maxMergeSize or maxMergeDocs; skipping", writer);
+        } else if (verbose(mergeContext)) {
+          message("    " + start + " to " + end + ": contains segment over maxMergeSize or maxMergeDocs; skipping", mergeContext);
         }
 
         start = end;
