@@ -425,7 +425,7 @@ public final class MoreLikeThis {
    * in to be still considered relevant.
    */
   public void setMaxDocFreqPct(int maxPercentage) {
-    setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.numDocs() / 100));
+    setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.maxDoc() / 100));
   }
 
   /**

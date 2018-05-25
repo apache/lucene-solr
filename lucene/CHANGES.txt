@@ -49,6 +49,9 @@ API Changes
 
 Changes in Runtime Behavior
 
+* LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
+  numDocs. (Robert Muir, Dawid Weiss).
+
 * LUCENE-7837: Indices that were created before the previous major version
   will now fail to open even if they have been merged with the previous major
   version. (Adrien Grand)
