@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
-import org.apache.lucene.index.ImpactsEnum;
+import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -30,22 +30,21 @@ import org.apache.lucene.util.ArrayUtil;
  * Compute maximum scores based on {@link Impacts} and keep them in a cache in
  * order not to run expensive similarity score computations multiple times on
  * the same data.
+ * @lucene.internal
  */
-public final class MaxScoreCache {
+final class MaxScoreCache {
 
-  private final ImpactsEnum impactsEnum;
+  private final ImpactsSource impactsSource;
   private final SimScorer scorer;
-  private final float globalMaxScore;
   private float[] maxScoreCache;
   private int[] maxScoreCacheUpTo;
 
   /**
    * Sole constructor.
    */
-  public MaxScoreCache(ImpactsEnum impactsEnum, SimScorer scorer) {
-    this.impactsEnum = impactsEnum;
+  public MaxScoreCache(ImpactsSource impactsSource, SimScorer scorer) {
+    this.impactsSource = impactsSource;
     this.scorer = scorer;
-    globalMaxScore = scorer.score(Integer.MAX_VALUE, 1L);
     maxScoreCache = new float[0];
     maxScoreCacheUpTo = new int[0];
   }
@@ -71,8 +70,8 @@ public final class MaxScoreCache {
    * Return the first level that includes all doc IDs up to {@code upTo},
    * or -1 if there is no such level.
    */
-  private int getLevel(int upTo) throws IOException {
-    final Impacts impacts = impactsEnum.getImpacts();
+  int getLevel(int upTo) throws IOException {
+    final Impacts impacts = impactsSource.getImpacts();
     for (int level = 0, numLevels = impacts.numLevels(); level < numLevels; ++level) {
       final int impactsUpTo = impacts.getDocIdUpTo(level);
       if (upTo <= impactsUpTo) {
@@ -86,7 +85,7 @@ public final class MaxScoreCache {
    * Return the maximum score for the given {@code level}.
    */
   float getMaxScoreForLevel(int level) throws IOException {
-    final Impacts impacts = impactsEnum.getImpacts();
+    final Impacts impacts = impactsSource.getImpacts();
     ensureCacheSize(level + 1);
     final int levelUpTo = impacts.getDocIdUpTo(level);
     if (maxScoreCacheUpTo[level] < levelUpTo) {
@@ -100,8 +99,7 @@ public final class MaxScoreCache {
    * Return the maximum level at which scores are all less than {@code minScore},
    * or -1 if none.
    */
-  int getSkipLevel(float minScore) throws IOException {
-    final Impacts impacts = impactsEnum.getImpacts();
+  private int getSkipLevel(Impacts impacts, float minScore) throws IOException {
     final int numLevels = impacts.numLevels();
     for (int level = 0; level < numLevels; ++level) {
       if (getMaxScoreForLevel(level) >= minScore) {
@@ -112,27 +110,17 @@ public final class MaxScoreCache {
   }
 
   /**
-   * Implement the contract of {@link Scorer#advanceShallow(int)} based on the
-   * wrapped {@link ImpactsEnum}.
-   * @see Scorer#advanceShallow(int)
+   * Return the an inclusive upper bound of documents that all have a score that
+   * is less than {@code minScore}, or {@code -1} if the current document may
+   * be competitive.
    */
-  public int advanceShallow(int target) throws IOException {
-    impactsEnum.advanceShallow(target);
-    Impacts impacts = impactsEnum.getImpacts();
-    return impacts.getDocIdUpTo(0);
+  int getSkipUpTo(float minScore) throws IOException {
+    final Impacts impacts = impactsSource.getImpacts();
+    final int level = getSkipLevel(impacts, minScore);
+    if (level == -1) {
+      return -1;
+    }
+    return impacts.getDocIdUpTo(level);
   }
 
-  /**
-   * Implement the contract of {@link Scorer#getMaxScore(int)} based on the
-   * wrapped {@link ImpactsEnum} and {@link Scorer}.
-   * @see Scorer#getMaxScore(int)
-   */
-  public float getMaxScore(int upTo) throws IOException {
-    final int level = getLevel(upTo);
-    if (level == -1) {
-      return globalMaxScore;
-    } else {
-      return getMaxScoreForLevel(level);
-    }
-  }
 }

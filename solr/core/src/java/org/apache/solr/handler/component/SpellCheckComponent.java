@@ -401,7 +401,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           try {
             nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
           } catch (Exception e) {
-            if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+            if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
               continue; // looks like a shard did not return anything
             }
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

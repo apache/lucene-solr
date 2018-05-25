@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.16
-Carrot2 3.15.0
+Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
@@ -52,7 +52,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.17
-Carrot2 3.15.0
+Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
@@ -72,6 +72,8 @@ Upgrade Notes
 
 New Features
 ----------------------
+
+* SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
 * SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
   ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
@@ -119,8 +121,19 @@ New Features
 * SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
   Knowledge Graphs. (Trey Grainger, hossman)
 
+* SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
+  (Oliver Bates, Michael Braun via Mark Miller)
+  
+* SOLR-12388: Enable a strict ZooKeeper-connected search request mode, in which search
+  requests will fail when the coordinating node can't communicate with ZooKeeper, 
+  by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
+
 Bug Fixes
 ----------------------
+
+* SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
+  content stream. The similarity is calculated between the content stream's value and all 
+  fields listed in mlt.fl. (Dawid Weiss)
 
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
 
@@ -255,6 +268,11 @@ Optimizations
 
 * SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
   search and update operations. (Varun Thacker, shalin)
+
+* SOLR-12375: Optimize Lucene ScoreMode use:
+  A non-cached filter query could be told incorrectly that scores were needed.
+  The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
+  Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
 
 Other Changes
 ----------------------
@@ -411,6 +429,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+
 * SOLR-11285: Simulation framework for autoscaling. (ab)
 
 * LUCENE-2899: In the Solr analysis-extras contrib, added support for the

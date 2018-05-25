@@ -272,19 +272,20 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger"))  {
       newTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), props);
       newTrigger.init();
-      AtomicBoolean fired = new AtomicBoolean(false);
+      AtomicBoolean stop = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {
-        if (fired.compareAndSet(false, true)) {
+        //the processor may get called 2 times, for newly added node and initial nodes
+        long currentTimeNanos = timeSource.getTimeNs();
+        long eventTimeNanos = event.getEventTime();
+        long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+        if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
+          fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
+        }
+        List<String> nodeNames = (List<String>) event.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAMES);
+        if (nodeNames.contains(newNode.getNodeName())) {
+          stop.set(true);
           eventRef.set(event);
-          long currentTimeNanos = timeSource.getTimeNs();
-          long eventTimeNanos = event.getEventTime();
-          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
-          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
-            fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
-          }
-        } else {
-          fail("NodeAddedTrigger was fired more than once!");
         }
         return true;
       });
@@ -296,15 +297,12 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         if (counter++ > 10) {
           fail("Newly added node was not discovered by trigger even after 10 seconds");
         }
-      } while (!fired.get());
+      } while (!stop.get());
 
       // ensure the event was fired
-      assertTrue(fired.get());
+      assertTrue(stop.get());
       TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
-      List<String> nodeNames = (List<String>) nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAMES);
-      assertTrue("Newly added node was not present in event message",
-          nodeNames.contains(newNode.getNodeName()));
     }
   }
 

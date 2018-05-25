@@ -551,11 +551,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     }
 
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE; // TODO: is this always true?
-    }
-
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
@@ -634,11 +629,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.field = field;
       this.collapsedSet = collapsedSet;
     }
-    
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE; // TODO: is this always true?
-    }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
@@ -683,8 +673,19 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
-  private interface GroupCollector {
+  //TODO lets just do simple abstract base class -- a fine use of inheritance
+  private interface GroupCollector extends Collector {
     public LongObjectMap<Collector> getGroups();
+
+    @Override
+    default ScoreMode scoreMode() {
+      final LongObjectMap<Collector> groups = getGroups();
+      if (groups.isEmpty()) {
+        return ScoreMode.COMPLETE; // doesn't matter?
+      } else {
+        return groups.iterator().next().value.scoreMode(); // we assume all the collectors should have the same nature
+      }
+    }
   }
 
   private Query getGroupQuery(String fname,
