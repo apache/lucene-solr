@@ -31,7 +31,11 @@ import java.io.IOException;
 // TODO: add APIs for integration with IndexWriter.IndexReaderWarmer
 public interface QueryCachingPolicy {
 
-  /** A simple policy that caches all the provided filters on all segments. */
+  /** A simple policy that caches all the provided filters on all segments.
+   *  @deprecated This policy is inefficient as caching too aggressively
+   *  disables the ability to skip non-interesting documents. See
+   *  {@link UsageTrackingQueryCachingPolicy}. */
+  @Deprecated
   public static final QueryCachingPolicy ALWAYS_CACHE = new QueryCachingPolicy() {
 
     @Override
