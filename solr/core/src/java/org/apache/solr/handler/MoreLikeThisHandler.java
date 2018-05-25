@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
@@ -399,7 +400,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       // SOLR-5351: if only check against a single field, use the reader directly. Otherwise we
       // repeat the stream's content for multiple fields so that query terms can be pulled from any
       // of those fields.
-      String [] fields = mlt.getFieldNames();
+      String[] fields = mlt.getParameters().getFieldNames();
       if (fields.length == 1) {
         boostedMLTQuery = mlt.like(fields[0], reader);
       } else {
