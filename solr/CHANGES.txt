@@ -131,6 +131,10 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
+  content stream. The similarity is calculated between the content stream's value and all 
+  fields listed in mlt.fl. (Dawid Weiss)
+
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
 
 * SOLR-12107: Fixed a error in [child] transformer that could ocur if documentCache was not used (hossman)
@@ -425,6 +429,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+
 * SOLR-11285: Simulation framework for autoscaling. (ab)
 
 * LUCENE-2899: In the Solr analysis-extras contrib, added support for the
