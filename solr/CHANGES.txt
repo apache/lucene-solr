@@ -94,6 +94,10 @@ New Features
 
 * SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
   (Oliver Bates, Michael Braun via Mark Miller)
+  
+* SOLR-12388: Enable a strict ZooKeeper-connected search request mode, in which search
+  requests will fail when the coordinating node can't communicate with ZooKeeper, 
+  by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
 
 Bug Fixes
 ----------------------
