@@ -27,7 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.suggest.BitsProducer;
 
 import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.HOLE_CHARACTER;
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_LABEL;
+import static org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter.SEP_CHAR;
 
 /**
  * Abstract {@link Query} that match documents containing terms with a specified prefix
@@ -158,7 +158,7 @@ public abstract class CompletionQuery extends Query {
         case HOLE_CHARACTER:
           throw new IllegalArgumentException(
               "Term text cannot contain HOLE character U+001E; this character is reserved");
-        case SEP_LABEL:
+        case SEP_CHAR:
           throw new IllegalArgumentException(
               "Term text cannot contain unit separator character U+001F; this character is reserved");
         default:

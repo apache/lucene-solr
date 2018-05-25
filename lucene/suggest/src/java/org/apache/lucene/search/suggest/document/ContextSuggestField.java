@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -83,23 +84,24 @@ public class ContextSuggestField extends SuggestField {
   }
 
   @Override
-  protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
+  protected ConcatenateGraphFilter wrapTokenStream(TokenStream stream) {
     final Iterable<CharSequence> contexts = contexts();
     for (CharSequence context : contexts) {
       validate(context);
     }
-    CompletionTokenStream completionTokenStream;
-    if (stream instanceof CompletionTokenStream) {
-      completionTokenStream = (CompletionTokenStream) stream;
-      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
-      completionTokenStream = new CompletionTokenStream(prefixTokenFilter,
-          completionTokenStream.preserveSep,
-          completionTokenStream.preservePositionIncrements,
-          completionTokenStream.maxGraphExpansions);
+    ConcatenateGraphFilter concatStream;
+    if (stream instanceof ConcatenateGraphFilter) {
+      //nocommit this is awkward; is there a better way avoiding re-creating the chain?
+      concatStream = (ConcatenateGraphFilter) stream;
+      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(concatStream.getInput(), (char) CONTEXT_SEPARATOR, contexts);
+      concatStream = new ConcatenateGraphFilter(prefixTokenFilter,
+          concatStream.preserveSep,
+          concatStream.preservePositionIncrements,
+          concatStream.maxGraphExpansions);
     } else {
-      completionTokenStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
+      concatStream = new ConcatenateGraphFilter(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
     }
-    return completionTokenStream;
+    return concatStream;
   }
 
   @Override

@@ -63,6 +63,7 @@ org.apache.lucene.analysis.lv.LatvianStemFilterFactory
 org.apache.lucene.analysis.minhash.MinHashFilterFactory
 org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
+org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilterFactory
 org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory
 org.apache.lucene.analysis.miscellaneous.DateRecognizerFilterFactory
 org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilterFactory

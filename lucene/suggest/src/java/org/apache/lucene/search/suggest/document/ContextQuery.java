@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
@@ -175,10 +176,10 @@ public class ContextQuery extends CompletionQuery {
       return new CompletionWeight(this, innerAutomaton);
     }
 
-    // if separators are preserved the fst contains a SEP_LABEL
+    // if separators are preserved the fst contains a SEP_CHAR
     // behind each gap. To have a matching automaton, we need to
-    // include the SEP_LABEL in the query as well
-    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL));
+    // include the SEP_CHAR in the query as well
+    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(ConcatenateGraphFilter.SEP_CHAR));
     Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerAutomaton);
     Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
     contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
@@ -302,9 +303,9 @@ public class ContextQuery extends CompletionQuery {
           }
           ref.offset = ++i;
           assert ref.offset < ref.length : "input should not end with the context separator";
-          if (ref.ints[i] == CompletionAnalyzer.SEP_LABEL) {
+          if (ref.ints[i] == ConcatenateGraphFilter.SEP_CHAR) {
             ref.offset++;
-            assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_LABEL";
+            assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_CHAR";
           }
           ref.length = ref.length - ref.offset;
           refBuilder.copyInts(ref.ints, ref.offset, ref.length);

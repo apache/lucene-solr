@@ -14,14 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.suggest.document;
+package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
@@ -31,55 +33,80 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.LimitedFiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.DEFAULT_MAX_GRAPH_EXPANSIONS;
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.DEFAULT_PRESERVE_POSITION_INCREMENTS;
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.DEFAULT_PRESERVE_SEP;
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_LABEL;
-
 /**
- * Token stream which converts a provided token stream to an automaton.
- * The accepted strings enumeration from the automaton are available through the
- * {@link org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute} attribute
- * The token stream uses a {@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute} to store
- * a completion's payload (see {@link CompletionTokenStream#setPayload(org.apache.lucene.util.BytesRef)})
+ * Concatenates/Joins every incoming token with a separator into one output token for every path through the
+ * token stream (which is a graph).  In simple cases this yields one token, but in the presence of any tokens with
+ * a zero positionIncrmeent (e.g. synonyms) it will be more.  This filter uses the token bytes, position increment,
+ * and position length of the incoming stream.  Other attributes are not used or manipulated.
  *
  * @lucene.experimental
  */
-public final class CompletionTokenStream extends TokenStream {
+public final class ConcatenateGraphFilter extends TokenFilter {
+
+  /*
+   * Token stream which converts a provided token stream to an automaton.
+   * The accepted strings enumeration from the automaton are available through the
+   * {@link org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute} attribute
+   * The token stream uses a {@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute} to store
+   * a completion's payload (see {@link ConcatenateGraphFilter#setPayload(org.apache.lucene.util.BytesRef)})
+   */
+
+  /**
+   * Represents the separation between tokens, if
+   * <code>preserveSep</code> is <code>true</code>.
+   */
+  public final static char SEP_CHAR = '\u001F';
+  public final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+  public final static boolean DEFAULT_PRESERVE_SEP = true;
+  public final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
 
   private final PayloadAttribute payloadAttr = addAttribute(PayloadAttribute.class);
   private final BytesRefBuilderTermAttribute bytesAtt = addAttribute(BytesRefBuilderTermAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
-  final TokenStream inputTokenStream;
-  final boolean preserveSep;
-  final boolean preservePositionIncrements;
-  final int maxGraphExpansions;
+  //nocommit add getters for these instead?  Accessor: org.apache.lucene.search.suggest.document.ContextSuggestField.wrapTokenStream
+  public final boolean preserveSep;
+  public final boolean preservePositionIncrements;
+  public final int maxGraphExpansions;
+  public TokenStream getInput() { return super.input; } // nocommit remove? see ContextSuggestField.wrapTokenStream
 
-  private FiniteStringsIterator finiteStrings;
+  private LimitedFiniteStringsIterator finiteStrings;
   private BytesRef payload;
   private CharTermAttribute charTermAttribute;
+  private State endState;
 
   /**
    * Creates a token stream to convert <code>input</code> to a token stream
-   * of accepted strings by its automaton.
+   * of accepted strings by its token stream graph.
    * <p>
-   * The token stream <code>input</code> is converted to an automaton
-   * with the default settings of {@link org.apache.lucene.search.suggest.document.CompletionAnalyzer}
+   * This constructor uses the default settings of the constants in this class.
    */
-  CompletionTokenStream(TokenStream inputTokenStream) {
+  public ConcatenateGraphFilter(TokenStream inputTokenStream) {
     this(inputTokenStream, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
-  CompletionTokenStream(TokenStream inputTokenStream, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
-    // Don't call the super(input) ctor - this is a true delegate and has a new attribute source since we consume
-    // the input stream entirely in the first call to incrementToken
-    this.inputTokenStream = inputTokenStream;
+  /**
+   * Creates a token stream to convert <code>input</code> to a token stream
+   * of accepted strings by its token stream graph.
+   *
+   * @param inputTokenStream The input/incoming TokenStream
+   * @param preserveSep
+   * @param preservePositionIncrements Whether to generate holes in the automaton for missing positions
+   * @param maxGraphExpansions If the tokenStream graph has more than this many possible paths through, then we'll throw
+   *                           {@link TooComplexToDeterminizeException} to preserve the stability and memory of the
+   *                           machine.
+   * @throws TooComplexToDeterminizeException if the tokenStream graph has more than {@code maxGraphExpansions}
+   *         expansions
+   *
+   */
+  public ConcatenateGraphFilter(TokenStream inputTokenStream, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
+    super(inputTokenStream);
     this.preserveSep = preserveSep;
     this.preservePositionIncrements = preservePositionIncrements;
     this.maxGraphExpansions = maxGraphExpansions;
@@ -87,6 +114,7 @@ public final class CompletionTokenStream extends TokenStream {
 
   /**
    * Sets a payload available throughout successive token stream enumeration
+   * @lucene.internal
    */
   public void setPayload(BytesRef payload) {
     this.payload = payload;
@@ -94,15 +122,15 @@ public final class CompletionTokenStream extends TokenStream {
 
   @Override
   public boolean incrementToken() throws IOException {
-    clearAttributes();
-    if (finiteStrings == null) {
-      Automaton automaton = toAutomaton();
-      finiteStrings = new LimitedFiniteStringsIterator(automaton, maxGraphExpansions);
-    }
-
     IntsRef string = finiteStrings.next();
     if (string == null) {
       return false;
+    }
+
+    clearAttributes();
+
+    if (finiteStrings.size() > 1) { // if number of iterated strings so far is more than one...
+      posIncrAtt.setPositionIncrement(0); // stacked
     }
 
     Util.toBytesRef(string, bytesAtt.builder()); // now we have UTF-8
@@ -119,27 +147,19 @@ public final class CompletionTokenStream extends TokenStream {
 
   @Override
   public void end() throws IOException {
-    super.end();
-    if (finiteStrings == null) {
-      inputTokenStream.end();
-    }
+    restoreState(endState);
   }
 
-  @Override
-  public void close() throws IOException {
-    if (finiteStrings == null) {
-      inputTokenStream.close();
-    }
-  }
-
+  //nocommit move method to before incrementToken
   @Override
   public void reset() throws IOException {
-    super.reset();
-    if (hasAttribute(CharTermAttribute.class)) {
-      // we only create this if we really need it to safe the UTF-8 to UTF-16 conversion
-      charTermAttribute = getAttribute(CharTermAttribute.class);
+    Automaton automaton = toAutomaton(); // calls reset(), incrementToken() repeatedly, then end()
+    endState = captureState();
+    finiteStrings = new LimitedFiniteStringsIterator(automaton, maxGraphExpansions);
+    if (charTermAttribute == null) {
+      // we only capture this if we really need it to save the UTF-8 to UTF-16 conversion
+      charTermAttribute = getAttribute(CharTermAttribute.class); // null if none; it's okay
     }
-    finiteStrings = null;
   }
 
   /**
@@ -163,7 +183,7 @@ public final class CompletionTokenStream extends TokenStream {
       // separator between tokens:
       final TokenStreamToAutomaton tsta;
       if (preserveSep) {
-        tsta = new EscapingTokenStreamToAutomaton((char) SEP_LABEL);
+        tsta = new EscapingTokenStreamToAutomaton(SEP_CHAR);
       } else {
         // When we're not preserving sep, we don't steal 0xff
         // byte, so we don't need to do any escaping:
@@ -172,14 +192,14 @@ public final class CompletionTokenStream extends TokenStream {
       tsta.setPreservePositionIncrements(preservePositionIncrements);
       tsta.setUnicodeArcs(unicodeAware);
 
-      automaton = tsta.toAutomaton(inputTokenStream);
+      automaton = tsta.toAutomaton(input);
     } finally {
-      IOUtils.closeWhileHandlingException(inputTokenStream);
+      IOUtils.closeWhileHandlingException(input);
     }
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    automaton = replaceSep(automaton, preserveSep, SEP_LABEL);
+    automaton = replaceSep(automaton, preserveSep, SEP_CHAR);
     // This automaton should not blow up during determinize:
     return Operations.determinize(automaton, maxGraphExpansions);
   }
@@ -240,7 +260,7 @@ public final class CompletionTokenStream extends TokenStream {
         if (t.min == TokenStreamToAutomaton.POS_SEP) {
           assert t.max == TokenStreamToAutomaton.POS_SEP;
           if (preserveSep) {
-            // Remap to SEP_LABEL:
+            // Remap to SEP_CHAR:
             result.addTransition(state, t.dest, sepLabel);
           } else {
             result.addEpsilon(state, t.dest);
@@ -269,6 +289,7 @@ public final class CompletionTokenStream extends TokenStream {
 
   /**
    * Attribute providing access to the term builder and UTF-16 conversion
+   * @lucene.internal
    */
   public interface BytesRefBuilderTermAttribute extends TermToBytesRefAttribute {
     /**
@@ -283,7 +304,8 @@ public final class CompletionTokenStream extends TokenStream {
   }
 
   /**
-   * Custom attribute implementation for completion token stream
+   * Implementation of {@link BytesRefBuilderTermAttribute}
+   * @lucene.internal
    */
   public static final class BytesRefBuilderTermAttributeImpl extends AttributeImpl implements BytesRefBuilderTermAttribute, TermToBytesRefAttribute {
     private final BytesRefBuilder bytes = new BytesRefBuilder();

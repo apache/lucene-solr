@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -100,21 +101,21 @@ public class SuggestField extends Field {
 
   @Override
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
-    CompletionTokenStream completionStream = wrapTokenStream(super.tokenStream(analyzer, reuse));
+    ConcatenateGraphFilter completionStream = wrapTokenStream(super.tokenStream(analyzer, reuse));
     completionStream.setPayload(buildSuggestPayload());
     return completionStream;
   }
 
   /**
-   * Wraps a <code>stream</code> with a CompletionTokenStream.
+   * Wraps a <code>stream</code> with a ConcatenateGraphFilter.
    *
    * Subclasses can override this method to change the indexing pipeline.
    */
-  protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
-    if (stream instanceof CompletionTokenStream) {
-      return (CompletionTokenStream) stream;
+  protected ConcatenateGraphFilter wrapTokenStream(TokenStream stream) {
+    if (stream instanceof ConcatenateGraphFilter) {
+      return (ConcatenateGraphFilter) stream;
     } else {
-      return new CompletionTokenStream(stream);
+      return new ConcatenateGraphFilter(stream);
     }
   }
 
@@ -140,7 +141,7 @@ public class SuggestField extends Field {
 
   private boolean isReserved(char c) {
     switch (c) {
-      case CompletionAnalyzer.SEP_LABEL:
+      case ConcatenateGraphFilter.SEP_CHAR:
       case CompletionAnalyzer.HOLE_CHARACTER:
       case NRTSuggesterBuilder.END_BYTE:
         return true;
