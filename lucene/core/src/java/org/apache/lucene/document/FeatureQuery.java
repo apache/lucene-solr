@@ -30,8 +30,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.ImpactsDISI;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MaxScoreCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -133,9 +133,9 @@ final class FeatureQuery extends Query {
           return null;
         }
 
-        SimScorer scorer = function.scorer(boost);
-        ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
-        MaxScoreCache maxScoreCache = new MaxScoreCache(impacts, scorer);
+        final SimScorer scorer = function.scorer(boost);
+        final ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
+        final ImpactsDISI impactsDisi = new ImpactsDISI(impacts, impacts, scorer);
 
         return new Scorer(this) {
 
@@ -151,19 +151,23 @@ final class FeatureQuery extends Query {
 
           @Override
           public DocIdSetIterator iterator() {
-            return impacts;
+            return impactsDisi;
           }
 
           @Override
           public int advanceShallow(int target) throws IOException {
-            return maxScoreCache.advanceShallow(target);
+            return impactsDisi.advanceShallow(target);
           }
 
           @Override
           public float getMaxScore(int upTo) throws IOException {
-            return maxScoreCache.getMaxScore(upTo);
+            return impactsDisi.getMaxScore(upTo);
           }
 
+          @Override
+          public void setMinCompetitiveScore(float minScore) {
+            impactsDisi.setMinCompetitiveScore(minScore);
+          }
         };
       }
 

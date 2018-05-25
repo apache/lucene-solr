@@ -111,7 +111,11 @@ public class TermQuery extends Query {
         return null;
       }
       LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), term.field(), scoreMode.needsScores());
-      return new TermScorer(this, termsEnum, scoreMode, scorer);
+      if (scoreMode == ScoreMode.TOP_SCORES) {
+        return new TermScorer(this, termsEnum.impacts(PostingsEnum.FREQS), scorer);
+      } else {
+        return new TermScorer(this, termsEnum.postings(null, PostingsEnum.FREQS), scorer);
+      }
     }
 
     @Override
