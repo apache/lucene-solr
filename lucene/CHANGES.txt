@@ -101,6 +101,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8221: MoreLikeThis.setMaxDocFreqPct can easily int-overflow on larger
+  indexes.
+
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon
   and throw a TileException. (Ignacio Vera)
 
