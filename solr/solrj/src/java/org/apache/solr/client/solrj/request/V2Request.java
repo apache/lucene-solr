@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,7 +67,9 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     if (payload == null) return null;
     if (payload instanceof String) {
       return new RequestWriter.StringPayloadContentWriter((String) payload, JSON_MIME);
-
+    }
+    if (payload instanceof Map) {
+      payload = Utils.getDeepCopy((Map) payload, 5);
     }
     return new RequestWriter.ContentWriter() {
       @Override

@@ -14,27 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update.processor;
 
-import java.util.ArrayList;
-import java.util.List;
+package org.apache.solr.core;
 
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.processor.SimpleUpdateProcessorFactory;
 
-public class RuntimeUrp extends SimpleUpdateProcessorFactory {
+public class TestURP extends SimpleUpdateProcessorFactory {
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
-    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
-    List<String>  names = new ArrayList<>();
-    for (UpdateRequestProcessorFactory p : processorChain.getProcessors()) {
-      if (p instanceof UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) {
-        p = ((UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) p).delegate;
-      }
-      names.add(p.getClass().getSimpleName());
-    }
-    cmd.solrDoc.addField("processors_s", StrUtils.join(names,'>'));
+    cmd.solrDoc.addField("time_s", ""+System.nanoTime());
   }
 }
