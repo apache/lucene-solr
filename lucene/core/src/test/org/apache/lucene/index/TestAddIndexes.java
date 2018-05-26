@@ -1413,4 +1413,50 @@ public class TestAddIndexes extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
+
+  public void testAddIndicesWithSoftDeletes() throws IOException {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random())).setSoftDeletesField("soft_delete");
+    IndexWriter writer = new IndexWriter(dir1, iwc1);
+    for (int i = 0; i < 30; i++) {
+      Document doc = new Document();
+      int docID = random().nextInt(5);
+      doc.add(new StringField("id", "" + docID, Field.Store.YES));
+      writer.softUpdateDocument(new Term("id", "" + docID), doc, new NumericDocValuesField("soft_delete", 1));
+      if (random().nextBoolean()) {
+        writer.flush();
+      }
+    }
+    writer.commit();
+    writer.close();
+    DirectoryReader reader = DirectoryReader.open(dir1);
+    DirectoryReader wrappedReader = new SoftDeletesDirectoryReaderWrapper(reader, "soft_delete");
+    Directory dir2 = newDirectory();
+    int numDocs = reader.numDocs();
+    int maxDoc = reader.maxDoc();
+    assertEquals(numDocs, maxDoc);
+    iwc1 = newIndexWriterConfig(new MockAnalyzer(random())).setSoftDeletesField("soft_delete");
+    writer = new IndexWriter(dir2, iwc1);
+    CodecReader[] readers = new CodecReader[reader.leaves().size()];
+    for (int i = 0; i < readers.length; i++) {
+      readers[i] = (CodecReader)reader.leaves().get(i).reader();
+    }
+    writer.addIndexes(readers);
+    assertEquals(wrappedReader.numDocs(), writer.numDocs());
+    assertEquals(maxDoc, writer.maxDoc());
+    writer.commit();
+    SegmentCommitInfo commitInfo = writer.segmentInfos.asList().get(0);
+    assertEquals(maxDoc-wrappedReader.numDocs(), commitInfo.getSoftDelCount());
+    writer.close();
+    Directory dir3 = newDirectory();
+    iwc1 = newIndexWriterConfig(new MockAnalyzer(random())).setSoftDeletesField("soft_delete");
+    writer = new IndexWriter(dir3, iwc1);
+    for (int i = 0; i < readers.length; i++) {
+      readers[i] = (CodecReader)wrappedReader.leaves().get(i).reader();
+    }
+    writer.addIndexes(readers);
+    assertEquals(wrappedReader.numDocs(), writer.numDocs());
+    assertEquals(wrappedReader.numDocs(), writer.maxDoc());
+    IOUtils.close(reader, writer, dir3, dir2, dir1);
+  }
 }

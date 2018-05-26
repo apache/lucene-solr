@@ -3160,7 +3160,11 @@ public class TestIndexWriter extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
     assertEquals(0, topDocs.totalHits);
-
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.segmentInfos) {
+     numSoftDeleted += info.getSoftDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
     writer.close();
     reader.close();
     dir.close();
@@ -3289,6 +3293,20 @@ public class TestIndexWriter extends LuceneTestCase {
       } else {
         assertEquals(1, reader.docFreq(new Term("id", id)));
       }
+    }
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.segmentInfos) {
+      numSoftDeleted += info.getSoftDelCount() + info.getDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    writer.commit();
+    try (DirectoryReader dirReader = DirectoryReader.open(dir)) {
+      int delCount = 0;
+      for (LeafReaderContext ctx : dirReader.leaves()) {
+        SegmentCommitInfo segmentInfo = ((SegmentReader) ctx.reader()).getSegmentInfo();
+        delCount += segmentInfo.getSoftDelCount() + segmentInfo.getDelCount();
+      }
+      assertEquals(numSoftDeleted, delCount);
     }
     IOUtils.close(reader, writer, dir);
   }

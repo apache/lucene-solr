@@ -49,6 +49,7 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -347,6 +348,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  much like how hotels place an "authorization hold" on your credit
    *  card to make sure they can later charge you when you check out. */
   final AtomicLong pendingNumDocs = new AtomicLong();
+  final boolean softDeletesEnabled;
 
   private final DocumentsWriter.FlushNotifications flushNotifications = new DocumentsWriter.FlushNotifications() {
     @Override
@@ -639,7 +641,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (rld != null) {
       return rld.getDelCount(); // get the full count from here since SCI might change concurrently
     } else {
-      int delCount = info.getDelCount();
+      final int delCount = info.getDelCount(softDeletesEnabled);
       assert delCount <= info.info.maxDoc(): "delCount: " + delCount + " maxDoc: " + info.info.maxDoc();
       return delCount;
     }
@@ -703,7 +705,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
-
+    softDeletesEnabled = config.getSoftDeletesField() != null;
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
@@ -1156,7 +1158,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (docWriter.anyDeletions()) {
       return true;
     }
-    if (readerPool.anyPendingDeletes()) {
+    if (readerPool.anyDeletions()) {
       return true;
     }
     for (final SegmentCommitInfo info : segmentInfos) {
@@ -2941,11 +2943,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     // long so we can detect int overflow:
     long numDocs = 0;
-
-    Sort indexSort = config.getIndexSort();
-
     long seqNo;
-
     try {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "flush at addIndexes(CodecReader...)");
@@ -2953,10 +2951,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       flush(false, true);
 
       String mergedName = newSegmentName();
-
+      int numSoftDeleted = 0;
       for (CodecReader leaf : readers) {
         numDocs += leaf.numDocs();
         validateMergeReader(leaf);
+        if (softDeletesEnabled) {
+            Bits liveDocs = leaf.getLiveDocs();
+            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
+            DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), leaf), liveDocs);
+        }
       }
       
       // Best-effort up front check:
@@ -2981,8 +2984,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
 
       merger.merge();                // merge 'em
-
-      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
+      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, numSoftDeleted, -1L, -1L, -1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       trackingDir.clearCreatedFiles();
@@ -3059,7 +3061,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     SegmentInfo newInfo = new SegmentInfo(directoryOrig, info.info.getVersion(), info.info.getMinVersion(), segName, info.info.maxDoc(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics(), info.info.getId(), info.info.getAttributes(), info.info.getIndexSort());
-    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), 
+    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getSoftDelCount(), info.getDelGen(),
                                                                info.getFieldInfosGen(), info.getDocValuesGen());
 
     newInfo.setFiles(info.info.files());
@@ -4251,7 +4253,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
-    merge.setMergeInfo(new SegmentCommitInfo(si, 0, -1L, -1L, -1L));
+    merge.setMergeInfo(new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L));
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));
@@ -4375,16 +4377,25 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
+      int numSoftDeleted = 0;
       for (SegmentReader reader : merge.readers) {
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
         mergeReaders.add(wrappedReader);
+        if (softDeletesEnabled) {
+          if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
+            Bits liveDocs = wrappedReader.getLiveDocs();
+            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
+                DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader),
+                liveDocs);
+          }
+        }
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-
+      merge.info.setSoftDelCount(numSoftDeleted);
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
@@ -4606,7 +4617,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *
    * @lucene.internal */
   private synchronized String segString(SegmentCommitInfo info) {
-    return info.toString(numDeletedDocs(info) - info.getDelCount());
+    return info.toString(numDeletedDocs(info) - info.getDelCount(softDeletesEnabled));
   }
 
   private synchronized void doWait() {

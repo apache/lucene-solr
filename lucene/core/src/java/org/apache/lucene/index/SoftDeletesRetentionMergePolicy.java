@@ -174,7 +174,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
   @Override
   public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
     final int numDeletesToMerge = super.numDeletesToMerge(info, delCount, readerSupplier);
-    if (numDeletesToMerge != 0) {
+    if (numDeletesToMerge != 0 && info.getSoftDelCount() > 0) {
       final CodecReader reader = readerSupplier.get();
       if (reader.getLiveDocs() != null) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();

@@ -45,6 +45,7 @@ import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -410,7 +411,7 @@ public final class CheckIndex implements Closeable {
    * that would otherwise be more complicated to debug if they had to close the writer
    * for each check.
    */
-  public CheckIndex(Directory dir, Lock writeLock) throws IOException {
+  public CheckIndex(Directory dir, Lock writeLock) {
     this.dir = dir;
     this.writeLock = writeLock;
     this.infoStream = null;
@@ -781,7 +782,10 @@ public final class CheckIndex implements Closeable {
             throw new RuntimeException("Points test failed");
           }
         }
-
+        final String softDeletesField = reader.getFieldInfos().getSoftDeletesField();
+        if (softDeletesField != null) {
+          checkSoftDeletes(softDeletesField, info, reader, infoStream, failFast);
+        }
         msg(infoStream, "");
         
         if (verbose) {
@@ -2849,6 +2853,25 @@ public final class CheckIndex implements Closeable {
       return 0;
     } else {
       return 1;
+    }
+  }
+
+  private static void checkSoftDeletes(String softDeletesField, SegmentCommitInfo info, SegmentReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null)
+      infoStream.print("    test: check soft deletes.....");
+    try {
+      int softDeletes = PendingSoftDeletes.countSoftDeletes(DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(softDeletesField, reader), reader.getLiveDocs());
+      if (softDeletes != info.getSoftDelCount()) {
+        throw new RuntimeException("actual soft deletes: " + softDeletes + " but expected: " +info.getSoftDelCount());
+      }
+    } catch (Exception e) {
+      if (failFast) {
+        throw IOUtils.rethrowAlways(e);
+      }
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
     }
   }
 

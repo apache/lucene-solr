@@ -35,6 +35,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
@@ -822,5 +823,20 @@ final class DefaultIndexingChain extends DocConsumer {
         invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
     }
+  }
+
+  @Override
+  DocIdSetIterator getHasDocValues(String field) {
+    PerField perField = getPerField(field);
+    if (perField != null) {
+      if (perField.docValuesWriter != null) {
+        if (perField.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
+          return null;
+        }
+
+        return perField.docValuesWriter.getDocIdSet();
+      }
+    }
+    return null;
   }
 }
