@@ -99,7 +99,7 @@ final class ReadersAndUpdates {
    *
    * <p>NOTE: steals incoming ref from reader. */
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
-    this(indexCreatedVersionMajor, reader.getSegmentInfo(), pendingDeletes);
+    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
     assert pendingDeletes.numPendingDeletes() >= 0
         : "got " + pendingDeletes.numPendingDeletes() + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
     this.reader = reader;
@@ -200,7 +200,7 @@ final class ReadersAndUpdates {
   }
 
   public synchronized void release(SegmentReader sr) throws IOException {
-    assert info == sr.getSegmentInfo();
+    assert info == sr.getOriginalSegmentInfo();
     sr.decRef();
   }
 
@@ -235,7 +235,7 @@ final class ReadersAndUpdates {
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs,
+      return new SegmentReader(info, reader, liveDocs,
           info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes

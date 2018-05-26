@@ -3375,4 +3375,28 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(writer, dir);
   }
 
+  public void testSegmentInfoIsSnapshot() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setRAMBufferSizeMB(Integer.MAX_VALUE);
+    config.setMaxBufferedDocs(2); // no auto flush
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "doc-0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "doc-1", Field.Store.YES));
+    writer.addDocument(d);
+    DirectoryReader reader = writer.getReader();
+    SegmentCommitInfo segmentInfo = ((SegmentReader) reader.leaves().get(0).reader()).getSegmentInfo();
+    SegmentCommitInfo originalInfo = ((SegmentReader) reader.leaves().get(0).reader()).getOriginalSegmentInfo();
+    assertEquals(0, originalInfo.getDelCount());
+    assertEquals(0, segmentInfo.getDelCount());
+    writer.deleteDocuments(new Term("id", "doc-0"));
+    writer.commit();
+    assertEquals(0, segmentInfo.getDelCount());
+    assertEquals(1, originalInfo.getDelCount());
+    IOUtils.close(reader, writer, dir);
+  }
+
 }

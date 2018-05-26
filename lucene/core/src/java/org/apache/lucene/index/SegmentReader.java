@@ -45,6 +45,10 @@ import org.apache.lucene.util.IOUtils;
 public final class SegmentReader extends CodecReader {
        
   private final SegmentCommitInfo si;
+  // this is the original SI that IW uses internally but it's mutated behind the scenes
+  // and we don't want this SI to be used for anything. Yet, IW needs this to do maintainance
+  // and lookup pooled readers etc.
+  private final SegmentCommitInfo originalSi;
   private final LeafMetaData metaData;
   private final Bits liveDocs;
 
@@ -67,9 +71,9 @@ public final class SegmentReader extends CodecReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  // TODO: why is this public?
-  public SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
-    this.si = si;
+  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
+    this.si = si.clone();
+    this.originalSi = si;
     this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
 
     // We pull liveDocs/DV updates from disk:
@@ -133,7 +137,8 @@ public final class SegmentReader extends CodecReader {
     if (liveDocs != null && liveDocs.length() != si.info.maxDoc()) {
       throw new IllegalArgumentException("maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
     }
-    this.si = si;
+    this.si = si.clone();
+    this.originalSi = si;
     this.metaData = sr.getMetaData();
     this.liveDocs = liveDocs;
     this.isNRT = isNRT;
@@ -347,5 +352,13 @@ public final class SegmentReader extends CodecReader {
   @Override
   public LeafMetaData getMetaData() {
     return metaData;
+  }
+
+  /**
+   * Returns the original SegmentInfo passed to the segment reader on creation time.
+   * {@link #getSegmentInfo()} returns a clone of this instance.
+   */
+  SegmentCommitInfo getOriginalSegmentInfo() {
+    return originalSi;
   }
 }

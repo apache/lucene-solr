@@ -396,7 +396,7 @@ final class FrozenBufferedUpdates {
           if (allDeleted == null) {
             allDeleted = new ArrayList<>();
           }
-          allDeleted.add(segState.reader.getSegmentInfo());
+          allDeleted.add(segState.reader.getOriginalSegmentInfo());
         }
       }
     }
@@ -451,7 +451,7 @@ final class FrozenBufferedUpdates {
 
     if (privateSegment != null) {
       assert segStates.length == 1;
-      assert privateSegment == segStates[0].reader.getSegmentInfo();
+      assert privateSegment == segStates[0].reader.getOriginalSegmentInfo();
     }
 
     totalDelCount += applyTermDeletes(segStates);

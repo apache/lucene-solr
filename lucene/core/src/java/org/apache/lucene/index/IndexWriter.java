@@ -1459,7 +1459,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw new IllegalArgumentException("the reader must be a SegmentReader or composite reader containing only SegmentReaders");
     }
 
-    final SegmentCommitInfo info = ((SegmentReader) reader).getSegmentInfo();
+    final SegmentCommitInfo info = ((SegmentReader) reader).getOriginalSegmentInfo();
 
     // TODO: this is a slow linear search, but, number of
     // segments should be contained unless something is
@@ -4308,7 +4308,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     final boolean drop = suppressExceptions == false;
     try (Closeable finalizer = merge::mergeFinished) {
       IOUtils.applyToAll(merge.readers, sr -> {
-        final ReadersAndUpdates rld = getPooledInstance(sr.getSegmentInfo(), false);
+        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
         // We still hold a ref so it should not have been removed:
         assert rld != null;
         if (drop) {
