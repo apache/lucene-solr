@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane fx:id="primary" prefHeight="650.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/8"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.apache.lucene.luke.app.controllers.LukeController">
+  <children>
+    <BorderPane prefHeight="650.0" prefWidth="850.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <center>
+        <TabPane fx:id="tabPane" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE"
+                 BorderPane.alignment="CENTER">
+          <tabs>
+            <Tab text="Overview">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="overview" source="overview.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_house_alt.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+            <Tab text="Documents">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="documents" source="documents.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_documents_alt.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+            <Tab text="Search">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="search" source="search.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_search.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+            <Tab text="Analysis">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="analysis" source="analysis.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_pencil-edit_alt.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+            <Tab text="Commits">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="commits" source="commits.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_drive.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+            <Tab text="Logs">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+                  <children>
+                    <fx:include fx:id="logs" source="logs.fxml"/>
+                  </children>
+                </AnchorPane>
+              </content>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_document.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Tab>
+          </tabs>
+        </TabPane>
+      </center>
+      <top>
+        <fx:include fx:id="menubar" source="menubar.fxml"/>
+      </top>
+      <bottom>
+        <AnchorPane prefHeight="25.0" prefWidth="850.0" BorderPane.alignment="CENTER">
+          <children>
+            <Label fx:id="statusMessage" layoutX="1.0" layoutY="4.0" prefHeight="20.0" prefWidth="650.0" text=""
+                   AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="160.0"
+                   AnchorPane.topAnchor="0.0"/>
+            <ImageView fx:id="multiIcon" fitHeight="16.0" fitWidth="16.0" layoutX="764.0" layoutY="5.0"
+                       pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.rightAnchor="70.0" AnchorPane.topAnchor="5.0">
+              <image>
+                <Image url="@/img/icon_grid-2x2.png"/>
+              </image>
+            </ImageView>
+            <ImageView fx:id="roIcon" fitHeight="16.0" fitWidth="16.0" layoutX="833.0" layoutY="10.0"
+                       pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.rightAnchor="50.0" AnchorPane.topAnchor="5.0">
+              <image>
+                <Image url="@/img/icon_lock.png"/>
+              </image>
+            </ImageView>
+            <ImageView fx:id="noReaderIcon" fitHeight="16.0" fitWidth="16.0" layoutX="833.0" layoutY="10.0"
+                       pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="5.0">
+              <image>
+                <Image url="@/img/icon_cone.png"/>
+              </image>
+            </ImageView>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true"
+                       AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="5.0">
+              <image>
+                <Image url="@/img/lucene.gif"/>
+              </image>
+            </ImageView>
+          </children>
+        </AnchorPane>
+      </bottom>
+    </BorderPane>
+  </children>
+</AnchorPane>

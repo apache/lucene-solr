@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane prefHeight="300.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.dialog.documents.TermVectorController">
+  <children>
+    <FlowPane prefHeight="30.0" prefWidth="200.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
+              AnchorPane.topAnchor="10.0">
+      <children>
+        <Label text="%documents.termvector.label.term_vector">
+          <FlowPane.margin>
+            <Insets right="10.0"/>
+          </FlowPane.margin>
+        </Label>
+        <Label fx:id="field"/>
+      </children>
+    </FlowPane>
+    <TableView fx:id="termVectorTable" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="50.0"
+               AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="40.0">
+      <columns>
+        <TableColumn fx:id="termColumn" editable="false" minWidth="100.0" prefWidth="100.0" sortable="false"
+                     text="Term"/>
+        <TableColumn fx:id="freqColumn" editable="false" minWidth="50.0" prefWidth="50.0" sortable="false" text="Freq"/>
+        <TableColumn fx:id="positionsColumn" minWidth="100.0" prefWidth="100.0" text="positions"/>
+        <TableColumn fx:id="offsetsColumn" maxWidth="1.7976931348623157E308" minWidth="100.0" prefWidth="310.0"
+                     text="offsets"/>
+      </columns>
+      <columnResizePolicy>
+        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+      </columnResizePolicy>
+    </TableView>
+    <Button fx:id="close" mnemonicParsing="false" text="%button.close" AnchorPane.bottomAnchor="10.0"
+            AnchorPane.rightAnchor="20.0"/>
+  </children>
+</AnchorPane>

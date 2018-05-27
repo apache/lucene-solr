@@ -1,0 +1,1 @@
+start javaw -jar .\target\luke-javafx-with-deps.jar

@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="luke" default="default" xmlns:artifact="antlib:org.apache.maven.artifact.ant" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <description>
+    Luke - Lucene Toolbox
+  </description>
+
+  <property name="demo.name" value="lucene-luke-${version}"/>
+
+  <import file="../module-build.xml"/>
+
+  <target name="init" depends="module-build.init,jar-lucene-core"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${lucene-core.jar}"/>
+    <pathelement path="${misc.jar}"/>
+    <pathelement path="${queryparser.jar}"/>
+    <pathelement path="${queries.jar}"/>
+    <fileset dir="lib" />
+  </path>
+
+  <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,javadocs-expressions,compile-core,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
+    <!-- we link the example source in the javadocs, as it's ref'ed elsewhere -->
+    <invoke-module-javadoc linksource="yes">
+      <links>
+        <link href="../analyzers-common"/>
+        <link href="../misc"/>
+        <link href="../queryparser"/>
+        <link href="../queries"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
+  <property name="luke.work.dir" value="${build.dir}/lucene-luke-${version}"/>
+  <property name="luke.dist.zip" value="${build.dir}/lucene-luke-${version}.zip"/>
+  <target name="build-artifacts-and-tests" depends="jar, compile-test">
+    <mkdir dir="${luke.work.dir}/lib"/>
+
+    <!-- copy libs -->
+    <copy todir="${luke.work.dir}/lib">
+      <fileset dir="${common.dir}/luke/lib">
+        <include name="**/*.jar"/>
+      </fileset>
+    </copy>
+    <copy file="${codecs.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${backward-codecs.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${lucene-core.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-common.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-icu.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-kuromoji.jar}" todir="${luke.work.dir}/lib"/>
+    <!--copy file="${analyzers-morfologik.jar}" todir="${luke.work.dir}/lib"/-->
+    <copy file="${analyzers-nori.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-opennlp.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-phonetic.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-smartcn.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${analyzers-stempel.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${queryparser.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${queries.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${misc.jar}" todir="${luke.work.dir}/lib"/>
+    <copy file="${luke.jar}" todir="${luke.work.dir}/lib"/>
+
+    <!-- copy start scripts -->
+    <copy todir="${luke.work.dir}">
+      <fileset dir="${common.dir}/luke/bin">
+        <include name="**/*.sh"/>
+        <include name="**/*.bat"/>
+      </fileset>
+    </copy>
+    <chmod perm="755">
+      <fileset dir="${luke.work.dir}">
+        <include name="**/*.sh"/>
+      </fileset>
+    </chmod>
+  </target>
+
+  <target name="compile-core" depends="jar-codecs,jar-backward-codecs,jar-analyzers-common,jar-analyzers-icu,jar-analyzers-kuromoji,jar-analyzers-morfologik,jar-analyzers-nori,jar-analyzers-opennlp,jar-analyzers-phonetic,jar-analyzers-smartcn,jar-analyzers-stempel,jar-misc,jar-queryparser,jar-queries,jar-misc,common.compile-core" />
+
+</project>

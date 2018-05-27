@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane prefHeight="500.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.dialog.menubar.AboutController">
+  <children>
+    <VBox alignment="TOP_CENTER" layoutX="143.0" layoutY="40.0" prefWidth="1000.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="20.0">
+      <children>
+        <ImageView pickOnBounds="true" preserveRatio="true" VBox.vgrow="ALWAYS">
+          <image>
+            <Image url="@/img/luke-logo.gif"/>
+          </image>
+        </ImageView>
+        <Label styleClass="about_proj_title" text="Lucene Toolbox Project"/>
+        <FlowPane alignment="CENTER" prefHeight="50.0" prefWidth="200.0" styleClass="about_proj_sub_title">
+          <children>
+            <Label text="GUI client of the best Java search library Apache Lucene"/>
+            <ImageView pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@/img/lucene-logo.gif"/>
+              </image>
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ImageView>
+          </children>
+        </FlowPane>
+        <Label text="https://lucene.apache.org/"/>
+        <TextArea editable="false"
+                  text="Created by Andrzej Bialecki &lt;ab@getopt.org&gt;&#10;Further developed by: Dmitry Kan &lt;dmitry.lucene@gmail.com&gt;, Tomoko Uchida &lt;tomoko.uchida.1111@gmail.com&gt;&#10;Backed by pull-requests from our fantastic community.&#10;&#10;[Copyright]&#10;&#10;Luke is distributed under Apache License Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)&#10;and includes The Elegant Icon Font (https://www.elegantthemes.com/blog/resources/elegant-icon-font) licensed under MIT (https://opensource.org/licenses/MIT).&#10;&#10;&#10;"
+                  wrapText="true">
+          <font>
+            <Font size="14.0"/>
+          </font>
+          <VBox.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+          </VBox.margin>
+        </TextArea>
+      </children>
+    </VBox>
+    <Button fx:id="close" layoutX="923.0" layoutY="458.0" mnemonicParsing="false" text="%button.close"
+            AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="20.0"/>
+  </children>
+</AnchorPane>

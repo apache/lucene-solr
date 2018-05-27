@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<MenuBar AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+         AnchorPane.topAnchor="0.0"
+         xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="org.apache.lucene.luke.app.controllers.MenubarController">
+  <menus>
+    <Menu mnemonicParsing="false" text="%menu.file">
+      <items>
+        <MenuItem fx:id="menuOpenIndex" mnemonicParsing="false" text="%menu.item.open_index"/>
+        <MenuItem fx:id="menuReopenIndex" mnemonicParsing="false" text="%menu.item.reopen_index"/>
+        <MenuItem fx:id="menuCloseIndex" mnemonicParsing="false" text="%menu.item.close_index"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <Menu mnemonicParsing="false" text="%menu.settings">
+          <items>
+            <Menu mnemonicParsing="false" text="%menu.color">
+              <items>
+                <MenuItem fx:id="menuThemeGray" mnemonicParsing="false" text="%menu.item.theme_gray"/>
+                <MenuItem fx:id="menuThemeClassic" mnemonicParsing="false" text="%menu.item.theme_classic"/>
+                <MenuItem fx:id="menuThemeSandstone" mnemonicParsing="false" text="%menu.item.theme_sandstone"/>
+                <MenuItem fx:id="menuThemeNavy" mnemonicParsing="false" text="%menu.item.theme_navy"/>
+              </items>
+            </Menu>
+          </items>
+        </Menu>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuExit" mnemonicParsing="false" text="%menu.item.exit"/>
+      </items>
+    </Menu>
+    <Menu mnemonicParsing="false" text="%menu.tools">
+      <items>
+        <MenuItem fx:id="menuOptimizeIndex" mnemonicParsing="false" text="%menu.item.optimize"/>
+        <MenuItem fx:id="menuCheckIndex" mnemonicParsing="false" text="%menu.item.check_index"/>
+      </items>
+    </Menu>
+    <Menu mnemonicParsing="false" text="%menu.help">
+      <items>
+        <MenuItem fx:id="menuAbout" mnemonicParsing="false" text="%menu.item.about"/>
+      </items>
+    </Menu>
+  </menus>
+</MenuBar>
+
+

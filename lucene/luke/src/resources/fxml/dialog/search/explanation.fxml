@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.dialog.search.ExplanationController">
+  <children>
+
+    <FlowPane layoutX="5.0" prefHeight="50.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+      <children>
+        <Label text="%search.explanation.description">
+          <FlowPane.margin>
+            <Insets left="10.0" top="10.0"/>
+          </FlowPane.margin>
+        </Label>
+        <Label fx:id="docNum">
+          <FlowPane.margin>
+            <Insets top="10.0" left="10.0"/>
+          </FlowPane.margin>
+        </Label>
+      </children>
+    </FlowPane>
+    <TreeView fx:id="tree" layoutX="7.0" layoutY="39.0" prefHeight="200.0" prefWidth="200.0"
+              AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
+              AnchorPane.topAnchor="50.0"/>
+    <Button fx:id="copy" mnemonicParsing="false" text="%button.copy" AnchorPane.bottomAnchor="10.0"
+            AnchorPane.rightAnchor="100.0"/>
+    <Button fx:id="close" mnemonicParsing="false" text="%button.close" AnchorPane.bottomAnchor="10.0"
+            AnchorPane.rightAnchor="20.0"/>
+  </children>
+</AnchorPane>
