@@ -99,6 +99,12 @@ New Features
   requests will fail when the coordinating node can't communicate with ZooKeeper, 
   by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
 
+* SOLR-9685: #Tagging queries in JSON Query DSL, equivalent to LocalParams based query/filter
+  tagging.  Multiple tags are comma separated.
+  LocalParams Example     : {!tag=colorfilt}color:blue
+  Equivalent JSON Example : { "#colorfilt" : "color:blue" } 
+  (Dmitry Tikhonov, Mikhail Khludnev, yonik)
+
 Bug Fixes
 ----------------------
 
