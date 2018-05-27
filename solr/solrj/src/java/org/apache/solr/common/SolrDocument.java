@@ -19,6 +19,7 @@ package org.apache.solr.common;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -371,6 +372,23 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   @Override
   public Collection<Object> values() {
     return _fields.values();
+  }
+
+  public Map<String, Object> getChildDocumentsMap() {
+    Map<String, Object> childDocs = new HashMap<>();
+    for (Entry<String, Object> field: entrySet()) {
+      Object fieldVal = field.getValue();
+      if (field instanceof Collection) {
+        Collection fieldVals = ((Collection) fieldVal);
+        if (fieldVals.size() > 0 && fieldVals.iterator().next() instanceof SolrDocument) {
+          childDocs.put(field.getKey(), fieldVal);
+        }
+      }
+      else if (fieldVal instanceof SolrDocument) {
+        childDocs.put(field.getKey(), fieldVal);
+      }
+    }
+    return childDocs.size() > 0 ? childDocs: null;
   }
 
   @Override

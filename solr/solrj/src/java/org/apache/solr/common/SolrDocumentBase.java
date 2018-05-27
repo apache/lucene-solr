@@ -56,6 +56,8 @@ public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializ
 
   public abstract List<K> getChildDocuments();
 
+  public abstract Map<String, T> getChildDocumentsMap();
+
   public abstract boolean hasChildDocuments();
 
   public abstract int getChildDocumentCount();

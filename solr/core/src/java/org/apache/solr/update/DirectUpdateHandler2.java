@@ -19,6 +19,8 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -45,6 +47,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
@@ -315,9 +318,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-
+      List<SolrInputDocument> docs = cmd.getDocsList();
       if (cmd.isBlock()) {
-        writer.addDocuments(cmd);
+        writer.addDocuments(toDocumentsIter(docs, cmd.req.getSchema()));
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -973,14 +976,41 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
+    List<SolrInputDocument> docs = cmd.getDocsList();
+
     if (cmd.isBlock()) {
-      log.debug("updateDocuments({})", cmd);
-      writer.updateDocuments(updateTerm, cmd);
+      log.debug("updateDocuments({})", docs);
+      writer.updateDocuments(updateTerm, toDocumentsIter(docs, cmd.req.getSchema()));
     } else {
       Document luceneDocument = cmd.getLuceneDocument(false);
       log.debug("updateDocument({})", cmd);
       writer.updateDocument(updateTerm, luceneDocument);
     }
+  }
+
+  private Iterable<Document> toDocumentsIter(Collection<SolrInputDocument> docs, IndexSchema schema) {
+    return new Iterable<Document>() {
+        public Iterator<Document> iterator() {
+          return new Iterator<Document>() {
+            Iterator<SolrInputDocument> iter = docs.iterator();
+
+            @Override
+            public boolean hasNext() {
+              return iter.hasNext();
+            }
+
+            @Override
+            public Document next() {
+              return DocumentBuilder.toDocument(iter.next(), schema);
+            }
+
+            @Override
+            public void remove() {
+              throw new UnsupportedOperationException();
+            }
+          };
+        }
+      };
   }
 
 

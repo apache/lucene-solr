@@ -17,8 +17,10 @@
 package org.apache.solr.update;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -35,7 +37,7 @@ import org.apache.solr.schema.SchemaField;
 /**
  *
  */
-public class AddUpdateCommand extends UpdateCommand implements Iterable<Document> {
+public class AddUpdateCommand extends UpdateCommand {
    // optional id in "internal" indexed form... if it is needed and not supplied,
    // it will be obtained from the doc.
    private BytesRef indexedId;
@@ -61,6 +63,8 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
    public int commitWithin = -1;
 
    public boolean isLastDocInBatch = false;
+
+   private List<SolrInputDocument> docsList = null;
    
    public AddUpdateCommand(SolrQueryRequest req) {
      super(req);
@@ -146,17 +150,14 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
      return "(null)";
    }
 
-  /**
-   * @return String id to hash
-   */
-  public String getHashableId() {
+  public String getHashableId(SolrInputDocument doc) {
     String id = null;
     IndexSchema schema = req.getSchema();
     SchemaField sf = schema.getUniqueKeyField();
     if (sf != null) {
-      if (solrDoc != null) {
-        SolrInputField field = solrDoc.getField(sf.getName());
-        
+      if (doc != null) {
+        SolrInputField field = doc.getField(sf.getName());
+
         int count = field == null ? 0 : field.getValueCount();
         if (count == 0) {
           if (overwrite) {
@@ -175,52 +176,49 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
     return id;
   }
 
-  public boolean isBlock() {
-    return solrDoc.hasChildDocuments();
+  /**
+   * @return String id to hash
+   */
+  public String getHashableId() {
+    return getHashableId(solrDoc);
   }
 
-  @Override
-  public Iterator<Document> iterator() {
-    return new Iterator<Document>() {
-      Iterator<SolrInputDocument> iter;
+  public boolean isBlock() {
+    return getDocsList().size() > 1;
+  }
 
-      {
-        List<SolrInputDocument> all = flatten(solrDoc);
+  public List<SolrInputDocument> getDocsList() {
+    if (docsList == null) {
+      buildDocsList();
+    }
+    return docsList;
+  }
 
-        String idField = getHashableId();
+  private void buildDocsList() {
+    List<SolrInputDocument> all = flatten(solrDoc);
 
-        boolean isVersion = version != 0;
+    String idField = getHashableId();
 
-        for (SolrInputDocument sdoc : all) {
+    boolean isVersion = version != 0;
+    SchemaField idFieldName = req.getSchema().getUniqueKeyField();
+
+    for (SolrInputDocument sdoc : all) {
+      if (idFieldName != null) {
+        if (!sdoc.containsKey(idFieldName.getName()) || !getHashableId(sdoc).equals(idField)) {
           sdoc.setField(IndexSchema.ROOT_FIELD_NAME, idField);
-          if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
-          // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
-          // then we could add this field to the generated lucene document instead.
         }
-
-        iter = all.iterator();
-     }
-
-      @Override
-      public boolean hasNext() {
-        return iter.hasNext();
       }
-
-      @Override
-      public Document next() {
-        return DocumentBuilder.toDocument(iter.next(), req.getSchema());
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-    };
+      if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
+      // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
+      // then we could add this field to the generated lucene document instead.
+    }
+    docsList = all;
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
     List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     recUnwrapp(unwrappedDocs, root);
+    recUnwrapRelations(unwrappedDocs, root);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
       throw new SolrException
         (SolrException.ErrorCode.BAD_REQUEST, "Unable to index docs with children: the schema must " +
@@ -228,6 +226,20 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
          "' field, using the exact same fieldType");
     }
     return unwrappedDocs;
+  }
+
+  private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    Map<String, SolrInputField> childDocsRelations = currentDoc.getChildDocumentsMap();
+    if (childDocsRelations == null) {
+      return;
+    }
+    for (Map.Entry<String, SolrInputField> childEntry : childDocsRelations.entrySet()) {
+      Collection<SolrInputDocument> childrenList = ((Collection) childEntry.getValue().getValues());
+      for (SolrInputDocument child : childrenList) {
+        recUnwrapRelations(unwrappedDocs, child);
+      }
+    }
+    unwrappedDocs.add(currentDoc);
   }
 
   private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {

@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -257,6 +258,17 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     for (SolrInputDocument child : children) {
       addChildDocument(child);
     }
+  }
+
+  public Map<String, SolrInputField> getChildDocumentsMap() {
+    Map<String, SolrInputField> childDocs = new HashMap<>();
+    for (SolrInputField field: values()) {
+      Object value = field.getFirstValue();
+      if (value instanceof SolrInputDocument) {
+        childDocs.put(field.getName(), field);
+      }
+    }
+    return childDocs.size() > 0 ? childDocs: null;
   }
 
   /** Returns the list of child documents, or null if none. */
