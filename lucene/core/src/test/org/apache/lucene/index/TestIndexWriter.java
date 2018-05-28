@@ -3324,9 +3324,9 @@ public class TestIndexWriter extends LuceneTestCase {
         .filter(filter).collect(Collectors.toSet());
     Set<String> dirFiles = new HashSet<>(Arrays.asList(writer.getDirectory().listAll()))
         .stream().filter(filter).collect(Collectors.toSet());
-    Set<String> s = new HashSet<>(segFiles);
-    s.removeAll(dirFiles);
-    assertEquals(segFiles.toString() + " vs "+ dirFiles.toString(), segFiles.size(), dirFiles.size());
+    // ExtraFS might add an extra0 file, ignore it
+    dirFiles.remove("extra0");
+    assertEquals(segFiles.size(), dirFiles.size());
   }
 
   public void testFullyDeletedSegmentsReleaseFiles() throws IOException {
