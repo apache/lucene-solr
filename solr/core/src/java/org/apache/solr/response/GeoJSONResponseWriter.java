@@ -166,21 +166,6 @@ class GeoJSONWriter extends JSONWriter {
       writeVal(fname, val);
     }
 
-    // GeoJSON does not really support nested FeatureCollections
-    if(doc.hasChildDocuments()) {
-      if(first == false) {
-        writeMapSeparator();
-        indent();
-      }
-      writeKey("_childDocuments_", true);
-      writeArrayOpener(doc.getChildDocumentCount());
-      List<SolrDocument> childDocs = doc.getChildDocuments();
-      for(int i=0; i<childDocs.size(); i++) {
-        writeSolrDocument(null, childDocs.get(i), null, i);
-      }
-      writeArrayCloser();
-    }
-
     // check that we added any properties
     if(!first) {
       decLevel();

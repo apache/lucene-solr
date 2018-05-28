@@ -607,18 +607,11 @@ public class JavaBinCodec implements PushWriter {
   }
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
-    List<SolrInputDocument> children = sdoc.getChildDocuments();
-    int sz = sdoc.size() + (children==null ? 0 : children.size());
-    writeTag(SOLRINPUTDOC, sz);
+    writeTag(SOLRINPUTDOC, sdoc.size());
     writeFloat(1f); // document boost
     for (SolrInputField inputField : sdoc.values()) {
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
-    }
-    if (children != null) {
-      for (SolrInputDocument child : children) {
-        writeSolrInputDocument(child);
-      }
     }
   }
 

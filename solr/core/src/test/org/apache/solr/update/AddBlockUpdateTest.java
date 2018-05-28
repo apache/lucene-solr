@@ -421,7 +421,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
       result = (SolrInputDocument) jbc.unmarshal(is);
     }
-    assertEquals(2, result.size());
+    assertEquals(3, result.size());
     assertEquals("v1", result.getFieldValue("parent_f1"));
     assertEquals("v2", result.getFieldValue("parent_f2"));
     

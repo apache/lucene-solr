@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -231,10 +232,13 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
   }
 
   private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
-    List<SolrInputDocument> children = currentDoc.getChildDocuments();
+    Map<String, Object> children = currentDoc.getChildDocumentsMap();
     if (children != null) {
-      for (SolrInputDocument child : children) {
-        recUnwrapp(unwrappedDocs, child);
+      for (Map.Entry<String, Object> childEntry : children.entrySet()) {
+        List<SolrInputDocument> childrenList = ((List<SolrInputDocument>) childEntry.getValue());
+        for(SolrInputDocument child: childrenList) {
+          recUnwrapp(unwrappedDocs, child);
+        }
       }
     }
     unwrappedDocs.add(currentDoc);

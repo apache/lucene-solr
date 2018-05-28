@@ -19,6 +19,7 @@ package org.apache.solr.common;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,8 +43,6 @@ import org.apache.solr.common.util.NamedList;
 public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> implements Iterable<Map.Entry<String, Object>>
 {
   private final Map<String,Object> _fields;
-  
-  private List<SolrDocument> _childDocuments;
   
   public SolrDocument()
   {
@@ -74,10 +73,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   public void clear()
   {
     _fields.clear();
-
-    if(_childDocuments != null) {
-      _childDocuments.clear();
-    }
   }
   
   /**
@@ -375,11 +370,12 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public void addChildDocument(SolrDocument child) {
-    if (_childDocuments == null) {
-      _childDocuments = new ArrayList<>();
+    Object childField = getFieldValue(CHILD_DOC_KEY);
+    if ( childField == null) {
+      setField(CHILD_DOC_KEY, new ArrayList<SolrDocument>());
     }
-     _childDocuments.add(child);
-   }
+    ((List<SolrDocument>) getFieldValue(CHILD_DOC_KEY)).add(child);
+  }
    
   @Override
    public void addChildDocuments(Collection<SolrDocument> children) {
@@ -388,20 +384,55 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
      }
    }
 
+   @Override
+   public Map<String, Object> getChildDocumentsMap() {
+     Map<String, Object> childDocs = new HashMap<>();
+     for (Entry<String, Object> entry: _fields.entrySet()) {
+       Object value = entry.getValue();
+       if(objIsDocument(value)) {
+         childDocs.put(entry.getKey(), value);
+       }
+     }
+     return childDocs;
+   }
+
    /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
-     return _childDocuments;
+     Map<String, Object> childDocMap = getChildDocumentsMap();
+     if (childDocMap == null) {
+       return null;
+     }
+     List<SolrDocument> children = new ArrayList<>();
+     for(Entry<String, Object> entry: childDocMap.entrySet()) {
+       Object value = entry.getValue();
+       if(value instanceof Collection) {
+         children.addAll(((Collection<SolrDocument>) value));
+         continue;
+       }
+       children.add(((SolrDocument) value));
+     }
+     return children;
    }
    
    @Override
    public boolean hasChildDocuments() {
-     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
-     return !isEmpty;
+     return getChildDocuments() != null;
    }
 
   @Override
   public int getChildDocumentCount() {
-    return _childDocuments.size();
+     if (!hasChildDocuments()) {
+       return 0;
+     }
+    int totalCount = 0;
+     for (Object value: getChildDocuments()) {
+       if(value instanceof Collection) {
+         totalCount += ((Collection) value).size();
+       } else {
+         ++totalCount;
+       }
+     }
+     return totalCount;
   }
 }

@@ -72,7 +72,9 @@ public class ClientUtils
       for( Object v : field ) {
         String update = null;
 
-        if (v instanceof Map) {
+        if(v instanceof SolrInputDocument) {
+          continue;
+        } else if (v instanceof Map) {
           // currently only supports a single value
           for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
             update = entry.getKey().toString();
