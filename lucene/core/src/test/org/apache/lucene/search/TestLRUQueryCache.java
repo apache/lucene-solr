@@ -1593,7 +1593,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
   public void testBulkScorerLocking() throws Exception {
 
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriterConfig iwc = newIndexWriterConfig()
+        .setMergePolicy(NoMergePolicy.INSTANCE)
+        // the test framework sometimes sets crazy low values, prevent this since we are indexing many docs
+        .setMaxBufferedDocs(-1);
     IndexWriter w = new IndexWriter(dir, iwc);
 
     final int numDocs = atLeast(10);
