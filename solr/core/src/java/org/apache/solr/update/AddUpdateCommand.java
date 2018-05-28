@@ -18,9 +18,10 @@ package org.apache.solr.update;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -80,6 +81,7 @@ public class AddUpdateCommand extends UpdateCommand {
      solrDoc = null;
      indexedId = null;
      updateTerm = null;
+     docsList = null;
      isLastDocInBatch = false;
      version = 0;
      prevVersion = -1;
@@ -200,13 +202,10 @@ public class AddUpdateCommand extends UpdateCommand {
     String idField = getHashableId();
 
     boolean isVersion = version != 0;
-    SchemaField idFieldName = req.getSchema().getUniqueKeyField();
 
     for (SolrInputDocument sdoc : all) {
-      if (idFieldName != null) {
-        if (!sdoc.containsKey(idFieldName.getName()) || !getHashableId(sdoc).equals(idField)) {
-          sdoc.setField(IndexSchema.ROOT_FIELD_NAME, idField);
-        }
+      if (all.size() > 1) {
+        sdoc.setField(IndexSchema.ROOT_FIELD_NAME, idField);
       }
       if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
@@ -216,8 +215,10 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
-    List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
-    recUnwrapp(unwrappedDocs, root);
+    Set<SolrInputDocument> unwrappedDocs = new LinkedHashSet<>();
+    if(root.hasChildDocuments()) {
+      recUnwrapp(unwrappedDocs, root);
+    }
     recUnwrapRelations(unwrappedDocs, root);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
       throw new SolrException
@@ -225,11 +226,12 @@ public class AddUpdateCommand extends UpdateCommand {
          "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
          "' field, using the exact same fieldType");
     }
-    return unwrappedDocs;
+    return new ArrayList<>(unwrappedDocs);
   }
 
-  private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+  private void recUnwrapRelations(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     Map<String, SolrInputField> childDocsRelations = currentDoc.getChildDocumentsMap();
+    unwrappedDocs.add(currentDoc);
     if (childDocsRelations == null) {
       return;
     }
@@ -239,10 +241,9 @@ public class AddUpdateCommand extends UpdateCommand {
         recUnwrapRelations(unwrappedDocs, child);
       }
     }
-    unwrappedDocs.add(currentDoc);
   }
 
-  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+  private void recUnwrapp(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     List<SolrInputDocument> children = currentDoc.getChildDocuments();
     if (children != null) {
       for (SolrInputDocument child : children) {

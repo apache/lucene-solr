@@ -26,7 +26,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -48,9 +51,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.XMLLoader;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -73,7 +80,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   private static final String child = "child_s";
   private static final String parent = "parent_s";
   private static final String type = "type_s";
-  
+
   private static ExecutorService exe;
   private static AtomicInteger counter = new AtomicInteger();
   private static boolean cachedMode;
@@ -159,13 +166,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                doc(child,"d","id", "66")), "overwrite", "false"));
     
     assertU(commit());
-    
+
     assertQ(req(parent+":"+overwritten, "//*[@numFound='1']"));
     assertQ(req(parent+":"+dubbed, "//*[@numFound='2']"));
-    
+
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("ab"), dubbed);
-    
+
     final TopDocs docs = searcher.search(join(one("cd")), 10);
     assertEquals(2, docs.totalHits);
     final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent)+
@@ -260,7 +267,46 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertQ(req(parent + ":Y"), "//*[@numFound='0']");
     assertQ(req(parent + ":W"), "//*[@numFound='0']");
   }
-  
+
+  @Test
+  public void testSolrNestedFields() throws Exception {
+    SolrInputDocument document1 = new SolrInputDocument() {
+      {
+        final String id = id();
+        addField("id", id);
+        addField("parent_s", "X");
+        addField("children",
+            new ArrayList<SolrInputDocument>()
+            {
+              {
+                add(sdoc("id", id(), "child_s", "y"));
+                add(sdoc("id", id(), "child_s", "z"));
+              }
+            });
+      }
+    };
+
+
+    SolrCore core = h.getCore();
+    long version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
+    updateCmd.setVersion(version);
+//    SolrQueryResponse resp = new SolrQueryResponse();
+//    h.getCore().getUpdateProcessingChain("update").createProcessor(coreReq, resp);
+    updateCmd.solrDoc = document1;
+    h.getCore().getUpdateHandler().addDoc(updateCmd);
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + 3);
+    assertSingleParentOf(searcher, one("yz"), "X");
+  }
+
   @SuppressWarnings("serial")
   @Test
   public void testSolrJXML() throws IOException {
@@ -398,7 +444,43 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("bc"), "A");
        
   }
-  
+
+  @Test
+  public void testJavaBinCodecNestedRelation() throws IOException {
+    SolrInputDocument topDocument = new SolrInputDocument();
+    topDocument.addField("parent_f1", "v1");
+    topDocument.addField("parent_f2", "v2");
+
+    int childsNum = atLeast(10);
+    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
+    for(int i = 0; i < childsNum; ++i) {
+      SolrInputDocument child = new SolrInputDocument();
+      child.addField("key", (i + 5) * atLeast(4));
+      String childKey = String.format(Locale.ROOT, "child%d", i);
+      topDocument.addField(childKey, child);
+      children.put(childKey, child);
+    }
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(topDocument, os);
+    }
+    byte[] buffer = os.toByteArray();
+    //now read the Object back
+    SolrInputDocument result;
+    try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
+      result = (SolrInputDocument) jbc.unmarshal(is);
+    }
+    assertEquals(2 + childsNum, result.size());
+    assertEquals("v1", result.getFieldValue("parent_f1"));
+    assertEquals("v2", result.getFieldValue("parent_f2"));
+
+    for(Map.Entry<String, SolrInputDocument> entry: children.entrySet()) {
+      compareSolrInputDocument(entry.getValue(), result.getFieldValue(entry.getKey()));
+    }
+
+  }
+
   
   @Test
   public void testJavaBinCodec() throws IOException { //actually this test must be in other test class
