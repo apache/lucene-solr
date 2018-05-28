@@ -60,7 +60,7 @@ public class TestDynamicURP extends SolrCloudTestCase {
         "    <processor class=\"solr.RunUpdateProcessorFactory\"/>\n" +
         "  </updateRequestProcessorChain>\n" +
         "\n" +
-        "  <updateProcessor class=\"org.apache.solr.core.TestURP\" name=\"testURP\" runtimeLib=\"true\"></updateProcessor>\n" +
+        "  <updateProcessor class=\"runtimecode.TestURP\" name=\"testURP\" runtimeLib=\"true\"></updateProcessor>\n" +
         "</config>").getBytes(StandardCharsets.UTF_8), true );
 
 

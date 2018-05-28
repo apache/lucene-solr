@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package runtimecode;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
