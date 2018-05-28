@@ -496,6 +496,49 @@ public class TestJsonFacets extends SolrTestCaseHS {
              );
   }
   
+  public void testDomainGraph() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // should be the same as join self
+    assertJQ(req("q", "*:*", "rows", "0",
+        "json.facet", ""
+            + "{x: { type: terms, field: 'num_i', "
+            + "      facet: { y: { domain: { graph: { from: 'cat_s', to: 'cat_s' } }, "
+            + "                    type: terms, field: 'where_s' "
+            + "                  } } } }")
+        , "facets=={count:6, x:{ buckets:["
+            + "   { val:-5, count:2, "
+            + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:2, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:3, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:7, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } } ] } }"
+    );
+
+    // This time, test with a traversalFilter
+    // should be the same as join self
+    assertJQ(req("q", "*:*", "rows", "0",
+        "json.facet", ""
+            + "{x: { type: terms, field: 'num_i', "
+            + "      facet: { y: { domain: { graph: { from: 'cat_s', to: 'cat_s', traversalFilter: 'where_s:NY' } }, "
+            + "                    type: terms, field: 'where_s' "
+            + "                  } } } }")
+        , "facets=={count:6, x:{ buckets:["
+            + "   { val:-5, count:2, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:2, count:1, "
+            + "     y : { buckets:[{ val:'NY', count:1 } ] } }, "
+            + "   { val:3, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:7, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1  }, { val:'NY', count:1 } ] } } ] } }"
+    );
+  }
+
+
   public void testNestedJoinDomain() throws Exception {
     Client client = Client.localClient();
 

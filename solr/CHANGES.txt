@@ -105,6 +105,9 @@ New Features
   Equivalent JSON Example : { "#colorfilt" : "color:blue" } 
   (Dmitry Tikhonov, Mikhail Khludnev, yonik)
 
+* SOLR-12328: JSON Facet API: Domain change with graph query.
+  (Daniel Meehl, Kevin Watters, yonik)
+
 Bug Fixes
 ----------------------
 
