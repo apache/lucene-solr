@@ -244,6 +244,8 @@ public class Lang {
         .withFunctionName("chebyshev", ChebyshevEvaluator.class)
         .withFunctionName("ones", OnesEvaluator.class)
         .withFunctionName("zeros", ZerosEvaluator.class)
+        .withFunctionName("getValue", GetValueEvaluator.class)
+        .withFunctionName("setValue", SetValueEvaluator.class)
 
         // Boolean Stream Evaluators
 
