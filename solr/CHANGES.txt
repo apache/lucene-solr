@@ -70,6 +70,9 @@ Upgrade Notes
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
+* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log .
+  Previously they would get logged in the solr.xml file
+
 New Features
 ----------------------
 
@@ -136,6 +139,9 @@ New Features
 
 * SOLR-12328: JSON Facet API: Domain change with graph query.
   (Daniel Meehl, Kevin Watters, yonik)
+
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
+  (Shawn Heisey, Remko Popma, Varun Thacker)
 
 Bug Fixes
 ----------------------
