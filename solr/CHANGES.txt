@@ -228,6 +228,9 @@ Bug Fixes
 * SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
   (Josh Lucas via shalin)
 
+* SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
+   in an update processor chain (noble)
+
 Optimizations
 ----------------------
 
