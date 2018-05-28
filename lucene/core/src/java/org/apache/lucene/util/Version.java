@@ -137,6 +137,13 @@ public final class Version {
   public static final Version LUCENE_6_6_3 = new Version(6, 6, 3);
 
   /**
+   * Match settings and bugs in Lucene's 6.6.4 release.
+   * @deprecated Use latest
+   */
+  @Deprecated
+  public static final Version LUCENE_6_6_4 = new Version(6, 6, 4);
+
+  /**
    * Match settings and bugs in Lucene's 7.0.0 release.
    * @deprecated (7.1.0) Use latest
    */
