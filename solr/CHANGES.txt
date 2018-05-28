@@ -238,6 +238,9 @@ Bug Fixes
 
 * SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
+* SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
+  indexing requests between leader and replica ( Mark Miller, Varun Thacker)
+
 Optimizations
 ----------------------
 

@@ -51,10 +51,15 @@ public class StreamingSolrClients {
 
   private ExecutorService updateExecutor;
 
+  private int socketTimeout;
+  private int connectionTimeout;
+
   public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
     this.updateExecutor = updateShardHandler.getUpdateExecutor();
     
     httpClient = updateShardHandler.getUpdateOnlyHttpClient();
+    socketTimeout = updateShardHandler.getSocketTimeout();
+    connectionTimeout = updateShardHandler.getConnectionTimeout();
   }
 
   public List<Error> getErrors() {
@@ -78,6 +83,8 @@ public class StreamingSolrClients {
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)
           .alwaysStreamDeletes()
+          .withSocketTimeout(socketTimeout)
+          .withConnectionTimeout(connectionTimeout)
           .build();
       client.setPollQueueTime(Integer.MAX_VALUE); // minimize connections created
       client.setParser(new BinaryResponseParser());
@@ -160,7 +167,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
       this.req = req;
       this.errors = errors;
     }
-    
+
     public ErrorReportingConcurrentUpdateSolrClient build() {
       return new ErrorReportingConcurrentUpdateSolrClient(this);
     }

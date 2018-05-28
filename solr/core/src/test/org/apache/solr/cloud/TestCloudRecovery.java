@@ -43,6 +43,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.UpdateShardHandler;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -68,6 +69,15 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
+
+    //SOLR-12314 : assert that these values are from the solr.xml file and not UpdateShardHandlerConfig#DEFAULT
+    for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      UpdateShardHandler shardHandler = jettySolrRunner.getCoreContainer().getUpdateShardHandler();
+      int socketTimeout = shardHandler.getSocketTimeout();
+      int connectionTimeout = shardHandler.getConnectionTimeout();
+      assertEquals(340000, socketTimeout);
+      assertEquals(45000, connectionTimeout);
+    }
   }
 
   @Before
