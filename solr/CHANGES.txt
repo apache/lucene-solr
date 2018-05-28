@@ -260,6 +260,9 @@ Bug Fixes
 * SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
   in an update processor chain (noble)
 
+* SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
+  indexing requests between leader and replica ( Mark Miller, Varun Thacker)
+
 Optimizations
 ----------------------
 
