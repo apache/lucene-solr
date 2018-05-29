@@ -16,21 +16,22 @@
  */
 package org.apache.solr.search.similarities;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 
 public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
 
   /** returns the similarity in use for the field */
   protected Similarity getSimilarity(String field) {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarity(true);
-    searcher.decref();
+    Similarity sim = null;
+    try {
+      sim = h.getCore().withSearcher(searcher -> searcher.getSimilarity(true));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     while (sim instanceof PerFieldSimilarityWrapper) {
       sim = ((PerFieldSimilarityWrapper)sim).get(field);
     }

@@ -825,16 +825,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * returns the CommitVersionInfo for the current searcher, or null on error.
    */
   private CommitVersionInfo getIndexVersion() {
-    CommitVersionInfo v = null;
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      v = CommitVersionInfo.build(searcher.get().getIndexReader().getIndexCommit());
+      return core.withSearcher(searcher -> CommitVersionInfo.build(searcher.getIndexReader().getIndexCommit()));
     } catch (IOException e) {
       LOG.warn("Unable to get index commit: ", e);
-    } finally {
-      searcher.decref();
+      return null;
     }
-    return v;
   }
 
   @Override
@@ -1543,14 +1539,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         initWrite();
 
-        RefCounted<SolrIndexSearcher> sref = core.getSearcher();
-        Directory dir;
-        try {
-          SolrIndexSearcher searcher = sref.get();
-          dir = searcher.getIndexReader().directory();
-        } finally {
-          sref.decref();
-        }
+        Directory dir = core.withSearcher(searcher -> searcher.getIndexReader().directory());
         in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);

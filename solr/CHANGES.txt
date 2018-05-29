@@ -221,6 +221,9 @@ Bug Fixes
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
   and devs. (Mark Miller)
 
+* SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
+  (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -300,6 +303,9 @@ Other Changes
 * SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
 * SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
+
+* SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
+  RefCounted API.  (David Smiley)
 
 ==================  7.3.1 ==================
 
