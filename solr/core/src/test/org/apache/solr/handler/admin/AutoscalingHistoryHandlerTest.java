@@ -134,7 +134,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'name' : '" + PREFIX + "_node_added_trigger'," +
         "'event' : 'nodeAdded'," +
         "'waitFor' : '0s'," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [" +
         "{'name':'compute_plan','class':'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}," +
@@ -151,7 +151,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'name' : '" + PREFIX + "_node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '0s'," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [" +
         "{'name':'compute_plan','class':'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}," +
@@ -234,6 +234,24 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    // setup is complete, enable the triggers
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : '" + PREFIX + "_node_added_trigger'," +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : '" + PREFIX + "_node_lost_trigger'," +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
   }
 
   private void resetLatches() {
@@ -242,7 +260,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testHistory() throws Exception {
     waitForState("Timed out wait for collection be active", COLL_NAME,
         clusterShape(1, 3));
@@ -314,12 +332,15 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     // reset latches
     resetLatches();
 
-    // kill a node where a replica exists
+    // kill a node where a replica exists - BUT not the Overseer
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
     ClusterState state = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection coll = state.getCollection(COLL_NAME);
     String nodeToKill = null;
     for (Replica r : coll.getReplicas()) {
-      if (r.isActive(state.getLiveNodes())) {
+      if (r.isActive(state.getLiveNodes()) &&
+          !r.getNodeName().equals(overseerLeader)) {
         nodeToKill = r.getNodeName();
         break;
       }
@@ -351,7 +372,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_lost_trigger");
     docs = solrClient.query(query).getResults();
-    assertEquals(8, docs.size());
+    assertEquals(docs.toString(), 8, docs.size());
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
         AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_lost_trigger",
