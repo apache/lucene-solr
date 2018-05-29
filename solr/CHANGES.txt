@@ -143,7 +143,7 @@ New Features
 * SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
-* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy) 
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
 
 * SOLR-11779: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
@@ -276,6 +276,9 @@ Bug Fixes
 * SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
   indexing requests between leader and replica ( Mark Miller, Varun Thacker)
 
+* SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
+  (David Smiley)
+
 * SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
 
 Optimizations
@@ -364,6 +367,9 @@ Other Changes
 * SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
 * SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
+
+* SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
+  RefCounted API.  (David Smiley)
 
 ==================  7.3.1 ==================
 
