@@ -16,35 +16,6 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
 
-==================  8.0.0 ==================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-
-Versions of Major Components
----------------------
-Apache Tika 1.16
-Carrot2 3.15.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.11
-Jetty 9.4.10.v20180503
-
-Upgrade Notes
-----------------------
-
-* LUCENE-7996: The 'func' query parser now returns scores that are equal to 0
-  when a negative value is produced. This change is due to the fact that
-  Lucene now requires scores to be positive. (Adrien Grand)
-
-* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
-  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
-  method signatures was required to fix it. Third party components that use this API
-  need to be updated. (Eros Taborelli, Erick Erickson, ab)
-
-* LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
-  MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
-  switch to "Direct" instead. (Dawid Weiss)
-
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
