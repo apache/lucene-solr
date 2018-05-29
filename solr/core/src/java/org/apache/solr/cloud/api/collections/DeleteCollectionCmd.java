@@ -40,7 +40,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.admin.MetricsHistoryHandler;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -67,6 +70,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     checkNotReferencedByAlias(zkStateReader, collection);
 
+    final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
+
     boolean removeCounterNode = true;
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
@@ -82,10 +87,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           return;
         }
       }
+      // remove collection-level metrics history
+      if (deleteHistory) {
+        MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
+        if (historyHandler != null) {
+          String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
+          historyHandler.removeHistory(registry);
+        }
+      }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
+      params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
       String asyncId = message.getStr(ASYNC);
       Map<String, String> requestMap = null;
@@ -126,7 +140,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Could not fully remove collection: " + collection);
       }
-
     } finally {
 
       try {

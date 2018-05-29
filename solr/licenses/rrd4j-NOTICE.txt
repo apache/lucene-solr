@@ -1,0 +1,2 @@
+GitHub: https://github.com/rrd4j/rrd4j/
+Maven-generated site: http://rrd4j.org/site/

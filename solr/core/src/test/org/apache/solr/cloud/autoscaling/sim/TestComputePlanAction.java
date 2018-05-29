@@ -273,7 +273,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'replica':'<5', 'shard': '#EACH', 'node': '#ANY'}," +
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
@@ -282,7 +282,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 2);
+        "conf",1, 4);
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
@@ -292,7 +292,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}," +
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";

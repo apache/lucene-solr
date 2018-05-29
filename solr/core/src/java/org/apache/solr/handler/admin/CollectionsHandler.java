@@ -147,6 +147,7 @@ import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_METRICS_HISTORY;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
@@ -642,7 +643,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams(), map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
-          DELETE_INSTANCE_DIR);
+          DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY);
       return map;
     }),
     FORCELEADER_OP(FORCELEADER, (req, rsp, h) -> {
@@ -671,6 +673,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY,
               COUNT_PROP, REPLICA_PROP,
               SHARD_ID_PROP,
           ONLY_IF_DOWN);
