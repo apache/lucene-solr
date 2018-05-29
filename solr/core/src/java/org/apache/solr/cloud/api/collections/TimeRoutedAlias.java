@@ -82,6 +82,7 @@ public class TimeRoutedAlias {
    */
   public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
       ROUTER_MAX_FUTURE,
+      ROUTER_AUTO_DELETE_AGE,
       TZ)); // kinda special
 
   static Predicate<String> PARAM_IS_PROP =
