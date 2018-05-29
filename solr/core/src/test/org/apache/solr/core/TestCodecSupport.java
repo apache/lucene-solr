@@ -33,8 +33,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 
@@ -111,22 +109,17 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core) throws IOException {
-    RefCounted<SolrIndexSearcher> ref = null;
-    SolrIndexSearcher searcher = null;
-    try {
-      ref = core.getSearcher();
-      searcher = ref.get();
+    h.getCore().withSearcher(searcher -> {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Expecting compression mode string to be " + expectedModeString + 
-          " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
-          "\n SegmentInfo: " + info +
-          "\n SegmentInfos: " + infos + 
-          "\n Codec: " + core.getCodec(),
+      assertEquals("Expecting compression mode string to be " + expectedModeString +
+              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
+              "\n SegmentInfo: " + info +
+              "\n SegmentInfos: " + infos +
+              "\n Codec: " + core.getCodec(),
           expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
-    } finally {
-      if (ref != null) ref.decref();
-    }
+      return null;
+    });
   }
   
   public void testCompressionMode() throws Exception {
