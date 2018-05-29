@@ -18,10 +18,8 @@ package org.apache.solr.update;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -215,21 +213,22 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
-    Set<SolrInputDocument> unwrappedDocs = new LinkedHashSet<>();
+    List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     if(root.hasChildDocuments()) {
-      recUnwrapp(unwrappedDocs, root);
+      recUnwrapp(unwrappedDocs, root, true);
     }
-    recUnwrapRelations(unwrappedDocs, root);
+    recUnwrapRelations(unwrappedDocs, root, true);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
       throw new SolrException
         (SolrException.ErrorCode.BAD_REQUEST, "Unable to index docs with children: the schema must " +
          "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
          "' field, using the exact same fieldType");
     }
-    return new ArrayList<>(unwrappedDocs);
+    unwrappedDocs.add(root);
+    return unwrappedDocs;
   }
 
-  private void recUnwrapRelations(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+  private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     Map<String, SolrInputField> childDocsRelations = currentDoc.getChildDocumentsMap();
     if (childDocsRelations != null) {
       for (Map.Entry<String, SolrInputField> childEntry : childDocsRelations.entrySet()) {
@@ -244,17 +243,25 @@ public class AddUpdateCommand extends UpdateCommand {
         }
       }
     }
-    unwrappedDocs.add(currentDoc);
+    if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
-  private void recUnwrapp(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+  private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    recUnwrapRelations(unwrappedDocs, currentDoc, false);
+  }
+
+  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     List<SolrInputDocument> children = currentDoc.getChildDocuments();
     if (children != null) {
       for (SolrInputDocument child : children) {
         recUnwrapp(unwrappedDocs, child);
       }
     }
-    unwrappedDocs.add(currentDoc);
+    if(!isRoot) unwrappedDocs.add(currentDoc);
+  }
+
+  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    recUnwrapp(unwrappedDocs, currentDoc, false);
   }
 
   @Override
