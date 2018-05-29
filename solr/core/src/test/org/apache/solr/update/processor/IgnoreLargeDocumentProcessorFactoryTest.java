@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -98,5 +99,83 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
     }
     document.addChildDocument(childDocument);
     assertEquals(fastEstimate(document), fastEstimate(map) * 2);
+  }
+
+  @Test
+  public void testEstimateObjectSizeWithSingleChild() {
+    assertEquals(fastEstimate("abc"), 6);
+    assertEquals(fastEstimate("abcdefgh"), 16);
+    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
+    assertEquals(fastEstimate(keys), 42);
+    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
+    assertEquals(fastEstimate(values), 8);
+    final String childDocKey = "testChildDoc";
+
+    Map<String, Object> mapWChild = new HashMap<>();
+    mapWChild.put("int", 12);
+    mapWChild.put("long", 5L);
+    mapWChild.put("double", 12.0);
+    mapWChild.put("float", 5.0f);
+    mapWChild.put("str", "duck");
+    assertEquals(fastEstimate(mapWChild), 50);
+    Map<String, Object> childMap = new HashMap<>(mapWChild);
+
+
+    SolrInputDocument document = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : mapWChild.entrySet()) {
+      document.addField(entry.getKey(), entry.getValue());
+    }
+    assertEquals(fastEstimate(document), fastEstimate(mapWChild));
+
+    SolrInputDocument childDocument = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : mapWChild.entrySet()) {
+      childDocument.addField(entry.getKey(), entry.getValue());
+    }
+    document.addField(childDocKey, childDocument);
+    mapWChild.put(childDocKey, childMap);
+    assertEquals(fastEstimate(document), fastEstimate(childMap) * 2 + fastEstimate(childDocKey));
+    assertEquals(fastEstimate(document), fastEstimate(mapWChild));
+  }
+
+  @Test
+  public void testEstimateObjectSizeWithChildList() {
+    assertEquals(fastEstimate("abc"), 6);
+    assertEquals(fastEstimate("abcdefgh"), 16);
+    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
+    assertEquals(fastEstimate(keys), 42);
+    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
+    assertEquals(fastEstimate(values), 8);
+    final String childDocKey = "testChildDoc";
+
+    Map<String, Object> mapWChild = new HashMap<>();
+    mapWChild.put("int", 12);
+    mapWChild.put("long", 5L);
+    mapWChild.put("double", 12.0);
+    mapWChild.put("float", 5.0f);
+    mapWChild.put("str", "duck");
+    assertEquals(fastEstimate(mapWChild), 50);
+    Map<String, Object> childMap = new HashMap<>(mapWChild);
+
+
+    SolrInputDocument document = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : mapWChild.entrySet()) {
+      document.addField(entry.getKey(), entry.getValue());
+    }
+    assertEquals(fastEstimate(document), fastEstimate(mapWChild));
+
+    SolrInputDocument childDocument = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : mapWChild.entrySet()) {
+      childDocument.addField(entry.getKey(), entry.getValue());
+    }
+    List<SolrInputDocument> childList = new ArrayList<SolrInputDocument>(){
+      {
+        add(childDocument);
+        add(new SolrInputDocument(childDocument));
+      }
+    };
+    document.addField(childDocKey, childList);
+    mapWChild.put(childDocKey, childList);
+    assertEquals(fastEstimate(document), fastEstimate(mapWChild));
+    assertEquals(fastEstimate(document), fastEstimate(childMap) * (childList.size() + 1) + fastEstimate(childDocKey));
   }
 }
