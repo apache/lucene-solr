@@ -100,8 +100,6 @@ final class ReadersAndUpdates {
    * <p>NOTE: steals incoming ref from reader. */
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
     this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
-    assert pendingDeletes.numPendingDeletes() >= 0
-        : "got " + pendingDeletes.numPendingDeletes() + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
     this.reader = reader;
     pendingDeletes.onNewReader(reader, info);
   }
@@ -122,10 +120,9 @@ final class ReadersAndUpdates {
     return rc;
   }
 
-  public synchronized int getPendingDeleteCount() {
-    return pendingDeletes.numPendingDeletes();
+  public synchronized int getDelCount() {
+    return pendingDeletes.getDelCount();
   }
-
   private synchronized boolean assertNoDupGen(List<DocValuesFieldUpdates> fieldUpdates, DocValuesFieldUpdates update) {
     for (int i=0;i<fieldUpdates.size();i++) {
       DocValuesFieldUpdates oldUpdate = fieldUpdates.get(i);
@@ -167,24 +164,6 @@ final class ReadersAndUpdates {
     return count;
   }
   
-  // Call only from assert!
-  public synchronized boolean verifyDocCounts() {
-    int count;
-    Bits liveDocs = pendingDeletes.getLiveDocs();
-    if (liveDocs != null) {
-      count = 0;
-      for(int docID=0;docID<info.info.maxDoc();docID++) {
-        if (liveDocs.get(docID)) {
-          count++;
-        }
-      }
-    } else {
-      count = info.info.maxDoc();
-    }
-
-    assert info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() + " pendingDeletes=" + pendingDeletes.numPendingDeletes() + " count=" + count;
-    return true;
-  }
 
   /** Returns a {@link SegmentReader}. */
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
@@ -235,8 +214,7 @@ final class ReadersAndUpdates {
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
     if (liveDocs != null) {
-      return new SegmentReader(info, reader, liveDocs,
-          info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+      return new SegmentReader(info, reader, liveDocs, pendingDeletes.numDocs());
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -254,8 +232,7 @@ final class ReadersAndUpdates {
       // get a reader and dec the ref right away we just make sure we have a reader
       getReader(IOContext.READ).decRef();
     }
-    if (reader.getLiveDocs() != pendingDeletes.getLiveDocs()
-        || reader.numDeletedDocs() != info.getDelCount() - pendingDeletes.numPendingDeletes()) {
+    if (pendingDeletes.needsRefresh(reader)) {
       // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
       swapNewReaderWithLatestLiveDocs();
     }
@@ -427,6 +404,10 @@ final class ReadersAndUpdates {
       assert !fieldFiles.containsKey(fieldInfo.number);
       fieldFiles.put(fieldInfo.number, trackingDir.getCreatedFiles());
     }
+  }
+
+  synchronized boolean anyPendingDeletes() {
+    return pendingDeletes.numPendingDeletes() != 0;
   }
 
   /**
@@ -668,8 +649,7 @@ final class ReadersAndUpdates {
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
     assert reader != null;
     assert Thread.holdsLock(this) : Thread.currentThread().getName();
-    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
-        info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(), pendingDeletes.numDocs());
     boolean success2 = false;
     try {
       pendingDeletes.onNewReader(newReader, info);
@@ -727,14 +707,13 @@ final class ReadersAndUpdates {
     }
     
     SegmentReader reader = getReader(context);
-    int delCount = pendingDeletes.numPendingDeletes() + info.getDelCount();
-    if (delCount != reader.numDeletedDocs()) {
+    if (pendingDeletes.needsRefresh(reader)) {
       // beware of zombies:
-      assert delCount > reader.numDeletedDocs(): "delCount=" + delCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs();
       assert pendingDeletes.getLiveDocs() != null;
       reader = createNewReaderWithLatestLiveDocs(reader);
     }
-    assert verifyDocCounts();
+    assert pendingDeletes.verifyDocCounts(reader);
+
 
     return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }

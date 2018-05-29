@@ -132,7 +132,7 @@ final class ReaderPool implements Closeable {
    */
   synchronized boolean anyPendingDeletes() {
     for(ReadersAndUpdates rld : readerMap.values()) {
-      if (rld.getPendingDeleteCount() != 0) {
+      if (rld.anyPendingDeletes()) {
         return true;
       }
     }
@@ -321,7 +321,6 @@ final class ReaderPool implements Closeable {
 
   /**
    * Returns <code>true</code> iff there are any buffered doc values updates. Otherwise <code>false</code>.
-   * @see #anyPendingDeletes()
    */
   synchronized boolean anyDocValuesChanges() {
     for (ReadersAndUpdates rld : readerMap.values()) {

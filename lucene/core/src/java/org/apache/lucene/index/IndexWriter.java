@@ -635,14 +635,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   public int numDeletedDocs(SegmentCommitInfo info) {
     ensureOpen(false);
     validate(info);
-    int delCount = info.getDelCount();
-
     final ReadersAndUpdates rld = getPooledInstance(info, false);
     if (rld != null) {
-      delCount += rld.getPendingDeleteCount();
+      return rld.getDelCount(); // get the full count from here since SCI might change concurrently
+    } else {
+      int delCount = info.getDelCount();
+      assert delCount <= info.info.maxDoc(): "delCount: " + delCount + " maxDoc: " + info.info.maxDoc();
+      return delCount;
     }
-    assert delCount <= info.info.maxDoc(): "delCount: " + delCount + " maxDoc: " + info.info.maxDoc();
-    return delCount;
   }
 
   /**
@@ -3697,7 +3697,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     // Lazy init (only when we find a delete or update to carry over):
     final ReadersAndUpdates mergedDeletesAndUpdates = getPooledInstance(merge.info, true);
-    
+    int numDeletesBefore = mergedDeletesAndUpdates.getDelCount();
     // field -> delGen -> dv field updates
     Map<String,Map<Long,DocValuesFieldUpdates>> mappedDVUpdates = new HashMap<>();
 
@@ -3788,7 +3788,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       if (mergedDeletesAndUpdates == null) {
         infoStream.message("IW", "no new deletes or field updates since merge started");
       } else {
-        String msg = mergedDeletesAndUpdates.getPendingDeleteCount() + " new deletes";
+        String msg = mergedDeletesAndUpdates.getDelCount() - numDeletesBefore + " new deletes";
         if (anyDVUpdates) {
           msg += " and " + mergedDeletesAndUpdates.getNumDVUpdates() + " new field updates";
           msg += " (" + mergedDeletesAndUpdates.ramBytesUsed.get() + ") bytes";
@@ -4363,7 +4363,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
         ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(context);
         SegmentReader reader = mr.reader;
-        int delCount = reader.numDeletedDocs();
 
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "seg=" + segString(info) + " reader=" + reader);
@@ -4371,7 +4370,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
         merge.hardLiveDocs.add(mr.hardLiveDocs);
         merge.readers.add(reader);
-        assert delCount <= info.info.maxDoc(): "delCount=" + delCount + " info.maxDoc=" + info.info.maxDoc() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         segUpto++;
       }
 
