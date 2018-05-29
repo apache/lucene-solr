@@ -54,7 +54,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -269,7 +268,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSolrNestedFields() throws Exception {
+  public void testSolrNestedFieldsList() throws Exception {
     SolrInputDocument document1 = new SolrInputDocument() {
       {
         final String id = id();
@@ -286,30 +285,105 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       }
     };
 
+    SolrInputDocument document2 = new SolrInputDocument() {
+      {
+        final String id = id();
+        addField("id", id);
+        addField("parent_s", "A");
+        addField("children",
+            new ArrayList<SolrInputDocument>()
+            {
+              {
+                add(sdoc("id", id(), "child_s", "b"));
+                add(sdoc("id", id(), "child_s", "c"));
+              }
+            });
+      }
+    };
+    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
+      {
+        add(document1);
+        add(document2);
+      }
+    };
 
-    SolrCore core = h.getCore();
-    long version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
-    updateCmd.setVersion(version);
-//    SolrQueryResponse resp = new SolrQueryResponse();
-//    h.getCore().getUpdateProcessingChain("update").createProcessor(coreReq, resp);
-    updateCmd.solrDoc = document1;
-    h.getCore().getUpdateHandler().addDoc(updateCmd);
-    assertU(commit());
+    indexSolrInputDocumentsDirectly(docs);
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
         "fl","*",
         "sort","id asc",
         "wt","json"),
-        "/response/numFound==" + 3);
+        "/response/numFound==" + "XyzAbc".length());
+    assertJQ(req("q",parent+":" + document2.getFieldValue(parent),
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + document2.getFieldValue("id") + "'");
+    assertQ(req("q",child+":(y z b c)", "sort","_docid_ asc"),
+        "//*[@numFound='" + "yzbc".length() + "']", // assert physical order of children
+        "//doc[1]/arr[@name='child_s']/str[text()='y']",
+        "//doc[2]/arr[@name='child_s']/str[text()='z']",
+        "//doc[3]/arr[@name='child_s']/str[text()='b']",
+        "//doc[4]/arr[@name='child_s']/str[text()='c']");
+    assertSingleParentOf(searcher, one("bc"), "A");
+    assertSingleParentOf(searcher, one("yz"), "X");
+  }
+
+  @Test
+  public void testSolrNestedFieldsSingleVal() throws Exception {
+    SolrInputDocument document1 = new SolrInputDocument() {
+      {
+        final String id = id();
+        addField("id", id);
+        addField("parent_s", "X");
+        addField("child1_s", sdoc("id", id(), "child_s", "y"));
+        addField("child2_s", sdoc("id", id(), "child_s", "z"));
+      }
+    };
+
+    SolrInputDocument document2 = new SolrInputDocument() {
+      {
+        final String id = id();
+        addField("id", id);
+        addField("parent_s", "A");
+        addField("child1_s", sdoc("id", id(), "child_s", "b"));
+        addField("child2_s", sdoc("id", id(), "child_s", "c"));
+      }
+    };
+    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
+      {
+        add(document1);
+        add(document2);
+      }
+    };
+
+    indexSolrInputDocumentsDirectly(docs);
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + "XyzAbc".length());
+    assertJQ(req("q",parent+":" + document2.getFieldValue(parent),
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + document2.getFieldValue("id") + "'");
+    assertQ(req("q",child+":(y z b c)", "sort","_docid_ asc"),
+        "//*[@numFound='" + "yzbc".length() + "']", // assert physical order of children
+        "//doc[1]/arr[@name='child_s']/str[text()='y']",
+        "//doc[2]/arr[@name='child_s']/str[text()='z']",
+        "//doc[3]/arr[@name='child_s']/str[text()='b']",
+        "//doc[4]/arr[@name='child_s']/str[text()='c']");
+    assertSingleParentOf(searcher, one("bc"), "A");
     assertSingleParentOf(searcher, one("yz"), "X");
   }
 
   @SuppressWarnings("serial")
   @Test
-  public void testSolrJXML() throws IOException {
+  public void testSolrJXML() throws Exception {
     UpdateRequest req = new UpdateRequest();
     
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -369,7 +443,12 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     requestWriter.write(req, os);
     assertBlockU(os.toString());
     assertU(commit());
-    
+
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + 6);
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
@@ -602,6 +681,23 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       attachField(document, "id", id());
       attachField(document, type, String.valueOf(typeValue));
     }
+  }
+
+  private void indexSolrInputDocumentsDirectly(List<SolrInputDocument> docs) throws IOException {
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
+    for (SolrInputDocument doc: docs) {
+      long version = getNewClock();
+      updateCmd.setVersion(Math.abs(version));
+      updateCmd.solrDoc = doc;
+      h.getCore().getUpdateHandler().addDoc(updateCmd);
+      updateCmd.clear();
+    }
+    assertU(commit());
+  }
+
+  private long getNewClock() {
+    return h.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
   }
   
   /**
