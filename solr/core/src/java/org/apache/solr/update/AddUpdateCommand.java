@@ -231,16 +231,20 @@ public class AddUpdateCommand extends UpdateCommand {
 
   private void recUnwrapRelations(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     Map<String, SolrInputField> childDocsRelations = currentDoc.getChildDocumentsMap();
-    unwrappedDocs.add(currentDoc);
-    if (childDocsRelations == null) {
-      return;
-    }
-    for (Map.Entry<String, SolrInputField> childEntry : childDocsRelations.entrySet()) {
-      Collection<SolrInputDocument> childrenList = ((Collection) childEntry.getValue().getValues());
-      for (SolrInputDocument child : childrenList) {
-        recUnwrapRelations(unwrappedDocs, child);
+    if (childDocsRelations != null) {
+      for (Map.Entry<String, SolrInputField> childEntry : childDocsRelations.entrySet()) {
+        Object val = childEntry.getValue().getValue();
+        if (!(val instanceof Collection)) {
+          recUnwrapRelations(unwrappedDocs, ((SolrInputDocument) val));
+          continue;
+        }
+        Collection<SolrInputDocument> childrenList = ((Collection) val);
+        for (SolrInputDocument child : childrenList) {
+          recUnwrapRelations(unwrappedDocs, child);
+        }
       }
     }
+    unwrappedDocs.add(currentDoc);
   }
 
   private void recUnwrapp(Set<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
