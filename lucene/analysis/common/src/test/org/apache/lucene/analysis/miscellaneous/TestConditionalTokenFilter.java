@@ -48,6 +48,7 @@ import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
@@ -328,6 +329,44 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     ts = new NonRandomSkippingFilter(ts, IndicNormalizationFilter::new, true);
 
     assertTokenStreamContents(ts, new String[]{"jvboq"});
+  }
+
+  public void testInternalPositionAdjustment() throws IOException {
+    // check that the partial TokenStream sent to the condition filter begins with a posInc of 1,
+    // even if the input stream has a posInc of 0 at that position, and that the filtered stream
+    // has the correct posInc afterwards
+    TokenStream ts = whitespaceMockTokenizer("one two three");
+    ts = new KeywordRepeatFilter(ts);
+    ts = new NonRandomSkippingFilter(ts, PositionAssertingTokenFilter::new, false, true, true, true, true, false);
+
+    assertTokenStreamContents(ts,
+        new String[]{ "one", "one", "two", "two", "three", "three" },
+        new int[]{    1,      0,    1,      0,    1,        0});
+  }
+
+  private static final class PositionAssertingTokenFilter extends TokenFilter {
+
+    boolean reset = false;
+    final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+
+    protected PositionAssertingTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.reset = true;
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (reset) {
+        assertEquals(1, posIncAtt.getPositionIncrement());
+      }
+      reset = false;
+      return input.incrementToken();
+    }
   }
 
   private static class RandomSkippingFilter extends ConditionalTokenFilter {
