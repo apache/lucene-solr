@@ -195,8 +195,6 @@ public class CoreDescriptor {
                         Properties containerProperties, boolean isZooKeeperAware) {
     this.instanceDir = instanceDir;
 
-    originalCoreProperties.setProperty(CORE_NAME, name);
-
     name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
                                              containerProperties);
 
@@ -216,6 +214,8 @@ public class CoreDescriptor {
         coreProperties.setProperty(propname,
             PropertiesUtil.substituteProperty(propvalue, containerProperties));
     }
+
+    originalCoreProperties.setProperty(CORE_NAME, name);
 
     loadExtraProperties();
     buildSubstitutableProperties();
