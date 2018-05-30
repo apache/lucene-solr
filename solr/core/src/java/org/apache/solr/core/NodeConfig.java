@@ -59,6 +59,8 @@ public class NodeConfig {
 
   private final Integer coreLoadThreads;
 
+  private final int replayUpdatesThreads;
+
   @Deprecated
   // This should be part of the transientCacheConfig, remove in 7.0
   private final int transientCacheSize;
@@ -77,7 +79,7 @@ public class NodeConfig {
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String healthCheckHandlerClass, String infoHandlerClass, String configSetsHandlerClass,
-                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
+                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads, int replayUpdatesThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig) {
@@ -96,6 +98,7 @@ public class NodeConfig {
     this.logWatcherConfig = logWatcherConfig;
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
+    this.replayUpdatesThreads = replayUpdatesThreads;
     this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
@@ -135,6 +138,10 @@ public class NodeConfig {
     return coreLoadThreads == null ?
         (zkAware ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
         : coreLoadThreads;
+  }
+
+  public int getReplayUpdatesThreads() {
+    return replayUpdatesThreads;
   }
 
   public String getSharedLibDirectory() {
@@ -222,6 +229,7 @@ public class NodeConfig {
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
+    private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
     @Deprecated
     //Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
     private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
@@ -341,6 +349,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setReplayUpdatesThreads(int replayUpdatesThreads) {
+      this.replayUpdatesThreads = replayUpdatesThreads;
+      return this;
+    }
+
     // Remove in Solr 7.0
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
@@ -381,7 +394,7 @@ public class NodeConfig {
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
+                            logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
                             backupRepositoryPlugins, metricsConfig, transientCacheConfig);
     }
   }

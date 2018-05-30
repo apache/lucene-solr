@@ -271,6 +271,9 @@ public class SolrXmlConfig {
         case "coreLoadThreads":
           builder.setCoreLoadThreads(parseInt(name, value));
           break;
+        case "replayUpdatesThreads":
+          builder.setReplayUpdatesThreads(parseInt(name, value));
+          break;
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;

@@ -300,6 +300,8 @@ Optimizations
   The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
   Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
 
+* SOLR-12338: Replay buffering tlog in parallel. (Cao Manh Dat, David Smiley)
+
 Other Changes
 ----------------------
 

@@ -126,6 +126,13 @@ public class ExecutorUtil {
         threadFactory);
   }
 
+  public static ExecutorService newMDCAwareCachedThreadPool(int maxThreads, ThreadFactory threadFactory) {
+    return new MDCAwareThreadPoolExecutor(0, maxThreads,
+        60L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(maxThreads),
+        threadFactory);
+  }
+
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 

@@ -957,6 +957,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     isIndexChanged = true;
   }
 
+  public static int bucketHash(BytesRef idBytes) {
+    assert idBytes != null;
+    return Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+  }
+
   /**
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
@@ -981,7 +986,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
-    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+    int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -1745,7 +1750,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
-    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+    int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.

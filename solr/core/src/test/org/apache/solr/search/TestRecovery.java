@@ -47,8 +47,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -98,6 +100,85 @@ public class TestRecovery extends SolrTestCaseJ4 {
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
     MetricRegistry registry = manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
     return registry.getMetrics();
+  }
+
+  @Test
+  public void stressLogReplay() throws Exception {
+    final int NUM_UPDATES = 150;
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
+      clearIndex();
+      assertU(commit());
+      Map<Integer, Integer> docIdToVal = new HashMap<>();
+      for (int i = 0; i < NUM_UPDATES; i++) {
+        int kindOfUpdate = random().nextInt(100);
+        if (docIdToVal.size() < 10) kindOfUpdate = 0;
+        if (kindOfUpdate <= 50) {
+          // add a new document update, may by duplicate with the current one
+          int val = random().nextInt(1000);
+          int docId = random().nextInt(10000);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", val), null);
+          docIdToVal.put(docId, val);
+        } else if (kindOfUpdate <= 80) {
+          // inc val of a document
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          int delta = random().nextInt(10);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", map("inc", delta)), null);
+          docIdToVal.put(docId, docIdToVal.get(docId) + delta);
+        } else if (kindOfUpdate <= 85) {
+          // set val of a document
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          int val = random().nextInt(1000);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", map("set", val)), null);
+          docIdToVal.put(docId, val);
+        } else if (kindOfUpdate <= 90) {
+          // delete by id
+          ArrayList<Integer> vals = new ArrayList<>(docIdToVal.values());
+          int val = vals.get(random().nextInt(vals.size()));
+          deleteByQueryAndGetVersion("val_i_dvo:"+val, null);
+          docIdToVal.entrySet().removeIf(integerIntegerEntry -> integerIntegerEntry.getValue() == val);
+        } else {
+          // delete by query
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          deleteAndGetVersion(String.valueOf(docId), null);
+          docIdToVal.remove(docId);
+        }
+      }
+
+      h.close();
+      createCore();
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+      // unblock recovery
+      logReplay.release(Integer.MAX_VALUE);
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertU(commit());
+      assertJQ(req("q","*:*") ,"/response/numFound=="+docIdToVal.size());
+
+      for (Map.Entry<Integer, Integer> entry : docIdToVal.entrySet()) {
+        assertJQ(req("q","id:"+entry.getKey(), "fl", "val_i_dvo") ,
+            "/response/numFound==1",
+            "/response/docs==[{'val_i_dvo':"+entry.getValue()+"}]");
+      }
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
   }
 
   @Test
