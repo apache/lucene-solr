@@ -165,11 +165,9 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
         if (value instanceof Map) {
           size += fastEstimate(entry.getValue());
         } else if (value instanceof Collection) {
-          for(Object item: ((Collection) value)) {
-            size += fastEstimate(item);
-          }
+          size += fastEstimate((Collection) value);
         } else {
-          size += primitiveEstimate(entry.getValue(), 0L);
+          size += primitiveEstimate(value, 0L);
         }
       }
       return size;
