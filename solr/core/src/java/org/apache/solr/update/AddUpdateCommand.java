@@ -242,6 +242,7 @@ public class AddUpdateCommand extends UpdateCommand {
     return childDocsKeys.size() > 0 ? childDocsKeys: null;
   }
 
+  /** Extract all child documents from parent that are saved in keys. */
   private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     Collection<String> childDocKeys = getChildDocumentsKeys(currentDoc);
     if (childDocKeys != null) {
@@ -264,6 +265,7 @@ public class AddUpdateCommand extends UpdateCommand {
     recUnwrapRelations(unwrappedDocs, currentDoc, false);
   }
 
+  /** Extract all anonymous child documents from parent. */
   private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     List<SolrInputDocument> children = currentDoc.getChildDocuments();
     if (children != null) {
