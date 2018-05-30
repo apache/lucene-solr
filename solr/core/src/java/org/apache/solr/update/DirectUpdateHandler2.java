@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Meter;
+import com.google.common.collect.FluentIterable;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CodecReader;
@@ -989,28 +989,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private Iterable<Document> toDocumentsIter(Collection<SolrInputDocument> docs, IndexSchema schema) {
-    return new Iterable<Document>() {
-        public Iterator<Document> iterator() {
-          return new Iterator<Document>() {
-            Iterator<SolrInputDocument> iter = docs.iterator();
-
-            @Override
-            public boolean hasNext() {
-              return iter.hasNext();
-            }
-
-            @Override
-            public Document next() {
-              return DocumentBuilder.toDocument(iter.next(), schema);
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-          };
-        }
-      };
+    return FluentIterable.from(docs).transform((SolrInputDocument doc) -> DocumentBuilder.toDocument(doc, schema));
   }
 
 
